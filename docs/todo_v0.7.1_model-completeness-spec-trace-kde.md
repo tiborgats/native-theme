@@ -1079,7 +1079,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K3.46 | `Font.weight, Font.width, Font.style (the style name mapped to them)` | field |
 | K3.46 | `TextStyle.case (ADD-A39)` | field |
 | K3.46 | `reader:kde:kdeglobals font strings (capitalization, letter and word spacing, stretch, style name, features, axes)` | reader |
-| K3.46 | `reader:kde:kcmfonts [General] forceFontDPI, Xft.dpi -> ReaderState.font_dpi` (the DPI the font strings' point sizes convert by, S9.4: platform-facts' *Font DPI override*, Plasma 6.7 on X11; none on Wayland or from Plasma 6.8, where the preset's `token.text.font_dpi` applies) | reader |
+| K3.46 | `reader:kde:Xft.dpi on an X11 session -> ReaderState.font_dpi` (the DPI the font strings' point sizes convert by, S9.4: Qt's xcb plugin's logical DPI, parsed by `qxcb_xft_dpi`; none on Wayland, where Qt's logical DPI is the preset's `token.text.font_dpi`; `kcmfonts`' `forceFontDPI`, platform-facts' *Font DPI override*, not read: Plasma 6.7 handed it to X11 as `Xft.dpi` and Plasma 6.8 removed it; S9.3, ADD-A140) | reader |
 | K3.46 | `token.text.font_dpi` (Plasma's DPI where the reader reports none, from the facts, S9.4, ADD-A103) | token |
 | K3.47 | - (`taskbarFont`, the Plasma panel's font: the shell draws the panel, no application does) | out (R1.1) |
 | K3.48† | `input.preedit.text, text_area.preedit.text (TextStyle.decoration and fill from the input method's attributes)` | field |
@@ -1113,7 +1113,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K3.61 | `PartStyle.icon.rendering_mode (from_icon: KIconLoader recolours an SVG's colour-scheme stylesheet classes in a theme that follows the colour scheme, Breeze's; S2.9, ADD-A130)` | field |
 | K3.62 | `PartStyle.icon.fill @ {selected} / {pressed} (selection foreground)` | rule |
 | K3.63 | `token.icons.sizes.toolbar, token.icons.sizes.keyed.main_toolbar, token.icons.sizes.small, token.icons.sizes.large, token.icons.sizes.dialog, token.icons.sizes.panel` | token |
-| K3.63 | `reader:kde:icon theme index.theme *Default sizes` | reader |
+| K3.63 | `reader:kde:icon theme index.theme *Default sizes` (`MainToolbarDefault` among them; a key the theme omits KIconTheme's own default for its group, `kiconthemes@6.31.0 src/kicontheme.cpp:160-167`, from KDE facts; S9.3, ADD-A140) | reader |
 | K3.64 | `token.pointer.theme, token.pointer.size (ADD-A46)` | token |
 | K3.64 | `reader:kde:kcminputrc [Mouse] cursorTheme, cursorSize` | reader |
 | K3.65† | `PartStyle.cursor per part: link.body.cursor, splitter.divider.cursor @ variant @column_view, list.accessory.cursor @ variant reorder, button.body.cursor @ variant help, sidebar.handle (the drawer edges)` | field |
