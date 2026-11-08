@@ -60,6 +60,8 @@ mod gnome;
 mod kde;
 #[cfg(all(feature = "watch", feature = "macos", target_os = "macos"))]
 mod macos;
+#[cfg(all(feature = "watch", feature = "windows", target_os = "windows"))]
+mod windows;
 
 use std::sync::mpsc;
 use std::thread::JoinHandle;
@@ -142,7 +144,8 @@ impl ThemeSubscription {
     /// Compiled where a backend exists to call it, and for tests.
     #[cfg(any(
         test,
-        all(target_os = "linux", any(feature = "kde", feature = "portal"))
+        all(target_os = "linux", any(feature = "kde", feature = "portal")),
+        all(target_os = "windows", feature = "windows"),
     ))]
     pub(crate) fn new(
         shutdown_tx: mpsc::Sender<()>,
@@ -198,6 +201,7 @@ impl Drop for ThemeSubscription {
     test,
     all(target_os = "linux", any(feature = "kde", feature = "portal")),
     all(target_os = "macos", feature = "macos"),
+    all(target_os = "windows", feature = "windows"),
 ))]
 fn fire(callback: &impl Fn(ThemeChangeEvent)) {
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -216,6 +220,7 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
     test,
     all(target_os = "linux", any(feature = "kde", feature = "portal")),
     all(target_os = "macos", feature = "macos"),
+    all(target_os = "windows", feature = "windows"),
 ))]
 const DEBOUNCE_MS: u32 = 300;
 
@@ -351,10 +356,12 @@ impl Debounce {
 /// `org.gnome.desktop.interface` and `org.gnome.desktop.a11y.interface`
 /// keys the reader reads; on a desktop with no reader of its own the same
 /// signal for the settings its portal-only read reads; on macOS the
-/// notifications of the macOS reader's sources, with the `macos` feature.
-/// One change can raise several of them, so the callback fires once per
-/// burst, 300 ms after the last. The KDE and Windows watchers return with
-/// their readers.
+/// notifications of the macOS reader's sources, with the `macos` feature;
+/// on Windows `UISettings::ColorValuesChanged`, `TextScaleFactorChanged`,
+/// `AnimationsEnabledChanged` and `AdvancedEffectsEnabledChanged`, with the
+/// `windows` feature (a change of high contrast is announced to top-level
+/// windows only, and the watcher has none). One change can raise several of
+/// them, so the callback fires once per burst, 300 ms after the last.
 ///
 /// A callback that panics loses that one event: the panic is contained, and
 /// the watcher keeps running (with the default `panic = "unwind"`; under
@@ -380,9 +387,11 @@ impl Debounce {
 /// not an absolute path and `$HOME` is unset or empty) or cannot be watched
 /// (it does not exist, or the inotify limits are reached); GNOME, Budgie and
 /// the portal-only desktops, the watcher thread could not connect to the
-/// session bus or subscribe to the portal's `SettingChanged` signal. The KDE
-/// backend sets up its watch on the calling thread, and the GNOME backend
-/// returns only once its thread is subscribed.
+/// session bus or subscribe to the portal's `SettingChanged` signal;
+/// Windows, the watcher thread did not start or could not subscribe to
+/// `UISettings::ColorValuesChanged` or `TextScaleFactorChanged`. The KDE
+/// backend sets up its watch on the calling thread, and the GNOME and
+/// Windows backends return only once their thread is subscribed.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
@@ -421,10 +430,17 @@ pub fn on_theme_change(
 
     #[cfg(target_os = "windows")]
     {
-        let _ = callback;
-        Err(crate::Error::WatchUnavailable {
-            reason: "this platform's watcher returns with its reader",
-        })
+        #[cfg(feature = "windows")]
+        {
+            windows::watch_windows(callback)
+        }
+        #[cfg(not(feature = "windows"))]
+        {
+            let _ = callback;
+            Err(crate::Error::WatchUnavailable {
+                reason: "enable the 'windows' feature for Windows theme watching",
+            })
+        }
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
@@ -556,7 +572,8 @@ mod tests {
     /// every source its module lists under `# Sources`, and the notification
     /// its watcher observes for it: a file in the config directory (KDE), a
     /// `namespace key` of the portal's `SettingChanged` (GNOME, the
-    /// portal-only read), a notification's name (macOS).
+    /// portal-only read), a notification's name (macOS) or a `UISettings`
+    /// event (Windows).
     const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
         ("kde", "kdeglobals", "kdeglobals"),
         ("kde", "kdedefaults/kdeglobals", "kdedefaults/kdeglobals"),
@@ -677,6 +694,22 @@ mod tests {
             "NSWorkspace.accessibilityDisplayOptions",
             "NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification",
         ),
+        ("windows", "UISettings.GetColorValue", "ColorValuesChanged"),
+        (
+            "windows",
+            "UISettings.TextScaleFactor",
+            "TextScaleFactorChanged",
+        ),
+        (
+            "windows",
+            "UISettings.AnimationsEnabled",
+            "AnimationsEnabledChanged",
+        ),
+        (
+            "windows",
+            "UISettings.AdvancedEffectsEnabled",
+            "AdvancedEffectsEnabledChanged",
+        ),
     ];
 
     /// Each reader's module source, whose docs list its sources.
@@ -685,6 +718,7 @@ mod tests {
         ("gnome", include_str!("../gnome/mod.rs")),
         ("portal", include_str!("../gnome/portal.rs")),
         ("macos", include_str!("../macos.rs")),
+        ("windows", include_str!("../windows.rs")),
     ];
 
     /// The sources a reader module lists: the first code span of each item
@@ -704,6 +738,7 @@ mod tests {
     #[cfg(any(
         all(target_os = "linux", any(feature = "kde", feature = "portal")),
         all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows"),
     ))]
     fn table_notifications(reader: &str) -> impl Iterator<Item = &'static str> {
         SOURCE_NOTIFICATIONS
@@ -789,6 +824,18 @@ mod tests {
             table_notifications("macos").count(),
             "macos: a registered notification with no row"
         );
+    }
+
+    /// The Windows watcher subscribes to the event of every Windows row.
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    #[test]
+    fn the_windows_watcher_observes_every_windows_source() {
+        for event in table_notifications("windows") {
+            assert!(
+                windows::SUBSCRIBED_EVENTS.contains(&event),
+                "the Windows watcher does not subscribe to `{event}`"
+            );
+        }
     }
 
     /// Every gsettings key the GNOME reader reads is a listed source.
@@ -1064,7 +1111,7 @@ mod tests {
     /// the two, so a drop that hangs fails the test after `per_drop_timeout`
     /// instead of blocking it. A platform or desktop without a watcher
     /// (`WatchUnavailable`) skips the test.
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     fn assert_subscribe_and_drop_returns(rounds: usize, per_drop_timeout: std::time::Duration) {
         for round in 0..rounds {
             let (done_tx, done_rx) = mpsc::channel();
@@ -1087,6 +1134,12 @@ mod tests {
     #[cfg(all(target_os = "macos", feature = "watch"))]
     #[test]
     fn macos_subscribe_and_drop_returns() {
+        assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
+    }
+
+    #[cfg(all(target_os = "windows", feature = "watch"))]
+    #[test]
+    fn windows_subscribe_and_drop_returns() {
         assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
     }
 

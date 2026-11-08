@@ -969,6 +969,11 @@ pub(crate) mod reader_names {
             allow(dead_code)
         )]
         GNOME_WATCHER = "gnome-watcher";
+        #[cfg_attr(
+            not(all(feature = "watch", feature = "windows", target_os = "windows")),
+            allow(dead_code)
+        )]
+        WINDOWS_WATCHER = "windows-watcher";
     }
 }
 

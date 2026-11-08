@@ -33,8 +33,9 @@ kde = ["dep:configparser"]
 # with no reader of their own: the XDG Desktop Portal settings and gsettings
 # (Linux).
 portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
-# The running Windows version, for `pipeline::diagnose_platform_support`; the
-# Windows reader from M1b.
+# The Windows reader: UISettings' colours, text scale and effects, high
+# contrast and its system colours (Windows); and the running Windows version,
+# for `pipeline::diagnose_platform_support`.
 windows = ["dep:windows", "dep:windows-version"]
 # The macOS reader: AppKit's appearances, colours and settings (macOS), and
 # the running macOS version, for `pipeline::diagnose_platform_support`.

@@ -68,9 +68,9 @@
 //! |---|---|
 //! | `kde` | The KDE Plasma reader, [`Theme::from_system`]: `kdeglobals` as KConfig cascades it, the colour scheme file it names and `kcmfonts`; and the KDE icon theme (Linux) |
 //! | `macos` | The macOS reader, [`Theme::from_system`]: AppKit's appearances, colours and settings; the running macOS version and its generation, in [`pipeline::diagnose_platform_support`] |
-//! | `windows` | The running Windows version and its generation, in [`pipeline::diagnose_platform_support`] |
+//! | `windows` | The Windows reader, [`Theme::from_system`]: `UISettings`' colours, text scale and effects, high contrast and its system colours; the running Windows version and its generation, in [`pipeline::diagnose_platform_support`] |
 //! | `portal` | The GNOME and Budgie reader, and the portal-only read of the Linux desktops with no reader of their own, [`Theme::from_system`]: the XDG Desktop Portal and gsettings (Linux) |
-//! | `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME, the portal-only desktops and macOS) |
+//! | `watch` | `watch::on_theme_change`, OS theme-change notifications: KDE (with `kde`), GNOME and the portal-only desktops (with `portal`), macOS (with `macos`) and Windows (with `windows`) |
 //! | `linux-kde`, `linux-portal` | Aliases of `kde` and `portal` |
 //! | `linux` | `linux-kde` and `linux-portal` |
 //! | `native` | `linux`, `macos` and `windows` |
@@ -183,10 +183,8 @@ pub mod rasterize;
 /// Requires the `system-icons` feature, and macOS.
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub(crate) mod sficons;
-/// The running Windows version.
-///
-/// Requires the `windows` feature, and Windows.
-#[cfg(all(target_os = "windows", feature = "windows"))]
+/// The Windows reader and the running Windows version; the reader's build
+/// from what Windows gave is compiled on every platform, for its tests.
 pub(crate) mod windows;
 /// Windows Segoe Fluent / stock icon loader.
 ///
