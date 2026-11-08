@@ -5495,16 +5495,18 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   repository*), whose tree holds `docs/evidence/` at the paths this section writes, never to this repository, which
   from the plan's switch holds no file under `docs/evidence/`. `sources.toml` pins it by one `[[source]]` of kind
   `git` with `evidence = true`: id `native-theme-evidence` (the one id without `@<version>`, so a moved pin keeps its
-  checkout), `repository`, `commit`, `tag = "commit"`, `generations = []`, and no `project`, `release`, `researched`
-  or `proof`; `check_sources.py` requires exactly one such entry. A path `docs/evidence/<rest>` (a citation's
-  `evidence`, an analysis output's `input_image`, a vector table's cell, a legacy run) names
-  `<root>/docs/evidence/<rest>`, the root being the directory `NATIVE_THEME_EVIDENCE` names, else the entry's checkout
-  in the source cache (`<cache>/native-theme-evidence/`). Every reader (the checkers, the generators that read
-  evidence, the gate) requires the root to be a clean git checkout (no changed and no untracked file) whose HEAD is
-  the pinned commit, and fails otherwise, as it fails without a root; an evidence file is committed when it is in that
-  commit's tree. The rules on which files a run holds, ADD-A136's records exempt by name (`settings.txt`,
-  `environment.txt`) among them, apply inside the evidence repository unchanged. A test fixture whose root holds
-  its own `docs/evidence/` is its own evidence root.
+  checkout), `repository`, `commit`, `tag = "commit"`, `generations = []` and a `note`, and no `project`, `release`,
+  `researched` or `proof`; `check_sources.py` requires exactly one such entry and waives for it alone the rules it
+  breaks (`release`, `researched` and `proof` required, `generations` not empty, the `<name>@<version>` id). A path
+  `docs/evidence/<rest>` (a citation's `evidence`, an analysis output's `input_image`, a vector table's cell, a legacy
+  run) names `<root>/docs/evidence/<rest>`, the root being, in this order: a test fixture's root holding its own
+  `docs/evidence/`, which needs no git checkout and no pin; else the directory `NATIVE_THEME_EVIDENCE` names; else the
+  entry's checkout in the source cache (`<cache>/native-theme-evidence/`). Outside a fixture every reader (the
+  checkers, the generators that read evidence, the gate) requires the root to be a clean git checkout
+  (`git status --porcelain --ignored --untracked-files=all` prints nothing, ignored files counting) whose HEAD is the pinned
+  commit, and fails otherwise, as it fails without a root; an evidence file is committed when it is in that commit's
+  tree. The rules on which files a run holds, ADD-A136's records exempt by name (`settings.txt`, `environment.txt`)
+  among them, apply inside the evidence repository unchanged.
 - **Generations.** Facts are one directory per platform (and `palettes/`, S14, whose facts have no generation),
   covering its presets: `gnome` (`adwaita`), `kde`
   (`kde-breeze`), `macos` (`macos-monterey`, `macos-tahoe`), `ios` (`ios-13`, `ios-26`), `windows` (`windows-11`),

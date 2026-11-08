@@ -172,7 +172,8 @@ them, which is false); a lenient validation mode (it hides the gaps the gate exi
 - **Citations of today's `platform-facts.md` by line.** They are rewritten to `platform-facts.md@<sha>:LINE`, `<sha>`
   being the commit `v0.8.0-rc1` is cut from: in M0 for the gap maps and `docs/todo.md`; at the switch for every other
   tracked file (the CHANGELOG included: an `@<sha>` makes a released entry's citation exact without changing its
-  meaning), except `docs/archive/`, `docs/evidence/` and the checker scripts that define the format. From the switch, a
+  meaning), except `docs/archive/`, `docs/evidence/` (in the evidence repository from its switch) and the checker
+  scripts that define the format. From the switch, a
   `check_release.sh` step fails on a `platform-facts.md:N` citation without `@` outside those exceptions. The probe's
   strings that cite the document become fact keys in the next spike that changes the probe.
 - **Today's inheritance rules** are converted by S19.2's script at M1a into a staged input file that each unit's preset
@@ -220,78 +221,103 @@ the facts tooling reads it.
   `check_fact_citations.py`'s: cited or an analysis's input, its README, its `run.toml`, its `analysis/`, and its
   records exempt by name, `settings.txt` and `environment.txt`, ADD-A136's rule) apply there unchanged.
 - **The pin:** one `[[source]]` of kind `git` in `docs/facts/sources.toml` with `evidence = true`:
-  `id = "native-theme-evidence"`, `repository`, `commit`, `tag = "commit"`, `generations = []`, and no `project`, `release`,
-  `researched` or `proof` (the commit is this project's own, moved by its own facts commits, which is no re-pin: D1
-  freezes the platform sources; spec S17 *The evidence root*). `scripts/update_sources.sh` checks it out at
-  `<cache>/native-theme-evidence/` like every pin, `--verify` included; `--only native-theme-evidence` fetches it
-  alone (the whole cache is about 4.4 GB, and running the facts gate needs only this entry), and a moved pin is
-  fetched into the existing checkout, so only the new runs download.
+  `id = "native-theme-evidence"`, `repository`, `commit`, `tag = "commit"`, `generations = []` and a `note` (why it is
+  pinned), and no `project`, `release`, `researched` or `proof` (the commit is this project's own, moved by its own
+  facts commits, which is no re-pin: D1 freezes the platform sources; spec S17 *The evidence root*). The entry breaks
+  three of `check_sources.py`'s rules today: every entry's `release`, `researched` and `proof` (`COMMON`), a non-empty
+  `generations` and the `<name>@<version>` id (its per-entry form check), each of which the tooling task waives for
+  the one `evidence = true` entry alone, which it requires to exist exactly once, with the id `native-theme-evidence`
+  and `generations = []`; its `note` meets the rule that a git entry has a project, a site or a note.
+- **Checkouts:** only the orchestrator's main checkout of this repository reads the evidence from the source cache:
+  `scripts/update_sources.sh` checks the entry out at `<cache>/native-theme-evidence/` like every pin, `--verify`
+  included. Every other worktree (a lane's, the tooling's, any branch whose pin differs from the main checkout's) sets
+  `NATIVE_THEME_EVIDENCE` to its own evidence checkout, a clone at `.claude/worktrees/<branch>-evidence/` (git-ignored
+  with the worktrees), and `update_sources.sh` skips the evidence entry, `--verify` included, when that variable is
+  set; a worktree that forgets it reads the cache's checkout, which is at the main checkout's pin, so its readers fail
+  on a differing pin rather than read the wrong evidence. Two `update_sources.sh` changes are the tooling task's, not
+  today's behaviour: `--only <id>` fetches named entries alone (the whole cache is about 4.4 GB, and running the facts
+  gate needs only this entry), and a moved evidence pin is fetched into the existing checkout, so only the new runs
+  download (today `fetch_one` fetches every entry afresh into `<cache>/<id>.tmp`).
 - **The evidence root:** citations keep their `docs/evidence/...` paths. Every reader (today `check_facts.py`,
   `check_fact_citations.py`, `check_function_vectors.py`, `generate_dynamic_type.py` and the facts gate) resolves a
-  path `docs/evidence/<rest>` to `<root>/docs/evidence/<rest>`, the root being the directory `NATIVE_THEME_EVIDENCE`
-  names (CI's checkout, a lane's clone), else the pin's checkout in the source cache (`NATIVE_THEME_SOURCES`, else
-  `scripts/citations.py`'s default; the gate holds the same default). One rule wherever the root lies: a reader fails,
-  naming the root and the pin, unless the root is a clean git checkout (no changed and no untracked file) whose HEAD
-  is the pinned commit, so S17's "committed" means in that commit's tree; without a root it fails, naming
-  `update_sources.sh --only native-theme-evidence`. A reader that runs never skips the evidence it cannot find, since
-  a gate that passes without its inputs is no gate (`check_release.sh --commit` still skips `check_fact_citations.py`
-  by name where the source cache is absent, as *The new scripts* says). A test fixture whose root holds its own
-  `docs/evidence/` (the gate's fixtures, the checkers' self-tests) is its own evidence root. The analysis scripts run
-  in the evidence repository's root, as they ran in this one's.
+  path `docs/evidence/<rest>` to `<root>/docs/evidence/<rest>`, the root being, in this order: a test fixture's root
+  holding its own `docs/evidence/` (the gate's fixtures, the checkers' self-tests), which needs no git checkout and no
+  pin; else the directory `NATIVE_THEME_EVIDENCE` names (CI's checkout, a worktree's clone); else the pin's checkout
+  in the source cache (`NATIVE_THEME_SOURCES`, else `scripts/citations.py`'s default; the gate holds the same
+  default). Outside a fixture a reader fails, naming the root and the pin, unless the root is a clean git checkout
+  whose HEAD is the pinned commit, so S17's "committed" means in that commit's tree. Clean means
+  `git status --porcelain --ignored --untracked-files=all` prints nothing: ignored files count, since a reader walks
+  the files on disk (the uncited check) whatever a user's excludes hide, and the evidence repository needs no ignore
+  rules. Without a root it fails, naming `update_sources.sh` (with `--only native-theme-evidence` once the tooling
+  task adds it).
+  A reader that runs never skips the evidence it cannot find, since a gate that passes without its inputs is no gate
+  (`check_release.sh --commit` still skips `check_fact_citations.py` by name where the source cache is absent, as *The
+  new scripts* says). The analysis scripts run in the evidence repository's root, as they ran in this one's.
 - **Branches and the pin's moves:** the evidence repository's branches follow this repository's. A branch that adds
-  evidence commits its runs on an evidence branch of the same name, cut from the evidence commit it pins, and its
-  facts commit moves the pin to that branch's head; a lane works in its own clone beside its worktree
-  (`.claude/worktrees/<branch>-evidence/`, git-ignored with the worktrees) with `NATIVE_THEME_EVIDENCE` set to it, and
-  commits its runs there before it checks (it may amend a commit it has not pushed). The evidence branch is pushed
-  before the commit that pins it (CI's checkout fails otherwise). When a branch of this repository merges into
-  another, its evidence branch merges into the other's evidence branch first (created at the other's pinned commit
-  where it has none), by a fast-forward or a merge commit, never a rebase or a squash, so every commit a pin ever
-  named stays reachable; the merge here pins the evidence branch's new head, which also settles a conflict on the
-  pin's line. An evidence branch is deleted only once merged. Rejected: one linear evidence `main` every lane pushes
-  to (a branch's pin would then hold runs only other, unmerged branches cite, and S17's "every evidence file is cited"
-  would fail on every branch but the last merged).
+  evidence commits its runs on an evidence branch of the same name, cut from the commit it pins, and its facts commit
+  moves the pin to that branch's head; a worktree commits its runs in its clone before it checks (it may amend a
+  commit it has not pushed). The evidence branch is pushed before the commit that pins it (CI's checkout fails
+  otherwise). When a branch of this repository merges into another, the source's pinned commit is merged into the
+  target's pinned commit (a fast-forward where one contains the other, else a merge commit, never a rebase or a
+  squash, so every commit a pin ever named stays reachable), the result is pushed to the target's evidence branch
+  (created where it has none), and the merge here pins the result, which also settles a conflict on the pin's line. An
+  evidence branch is deleted once merged, or once its branch here is deleted unmerged. Rejected: one linear evidence
+  branch every lane pushes to, each branch's checks scoped to the runs its own facts cite: a run no fact ever cites
+  would then be caught only at the release's unscoped check, long after the lane that wrote it; with mirrored branches
+  every branch's pin holds exactly its own and its merged branches' runs, so S17's "every evidence file is cited"
+  holds on every branch, as it does today.
 - **CI:** every job whose steps read evidence (today `ci.yml`'s test matrix, whose `cargo test -p native-theme` runs
-  the facts gate, and its `parity` job's `check_function_vectors.py`; `dependency-canary.yml`'s tests; the macOS job of
-  `os-probe.yml` that checks the SDK-header citations, once it runs `check_fact_citations.py`) checks the evidence
+  the facts gate, and its `parity` job's `check_function_vectors.py`; `dependency-canary.yml`'s tests; the macOS job
+  of `os-probe.yml` that checks the SDK-header citations, once it runs `check_fact_citations.py`) checks the evidence
   repository out at the commit `sources.toml` pins (that commit alone, depth 1) and sets `NATIVE_THEME_EVIDENCE` to
   it, through one shared step, so the jobs cannot differ.
 - **The step cache** (`check_release.sh --commit`, `--quick`) keys a step that reads evidence on the pin, in
   `sources.toml`: a reader accepts only a clean checkout at the pin, so the pin fixes the evidence it reads. The
   tooling task declares it for each such step (from the switch the traced Python checks read outside the repository).
-- **History:** neither repository's pushed history is rewritten (an unpushed branch may be, below). The evidence committed here so far stays in this
-  repository's history; the evidence repository deletes a file by a new commit, never a force push. From the switch,
-  new runs go to the evidence repository only, and a `check_release.sh` step and CI's `parity` job fail on any tracked
-  file under this repository's `docs/evidence/`.
+- **History:** neither repository's pushed history is rewritten (an unpushed branch may be, below). The evidence
+  committed here so far stays in this repository's history; the evidence repository deletes a file by a new commit,
+  never a force push. From the switch, new runs go to the evidence repository only, and a `check_release.sh` step and
+  CI's `parity` job fail on any tracked file under this repository's `docs/evidence/`.
 - **The switch**, in this order:
   1. the maintainer creates the repository;
   2. its first two commits, on its `v0.8.0-rc1` branch with `main` at the same commit: the first holds `v0.8.0-rc1`'s
-     `docs/evidence/` byte for byte at the commit the switch follows, its message naming that commit; the second adds
-     the root README and the licence files and restates `docs/evidence/README.md` for its new home (it says the runs
-     are kept "in the repository");
-  3. the tooling task's branch (the readers, `update_sources.sh`, `check_sources.py`, the gate, CI, the step cache,
-     the guard, `CONTRIBUTING.md`) ends with the switch commit: the pin added, naming the second commit, and
-     `docs/evidence/` removed. The orchestrator merges it whole, so no commit of `v0.8.0-rc1` has a reader without its
-     evidence. `CONTRIBUTING.md`'s link into `docs/evidence/` points at the evidence repository; the working
-     documents' and the imported rows' `docs/evidence/` paths stay as written, naming files by the root rule above
-     (`docs/archive/` is never edited);
+     `docs/evidence/` byte for byte at the commit the switch follows, its message naming that commit, and checked
+     mechanically: `git rev-parse <that commit>:docs/evidence` here equals
+     `git rev-parse <first commit>:docs/evidence` there (the same tree); the second adds the root README and the
+     licence files and restates `docs/evidence/README.md` for its new home (it says the runs are kept "in the
+     repository");
+  3. the tooling task's branch: its first commit adds the pin, naming the second commit, with CI's shared checkout
+     step; then the readers switch to the evidence root one by one, each commit still holding this repository's
+     `docs/evidence/`, so a reader not yet switched reads it and a switched one reads the checkout, whose files step 2
+     proved the same; then `update_sources.sh`, `check_sources.py`, the step cache, the documents (`CONTRIBUTING.md`,
+     whose link into `docs/evidence/` points at the evidence repository; `docs/new-os-version-guide.md`, whose
+     recording steps copy a run's artifacts into the evidence repository; `scripts/README.md`) and
+     `check_pinned_citations.py`'s exemption of `docs/evidence/` dropped; last, `docs/evidence/` removed, with the
+     guard. So every commit of the branch has its readers' evidence. The working documents' and the imported rows'
+     `docs/evidence/` paths stay as written, naming files by the root rule above (`docs/archive/` is never edited);
   4. the branches open at the switch land as the next item says.
 - **Branches open at the switch:** their evidence goes to the evidence repository, not into this repository's history.
   Each one's changes to `docs/evidence/` since its merge base with `v0.8.0-rc1` are applied on its evidence branch,
-  cut from the switch's pin (the paths are the same, so the diff applies as it stands), and pushed. A branch never
-  pushed (on 2026-11-08 `facts-ios-m1b3` with its sub-branches, `facts-macos-m1b4`, `checkfacts-perf`,
-  `facts-hosts-m1b`) then has `docs/evidence/` filtered out of its own commits, every commit and message kept, the
-  branches rewritten in one run so that commits they share stay shared; a pushed branch (`v0.8.0-tools` and its
-  `v0.8.0-tools-*` branches) is not rewritten, and its merge leaves its `docs/evidence/` files out (their objects are
-  on GitHub already). Then a commit on the branch moves its pin to its evidence branch's head, and it merges as above.
-  Rejected: merging them as they stand (528 MB more in every clone for ever, the growth the decision stops); a squash
-  merge (it loses the lanes' commit messages, which record their reasoning). The rewrite is approved (the
-  orchestrator, 2026-11-08): the no-rewrite rule protects pushed history only, and no one else holds these branches.
-  They wait for the switch: merged before it, their runs would enter this repository's history.
+  cut from the switch's pin (the paths are the same, so the diff applies as it stands), and pushed. Then:
+  - a branch never pushed (on 2026-11-08 `facts-ios-m1b3` with its sub-branches, `facts-macos-m1b4`,
+    `checkfacts-perf`, `facts-hosts-m1b`) has `docs/evidence/` filtered out of its own commits, every commit and
+    message kept, the branches rewritten in one run so that commits they share stay shared. Approved by the
+    orchestrator (2026-11-08): the no-rewrite rule protects pushed history only, and no one else holds these branches;
+  - a pushed branch holding evidence (on 2026-11-08 `v0.8.0-tools-probe-m2` with 72.6 MB, `v0.8.0-tools-ios-m2` with
+    22.8 MB, `v0.8.0-tools-hosts-m1b` with 0.3 MB) is not rewritten: its own commits are cherry-picked in order, each
+    without `docs/evidence/` and with its message kept, onto a new branch, which merges in its place, and the old
+    branch is deleted, here and on GitHub. Leaving the files out of a merge would not do: the merge's parents would
+    still carry them into `v0.8.0-rc1`'s history (about 96 MB for these three);
+  - a commit on the branch (or its copy) then moves its pin to its evidence branch's head, and it merges as above.
+
+  Rejected: merging them as they stand (about 620 MB more in every clone for ever, the growth the decision stops); a
+  squash merge (it loses the lanes' commit messages, which record their reasoning). They wait for the switch: merged
+  before it, their runs would enter this repository's history.
 - **Rejected:**
   - a git submodule at `docs/evidence` (a pin git understands, `git clone --recursive`): Cargo clones a git
-    dependency's submodules, so every user depending on `native-theme` by git would download the evidence; every
-    worktree would need its own checkout of it, where the source cache holds one for all; and it would be a second
-    pinning mechanism beside `sources.toml`, outside `update_sources.sh --verify`;
+    dependency's submodules, so every user depending on `native-theme` by git would download the evidence; and it
+    would be a second pinning mechanism beside `sources.toml`, outside `update_sources.sh --verify` and the checkers'
+    pin check;
   - the evidence tree at the repository's root (`os-probe/...`, the prefix stripped): the analysis outputs'
     `input_image`, the scripts' usage lines and the open branches' diffs name `docs/evidence/...` paths, so each would
     need rewriting or a second mapping, against two folder levels with nothing else in them;
@@ -302,6 +328,7 @@ the facts tooling reads it.
     source commit is enough;
   - a reader accepting a root that is not clean or whose HEAD differs from the pin, with a note: "committed" would
     have two meanings, and a check could pass on evidence no commit pins;
+  - every worktree reading the cache's one checkout: it can be at one pin only, and branches pin different commits;
   - keeping it here and Git LFS (D6's other options).
 
 ## Decisions
