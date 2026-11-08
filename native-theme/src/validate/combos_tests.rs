@@ -943,10 +943,10 @@ fn combination_per_flavour_declarations() {
 }
 
 /// On `kde-breeze`, a mapping palette leaving an accent-dependent role or
-/// an inactive input role to the preset (S9.1, S9.2, S14, S12). No preset
-/// is bundled yet, so the check runs here directly over a stack whose
-/// preset states the roles (M1b's `kde-breeze` and palettes exercise it
-/// through `Theme::apply_palette`); the scheme's tint takes every key in.
+/// an inactive input role to the preset (S9.1, S9.2, S14, S12). The check
+/// runs here directly over a stack whose small preset states the roles,
+/// until M1b's palettes exercise it over the bundled `kde-breeze` through
+/// `Theme::apply_palette`; the scheme's tint takes every key in.
 #[test]
 fn combination_mapping_palette() {
     use super::combos::mapping_palette;

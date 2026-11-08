@@ -24,19 +24,18 @@ targets = [
 ]
 
 [features]
-# Each OS-specific dependency is compiled only on its own target. The 0.8.0
-# plan's M1b ports the platform readers and their watchers one by one: until
-# each is back its feature enables what its comment says.
+# Each OS-specific dependency is compiled only on its own target.
 
-# The KDE icon theme, read from the kdeglobals files as KConfig cascades them
-# (Linux); the KDE Plasma reader from M1b.
+# The KDE Plasma reader: kdeglobals as KConfig cascades it, the colour
+# scheme file it names and, on X11, Xft.dpi; and the KDE icon theme (Linux).
 kde = ["dep:configparser"]
 # The GNOME and Budgie reader, and the portal-only read of the Linux desktops
 # with no reader of their own: the XDG Desktop Portal settings and gsettings
 # (Linux).
 portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
-# The running Windows version, for `pipeline::diagnose_platform_support`; the
-# Windows reader from M1b.
+# The Windows reader: UISettings' colours, text scale and effects, high
+# contrast and its system colours (Windows); and the running Windows version,
+# for `pipeline::diagnose_platform_support`.
 windows = ["dep:windows", "dep:windows-version"]
 # The macOS reader: AppKit's appearances, colours and settings (macOS), and
 # the running macOS version, for `pipeline::diagnose_platform_support`.
@@ -48,9 +47,9 @@ linux-portal = ["portal"]
 linux = ["linux-kde", "linux-portal"]
 # Every platform feature.
 native = ["linux", "macos", "windows"]
-# `watch::on_theme_change`: OS theme-change notifications, on the platforms
-# whose reader is back (GNOME and the portal-only desktops, with `portal`;
-# macOS, with `macos`).
+# `watch::on_theme_change`: OS theme-change notifications (KDE, with `kde`;
+# GNOME and the portal-only desktops, with `portal`; macOS, with `macos`;
+# Windows, with `windows`).
 watch = ["dep:notify", "zbus?/blocking-api"]
 # The bundled Material Symbols icon set.
 material-icons = []
