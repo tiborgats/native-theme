@@ -3866,9 +3866,10 @@ fn inset_chain(part: TypedPart) -> Vec<(TypedPart, &'static str)> {
 }
 
 /// Whether the current preset is `kde-breeze`, whose mapping palettes S12
-/// checks (S9.1, S14); `kde-breeze` is not bundled yet (M1b adds it).
+/// checks (S9.1, S14).
 pub(super) fn on_kde_breeze(preset: Option<PresetId>) -> bool {
     preset.is_some_and(|preset| match preset {
+        PresetId::KdeBreeze => true,
         PresetId::Adwaita
         | PresetId::MacosTahoe
         | PresetId::MacosMonterey

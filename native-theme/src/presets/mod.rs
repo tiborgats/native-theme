@@ -52,6 +52,8 @@ presets! {
     Ios26 => "ios-26", "ios-26.toml";
     /// Apple's iOS 13 to iOS 18, its facts read on iOS 18.
     Ios13 => "ios-13", "ios-13.toml";
+    /// KDE's Breeze, Plasma 6.
+    KdeBreeze => "kde-breeze", "kde-breeze.toml";
 }
 
 impl PresetId {
