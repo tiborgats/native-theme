@@ -213,7 +213,7 @@ impl Report {
 
     /// `other`'s findings added after this report's, as one run recording
     /// both in turn records them.
-    fn merge(&mut self, mut other: Report) {
+    pub fn merge(&mut self, mut other: Report) {
         let failures = std::mem::take(&mut other.failures);
         for (failure, group) in failures.into_iter().zip(&other.of_group) {
             match other.groups.get(*group) {
@@ -259,6 +259,50 @@ impl Report {
         }
         self.queried += other.queried;
         self.compared += other.compared;
+    }
+
+    /// Its findings and counts, all but the time, in an order of their own:
+    /// the failures sorted, and each group by its run, key and fact with its
+    /// count; two runs that found the same, in any order, give the same.
+    pub fn findings(&self) -> String {
+        let mut failures = self.failures.clone();
+        failures.sort();
+        let groups: BTreeMap<(&str, &str, &str), u64> = self
+            .groups
+            .iter()
+            .map(|group| {
+                (
+                    (group.run.as_str(), group.key.as_str(), group.fact.as_str()),
+                    group.count,
+                )
+            })
+            .collect();
+        let mut unread = self.unread.clone();
+        unread.sort();
+        format!(
+            "failures {failures:?}\ngroups {groups:?}\npending {:?}\nsynthetic {:?}\n\
+             listed {:?}\nunchecked {:?}\nunread {unread:?}\nkeys not held {:?}\n\
+             units not enabled {:?}\nwhens not held {:?}\nother presets {}\n\
+             variants not held {:?}\naccent run {}\nfields not drawn {}\n\
+             whens not drawn {}\ncombinations skipped {}\ncombinations {:?}\nqueried {}\n\
+             compared {}",
+            self.pending,
+            self.synthetic,
+            self.listed,
+            self.unchecked,
+            self.keys_not_held,
+            self.units_not_enabled,
+            self.whens_not_held,
+            self.other_presets,
+            self.variants_not_held,
+            self.accent_run,
+            self.fields_not_drawn,
+            self.whens_not_drawn,
+            self.combinations_skipped,
+            self.combinations,
+            self.queried,
+            self.compared,
+        )
     }
 }
 
@@ -1437,8 +1481,21 @@ fn vector_count(planned: &[Planned<'_>], own: Option<&Distinct>, vector: &[Strin
 /// citations' evidence read under the evidence root `evidence` (S17 *The
 /// evidence root*: [`facts::evidence_root`]'s, or a fixture's own root).
 pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report {
+    run_shard(root, evidence, presets, Shard::WHOLE)
+}
+
+/// [`run`]'s shard `shard` alone ([`Shard`]): its condition vectors
+/// checked, and where it is the first, the rest of the run recorded.
+pub fn run_shard(
+    root: &Path,
+    evidence: &Path,
+    presets: &[(String, Preset)],
+    shard: Shard,
+) -> Report {
     let started = Instant::now();
     let mut report = Report::default();
+    let mut elsewhere = Report::default();
+    let mut split = Split::new(shard);
     let evidence = facts::Evidence::new(evidence);
     let mut directories: Vec<_> = std::fs::read_dir(root)
         .map(|entries| {
@@ -1452,7 +1509,9 @@ pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report
     directories.sort();
     let bundled: Vec<&str> = presets.iter().map(|(_, preset)| preset.id()).collect();
     let units = Units::repository().unwrap_or_else(|error| {
-        report.fail(format!("the units do not read: {error}"));
+        shard
+            .shared(&mut report, &mut elsewhere)
+            .fail(format!("the units do not read: {error}"));
         Units::none()
     });
     for directory in directories {
@@ -1463,19 +1522,20 @@ pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report
         if name == "imported" || name == "staged" || name == "palettes" {
             continue;
         }
-        let platform = Platform::read(&directory, &units, &mut report);
-        read_all(&platform, &mut report);
+        let shared = shard.shared(&mut report, &mut elsewhere);
+        let platform = Platform::read(&directory, &units, shared);
+        read_all(&platform, shared);
         // Every pending fact is listed, with the combinations it applied
         // in, none where it applied in none (S17).
         for fact in &platform.facts {
             if let Stated::Pending(id) = &fact.stated {
-                report
+                shared
                     .pending
                     .entry(fact.place())
                     .or_insert_with(|| (id.clone(), fact.key.clone(), 0));
             }
         }
-        report.other_presets += platform
+        shared.other_presets += platform
             .facts
             .iter()
             .filter(|fact| {
@@ -1491,14 +1551,14 @@ pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report
             if !entry.available {
                 continue;
             }
-            let skipped = skipped_variants(&platform, entry, None, &mut report);
+            let skipped = skipped_variants(&platform, entry, None, shared);
             let entry = &entry.without(&skipped);
             let vectors = model::condition_vectors(
                 &entry.axis_conditions,
                 &["light".to_owned(), "dark".to_owned()],
             );
             let count = model::count(entry, &vectors);
-            report.combinations.insert(
+            shared.combinations.insert(
                 format!("{} {} {:?}", entry.file, entry.widget, entry.conditions),
                 count,
             );
@@ -1513,12 +1573,27 @@ pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report
             } else {
                 flavors.iter().map(|flavor| Some(flavor.as_str())).collect()
             };
-            let keys = prepare(&platform, preset.id(), &evidence, &mut report);
-            let not_drawn = not_drawn_map(&platform, preset.id(), &mut report);
+            let shared = shard.shared(&mut report, &mut elsewhere);
+            let keys = prepare(&platform, preset.id(), &evidence, shared);
+            let not_drawn = not_drawn_map(&platform, preset.id(), shared);
             for flavor in flavors {
-                declarations_run(&platform, preset, flavor, &mut report);
-                check(&platform, preset, flavor, &keys, &not_drawn, &mut report);
-                let entries = projected(&platform, preset, flavor, &mut report);
+                declarations_run(
+                    &platform,
+                    preset,
+                    flavor,
+                    shard.shared(&mut report, &mut elsewhere),
+                );
+                check(
+                    &platform,
+                    preset,
+                    flavor,
+                    &keys,
+                    &not_drawn,
+                    &mut split,
+                    &mut report,
+                );
+                let shared = shard.shared(&mut report, &mut elsewhere);
+                let entries = projected(&platform, preset, flavor, shared);
                 derivations(
                     &platform.name,
                     preset,
@@ -1526,10 +1601,15 @@ pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report
                     &keys,
                     &entries,
                     &not_drawn,
-                    &mut report,
+                    shared,
                 );
             }
-            listed_paths(preset, &mut report);
+            // The listed paths are found over every vector (S17, ADD-A128):
+            // a split run leaves them to its shards' findings merged
+            // ([`Shard`]).
+            if shard == Shard::WHOLE {
+                listed_paths(preset, &mut report);
+            }
         }
     }
     report.elapsed = started.elapsed();
@@ -1824,18 +1904,23 @@ fn not_drawn_whens(entry: &Model, preset: &str, report: &mut Report) -> Vec<When
 /// into its own report and dropped with its combinations, which are
 /// enumerated as they are checked ([`plan_vector`]), never all held: one
 /// vector's run to millions. The reports are merged in the vectors' order,
-/// as one run checking each in turn records them.
+/// as one run checking each in turn records them. Only the vectors `split`
+/// gives this run's shard are checked; the rest is recorded by the first
+/// shard alone ([`Shard`]).
 fn check(
     platform: &Platform,
     preset: &Preset,
     flavor: Option<&str>,
     keys: &[KeyFacts<'_>],
     entry_not_drawn: &NotDrawn,
+    split: &mut Split,
     report: &mut Report,
 ) {
+    let mut elsewhere = Report::default();
+    let shared = split.shard.shared(report, &mut elsewhere);
     let schemes = preset.schemes();
     let drawing = drawing(&platform.name, flavor);
-    let entries = projected(platform, preset, flavor, report);
+    let entries = projected(platform, preset, flavor, shared);
     let mut planned: Vec<Planned<'_>> = Vec::new();
     let mut global_vectors: BTreeSet<Vec<String>> = BTreeSet::new();
     let declared_variants = |widget: &str| {
@@ -1918,7 +2003,7 @@ fn check(
             let Some((vectors, combination)) =
                 own_combination(when, widget.as_deref().unwrap_or_default(), &schemes)
             else {
-                report.combinations_skipped += 1;
+                shared.combinations_skipped += 1;
                 continue;
             };
             let combination = match entries
@@ -1929,7 +2014,7 @@ fn check(
                 None => Some(combination),
             };
             let Some(combination) = combination else {
-                report.whens_not_drawn += 1;
+                shared.whens_not_drawn += 1;
                 continue;
             };
             for vector in vectors {
@@ -1963,12 +2048,22 @@ fn check(
     order.sort_by_key(|at| {
         std::cmp::Reverse(vectors.get(*at).map_or(0, |vector| planned_in(vector)))
     });
+    // This shard's vectors, the split decided over every vector, the most
+    // combinations first.
+    let mut weights: Vec<(usize, u64)> = vectors
+        .iter()
+        .enumerate()
+        .map(|(at, vector)| (at, count(vector)))
+        .collect();
+    weights.sort_by_key(|(at, weight)| (std::cmp::Reverse(*weight), *at));
+    let mine: HashSet<usize> = split.take(&weights).into_iter().collect();
+    order.retain(|at| mine.contains(at));
     let widgets = widget_keys(keys);
     let threads = Threads {
         count: threads(),
         checking: AtomicUsize::new(0),
     };
-    let at_once = threads.count.min(vectors.len()).max(1);
+    let at_once = threads.count.min(order.len()).max(1);
     // Each vector resolved and checked on its own, into its own report;
     // the reports merged in the vectors' order, as one run checking each
     // in turn records them.
@@ -2548,6 +2643,110 @@ pub fn thread_count(value: Option<&str>) -> Result<usize, String> {
             .ok()
             .filter(|count| *count > 0)
             .ok_or_else(|| format!("`{value}` is no number above zero")),
+    }
+}
+
+/// The environment variable that limits a run to one shard of the gate's
+/// work, `k/N` (the module's docs of `facts_gate`).
+pub const SHARD_VARIABLE: &str = "NT_FACTS_GATE_SHARD";
+
+/// One of the parts the gate's work is split into ([`run_shard`]): the
+/// condition vectors of every preset's normal and perturbed runs, each
+/// vector checked by one shard alone, and the rest of the run, which every
+/// shard does as far as the vectors need it and the first alone records:
+/// the facts read, each preset prepared, its declarations run and its
+/// derivations. A preset's listed paths, which the combinations of all its
+/// vectors find, are checked by no shard: [`listed_paths`] over the shards'
+/// reports merged checks them, and those reports then hold the whole run's
+/// findings and counts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Shard {
+    /// Its place among the shards, from 0.
+    pub index: usize,
+    /// How many shards the work is split into.
+    pub count: usize,
+}
+
+impl Shard {
+    /// The whole run, one shard.
+    pub const WHOLE: Shard = Shard { index: 0, count: 1 };
+
+    /// `report` where this shard records the work every shard does, the
+    /// first; else `elsewhere`, which nothing reads.
+    fn shared<'r>(self, report: &'r mut Report, elsewhere: &'r mut Report) -> &'r mut Report {
+        if self.index == 0 { report } else { elsewhere }
+    }
+}
+
+/// The shard [`SHARD_VARIABLE`]'s value names ([`shard_of`]); a value it
+/// refuses, or one that is not Unicode, fails.
+pub fn shard() -> Shard {
+    let value = match std::env::var(SHARD_VARIABLE) {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(std::env::VarError::NotUnicode(value)) => {
+            panic!("{SHARD_VARIABLE} is not Unicode: {value:?}")
+        }
+    };
+    shard_of(value.as_deref()).unwrap_or_else(|error| panic!("{SHARD_VARIABLE}: {error}"))
+}
+
+/// The shard `value`, [`SHARD_VARIABLE`]'s value, names: `k/N`, the `k`th
+/// of `N` shards, `1 ≤ k ≤ N`; the whole run where it is `None`. Any other
+/// value is an error, never a silently different run.
+pub fn shard_of(value: Option<&str>) -> Result<Shard, String> {
+    let Some(value) = value else {
+        return Ok(Shard::WHOLE);
+    };
+    let number = |part: &str| part.trim().parse::<usize>().ok();
+    value
+        .split_once('/')
+        .and_then(|(k, n)| Some((number(k)?, number(n)?)))
+        .filter(|(k, n)| (1..=*n).contains(k))
+        .map(|(k, n)| Shard {
+            index: k - 1,
+            count: n,
+        })
+        .ok_or_else(|| format!("`{value}` is no shard: `k/N`, with 1 ≤ k ≤ N"))
+}
+
+/// The condition vectors' split among the shards ([`Shard`]), one
+/// preset's and flavour's at a time: each vector, the most combinations
+/// first, given to the shard with the fewest combinations of them so far,
+/// of those that tie the one next in turn, the turn going on from one
+/// preset to the next. A vector's combinations cost about the same as its
+/// preset's others', far from another preset's, so each preset's vectors
+/// are spread evenly; every shard decides the same split.
+struct Split {
+    shard: Shard,
+    turn: usize,
+}
+
+impl Split {
+    fn new(shard: Shard) -> Split {
+        Split { shard, turn: 0 }
+    }
+
+    /// Of the vectors `weights` gives, in turn (each one's place and its
+    /// combinations), those this shard checks, in that order.
+    fn take(&mut self, weights: &[(usize, u64)]) -> Vec<usize> {
+        let count = self.shard.count.max(1);
+        let mut loads = vec![0_u64; count];
+        let mut mine = Vec::new();
+        for (at, weight) in weights {
+            let after_turn = |shard: usize| (shard + count - self.turn % count) % count;
+            let least = (0..count)
+                .min_by_key(|shard| (loads.get(*shard).copied().unwrap_or(0), after_turn(*shard)))
+                .unwrap_or(0);
+            if let Some(load) = loads.get_mut(least) {
+                *load = load.saturating_add(*weight);
+            }
+            self.turn = (least + 1) % count;
+            if least == self.shard.index {
+                mine.push(*at);
+            }
+        }
+        mine
     }
 }
 

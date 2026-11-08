@@ -190,6 +190,16 @@ test; the gate's report (`-- --nocapture`) says it ran a subset. A subset is no
 gate: `scripts/check_release.sh` never sets the variable, so all its modes gate
 every preset, and the release's run (`FACTS_GATE_RELEASE=1`) refuses a subset.
 
+`NT_FACTS_GATE_SHARD=k/N` runs the `k`th of `N` shards of the gate's work:
+each condition vector is checked by one shard alone, and the rest of the run
+by every shard but recorded by the first. The presets' `[pending]` tables are
+checked against the listed paths of all the shards at once: each shard writes
+those it found to the directory `NT_FACTS_GATE_LISTED` names, and the gate
+with `NT_FACTS_GATE_MERGE` naming it checks the tables instead of gating.
+Together they find what the whole run finds (`gate_shards_add_up`). CI runs
+the gate so, one job per shard and one for the tables; the release's run
+refuses a shard.
+
 The gate runs its parallel steps on as many threads as the machine has;
 `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no number
 above zero fails the test. The count sets the speed and the memory: as many
