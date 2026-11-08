@@ -18,6 +18,7 @@ use toml::Value;
 
 use super::facts::{self, Fact, Stated};
 use super::model::{self, Block, Mentioned, Model, Point, Space, strings};
+use super::timing::{Step, timed};
 use super::units::Units;
 
 /// The gate's font measurement (S17 *The gate*, the design's "fixed,
@@ -1954,6 +1955,7 @@ fn check(
     split: &mut Split,
     report: &mut Report,
 ) {
+    let started = Instant::now();
     let mut elsewhere = Report::default();
     let shared = split.shard.shared(report, &mut elsewhere);
     let schemes = preset.schemes();
@@ -2112,7 +2114,9 @@ fn check(
         let mut report = Report::default();
         threads.checking.fetch_add(1, Ordering::Relaxed);
         if let Some(vector) = vectors.get(*at) {
-            let resolved = resolve_vector(preset, keys, vector, flavor, &count, &mut report);
+            let resolved = timed(Step::Resolve, || {
+                resolve_vector(preset, keys, vector, flavor, &count, &mut report)
+            });
             if let Some((normal, perturbed)) = resolved {
                 let passes = std::iter::once((Pass::Normal, Some(normal)))
                     .chain(std::iter::once((Pass::Perturbed, perturbed)));
@@ -2160,6 +2164,10 @@ fn check(
     for (_, found) in found {
         report.merge(found);
     }
+    super::timing::print(
+        &format!("{} {flavor:?}, {} vectors", preset.id(), order.len()),
+        started.elapsed(),
+    );
 }
 
 /// A condition vector resolved for the normal run and the perturbed run,
@@ -2844,18 +2852,20 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
     let metrics = StubMetrics;
     let probe = |combination: &Combination| {
         let describe = || format!("{vector:?} {combination:?}");
-        let session = match resolved.session(combination, run.root, &metrics) {
+        let session = match timed(Step::Session, || {
+            resolved.session(combination, run.root, &metrics)
+        }) {
             Ok(session) => session,
             Err(Unread::NotHeld(_)) => return Probe::Skipped,
             Err(Unread::Refused(why)) => {
                 return Probe::Failed(format!("{pass:?}: {why} under {}", describe()));
             }
         };
-        if run
-            .not_drawn
-            .get(&combination.widget)
-            .is_some_and(|whens| whens.iter().any(|when| session.root_holds(when)))
-        {
+        if timed(Step::NotDrawn, || {
+            run.not_drawn
+                .get(&combination.widget)
+                .is_some_and(|whens| whens.iter().any(|when| session.root_holds(when)))
+        }) {
             return Probe::NotDrawn;
         }
         if let Some(why) = session.unavailable() {
@@ -2865,7 +2875,9 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
             ));
         }
         let mut probe = Report::default();
-        let applying = run.applying(&combination.widget, &session, &mut probe, &describe);
+        let applying = timed(Step::Applying, || {
+            run.applying(&combination.widget, &session, &mut probe, &describe)
+        });
         // Each key's applying fact by its place among the key's facts, the
         // widget's keys always in one order.
         let facts: Vec<u32> = applying
@@ -2879,7 +2891,11 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
         );
         Probe::Queried {
             failures: probe.failures,
-            signature: (element, session.signature(), facts),
+            signature: (
+                element,
+                timed(Step::Signature, || session.signature()),
+                facts,
+            ),
         }
     };
     // Probed in chunks as they are given, each chunk's findings recorded in
@@ -2889,7 +2905,9 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
     let mut signatures: HashSet<(String, Vec<u32>, Vec<u32>)> = HashSet::new();
     let mut queried: Vec<Combination> = Vec::new();
     let mut probe_chunk = |chunk: &mut Vec<Combination>, report: &mut Report| {
-        let probes = parallel_on(run.threads.each(), chunk, probe);
+        let probes = parallel_on(run.threads.each(), chunk, |combination| {
+            timed(Step::Probe, || probe(combination))
+        });
         for (combination, probe) in chunk.drain(..).zip(probes) {
             match probe {
                 Probe::Skipped => report.combinations_skipped += 1,
@@ -2924,7 +2942,9 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
     for chunk in queried.chunks(PROBED_BY_THREAD.saturating_mul(threads)) {
         let found = parallel_on(threads, chunk, |combination| {
             let mut report = Report::default();
-            compare_widget(run, combination, &mut report);
+            timed(Step::Compare, || {
+                compare_widget(run, combination, &mut report)
+            });
             report
         });
         for found in found {

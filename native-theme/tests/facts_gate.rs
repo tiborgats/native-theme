@@ -38,6 +38,9 @@
 //! combinations enumerated as they are checked, a chunk at a time, never all
 //! held, so each thread adds about 120 MB and the six presets peak near
 //! 4 GB on 16 threads, 6 GB on 32 (`run::thread_count`).
+//! `NT_FACTS_GATE_TIMING=1` prints, after each preset's and flavour's
+//! widget checks, the time their steps took over every thread
+//! (`timing::Step`); the report holds none of it.
 //!
 //! The citations' evidence is read under the evidence root (S17 *The
 //! evidence root*, `facts::evidence_root`): the evidence repository checked
@@ -55,6 +58,8 @@ mod facts;
 mod model;
 #[path = "facts_gate/run.rs"]
 mod run;
+#[path = "facts_gate/timing.rs"]
+mod timing;
 #[path = "facts_gate/units.rs"]
 mod units;
 
