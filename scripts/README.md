@@ -1259,7 +1259,13 @@ python3 scripts/verify_facts.py --self-test
   (under four characters, or a keyword), `normative-value` (a platform
   value, such as a citation, a literal or a font or icon name, that the
   specification's or catalogue's own text holds: a leak to report), or
-  `leak`. A leak or a normative value exits 1.
+  `leak`. A leak or a normative value exits 1. So that the brief passes,
+  it elides each of the unit's platform values and citations in its copies
+  of the normative text (`spec.md`, `catalogue.md`, `facts-format.md`) with
+  a visible marker, `⟦elided: a value of this unit⟧` or `⟦elided: a
+  citation of this unit⟧`, keeping the text around it; its `README.md`
+  lists each elision by file, line and class, never the string. Trivial
+  strings and those of the unit's identities stay.
 - `compare-model <unit> <verifier-state-models.toml>`: the lane's state
   models of the unit's widgets against the verifier's, entry by entry. It
   lists every declaration that differs (axes, flags, variants, sizes,
@@ -1295,7 +1301,7 @@ python3 scripts/verify_facts.py --self-test
 repository. It covers the units' counts and splitting, the brief's files,
 the specification's sections (S17's heading among them, S22 left out) and
 its leak check (a planted citation is caught, a platform value in the
-catalogue reported), the model comparison and the two-step flow, the
+catalogue elided and listed, an unelided one reported), the model comparison and the two-step flow, the
 resolution (equivalent, equal under one scheme only, `absent` against a
 transparent colour, an unevaluated function), each normalisation, an identity mismatch, one-sided facts and the sample's
 determinism. It runs in `check_release.sh` and in CI's parity job.

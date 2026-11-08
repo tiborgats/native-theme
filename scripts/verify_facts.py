@@ -91,7 +91,11 @@ is told what to state; `specification`, the model's vocabulary in the texts ever
 `sources`; `template`), but `normative-value` where the string is a platform value (platform_value: a citation, a
 value holding a literal, a text that is no name) in normative text, a leak to report; else a `leak`, a string that
 can only have come from the lane's facts. It prints the counts and each collision but the trivial ones (to stdout,
-never into the folder); a leak or a normative value is exit 1.
+never into the folder); a leak or a normative value is exit 1. So the brief passes it, `brief` elides first: in its
+copies of the normative text (REDACTED_FILES), each platform value and citation of the unit (redact: no trivial
+string, none its identities hold) is replaced by an ELIDED marker, the text around it kept, and `README.md` lists
+each elision by file, line and class (a value or a citation), never the string; the repository's documents are not
+changed.
 
 `compare-model <unit> <verifier-state-models.toml>`: the lane's state-model entries of the unit's widgets against the
 verifier's, an entry named by its widget and its `when` (its `preset:` or `flavor:` conditions). Per entry both
@@ -189,6 +193,8 @@ SPEC_HEADER = "# The specification's sections the facts format reads"
 FLOOR = 4
 KEYWORDS = {"true", "false", "auto", "absent", "none"}
 EVIDENCE_DIR = "docs/evidence"
+ELIDED = "⟦elided: {} of this unit⟧"
+REDACTED_FILES = ("spec.md", "catalogue.md", "facts-format.md")
 FORMAT_HEADER = "# The facts format (the facts lanes' brief, its format sections)"
 
 NORMALISATIONS = {
@@ -818,9 +824,9 @@ def pins_text(sources_data, platform, cache):
     return "\n".join(out), "\n".join(added)
 
 
-def readme_text(unit, files, cache, phase):
+def readme_text(unit, files, cache, phase, redactions=()):
     """The README; `phase`: "model" (no combinations: the state models alone), "facts" (the combinations both state
-    models draw: the facts alone) or "both"."""
+    models draw: the facts alone) or "both"; `redactions`: (file, line, class) of each elided string."""
     measured = unit["kind"] == "measured"
     out = [f"# Verifier's brief: unit {unit['id']} ({unit['platform']}, {unit['kind']})", "",
            f"You verify the {unit['facts']} facts of this unit for the presets {', '.join(unit['presets'])}, "
@@ -852,7 +858,37 @@ def readme_text(unit, files, cache, phase):
                                             enumerate(steps, 1)]
     out.append(f"{sum(1 for x in steps if not x.startswith('   ')) + 1}. Your report: the counts, the combinations you "
                f"could not source, and anything the catalogue cannot express.")
+    if redactions:
+        out += ["", "## Elided text", "",
+                f"The copied normative text held {len(redactions)} of this unit's values or citations; each is "
+                f"replaced by `{ELIDED.format('a value')}` or `{ELIDED.format('a citation')}`, the text around it "
+                "kept as written:", ""]
+        out += [f"- `{f}` line {n}: {cls}" for f, n, cls in redactions]
     return "\n".join(out) + "\n"
+
+
+def redact(text, facts):
+    """(the text with each platform value and citation of the facts (platform_value; not a trivial string, nor one
+    their identities hold, which the verifier is given) replaced by an ELIDED marker, [(line, "value" or
+    "citation")]): one pass, the longest string first where two start at one place, so the text around each is kept
+    exactly."""
+    ident = identity_text(facts)
+    wanted = {n: w for n, w in needles(facts).items()
+              if len(n) >= FLOOR and n not in KEYWORDS and platform_value(n, w) and n in text
+              and not (n in ident and needle_rx(n).search(ident))}
+    if not wanted:
+        return text, []
+    order = sorted(wanted, key=lambda n: (-len(n), n))
+    rx = re.compile("|".join(f"(?:{needle_rx(n).pattern})" for n in order))
+    found = []
+
+    def mark(m):
+        what = wanted.get(m.group(0))
+        cls = "citation" if what is None or what.startswith("a citation's") else "value"
+        found.append((text.count("\n", 0, m.start()) + 1, cls))
+        return ELIDED.format(f"a {cls}")
+
+    return rx.sub(mark, text), found
 
 
 def brief(root, doc, unit_id, out, lane_brief, cache, evidence_root=None, combinations=True, agreed=None):
@@ -916,7 +952,14 @@ def brief(root, doc, unit_id, out, lane_brief, cache, evidence_root=None, combin
         n = copy_evidence(facts, Path(evidence_root), out)
         files.append((f"{EVIDENCE_DIR}/", f"the {n} evidence files the unit's facts cite, each run's run.toml and "
                                           f"analysis/ scripts"))
-    readme = readme_text(unit, files, cache, "model" if not combinations else "both" if agreed is None else "facts")
+    redactions = []
+    for name in REDACTED_FILES:
+        text, provenance = write[name]
+        text, found = redact(text, facts)
+        write[name] = (text, provenance)
+        redactions += [(name, n, cls) for n, cls in found]
+    readme = readme_text(unit, files, cache, "model" if not combinations else "both" if agreed is None else "facts",
+                         redactions)
     write["README.md"] = (readme, readme)
     for name, (text, _) in write.items():
         (out / name).write_text(text, encoding="utf-8")
@@ -1015,9 +1058,10 @@ def leak_check(out, facts, inputs):
     files (the evidence copies left out): `trivial` (under FLOOR characters, or a keyword or bool), else, where the
     text the file was written from holds it too (`inputs`: {file: that text}), the class of the file (LEAK_CLASSES),
     but `normative-value` where that class is `specification` and the string a platform value (platform_value: a
-    platform value in normative text, a leak to report), else `leak`, a string that can only have come from the
-    lane's facts."""
+    platform value in normative text, a leak to report; `identity` where the facts' identities hold it), else
+    `leak`, a string that can only have come from the lane's facts."""
     found = []
+    ident = identity_text(facts)
     texts = {}
     for p in sorted(Path(out).rglob("*")):
         rel = p.relative_to(out).as_posix()
@@ -1035,7 +1079,7 @@ def leak_check(out, facts, inputs):
                 elif rel in inputs and s in inputs[rel] and rx.search(inputs[rel]):
                     cls = LEAK_CLASSES.get(rel, "leak")
                     if cls == "specification" and platform_value(s, what):
-                        cls = "normative-value"
+                        cls = "identity" if s in ident and rx.search(ident) else "normative-value"
                 else:
                     cls = "leak"
                 found.append((cls, s, what, rel, line))
@@ -2265,9 +2309,31 @@ def self_test() -> int:
               ("## Entry format" in cat, "## Shared value types" in cat, "## Shared flags" in cat,
                "## Selector notation" in cat, "- **Notes:** a note naming the card." in cat, "### link" in cat,
                "Not copied." in cat, "Not normative here." in cat), (True,) * 5 + (False,) * 3)
-        check("brief: a platform value (a quote) in normative text is a leak to report",
-              [(f[0], f[3]) for f in found if f[1] == "border-radius: 6px;" and f[0] != "trivial"],
-              [("normative-value", "catalogue.md")])
+        check("brief: a citation in the copied normative text is elided, the text around it kept",
+              ([f for f in found if f[0] in ("leak", "normative-value")], "border-radius: 6px;" in cat,
+               "libadwaita's selectors in `_buttons.scss` (`⟦elided: a citation of this unit⟧`)." in cat),
+              ([], False, True))
+        readme_md = (out / "brief" / "README.md").read_text()
+        cat_line = next(n for n, x in enumerate(cat.splitlines(), 1) if "⟦elided" in x)
+        check("brief: the README lists each elision by file, line and class, never the string",
+              (f"- `catalogue.md` line {cat_line}: citation" in readme_md, "border-radius: 6px;" in readme_md),
+              (True, False))
+        spec_file = out / "brief" / "spec.md"
+        saved = spec_file.read_text()
+        spec_file.write_text(saved + "\nborder-radius: 6px;\n")
+        planted = leak_check(out / "brief", unit_facts(repo, doc, find_unit(doc, unit_id))[0],
+                             {**inputs, "spec.md": inputs["spec.md"] + "\nborder-radius: 6px;\n"})
+        check("leak check: an unelided platform value in normative text is reported",
+              [(f[0], f[3]) for f in planted if f[1] == "border-radius: 6px;"], [("normative-value", "spec.md")])
+        spec_file.write_text(saved)
+        check("redact: a string the identities hold is kept",
+              redact("accent #e5a50a", [Fact("f.toml", 1, {"key": "k", "value": "#e5a50a", "accent": "#e5a50a"}, [],
+                                             ())]), ("accent #e5a50a", []))
+        check("redact: exact, the longest first, trivial strings kept",
+              redact("a 'x.c:1-5' b x.c:1 c 6px", [Fact("f.toml", 1, {"key": "k", "value": "6px"}, [
+                  {"source": "x.c:1-5"}, {"source": "x.c:1"}], ())]),
+              ("a '⟦elided: a citation of this unit⟧' b ⟦elided: a citation of this unit⟧ c 6px",
+               [(1, "citation"), (1, "citation")]))
         check("leak check: the model's vocabulary is no platform value, a literal or a text is",
               [platform_value(x, "a value of k") for x in ("circular", "@card", "= role.global.accent",
                                                            "= alpha(role.x, 0.5)", "#ffffff", "0.3", "Cantarell",
