@@ -3,7 +3,11 @@
 
 Reads the facts as scripts/check_facts.py does (that script checks their form; this one assumes it and skips what it
 cannot read), the source cache (`NATIVE_THEME_SOURCES`, else scripts/citations.py's DEFAULT_CACHE, or `--cache DIR`;
-one checkout per `docs/facts/sources.toml` id, filled by scripts/update_sources.sh) and `docs/evidence/`.
+one checkout per `docs/facts/sources.toml` id, filled by scripts/update_sources.sh) and the evidence: a path
+`docs/evidence/<rest>` names `<root>/docs/evidence/<rest>`, the root being a fixture's (the self-test's), else the
+directory `NATIVE_THEME_EVIDENCE` names, else the pin's checkout in the source cache, `<cache>/native-theme-evidence/`
+(spec S17 *The evidence root*; citations.evidence_root). Outside a fixture the root must be a clean git checkout at the
+commit sources.toml's `evidence = true` entry pins: without one the run fails, naming the root and the pin.
 
 Run from the repository root:
 
@@ -75,7 +79,7 @@ A value the specification defines (S9.4's `token.text.font_dpi = 72` on `macos-*
 scripts/check_facts.py refuses a fact stating one, and scripts/check_preset_citations.py accepts the comment for that
 key, value and presets alone.
 
-Per `measured` citation: the evidence file is committed (`git ls-files`) and exists, the run folder's `run.toml` has an
+Per `measured` citation: the evidence file is committed (`git ls-files` in the evidence root) and exists, the run folder's `run.toml` has an
 entry for the image, and, for a measured derivation (a citation with `inputs` of an expression value, S17 *A measured
 derivation*), the evidence path names a list of pass tables in a TOML file (pass_problems): each holds the `inputs` as
 quoted keys, `result`, and `conditions` (a list of S7.1's condition strings naming the pass's scheme) unless the fact's
@@ -1146,8 +1150,9 @@ class Run:
         self.counts = {"quotes": 0, "generations": 0, "measured": 0, "evidence": 0, "legacy": 0, "sdk": 0}
 
     def git_files(self):
+        """The files committed under docs/evidence/ in the evidence root (its pinned commit's, the root being clean)."""
         try:
-            out = subprocess.run(["git", "-C", str(self.ctx.root), "ls-files", "-z", "docs/evidence"],
+            out = subprocess.run(["git", "-C", str(self.ctx.evidence_root), "ls-files", "-z", "docs/evidence"],
                                  capture_output=True, text=True, check=True).stdout
         except (OSError, subprocess.CalledProcessError) as err:
             raise check_facts.InputError(f"git ls-files: {err}") from err
@@ -1345,7 +1350,7 @@ class Run:
         runs.setdefault((harness, run), []).append((item, cite))
         if file not in self.committed:
             self.add(item.file, cite.ln("evidence"), f"{file} is not committed")
-        p = self.ctx.root / file
+        p = self.ctx.evidence_root / file
         if not p.is_file():
             self.add(item.file, cite.ln("evidence"), f"{file} does not exist")
             return
@@ -1436,7 +1441,7 @@ class Run:
 
     def check_run_toml(self, harness, run):
         rel = f"docs/evidence/{harness}/{run}/run.toml"
-        p = self.ctx.root / rel
+        p = self.ctx.evidence_root / rel
         if not p.is_file():
             self.add(rel, 1, "missing: a run's run.toml maps each image folder to its preset (S17)")
             return
@@ -1453,7 +1458,7 @@ class Run:
             if k != "images":
                 self.add(rel, ln(k), f"unknown table `{k}` (run.toml holds [images.<image>] only)")
         images = data.get("images", {}) if isinstance(data.get("images"), dict) else {}
-        folder = self.ctx.root / "docs/evidence" / harness / run
+        folder = self.ctx.evidence_root / "docs/evidence" / harness / run
         on_disk = {d.name for d in folder.iterdir() if d.is_dir() and d.name != ANALYSIS} if folder.is_dir() else set()
         required, optional = RUN_FIELDS
         for image, e in images.items():
@@ -1482,7 +1487,7 @@ class Run:
         a repository path, or a list of them), each a finding where it is no file."""
         out = set()
         for f in sorted(cited):
-            p = self.ctx.root / f
+            p = self.ctx.evidence_root / f
             if p.suffix not in (".toml", ".json") or not p.is_file():
                 continue
             try:
@@ -1495,14 +1500,14 @@ class Run:
             for name in names if isinstance(names, list) else [names]:
                 if not isinstance(name, str) or not name.startswith("docs/evidence/") or ".." in name.split("/"):
                     self.add(f, 1, f"input_image {name!r} is not a repository path under docs/evidence/")
-                elif not (self.ctx.root / name).is_file() and name not in self.committed:
+                elif not (self.ctx.evidence_root / name).is_file() and name not in self.committed:
                     self.add(f, 1, f"{f} names the input image {name}, which does not exist")
                 else:
                     out.add(name)
         return out
 
     def check_evidence_files(self, cited):
-        root = self.ctx.root
+        root = self.ctx.evidence_root
         base = root / "docs/evidence"
         files = {p.relative_to(root).as_posix() for p in base.rglob("*") if p.is_file()} if base.is_dir() else set()
         files |= {p for p in self.committed if p.startswith("docs/evidence/")}
@@ -2400,7 +2405,7 @@ def self_test() -> int:
             committed = {p.relative_to(root).as_posix() for p in (root / "docs/evidence").rglob("*") if p.is_file()}
             ctx = check_facts.Context(root, core_text=check_facts.SELF_TEST_CORE,
                                       cat_text=check_facts.SELF_TEST_CATALOGUE, sources_text=sources,
-                                      rows=check_facts.SELF_TEST_ROWS)
+                                      rows=check_facts.SELF_TEST_ROWS, evidence=root)
             run = Run(ctx, root / "cache", committed, check_heads=False)
             items = run.check()
             got = [f"{f}:{ln}: {w}" for f, ln, w in run.findings]
@@ -2430,7 +2435,7 @@ def self_test() -> int:
         committed = {p.relative_to(root).as_posix() for p in (root / "docs/evidence").rglob("*") if p.is_file()}
         ctx = check_facts.Context(root, core_text=check_facts.SELF_TEST_CORE, cat_text=check_facts.SELF_TEST_CATALOGUE,
                                   sources_text=(root / check_facts.SOURCES).read_text(encoding="utf-8"),
-                                  rows=check_facts.SELF_TEST_ROWS)
+                                  rows=check_facts.SELF_TEST_ROWS, evidence=root)
         run = Run(ctx, root / "cache", committed, check_heads=False)
         run.check()
         got = [w for _, _, w in run.findings]
@@ -2490,7 +2495,7 @@ def main(argv) -> int:
         print(f"error: no source cache at {cache} (scripts/update_sources.sh fills it)", file=sys.stderr)
         return 2
     try:
-        run = Run(check_facts.Context(Path(".")), cache)
+        run = Run(check_facts.Context(Path("."), cache=cache), cache)
         items = run.check()
     except (OSError, UnicodeDecodeError, check_facts.InputError) as err:
         print(f"error: {err}", file=sys.stderr)
