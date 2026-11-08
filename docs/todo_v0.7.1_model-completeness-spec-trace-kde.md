@@ -1273,8 +1273,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-RL01† | `role.@shade_dark, role.@shade_shadow` | role |
 | K-RL02† | `list.disclosure.glyph @ context shortcuts_dialog / context shortcuts_dialog dir rtl / {open} context shortcuts_dialog (the in-row extender's arrow on the item panel, open: its own state)` | rule |
 | K-RL02† | `list.row_background @ context shortcuts_dialog (the item panel)` | rule |
-| K-RL02† | `button.icon.glyph (ThemeIcon configure), button.label.text (the native shortcut text) @ variant @key_sequence context shortcuts_dialog` | rule |
-| K-RL02† | `button.body.fill, button.body.stroke (held pressed), button.label.text @ variant @key_sequence {@recording} context shortcuts_dialog` | rule |
+| K-RL02† | `button.icon.glyph (ThemeIcon configure), button.label.text (the native shortcut text) @ variant @key_sequence context shortcuts_dialog` (while it records, only the string changes, to "Input" or the partial sequence and " …", the button keeping its usual states: its click starts the recorder, `kxmlgui@6.31.0 src/kkeysequencewidget.cpp:416`, `:526-530`, and the private `startRecording()` that would hold it pressed, `:373-377`, has no caller; ADD-A139) | rule |
 | K-RL02† | `button.icon.glyph (ThemeIcon by direction) @ variants {tool,clear_field} context shortcuts_dialog / variants {tool,clear_field} context shortcuts_dialog dir rtl` | rule |
 | K-RL03† | - (plasma-emojier, Plasma's emoji picker: a separate Plasma program, `emojier/app/org.kde.plasma.emojier.desktop`, which no application draws) | out (R1.1) |
 | K-RL04† | `component.char_select.table.fill (Surface View background), component.char_select.table.bindings` | component |
@@ -1631,9 +1630,9 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-KA-43† | `search_field @ context shortcuts_dialog` | rule |
 | K-KA-43† | `list @ variant @ka_rounded context shortcuts_dialog` | rule |
 | K-KA-43† | `toolbar @ variant bottom context shortcuts_dialog (Save and Reset); toolbar.bar.padding @ variant bottom context shortcuts_dialog` | rule |
-| K-KA-43† | `button.icon.glyph (ThemeIcon configure), button.label.text @ variant @key_sequence context shortcuts_dialog / variant @key_sequence {checked} context shortcuts_dialog / variant @key_sequence {@recording} context shortcuts_dialog` | rule |
+| K-KA-43† | `button.icon.glyph (ThemeIcon configure), button.label.text @ variants {toggle,@key_sequence} context shortcuts_dialog / variants {toggle,@key_sequence} {checked} context shortcuts_dialog` (the checkable main button, which records while it is checked, `kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:121-122`, `:148-153`; ADD-A139) | rule |
 | K-KA-43† | `button.body.min_width, button.body.min_height (square), button.icon.glyph (ThemeIcon by direction) @ variant clear_field context shortcuts_dialog / variant clear_field context shortcuts_dialog dir rtl` | rule |
-| K-KA-43† | `button.icon.glyph (ThemeIcon dialog-cancel) @ variant clear_field context shortcuts_dialog prev button {@recording} (ADD-B07)` | rule |
+| K-KA-43† | `button.icon.glyph (ThemeIcon dialog-cancel) @ variant clear_field context shortcuts_dialog prev button {checked} (while the main button records, ADD-B07, ADD-A139)` | rule |
 | K-KA-43† | `dialog @ variant @ka_form_card_dialog context shortcuts_dialog (K-KA-17†)` | rule |
 | K-KA-43† | `dialog @ variants {@ka_message_dialog,warning} context shortcuts_dialog (the conflict)` | rule |
 | K-KA-44† | `about_dialog.body.padding (its margins), about_dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size), about_dialog.values.icon_max_width_fraction, about_dialog.name.text, about_dialog.version.text, about_dialog.description.text (leaf by leaf: token.text.keyed.heading_3_secondary) @ variant @ka_about` | rule |
