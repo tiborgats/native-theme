@@ -44,8 +44,10 @@ the state models) and the `read` facts as bases (S17 *`read`*: the reference a k
 generated text holds one block per part, where its lines go: `preset` in `[preset]` after `id`; `declare` in
 `[declare]` after `conditions`, before the state models (its lines may open `[declare.params.<group>]` tables); and
 `bases <table>` at the start of each base table a `read` fact's key lies in (read_tables(): a colour role's per scheme
-it holds in at rest, any other key's where its `when` is empty; a `read` fact under another `when` is reported, its
-rule written by hand). A block is the lines between `# hand-written: begin <part>` and `# hand-written: end <part>`,
+it holds in at rest, any other key's where its `when` is empty); and `rule <key> <when>` as the `set` of a rule of
+its own for a `read` fact under another `when` (S17 *`read`*, *Which fact applies*: the rule under the fact's `when`,
+placed in the facts' order among its key's rules, so the fact applies exactly where it holds and no later one does;
+the base beneath it is what the key's other facts give, a pending one's path listed, S17, S19.1). A block is the lines between `# hand-written: begin <part>` and `# hand-written: end <part>`,
 markers included in the generated text, the lines inside written by hand, each value with its citation comment.
 
 `--write` regenerates every line outside the blocks and carries each block's lines into the new text exactly, so no
@@ -297,6 +299,7 @@ class Fact:
     rule_when: object = None  # the `when` of its rule (its own, or narrowed to the scheme it is alive in)
     whole: bool = False       # a table at a `Value` struct block: `{ replace = { … } }` in a rule (whole_block())
     param_unit: str = ""      # a keyed param's group unit, its unit literal's (param_units()), its number in it
+    hand: str = ""            # a `read` fact whose `when` is no base: its rule's hand-written part (read_tables())
 
     @property
     def where(self):
@@ -309,6 +312,7 @@ class Rule:
     target: str
     facts: list = field(default_factory=list)
     tree: dict = field(default_factory=dict)   # its `set` as nested tables, to refuse a key above or below another
+    hand: str = ""            # the hand-written part its `set` is, a `read` fact's (read_tables()); no facts then
 
 
 class Leaf:
@@ -792,7 +796,8 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.status, f.reason = LEFT_OUT, BASE_CLASH
             continue
         bases += [(f.section, s, f.header, tuple(dotted), v, f) for s, dotted, v in entries]
-    rules = group_rules([f for f in facts if f.status == "rule"])
+    tables, read_rules = read_tables(facts)
+    rules = group_rules([f for f in facts if f.status == "rule" or f.hand])
     while True:
         split = split_blocks(ctx, bases, rules)
         if not split:
@@ -800,7 +805,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         for f in split:
             f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
         bases = [b for b in bases if b[5] not in split]
-        rules = group_rules([f for f in facts if f.status == "rule"])
+        rules = group_rules([f for f in facts if f.status == "rule" or f.hand])
     declare, conditions, models, left_models, dropped, waiting = declarations(items, platform, preset, units, facts,
                                                                               ctx.content_variants)
     covering, gaps = covering_bases(facts, models, tree)
@@ -816,15 +821,17 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         if f.reason == SET_WHOLE_SPLIT and f.ckey[:-1] in pending_blocks:
             f.reason = SET_WHOLE_PENDING
     listed = pending_table(ctx, facts, bases, models=models) + waiting
-    tables, read_rules = read_tables(facts)
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
                  listed, gaps, definitions(preset, tree), tables, read_rules)
 
 
 def read_tables(facts) -> tuple:
     """The base tables the `read` facts' hand-written values go in (S17 *`read`*), each once, in the facts' order:
-    a colour role's under each scheme it holds in at rest, any other key's where its `when` is empty; and the `read`
-    facts whose `when` is no base, which a hand-written rule states (reported, no part opened for them)."""
+    a colour role's under each scheme it holds in at rest, any other key's where its `when` is empty. A `read` fact
+    whose `when` is no base takes a rule of its own under that `when`, its `set` the hand-written part
+    `rule <key> <when>` (the fact's `hand`; group_rules() places the rule in the facts' order, so a later fact of its
+    key still applies after it, and the bases beneath it are the other facts', a pending one's listed); one whose key
+    no rule can state is returned, reported."""
     tables, rules = [], []
     for f in facts:
         if f.reason != READ:
@@ -841,7 +848,8 @@ def read_tables(facts) -> tuple:
         elif f.kind != "role" and not f.when:
             at = [(g.section, None, g.header)]
         else:
-            rules.append(f)
+            place(f)
+            f.rule_when, f.hand = f.when, f"rule {f.key} {toml_inline(f.when)}"
             continue
         tables += [t for t in at if t not in tables]
     return tables, rules
@@ -1249,11 +1257,18 @@ def inputs_of(fs: list):
 
 def group_rules(facts: list) -> list:
     """The rules, in order (the docstring's grouping): a fact joins the last rule with its `when` and target unless a
-    later rule states a key related to its own, or the rule's `set` cannot take it; else a new rule."""
+    later rule states a key related to its own, or the rule's `set` cannot take it; else a new rule. A `read` fact
+    with a hand-written rule (its `hand`) has that rule alone, which no fact joins."""
     rules, last_of = [], {}
     last_key = {}       # a key: the last rule stating it
     last_below = {}     # a key: the last rule stating it or a key below it
     for f in facts:
+        if f.hand:
+            rules.append(Rule(f.rule_when, f.target, hand=f.hand))
+            last_key[f.ckey] = len(rules) - 1
+            for n in range(1, len(f.ckey) + 1):
+                last_below[f.ckey[:n]] = len(rules) - 1
+            continue
         sig = (check_facts.canonical_when(f.rule_when), f.target)
         i = last_of.get(sig)
         later = max([last_key.get(f.ckey[:n], -1) for n in range(1, len(f.ckey) + 1)]
@@ -1538,6 +1553,8 @@ def render(draft: Draft) -> str:
         out.append("")
     for r in draft.rules:
         out += ["[[rules]]", f"when = {toml_inline(r.when)}", f"target = {toml_inline(r.target)}", "", "[rules.set]"]
+        if r.hand:
+            out += block(r.hand)
         for f in r.facts:
             value = {"replace": f.value} if f.whole else f.value
             out += [f"# {f.where}", f"{dotted_key(f.rel)} = {toml_inline(value)}"]
@@ -2068,9 +2085,10 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
         out.append(f"# [declare] {w}: variants left out, only facts of units not enabled naming them: {', '.join(vs)}")
     out.append(f"# left for hand-writing: S19.2's staged bases for {draft.preset}: {draft.staged} "
                f"({STAGED_BASES}); the keyed namespaces of [declare] but `conditions`; `[preset] generation`; "
-               f"the `read` facts as bases, in {len(draft.read_tables)} tables")
+               f"the `read` facts as bases, in {len(draft.read_tables)} tables, and in "
+               f"{sum(1 for r in draft.rules if r.hand)} rules of their own")
     for f in draft.read_rules:
-        out.append(f"# left for hand-writing: {f.key} ({f.where}), a `read` fact whose `when` is no base: its rule, "
+        out.append(f"# left for hand-writing: {f.key} ({f.where}), a `read` fact whose key no rule states: its rule, "
                    f"which no hand-written part holds")
     for widget, key, why in draft.gaps:
         out.append(f"# facts gap: {key}: {why}")
@@ -2483,6 +2501,7 @@ quote = "x"
         _fact("input.accent", '"#3584e4"'),
         _fact("input.accent", '"#1c71d8"', '{ conditions = ["contrast_high", "scheme:light"] }'),
         _fact("input.selected", '"#ffffff"', '{ conditions = ["window_inactive"] }'),
+        _fact("role.global.accent", '"= input.selected"', '{ conditions = ["window_inactive"] }', cite=_READ),
     ]),
     "docs/facts/gnome/tokens.toml": "".join([
         _fact("token.motion.durations.button", '"200ms"'),
@@ -2792,6 +2811,14 @@ target = "colors"
 surfaces.view.background = "#eeeeee"
 
 [[rules]]
+when = { conditions = ["window_inactive"] }
+target = "colors"
+
+[rules.set]
+# hand-written: begin rule role.global.accent { conditions = ["window_inactive"] }
+# hand-written: end rule role.global.accent { conditions = ["window_inactive"] }
+
+[[rules]]
 when = { conditions = ["system_setting:reduced_chrome"] }
 target = "tokens"
 
@@ -3007,7 +3034,8 @@ FIELDS_CASES = [
 
 def fixture_context(root: Path):
     return check_facts.Context(root, core_text=check_facts.SELF_TEST_CORE, cat_text=check_facts.SELF_TEST_CATALOGUE,
-                               sources_text=check_facts.SELF_TEST_SOURCES, rows=check_facts.SELF_TEST_ROWS)
+                               sources_text=check_facts.SELF_TEST_SOURCES, rows=check_facts.SELF_TEST_ROWS,
+                               evidence=root)
 
 
 def write(root: Path, files: dict):
@@ -3539,8 +3567,8 @@ def self_test() -> int:
                 failures.append(f"{key} = {value!r}: {status.get((key, repr(value)))}, expected {want}")
         lines = share_lines(draft, units, trip)
         for needle in ("2 pending", "pending (register id: facts): U1: 1, U8: 1",
-                       "[pending]: 1 listed paths, pending with nothing beneath: tokens.text.fallbacks.families (U8)", f"{READ} 1", f"{NOT_HELD} 3",
-                       "22 rules", f"{UNIT_NOT_ENABLED} (toolbar) 2", "[declare] left out: toolbar"):
+                       "[pending]: 1 listed paths, pending with nothing beneath: tokens.text.fallbacks.families (U8)", f"{READ} 2", f"{NOT_HELD} 3",
+                       "23 rules", "the `read` facts as bases, in 2 tables, and in 1 rules of their own", f"{UNIT_NOT_ENABLED} (toolbar) 2", "[declare] left out: toolbar"):
             if not any(needle in line for line in lines):
                 failures.append(f"the report lacks {needle!r}")
         # grouping and order: the second hover rule after the flat rule that states `fill` between them; a later

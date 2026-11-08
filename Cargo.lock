@@ -5822,6 +5822,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "native-theme-preset-check"
+version = "0.0.0"
+dependencies = [
+ "native-theme",
+]
+
+[[package]]
 name = "native-theme-showcase-support"
 version = "0.0.0"
 dependencies = [

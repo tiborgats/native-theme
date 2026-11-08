@@ -10,6 +10,7 @@ members = [
     "tools/os-probe",
     "tools/test-fixtures",
     "tools/showcase-support",
+    "tools/preset-check",
 ]
 resolver = "3"
 

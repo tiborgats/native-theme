@@ -7,6 +7,8 @@
 use std::collections::HashMap;
 
 use native_theme::platform::adw_standalone::adw_standalone;
+use native_theme::platform::android_non_linear::{android_non_linear, android_non_linear_inverse};
+use native_theme::platform::dynamic_type::dynamic_type;
 use native_theme::platform::kcu_mix::kcu_mix;
 use native_theme::platform::kcu_overlay::kcu_overlay;
 use native_theme::platform::kcu_shade::kcu_shade;
@@ -19,8 +21,8 @@ use native_theme::platform::kirigami_tint::kirigami_tint;
 use native_theme::platform::m3_role::m3_role;
 use native_theme::platform::sf_tracking::{TrackingDesign, sf_tracking};
 use native_theme::{
-    Color, KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect, KdeRoleKind,
-    MaterialVariant, Scheme,
+    Color, ContentSizeCategory, KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect,
+    KdeRoleKind, MaterialVariant, Scheme, TextRole,
 };
 
 /// A table's rows, each by its column names; the header lines skipped.
@@ -347,5 +349,83 @@ fn vectors_m3_role() {
         )
         .expect("a role of the implemented scheme");
         assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+/// A size cell, `<n>px`, as the f32 it reads back to.
+fn size_px(cell: &str) -> f32 {
+    number(cell.strip_suffix("px").expect(cell))
+}
+
+#[test]
+fn vectors_android_non_linear() {
+    let rows = rows("android_non_linear");
+    assert_eq!(rows.len(), 1425);
+    for row in rows {
+        let got = android_non_linear(size_px(&row["size"]), number(&row["font_scale"]));
+        assert_eq!(got, size_px(&row["result"]), "{row:?}");
+    }
+}
+
+#[test]
+fn vectors_android_non_linear_inverse() {
+    let rows = rows("android_non_linear_inverse");
+    assert_eq!(rows.len(), 1425);
+    for row in rows {
+        let got = android_non_linear_inverse(size_px(&row["size"]), number(&row["font_scale"]));
+        assert_eq!(got, size_px(&row["result"]), "{row:?}");
+    }
+}
+
+fn text_role(cell: &str) -> TextRole {
+    match cell {
+        "large_title" => TextRole::LargeTitle,
+        "title1" => TextRole::Title1,
+        "title2" => TextRole::Title2,
+        "title3" => TextRole::Title3,
+        "headline" => TextRole::Headline,
+        "body" => TextRole::Body,
+        "callout" => TextRole::Callout,
+        "subheadline" => TextRole::Subheadline,
+        "footnote" => TextRole::Footnote,
+        "caption" => TextRole::Caption,
+        "caption2" => TextRole::Caption2,
+        other => panic!("no text role `{other}` in the table"),
+    }
+}
+
+fn category(cell: &str) -> ContentSizeCategory {
+    match cell {
+        "extra_small" => ContentSizeCategory::ExtraSmall,
+        "small" => ContentSizeCategory::Small,
+        "medium" => ContentSizeCategory::Medium,
+        "large" => ContentSizeCategory::Large,
+        "extra_large" => ContentSizeCategory::ExtraLarge,
+        "extra_extra_large" => ContentSizeCategory::ExtraExtraLarge,
+        "extra_extra_extra_large" => ContentSizeCategory::ExtraExtraExtraLarge,
+        "accessibility_medium" => ContentSizeCategory::AccessibilityMedium,
+        "accessibility_large" => ContentSizeCategory::AccessibilityLarge,
+        "accessibility_extra_large" => ContentSizeCategory::AccessibilityExtraLarge,
+        "accessibility_extra_extra_large" => ContentSizeCategory::AccessibilityExtraExtraLarge,
+        "accessibility_extra_extra_extra_large" => {
+            ContentSizeCategory::AccessibilityExtraExtraExtraLarge
+        }
+        other => panic!("no content size category `{other}`"),
+    }
+}
+
+#[test]
+fn vectors_dynamic_type() {
+    let rows = rows("dynamic_type");
+    assert_eq!(rows.len(), 132);
+    for row in rows {
+        let got = dynamic_type(
+            text_role(&row["role"]),
+            category(&row["category"]),
+            number(&row["font_dpi"]),
+        )
+        .expect("a role the table has a row for");
+        assert_eq!(got.font_size, size_px(&row["font_size"]), "{row:?}");
+        assert_eq!(got.line_height, size_px(&row["line_height"]), "{row:?}");
     }
 }

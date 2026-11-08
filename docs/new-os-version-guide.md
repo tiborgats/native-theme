@@ -44,7 +44,13 @@ kinds:
 - `measured`: an evidence file under `docs/evidence/<harness>/<date>-run-<id>/`
   with the path of the value in it and a `tolerance`; the run's `run.toml`
   maps each runner image to the preset it measures, and the file records the
-  exact OS and toolkit builds.
+  exact OS and toolkit builds. The path names a file of the evidence
+  repository,
+  [`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence),
+  at the commit `docs/facts/sources.toml` pins (its `evidence = true` entry):
+  the checkers and the facts gate read it from a clean checkout at that
+  commit, `NATIVE_THEME_EVIDENCE`'s or the source cache's
+  (`./scripts/update_sources.sh --only native-theme-evidence`).
 
 For example, adwaita's button height (`docs/facts/gnome/button.toml`):
 
@@ -124,6 +130,9 @@ python3 scripts/check_sources.py        # the file's form, and every cited proje
 ./scripts/update_sources.sh --verify    # every checkout at its pin (offline)
 ```
 
+The evidence entry is no platform source: its commit is this project's own,
+moved by the facts commits that add runs (step 3), never by a re-pin.
+
 While the 0.8.0 plan runs, the release set is frozen until the catalogue's
 last unit is released (the plan's D1, D13), so that every unit's facts
 describe one release set. A re-pin then is recorded in the ledger, and every
@@ -171,10 +180,21 @@ D3):
   ```
 
 Copy the run's artifacts into a new `docs/evidence/<harness>/<date>-run-<id>/`
-with its `README.md` and `run.toml`, and add the run to
+of the evidence repository,
+[`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence),
+never of this one, with its `README.md` and `run.toml`, and add the run to its
 `docs/evidence/README.md`'s table: GitHub deletes a run's artifacts after 90
 days, and a recorded file is never edited afterwards (a later reading is a new
-run). Cite the files from `measured` facts.
+run). Commit the run on the evidence repository's branch of the same name as
+this repository's branch (cut from the commit `docs/facts/sources.toml` pins),
+push it, then cite the files from `measured` facts in a commit that moves the
+pin (`commit` of the `evidence = true` entry) to that branch's head; the
+checks read the new run once the cache's checkout is at the new pin
+(`./scripts/update_sources.sh --only native-theme-evidence`, or a clone of
+your own named by `NATIVE_THEME_EVIDENCE` in a worktree). When the branch
+merges, the evidence branch merges into the target's pinned commit too (never
+a rebase or a squash) and the merge pins the result (the 0.8.0 plan's *The
+evidence repository*).
 
 ### 4. Verify independently
 

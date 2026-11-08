@@ -6,10 +6,17 @@
 //! were written in a clean room, from behavioural descriptions and the vector
 //! tables alone (the plan's D10); `sf_tracking` reads Apple's published
 //! tables, `gen_sf_tracking` generated from them; `m3_role` ports
-//! material-color-utilities under that code's Apache-2.0 licence (D10). The
-//! model's names for their operands are here.
+//! material-color-utilities under that code's Apache-2.0 licence (D10). S9.4's
+//! scaling curves live here too: `android_non_linear` ports the Android Open
+//! Source Project's `FontScaleConverter` under its Apache-2.0 licence, and
+//! `dynamic_type` reads Apple's published Dynamic Type table,
+//! `gen_dynamic_type` generated from it. The model's names for their operands
+//! are here.
 
 pub mod adw_standalone;
+pub mod android_non_linear;
+pub mod dynamic_type;
+mod gen_dynamic_type;
 mod gen_sf_tracking;
 pub mod kcu_mix;
 pub mod kcu_overlay;

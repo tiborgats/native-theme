@@ -19,7 +19,7 @@ use std::any::{Any, TypeId};
 use std::cell::Cell;
 
 use super::compose::{self, Fold, Found, Locate, Target};
-use super::{Pos, ResolvedTheme};
+use super::{ContentSizeCategory, Pos, ResolvedTheme};
 use crate::IconSet;
 use crate::blocks::motion::Loop;
 use crate::blocks::outline::{DashPattern, Radius, ShapeKind, full};
@@ -28,7 +28,7 @@ use crate::blocks::paint::{
 };
 use crate::blocks::part_style::{Binding, PartStyle, ResolvedBinding, RoleRef};
 use crate::blocks::shadow::{ResolvedShadow, Shadow, ShadowLayer};
-use crate::blocks::text::{Font, ResolvedFont, ResolvedTextStyle, TextStyle};
+use crate::blocks::text::{Font, ResolvedFont, ResolvedTextStyle, TextRole, TextStyle};
 use crate::blocks::{Block, BlockPatch, FieldsBlock, KeyedItem, merge_by_key};
 use crate::color::Color;
 use crate::declare::ScalarUnit;
@@ -38,6 +38,10 @@ use crate::expr::{
 };
 use crate::inputs::InputName;
 use crate::key::Key;
+use crate::platform::android_non_linear::{
+    PROPORTIONAL_LINE_HEIGHT_ABOVE, android_non_linear, android_non_linear_inverse,
+};
+use crate::platform::dynamic_type::{DEFAULT_CATEGORY, DynamicTypeSize, dynamic_type};
 use crate::query::{Element, Scope, ScopeEntry, instance_entries, own_entries};
 use crate::roles::SurfaceSet;
 use crate::selector::{PartRef, Selector};
@@ -495,6 +499,29 @@ struct TextFrame {
     line_height_reached: bool,
 }
 
+/// The text scaling in force (S9.4): the preset's `token.text.scaling`, with
+/// what its curve reads.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Scaling {
+    /// A product by the factor.
+    Linear(f32),
+    /// Android's curve at the factor, the font scale.
+    AndroidNonLinear(f32),
+    /// Apple's table at the category; the factor is not read.
+    DynamicType(ContentSizeCategory),
+}
+
+/// What a font size scaled lies in (S9.4): each kind follows its own rule.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Scaled {
+    /// A `Font.size`.
+    Size,
+    /// A text style's `line_height`.
+    LineHeight,
+    /// A letter or word spacing, or a size read as a value of its own.
+    Spacing,
+}
+
 /// The query's evaluation context (S8): the resolved theme, the element and
 /// the scope, the place being evaluated, and the references being followed.
 pub(crate) struct Cx<'t> {
@@ -524,6 +551,10 @@ pub(crate) struct Cx<'t> {
     outside: Option<TypedPart>,
     /// The text styles the place lies in, innermost last.
     text: Vec<TextFrame>,
+    /// The `scaling_role`s of the text styles the place lies in, innermost
+    /// last, entered before their fonts, each with whether reading it read a
+    /// synthetic layer's step; read under `DynamicType` alone (S9.4).
+    roles: Vec<(Option<TextRole>, bool)>,
     /// The places whose references are being followed.
     visiting: Vec<(Target, String)>,
     /// Inside an expression on a `Font.size`: font sizes read converted, not
@@ -532,9 +563,9 @@ pub(crate) struct Cx<'t> {
     /// Inside `active(…)`: every place read reads its bases alone, and no
     /// `Role` binding is followed (S2.2).
     bases_only: bool,
-    /// The DPI and the scaling factor, read once outside every chain of
+    /// The DPI and the text scaling, read once outside every chain of
     /// references (S9.4); `None` until read.
-    sizes: Option<(Option<f32>, Option<f32>)>,
+    sizes: Option<(Option<f32>, Option<Scaling>)>,
     /// Whether reading the DPI, and the scaling, read a synthetic layer's
     /// step.
     sizes_reached: (bool, bool),
@@ -615,13 +646,30 @@ impl Bindings {
     }
 }
 
+/// How an expression's font size literals scale (S9.4): each as a value of
+/// its own, where the place scales.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Literals {
+    /// Not scaled: the place does not scale, or nothing does.
+    Unscaled,
+    /// A product by the factor (`Linear`).
+    Factor(f32),
+    /// Android's curve at the font scale (`AndroidNonLinear`).
+    AndroidNonLinear(f32),
+    /// No rule read yet (`DynamicType` away from the default category):
+    /// the expression gives no value.
+    NoRule,
+}
+
 /// An evaluated expression's operands, which typed evaluation reads.
 struct Operands {
     values: Vec<(Ref, Val)>,
     dpi: Option<f32>,
-    factor: Option<f32>,
+    literals: Literals,
     /// A font size literal was converted, or `round_pt` read the DPI.
     converted: Cell<bool>,
+    /// A font size literal met [`Literals::NoRule`].
+    no_rule: Cell<bool>,
 }
 
 impl Env for Operands {
@@ -637,9 +685,14 @@ impl Env for Operands {
     /// which evaluation takes as zero (S2.2's *Totality*).
     fn font_size(&self, size: FontSize) -> Px {
         self.converted.set(true);
-        match (convert(size, self.dpi), self.factor) {
-            (Some(px), Some(factor)) => Px(px.0 * factor),
-            (Some(px), None) => px,
+        match (convert(size, self.dpi), self.literals) {
+            (Some(px), Literals::Unscaled) => px,
+            (Some(px), Literals::Factor(factor)) => Px(px.0 * factor),
+            (Some(px), Literals::AndroidNonLinear(scale)) => Px(android_non_linear(px.0, scale)),
+            (Some(_), Literals::NoRule) => {
+                self.no_rule.set(true);
+                Px(f32::NAN)
+            }
             (None, _) => Px(f32::NAN),
         }
     }
@@ -881,6 +934,7 @@ impl<'t> Cx<'t> {
             chain_part: None,
             outside: None,
             text: Vec::new(),
+            roles: Vec::new(),
             visiting: Vec::new(),
             unscaled: false,
             bases_only: false,
@@ -1001,6 +1055,16 @@ impl<'t> Cx<'t> {
     where
         't: 'f,
     {
+        let role = match self.sizes().1 {
+            Some(Scaling::DynamicType(_)) => self.noting(|cx| {
+                cx.at("scaling_role", |cx| {
+                    cx.value::<Option<TextRole>>(&compose::children(folds, "scaling_role"), false)
+                })
+                .flatten()
+            }),
+            Some(Scaling::Linear(_) | Scaling::AndroidNonLinear(_)) | None => (None, false),
+        };
+        self.roles.push(role);
         let (font, font_reached) = self.noting(|cx| {
             cx.at("font", |cx| {
                 cx.block::<Font>(&compose::children(folds, "font"))
@@ -1025,6 +1089,7 @@ impl<'t> Cx<'t> {
         }
         let out = f(self);
         self.text.pop();
+        self.roles.pop();
         out
     }
 
@@ -1167,6 +1232,7 @@ impl<'t> Cx<'t> {
         let saved_target = std::mem::replace(&mut self.target, target);
         let saved_path = std::mem::replace(&mut self.path, path);
         let saved_text = std::mem::take(&mut self.text);
+        let saved_roles = std::mem::take(&mut self.roles);
         let saved_params = self.params.take();
         let out = match target {
             // Another part of the element is evaluated in the scope it is
@@ -1191,6 +1257,7 @@ impl<'t> Cx<'t> {
         self.bases_only = saved_bases;
         self.params = saved_params;
         self.text = saved_text;
+        self.roles = saved_roles;
         self.path = saved_path;
         self.target = saved_target;
         self.visiting.pop();
@@ -1756,10 +1823,10 @@ impl<'t> Cx<'t> {
         dpi
     }
 
-    /// The DPI and the scaling factor, read once, outside the chain of
+    /// The DPI and the text scaling, read once, outside the chain of
     /// references being followed (S2.2 counts an expression's own
     /// references only); while they are being read, none.
-    fn sizes(&mut self) -> (Option<f32>, Option<f32>) {
+    fn sizes(&mut self) -> (Option<f32>, Option<Scaling>) {
         if let Some(sizes) = self.sizes {
             return sizes;
         }
@@ -1784,31 +1851,136 @@ impl<'t> Cx<'t> {
             })
         });
         self.sizes_reached = (dpi_reached, scaling_reached);
-        let factor = match scaling {
-            Some(TextScaling::Linear) => Some(self.theme.text_scaling_factor),
-            Some(TextScaling::AndroidNonLinear | TextScaling::DynamicType) | None => None,
-        };
+        let factor = self.theme.text_scaling_factor;
+        let scaling = scaling.map(|scaling| match scaling {
+            TextScaling::Linear => Scaling::Linear(factor),
+            TextScaling::AndroidNonLinear => Scaling::AndroidNonLinear(factor),
+            TextScaling::DynamicType => {
+                Scaling::DynamicType(self.theme.content_size_category.unwrap_or(DEFAULT_CATEGORY))
+            }
+        });
         self.visiting = saved;
         self.bases_only = saved_bases;
-        self.sizes = Some((dpi, factor));
-        (dpi, factor)
+        self.sizes = Some((dpi, scaling));
+        (dpi, scaling)
     }
 
-    /// The factor font sizes scale by under the preset's
-    /// `token.text.scaling` (S9.4): `Linear`'s product; `None` for the
-    /// non-linear kinds, whose curves are not implemented yet.
-    fn factor(&mut self) -> Option<f32> {
-        let factor = self.sizes().1;
+    /// The preset's text scaling (S9.4); `None` where nothing states it.
+    fn scaling(&mut self) -> Option<Scaling> {
+        let scaling = self.sizes().1;
         self.reach(self.sizes_reached.1);
-        factor
+        scaling
     }
 
-    /// `px` scaled by the text scaling (S9.4).
-    fn scale(&mut self, px: Px) -> Px {
-        match self.factor() {
-            Some(factor) => Px(px.0 * factor),
-            None => px,
+    /// What the font size being resolved at the place lies in: a
+    /// `Font.size` where `size` says so or the place is one, a line height
+    /// at a `line_height`, else a spacing or a size read as a value of its
+    /// own.
+    fn scaled_kind(&self, size: bool) -> Scaled {
+        let names: Vec<&str> = self.path.iter().map(String::as_str).collect();
+        match names.as_slice() {
+            _ if size => Scaled::Size,
+            [.., "font", "size"] => Scaled::Size,
+            [.., "line_height"] => Scaled::LineHeight,
+            _ => Scaled::Spacing,
         }
+    }
+
+    /// `px`, converted, scaled by the text scaling as its kind is (S9.4):
+    /// under `Linear` the product by the factor; under `AndroidNonLinear`
+    /// Android's curve, a line height above Compose's threshold kept in
+    /// proportion to its font's change
+    /// (`androidx@e4d933c9 compose/ui/ui-text/src/androidMain/kotlin/androidx/compose/ui/text/platform/extensions/SpannableExtensions.android.kt:224-250`);
+    /// under `DynamicType` nothing at the default category, else a size by
+    /// its style's row's ratio of the category's size to the default's, a
+    /// line height equal to the row's leading at the default category the
+    /// row's leading at the category. `None` where the kind's rule gives
+    /// none: a role without a row, and, until the value phase reads UIKit's
+    /// rule from its fonts per category (D-5), a line height other than the
+    /// row's and a spacing stated in points or pixels under `DynamicType`.
+    fn scale(&mut self, px: Px, kind: Scaled) -> Option<Px> {
+        let Some(scaling) = self.scaling() else {
+            return Some(px);
+        };
+        match (scaling, kind) {
+            (Scaling::Linear(factor), _) => Some(Px(px.0 * factor)),
+            (Scaling::AndroidNonLinear(scale), Scaled::LineHeight)
+                if f64::from(scale) > PROPORTIONAL_LINE_HEIGHT_ABOVE =>
+            {
+                let font = self.style_font_size()?;
+                let font_sp = android_non_linear_inverse(font.0, scale);
+                Some(Px(px.0 / font_sp * font.0))
+            }
+            (Scaling::AndroidNonLinear(scale), _) => Some(Px(android_non_linear(px.0, scale))),
+            (Scaling::DynamicType(category), _) if category == DEFAULT_CATEGORY => Some(px),
+            (Scaling::DynamicType(category), Scaled::Size) => {
+                let (at, default) = self.dynamic_type_rows(category)?;
+                let size = f64::from(px.0) * f64::from(at.font_size) / f64::from(default.font_size);
+                Some(Px(size as f32))
+            }
+            (Scaling::DynamicType(category), Scaled::LineHeight) => {
+                let (at, default) = self.dynamic_type_rows(category)?;
+                (px.0 == default.line_height).then_some(Px(at.line_height))
+            }
+            (Scaling::DynamicType(_), Scaled::Spacing) => None,
+        }
+    }
+
+    /// The table's rows (S9.4's `DynamicType`) of the `scaling_role` of the
+    /// text style the place lies in, `body`'s where it states none, at
+    /// `category` and at the default category, in logical px.
+    fn dynamic_type_rows(
+        &mut self,
+        category: ContentSizeCategory,
+    ) -> Option<(DynamicTypeSize, DynamicTypeSize)> {
+        let role = self.style_role().unwrap_or(TextRole::Body);
+        let dpi = self.dpi()?;
+        Some((
+            dynamic_type(role, category, dpi)?,
+            dynamic_type(role, DEFAULT_CATEGORY, dpi)?,
+        ))
+    }
+
+    /// The text style's own path where the place lies in one of its font
+    /// sizes, its `Font.size`, line height or spacing.
+    fn style_path(&self) -> Option<Vec<String>> {
+        let names: Vec<&str> = self.path.iter().map(String::as_str).collect();
+        let own = match names.as_slice() {
+            [.., "font", "size"] => 2,
+            [.., "line_height" | "letter_spacing" | "word_spacing"] => 1,
+            _ => return None,
+        };
+        self.path
+            .get(..self.path.len().checked_sub(own)?)
+            .map(<[String]>::to_vec)
+    }
+
+    /// The `scaling_role` of the text style the place lies in: the style
+    /// being resolved, else the one whose font size the place is.
+    fn style_role(&mut self) -> Option<TextRole> {
+        if let Some(&(role, reached)) = self.roles.last() {
+            self.reach(reached);
+            return role;
+        }
+        let mut path = self.style_path()?;
+        path.push("scaling_role".to_owned());
+        self.follow(self.target, path, false, |cx, folds| {
+            cx.value::<Option<TextRole>>(folds, false)
+        })
+        .flatten()
+    }
+
+    /// The scaled font size of the text style the place lies in: the style
+    /// being resolved, else the one whose font size the place is.
+    fn style_font_size(&mut self) -> Option<Px> {
+        if let Some(frame) = self.text.last() {
+            let (size, reached) = (frame.size, frame.font_reached);
+            self.reach(reached);
+            return size;
+        }
+        let mut path = self.style_path()?;
+        path.extend(["font".to_owned(), "size".to_owned()]);
+        self.follow(self.target, path, false, |cx, folds| cx.font(folds, true))
     }
 
     /// A literal's value.
@@ -1823,7 +1995,10 @@ impl<'t> Cx<'t> {
                 let dpi = self.dpi();
                 match convert(FontSize::Pt(*points), dpi) {
                     Some(px) if self.unscaled => Val::FontSize(px),
-                    Some(px) => Val::FontSize(self.scale(px)),
+                    Some(px) => {
+                        let kind = self.scaled_kind(false);
+                        self.scale(px, kind).map_or(Val::Absent, Val::FontSize)
+                    }
                     None => Val::Absent,
                 }
             }
@@ -1860,7 +2035,8 @@ impl<'t> Cx<'t> {
             Color, Px, Ms, Deg, f32, Fraction, u16, u32, bool, String, Key, Scalar
         );
         if value_of::<FontSize>(fold).is_some() {
-            return self.font(folds, false).map(Val::FontSize);
+            let size = self.scaled_kind(false) == Scaled::Size;
+            return self.font(folds, size).map(Val::FontSize);
         }
         if value_of::<Paint>(fold).is_some() || fold.found.get::<PaintPatch>().is_some() {
             return self.paint(folds).map(Val::Paint);
@@ -1914,18 +2090,31 @@ impl<'t> Cx<'t> {
             };
             values.push((reference, value.unwrap_or(Val::Absent)));
         }
-        let (dpi, factor) = self.sizes();
-        let factor = if self.unscaled { None } else { factor };
+        let (dpi, scaling) = self.sizes();
+        let literals = match scaling {
+            _ if self.unscaled => Literals::Unscaled,
+            None => Literals::Unscaled,
+            Some(Scaling::Linear(factor)) => Literals::Factor(factor),
+            Some(Scaling::AndroidNonLinear(scale)) => Literals::AndroidNonLinear(scale),
+            Some(Scaling::DynamicType(category)) if category == DEFAULT_CATEGORY => {
+                Literals::Unscaled
+            }
+            Some(Scaling::DynamicType(_)) => Literals::NoRule,
+        };
         let operands = Operands {
             values,
             dpi,
-            factor,
+            literals,
             converted: Cell::new(false),
+            no_rule: Cell::new(false),
         };
         let val = typed.eval(&operands);
         if operands.converted.get() {
             let (dpi_reached, scaling_reached) = self.sizes_reached;
             self.reach(dpi_reached || (scaling_reached && !self.unscaled));
+        }
+        if operands.no_rule.get() {
+            return None;
         }
         Some(val)
     }
@@ -2187,11 +2376,11 @@ impl<'t> Cx<'t> {
         't: 'f,
     {
         let (px, scaled) = self.font_value(items, size)?;
-        Some(if scaled || self.unscaled {
-            px
-        } else {
-            self.scale(px)
-        })
+        if scaled || self.unscaled {
+            return Some(px);
+        }
+        let kind = self.scaled_kind(size);
+        self.scale(px, kind)
     }
 
     /// A `Value<FontSize>` field marked `auto` (a line height).
@@ -3038,11 +3227,11 @@ impl ResolvedTheme {
     /// scales linearly; `None` without a DPI.
     pub(crate) fn px_per_point(&self, scope: &Scope) -> Option<f32> {
         let mut cx = Cx::new(self, scope, None, &|_| true, Target::Tokens);
-        let (dpi, factor) = cx.sizes();
+        let (dpi, scaling) = cx.sizes();
         let px = convert(FontSize::Pt(1.0), dpi)?;
-        Some(match factor {
-            Some(factor) => px.0 * factor,
-            None => px.0,
+        Some(match scaling {
+            Some(Scaling::Linear(factor)) => px.0 * factor,
+            Some(Scaling::AndroidNonLinear(_) | Scaling::DynamicType(_)) | None => px.0,
         })
     }
 
