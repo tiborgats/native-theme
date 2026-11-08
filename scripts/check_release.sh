@@ -834,17 +834,23 @@ fi
 #     panic lints, rustdoc) reads what rustc and the build scripts read, as
 #     cache_inputs lists it;
 #   * a test step also reads what its tests read: native-theme-derive's unit
-#     tests read nothing; the facts gate reads docs/ (the facts and their
-#     evidence) and scripts/widget_units.toml, layers and platform_vectors
-#     their fixtures under native-theme/tests. native-theme's library tests
-#     (the desktop they run on), its doctests, native-theme-build's tests (a
-#     `cargo check` of a fresh project, with no lock, against crates.io) and
-#     every connector's are not cached;
+#     tests read nothing; the facts gate reads docs/ (the facts),
+#     scripts/widget_units.toml and the evidence (EVIDENCE_PIN), layers and
+#     platform_vectors their fixtures under native-theme/tests.
+#     native-theme's library tests (the desktop they run on), its doctests,
+#     native-theme-build's tests (a `cargo check` of a fresh project, with no
+#     lock, against crates.io) and every connector's are not cached;
 #   * the Python data checks read scripts/ (their modules), docs/,
 #     native-theme/src, native-theme/tests and ROADMAP.md, and run rustfmt,
-#     whose version is in the key; the checks that read the source cache
-#     outside the repository (the citations, sf_tracking, dynamic_type) are
-#     not cached.
+#     whose version is in the key; check_facts.py and check_function_vectors.py
+#     also read the evidence (EVIDENCE_PIN); the checks that read the source
+#     cache's platform sources (the citations, sf_tracking, dynamic_type) are
+#     not cached;
+#   * the evidence lies outside the repository, in the evidence repository's
+#     checkout (spec S17 *The evidence root*), which every reader accepts only
+#     clean and at the commit docs/facts/sources.toml pins: so the pin,
+#     EVIDENCE_PIN, fixes the evidence a step reads, and a step reading
+#     evidence declares it.
 # CACHE_HOST_PROBES are the registry build helpers that read the host's
 # libraries or compilers; CACHE_TRUSTED_BUILD_CODE the workspace packages
 # whose build script or procedural macro reads only its own directory
@@ -852,6 +858,7 @@ fi
 CACHE_HOST_PROBES="pkg-config cc cmake bindgen system-deps vcpkg metadeps"
 CACHE_TRUSTED_BUILD_CODE="native-theme native-theme-derive"
 PY_DATA_INPUTS="scripts docs native-theme/src native-theme/tests ROADMAP.md"
+EVIDENCE_PIN="docs/facts/sources.toml"
 STRICT_PANIC_INPUTS="scripts/check_strict_panic.sh"
 declare -A CACHE_INPUTS=(
     ["panic-pattern scan (native-theme, native-theme-derive)"]="scripts/check_panic_patterns.py native-theme/src native-theme-derive/src"
@@ -860,7 +867,7 @@ declare -A CACHE_INPUTS=(
     ["strict-panic (native-theme, Linux features)"]="@rust:native-theme $STRICT_PANIC_INPUTS"
     ["strict-panic (native-theme, no features)"]="@rust:native-theme $STRICT_PANIC_INPUTS"
     ["test (native-theme-derive)"]="@rust:native-theme-derive"
-    ["test (native-theme, layers, vectors and facts gate)"]="@rust:native-theme docs scripts/widget_units.toml"
+    ["test (native-theme, layers, vectors and facts gate)"]="@rust:native-theme docs scripts/widget_units.toml $EVIDENCE_PIN"
     ["docs (native-theme)"]="@rust:native-theme"
     ["docs, private items (native-theme, Linux features)"]="@rust:native-theme"
 )
@@ -876,6 +883,10 @@ for check in "the generated widgets match the catalogue" "every platform functio
     "the 0.8.0 ledger triages every open item" "the enabled units' trace lines are carried"; do
     CACHE_INPUTS["$check"]="$PY_DATA_INPUTS"
     CACHE_INPUTS["data documents: $check"]="$PY_DATA_INPUTS"
+done
+for check in "every platform function has its vectors" "the facts are well formed"; do
+    CACHE_INPUTS["$check"]="$PY_DATA_INPUTS $EVIDENCE_PIN"
+    CACHE_INPUTS["data documents: $check"]="$PY_DATA_INPUTS $EVIDENCE_PIN"
 done
 for preset in native-theme/src/presets/*.toml; do
     preset=$(basename "$preset" .toml)
@@ -1766,12 +1777,18 @@ run_check "data documents: platform-facts generator self-test" \
 # The citations of today's platform-facts.md and the deleted
 # inheritance-rules.toml by line name the commit they read (`@fc6109d1`, the
 # 0.8.0 plan's *Citations of today's platform-facts.md by line*), outside
-# docs/archive/, docs/evidence/ and the scripts that define the format. CI's
-# parity job runs the same two.
+# docs/archive/ and the scripts that define the format. CI's parity job runs
+# the same two.
 run_check "data documents: today's platform-facts.md and inheritance-rules.toml cited by line at a commit" \
     python3 scripts/check_pinned_citations.py
 run_check "data documents: pinned citations self-test" \
     python3 scripts/check_pinned_citations.py --self-test
+# The evidence lives in the evidence repository, native-theme-evidence, pinned
+# by docs/facts/sources.toml (spec S17 *The evidence root*): no file under
+# docs/evidence/ is tracked here. CI's parity job runs the same check.
+run_check "data documents: no evidence in this repository (it lives in native-theme-evidence)" \
+    bash -c 'tracked=$(git ls-files -- docs/evidence); [ -z "$tracked" ] ||
+        { printf "tracked here, belongs in native-theme-evidence: %s\n" $tracked | head -20; exit 1; }'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs

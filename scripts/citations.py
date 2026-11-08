@@ -60,6 +60,10 @@ API (run from the repository root):
     ABBR                       (token, kind, project, ref, root, defined at): the documents' abbreviations
     Index.of_repo(), Index.of_cache(sources=SOURCES_TOML, cache=None)
     cache_dir(path=None)       the source cache: path, else `NATIVE_THEME_SOURCES`, else DEFAULT_CACHE
+    evidence_pin(sources_data) the commit sources.toml's one `evidence = true` git entry pins
+    evidence_root(sources_data, cache=None)   the evidence root outside a fixture (spec S17 *The evidence root*):
+                               `NATIVE_THEME_EVIDENCE`, else <cache>/native-theme-evidence/, a clean git checkout at
+                               the pin, else EvidenceRootError naming the root and the pin
     definitions(texts)         the abbreviations' refs as the documents' definitions state them
     scan(text, doc, index, defs=None) -> list[Citation]   one document's text; doc is its short name
                                                           ("gap-map-kde.md"); defs from definitions()
@@ -86,6 +90,65 @@ DEFAULT_CACHE = "/run/media/tibi/work/cargo-build/native-theme-sources"
 def cache_dir(path=None):
     """The source cache: path, else `NATIVE_THEME_SOURCES`, else DEFAULT_CACHE."""
     return Path(path or os.environ.get("NATIVE_THEME_SOURCES") or DEFAULT_CACHE)
+
+
+# The evidence repository (spec S17 *The evidence root*, the 0.8.0 plan's *The evidence repository*): its entry's id
+# in sources.toml, which is its folder in the source cache, and the variable naming another checkout of it.
+EVIDENCE_ID = "native-theme-evidence"
+EVIDENCE_VARIABLE = "NATIVE_THEME_EVIDENCE"
+
+
+class EvidenceRootError(Exception):
+    """No evidence root, or one that is not a clean git checkout at the pinned commit."""
+
+
+def evidence_pin(sources_data):
+    """The commit sources.toml (parsed) pins the evidence repository at: its one git entry with `evidence = true`."""
+    entries = sources_data.get("source", [])
+    pins = [e for e in entries if isinstance(e, dict) and e.get("kind") == "git" and e.get("evidence") is True] \
+        if isinstance(entries, list) else []
+    if len(pins) != 1 or not isinstance(pins[0].get("commit"), str):
+        raise EvidenceRootError(f"{SOURCES_TOML}: {len(pins)} evidence entries (a git [[source]] with "
+                                f"`evidence = true`), not one with a commit (scripts/check_sources.py)")
+    return pins[0]["commit"]
+
+
+def evidence_root(sources_data, cache=None):
+    """The root a path `docs/evidence/<rest>` is read under outside a fixture: the directory `NATIVE_THEME_EVIDENCE`
+    names, else the pin's checkout in the source cache (cache_dir(cache)). It must be the top of a git checkout whose
+    HEAD is the pinned commit (evidence_pin) and which is clean: `git status --porcelain --ignored
+    --untracked-files=all` prints nothing, ignored files counting, since a reader walks the files on disk. Otherwise
+    EvidenceRootError, naming the root and the pin: a reader never skips the evidence it cannot find."""
+    commit = evidence_pin(sources_data)
+    named = os.environ.get(EVIDENCE_VARIABLE)
+    root = Path(named) if named else cache_dir(cache) / EVIDENCE_ID
+    where = f"{EVIDENCE_VARIABLE}={root}" if named else f"{root} (the source cache's checkout of {EVIDENCE_ID})"
+    fix = (f"check {EVIDENCE_ID} out there at {commit}" if named
+           else f"fetch it with scripts/update_sources.sh --only {EVIDENCE_ID}")
+    if not root.is_dir():
+        raise EvidenceRootError(f"no evidence root: {where} is no directory; the pin is {commit} ({fix})")
+
+    def git(*args):
+        try:
+            got = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
+        except OSError as err:
+            raise EvidenceRootError(f"the evidence root {where}: git: {err}") from err
+        return got.stdout if got.returncode == 0 else None
+
+    if git("rev-parse", "--show-prefix") != "\n":
+        raise EvidenceRootError(f"the evidence root {where} is not the top of a git checkout; the pin is {commit} "
+                                f"({fix})")
+    head = (git("rev-parse", "--verify", "-q", "HEAD") or "").strip()
+    if head != commit:
+        raise EvidenceRootError(f"the evidence root {where} is at {head or 'no commit'}, not at the pin {commit} "
+                                f"({fix})")
+    status = git("status", "--porcelain", "--ignored", "--untracked-files=all")
+    if status is None or status.strip():
+        changed = status.splitlines() if status else []
+        first = f"; first: {changed[0].strip()}" if changed else ""
+        raise EvidenceRootError(f"the evidence root {where} at the pin {commit} is not clean: "
+                                f"{len(changed)} paths changed, untracked or ignored{first}")
+    return root
 
 PREFIX = "todo_v0.7.1_model-completeness-"
 PLATFORMS = ("gnome", "ios", "kde", "macos", "material", "windows")
@@ -1275,11 +1338,72 @@ def self_test() -> int:
             failures.append(f"{label}: got {got}, want {want}")
         if label == "seeds quote" and not all(c.quote for c in scan(text, doc, index)):
             failures.append(f"{label}: the record is not marked as a quote")
+    failures += evidence_root_self_test()
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
-        print(f"self-test ok ({len(SELF_TEST)} cases)")
+        print(f"self-test ok ({len(SELF_TEST)} cases, the evidence root)")
     return 1 if failures else 0
+
+
+def evidence_root_self_test():
+    """evidence_root on a fixture checkout: at the pin and clean; another commit; a changed, an untracked and an
+    ignored file; a subfolder; no folder; the variable over the cache; no entry, two entries."""
+    import tempfile
+    failures = []
+    saved = os.environ.pop(EVIDENCE_VARIABLE, None)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = Path(tmp) / "cache"
+            repo = cache / EVIDENCE_ID
+            (repo / "docs/evidence").mkdir(parents=True)
+            (repo / "docs/evidence/a.toml").write_text("a = 1\n", encoding="utf-8")
+            git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+            try:
+                subprocess.run(git + ["init", "-q"], check=True, capture_output=True)
+                subprocess.run(git + ["add", "-A"], check=True, capture_output=True)
+                subprocess.run(git + ["commit", "-q", "-m", "c"], check=True, capture_output=True)
+                head = subprocess.run(git + ["rev-parse", "HEAD"], check=True, capture_output=True,
+                                      text=True).stdout.strip()
+            except (OSError, subprocess.CalledProcessError) as err:
+                return [f"evidence root: git: {err}"]
+
+            def data(*commits):
+                return {"source": [{"id": EVIDENCE_ID, "kind": "git", "evidence": True, "commit": c} for c in commits]
+                        + [{"id": "x@1", "kind": "git", "commit": "1" * 40}]}
+
+            def expect(label, sources, want, cache_arg=cache):
+                try:
+                    got = evidence_root(sources, cache_arg)
+                except EvidenceRootError as err:
+                    got = str(err)
+                if (got != want) if isinstance(want, Path) else (not isinstance(got, str) or want not in got):
+                    failures.append(f"evidence root, {label}: got {got!r}, want {want!r}")
+
+            expect("at the pin, clean", data(head), repo)
+            expect("another commit", data("0" * 40), f"is at {head}, not at the pin {'0' * 40}")
+            expect("no entry", {"source": []}, "0 evidence entries")
+            expect("two entries", data(head, head), "2 evidence entries")
+            expect("no checkout", data(head), "is no directory", Path(tmp) / "elsewhere")
+            for label, path, ignore in (("an untracked file", "docs/evidence/b.toml", False),
+                                        ("an ignored file", "docs/evidence/c.toml", True)):
+                (repo / path).write_text("b = 1\n", encoding="utf-8")
+                if ignore:
+                    (repo / ".git/info/exclude").write_text("c.toml\n", encoding="utf-8")
+                expect(label, data(head), "is not clean: 1 paths changed, untracked or ignored")
+                (repo / path).unlink()
+            (repo / "docs/evidence/a.toml").write_text("a = 2\n", encoding="utf-8")
+            expect("a changed file", data(head), "is not clean")
+            (repo / "docs/evidence/a.toml").write_text("a = 1\n", encoding="utf-8")
+            os.environ[EVIDENCE_VARIABLE] = str(repo / "docs")
+            expect("a subfolder", data(head), "is not the top of a git checkout")
+            os.environ[EVIDENCE_VARIABLE] = str(repo)
+            expect("the variable over the cache", data(head), repo, Path(tmp) / "elsewhere")
+    finally:
+        os.environ.pop(EVIDENCE_VARIABLE, None)
+        if saved is not None:
+            os.environ[EVIDENCE_VARIABLE] = saved
+    return failures
 
 
 def main(argv):

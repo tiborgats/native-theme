@@ -41,6 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # native-theme's tests run the facts gate, which reads the evidence at
+      # its pin.
+      - uses: ./.github/actions/evidence
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy

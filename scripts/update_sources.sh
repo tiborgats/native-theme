@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # The source cache (plan D1): every git entry of docs/facts/sources.toml checked out at its commit.
 #
-#   update_sources.sh [--seed DIR]... [--jobs N]   fetch each entry missing from the cache or not at its commit
-#   update_sources.sh --verify                     offline: exit 1 unless every entry's checkout is at its commit,
+#   update_sources.sh [--seed DIR]... [--jobs N] [--only ID]...   fetch each entry missing from the cache or not
+#                                                  at its commit (--only: the entries named alone)
+#   update_sources.sh --verify [--only ID]...      offline: exit 1 unless every entry's checkout is at its commit,
 #                                                  with its sparse folders and no change to a tracked file, and every
 #                                                  SDK header copy in the cache matches its xcode.txt
 #
@@ -21,7 +22,18 @@
 #
 # --seed DIR (repeatable): an entry without sparse folders whose commit is the HEAD of DIR/<repository name> is
 # fetched from that checkout instead of its repository (its tracked files only; origin is still the entry's
-# repository). --jobs N: fetches at once (default 4, at least 1).
+# repository). --jobs N: fetches at once (default 4, at least 1). --only ID (repeatable): the git entries named alone
+# are fetched or verified, an ID no git entry has refused; the SDK copies and the folders no entry names are then not
+# looked at (`--only native-theme-evidence` fetches the evidence alone: the whole cache is about 4.4 GB).
+#
+# The evidence entry (`evidence = true`, the evidence repository, spec S17 *The evidence root*): its checkout is read
+# by the checkers and the facts gate of this, the main checkout, and only from a clean checkout at the pin, so
+# --verify also counts an untracked or ignored file as a problem. A moved pin is fetched into the existing checkout,
+# so only the new runs download; a checkout that a fetch leaves not clean fails, its files left in place. The entry is
+# skipped, --verify included, where `NATIVE_THEME_EVIDENCE` is set (the readers read that checkout) and in any git
+# worktree of this repository (`git rev-parse --git-dir` differs from `--git-common-dir` there): a worktree's
+# readers then read the cache's checkout at the main checkout's pin and fail on a pin of its own, so a worktree that
+# forgets the variable cannot move the checkout under a gate running in the main checkout.
 #
 # The SDK and distribution entries are not fetched: an SDK exists only on its runner image, a distribution snapshot is
 # installed by the harness that uses it. An SDK entry's folder, <cache>/<id>/, holds the headers os-probe.yml's macOS
@@ -39,26 +51,28 @@ ROOT=$(git rev-parse --show-toplevel)
 SOURCES="$ROOT/docs/facts/sources.toml"
 
 usage() {
-    sed -n '4,6p' "$0" | sed 's/^# \{0,1\}//' >&2
+    sed -n '4,8p' "$0" | sed 's/^# \{0,1\}//' >&2
     exit 2
 }
 
 VERIFY=0
 JOBS=4
 SEEDS=()
+ONLY=()
 while (($#)); do
     case "$1" in
         --verify) VERIFY=1 ;;
         --seed) (($# >= 2)) || usage; SEEDS+=("$2"); shift ;;
         --jobs) (($# >= 2)) && [[ "$2" =~ ^[1-9][0-9]*$ ]] || usage; JOBS="$2"; shift ;;
+        --only) (($# >= 2)) || usage; ONLY+=("$2"); shift ;;
         *) usage ;;
     esac
     shift
 done
 
-# `git`, then the id, repository, commit, tag, sparse folders (space-separated) of every git entry, and `sdk`, then the
-# id of every SDK entry, once the whole file passes check_sources.py's form rules (they keep tabs, newlines and spaces
-# out of every field printed here)
+# `git`, then the id, repository, commit, tag, sparse folders (space-separated) of every git entry, `evidence`, then the
+# id of the evidence entry, and `sdk`, then the id of every SDK entry, once the whole file passes check_sources.py's
+# form rules (they keep tabs, newlines and spaces out of every field printed here)
 if ! LISTED=$(python3 -I - "$ROOT/scripts" "$SOURCES" <<'EOF'
 import sys, tomllib
 sys.path.insert(0, sys.argv[1])
@@ -75,6 +89,8 @@ if problems:
 for e in data.get("source", []):
     if e.get("kind") == "git":
         print("\t".join(["git", e["id"], e["repository"], e["commit"], e["tag"], " ".join(e.get("sparse", []))]))
+        if e.get("evidence") is True:
+            print("\t".join(["evidence", e["id"]]))
     elif e.get("kind") == "sdk":
         print("\t".join(["sdk", e["id"]]))
 EOF
@@ -83,6 +99,35 @@ EOF
 fi
 ENTRIES=$(grep -- $'^git\t' <<<"$LISTED" | cut -f2- || true)
 SDKS=$(grep -- $'^sdk\t' <<<"$LISTED" | cut -f2 || true)
+EVIDENCE_ID=$(grep -- $'^evidence\t' <<<"$LISTED" | cut -f2 || true)
+# every id a cache folder may hold, for the stale report, whatever --only and the evidence skip leave out
+ALL_IDS=$(cut -f1 <<<"$ENTRIES"; printf "%s\n" "$SDKS")
+
+if ((${#ONLY[@]})); then
+    for id in "${ONLY[@]}"; do
+        if ! cut -f1 <<<"$ENTRIES" | grep -qxF -- "$id"; then
+            echo "--only $id: no git entry of $SOURCES has that id" >&2
+            exit 2
+        fi
+    done
+    ENTRIES=$(awk -F'\t' 'NR == FNR { only[$0] = 1; next } $1 in only' <(printf "%s\n" "${ONLY[@]}") - <<<"$ENTRIES")
+    SDKS=""
+fi
+
+# The evidence entry is skipped where NATIVE_THEME_EVIDENCE names another checkout and in a worktree (above).
+if [[ -n "$EVIDENCE_ID" ]]; then
+    skip=""
+    if [[ -n "${NATIVE_THEME_EVIDENCE:-}" ]]; then
+        skip="NATIVE_THEME_EVIDENCE is set: the readers read $NATIVE_THEME_EVIDENCE"
+    elif [[ "$(git rev-parse --path-format=absolute --git-dir)" != \
+        "$(git rev-parse --path-format=absolute --git-common-dir)" ]]; then
+        skip="a worktree: only the main checkout fetches it; set NATIVE_THEME_EVIDENCE to a clone of your own"
+    fi
+    if [[ -n "$skip" ]] && cut -f1 <<<"$ENTRIES" | grep -qxF -- "$EVIDENCE_ID"; then
+        echo "# $EVIDENCE_ID: skipped ($skip)"
+        ENTRIES=$(awk -F'\t' -v id="$EVIDENCE_ID" '$1 != id' <<<"$ENTRIES")
+    fi
+fi
 
 head_of() {
     git -C "$1" rev-parse --verify -q HEAD 2>/dev/null || true
@@ -93,6 +138,11 @@ sparse_of() {
     if [[ "$(git -C "$1" config --bool core.sparseCheckout 2>/dev/null || true)" == "true" ]]; then
         git -C "$1" sparse-checkout list 2>/dev/null | sort | paste -sd' ' -
     fi
+}
+
+# What makes a checkout not clean for the evidence readers: any changed, untracked or ignored path.
+unclean() {
+    git -C "$1" status --porcelain --ignored --untracked-files=all 2>&1
 }
 
 sorted_words() {
@@ -136,6 +186,9 @@ verify() {
         elif [[ -n "$(git -C "$dir" status --porcelain --untracked-files=no)" ]]; then
             echo "$id: tracked files changed in $dir"
             bad=$((bad + 1))
+        elif [[ "$id" == "$EVIDENCE_ID" && -n "$(unclean "$dir")" ]]; then
+            echo "$id: not clean (the readers refuse it): $(unclean "$dir" | head -1)"
+            bad=$((bad + 1))
         fi
     done <<<"$ENTRIES"
     local copies=0
@@ -156,7 +209,7 @@ verify() {
             bad=$((bad + 1))
         fi
     done <<<"$SDKS"
-    stale
+    ((${#ONLY[@]})) || stale
     echo "# $n checkouts verified in $CACHE"
     echo "# $copies SDK header copies verified against their xcode.txt"
     echo "# $bad problems"
@@ -168,7 +221,7 @@ stale() {
     for d in "$CACHE"/*/; do
         [[ -d "$d" ]] || continue
         name=$(basename "$d")
-        if ! cut -f1 <<<"$ENTRIES" | grep -qxF -- "$name" && ! grep -qxF -- "$name" <<<"$SDKS"; then
+        if ! grep -qxF -- "$name" <<<"$ALL_IDS"; then
             echo "# not in sources.toml (left in place): $d"
         fi
     done
@@ -190,6 +243,33 @@ seed_for() {
     return 1
 }
 
+# The evidence entry's moved pin, fetched into its existing checkout (only the new commits download; depth 1 where the
+# checkout is shallow) and checked out detached; a checkout it leaves not clean fails, nothing removed.
+fetch_in_place() {
+    local id="$1" url="$2" commit="$3" dir="$4" log="$5" depth=()
+    if [[ "$(git -C "$dir" rev-parse --is-shallow-repository 2>/dev/null)" == "true" ]]; then
+        depth=(--depth 1)
+    fi
+    if ! git -C "$dir" fetch -q "${depth[@]}" --end-of-options "$url" "$commit" >"$log" 2>&1; then
+        echo "$id: fetch into $dir failed (see $log)"
+        return 1
+    fi
+    if ! git -C "$dir" -c advice.detachedHead=false checkout -q --detach "$commit" >>"$log" 2>&1; then
+        echo "$id: checkout of $commit in $dir failed (see $log)"
+        return 1
+    fi
+    if [[ "$(head_of "$dir")" != "$commit" ]]; then
+        echo "$id: HEAD $(head_of "$dir"), want $commit"
+        return 1
+    fi
+    if [[ -n "$(unclean "$dir")" ]]; then
+        echo "$id: at $commit, but not clean (the readers refuse it): $(unclean "$dir" | head -1)"
+        return 1
+    fi
+    rm -f -- "$log"
+    echo "$id: fetched $commit into its checkout"
+}
+
 fetch_one() {
     local id="$1" url="$2" commit="$3" tag="$4" sparse="$5"
     local dir="$CACHE/$id" tmp="$CACHE/$id.tmp" log="$CACHE/$id.log" filter=() seed=""
@@ -204,10 +284,17 @@ fetch_one() {
                 return 0
             fi
             echo "$id: tracked files changed and not reset (see $log); fetching again"
+        elif [[ "$id" == "$EVIDENCE_ID" && -n "$(unclean "$dir")" ]]; then
+            echo "$id: at $commit, but not clean (the readers refuse it): $(unclean "$dir" | head -1)"
+            return 1
         else
             echo "$id: at $commit"
             return 0
         fi
+    fi
+    if [[ "$id" == "$EVIDENCE_ID" && -d "$dir/.git" ]]; then
+        fetch_in_place "$id" "$url" "$commit" "$dir" "$log"
+        return
     fi
     rm -rf -- "$tmp" || { echo "$id: cannot remove $tmp"; return 1; }
     mkdir -p -- "$tmp" || { echo "$id: cannot create $tmp"; return 1; }
@@ -280,7 +367,7 @@ while IFS=$'\t' read -r id url commit tag sparse; do
         </dev/null &
 done <<<"$ENTRIES"
 wait
-stale
+((${#ONLY[@]})) || stale
 OK=$(find "$RESULTS" -name 'ok.*' | wc -l)
 FAIL=$(find "$RESULTS" -name 'fail.*' | wc -l)
 echo "# $OK entries at their commit, $FAIL failed"
