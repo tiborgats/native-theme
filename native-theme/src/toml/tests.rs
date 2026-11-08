@@ -708,12 +708,12 @@ fn spelling_condition() {
     assert_eq!(
         problems(
             "[[rules]]\nwhen = { conditions = [\"scheme:blue\", \"windowinactive\", \
-             \"preset:kde-breeze\", \"scheme\", \"maximized:yes\"] }\ntarget = \"tokens\"\nset = {}"
+             \"preset:breeze\", \"scheme\", \"maximized:yes\"] }\ntarget = \"tokens\"\nset = {}"
         ),
         [
             "rules[0].when.conditions[0]: unknown name \"blue\"",
             "rules[0].when.conditions[1]: unknown name \"windowinactive\"",
-            "rules[0].when.conditions[2]: unknown name \"kde-breeze\"",
+            "rules[0].when.conditions[2]: unknown name \"breeze\"",
             "rules[0].when.conditions[3]: expected a condition and its value, `<name>:<value>`",
             "rules[0].when.conditions[4]: expected a condition with no `:<value>`",
         ]
@@ -825,10 +825,10 @@ fn spelling_for_preset() {
     assert_eq!(layer.for_preset.len(), 1);
     assert_eq!(layer.for_preset[0].0, PresetId::Adwaita);
     assert_eq!(
-        problems("[for_preset.kde-breeze.widgets.button.body]\nshine = 1"),
+        problems("[for_preset.breeze.widgets.button.body]\nshine = 1"),
         [
-            "for_preset.kde-breeze: unknown key",
-            "for_preset.kde-breeze.widgets.button.body.shine: unknown key",
+            "for_preset.breeze: unknown key",
+            "for_preset.breeze.widgets.button.body.shine: unknown key",
         ]
     );
 }
