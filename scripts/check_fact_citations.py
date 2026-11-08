@@ -106,9 +106,12 @@ cited by a fact's or a state-model entry's measured citation, or by a vector tab
 scripts/check_function_vectors.py's format fills at M1a; until then it counts none), or is an image a cited image
 analysis's output names. An analysis output (a TOML or JSON evidence file of a committed analysis script, S17
 *`evidence`*) names its input image by a top-level `input_image = "<repository path>"` (a list of them where it reads
-several), each under `docs/evidence/`; a name that is no file is a finding (input_images()). Not evidence: any
-README.md, a run's `run.toml`, its `analysis/` folder (ANALYSIS: the committed analysis scripts, which run.toml maps to
-no image), and the files of the runs LEGACY_EVIDENCE lists (the plan's *What carries over*: cited
+several), each under `docs/evidence/`; a name that is no file is a finding (input_images()). An analysis's input is
+any file it reads, images or not: a recording and the `.crop` the harness cut its frames with are evidence files, so
+each is cited only as the `input_image` of the analysis reading the frames (S17, ADD-A136). Not evidence: any
+README.md, a run's `run.toml`, its records (RECORDS, by name anywhere in a run folder: the files a harness writes
+about its own conduct, from which no value is read), its `analysis/` folder (ANALYSIS: the committed analysis
+scripts, which run.toml maps to no image), and the files of the runs LEGACY_EVIDENCE lists (the plan's *What carries over*: cited
 until M4, which empties the list; scripts/check_ledger.py --final reads it by name). Any other file under
 `docs/evidence/` outside a run's image folder is a finding.
 
@@ -197,7 +200,9 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   weight: 100 times one more than the number of NS_WEIGHT_THRESHOLDS, −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5
   and 0.7, at or below it, so 0, 0.3 and 0.4 are 400, 600 and 700, 100 below −0.6 and 900 from 0.7; S17, ADD-A123:
   WebKit's mapping of the system font's weight trait, WebKit@7624.5.1.11.3
-  Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739), `rem_to_factor` (S17's class 1 member for GTK's
+  Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739; withdrawn by ADD-A136, S2.8's *Weight*: the weight is
+  the drawn face's `wght` coordinate, which the trait does not determine, so a citation naming it is a warning
+  (WITHDRAWN), not a finding, until the facts are re-cited to the face, when it leaves this list), `rem_to_factor` (S17's class 1 member for GTK's
   `rem`: under a citation naming it, each `<n>rem` literal of the quote, otherwise no literal, reads as the unitless
   number n, the factor of the default font size that GTK multiplies a rem length by, `gtk@4.24.1
   gtk/gtkcssnumbervalue.c:405-408`, "case GTK_CSS_REM: return gtk_css_dimension_value_new (value *
@@ -213,7 +218,12 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   none, and no Apple page is snapshotted yet), so the quote notations read none and such a value is held by its
   measured citations, whose `data` notation reads `display_p3(…)`; the first snapshot stating P3 values adds its
   notation here, as a class 1 change.
-- Evidence path forms (S17 *`evidence`*), by the file's type: TOML a dotted key (a digit segment indexes an array),
+- Records (RECORDS, S17 *`evidence`*, ADD-A136): `settings.txt` (the settings a pass wrote and read back) and
+  `environment.txt` (the image's OS, Xcode and SDK builds).
+- Evidence path forms (S17 *`evidence`*), by the file's type: TOML a dotted key written as TOML writes one
+  (check_facts.key_segments: a key that is no bare key quoted as a basic string, `macos.symbols."chevron.forward".size`;
+  a bare digit segment indexes an array where the value there is one and names a table's key otherwise, a quoted one
+  always a table's key),
   JSON a JSON pointer, INI `<group>/<key>` (a nested group as its bracketed names joined by `][`:
   `Colors:Header][Inactive/BackgroundNormal`), CSV `<first column>/<header>`.
 - `run.toml` (RUN_FIELDS): `[images.<image>]` tables only, each `preset`, `source`, `os` required, `toolkit` optional.
@@ -260,6 +270,10 @@ UNITS = {"px": ("length", 1), "dp": ("length", 1), "sp": ("length", 1), "pt": ("
          "s": ("duration", 1000), "deg": ("angle", 1), "rem": None, "em": None}
 VALUE_UNITS = {"px": "length", "pt": "pt", "ms": "duration", "deg": "angle"}
 SUFFIX_DIMS = {"_px": "length", "_ms": "duration", "_deg": "angle", "_pt": "pt"}
+# conversions the specification withdrew, each with the change that did (a citation naming one is a warning, not a
+# finding, while the facts are re-cited; the conversion leaves CONVERSIONS once none names it)
+WITHDRAWN = {"ns_font_weight": "ADD-A136: S2.8's weight is the drawn face's `wght` coordinate, never the weight trait; "
+                               "re-cite it to the face"}
 RUN_FIELDS = ({"preset", "source", "os"}, {"toolkit"})
 NUMBER_EQ = 1e-4
 COLOUR_EQ = 1e-3
@@ -279,6 +293,9 @@ APPLE_PRESETS = ("macos-", "ios-")
 APPLE_SITES = ("developer.apple.com", "support.apple.com")
 RUN_RX = re.compile(r"^\d{4}-\d\d-\d\d-run-.+$")
 ANALYSIS = "analysis"   # a run's committed analysis scripts: not evidence, as its README.md and run.toml
+# a run's records (S17 *`evidence`*, ADD-A136): not evidence, by name; a member is added as a class 1 change
+RECORDS = ("settings.txt", "environment.txt")
+BARE_KEY_RX = re.compile(r"^[A-Za-z0-9_-]+$")
 
 NOTATIONS = {
     "css": (".css", ".scss", ".sass", ".less", ".html", ".svg"),
@@ -814,20 +831,41 @@ def read_evidence_file(path: Path):
     raise EvidenceError(f"{name}: not an evidence file type (TOML, JSON, INI, CSV)")
 
 
+def toml_segments(path: str) -> list:
+    """(segment, quoted) of a TOML dotted key (check_facts.key_segments: a quoted segment is one whatever it holds),
+    or raise EvidenceError."""
+    parsed = check_facts.key_segments(path)
+    if isinstance(parsed, str):
+        raise EvidenceError(parsed)
+    segs, quoted = parsed
+    return [(seg, i in quoted) for i, seg in enumerate(segs)]
+
+
+def toml_at(value, path: str):
+    """The value at a TOML dotted key: a bare digit segment indexes a list, any other segment names a table's key;
+    raise EvidenceError where the value has none."""
+    cur = value
+    for seg, quoted in toml_segments(path) if path else []:
+        if isinstance(cur, list) and not quoted and seg.isdigit() and int(seg) < len(cur):
+            cur = cur[int(seg)]
+        elif isinstance(cur, dict) and seg in cur:
+            cur = cur[seg]
+        else:
+            raise EvidenceError(f"no {seg!r} at {path!r}")
+    return cur
+
+
+def toml_key(seg: str) -> str:
+    """A key segment as TOML writes it: bare where it is a bare key, else a basic string."""
+    return seg if BARE_KEY_RX.match(seg) else json.dumps(seg, ensure_ascii=False)
+
+
 def evidence_value(path: Path, form: str, cache=None):
     """The value at `form` in the evidence file (by its type), or raise EvidenceError; `cache` as evidence_doc's."""
     name = path.name
     doc = evidence_doc(path, cache)
     if name.endswith(".toml"):
-        cur = doc
-        for seg in form.split("."):
-            if isinstance(cur, list) and seg.isdigit() and int(seg) < len(cur):
-                cur = cur[int(seg)]
-            elif isinstance(cur, dict) and seg in cur:
-                cur = cur[seg]
-            else:
-                raise EvidenceError(f"no {seg!r} at {form!r}")
-        return cur
+        return toml_at(doc, form)
     if name.endswith(".json"):
         return json_pointer(doc, form)
     if name.endswith(".csv"):
@@ -851,11 +889,11 @@ def evidence_value(path: Path, form: str, cache=None):
 
 
 def leaves(value, prefix="", dim=None):
-    """(path as S11 spells it, leaf, dimension) of every leaf of a value."""
+    """(path as S11 spells it, a key that is no bare key quoted, leaf, dimension) of every leaf of a value."""
     if isinstance(value, dict):
         for k, v in value.items():
             sub = next((d for suf, d in SUFFIX_DIMS.items() if k.endswith(suf)), None)
-            yield from leaves(v, f"{prefix}.{k}" if prefix else k, sub)
+            yield from leaves(v, f"{prefix}.{toml_key(k)}" if prefix else toml_key(k), sub)
     elif isinstance(value, list):
         for i, v in enumerate(value):
             yield from leaves(v, f"{prefix}.{i}" if prefix else str(i), None)
@@ -864,15 +902,11 @@ def leaves(value, prefix="", dim=None):
 
 
 def at(value, path):
-    cur = value
-    for seg in path.split(".") if path else []:
-        if isinstance(cur, list) and seg.isdigit() and int(seg) < len(cur):
-            cur = cur[int(seg)]
-        elif isinstance(cur, dict) and seg in cur:
-            cur = cur[seg]
-        else:
-            raise KeyError(path)
-    return cur
+    """The value at a leaf path (leaves()' spelling), split outside quotes; raise KeyError where it has none."""
+    try:
+        return toml_at(value, path)
+    except EvidenceError as err:
+        raise KeyError(path) from err
 
 
 def fact_leaf_literal(leaf, dim):
@@ -893,7 +927,7 @@ def shape_problems(fact, ev, path=""):
     """Where the evidence's shape is not the value's: a table's keys, a list's length (S17 *Fields*: the evidence path
     names a table shaped like the value)."""
     where = repr(path) if path else "the value"
-    sub = (lambda k: f"{path}.{k}" if path else str(k))
+    sub = (lambda k: f"{path}.{toml_key(str(k))}" if path else toml_key(str(k)))
     if isinstance(fact, dict):
         if not isinstance(ev, dict):
             return [f"{where}: the evidence holds {ev!r}, the fact a table"]
@@ -1146,6 +1180,7 @@ class Run:
         self._lines = {}      # cited file -> its lines, or None where it cannot be read
         self._sdk = {}        # SDK entry id -> its copies (sdk_copies)
         self.findings = []
+        self.warnings = []    # (file, line, what): citations naming a WITHDRAWN conversion
         self.sdk = []         # the SDK citations with no local copy, listed
         self.counts = {"quotes": 0, "generations": 0, "measured": 0, "evidence": 0, "legacy": 0, "sdk": 0}
 
@@ -1517,6 +1552,8 @@ class Run:
             parts = f.split("/")
             if parts[-1] == "README.md":
                 continue
+            if parts[-1] in RECORDS and len(parts) >= 5 and RUN_RX.match(parts[3]):
+                continue
             if f.startswith(legacy):
                 self.counts["legacy"] += 1
                 continue
@@ -1532,7 +1569,8 @@ class Run:
             runs.add((parts[2], parts[3]))
             self.counts["evidence"] += 1
             if f not in cited:
-                self.add(f, 1, "evidence file cited by no fact, state-model entry or vector table")
+                self.add(f, 1, "evidence file cited by no fact, state-model entry or vector table, nor named in a "
+                               "cited analysis output's input_image")
         return runs
 
     def check(self):
@@ -1544,6 +1582,10 @@ class Run:
                 for ln, what in gtk_css_list_problems(it, facts.get(it.platform, {})):
                     self.add(it.file, ln, what)
             for cite in it.cites:
+                for name in conversions_of(cite.data):
+                    if name in WITHDRAWN:
+                        self.warnings.append((it.file, cite.ln("conversion"), f"conversion `{name}` is withdrawn "
+                                                                              f"({WITHDRAWN[name]})"))
                 kind = cite.data.get("kind")
                 if kind in ("published", "read"):
                     self.check_published(it, cite)
@@ -1570,7 +1612,8 @@ class Run:
                 f"checked at their pins, {n['generations']} literal checks per generation, {n['measured']} measured "
                 f"citations, {n['sdk']} SDK citations checked at their Xcode's local headers, {len(self.sdk)} "
                 f"listed (no local copy); {n['evidence']} evidence "
-                f"files ({n['legacy']} more in {len(LEGACY_EVIDENCE)} legacy runs): {len(self.findings)} findings")
+                f"files ({n['legacy']} more in {len(LEGACY_EVIDENCE)} legacy runs): {len(self.findings)} findings, "
+                f"{len(self.warnings)} warnings")
 
 
 # --------------------------------------------------------------------------------------------- self-test
@@ -1850,12 +1893,13 @@ quote = "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opac
     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/probe.toml":
         "[macos.fonts.sizes]\nsystemFontSize = 13.0\n\n[macos.fonts.weights]\nbutton = 0.3\n",
     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml":
-        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n\n[macos.fonts.weights]\nbutton = 0.3\n",
+        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n\n[macos.fonts.weights]\nbutton = 0.3\n\n"
+        "[macos.symbols.\"chevron.forward\"]\nsize = 13.0\n",
     "docs/evidence/os-probe/2026-11-02-run-1/README.md": "The run's harness and commit.\n",
     "docs/evidence/kde-accent/2026-11-03-run-2/kde-breeze-light/kdeglobals":
         "[Colors:Header]\nBackgroundNormal=222,224,226\n\n[Colors:Header][Inactive]\nBackgroundNormal=227,229,231\n",
     "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/shadows.toml": '''
-input_image = "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/button.png"
+input_image = ["docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/button.png", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/transition-caret.mov", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/transition-caret.crop"]
 
 [button.rest]
 layers = [ { x_px = 0, y_px = 1.2, blur_px = 2.5, spread_px = 0, color = "#00000025", inset = false, falloff = "gaussian" },
@@ -1865,6 +1909,8 @@ layers = [ { x_px = 0, y_px = 1.2, blur_px = 2.5, spread_px = 0, color = "#00000
 opacity_percent = 50
 ''',
     "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/button.png": "png",
+    "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/transition-caret.mov": "mov",
+    "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/transition-caret.crop": "120 80 64 32\n",
     "docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-15/renders/button.png": "legacy",
 }
 
@@ -2028,6 +2074,32 @@ SELF_TEST_CASES = [
      ["evidence file cited by no fact"]),
     ("evidence: a file outside an image folder", "docs/evidence/os-probe/2026-11-02-run-1/notes.txt", None, "x\n",
      ["not in a run's image folder"]),
+    # a run's records (S17 *`evidence`*, ADD-A136): not evidence, by name, anywhere in a run folder; nothing else
+    ("evidence: a run's settings record", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/settings.txt",
+     None, "AppleInterfaceStyle = Dark\n", []),
+    ("evidence: a pass's settings record",
+     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/not-key/settings.txt", None, "x\n", []),
+    ("evidence: a run's environment record",
+     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/environment.txt", None, "macOS 26.0 (25A354)\n", []),
+    ("evidence: a record's name is not its type", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/"
+     "settings.toml", None, "a = 1\n", ["evidence file cited by no fact"]),
+    ("evidence: a record outside a run", "docs/evidence/os-probe/settings.txt", None, "x\n",
+     ["not in a run's image folder"]),
+    # a recording and its crop are the input of the analysis reading their frames (S17 *`evidence`*, ADD-A136)
+    ("analysis: a recording and its crop no analysis names", "docs/evidence/winui-host/2026-11-04-run-3/"
+     "winui-host-windows-11/shadows.toml", ', "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/'
+     'transition-caret.mov", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/transition-caret.crop"',
+     "", ["transition-caret.mov:1: evidence file cited by no fact, state-model entry or vector table, nor named in a "
+          "cited analysis output's input_image", "transition-caret.crop:1: evidence file cited by no fact"]),
+    # an evidence path's TOML key as TOML writes it (S17 *`evidence`*, ADD-A136)
+    ("evidence: a quoted key holding a dot", "docs/facts/macos/buttons.toml",
+     'evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.sizes.'
+     'systemFontSize"', 'evidence = \'docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.'
+                        'symbols."chevron.forward".size\'', []),
+    ("evidence: a dotted key left bare", "docs/facts/macos/buttons.toml",
+     'evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.sizes.'
+     'systemFontSize"', 'evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.'
+                        'symbols.chevron.forward.size"', ["no 'chevron' at"]),
     ("evidence: a legacy file is cited", "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-macos-26/x.png",
      None, "legacy", []),
     ("KDE accent: another inactive colour", "docs/evidence/kde-accent/2026-11-03-run-2/kde-breeze-light/kdeglobals",
@@ -2349,6 +2421,20 @@ def self_test() -> int:
                  "kdeglobals": "[Colors:Header]\nA=1\n[Colors:Header][Inactive]\nA=2\n", "t.csv": "key,w,h\nbtn,3,4\n"}
         for name, text in files.items():
             (base / name).write_text(text, encoding="utf-8")
+        (base / "q.toml").write_text('[s."chevron.forward"]\nsize = 3\n[s.l]\n"0" = 5\nm = [7]\n', encoding="utf-8")
+        for form, want in (('s."chevron.forward".size', 3), ("s.'chevron.forward'.size", 3), ("s.l.0", 5),
+                           ('s.l."0"', 5), ("s.l.m.0", 7), ('s.l.m."0"', None), ("s.chevron.forward.size", None),
+                           ('s."chevron.forward.size', None)):
+            try:
+                got = evidence_value(base / "q.toml", form)
+            except EvidenceError:
+                got = None
+            if got != want:
+                failures.append(f"evidence path q.toml#{form}: got {got!r}, want {want!r}")
+        value = {"m": {"chevron.forward": 2, "a b": [1]}}
+        paths = [p for p, _, _ in leaves(value)]
+        if paths != ['m."chevron.forward"', 'm."a b".0'] or [at(value, p) for p in paths] != [2, 1]:
+            failures.append(f"leaf paths with quoted keys: got {paths}")
         for name, form, want in (("t.toml", "a.b.c.1.d", 2), ("t.json", "/a/b~1c/1", "y"),
                                  ("kdeglobals", "Colors:Header][Inactive/A", "2"),
                                  ("kdeglobals", "Colors:Header/A", "1"),
@@ -2411,6 +2497,13 @@ def self_test() -> int:
             got = [f"{f}:{ln}: {w}" for f, ln, w in run.findings]
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"{label}: got {got}, want {want}")
+            warned = [f"{f}:{ln}: {w}" for f, ln, w in run.warnings]
+            if label == "good" and (len(warned) != 2 or not all(
+                    w.startswith("docs/facts/macos/weight.toml:") and "conversion `ns_font_weight` is withdrawn "
+                    "(ADD-A136" in w for w in warned)):
+                failures.append(f"good: the withdrawn ns_font_weight's warnings: got {warned}")
+            if label == "macOS: a weight without its conversion" and warned:
+                failures.append(f"{label}: warned {warned}")
             if label == "good":
                 if (len(run.sdk), run.counts["sdk"], run.counts["legacy"], run.counts["measured"]) != (2, 1, 1, 8):
                     failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
@@ -2504,6 +2597,8 @@ def main(argv) -> int:
         print(f"{f}:{ln}: {what}")
     for f, ln, src in run.sdk:
         print(f"# sdk: {f}:{ln}: {src} (no local copy of that header: not checked)")
+    for f, ln, what in run.warnings:
+        print(f"# warning: {f}:{ln}: {what}")
     print(run.summary(items), file=sys.stderr)
     return 1 if run.findings else 0
 

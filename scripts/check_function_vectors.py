@@ -26,7 +26,11 @@ variant in snake_case (`place.gtk_popover.tsv`, `place.keyboard_avoid.tsv`; a va
 enum input column), and per member of S2.7's `ColorInterpolation`, `native-theme/tests/vectors/interpolate_color.
 <member>.tsv`, the member in snake_case (`interpolate_color.premultiplied_srgb.tsv`; ADD-A131): its inputs `from:colour
 to:colour t:number` and one colour output (INTERPOLATE_COLUMNS), with a row whose `t` is below 0 and one whose `t` is
-above 1 (the undershoot and overshoot a timing gives). UTF-8, lines ending in `\\n`, tab-separated.
+above 1 (the undershoot and overshoot a timing gives). Per reader helper S2.2 lists (*The readers' helpers*,
+ADD-A135: a reader's parser or classifier ported through the clean room, which no fact or preset calls),
+`native-theme/tests/vectors/reader.<helper>.tsv` (`reader.pango_font_description.tsv`), its `generations` the
+reader's own preset. S2.5's `kirigami_shadow_alpha`, a function of the `shapes` module (SHAPES), has its table as a
+platform function has. UTF-8, lines ending in `\\n`, tab-separated.
 
 1. Header lines, before anything else (after the column header row every line is a row, so a row may start with a
    `#rrggbb` colour). A line starting `#` is a header field when it reads `# <name>: <value>`
@@ -49,10 +53,14 @@ above 1 (the undershoot and overshoot a timing gives). UTF-8, lines ending in `\
      parameter order (`c:colour scheme:enum<Scheme>`), then the operands the function reads itself, which S2.2 lists
      as its operands (`m3_role` reads `input.accent`, …); a strategy's inputs are `PlacementInput`'s fields.
    - `outputs` (once): the output columns, the same form (`result:colour`; a strategy's `frame:rect`).
-   - `tolerance` (repeatable; on `measured` only, where it is required): `<output column> <number >= 0>` for each
-     output column of a numeric, colour or composite type, in the column type's canonical unit (a colour's per
-     8-bit channel, S17). Generated rows compare unrounded, colours on the 0-255 scale to 1e-3, and published rows
-     at the quote check's precision (S2.2, S17): neither states one.
+   - `tolerance` (repeatable; on `measured` and on TOLERATED's table on its route, where it is required):
+     `<output column> <number >= 0>` for each output column of a numeric, colour or composite type, in the column
+     type's canonical unit (a colour's per 8-bit channel, S17). Generated rows compare unrounded, colours on the
+     0-255 scale to 1e-3, and published rows at the quote check's precision (S2.2, S17): neither states one, but
+     `kirigami_shadow_alpha`'s `compiled_source` table, the pinned shader on a pinned renderer whose GLSL built-ins
+     and `fwidth` are inexact, compares within the tolerance its header states (S2.5, S2.2; ADD-A135, ledger queue
+     #167). The renderer's version, which S2.5 has the header name, has no field of its own yet: the specification
+     names none, so it is a free comment.
 2. The column header row: the input columns, the output columns, then the route's columns, then (a strategy's
    table) PLACEMENT_COLUMNS, each name once:
    - generated routes: optional `source`, the header's entry that wrote the row where the header names several;
@@ -70,7 +78,8 @@ above 1 (the undershoot and overshoot a timing gives). UTF-8, lines ending in `\
 3. The rows, one per line, as many cells as columns, none empty. A cell is spelled by its column's TYPES:
    `colour` S2.1's literal forms (`#rrggbb`, `#rrggbbaa`, `srgb(r, g, b[, a])`, `display_p3(r, g, b[, a])`); a
    generated output colour is `srgb(…)` or `display_p3(…)` with the reference's unrounded channels (`#…` rounds
-   them to bytes); `length` `<n>px`, `duration` `<n>ms`, `angle` `<n>deg`, `font_size` `<n>px` (logical px: a font
+   them to bytes); `string` a JSON string literal (RFC 8259: `""`, `"\\tSans\\t11"`), which, unlike `text`,
+   holds the empty string, surrounding whitespace, tabs and newlines (S2.2, ADD-A135); `length` `<n>px`, `duration` `<n>ms`, `angle` `<n>deg`, `font_size` `<n>px` (logical px: a font
    size reaches a function converted and scaled, S2.2), `number` `<n>`, where `<n>` is a decimal number with an
    optional exponent (`1.5e-05`), never NaN or infinite; `bool` `true` or `false`; `text` the string as written;
    `enum<E>` a variant in snake_case, of the core's enum `E` where the core defines it; `name` `[@]<snake_case>`
@@ -93,13 +102,23 @@ What is checked
   implemented). Once `interpolate_color` is a `pub` function of the `transitions` module (TRANSITIONS: its folder or
   file, in `native-theme/src/`), every `ColorInterpolation` member has
   `interpolate_color.<member>.tsv` and `vectors_interpolate_color_<member>` (S2.7: each member checked by a vector
-  table, as a platform function is; ADD-A131). A table or test of anything else is a finding (the model's arithmetic
-  has unit tests, S2.2), except a table of an S2.2 platform function or a `ColorInterpolation` member not implemented
-  yet, which is reported (a clean-room implementer receives the table first, the plan's D10).
+  table, as a platform function is; ADD-A131). Once `kirigami_shadow_alpha` is a `pub` function of the `shapes`
+  module, it has its table and `vectors_kirigami_shadow_alpha` (S2.5). A reader helper S2.2 lists (read from the
+  core's *The readers' helpers*: the backticked names followed by `(the`, after "The helpers are exactly these")
+  that is implemented (a `pub` or `pub(crate)` fn of that name in `native-theme/src/`) has its table
+  `reader.<helper>.tsv` and a test `#[test] fn vectors_reader_<helper>` in its own module (a `.rs` file of the
+  helper's file's folder: the helper is `pub(crate)`, which TESTS cannot call); a `reader.` table of a name S2.2
+  does not list is a finding. A table or test of anything else is a finding (the model's arithmetic
+  has unit tests, S2.2), except a table of an S2.2 platform function, an S9.4 curve, `kirigami_shadow_alpha`, a
+  listed reader helper or a `ColorInterpolation` member not implemented yet, which is reported (a clean-room
+  implementer receives the table first, the plan's D10).
 - Calls: every platform function a fact (`docs/facts/<platform>/*.toml`, as check_facts.py loads them) or a preset
   (`native-theme/src/presets/*.toml`) calls in an expression is implemented and has a table. A function only
   facts call and that is not implemented yet is reported as called, not yet implemented; it is a finding once a
-  preset calls it. A call of a name outside S2.2's table is check_facts.py's finding.
+  preset calls it. A fact or a preset stating a non-linear `token.text.scaling` (a `TextScaling` variant but
+  `linear`: a preset's `[tokens.text]` base or a rule setting it) calls its curve, the function named by the
+  variant in snake_case (`dynamic_type`), with no argument: every generation it serves needs a row (S9.4, S2.2;
+  ADD-A135). A call of a name outside S2.2's table is check_facts.py's finding.
 - Generations (S2.2), on a table whose form holds (a form finding is fixed first): a row serves the generations its generator's pin serves (the generated routes: the `sources`
   entries' generations, the row's own `source` where it has one), its citation's entry's (`published`), or the
   preset its evidence run's `run.toml` maps its image to (`measured`). Every generation that calls the function (a
@@ -153,11 +172,24 @@ ROUTE_COLUMNS = {
     "measured": (("evidence",), ()),
 }
 PLACEMENT_COLUMNS = ("preset", "value", "when")
+# S2.2's readers' helpers (ADD-A135): `reader.<helper>.tsv`, the list read from the core's *The readers' helpers*
+READER = "reader."
+HELPERS_RX = re.compile(r"The helpers are exactly these(.*?)`check_function_vectors\.py` reads this list", re.S)
+HELPER_NAME_RX = re.compile(r"`([a-z_][a-z0-9_]*)`\s*\(the ")
+# S9.4's text scaling (ADD-A135): a non-linear `token.text.scaling` kind calls its curve, the function named by the
+# kind in snake_case
+SCALING = ("TextScaling", "linear")
+SCALING_KEY = ("token", "text", "scaling")
+# S2.5's `kirigami_shadow_alpha`, a function of the `shapes` module checked as a platform function is, its generated
+# table compared within the tolerance its header states (ADD-A135; ledger queue #167)
+SHAPES = (check_facts.MODEL_DIR / "shapes", check_facts.MODEL_DIR / "shapes.rs")
+SHAPE_FUNCTIONS = ("kirigami_shadow_alpha",)
+TOLERATED = {"kirigami_shadow_alpha": "compiled_source"}
 PLACE = "place."
 # S2.7's colour interpolation (ADD-A131): `interpolate_color`'s table per `ColorInterpolation` member, its columns
 INTERPOLATE = "interpolate_color"
 INTERPOLATE_COLUMNS = (["from:colour", "to:colour", "t:number"], 1)   # (the inputs, the number of colour outputs)
-SCALAR_TYPES = {"colour", "length", "duration", "angle", "font_size", "number", "bool", "text", "name"}
+SCALAR_TYPES = {"colour", "length", "duration", "angle", "font_size", "number", "bool", "text", "string", "name"}
 COMPOSITE_TYPES = {"rect": 4, "size": 2, "point": 2, "sides": 4, "shadow": None}
 TOLERANCE_TYPES = {"colour", "length", "duration", "angle", "font_size", "number"} | set(COMPOSITE_TYPES)
 UNIT_OF = {"length": "px", "duration": "ms", "angle": "deg", "font_size": "px"}
@@ -306,6 +338,12 @@ def cell_problem(cell: str, typ: str, ctx, unrounded=False):
         return None if cell in ("true", "false") else f"`{cell}` is not `true` or `false`"
     if typ == "text":
         return None
+    if typ == "string":
+        try:
+            v = json.loads(cell) if cell.startswith('"') else None
+        except json.JSONDecodeError:
+            v = None
+        return None if isinstance(v, str) else f"`{cell}` is not a JSON string literal (RFC 8259)"
     if typ == "name":
         return None if NAME_RX.match(cell) else f"`{cell}` is not a name (`[@]snake_case`)"
     if typ in COMPOSITE_TYPES:
@@ -412,17 +450,20 @@ def read_table(path: Path, rel: str, ctx) -> Table:
         if parts[0] in tolerances:
             t.findings.append((ln, f"tolerance of `{parts[0]}` twice"))
         tolerances[parts[0]] = float(parts[1])
-    if route is not None and route != "measured" and tolerances:
+    tolerated = route == "measured" or (route is not None and TOLERATED.get(t.stem) == route)
+    if route is not None and not tolerated and tolerances:
         t.findings.append((t.line_of("tolerance"), f"a `{route}` table states no tolerance (generated rows compare "
-                                                   f"unrounded, published ones at the quote check's precision)"))
-    if route == "measured":
+                                                   f"unrounded, published ones at the quote check's precision"
+                                                   f"{'' if t.stem not in TOLERATED else ', and ' + t.stem + ' is ' + TOLERATED[t.stem]})"))
+    if tolerated:
         outs = {c.name: c for c in t.outputs}
         for name in tolerances:
             if name not in outs:
                 t.findings.append((t.line_of("tolerance"), f"tolerance of `{name}`, which is no output column"))
         for c in t.outputs:
             if base_type(c.type) in TOLERANCE_TYPES and c.name not in tolerances:
-                t.findings.append((t.line_of("outputs"), f"measured output `{c.name}` has no `# tolerance:` line"))
+                t.findings.append((t.line_of("outputs"), f"{'measured' if route == 'measured' else route} output "
+                                                         f"`{c.name}` has no `# tolerance:` line"))
     names = [c.name for c in t.columns]
     if len(set(names)) != len(names):
         t.findings.append((t.line_of("inputs"), "a column name twice"))
@@ -641,7 +682,11 @@ def module_exists(root: Path, dirs) -> bool:
 
 def test_functions(root: Path) -> dict:
     """{name: line} of every `#[test]` fn of TESTS (its attributes directly above it)."""
-    p = root / TESTS
+    return rust_tests(root / TESTS)
+
+
+def rust_tests(p: Path) -> dict:
+    """{name: line} of every `#[test]` fn of a Rust file, inside a `#[cfg(test)]` module or not."""
     if not p.is_file():
         return {}
     out = {}
@@ -670,6 +715,7 @@ class Call:
     line: int
     generations: set      # the generations that use it
     preset: bool          # a preset file's call (else a fact's)
+    scaling: bool = False  # a `token.text.scaling` kind naming its curve (S9.4), not an expression's call
 
 
 def parse_calls(expr: str) -> list:
@@ -733,14 +779,41 @@ def expressions(value, line_of=None):
     return []
 
 
-def collect_calls(ctx, platform_functions: set) -> list:
-    """Every call of a platform function in the facts and the new model's presets."""
+def preset_scalings(data: dict) -> list:
+    """The `token.text.scaling` kinds a preset states: its `[tokens.text]` base's and its rules' setting it."""
+    out = []
+    tokens = data.get("tokens") if isinstance(data.get("tokens"), dict) else {}
+    text = tokens.get("text") if isinstance(tokens.get("text"), dict) else {}
+    if isinstance(text.get("scaling"), str):
+        out.append(text["scaling"])
+    for rule in data.get("rules", []) if isinstance(data.get("rules"), list) else []:
+        if not isinstance(rule, dict) or not isinstance(rule.get("target"), str) or not isinstance(rule.get("set"),
+                                                                                                  dict):
+            continue
+        target = rule["target"].split(".")
+        path = tuple(["token"] + target[1:])
+        if target[0] != "tokens" or path != SCALING_KEY[:len(path)]:
+            continue
+        cur = rule["set"]
+        for seg in SCALING_KEY[len(path):]:
+            cur = cur.get(seg) if isinstance(cur, dict) else None
+        if isinstance(cur, str):
+            out.append(cur)
+    return out
+
+
+def collect_calls(ctx, platform_functions: set, curves: set = frozenset()) -> list:
+    """Every call of a platform function in the facts and the new model's presets, and every non-linear
+    `token.text.scaling` kind (`curves`) as a call of its curve (S9.4)."""
     out = []
     items, _, _ = check_facts.load(ctx)
     for it in items:
         if it.table != "fact" or it.palette:
             continue
         gens, _ = ctx.covered(it)
+        v = it.data.get("value")
+        if check_facts.canonical_key(it.data.get("key")) == SCALING_KEY and isinstance(v, str) and v in curves:
+            out.append(Call(v, [], it.file, it.ln("value"), set(gens), False, True))
         for expr in expressions(it.data.get("value")):
             for fn, args in parse_calls(expr):
                 if fn in platform_functions:
@@ -755,6 +828,11 @@ def collect_calls(ctx, platform_functions: set) -> list:
             except tomllib.TOMLDecodeError:
                 continue   # the preset's own test refuses it
             gens = {p.stem} if p.stem in check_facts.ALL_PRESETS else set()
+            for kind in preset_scalings(data):
+                if kind in curves:
+                    m = re.search(rf"^\s*(?:\S*\.)?scaling\s*=\s*\"{kind}\"", text, re.M)
+                    line = text.count("\n", 0, m.start()) + 1 if m else 1
+                    out.append(Call(kind, [], rel, line, gens, True, True))
             for expr in expressions(data):
                 at = text.find(expr)
                 line = text.count("\n", 0, at) + 1 if at >= 0 else 1
@@ -775,6 +853,24 @@ class Context:
         self.sources = self.fc.sources
         self.enums = {k: list(v) for k, v in self.fc.enums.items()}
         self.platform_functions = set(self.fc.functions) - ARITHMETIC
+        self.curves = set(self.enums.get(SCALING[0], [])) - {SCALING[1]}
+        core = kw.get("core_text")
+        if core is None:
+            try:
+                core = (self.root / check_facts.CORE).read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as err:
+                raise InputError(str(err)) from err
+        self.reader_helpers = reader_helpers(core)
+
+
+def reader_helpers(core_text: str) -> list:
+    """The readers' helpers S2.2 lists (*The readers' helpers*, ADD-A135), or InputError where it lists none."""
+    m = HELPERS_RX.search(core_text)
+    names = HELPER_NAME_RX.findall(m.group(1)) if m else []
+    if not names:
+        raise InputError("the core lists no readers' helpers (S2.2's *The readers' helpers*: \"The helpers are "
+                         "exactly these\" … \"`check_function_vectors.py` reads this list\")")
+    return names
 
 
 def served(t: Table, row: dict, ctx) -> set:
@@ -862,6 +958,9 @@ def check(ctx):
         for s in strategies:
             required[PLACE + s] = (f"placement strategy `{s}` (S13)", next(
                 (d.as_posix() for d in PLACEMENT if (root / d).is_dir())), 1)
+    for fn, (f, ln) in pub_functions(root, SHAPES).items():
+        if fn in SHAPE_FUNCTIONS:
+            required[fn] = (f"`pub` function `{fn}` of the shapes module (S2.5)", f, ln)
     members = ctx.enums.get("ColorInterpolation", [])
     interpolate = pub_functions(root, TRANSITIONS).get(INTERPOLATE)
     if interpolate:
@@ -877,24 +976,49 @@ def check(ctx):
         if test not in tests:
             findings.append((f, ln, f"{why} has no test `#[test] fn {test}` in {TESTS.as_posix()}"))
     waiting = []
+    helpers = {}
+    model = pub_functions(root, (check_facts.MODEL_DIR,)) if ctx.reader_helpers else {}
+    for h in ctx.reader_helpers:
+        if h not in model:
+            continue
+        f, ln = model[h]
+        helpers[h] = (f, ln)
+        stem = READER + h
+        why = f"reader helper `{h}` (S2.2)"
+        if stem not in by_stem:
+            findings.append((f, ln, f"{why} has no vector table {(VECTORS / (stem + '.tsv')).as_posix()}"))
+        test = "vectors_reader_" + h
+        folder = (root / f).parent
+        if not any(test in rust_tests(p) for p in sorted(folder.glob("*.rs"))):
+            findings.append((f, ln, f"{why} has no test `#[test] fn {test}` in its module "
+                                    f"({folder.relative_to(root).as_posix()}/)"))
     for stem, t in sorted(by_stem.items()):
         if stem in required:
+            continue
+        if stem.startswith(READER):
+            name = stem[len(READER):]
+            if name not in ctx.reader_helpers:
+                findings.append((t.file, 1, f"`{name}` is no reader helper S2.2 lists "
+                                            f"({', '.join(ctx.reader_helpers)})"))
+            elif name not in helpers:
+                waiting.append(stem)
             continue
         if stem in ARITHMETIC:
             findings.append((t.file, 1, f"`{stem}` is the model's own arithmetic: unit tests from S2.2's definition, "
                                         f"no vector table"))
-        elif stem in ctx.platform_functions or (stem.startswith(INTERPOLATE + ".")
-                                                and stem[len(INTERPOLATE) + 1:] in members):
+        elif stem in ctx.platform_functions or stem in ctx.curves or stem in SHAPE_FUNCTIONS or (
+                stem.startswith(INTERPOLATE + ".") and stem[len(INTERPOLATE) + 1:] in members):
             waiting.append(stem)
         else:
             findings.append((t.file, 1, f"`{stem}` is no platform function of S2.2's table, `pub` function of the "
                                         f"platform module, placement strategy or colour interpolation"))
-    expected_tests = {"vectors_" + s.replace(".", "_") for s in set(required) | set(waiting)}
+    expected_tests = {"vectors_" + s.replace(".", "_") for s in set(required) | set(waiting)
+                      if not s.startswith(READER)}
     for name, ln in sorted(tests.items()):
         if name.startswith("vectors_") and name not in expected_tests:
             findings.append((TESTS.as_posix(), ln, f"test `{name}` has no implemented function or strategy with a "
                                                    f"vector table"))
-    calls = collect_calls(ctx.fc, ctx.platform_functions)
+    calls = collect_calls(ctx.fc, ctx.platform_functions, ctx.curves)
     called = {}
     for c in calls:
         called.setdefault(c.function, []).append(c)
@@ -907,7 +1031,9 @@ def check(ctx):
         by_preset = [c for c in cs if c.preset]
         if by_preset:
             for c in by_preset:
-                findings.append((c.file, c.line, f"calls `{fn}`, a platform function not implemented in the "
+                findings.append((c.file, c.line, f"states `token.text.scaling = \"{fn}\"`, whose curve `{fn}` is not "
+                                                 f"implemented in the platform module (S9.4)" if c.scaling else
+                                                 f"calls `{fn}`, a platform function not implemented in the "
                                                  f"platform module (S2.2)"))
         else:
             first = cs[0]
@@ -958,9 +1084,10 @@ def summary(counts, n):
 
 # --------------------------------------------------------------------------------------------- self-test
 
-SELF_TEST_CORE = check_facts.SELF_TEST_CORE.replace(
+SELF_TEST_CORE = (check_facts.SELF_TEST_CORE.replace(
     "pub enum Scheme { Light, Dark }",
-    "pub enum Scheme { Light, Dark }\npub enum TrackingDesign { SfPro, NewYork }",
+    "pub enum Scheme { Light, Dark }\npub enum TrackingDesign { SfPro, NewYork }\n"
+    "pub enum TextScaling { Linear, AndroidNonLinear, DynamicType }",
 ).replace(
     "| `kcu_mix(a, b, bias)`, `kcu_tint(a, b, amount)` | colour | KColorUtils |",
     "| `kcu_mix(a, b, bias)`, `kcu_tint(a, b, amount)` | colour | KColorUtils |\n"
@@ -968,7 +1095,13 @@ SELF_TEST_CORE = check_facts.SELF_TEST_CORE.replace(
     "| `sf_tracking(font_size, design: TrackingDesign)` | length | Apple's tables |\n"
     "| `m3_role(role)` | colour | material-color-utilities |\n"
     "| `mul(x, y)` | number | arithmetic |",
-)
+) + """
+**The readers' helpers** (ADD-A135). The helpers are exactly these, each a `pub(crate)` function of the reader
+module that uses it: `pango_font_description`
+(the GNOME reader's) and `qfont_from_string` (the KDE reader's). `check_function_vectors.py` reads this list as it
+reads S2.2's functions.
+""")
+
 
 SELF_TEST_RUN = '''
 [images.os-probe-macos-26]
@@ -1112,6 +1245,62 @@ rows = []
 kind = "published"
 source = "breeze@6.8.2 x.cpp:1"
 quote = "x"
+'''
+
+# S2.2's readers' helpers (ADD-A135): a `reader.<helper>` table, its `string` cells JSON string literals
+PANGO = "native-theme/tests/vectors/reader.pango_font_description.tsv"
+PANGO_TABLE = '''# function: reader.pango_font_description
+# route: public_api
+# source: libadwaita@1.10.0
+# generations: adwaita
+# generator: tools/gnome-vectors
+# inputs: text:string
+# outputs: family:string size:number
+text\tfamily\tsize
+""\t""\t0
+"\\tSans\\t11"\t"Sans"\t11
+"Cantarell Bold 11"\t"Cantarell"\t11
+'''
+PANGO_RS = "native-theme/src/gnome/pango.rs"
+PANGO_IMPL = ("pub(crate) fn pango_font_description(s: &str) -> Font {\n    todo()\n}\n\n#[cfg(test)]\nmod tests {\n"
+              "    #[test]\n    fn vectors_reader_pango_font_description() {}\n}\n")
+# S9.4's curves (ADD-A135): a non-linear `token.text.scaling` calls its curve
+DYN = "native-theme/tests/vectors/dynamic_type.tsv"
+DYN_TABLE = '''# function: dynamic_type
+# route: published
+# source: hig-typography@2026-10-29
+# generations: macos-tahoe
+# inputs: role:enum<Scheme> category:number
+# outputs: font_size:font_size
+role\tcategory\tfont_size\tcite\tquote
+light\t3\t17px\thig-typography@2026-10-29 #/sections/1/rows/1\tBody 17
+'''
+DYN_RS = "native-theme/src/platform/dynamic_type.rs"
+DYN_IMPL = "pub fn dynamic_type(role: TextRole, category: ContentSizeCategory) -> f32 {\n    17.0\n}\n"
+DYN_TEST = "\n#[test]\nfn vectors_dynamic_type() {}\n"
+GNOME_SCALING = '''
+[[fact]]
+key = "token.text.scaling"
+value = "dynamic_type"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/x.scss:1"
+quote = "x"
+'''
+# S2.5's `kirigami_shadow_alpha` (ADD-A135; ledger queue #167): its compiled_source table states its tolerance
+KSA = "native-theme/tests/vectors/kirigami_shadow_alpha.tsv"
+KSA_TABLE = '''# function: kirigami_shadow_alpha
+# route: compiled_source
+# source: breeze@6.8.2
+# generations: kde-breeze
+# generator: tools/kde-vectors
+# inputs: size:size radius:number shadow_size:number offset:point at:point
+# outputs: alpha:number
+# tolerance: alpha 0.002
+size\tradius\tshadow_size\toffset\tat\talpha
+[100, 50]\t8\t20\t[0, 4]\t[-5, 25]\t0.4123
 '''
 
 
@@ -1330,6 +1519,110 @@ def self_test() -> int:
         got, info, _ = run(files, presets=())
         if got or "tables waiting for their implementation: interpolate_color.premultiplied_srgb" not in info:
             failures.append(f"interpolate_color waiting: got {got}, {info}")
+        # the readers' helpers (S2.2; ADD-A135): waiting, implemented with its table and its module's test, or not
+        for label, change, want, waits in (
+                ("a table waiting for its helper", {PANGO: PANGO_TABLE}, [], True),
+                ("an implemented helper", {PANGO: PANGO_TABLE, PANGO_RS: PANGO_IMPL}, [], False),
+                ("its test in a sibling file of its module", {PANGO: PANGO_TABLE, PANGO_RS: PANGO_IMPL.split(
+                    "\n#[cfg(test)]")[0], "native-theme/src/gnome/tests.rs": "#[test]\nfn "
+                                                                         "vectors_reader_pango_font_description() {}\n"},
+                 [], False),
+                ("an implemented helper without its table", {PANGO_RS: PANGO_IMPL},
+                 ["reader helper `pango_font_description` (S2.2) has no vector table"], False),
+                ("an implemented helper without its test", {PANGO: PANGO_TABLE, PANGO_RS: PANGO_IMPL.split(
+                    "\n#[cfg(test)]")[0]}, ["has no test `#[test] fn vectors_reader_pango_font_description` in its "
+                                            "module (native-theme/src/gnome/)"], False),
+                ("its test in another module", {PANGO: PANGO_TABLE, PANGO_RS: PANGO_IMPL.split("\n#[cfg(test)]")[0],
+                                                TS: SELF_TEST_FILES[TS] + "\n#[test]\nfn "
+                                                                          "vectors_reader_pango_font_description() {}\n"},
+                 ["has no test `#[test] fn vectors_reader_pango_font_description` in its module",
+                  "test `vectors_reader_pango_font_description` has no implemented function"], False),
+                ("a table of a helper not listed", {"native-theme/tests/vectors/reader.adw_accent_nearest.tsv":
+                                                    PANGO_TABLE.replace("pango_font_description", "adw_accent_nearest")},
+                 ["`adw_accent_nearest` is no reader helper S2.2 lists (pango_font_description, qfont_from_string)"],
+                 False),
+                ("a string cell unquoted", {PANGO: PANGO_TABLE.replace('"Cantarell Bold 11"', "Cantarell Bold 11")},
+                 ["`text`: `Cantarell Bold 11` is not a JSON string literal"], True),
+                ("a string cell unterminated", {PANGO: PANGO_TABLE.replace('"Sans"', '"Sans')},
+                 ["`family`: `\"Sans` is not a JSON string literal"], True),
+                ("a string cell holding a number", {PANGO: PANGO_TABLE.replace('"Sans"', '11')},
+                 ["`family`: `11` is not a JSON string literal"], True)):
+            files = dict(SELF_TEST_FILES)
+            files.update(change)
+            got, info, _ = run(files)
+            waiting = "tables waiting for their implementation: reader.pango_font_description" in info
+            if len(got) != len(want) or not all(any(w in g for g in got) for w in want) or waiting != waits:
+                failures.append(f"reader helpers, {label}: got {got}, {info}, want {want}")
+        try:
+            reader_helpers("no list")
+            failures.append("reader helpers: a core without the list accepted")
+        except InputError:
+            pass
+        # S9.4's curves (ADD-A135): a non-linear `token.text.scaling` calls its curve, a generation no row serves
+        # reported; `linear` calls nothing
+        rule = ('\n[[rules]]\ntarget = "tokens"\nwhen = { conditions = ["reduced_motion"] }\n'
+                'set = { text = { scaling = "dynamic_type" } }\n')
+        for label, change, want in (
+                ("a preset's curve not implemented", {ADWP: SELF_TEST_FILES[ADWP] + '\n[tokens.text]\nscaling = '
+                                                                                  '"dynamic_type"\n'},
+                 ["adwaita.toml:7: states `token.text.scaling = \"dynamic_type\"`, whose curve `dynamic_type` is not "
+                  "implemented"]),
+                ("a rule's curve not implemented", {ADWP: SELF_TEST_FILES[ADWP] + rule},
+                 ["states `token.text.scaling = \"dynamic_type\"`, whose curve"]),
+                ("a linear preset", {ADWP: SELF_TEST_FILES[ADWP] + '\n[tokens.text]\nscaling = "linear"\n'}, []),
+                ("the curve's table serves no calling generation",
+                 {ADWP: SELF_TEST_FILES[ADWP] + '\n[tokens.text]\nscaling = "dynamic_type"\n', DYN: DYN_TABLE,
+                  DYN_RS: DYN_IMPL, TS: SELF_TEST_FILES[TS] + DYN_TEST},
+                 ["calls `dynamic_type` for adwaita, which `# generations:` does not list",
+                  "calls `dynamic_type` for `adwaita`: no row serves it",
+                  "dynamic_type.tsv:8: the row does not serve `adwaita`, which native-theme/src/presets/adwaita.toml:7 "
+                  "calls `dynamic_type` for"]),
+                ("a fact's curve, its table serving it",
+                 {"docs/facts/gnome/tokens.toml": GNOME_SCALING, DYN: DYN_TABLE.replace("macos-tahoe", "adwaita")
+                  .replace("hig-typography@2026-10-29", "libadwaita@1.10.0"), DYN_RS: DYN_IMPL,
+                  TS: SELF_TEST_FILES[TS] + DYN_TEST}, []),
+                ("a fact's curve, its table serving another generation",
+                 {"docs/facts/gnome/tokens.toml": GNOME_SCALING, DYN: DYN_TABLE, DYN_RS: DYN_IMPL,
+                  TS: SELF_TEST_FILES[TS] + DYN_TEST},
+                 ["docs/facts/gnome/tokens.toml:4 calls `dynamic_type` for adwaita, which `# generations:` does not",
+                  "docs/facts/gnome/tokens.toml:4 calls `dynamic_type` for `adwaita`: no row serves it",
+                  "the row does not serve `adwaita`, which docs/facts/gnome/tokens.toml:4 calls `dynamic_type` for"])):
+            files = dict(SELF_TEST_FILES)
+            files.update(change)
+            got, _, _ = run(files)
+            if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
+                failures.append(f"scaling curves, {label}: got {got}, want {want}")
+        files = dict(SELF_TEST_FILES)
+        files["docs/facts/gnome/tokens.toml"] = GNOME_SCALING
+        files[DYN] = DYN_TABLE.replace("macos-tahoe", "adwaita").replace("hig-typography@2026-10-29", "libadwaita@1.10.0")
+        got, info, _ = run(files)
+        if got or not any("dynamic_type (1 call in docs/facts/gnome/tokens.toml" in i for i in info) or not any(
+                "waiting for their implementation: dynamic_type" in i for i in info):
+            failures.append(f"scaling curves, called by a fact and waiting: got {got}, {info}")
+        # `kirigami_shadow_alpha`'s generated table within its header's tolerance (S2.5; ADD-A135, queue #167)
+        for label, change, want, waits in (
+                ("its table waiting, with its tolerance", {KSA: KSA_TABLE}, [], True),
+                ("its table without its tolerance", {KSA: KSA_TABLE.replace("# tolerance: alpha 0.002\n", "")},
+                 ["compiled_source output `alpha` has no `# tolerance:` line"], True),
+                ("its table on another route", {KSA: KSA_TABLE.replace("compiled_source", "public_api")},
+                 ["a `public_api` table states no tolerance (generated rows compare unrounded, published ones at the "
+                  "quote check's precision, and kirigami_shadow_alpha is compiled_source)"], True),
+                ("a tolerance for no output", {KSA: KSA_TABLE.replace("alpha 0.002", "alpha 0.002\n# tolerance: a 1")},
+                 ["tolerance of `a`, which is no output column"], True),
+                ("implemented without its table", {"native-theme/src/shapes.rs": "pub fn kirigami_shadow_alpha() -> "
+                                                                                 "f32 {\n    0.0\n}\n"},
+                 ["`pub` function `kirigami_shadow_alpha` of the shapes module (S2.5) has no vector table",
+                  "`pub` function `kirigami_shadow_alpha` of the shapes module (S2.5) has no test"], False),
+                ("implemented with its table and test", {"native-theme/src/shapes.rs": "pub fn kirigami_shadow_alpha() "
+                                                                                       "-> f32 {\n    0.0\n}\n",
+                                                         KSA: KSA_TABLE, TS: SELF_TEST_FILES[TS] + "\n#[test]\nfn "
+                                                         "vectors_kirigami_shadow_alpha() {}\n"}, [], False)):
+            files = dict(SELF_TEST_FILES)
+            files.update(change)
+            got, info, _ = run(files)
+            waiting = "tables waiting for their implementation: kirigami_shadow_alpha" in info
+            if len(got) != len(want) or not all(any(w in g for g in got) for w in want) or waiting != waits:
+                failures.append(f"kirigami_shadow_alpha, {label}: got {got}, {info}, want {want}")
         # the API
         root = base / "case0"
         ev = table_evidence(root)
@@ -1353,7 +1646,7 @@ def self_test() -> int:
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
-        print(f"self-test ok ({len(SELF_TEST_CASES) + 12} fixture cases)")
+        print(f"self-test ok ({len(SELF_TEST_CASES) + 35} fixture cases)")
     return 1 if failures else 0
 
 

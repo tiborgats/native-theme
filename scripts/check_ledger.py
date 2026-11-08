@@ -90,9 +90,21 @@ Also:
   it at the top level as `LEGACY_EVIDENCE = <literal list, tuple, set or
   dict>`. A missing script (the plan keeps it from M0 on), a missing or
   non-literal assignment, and a non-empty list are findings.
-- The Unmeasured register: a row with an empty Decision is a finding.
-- No S17 pending fact or declaration: each is a finding, whether or not its
-  id names a row (the plan's final gate; 0.8.0 is released with none).
+- The enabled units (S17, S21.3; ADD-A135, the plan's D13): a release
+  passes this gate over the units `scripts/widget_units.toml` enables, read
+  and matched as scripts/check_facts_trace.py reads and matches them
+  (read_units, in_unit; an `input.…` key that is no part or value of the
+  `input` widget is an S9 input, never that widget). A pending fact is of the
+  enabled units where its key lies in one; a state model's pending entry
+  (S10's pending default size) where its widget does (S17: it counts as a
+  pending fact of its widget's unit).
+- The Unmeasured register: a row of the enabled units with an empty Decision
+  is a finding. A row is of a unit not enabled where every pending fact or
+  entry naming it is, and at least one does; a row none names is the
+  enabled units'.
+- No S17 pending fact or declaration of the enabled units: each is a
+  finding, whether or not its id names a row (each release is made with
+  none).
 - Every measured fact with a drift comparison. A measured fact is a
   `[[fact]]` of `docs/facts/<platform>/*.toml` (not `imported/`, not
   `palettes/`, not `staged/`, S19.2's staged inheritance bases) with a `[[fact.cite]]` of `kind = "measured"`; M4's drift run
@@ -112,6 +124,9 @@ import tempfile
 import tomllib
 from pathlib import Path
 from typing import NamedTuple
+
+import check_facts_trace
+import spec_catalogue
 
 DOCS = Path("docs")
 LEDGER = DOCS / "todo_v0.7.1_model-completeness-ledger.md"
@@ -423,9 +438,10 @@ def register_rows(ledger: str, ledger_text: str) -> tuple[list[tuple[int, list[s
     return rows, []
 
 
-def unmeasured_problems(ledger: str, ledger_text: str, final: bool = True) -> list[tuple[str, int, str]]:
+def unmeasured_problems(ledger: str, ledger_text: str, final: bool = True,
+                        outside: frozenset | set = frozenset()) -> list[tuple[str, int, str]]:
     """The register's Ids (every run): `U` and a number, no two rows sharing one; with `final`, also each row's
-    Decision (the plan's M4 gate)."""
+    Decision but a row of a unit not enabled (its Id in `outside`: outside_ids())."""
     rows, found = register_rows(ledger, ledger_text)
     seen = set()
     for n, c in rows or []:
@@ -434,7 +450,7 @@ def unmeasured_problems(ledger: str, ledger_text: str, final: bool = True) -> li
         elif c[0] in seen:
             found.append((ledger, n, f"unmeasured id {c[0]} is used twice"))
         seen.add(c[0])
-        if final and not c[4]:
+        if final and not c[4] and c[0] not in outside:
             found.append((ledger, n, f"unmeasured {c[1]!r} has no decision"))
     return found
 
@@ -492,19 +508,67 @@ def pending_declarations(texts: dict[str, str]) -> list[tuple[str, int, str, obj
     return out
 
 
-def pending_problems(ledger: str, ledger_text: str, pending: list, final: bool) -> list[tuple[str, int, str]]:
+def unit_path(entry: tuple, input_parts: frozenset | set = frozenset()) -> tuple[str, str]:
+    """(path, kind) by which a pending fact or declaration lies in a unit (check_facts_trace.in_unit): a fact's key,
+    an `input.…` key of kind "input" unless it names a part or the values of the `input` widget (`input_parts`); a
+    declaration's widget (S17: a state model's pending entry counts as a pending fact of its widget's unit)."""
+    key = str(entry[2])
+    if entry[4:5] == ("pending declaration",):
+        return key.split(".", 1)[0], ""
+    segs = key.split(".")
+    if segs[0] == "input" and not (len(segs) > 1 and (segs[1] == "values" or segs[1] in input_parts)):
+        return key, "input"
+    return key, ""
+
+
+def enabled(entry: tuple, units: list | None, input_parts: frozenset | set = frozenset()) -> bool:
+    """Whether a pending fact or declaration is of the enabled units (`units`; None: every entry is)."""
+    if units is None:
+        return True
+    path, kind = unit_path(entry, input_parts)
+    return any(check_facts_trace.in_unit(path, kind, u) for u in units)
+
+
+def outside_ids(pending: list, units: list | None, input_parts: frozenset | set = frozenset()) -> set:
+    """The register Ids of units not enabled: named by pending facts or declarations, every one not enabled."""
+    named: dict[object, bool] = {}
+    for entry in pending:
+        named[entry[3]] = named.get(entry[3], False) or enabled(entry, units, input_parts)
+    return {pid for pid, any_enabled in named.items() if isinstance(pid, str) and not any_enabled}
+
+
+def pending_problems(ledger: str, ledger_text: str, pending: list, final: bool, units: list | None = None,
+                     input_parts: frozenset | set = frozenset()) -> list[tuple[str, int, str]]:
     """S17 *A pending measurement*: on every run, a pending fact whose id names no row of the register; with
-    `final`, every pending fact (the plan's final gate requires none)."""
+    `final`, every pending fact of the enabled units (`units`, None for every entry; a release is made with none)."""
     rows, _ = register_rows(ledger, ledger_text)
     ids = {c[0] for _, c in rows or []}
     found = []
-    for name, line, key, pid, *kind in pending:
+    for entry in pending:
+        name, line, key, pid, *kind = entry
         what = kind[0] if kind else "pending fact"
         if not isinstance(pid, str) or pid not in ids:
             found.append((name, line, f"{what} {key!r} names {pid!r}, no row of the ledger's Unmeasured register"))
-        if final:
-            found.append((name, line, f"{what} {key!r} ({pid}): 0.8.0 is released with no S17 {what}"))
+        if final and enabled(entry, units, input_parts):
+            found.append((name, line, f"{what} {key!r} ({pid}): a release is made with no S17 {what} of its "
+                                      f"enabled units"))
     return found
+
+
+def input_parts_of(cat_text: str | None) -> frozenset:
+    """The `input` widget's part names in the catalogue (none without the catalogue or the entry)."""
+    if cat_text is None:
+        return frozenset()
+    entry = {e.name: e for e in spec_catalogue.entries(cat_text)}.get("input")
+    return frozenset(n for p in entry.parts for n in p.names) if entry else frozenset()
+
+
+def enabled_units() -> list:
+    """scripts/widget_units.toml's enabled units (check_facts_trace.read_units)."""
+    try:
+        return list(check_facts_trace.read_units(Path(".")).values())
+    except check_facts_trace.InputError as err:
+        raise InputError(str(err)) from err
 
 
 def measured_facts(texts: dict[str, str]) -> int:
@@ -773,7 +837,8 @@ rows = []
                ("g.toml", 3, "pending fact 'x' names 3, no row of the ledger's Unmeasured register")]:
         failures.append(f"pending, every run: got {got}")
     got = pending_problems("L", ledger, pending[:1], True)
-    if got != [("f.toml", 8, "pending fact 'button.body.fill' (U1): 0.8.0 is released with no S17 pending fact")]:
+    if got != [("f.toml", 8, "pending fact 'button.body.fill' (U1): a release is made with no S17 pending fact of "
+                             "its enabled units")]:
         failures.append(f"pending, --final: got {got}")
     if pending_problems("L", ledger, [], True) or pending_problems("L", ledger, pending[:1], False):
         failures.append("pending: no pending fact, or one naming a row, is a finding")
@@ -799,12 +864,42 @@ default_size = "regular"
                              "the ledger's Unmeasured register")]:
         failures.append(f"pending declarations, every run: got {got}")
     got = pending_problems("L", ledger, [(*decls[0], "pending declaration")], True)
-    if got != [("s.toml", 3, "pending declaration 'button.default_size' (U1): 0.8.0 is released with no S17 pending "
-                             "declaration")]:
+    if got != [("s.toml", 3, "pending declaration 'button.default_size' (U1): a release is made with no S17 pending "
+                             "declaration of its enabled units")]:
         failures.append(f"pending declarations, --final: got {got}")
     if pending_declarations({"s.toml": models_text.replace("{ pending = \"U1\" }", "\"small\"")}) != [
             ("s.toml", 4, "button.sizes_by_variant.@gray.default_size", "U9")]:
         failures.append("pending declarations: a stated default size is no pending declaration")
+    # --final over the enabled units (S17, S21.3; ADD-A135): a pending fact by its key's unit, a state model's
+    # pending entry by its widget's, an `input.…` S9 input never the `input` widget's; a register row of a unit not
+    # enabled where every pending fact naming it is
+    units = [check_facts_trace.Unit("slice", ("button", "input", "role", "token.motion"),
+                                    ("token.motion.scroll",))]
+    scoped = [("f.toml", 8, "button.body.fill", "U1"), ("f.toml", 9, "menu.body.shadow", "U2"),
+              ("f.toml", 10, "input.accent", "U2"), ("f.toml", 11, "input.field.fill", "U3"),
+              ("f.toml", 12, "token.motion.scroll.delay", "U4"), ("f.toml", 13, "checkbox.body.fill", "U5"),
+              ("s.toml", 3, "switch.default_size", "U4", "pending declaration"),
+              ("s.toml", 4, "button.sizes_by_variant.@gray.default_size", "U5", "pending declaration")]
+    got = [(f, n) for f, n, _ in pending_problems("L", ledger, scoped, True, units, frozenset({"field"}))
+           if "a release is made" in _]
+    if got != [("f.toml", 8), ("f.toml", 11), ("s.toml", 4)]:
+        failures.append(f"pending, --final over the enabled units: got {got}")
+    if pending_problems("L", ledger, scoped[:1], True, []) or not pending_problems("L", ledger, scoped[:1], True):
+        failures.append("pending, --final: no unit enabled, or every entry (units None), read wrong")
+    got = outside_ids(scoped, units, frozenset({"field"}))
+    if got != {"U2", "U4"}:
+        failures.append(f"outside ids: got {sorted(got)}, want ['U2', 'U4']")
+    if outside_ids(scoped, None) or outside_ids([("f.toml", 1, "menu.body.fill", 7)], units):
+        failures.append("outside ids: every entry enabled, or a malformed id, gave an id")
+    if unmeasured_problems("L", ledger, True, {"U2"}) or unmeasured_problems("L", ledger, True, {"U1"}) != [
+            ("L", 7, "unmeasured '`menu.body.shadow`' has no decision")]:
+        failures.append("unmeasured, --final: a row of a unit not enabled failed, or one of the enabled units passed")
+    try:
+        parts = input_parts_of(cat)
+    except Exception as err:   # noqa: BLE001 - a self-test reports, it does not stop
+        parts = err
+    if parts != frozenset() or input_parts_of(None) != frozenset():
+        failures.append(f"input parts: a catalogue without an `input` entry gave {parts}")
     if unmeasured_problems("L", "# Ledger\n") != [("L", 1, "no `## Unmeasured register` section")]:
         failures.append("unmeasured: a ledger without the section passed")
     if unmeasured_problems("L", "## Unmeasured register\n\nProse.\n")[0][2] != "the unmeasured register has no table":
@@ -899,15 +994,19 @@ def main(argv: list[str]) -> int:
             rows = triage_rows(ledger_text)
         except InputError as err:
             raise InputError(f"{ledger}: {err}") from err
-        items = extract(read_sources())
+        sources = read_sources()
+        items = extract(sources)
         found = problems(str(ledger), rows, items)
         fact_texts = platform_fact_texts(FACTS)
         pending = pending_facts(fact_texts)
         declarations = pending_declarations(fact_texts)
-        found += unmeasured_problems(str(ledger), ledger_text, final)
-        found += pending_problems(str(ledger), ledger_text, pending, final)
+        units = enabled_units() if final else None
+        parts = input_parts_of(sources.get("catalogue")) if final else frozenset()
+        every = pending + [(*d, "pending declaration") for d in declarations]
+        found += unmeasured_problems(str(ledger), ledger_text, final, outside_ids(every, units, parts))
+        found += pending_problems(str(ledger), ledger_text, pending, final, units, parts)
         found += pending_problems(str(ledger), ledger_text, [(*d, "pending declaration") for d in declarations],
-                                  final)
+                                  final, units, parts)
         if final:
             found += check_final(str(ledger), ledger_text, staged)
     except (OSError, UnicodeDecodeError, InputError) as err:
