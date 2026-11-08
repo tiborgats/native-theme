@@ -10032,11 +10032,19 @@ key = "token.behavior.single_click_activates"
 pending = "U555"
 rows = []
 
-# when Compose shows focus indication (MAT-X34†): U554
+# when Compose shows focus indication (MAT-X34†), measured (U554): on the Android host a real tap leaves a filled
+# button unfocused and drawn at rest, in touch mode, while a Tab key event leaves touch mode, focuses it and draws
+# its focus state layer; a second tap unfocuses it (read_focus.py): shown for keyboard focus, no timeout within the
+# capture
 [[fact]]
 key = "token.behavior.focus_visible_when"
-pending = "U554"
+value = { keyboard = {} }
 rows = ["MAT-X34†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/android-host/2026-11-06-run-42307873328/measure/focus-visible.toml#focus_visible_when"
+tolerance = 0
 
 # the pointer hidden while typing (MAT-P3-15†): frameworks/native's PointerChoreographer, not pinned: U553
 [[fact]]

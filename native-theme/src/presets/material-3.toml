@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 c74fe6d52ecc62ccb49f131562f0cdd58f4c652f33f06f238f15e3dd3bfb7410
+# generated lines: sha256 a589fab007313c0c7174080410c5579ae2acc583072c164cb69af3c48b47bcd2
 
 [preset]
 id = "material-3"
@@ -288,27 +288,25 @@ sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "large", "e
 "tokens.behavior.touch.paging_slop_px" = "U556"
 # docs/facts/material/tokens.toml:10030
 "tokens.behavior.single_click_activates" = "U555"
-# docs/facts/material/tokens.toml:10036
-"tokens.behavior.focus_visible_when" = "U554"
-# docs/facts/material/tokens.toml:10042
+# docs/facts/material/tokens.toml:10050
 "tokens.behavior.hide_pointer_while_typing" = "U553"
-# docs/facts/material/tokens.toml:10047
+# docs/facts/material/tokens.toml:10055
 "tokens.behavior.hide_pointer_delay_ms" = "U553"
-# docs/facts/material/tokens.toml:10052
+# docs/facts/material/tokens.toml:10060
 "tokens.behavior.hide_pointer_fade_ms" = "U553"
-# docs/facts/material/tokens.toml:10062
+# docs/facts/material/tokens.toml:10070
 "tokens.focus.transition" = "U552"
-# docs/facts/material/tokens.toml:10072
+# docs/facts/material/tokens.toml:10080
 "tokens.icons.theme" = "U559"
-# docs/facts/material/tokens.toml:10077
+# docs/facts/material/tokens.toml:10085
 "tokens.icons.theme_fallback" = "U559"
-# docs/facts/material/tokens.toml:10084
+# docs/facts/material/tokens.toml:10092
 "tokens.icons.mirroring" = "U560"
-# docs/facts/material/tokens.toml:10287
+# docs/facts/material/tokens.toml:10295
 "tokens.icons.sizes.small" = "U561"
-# docs/facts/material/tokens.toml:10292
+# docs/facts/material/tokens.toml:10300
 "tokens.icons.sizes.large" = "U561"
-# docs/facts/material/tokens.toml:10297
+# docs/facts/material/tokens.toml:10305
 "tokens.icons.sizes.panel" = "U561"
 
 [colors.light.keyed]
@@ -1030,7 +1028,7 @@ scrim = "= alpha(role.@scrim, 0.32)"
 [tokens]
 # docs/facts/material/roles.toml:2437
 kde = "absent"
-# docs/facts/material/tokens.toml:10306
+# docs/facts/material/tokens.toml:10314
 size_classes = { compact = { horizontal_px = 0, vertical_px = 0 }, medium = { horizontal_px = 600, vertical_px = 480 }, expanded = { horizontal_px = 840, vertical_px = 900 } }
 
 [tokens.material]
@@ -1214,41 +1212,41 @@ sizes.toolbar.size_px = 24
 sizes.dialog.size_px = 24
 # docs/facts/material/tokens.toml:1874
 sizes.keyed = {}
-# docs/facts/material/tokens.toml:10093
+# docs/facts/material/tokens.toml:10101
 sizes.toolbar.fill = "= surface.foreground"
-# docs/facts/material/tokens.toml:10103
+# docs/facts/material/tokens.toml:10111
 sizes.toolbar.weight = 400
-# docs/facts/material/tokens.toml:10113
+# docs/facts/material/tokens.toml:10121
 sizes.toolbar.axes = {}
-# docs/facts/material/tokens.toml:10123
+# docs/facts/material/tokens.toml:10131
 sizes.toolbar.symbol_variants = []
-# docs/facts/material/tokens.toml:10134
+# docs/facts/material/tokens.toml:10142
 sizes.toolbar.symbolic_colors = {}
-# docs/facts/material/tokens.toml:10145
+# docs/facts/material/tokens.toml:10153
 sizes.toolbar.rendering_mode = "absent"
-# docs/facts/material/tokens.toml:10156
+# docs/facts/material/tokens.toml:10164
 sizes.toolbar.scale = "absent"
-# docs/facts/material/tokens.toml:10167
+# docs/facts/material/tokens.toml:10175
 sizes.toolbar.state_effect = "absent"
-# docs/facts/material/tokens.toml:10178
+# docs/facts/material/tokens.toml:10186
 sizes.toolbar.animation = "absent"
-# docs/facts/material/tokens.toml:10189
+# docs/facts/material/tokens.toml:10197
 sizes.dialog.fill = "= surface.foreground"
-# docs/facts/material/tokens.toml:10199
+# docs/facts/material/tokens.toml:10207
 sizes.dialog.weight = 400
-# docs/facts/material/tokens.toml:10209
+# docs/facts/material/tokens.toml:10217
 sizes.dialog.axes = {}
-# docs/facts/material/tokens.toml:10219
+# docs/facts/material/tokens.toml:10227
 sizes.dialog.symbol_variants = []
-# docs/facts/material/tokens.toml:10230
+# docs/facts/material/tokens.toml:10238
 sizes.dialog.symbolic_colors = {}
-# docs/facts/material/tokens.toml:10241
+# docs/facts/material/tokens.toml:10249
 sizes.dialog.rendering_mode = "absent"
-# docs/facts/material/tokens.toml:10252
+# docs/facts/material/tokens.toml:10260
 sizes.dialog.scale = "absent"
-# docs/facts/material/tokens.toml:10263
+# docs/facts/material/tokens.toml:10271
 sizes.dialog.state_effect = "absent"
-# docs/facts/material/tokens.toml:10274
+# docs/facts/material/tokens.toml:10282
 sizes.dialog.animation = "absent"
 # S4.5
 animated_visuals = {}
@@ -2440,6 +2438,8 @@ spring_loading_ms = "absent"
 mnemonics = "never"
 # docs/facts/material/tokens.toml:10018
 mnemonic_when_disabled = "absent"
+# docs/facts/material/tokens.toml:10039
+focus_visible_when = { keyboard = {} }
 
 [widgets.button.body]
 # docs/facts/material/button.toml:16
