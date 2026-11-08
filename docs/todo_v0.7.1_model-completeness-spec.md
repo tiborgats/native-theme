@@ -2295,6 +2295,17 @@ mirrors some icons in Arabic and Farsi but not Hebrew). Icon lookup takes the el
 language (GTK's `-rtl` and `-ltr` names, SF Symbols' localized forms; R25.8), from the scope its part's query returned
 (`ResolvedTheme::icon`, S16).
 
+**A glyph drawn whole** (ADD-A141; the KD-C1 and GN-C1 verifiers' questions). `draw_extent` and `draw_start` `Absent`
+(S6.3's marks) say that the platform sets no extent for the glyph and draws it whole: the connector draws the whole
+path from its start, as `draw_extent` 1 at `draw_start` 0 would. A glyph states both `Absent` where its platform's
+code sets no extent (the fact's absence citation names the dash or trim calls the drawing code does not make, Breeze's
+`renderArrow` and `setDashPattern`), and numbers where the platform sets one, in every state of the part once any
+state or transition does (Breeze's check mark, hidden at `draw_extent` 0, drawn at its pen's measure), so no transition
+moves between a number and `Absent`. Rejected: the identity, 1 and 0, on every glyph (two spellings of one look
+beside the marks, and the 1 is no literal of the source, which S17's zero by omission does not hold, so every whole
+glyph would need a citation form of its own); either spelling at will (one look, two spellings, which the verifiers
+split on).
+
 `IconStyle.fill` is the paint the platform's recolouring gives an icon (a symbolic icon, a template image, a symbol in
 its rendering mode's colours). It may be absent where `rendering_mode` is `Original`, which recolours nothing, and only
 there (an icon-size context keeps its own mark, S4.5): S12 refuses it absent under any other mode, following references
@@ -2350,12 +2361,21 @@ pub struct FocusIndicator { pub kind: FocusKind, pub width: Value<Px>, pub paint
                                                         // stated where the platform draws otherwise
 pub enum FocusVisibleWhen { Keyboard { timeout: Option<Value<Ms>> },   // None: no timeout (Breeze, K1.21)
                            AnyFocus, FocusWithin, Never }                 // ADD-A16
-pub enum FocusKind { Ring, FilledRing, Underline, Keyed(Key) }   // drawn while the element has `FocusVisible`,
-                                                                // and while its transition out runs (below; R12,
-                                                                // ADD-A126)
-                                                                // Keyed: WinUI's Reveal (W3-20); no indicator:
-                                                                // the part's `focus` is `Absent`
+pub enum FocusKind { Ring, Underline, Keyed(Key) }   // drawn while the element has `FocusVisible`,
+                                                    // and while its transition out runs (below; R12,
+                                                    // ADD-A126)
+                                                    // Keyed: WinUI's Reveal (W3-20); no indicator:
+                                                    // the part's `focus` is `Absent`
 ```
+
+**One ring** (ADD-A141; the KD-C1 verifier's question). A `Ring` is the band `width` wide outward from the inner
+outline *Where the ring lies* defines, between its inner and outer corners, filled with `paint`, whether the platform
+strokes a path along it or fills the region between two outlines: Breeze's focus frame fills the path between two
+rounded rectangles (`breeze@6.8.2 kstyle/breezestyle.cpp:6642-6651`, `:6776-6779`), its inner corners
+`Frame_FrameRadius` and its outer corners those plus the margin (`:6631-6632`), which is a stated corner's outer corner
+below, so it is a `Ring`. `FilledRing`, which no section defined apart from `Ring`, is withdrawn. Rejected: a filled
+kind of its own (it would draw the same band, two spellings for one look); a ring filled inside as well (a focus that
+changes a fill is a `{focus_visible}` rule, R12).
 
 **Where the ring lies** (ADD-A122). `offset` measures, on each side, from the part's box to the ring's **inner** edge,
 outward positive, as CSS's `outline-offset` does; the ring is `width` wide outward from there, so a ring drawn inside
@@ -2468,8 +2488,9 @@ to measure the content and deflates by both to arrange it (`microsoft-ui-xaml@2.
 src/dxaml/xcp/core/core/elements/Border.cpp:356-381`, `:325-352`, `src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:840-845`,
 `:884`). The size limits `min_width` … `max_height` bound the box too, so a platform whose limits bound less than the
 box states them in its own terms plus what lies between: GTK's, which bound the content, as an expression over the
-part's own resolved padding, which holds the border already (`= add(<CSS min>, part.padding.top, part.padding.bottom)`,
-`left` and `right` for a width), so a variant that restates
+part's own resolved padding, which holds the border already (`= add(<CSS min>, add(part.padding.top,
+part.padding.bottom))`, `left` and `right` for a width, S2.2's `add` taking two operands, as the facts write it;
+ADD-A141), so a variant that restates
 its padding carries it through (GTK's pill, `padding: 10px 32px`, is at least 44 px tall, its card button, `padding:
 0`, 24 px, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:323-324`, `:332`): GTK's CSS `min-width` and `min-height`, which GTK adds the margin, border and padding to (`gtk@4.24.1
 gtk/gtksizerequest.c:194-204`, `:297`); Breeze's minimum width on a button with text, which bounds the content with its margins, plus what lies between
@@ -2488,6 +2509,22 @@ box, the content inside the stroke as well (the platforms that draw a stroke ove
 each subtract it, and a stroke whose width moves, Compose's outlined toggle, would move the content, which it does
 not); CSS's content-box sizing for the limits (GTK's alone; WinUI's, AppKit's, UIKit's and Compose's sizes are the
 whole box, and Breeze's facts already state it so).
+
+**A template laid out by margins** (ADD-A141; U1). Where a platform's template positions a widget's content by the
+margins of its template parts and uses no `Padding` (WinUI's AppBarButton and AppBarToggleButton: the
+`AppBarButtonInnerBorder` drawing the fill and stroke at `AppBarButtonInnerBorderMargin` inside the control, the icon's
+`ContentViewbox` and the `TextLabel` at their own margins from the control's edges, `microsoft-ui-xaml@2.5.1
+src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:110-119`), the part whose box draws the fill and stroke
+is the part's box, the margin of that template part is the part's `margin`, and the `padding` on each side is the
+distance from that box to the content, stated in S2.2's arithmetic over the template's literals
+(`= sub(<the content's margin from the control>, <the drawing part's margin>)`), the gap between two content parts
+their facing margins added (`icon_text_gap_px`), each per view state as the template sets them (the label below or
+beside, compact, collapsed). A border of the drawing part adds to the padding only where the content lies inside it
+(the border rule above); AppBarButton's content is its sibling, so its stroke adds nothing there. The WinUI
+host's part bounds (`frames.toml`'s `[[part]]`) measure the result. Rejected: the padding zero and each content part
+its own margin (the catalogue's `label` and `icon` parts have no `margin`, a gap the platform writes as a content
+margin having its one home in the widget's gap values, S2.11 above and the catalogue's *IndicatorAnchor* reading); the
+control's own box as the part's (the fill would cover the margin WinUI leaves undrawn).
 
 **Fields per part.** A part has the fields its catalogue entry lists ("the fields that matter"); the derive
 generates that set per part, a field outside it is not part of that part (a patch setting it is refused, S12; the
