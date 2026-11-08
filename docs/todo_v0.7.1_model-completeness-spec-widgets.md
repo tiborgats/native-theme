@@ -1552,13 +1552,17 @@ spaces:
     the host's value; B-18†, K-P3-5†, GN-P4-2†, W1-102, P4-12†; its arrowless popover on GNOME, GN-1.278†).
   - `menu_trigger: Value<MenuTrigger>`, `MenuTrigger { Primary, LongPress, LongPressOrSecondaryClick }` — the
     touch-and-hold variant (B-18†); AdwBackButton's navigation menu opens on a long press or a secondary click
-    (GN-1.278†).
+    (GN-1.278†). On `macos-*` NSComboButton's unified style opens its menu "on click and hold" where the button has an
+    action and "on click" where it has none (`NSComboButton.h:18` at both pinned Xcodes): `primary` `@ variant menu`,
+    and `long_press` `@ variants {menu,@menu_on_hold}`, the button with an action, as on iOS (MAC-N29†; ledger
+    queue #166 (1), ADD-A135).
   - `shows_icon: Value<bool>` — whether push buttons show icons (K1.28, read from `kdeglobals`).
   - `focus_visible_when` (S2.11's `FocusVisibleWhen`) — when focus becomes visible (K1.21, R17). On `macos-*` a
-    button draws its focus ring only under Full Keyboard Access: `keyboard` by a rule
+    button draws its focus ring only under Keyboard navigation: `keyboard` by a rule
     `@ cond full_keyboard_access` and `never` without it, the reader's condition (S7.1's `FullKeyboardAccess`, S8's
-    `ReaderState`), its values pending until a source or a committed `canBecomeKeyView` analysis states them (U331;
-    ledger queue #155 (2), ADD-A134).
+    `ReaderState`; on macOS the Keyboard navigation setting `isFullKeyboardAccessEnabled` reports, not the
+    accessibility setting of that name, ADD-A135), its values pending until a source or a committed `canBecomeKeyView`
+    analysis states them (U331; ledger queue #155 (2), ADD-A134).
   - `repeat_delay_ms: Value<Ms>`, `repeat_interval_ms: Value<Ms>` — durations of an auto-repeating button (K-RL07†,
     W2-19, MAC-X12). One home per fact, as `drag_hover_delay_ms` (Entry format): on `macos-*`, whose platform states
     one system pointer auto-repeat (`NSButtonCell.getPeriodicDelay(_:interval:)`, MAC-X12), the bases are `=
@@ -1670,6 +1674,9 @@ spaces:
     look the probe measures per placement before a fact rests on it (the probe's open item), stated then as the
     variant it matches or, drawing none of them, as a keyed variant; ADD-A123;
     the route button's `@bordered`, `isRoutePickerButtonBordered`, MAC-P3-9†;
+    `@menu_on_hold`, with `menu` an NSComboButton whose `action` is set, its menu opening on a click and hold,
+    `menu` alone one whose `action` is nil, its menu opening on a click (`NSComboButton.h:18`, MAC-N29†; named as
+    iOS's `@menu_on_hold`, the same trigger; ledger queue #166 (1), ADD-A135);
     borderless is `flat`, circular `circular`, glass `glass`, help `help`, toolbar `tool`; the disclosure bezels are
     `expander`'s, MAC-B01, MAC-EX01); the 26 border shape `@rounded_rectangle` (capsule is `pill`, circle
     `circular`, automatic the base). The fills that follow the accent other than the accent itself are measured
@@ -1744,7 +1751,7 @@ spaces:
     {glass,@corner_dynamic}` and `@ variants {clear,@corner_dynamic}`, the products building those sets alone;
     ADD-A125); the roles `@cancel` and `@role_primary` (UIKit's `UIButton.Role`, `UIButton.h:37-42`
     in both pinned SDKs: `primary` makes the title heavier in every style, `cells.<scheme>.<style>__role_primary`
-    weight trait 0.3 against 0.0, `ns_font_weight`'s 600, while the typed `primary` is the filled style; the cancel and destructive roles
+    weight trait 0.3 against 0.0, its weight the drawn face's, S2.8's *Weight*, ADD-A136, while the typed `primary` is the filled style; the cancel and destructive roles
     draw as normal on a standalone button and are variants for the hosts that draw them otherwise (above), their
     facts there; iOS 26's further
     bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types `@info`, `@contact_add`; `@share` the system Action bar item (`UIBarButtonSystemItemAction`,
@@ -2003,7 +2010,7 @@ spaces:
   - `icon` — the external-link icon after the text (Kirigami `UrlButton`, Q1.136): `icon` (its size `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100)).
 - **Widget values:** `icon_text_gap_px: Value<Px>` (Q1.136); `shows_url_tooltip: Value<bool>` (Q1.136; the tooltip's
   look and delay are the `tooltip` widget's); `focus_visible_when` (S2.11's `FocusVisibleWhen`; macOS's ring under
-  Full Keyboard Access is a rule `@ cond full_keyboard_access`, MAC-LK03).
+  Keyboard navigation is a rule `@ cond full_keyboard_access`, S7.1, MAC-LK03).
 - **Variants:** typed `inline` — a link inside running text (GNOME label links, WinUI `Hyperlink`, AppKit
   `NSTextView` links and data detectors TA-5, iOS text-view links, KDE rich-text labels, SwiftUI Markdown links
   MAC-SF04† and SF-4†, Compose's HTML links MAT-P3-20†); the base is a standalone link control (GtkLinkButton, WinUI
@@ -9809,7 +9816,7 @@ The conditions these rows added to S7.1 (ADD-A04 … ADD-A11, ADD-A76, ADD-A83),
 |---|---|---|
 | `OnOffLabels` | the switch draws I and O marks; iOS's On/Off Labels setting | X-A11-6 |
 | `PreferCrossFade` | iOS's Prefer Cross-Fade Transitions: presentation transitions become crossfades | X-A11-9, X-MO-10 |
-| `FullKeyboardAccess` | macOS's and iOS's Full Keyboard Access: buttons show focus (the OS's own highlight, MAC-X31†, is out, R1.1) | MAC-X13, X-FO-3† |
+| `FullKeyboardAccess` | the setting under which controls take keyboard focus and show it (S7.1, ADD-A135): macOS's Keyboard navigation (`NSApplication.isFullKeyboardAccessEnabled`, not the accessibility setting of that name, whose highlight, MAC-X31†, is out, R1.1); iOS's Full Keyboard Access | MAC-X13, X-FO-3† |
 | `AccessibilityTextSize` | the content size category (`ContentSizeCategory`, S8) is one of its five `Accessibility*` categories; layouts change axis | X-DT-3, X-A11-10 |
 | `Idiom` | `Phone`, `Pad` (the idiom axis beside the size class) | X-SV-1 |
 | `TintDimmed` | the window or scene is covered by a modal presentation; iOS dims the tint | X-CO-3 |
@@ -9834,8 +9841,13 @@ holds.
 
 **GNOME (libadwaita and GTK)**
 
-- portal accent RGB snapped to the nearest of libadwaita's nine accents (`adw-settings-impl-portal.c:140`,
-  `adw-accent-color.c:160`), replacing the raw RGB the reader uses: GN-3.15.
+- portal accent RGB classified into one of libadwaita's nine accents by OKLCH chroma and hue ranges
+  (`adw-settings-impl-portal.c:124-141`, `adw-accent-color.c:159-199`; `adw_accent_nearest`, S2.2's readers' helpers),
+  the accent's colour replacing the raw RGB the reader uses: GN-3.15 (S9.3, ADD-A135).
+- on a Linux desktop no reader of its own reads (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors, COSMIC, an
+  unnamed one), the portal's `org.freedesktop.appearance` settings, then 0.7.0's chain for the scheme (`GTK_THEME`,
+  gsettings' `color-scheme`, `gtk-3.0/settings.ini`) and its `enable-animations`, with gsettings' `reduced-motion` a new read, under
+  `adwaita` (S16's *Which reader*, ADD-A135).
 - accent-color enum, `org.gnome.desktop.interface` (schema lines 314-320), fallback to the portal: GN-3.16.
 - reduced-motion, `org.gnome.desktop.a11y.interface` (schema lines 18-24); `enable-animations` already read: GN-3.25,
   GN-3.26.
@@ -9933,7 +9945,8 @@ holds.
 - `NSEvent.doubleClickInterval`, `keyRepeatDelay`, `keyRepeatInterval`, `NSButtonCell.getPeriodicDelay` (into
   `token.params.pointer_repeat.delay` and `.interval`), user defaults
   `NSTextInsertionPointBlinkPeriodOn` and `…Off`, `NSInitialToolTipDelay`: MAC-X12.
-- `NSApplication.isFullKeyboardAccessEnabled` or user default `AppleKeyboardUIMode` (both to verify): MAC-X13.
+- `NSApplication.isFullKeyboardAccessEnabled`, the Keyboard navigation setting (`NSApplication.h:377-380` at
+  xcode@26.6; S7.1, ADD-A135): MAC-X13.
 - `NSWorkspace.accessibilityDisplayShouldDifferentiateWithoutColor` (already probed): MAC-X24.
 - the Text size setting (14+; no public API, to verify) into `ReaderState.text_scaling_factor`; the "Show toolbar
   button shapes" setting (API or key to verify) into `cond button_shapes`: MAC-X26.

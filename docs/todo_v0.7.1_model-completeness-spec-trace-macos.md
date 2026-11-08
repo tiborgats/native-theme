@@ -655,6 +655,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N29† | `button.body.*, button.menu_indicator @ variant menu {pressed} / variant menu {open}` (`NSComboButton` `.unified`) | rule |
 | MAC-N29† | `combo_box.{body,arrow} @ variant @pull_down {pressed} / variant @pull_down {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
 | MAC-N29† | `button.values.menu_indicator_gap` | field |
+| MAC-N29† | `button.values.menu_trigger @ variant menu / variants {menu,@menu_on_hold}` (`primary` where the unified NSComboButton has no action, `long_press` where it has one, `NSComboButton.h:18`; ADD-A135) | rule |
 | MAC-N29† | `button.* @ variant menu context toolbar.bar (NSMenuToolbarItem)` | rule |
 | MAC-N30† | `media_controls.bar.{fill,corners,shadow} @ variant @inline / floating / @minimal` | rule |
 | MAC-N30† | `button.* @ variant play / volume / full_screen / frame_step context media_controls.bar` | rule |
@@ -770,7 +771,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X13 | `<widget>.values.focus_visible_when (Never for buttons, checkboxes, segments, links; AnyFocus for text fields and lists; ADD-A16)` | field |
 | MAC-X13 | `<widget>.values.focus_visible_when @ cond full_keyboard_access (Keyboard { … } for buttons, checkboxes, segments, links)` | rule |
 | MAC-X13 | `cond full_keyboard_access (ADD-A06)` | condition |
-| MAC-X13 | `reader:macos:NSApplication.isFullKeyboardAccessEnabled or AppleKeyboardUIMode` | reader |
+| MAC-X13 | `reader:macos:NSApplication.isFullKeyboardAccessEnabled (the Keyboard navigation setting, not the accessibility setting of that name; S7.1, ADD-A135)` | reader |
 | MAC-X14 | `token.caret.width` | token |
 | MAC-X14 | `token.caret.blink_style Fade (ADD-A24)` | token |
 | MAC-X14 | `input.caret.{min_width,min_height,corners}; text_area.caret.{min_width,min_height,corners}` (the insertion indicator's width, its height against the line and its shape: the caret parts' rules, S4.2) | field |
@@ -816,7 +817,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X18 | `Font.family (the system designs rounded, serif and monospaced, by their family names)` | field |
 | MAC-X18 | `token.text.roles.*` | token |
 | MAC-X18 | `token.text.rendering (font smoothing; R25.7)` | token |
-| MAC-X18 | `reader:macos:NSFont and NSFontDescriptor (tracking, width, design, weight per style)` | reader |
+| MAC-X18 | `reader:macos:NSFont and NSFontDescriptor (tracking, width, design, weight per style: the drawn face's wght coordinate, never the weight trait; S2.8 Weight, ADD-A136)` | reader |
 | MAC-X19 | `PartStyle.icon.fill @ {pressed} / {disabled} / {selected} (template images and SF Symbols per state)` | rule |
 | MAC-X19 | `list.leading_icon.icon.fill @ variant sidebar (the accent)` | rule |
 | MAC-X19 | `list.leading_icon.icon.fill @ {selected} context list.view {focus_within} (on an emphasized selection)` | rule |

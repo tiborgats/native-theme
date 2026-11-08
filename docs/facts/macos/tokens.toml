@@ -17746,7 +17746,9 @@ quote = "typedef NSString * NSFontTextStyleOptionKey NS_TYPED_ENUM API_AVAILABLE
 # ---------------------------------------------------------------------------------------------------------------------
 # macos-monterey: the tahoe fill's facts above, each SDK citation at Xcode 16.4 (the macOS 15.5 SDK, the
 # run 41006842699 macos-15 job's header copy): the text styles' leaves (decoration, mnemonic decoration, word spacing and case absent or their
-# zero; letter spacing pending U237, as the HIG snapshot serves macos-tahoe only).
+# zero); the letter spacing SF Pro's tracking as on macos-tahoe, from the HIG's macOS tracking table in a capture
+# from macOS 15's lifetime (hig-typography@2025-08-15, ADD-A136, whose tables equal macos-tahoe's snapshot's row by
+# row), each fact citing the table's head and its style's size row (U237 settled).
 
 [[fact]]
 key = "token.text.keyed.large_title.decoration"
@@ -17850,8 +17852,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.large_title.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/21/0/0/inlineContent/0/text"
+quote = "26"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/21/1/0/inlineContent/0/text"
+quote = "+8"
 
 [[fact]]
 key = "token.text.keyed.large_title.word_spacing"
@@ -18039,8 +18066,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.title_1.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/17/0/0/inlineContent/0/text"
+quote = "22"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/17/1/0/inlineContent/0/text"
+quote = "-12"
 
 [[fact]]
 key = "token.text.keyed.title_1.word_spacing"
@@ -18228,8 +18280,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.title_2.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.title_2.word_spacing"
@@ -18417,8 +18494,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.title_3.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/10/0/0/inlineContent/0/text"
+quote = "15"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/10/1/0/inlineContent/0/text"
+quote = "-16"
 
 [[fact]]
 key = "token.text.keyed.title_3.word_spacing"
@@ -18606,8 +18708,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.headline.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.headline.word_spacing"
@@ -18795,8 +18922,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.subheadline.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
 
 [[fact]]
 key = "token.text.keyed.subheadline.word_spacing"
@@ -18984,8 +19136,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.body.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.body.word_spacing"
@@ -19173,8 +19350,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.callout.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/7/0/0/inlineContent/0/text"
+quote = "12"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/7/1/0/inlineContent/0/text"
+quote = "0"
 
 [[fact]]
 key = "token.text.keyed.callout.word_spacing"
@@ -19362,8 +19564,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.footnote.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/0/0/inlineContent/0/text"
+quote = "10"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.footnote.word_spacing"
@@ -19551,8 +19778,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.caption_1.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/0/0/inlineContent/0/text"
+quote = "10"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.caption_1.word_spacing"
@@ -19740,8 +19992,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.caption_2.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/0/0/inlineContent/0/text"
+quote = "10"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.caption_2.word_spacing"
@@ -19929,8 +20206,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.label.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS02", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/0/0/inlineContent/0/text"
+quote = "10"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.label.word_spacing"
@@ -20118,8 +20420,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.message.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS02", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.message.word_spacing"
@@ -20307,8 +20634,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.palette.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS02", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
 
 [[fact]]
 key = "token.text.keyed.palette.word_spacing"
@@ -20496,8 +20848,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.menu_bar.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS02", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.menu_bar.word_spacing"
@@ -20685,8 +21062,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.control_content.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS02", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/7/0/0/inlineContent/0/text"
+quote = "12"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/7/1/0/inlineContent/0/text"
+quote = "0"
 
 [[fact]]
 key = "token.text.keyed.control_content.word_spacing"
@@ -20874,8 +21276,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.small_system.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS02", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
 
 [[fact]]
 key = "token.text.keyed.small_system.word_spacing"
@@ -21063,8 +21490,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/21/0/0/inlineContent/0/text"
+quote = "26"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/21/1/0/inlineContent/0/text"
+quote = "+8"
 
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.word_spacing"
@@ -21252,8 +21704,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.title_1_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/17/0/0/inlineContent/0/text"
+quote = "22"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/17/1/0/inlineContent/0/text"
+quote = "-12"
 
 [[fact]]
 key = "token.text.keyed.title_1_emphasized.word_spacing"
@@ -21441,8 +21918,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.title_2_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.title_2_emphasized.word_spacing"
@@ -21630,8 +22132,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.title_3_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/10/0/0/inlineContent/0/text"
+quote = "15"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/10/1/0/inlineContent/0/text"
+quote = "-16"
 
 [[fact]]
 key = "token.text.keyed.title_3_emphasized.word_spacing"
@@ -21819,8 +22346,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.headline_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.headline_emphasized.word_spacing"
@@ -22008,8 +22560,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.subheadline_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
 
 [[fact]]
 key = "token.text.keyed.subheadline_emphasized.word_spacing"
@@ -22197,8 +22774,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.body_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.body_emphasized.word_spacing"
@@ -22386,8 +22988,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.callout_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/7/0/0/inlineContent/0/text"
+quote = "12"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/7/1/0/inlineContent/0/text"
+quote = "0"
 
 [[fact]]
 key = "token.text.keyed.callout_emphasized.word_spacing"
@@ -22575,8 +23202,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.footnote_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/0/0/inlineContent/0/text"
+quote = "10"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.footnote_emphasized.word_spacing"
@@ -22764,8 +23416,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.caption_1_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/0/0/inlineContent/0/text"
+quote = "10"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.caption_1_emphasized.word_spacing"
@@ -22953,8 +23630,33 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "token.text.keyed.caption_2_emphasized.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/0/0/inlineContent/0/text"
+quote = "10"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/5/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.caption_2_emphasized.word_spacing"

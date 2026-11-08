@@ -1707,10 +1707,11 @@ def context_holds(e: dict, ancestors: list) -> bool:
     return any(ancestor_matches(e, a) for a in ancestors)
 
 
-def holds(when: dict, c: dict, groups: list, recency: dict) -> bool:
+def holds(when: dict, c: dict, groups: list, recency: dict, states=None) -> bool:
     """Whether a `when` holds in a combination (S7, S11): every required name present, no refused one, after the
-    exclusive drop; the contexts, position, direction, size classes and recency answers as S7 matches them."""
-    states = reduced(c["states"], groups)
+    exclusive drop (`states`, the combination's flags after it, where the caller has them); the contexts, position,
+    direction, size classes and recency answers as S7 matches them."""
+    states = reduced(c["states"], groups) if states is None else states
     have = {"conditions": c["conditions"], "states": states, "variants": c["variants"], "sizes": c["sizes"],
             "densities": c["densities"]}
     if not all(set_match(when, k, v) for k, v in have.items()):
@@ -1829,11 +1830,8 @@ def minimal(when: dict, scheme: str, groups: list, recency: dict, model=None):
 
 
 def last_holding(fs: list, c: dict, groups, recency):
-    hit = None
-    for f in fs:
-        if holds(f.when, c, groups, recency):
-            hit = f
-    return hit
+    states = reduced(c["states"], groups)
+    return next((f for f in reversed(fs) if holds(f.when, c, groups, recency, states)), None)
 
 
 # --------------------------------------------------------------------------------------------- round trip
@@ -2027,11 +2025,10 @@ def preset_value(got, kind, c, scheme, groups, recency):
     if kind == "input":
         contrast = next((x for x, _ in CONTRASTS if x in c["conditions"]), None)
         return got["base"].get((scheme, contrast), got["base"].get((scheme, None)))
-    value = got["base"].get(scheme if kind == "role" else None)
-    for when, v in got["rules"]:
-        if holds(when if isinstance(when, dict) else {}, c, groups, recency):
-            value = v
-    return value
+    states = reduced(c["states"], groups)
+    return next((v for when, v in reversed(got["rules"])
+                 if holds(when if isinstance(when, dict) else {}, c, groups, recency, states)),
+                got["base"].get(scheme if kind == "role" else None))
 
 
 # ------------------------------------------------------------------------------------------------- report

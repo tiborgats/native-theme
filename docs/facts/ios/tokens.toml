@@ -1902,12 +1902,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
 quote = "+12"
 
-# U462: ios-13's tracking: no pinned source of iOS 18's lifetime states it (the HIG snapshot serves ios-26 only)
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.large_title.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/29/0/0/inlineContent/0/text"
+quote = "34"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
+quote = "+12"
 
 # a Dynamic Type style is a font (UIFont and its descriptor), which holds no colour, decoration, case, word spacing,
 # line breaking or line limit: those are the label's or the text view's (S2.8); the names cited absent are UIKit's for them
@@ -2174,8 +2205,38 @@ quote = "+14"
 [[fact]]
 key = "token.text.keyed.title_1.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/0/0/inlineContent/0/text"
+quote = "28"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
+quote = "+14"
 
 [[fact]]
 key = "token.text.keyed.title_1.fill"
@@ -2439,8 +2500,38 @@ quote = "-12"
 [[fact]]
 key = "token.text.keyed.title_2.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/17/0/0/inlineContent/0/text"
+quote = "22"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/17/1/0/inlineContent/0/text"
+quote = "-12"
 
 [[fact]]
 key = "token.text.keyed.title_2.fill"
@@ -2704,8 +2795,38 @@ quote = "-23"
 [[fact]]
 key = "token.text.keyed.title_3.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/15/0/0/inlineContent/0/text"
+quote = "20"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/15/1/0/inlineContent/0/text"
+quote = "-23"
 
 [[fact]]
 key = "token.text.keyed.title_3.fill"
@@ -2969,8 +3090,38 @@ quote = "-26"
 [[fact]]
 key = "token.text.keyed.headline.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.headline.fill"
@@ -3234,8 +3385,38 @@ quote = "-16"
 [[fact]]
 key = "token.text.keyed.subheadline.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/10/0/0/inlineContent/0/text"
+quote = "15"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/10/1/0/inlineContent/0/text"
+quote = "-16"
 
 [[fact]]
 key = "token.text.keyed.subheadline.fill"
@@ -3499,8 +3680,38 @@ quote = "-26"
 [[fact]]
 key = "token.text.keyed.body.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.body.fill"
@@ -3764,8 +3975,38 @@ quote = "-20"
 [[fact]]
 key = "token.text.keyed.callout.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/11/0/0/inlineContent/0/text"
+quote = "16"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/11/1/0/inlineContent/0/text"
+quote = "-20"
 
 [[fact]]
 key = "token.text.keyed.callout.fill"
@@ -4029,8 +4270,38 @@ quote = "-6"
 [[fact]]
 key = "token.text.keyed.footnote.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.footnote.fill"
@@ -4294,8 +4565,38 @@ quote = "0"
 [[fact]]
 key = "token.text.keyed.caption_1.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/7/0/0/inlineContent/0/text"
+quote = "12"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/7/1/0/inlineContent/0/text"
+quote = "0"
 
 [[fact]]
 key = "token.text.keyed.caption_1.fill"
@@ -4559,8 +4860,38 @@ quote = "+6"
 [[fact]]
 key = "token.text.keyed.caption_2.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
-rows = ["D-1"]
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
 
 [[fact]]
 key = "token.text.keyed.caption_2.fill"

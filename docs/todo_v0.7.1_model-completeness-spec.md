@@ -37,7 +37,8 @@ platform is stated here: values come from the facts (S17) in the value phase.
   (opacities, amounts); plain `f32` for unitless numbers (scales, factors) and for velocities (px per second, stated
   at the field); colours extended sRGB (S2.1). `Scalar` is `Px | Ms | Deg | Fraction | Number(f32)`, for keyed
   values whose unit their declaration states (S10). A length may be negative only where its field says so (offsets,
-  translations, letter and word spacing); elsewhere a negative result is zero (S2.2).
+  translations, letter and word spacing, a margin, a shadow layer's `spread`, S2.5); elsewhere a negative result is
+  zero (S2.2).
 - **Keys.** A keyed name (a platform's own colour role, variant, component, text style, elevation entry,
   material, presentation kind) is a `Key`, `[a-z0-9][a-z0-9_]*` (WinUI's elevation steps are `1` … `128`),
   declared by the preset (S10); `Key::new(&str) -> Result<Key, KeyError>`, and `key!("name")` checks a literal at
@@ -557,7 +558,8 @@ measured on it (evidence as S17's, holding the inputs the harness set or read an
 function row's citations, evidence or generator's pin together serve each generation whose presets use the function
 with that row's enum operands; a row for an enum operand no preset uses is checked over all its citations, evidence and
 generator's pin. The quote check runs
-per generation. Generated outputs compare unrounded, colours on the 0–255 scale to 1e-3, so an implementation
+per generation. Generated outputs compare unrounded, colours on the 0–255 scale to 1e-3 (but S2.5's
+`kirigami_shadow_alpha`, a GPU shader on a pinned renderer, within its header's tolerance; ADD-A135), so an implementation
 reproduces the reference's intermediate storage (QColor's 16-bit channels and integer HSV). A function whose
 reference differs by generation or platform selects it by an enum operand, as `name_index`'s `method` does (a class 2
 change where a lane finds such a difference), so one implementation answers every row; every preset whose facts or
@@ -577,6 +579,25 @@ their types, the tolerances), and checks that every platform function of the tab
 implementing S9.4's curves and every `pub` or `pub(crate)` function of the `platform` module has a table and a test,
 and that every platform function a fact or a preset names is one of them; `check_fact_citations.py` checks the rows'
 citations and counts their evidence as cited.
+
+**The readers' helpers** (ADD-A135; ledger queue #172). A reader's parser or classifier ported from an LGPL source
+through the clean room (the 0.8.0 plan's D10) is no platform function, as no fact or preset calls it, and is checked as
+one is: a vector table `native-theme/tests/vectors/reader.<helper>.tsv`, by one of the routes above, its
+`generations` the reader's own preset, and a test `vectors_reader_<helper>`, a unit test in the helper's own module
+reading that table (the helper is `pub(crate)`, which `native-theme/tests/platform_vectors.rs` cannot call).
+The helpers are exactly these, each a `pub(crate)` function of the reader module that uses it: `pango_font_description`
+(the GNOME reader's, Pango's `pango_font_description_from_string`, `pango@1.58.2 pango/fonts.c:1613-1729`, read for
+the gsettings font strings), `qfont_from_string` (the KDE reader's, Qt's `QFont::fromString`, `qtbase@6.12.0
+src/gui/text/qfont.cpp:2246-2320`, for kdeglobals' font entries) and `adw_accent_nearest` (the GNOME reader's,
+libadwaita's `adw_accent_color_nearest_from_rgba`, `libadwaita@1.10.0 src/adw-accent-color.c:159-199`, S9.3).
+`check_function_vectors.py` reads this list as it reads S2.2's functions: a listed helper with a table and no
+implementation is reported as waiting (its implementer receives the table first, D10); an implemented one without
+its table or test is a finding, and so is a `reader.` table of a name not listed. A table's columns may take the type
+`string`, a JSON string literal (RFC 8259), which, unlike `text`, holds the empty string, surrounding whitespace, tabs
+and newlines, the inputs these parsers meet (`""`, `"\tSans\t11"`). Rejected: the helpers in S2.2's table of
+functions (each would become an expression function a fact or preset could call, while it parses or classifies
+what a reader reads and derives no value); no table (D10 makes the table the implementer's only reference); `text` cells with escapes (a second
+escaping scheme beside JSON's, which the generators already write).
 
 ### S2.3 Paint (R6)
 
@@ -702,7 +723,7 @@ pub enum PixelSnap { None, ToDevicePixel, AtLeastOneDevicePixel }   // the width
 pub enum LineCap { Butt, Round, Square }
 pub enum LineJoin { Miter, Round, Bevel }
 pub enum StrokePosition { Inside, Center, Outside }
-pub enum FillClip { Box, InnerEdge }
+pub enum FillClip { Box, InnerEdge, Center }   // Center: to the stroke's centre line (below; ADD-A135)
 ```
 
 A part's outline is its `corners`, unless `PartStyle.shape` names a shape: `ShapeKind { Material(MaterialShape) }`, a
@@ -786,22 +807,59 @@ is square. Wherever the model takes a corner's radii less an inset (a stroke's i
 an inset shadow's box), it takes the horizontal radius less the inset on the corner's vertical side and the vertical
 radius less the inset on its horizontal side, each at least 0, as CSS reduces an elliptical corner, so equal insets
 give the ellipse inscribed in the inset box; where the model grows the box (an `Outside` stroke's or a `Center`
-stroke's outer edge, an outset), it adds each axis's outset to that axis's radius likewise. A `Corners` transition into or out of `Ellipse` interpolates each
+stroke's outer edge, an outset), it adds each axis's outset to that axis's radius likewise (*Growing an outline*,
+below). A `Corners` transition into or out of `Ellipse` interpolates each
 corner's horizontal and vertical radii, a circular corner's two being equal, as CSS interpolates `border-radius`. An
 `Ellipse` part has no `Outline`, whose `OutlineCorners` hold one radius per corner: a part whose `shape` can be stated
 is refused where its corners can be `Ellipse` (S12), as where they can be `Continuous`.
+
+**Growing an outline** (ADD-A136; ledger queue #174 (1), #175). Wherever the model grows a part's outline by a
+distance (an `Outside` stroke's outer edge by its `outset` and width, a `Center` stroke's by half its width, an outer
+shadow layer's shape by a positive `spread` and an inset layer's inner shape by a negative one, S2.5), each corner
+radius above zero grows by that distance, an `Ellipse` corner's radius on each axis by the distance on that axis's
+side, and a zero radius stays zero, a square corner square; a radius above zero but below the distance grows by the
+whole of it too. Where it shrinks the outline, each radius is less the distance, at least 0 (above). It is the outline's
+outer offset with its arcs concentric and its square corners kept square (a mitred join), as GTK grows a rounded
+rectangle for an outline or a shadow (`gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:495-504`; a border it shrinks inward
+from the border box): a radius changed only where it is above zero
+(`gtk@4.24.1 gsk/gskroundedrect.c:217-236`; the GPU renderer's `rounded_rect_shrink` by the radius's sign,
+`gsk/gpu/shaders/roundedrect.glsl:92-101`; the shadows, `gsk/gskoutsetshadownode.c:117`,
+`gsk/gskinsetshadownode.c:92`, `gsk/gpu/shaders/gskgpuboxshadow.glsl:37-51`). A focus ring's corners keep S2.10's own
+rule (`follow_part` grows a square corner, as CSS's outline does), as they are stated there. Rejected: the distance
+added to every radius, a square corner included (a rounded corner GTK does not draw there); CSS
+Backgrounds 3's spread factor, the distance times `1 + (r − 1)³` for a radius below it, `r` the radius over the
+distance (*Shadow shape*), which a browser's box shadow applies: `material-3`'s elevations are material-web's CSS
+box shadows (`material-web@2.5.0 elevation/internal/_elevation.scss:107-112`, ambient spreads 1, 2, 3, 4 and 6 px at
+levels 1 to 5, `docs/facts/material/tokens.toml:1381-1521`), but the one `material-3` part that takes a shadow, the
+button's body, never has a radius above zero and below its spread: its levels reach level4 (4 px, a hovered `@fab`
+or `@extended_fab`), and its corners are at least `token.params.shape.small`, 8 px, or a capsule, half the smaller
+side of a box at least 28 px wide and 32 px high (`docs/facts/material/button.toml`), so CSS's factor, 1 for a radius
+at or above the spread, changes nothing there, and GTK's rule holds for every bundled preset (`adwaita`'s growing
+layers GTK draws; `kde-breeze`'s spreads are negative, `windows-11`'s one inset layer shrinks its hole); a preset part
+meeting the case adds the factor then (a class 2 change); a field choosing the rule per layer (a member no preset
+uses).
 
 **The fill under the stroke** (`Stroke.fill_clip`, ADD-A121). With `Box` the part's fill covers its whole box (the
 outline), beneath the part of the stroke that lies inside the box (an `Inside` stroke, the inner half of a `Center`
 one): CSS's default `background-clip: border-box`, WinUI's `BackgroundSizing="OuterBorderEdge"`
 (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:238`, `AccentButtonStyle`), a Qt
-painter's brush under a pen on the same rectangle. With `InnerEdge` the fill stops at the stroke's inner edge, inset
+painter's brush under a pen drawn on the box's own outline (a `Center` stroke). With `InnerEdge` the fill stops at the stroke's inner edge, inset
 on each edge by the part of that edge's width that lies inside the box (all of it for `Inside`, half for `Center`,
 none for `Outside`), its corners the outline's radii less that inset, at least 0, as CSS's padding-box corners are:
 CSS's `background-clip: padding-box`, WinUI's `InnerBorderEdge` (`Button_themeresources.xaml:156`, the default
 button; `ToggleButton_themeresources.xaml:182`, with `OuterBorderEdge` while checked but not disabled, `:6`,
 `:255-256`, its `CheckedDisabled` state setting none, `:292-304`; AppBarToggleButton's in all four checked states,
-`AppBarToggleButton_themeresources.xaml:343`, `:354`, `:367`, `:380`; ADD-A122). The
+`AppBarToggleButton_themeresources.xaml:343`, `:354`, `:367`, `:380`; ADD-A122). With `Center` (ADD-A135; ledger
+queue #165) the fill stops at the stroke's centre line where that line lies inside the box: inset on each edge by
+half that edge's width for an `Inside` stroke, by none for a `Center` one (as `Box`) or an `Outside` one (the fill
+never leaves the box), its corners the outline's radii less that inset, at least 0, as for `InnerEdge`. It is a Qt
+painter's brush under a pen on a rectangle inset by half the pen's width, Breeze's button frame: the brush and the
+pen on one painter, one rounded rectangle, the box inset by half the pen width, its radius the frame radius less half
+the pen width, so the pen lies inside the box and the fill reaches its centre line (`breeze@6.8.2
+kstyle/breezehelper.cpp:670-671`, `:736-739`, `:1747-1757`; `breezehelper.h:345-348`; U680). Rejected: Breeze's stroke
+stated `Center` with `Box` (it would move the pen's outer half outside the box); `Box` or `InnerEdge` as a known
+inexactness (the difference shows under a see-through pen, Breeze's flat button fading its hover pen,
+`breezehelper.cpp:714-725`); a fill inset of its own length (a field for one platform's half width). The
 difference shows where the stroke is translucent (WinUI's elevation strokes, W1-018). A stroke `Absent` has no
 `fill_clip`: the fill covers the box. A change of it takes effect at once (an enum, S2.7).
 
@@ -852,8 +910,12 @@ pub enum Shadow { Layers(Vec<ShadowLayer>), Elevation(Key) }   // Key: an entry 
                                                                  // may be empty (Material's level 0: no shadow);
                                                                  // `Layers` has at least one; no shadow is `Absent`
 pub struct ShadowLayer { pub x: Value<Px>, pub y: Value<Px>, pub blur: Value<Px>,   // x: physical, not mirrored
-                         pub spread: Value<Px>, pub color: Value<Color>, pub inset: bool,   // in right-to-left (S2.4)
-                         pub falloff: ShadowFalloff }   // how its edge fades over `blur` (below; ADD-A134)
+                         pub spread: Value<Px>,                // may be negative (below; ADD-A135)
+                         pub color: Value<Color>, pub inset: bool,   // in right-to-left (S2.4)
+                         pub falloff: ShadowFalloff,    // how its edge fades over `blur` (below; ADD-A134)
+                         pub corner_radius: Option<Value<Px>> }  // None: the part's corners, changed by
+                                                        // `spread`; Some: one circular radius on all four
+                                                        // corners, which `spread` leaves (below; ADD-A136)
 pub enum ShadowFalloff { Gaussian,             // CSS's: a Gaussian blur, its deviation half of `blur`
                          KirigamiSmoothstep }  // Kirigami's `ShadowedRectangle`: a smoothstep band, `blur` its
                                                // `shadow.size`
@@ -877,9 +939,18 @@ layer's coverage at a point for a part of that box and those corners (`ResolvedS
 layer, S6.1), which a connector drawing the shadow itself
 calls, as it calls `outline` (S2.4); it is checked as a platform function is (S2.2's *Checked against their
 references*): its vector table, `native-theme/tests/vectors/kirigami_shadow_alpha.tsv`, route
-`observable_behaviour`, source `kirigami@6.31.0`, generation `kde-breeze`, rows of a `ShadowedRectangle`'s size,
-corner radii, `shadow.size`, offset and a point, and the alpha a headless render of it draws there, its tolerance in
-the table's header, which the test `vectors_kirigami_shadow_alpha` and `check_function_vectors.py` check. Every layer states its `falloff` (`falloff = "gaussian"`): no default stands in
+`compiled_source`, source `kirigami@6.31.0`, generation `kde-breeze`, rows of a `ShadowedRectangle`'s size,
+corner radii, `shadow.size`, offset and a point, and the alpha the pinned shader, compiled unchanged into an offscreen
+GL harness writing a float render target (`tools/kde-vectors`), draws there on a pinned renderer (Mesa's software
+rasteriser at a version the table's header names), which the test `vectors_kirigami_shadow_alpha` and
+`check_function_vectors.py` check within the tolerance the header states (ADD-A135; ledger queue #167): GLSL lets
+built-in functions be inexact, and the item's antialiased edge comes from `fwidth` (`src/primitives/shaders/sdf.glsl:215-216`),
+so the table cannot match bit for bit, the one generated table S2.2 lets state a tolerance. The coverage is the
+shadow's band alone: inside the item's own shape the shader paints the item's fill over the shadow, replacing it
+whatever the fill's alpha (`shadowedrectangle.frag:62-76`), so the table's points lie outside the shape's antialiased
+edge; and the shader draws only inside the item's box grown on each side by `shadow.size` plus the
+offset's length, each scaled by the box's aspect on that axis (`shadowedrectangle.cpp:18-35`), so the coverage is zero
+beyond that area, where a large shadow is cut. Every layer states its `falloff` (`falloff = "gaussian"`): no default stands in
 for a value (S1). A platform whose blur parameter means another thing states `blur` converted where a pinned source
 gives the relation, else measured (S17). Matched layers (S2.7) whose falloffs differ interpolate as the old one
 vanishing and the new one appearing. Rejected: a Gaussian approximation of Kirigami's band (a `blur` no source
@@ -895,6 +966,42 @@ casts each layer as the ellipse inscribed in that layer's own box (the part's bo
 `spread`, or shrunk by it where `inset`), as Breeze draws its round button's shadow with the button's radius on the
 shadow's own rect, which Qt clamps per axis as it does the frame's (`breeze@6.8.2 kstyle/breezehelper.cpp:729-731`,
 `:1654-1659`; `qtbase@6.12.0 src/gui/painting/qpaintengineex.cpp:745-746`; ADD-A124).
+
+**A negative spread** (ADD-A135). `spread` may be negative (S1), as CSS's spread distance may: a negative one shrinks
+an outer layer's shape on every side by its magnitude, its corners' radii less that distance, at least 0, as the model
+takes radii less an inset, and grows an inset layer's inner shape by it, its radii growing by it; an outer layer
+shrunk to no width or height casts nothing. Where a shape grows, its radii grow as S2.4's *Growing an outline*
+says: a radius above zero by the whole distance, a zero radius not at all (a square corner stays square), as GTK
+grows them (`gtk@4.24.1 gsk/gskroundedrect.c:217-236`), with CSS's factor for a radius below the spread rejected
+there (ADD-A136; ledger queue #174 (1)). GTK moves the outline so (`gsk/gskroundedrect.c:259-296`: the sides moved,
+the width and height floored at zero, each radius changed and floored at zero; an unblurred outset shadow's spread,
+`gsk/gpu/gskgpunodeprocessor.c:1679`).
+
+**A layer's own corner radius** (ADD-A136; ledger queue #174 (2)). A layer's shape takes the part's corners, changed
+by its `spread` as above, unless the layer states `corner_radius`: then the shape's four corners are circular with
+that radius, which the spread does not change, the spread moving its sides alone. Breeze's window and popup shadows
+are such layers: each is rendered around a box with one radius of its own and placed by its padding so that the
+box's edge lies `Shadow_Overlap` inside the surface's edge on every side, a spread of that overlap negated, while the
+radius stays the surface's frame radius: a window's plus half a pixel, its overlap 3 px
+(`breeze@6.8.2 kdecoration/breezedecoration.cpp:829`, the padding `:846-851`, `kdecoration/breeze.h:38`), a popup's
+its frame radius, its overlap 2 px (`kstyle/breezeshadowhelper.cpp:205-208`, the padding `:225-228`,
+`kstyle/breezemetrics.h:172`; the KDE facts' `spread_px = -2`, `docs/facts/kde/tokens.toml:1329-1452`). Under the
+spread's rule those corners would be that radius less the overlap, 3.5 px smaller on a window and 2 px on a popup,
+which moves each corner's arc inward by about 0.41 of that on its diagonal, 0.83 to 1.45 px, a move the layers' blurs
+(6 px and up) soften but do not remove, so the facts state each such layer's `corner_radius`, an expression on the
+frame radius the surface's own corners read. S12 refuses it on a `KirigamiSmoothstep` layer (Kirigami's shadow
+follows the item's corners, `shadowedrectangle.frag:34-45`). In TOML a layer writes it `corner_radius_px`
+(`corner_radius_px = "= add(…, 0.5px)"`); left out, the layer has none, as an `Option` in a list item is `None`
+(S2.11). Matched layers (S2.7) interpolate it as one number on each corner, a layer without its own taking the radii
+its spread gives the part's. Rejected: the full `Corners` form (four radii of any `Radius` variant and a curve, which
+S12 would have to narrow to plain radii, while both sources set one radius, `breezedecoration.cpp:829`,
+`breezeshadowhelper.cpp:208`, and one number interpolates simply); the difference recorded as a known inexactness
+(the arc's move shows at the corners, and the model covers what is drawn); the KDE facts measuring the drawn shadow
+and stating the layer that matches it best (no layer of the current fields matches it, so this is the inexactness
+again, measured); an enum keeping or changing the part's radii (it cannot state the window's added half pixel); the
+spread's rule changed to keep radii for every layer (GTK and CSS change them, and libadwaita's layers are drawn so);
+the spread at least zero, with Breeze's overlap stated another way (no other field moves a layer's edges inward on
+every side, and an inset layer is another shape).
 
 ### S2.6 Transform (R9)
 
@@ -1025,7 +1132,10 @@ applies (a paint the part's resolved paint at that field, a rotation or an opaci
 `set`); a keyframe whose part resolves `NotDrawn` or `DrawnAs` resolves to a patch with every field `None`, its `at` and
 `timing` kept so the neighbours' spans do not change: it animates nothing, and a `DrawnAs` part is drawn by its target,
 a widget or a part, with the target's own rules and motion (S6.1, S6.3, S8, S12; any combination where a loop meets an absent or
-substituted part; ADD-A125).
+substituted part; ADD-A125). A keyframe resolves its part's `icon` without the icon's own `animation`, so an
+`icon.animation` a keyframe's patch states (a loop's keyframe or a `Keyframes` transition's, field by field or in a
+whole icon whose animation is other than absent) would have no effect, and S12 refuses it (ADD-A135; ledger queue
+#163).
 
 Semantics (R9): the query is stateless: the connector compares successive query results per element and part, and
 a transition starts when a property's resolved value changes (under the value engines; Breeze's start on their test,
@@ -1888,7 +1998,8 @@ pub struct Font {
     pub family: Value<String>,                // fallbacks are the text tokens' (S4.4, ADD-A41)
     pub size: Value<FontSize>,                // today's FontSize (pt or px); a point size becomes logical px by
                                               // the font DPI (S9.4)
-    pub weight: Value<u16>,                   // the only route for weight: `axes` may not hold `wght` (S12)
+    pub weight: Value<u16>,                   // the only route for weight: `axes` may not hold `wght` (S12);
+                                              // the drawn face's (*Weight*, below; ADD-A136)
     pub style: Value<FontStyle>,
     pub width: Value<f32>,                    // percent of normal, as the OpenType `wdth` axis, and the only
                                               // route for it: `axes` may not hold `wdth` (S12)
@@ -2051,10 +2162,38 @@ pango/pango-layout.h:67-95`, the fallback `pango/pango-layout.c:4288-4297`). The
 `TextWrapping` `NoWrap` is `None`, `WrapWholeWords` `Word` and `Wrap`, which breaks "even if the text logic can't
 determine any line break opportunity", `WordChar` (`winapps-winrt-api@554b7e3a microsoft.ui.xaml/textwrapping.md:24-34`),
 so WinUI's text styles, which set `TextWrapping` `Wrap`, state `word_char`; AppKit's and UIKit's `NSLineBreakMode`
-and Compose's `softWrap` (Android's line breaker) map as their lanes read them at their pins. Rejected: XAML's
+and Compose's `softWrap` (Android's line breaker) map as their lanes read them at their pins. `NSLineBreakByCharWrapping`
+is `Char` ("Wrap at character boundaries"); `NSLineBreakByWordWrapping`'s "Wrap at word boundaries" does not say
+what a word wider than the line does, so it tells `Word` from `WordChar` in neither SDK (`NSParagraphStyle.h:26-27` in
+AppKit at both pinned Xcodes, `:27-28` in UIKit at both): an Apple control's `wrap` under it is
+measured, a label of one word wider than its box laid out in that mode, `word_char` where the word breaks inside and
+`word` where it overflows, its facts pending until then, neither read from the comment's words, which name the
+opportunities and not the fallback (ADD-A135; ledger queue #164 (2); on `ios-*`, U256).
+Rejected: XAML's
 `Wrap` as `Word` (a long word then overflows where WinUI breaks it); as `Char` (WinUI breaks at words wherever one
 fits); a separate flag for the in-word fallback beside `Word` (a field for one member's difference, and meaningless
 beside `None` and `Char`).
+
+**Weight** (ADD-A136; the macOS facts lane's round 4, 3b7c8b03). `Font.weight` is on the OpenType `wght` axis's
+scale, which CSS's `font-weight` shares (1 to 1000, 400 regular, 700 bold), and is the number that, asked of the same
+fonts, gives the face the platform draws: where the platform's style names a weight on that scale (Qt's
+`QFont::Weight`, Pango's `PangoWeight`, XAML's `FontWeight`, CSS's `font-weight`), that number, the fonts' matching
+giving the face for a connector as for the platform; where it names the weight otherwise, the drawn face's own: the
+coordinate it is drawn at on its font's `wght` axis (its variation's `wght`, the axis's default where the variation
+holds none), or for a font without that axis its face's weight class (the `OS/2` table's `usWeightClass`). Apple's
+styles name a weight trait (`NSFontWeightTrait`, `UIFontWeightTrait`, −1 to 1), and Core Text draws a named instance
+of SF whose coordinate the trait does not determine: on macOS 15 (run 42215651196's `[macos.fonts]`) `.SFNS-Semibold`
+is drawn at `wght` 590 under the traits 0.3 and 0.4, `.SFNS-Medium` at 510 under 0 and 0.3 and `.SFNS-Heavy` at 860
+under 0.4, while `.SFNS-Bold` is 700 and `.SFNS-Regular` holds no coordinate, its axis's default 400. So a `macos-*`
+or `ios-*` weight is that coordinate, read from the font the style returns (`CTFontCopyVariation` and
+`CTFontCopyVariationAxes`, through the run's committed analysis, as `Font.width` is read), and S17 has no conversion
+from the trait. Rejected: the trait mapped to a weight by WebKit's thresholds (ADD-A123's `ns_font_weight`, withdrawn;
+`WebKit@7624.5.1.11.3 Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739`), which gives 600 where SF draws
+590, 400 where it draws 510 and 700 where it draws 860, so a connector asking SF's variable font for it draws another
+weight; `kCTFontCSSWeightAttribute` as the evidence, which macOS 15 reports as the trait's mapping for every font of
+that run (400, 600, 700) and macOS 26 as the face's coordinate (runs 41195846264 and 42272240639): one attribute
+meaning two things by release; the trait and the coordinate both, the coordinate in `axes` (the only route forbids
+`wght` there, S12, and a toolkit without variable fonts could apply neither).
 
 **Width** (ADD-A130) is a percent of the normal width (100 normal), the scale of the OpenType `wdth` axis, which no
 pinned source here states. AppKit reports a width trait instead, `NSFontWidthTrait`, "the relative inter-glyph
@@ -2548,6 +2687,28 @@ to `Window`, and selected items take `Selection`'s roles.
 
 **S3.1 Bases.** `colors.light` and `colors.dark` are the two bases (R5.1). Every other condition changes roles
 by colour-role rules (S7).
+
+A keyed role has a value in both bases (S12 refuses a declared keyed name no base states). A platform resource that is
+a colour only under a condition, its other definitions no colour, is no role (ADD-A135): WinUI's
+`ControlElevationBorderBrush`, `CircleElevationBorderBrush` and `AccentControlElevationBorderBrush` are gradient
+brushes in the light and dark dictionaries and `SystemColorWindowTextColor` under high contrast
+(`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:506-508`), so a part states
+the gradient as its own paint (S2.3) and, under `contrast_high`, references the colour the resource names there,
+`role.@system_window_text`, citing the resource. Rejected: a keyed role that exists only under a condition (outside
+it the role would resolve to nothing, every reference then needing the condition proved, for a name); a base taken
+from one of the gradient's stops (a value no source gives the role).
+
+A role the reader states under a condition keeps the bases beneath it (ADD-A135). WinUI's eight system colours
+(`role.@system_window_text` and the others of W3-35) have the light and dark dictionaries' placeholder colour as
+their bases, which the facts reference only under `contrast_high`, and the Windows reader states the user's contrast
+theme's colours under `contrast_high` (S9.3). Where no reader does (a stand-in, an application's `set_contrast`,
+another platform), the preset states by a rule under `contrast_high` the colours of Aquatic, the contrast theme
+Windows applies by default where none was selected before (`windows-dev-docs@f54166ed
+hub/apps/design/accessibility/high-contrast-themes.md:22`), measured, as that page shows them only as images, and
+pending until they are; so no theme draws the placeholder, which WinUI never draws under high contrast. Rejected: a
+declared input for the eight with `contrast.high` bases (an input serves values a derivation reads or a group keeps
+together, S9.1, S9.2; these are read and referenced directly, which a reader rule under the condition carries, S9.3,
+without a new input group and its checks); the placeholder left in force under high contrast without a reader.
 
 **S3.2 Groups.** The inactive group is a colour-role rule under `window_inactive`; disabled roles are
 `SurfaceRoles.disabled`, which parts' `{disabled}` rules refer to (R5.1).
@@ -3281,7 +3442,15 @@ avoids no keyboard). A widget's root
 part is never absent as a whole and is never a repeated element (the catalogue gives such widgets a container root);
 its fields may be. `may_be_absent` is about what a platform draws, never about an element's content: a part the
 element's content lacks (a dialog given no icon, an icon-only tab's label) is simply not queried by the connector,
-and the catalogue does not list it. A part's presence is decided by the last of its patches that states one
+and the catalogue does not list it. So no fact states such a part absent where a content variant leaves it no content
+(a button's `label` under `icon_only`), and its field facts name that content variant in neither `variants` nor
+`not_variants`: they state its look where it is drawn and hold there as in the same combination without the
+variant, so nothing there is pending or measured (no platform draws it); the gate compares them there as anywhere,
+values no connector queries (ADD-A135). `adwaita`'s facts state its icon-only button's label so (no
+`button.label` fact, none of its label facts naming `icon_only`), and the iOS facts follow (ADD-A135's follow-ups). Rejected: the part absent under the content variant (it is the content's, and the
+catalogue lists no such absence); a catalogue map of the parts each content variant empties, with the gate skipping
+their fields there (machinery for values no connector reads); facts pending there (a measurement of nothing drawn).
+A part's presence is decided by the last of its patches that states one
 (`PartPatch.presence`): `Absent`, `DrawnAs`, or `Present` (TOML `absent = false` in its table: drawn with its own
 style); a patch that states none sets fields only and never brings an absent or redrawn part back,
 so no later rule or layer patching a field (an application's colour `@ {hover}`) restores a part a condition made
@@ -3428,6 +3597,17 @@ The additions and their rows: ADD-A01 … ADD-A12, ADD-A76, ADD-A83 (S22). `Over
 The readers report the system conditions directly (R2.3; today's `AccessibilityPreferences` goes, S16);
 `text_scaling_factor` stays a reader value (S9.4). `MobileFormFactor` is Plasma Mobile's shell, which is not a device
 idiom; `Idiom` is UIKit's and Material's phone and pad.
+
+**`FullKeyboardAccess`** (ADD-A06, ADD-A135; ledger queue #166 (2)) is the setting under which the platform's
+controls take keyboard focus, and so show it. On macOS it is the Keyboard navigation setting (System Settings >
+Keyboard), which `NSApplication.isFullKeyboardAccessEnabled` reports, "whether
+keyboard navigation is enabled in System Settings > Keyboard", not "the separate accessibility setting named 'Full
+Keyboard Access'" (`NSApplication.h:377-380` at xcode@26.6, `:373-376` at xcode@16.4), whose highlight the system
+draws (MAC-X31†, out, R1.1); the macOS reader reads that property, which key-value observing does not report changes
+of (the same note), so a change shows at the reader's next read, no watcher event announcing it. On iOS it is Full Keyboard Access, the one
+setting of the name (X-FO-3†, no API found). The name stays the API's. Rejected: renaming the condition after the
+macOS setting's label (iOS's setting and both platforms' API keep the name); one condition per macOS setting (the
+accessibility setting's highlight is the system's, MAC-X31†, which no preset states).
 
 ### S7.2 State flags (R3)
 
@@ -4050,8 +4230,8 @@ roles), under the scheme it read only. Its `input.accent` (ADD-A132), read from 
   and the preset's own statements at the other, where the preset's `#00000000` is in force and the accent-derivation
   layer states nothing (S9.2).
 So another preset on KDE shows the accent every KDE application shows, the colour KDE's portal publishes as
-`accent-color` (which libadwaita rounds to its nearest named accent, `libadwaita@1.10.0
-src/adw-settings-impl-portal.c:123-140`). Weighed: no accent where `AccentColor` is absent (every other preset then shows its own accent, unlike
+`accent-color` (which libadwaita classifies into one of its nine accents, `libadwaita@1.10.0
+src/adw-settings-impl-portal.c:123-140`, as the GNOME reader does, below). Weighed: no accent where `AccentColor` is absent (every other preset then shows its own accent, unlike
 every application on that desktop); the `Highlight` also where `AccentColor` is set (it is the accent blended at 70 %
 over the `View` background, `colorsapplicator.cpp:230-238`, `colorsapplicator.h:45-50`, not the colour the user
 chose, which `material-3`'s seed and `adwaita`'s own derivations take); `[Colors:View] DecorationFocus` where
@@ -4060,6 +4240,37 @@ chose, which `material-3`'s seed and `adwaita`'s own derivations take); `[Colors
 in a scheme where they differ); `#00000000` in the common bases (S9.5 carries it to `adwaita` and `material-3`, which
 would mix and seed from transparent black). The new reads per
 platform are the rows of the traceability whose target is a reader read (S20); each is a `reader::<platform>` change.
+
+**The GNOME reader's readings** (ADD-A135; ledger queue #171, #173). Its sources are the XDG Settings portal's
+`org.freedesktop.appearance` namespace and gsettings, each setting the portal does not give (no session bus, no
+answer within the readers' D-Bus deadline, the setting missing) read from gsettings where GNOME keeps it, and a
+setting neither gives stated by nothing, so it keeps the no-reader state's value (S16): a flag false, an unread
+`overlay-scrolling` among them (not its schema default, which is no reading). It states:
+- `input.accent` (GN-3.15), at both schemes in its common bases: the accent libadwaita shows, not the portal's raw
+  colour. libadwaita classifies the portal's `accent-color` by no colour distance: it converts it to OKLCH, takes a
+  chroma below a fixed cut-off as `slate`, and otherwise picks the accent by fixed hue ranges, eight cuts around the
+  circle (`libadwaita@1.10.0 src/adw-accent-color.c:159-199`), each channel narrowed to single precision
+  first (`src/adw-settings-impl-portal.c:124-141`); the reader classifies it with `adw_accent_nearest` (S2.2's readers'
+  helpers) and states that accent's colour (`src/adw-accent-color.c:52-80`). GNOME's own portal sends the chosen
+  accent's colour, which classifies as itself, so the two differ only where another portal backend answers. A
+  channel outside `0..=1`, which the portal's specification reads as no accent, states none, so the preset's own
+  shows, `adwaita`'s being libadwaita's blue, which libadwaita takes there (`:124-141`).
+- the scheme and `contrast_high` from the portal's `color-scheme` and `contrast`, else gsettings'
+  `org.gnome.desktop.interface color-scheme` and `org.gnome.desktop.a11y.interface high-contrast` (the scheme light
+  where neither gives one, the reader reporting a scheme as every reader does, S8);
+  `reduced_motion` from the portal's `reduced-motion`, else `org.gnome.desktop.a11y.interface reduced-motion`
+  (GN-3.26); `animations_off` where `org.gnome.desktop.interface enable-animations` is false (GN-3.25), a condition
+  of its own beside reduced motion (S7.1); `overlay_scrollbars` from `overlay-scrolling` (GN-1.85); the text-scaling
+  factor from `text-scaling-factor`, off an X11 session (S9.4).
+- no font DPI (`font_dpi: None`): GNOME's is a fixed base, `DPI_FALLBACK`, times the text-scaling factor
+  (`gnome-settings-daemon@51.1 plugins/xsettings/gsd-xsettings-manager.c:243`, `:582-594`), the factor it already
+  reports, so `adwaita`'s
+  `token.text.font_dpi` converts its points (S9.4).
+- `token.icons.theme` from `icon-theme` under `for_preset.adwaita`, a freedesktop theme's name being its own
+  preset's (S9.5).
+Rejected: the portal's raw accent (it is not what any libadwaita application shows where the two differ); a nearest
+colour by distance (libadwaita computes none); the schema's defaults for unread keys (a value the system did not
+report).
 
 **S9.4 Points, then text scaling.** A font size, line height, letter spacing or word spacing stated in points becomes logical pixels first, as
 `pt × dpi / 72`, where `dpi` is `ReaderState.font_dpi` where the reader reports one (the platform's setting: on KDE
@@ -4090,7 +4301,11 @@ derive).
 **Text scaling.** The reader supplies `text_scaling_factor` (1 where the platform scales by the font size
 itself, and 1 where a reader reads each text style's size, R10); the query scales font sizes by it before
 font-derived lengths, by the preset's `token.text.scaling`: `Linear` (a product); `AndroidNonLinear`, Android 14's
-`FontScaleConverter`, which scales large sizes less (MAT-X19); or `DynamicType`, each text style's size for the
+`FontScaleConverter`, which scales large sizes less (MAT-X19): the platform's converter (`frameworks-base@android-17.0.0_r1
+core/java/android/content/res/FontScaleConverterFactory.java`, its curves applying from its first table's key less
+0.01, `:142`), not Compose's own copy (`androidx.compose.ui.unit.fontscaling`, outside the pinned sparse checkout),
+which the text-scaling task (a5de6753) reports to differ from it for font scales from 1.03 to 1.05 (ADD-A135); or
+`DynamicType`, each text style's size for the
 reader's or stand-in's `content_size_category` (`ContentSizeCategory`, S8), to Apple's published table (the curve `uifm_scaled` uses for
 lengths). A part's font is scaled by the curve of its `TextStyle.scaling_role`, `body`'s when `None`; a reader that
 reads each style's size reports the default category. A font size is scaled once, where its own style is resolved: a
@@ -4112,6 +4327,28 @@ table states for the style's `scaling_role` at that category (TS-2), the table's
 whose stated line height differs from the table's at the default category (the tight and loose forms, MAC-TS03†), the
 platform's own rule, read in the value phase from the fonts UIKit returns per category
 (`preferredFont(forTextStyle:compatibleWith:)`, D-5). The value phase confirms each rule from its cited source.
+
+**The rules as implemented** (ADD-A135; the text-scaling task, a5de6753, 419d2db1). Under `AndroidNonLinear`, a line
+height stated in points or pixels keeps its proportion to its font's change above a font scale of 1.05, as Compose
+does (`androidx@e4d933c9 compose/ui/ui-text/src/androidMain/kotlin/androidx/compose/ui/text/platform/extensions/SpannableExtensions.android.kt:224-250`),
+and at or below it goes through the curve as a value of its own; letter and word spacing go through the curve on
+their own. Under `DynamicType`, nothing changes at the default category; elsewhere a font size other than the table's
+scales by its `scaling_role`'s row's size at the category over its size at the default category, and a line height
+equal to the row's default leading becomes the row's leading at the category; a line height other than the table's,
+a spacing stated in points or pixels, and a style whose role has no row have no value away from the default category
+until the value phase reads UIKit's rule (D-5). The `dynamic_type` table
+serves `ios-26` alone, its HIG snapshot (`hig-typography@2026-02-09`) being pinned to that generation. `ios-13` takes
+its rows from a second snapshot of the same page (ADD-A136; ledger queue #176): the HIG Typography page's DocC JSON
+as the Web Archive captured it (the `id_` form, as the first) after macOS 15's and iOS 18's release and before the
+page switched to describing macOS 26 and iOS 26, the last such capture that holds the tables these functions read, the nearest to the iOS 18 updates the runner
+measures (18.5 and 18.6, `docs/facts/sources.toml:1060`; D12); its `sources.toml` entry `describes = ["macOS 15", "iOS 18"]` and serves `macos-monterey` and
+`ios-13` (S17). The same snapshot serves `sf_tracking`'s rows for those two (U237, U462). Where its tables equal the
+first snapshot's row by row, each row cites both and serves both generations; where one differs, the function
+selects its table by an enum operand naming the release, S2.2's rule (for `dynamic_type`, an operand the
+`DynamicType` kind carries), a class 2 change made then. Until the capture is fetched and pinned (its URL, date and
+SHA-256), the table serves no row to `ios-13`, which S2.2 requires before its release; should no capture in that
+window hold the tables, `ios-13`'s rows stay pending under U237 and U462. `check_function_vectors.py`
+does not yet count a preset's `token.text.scaling` as calling its curve (a scripts follow-up).
 
 Letter and word spacing follow the line height's rule, as a platform scales tracking stated in its own scalable unit
 (Compose's typescale tracking is in sp, MAT-TS2): one stated as an expression on `font_size` (`sf_tracking`, a
@@ -4489,12 +4726,14 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   marked `auto` neither by the catalogue for that part nor by the core (S6.3); a call is stated on a `Value<bool>`, `Value<Key>`, `Value<String>` or enum field (a
   reference is allowed); a paint has no layer, or its bottom layer is a `Mask`, or a `Shadow::Layers` no layer (S2.3,
   S2.5; an elevation entry may be empty); a `KirigamiSmoothstep` shadow layer's `spread` can be other than zero, or
-  its `inset` is true (S2.5; ADD-A134); `pick` has no colours; a `Transition` has an empty `properties` list (it
+  its `inset` is true (S2.5; ADD-A134), or states a `corner_radius` (S2.5; ADD-A136); `pick` has no colours; a `Transition` has an empty `properties` list (it
   would animate nothing, S2.7; ADD-A122), but a `FocusIndicator.transition`, which times the whole indicator and
   states it empty, and is refused a non-empty one (S2.10; ADD-A126); a `Keyframes` transition has no keyframe, a
   keyframe's `at` outside `0..=1` or not above the one before it, a keyframe naming a `part`, or a keyframe patch
   stating a field outside its transition's groups (in a `FocusIndicator.transition`, any field but `focus`'s), and a
   `Keyframes` kind under an engine other than `CssAnimation`, or `CssAnimation` with another kind (S2.7; ADD-A134);
+  a keyframe's patch, a loop's or a `Keyframes` transition's, states `icon.animation`, field by field or in a whole
+  icon whose animation is other than absent, which a keyframe never resolves (S2.7; ADD-A135, ledger queue #163);
 - a stated number lies outside its type's range: a stated `kirigami_lerp` balance outside `0..=1` (S2.2), a negative
   length where the field cannot be negative (S1), a
   `Fraction` outside `0..=1`, a negative `Material.saturation` (a typo's sign; only a computed result is clamped,
@@ -4985,6 +5224,38 @@ read in `from_system` is an error carrying the preset it chose, not a silent fal
 preset alone calls `from_preset(preset, scheme)` with the scheme it chooses, so no scheme is assumed for it. A later
 failed re-read keeps the previous reader layer and `ReaderState` (S8).
 
+**Which reader** (ADD-A135; ledger queue #173). `from_system` chooses the reader and its preset from the platform and,
+on Linux, the desktop `XDG_CURRENT_DESKTOP` names, refined where it names none by asking the session bus which portal
+backend runs (within the readers' D-Bus deadline), then by the user's `kdeglobals` (with the `kde` feature), as
+`PresetId::for_system` chooses. On Linux:
+- GNOME and Budgie are read by the GNOME reader under `adwaita` (S9.3), KDE by the KDE reader under `kde-breeze`;
+  `Err(FeatureDisabled)` where the build lacks the reader's feature;
+- every other desktop (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors, COSMIC, one the refinement leaves
+  unnamed) has no reader of its own and is read under the preset `PresetId::for_system` gives (`adwaita`), in its
+  common bases and conditions only, nothing under `for_preset`: the portal's `org.freedesktop.appearance` settings
+  first (`color-scheme`, `accent-color`, `contrast`, `reduced-motion`), as the GNOME reader reads them, then, for
+  the scheme and motion the portal does not give, 0.7.0's own chain on these desktops (`detect.rs` at the switch's parent 2796b26e, the file as tagged `v0.7.0`,
+  caeddd6b): the scheme dark where `GTK_THEME`, lowercased, ends in `:dark` or holds `-dark` (`:768-774`), else gsettings'
+  `org.gnome.desktop.interface color-scheme` (`:727-742`, "reliable on GNOME and GTK-based desktops", `:744-748`), else
+  dark where `gtk-3.0/settings.ini` sets `gtk-application-prefer-dark-theme` (`:797-810`), else light; reduced motion
+  gsettings' `org.gnome.desktop.a11y.interface reduced-motion`, a read 0.7.0 did not make there, and `animations_off`
+  its `enable-animations` false, the key 0.7.0 read there and reported as reduced motion, its one motion flag
+  (`:952-967`, `:976-988`): the model holds the two apart (S7.1), so an application checking reduced motion there
+  sees `enable-animations` as `animations_off` now.
+  `kdeglobals`, which 0.7.0 also asked there, stays the KDE reader's. The read cannot fail, a setting none of these
+  gives keeping the no-reader state's value (no flag); it needs the `portal` feature as the GNOME reader does
+  (`Err(FeatureDisabled)` without it). So these desktops keep what 0.7.0 gave them, the preset in the scheme and
+  motion the desktop set, with the portal's reading first (the 0.8.0 plan's D13: nothing 0.7.0 has is lost);
+- Linux has no generation table, so the one preset of the desktop is its only generation: `from_system(Some(id))`
+  takes that preset and is `Err(PresetNotForPlatform(id))` for any other.
+A platform this build reads nothing on is `Err(PlatformUnsupported)`, never a preset in an assumed scheme. The
+watcher (below) chooses its backend by the same refined desktop, so `on_theme_change` on a desktop
+`XDG_CURRENT_DESKTOP` does not name waits for the portal backend's answer up to that deadline. Rejected:
+`PlatformUnsupported` on the desktops without a reader of their own (an application there loses the scheme 0.7.0
+gave it); the portal alone there (where no portal answers it reports light where 0.7.0 found dark); the GNOME reader
+whole there (its text-scaling, overlay-scrolling and icon-theme reads go beyond what 0.7.0 read on these desktops,
+which D13 does not ask for: a readers unit's decision).
+
 **Today's API, feature by feature** (S19.3 migrates the branch's callers):
 
 - *Preset listing* (`Theme::list_presets`, `list_presets_for_platform`, `PresetInfo`): kept, as `PresetId::all`,
@@ -5268,20 +5539,17 @@ millisecond as WinUI counts them,
 S2.7's `WinUiAnimatedIcon`, `AnimatedChevronDownSmallVisualSource.cpp:462`'s `TimeSpan{ 4833333L }` being 483.3333 ms,
 the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x, the quoted
   number's sign flipped: WinUI's `FocusVisualMargin`, whose negative margin is an outward distance, S2.10; ADD-A122),
-  `ns_font_weight` (an AppKit `NSFontWeight` to S2.8's CSS weight: 100 times one more than the number of the
-  thresholds −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5 and 0.7 at or below it, so the probe's 0, 0.3 and 0.4 are
-  400, 600 and 700; ADD-A123). It is the model's own conversion, the same for every generation, as every member of
-  this list is; its source is WebKit's mapping of the system font's weight trait,
-  `WebKit@7624.5.1.11.3 Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739`, which WebKit takes only where
-  Core Text gives the font no CSS weight of its own (`kCTFontCSSWeightAttribute`, read first, `:725-728`): a fact
-  whose evidence records that attribute states it unconverted. `rem_to_factor` (GTK's `rem`, ledger queue #152) reads each `<n>rem`
+  and `rem_to_factor`, each the model's own conversion, the same for every generation. `rem_to_factor` (GTK's `rem`, ledger queue #152) reads each `<n>rem`
   literal of the citation's quote as the unitless factor n, which GTK multiplies by the default font size
   (`gtk@4.24.1 gtk/gtkcssnumbervalue.c:405-408`, `gtk_css_font_size_get_default_px`, `gtk/gtkcssenumvalue.c:213-231`,
   GtkSettings' `gtk-font-name`, not the root widget's computed size): the fact keeps GTK's derivation,
   `= mul(token.text.keyed.body.font.size, 0.75)` for libadwaita's `0.75rem`; without the conversion a `rem` value keeps no literal,
   so a `0.75rem` quote never holds a plain `0.75`. AppKit's width trait has no conversion: no pinned
   source maps `NSFontWidthTrait` to a percent, so a `macos-*` width is measured on the font's `wdth` axis
-  (S2.8's *Width*, ADD-A130). A point size stays a
+  (S2.8's *Width*, ADD-A130). Nor has an Apple weight trait (`NSFontWeightTrait`, `UIFontWeightTrait`): S2.8's
+  weight on `macos-*` and `ios-*` is the coordinate of the face the platform draws, which the trait does not
+  determine, so it is measured on the face (S2.8's *Weight*; ADD-A136, which withdraws ADD-A123's `ns_font_weight`,
+  the trait mapped by WebKit's thresholds), and neither the trait nor `kCTFontCSSWeightAttribute` is its evidence. A point size stays a
   point size (S9.4 converts it by the preset's font DPI). A JSON-pointer citation's quote occurs in the string value
   at the pointer. A `GtkCss` transitions fact whose transitions name several curves is checked further: its
   transitions follow its quoted CSS `transition` list item by item, in the list's order, each item's duration, delay
@@ -5317,8 +5585,12 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   may name one row (a combination's keys measured together): an Id is unique among the register's rows, not among the
   facts. The plan's `check_ledger.py` checks the register (each row's Id of that form and no two rows sharing one) and, on every run, each pending fact against it: a
   pending fact whose id names no register row is a finding with or without `--final`; with `--final` every pending
-  fact is a finding, whether or not its id names a row, beside the register's undecided rows, and the plan's final
-  gate requires no S17 pending fact, so 0.8.0 is not released while one remains (R21). The gate (below) reads no
+  fact of the enabled units (*While the units are built*, below) is a finding, whether or not its id names a row,
+  beside the register's undecided rows of the enabled units (a row is of a unit not enabled where every pending fact
+  naming it is; a row no pending fact names is the enabled units'); a state model's pending entry
+  (`default_size = { pending = "U129" }`, `docs/facts/ios/state-models.toml:69`) counts as a pending fact of its
+  widget's unit, and each release's gate requires no S17 pending
+  fact of its enabled units, so no release is made while one remains (R21; ADD-A135, the 0.8.0 plan's D13). The gate (below) reads no
   ledger, a plan document archived with the plan: it lists each pending fact with its id, whatever the register
   holds. The row's decision resolves the fact, by a measured fact, a catalogue or state-model correction (a
   `not_drawn` combination) or another option it records, and the commit
@@ -5430,7 +5702,7 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   stack holds, and the case takes a spec row when it first appears, with its real shape; a refusal that disappears
   with the preset's facts measured is the gate's choice of values to fix, any other the preset's. A check that passes on a synthetic
   value and would fail on the real one is found when the fact is measured: the preset is regenerated with the measured value stated and
-  validated with it (through `from_preset` once its table is empty), and every table is empty at the release, so nothing it misses ships. Rejected: ADD-A128's
+  validated with it (through `from_preset` once its table is empty), and every table is empty at each release, so nothing it misses ships. Rejected: ADD-A128's
   reading of a listed path as able to take any value of its type (it includes values S12 itself refuses, so a preset
   listing a whole focus indicator, an edge or a conditionally marked field could never load, and the repairs it
   needs, a joint reading of every listed value against the checks across fields, are machinery that serves only the
@@ -5440,8 +5712,9 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   skips every fact whose evaluation reaches a synthetic value (the synthetic value itself, any value referencing it,
   a reader-backed fact at a listed path; a listed input's folded value where it is the value in force, at its scheme
   under no contrast or a contrast the preset states no base for, and no layer above gives one; ADD-A132), reporting each, which costs coverage and nothing else, while the facts
-  where the preset's rules state the path are compared, and reports each listed path with its id; 0.8.0 is released
-  with every `[pending]` table empty, as R21 and
+  where the preset's rules state the path are compared, and reports each listed path with its id; each release is made
+  with every `[pending]` table empty (the tables listing the enabled units' paths alone, as the preset holds only
+  those), as R21 and
   ADD-A122 require of pending facts. Rejected: the preset left out of the bundle (the gate then resolves none of its
   facts, M1a design decision 7, against the plan's queue of every preset per unit); a `Pending` answer of the query, and
   `PresetPending` variants of `ThemeError` and `LayerError` (each a permanent API and variant, which every caller of
@@ -5469,7 +5742,10 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   API's declaration at the pinned source or SDK; the gate checks them as derivations (the perturbed run changes the
   input).
 - **`evidence`** (`measured`): a file under `docs/evidence/<harness>/<date>-run-<id>/<image>/`, committed in the
-  evidence repository (*The evidence root*, below), and the path of the value inside it, in the file type's form (a dotted key in TOML, a JSON pointer in JSON, `<group>/<key>` in an
+  evidence repository (*The evidence root*, below), and the path of the value inside it, in the file type's form (a dotted key in TOML, written as TOML writes one, a key that is no
+  bare key, one holding a dot among them, quoted as a basic string, `macos.symbols."chevron.forward".size`, and a
+  bare decimal key indexing an array where the value there is one and naming a table's key otherwise, the fact's `evidence` then a literal string, `'…#macos.symbols."chevron.forward".size'`,
+  so the quotes need no escape: the form the fact keys and S11 already use for a map entry, ADD-A136; a JSON pointer in JSON, `<group>/<key>` in an
   INI file such as kdeglobals, a nested group written as its bracketed names joined by `][`,
   `Colors:Header][Inactive/BackgroundNormal`; `<first column>/<header>` in CSV); for a value read from an image, the committed output of
   a committed analysis script naming its input image and the pixels it reads; for a value computed from values a
@@ -5490,7 +5766,19 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   preset = "macos-tahoe"`, `source = "xcode@26.6"`, `os = "<build>"`, `toolkit = "<build>"`, the last where a toolkit
   drew or answered); the checker requires the others and that the preset is among the entry's generations. The builds are recorded, not matched: a runner image
   moves within a release (D1). Every evidence file is cited by a fact, a state-model entry or a
-  vector table (S2.2, S13); a run's README and `run.toml` are not evidence;
+  vector table (S2.2, S13), or is the input of a cited analysis output (its `input_image`, above): a recording
+  and the crop the harness cut its frames with (`transition-caret.mov` and `.crop`, run 42272240639) are data: the
+  analysis that reads the frames names them in its `input_image`, as the files the frames were cut from. Not evidence: a run's README and `run.toml`, and its records, the
+  files a harness writes about its own conduct, from which no fact's value is read (`run.toml` takes its builds from
+  `environment.txt`), held by name in a closed list of
+  `check_fact_citations.py` (a member added as a class 1 change): `settings.txt` (the settings a pass wrote and read
+  back) and `environment.txt` (the image's OS, Xcode and SDK builds) (ADD-A136; rejected: every record required
+  to be an analysis's input, which most are to none (one an analysis reads, as it may read a pass's settings, it
+  names all the same); records left out of the repository, which show the conditions a pass
+  ran under, as a review checks them; an exemption by file type, which would pass an uncited table or image written
+  as text). A run's data no fact,
+  state-model entry, vector table or analysis reads yet stays on the harness's branch until one does: a run brought
+  into the facts branch brings its read files and its records;
   the runs the 0.8.0 plan lists as legacy count as cited until its M4.
 - **The evidence root** (ADD-A137). Evidence is committed to the evidence repository (the 0.8.0 plan's *The evidence
   repository*), whose tree holds `docs/evidence/` at the paths this section writes, never to this repository, which
@@ -5644,8 +5932,9 @@ The gate also resolves each fact's own
 once per flavour, each with its flavour's entries. An entry with
 `preset:` (or `flavor:`) replaces the shared entry of its widget for that preset (or flavour). `check_facts.py` checks
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
-`rows`. **While 0.8.0 is built** (ADD-A128), the 0.8.0 plan enables its units one by one, a unit entering the model
-in the commit whose presets state it (S6.1). A fact belongs to the unit of its key and to the unit of every widget its
+`rows`. **While the units are built** (ADD-A128, ADD-A135), the 0.8.0 plan enables the catalogue's units one by one,
+a unit entering the model in the commit whose presets state it (S6.1), 0.8.0 releasing the units of its scope and
+each follow-up release its own (the plan's D13, S21.1). A fact belongs to the unit of its key and to the unit of every widget its
 `when`'s positive lists name (`context`, its `scope.nearest`, a `widget`), and the gate skips it while any of those
 units is not enabled. Its negative lists (`not_context`, `not_variants`) never add a unit: `not_context X` applies
 everywhere but inside X, and where X's unit is not enabled no X exists, so the negation holds and the fact applies
@@ -5664,8 +5953,9 @@ it draws as the rules that apply give it: with none, as the base (libadwaita's `
 GN-2.21–2.54); `@tab_button`, whose inner button is an image button (`libadwaita@1.10.0 src/adw-tab-button.ui:33`),
 its stylesheet styling only its counter and indicator (`src/stylesheet/widgets/_buttons.scss:647-662`), as
 `icon_only`, the set `[@tab_button, icon_only]` that the GNOME facts' state model is to state (once facts name it,
-GN-2.37's badge, it is skipped or checked as those facts are). Every unit is enabled by 0.8.0's release, so nothing is
-skipped then.
+GN-2.37's badge, it is skipped or checked as those facts are). Every unit of a release is enabled by that release, so
+no fact of the enabled units is skipped then, a fact of a later release's unit skipped as before; from the last
+follow-up release no fact is skipped.
 
 **Palette facts** (`docs/facts/palettes/<project>.toml`, S14): the colours a project publishes, one fact per colour
 and flavour, keyed `<project>.<flavour>.<the project's name>` (`catppuccin.mocha.surface0`; `<project>` the file's
@@ -5684,7 +5974,13 @@ the exclusive groups' reduction (S10), a pending fact applying as any fact does.
 combination's order makes that flag its set's latest, and a fact without it holds under every order (ADD-A124). The gate fails a pending fact that a later fact of its key
 shadows on any combination its `when` holds in (it would not apply there, and the combination would pass with the
 later fact's value), so a pending fact stands after the facts that hold where it does, its `when` narrowed
-(`not_states`, …) where a later fact is more specific. Where the platform states a combination ({checked, hover} in GN-1.29), its
+(`not_states`, …) where a later fact is more specific. A later fact that is itself pending is exempt (ADD-A135;
+ledger queue #164 (3)): the combination stays pending, listed with the later fact's id, and passes nothing silently;
+once that fact is replaced by a value, the earlier one is shadowed by a value and fails, so its `when` is narrowed
+then, where the narrowing follows the measured fact. `check_facts.py` and the gate apply the exemption alike. Rejected:
+narrowing the earlier pending fact under every later pending one (a lane's added state narrowed 1311 earlier pending
+facts, each narrowing undone or redone when the later fact is measured); exempting only a later fact with the same
+register id (a combination two rows wait on is pending either way). Where the platform states a combination ({checked, hover} in GN-1.29), its
 facts state it, and a preset that forgot it fails. A fact with `scheme_file` and `accent` (below) applies only in the
 accent run, for that scheme file and accent, and on `material-3` one with `accent` alone only in its accent run, for
 that accent; the other runs consider only facts without them.
@@ -5714,12 +6010,13 @@ each, a `when` being a conjunction while `adwaita`'s part facts draw the arrow o
 pass under which the part is not drawn still fails: its evidence measured the part drawn. Rejected: failing a field's
 fact that applies where its part is not drawn (it adds no check the part's key does not make, and forces that
 restatement). It compares every token,
-colour-role and input fact the same way, under its `when`. While 0.8.0 is built, the gate skips a fact whose key the
-model does not hold yet (the 0.8.0 plan enables its units one by one); 0.8.0 is released with none skipped. Where the
+colour-role and input fact the same way, under its `when`. While the units are built, the gate skips a fact whose key the
+model does not hold yet (the 0.8.0 plan enables its units one by one); each release is made with no fact of its
+enabled units skipped, the gate failing from the plan's M4 on such a fact and on a fact whose key lies in no unit. Where the
 fact that applies is pending, the gate compares nothing for that key and combination: it counts it and lists it with
-its register id in its report, apart from the failures, and passes it while 0.8.0 is built, as a skipped key; the
-perturbed and accent runs skip it too. That list, the register and `check_ledger.py --final` meet at the release:
-0.8.0 is released with no pending fact (ADD-A122).
+its register id in its report, apart from the failures, and passes it while the units are built, as a skipped key; the
+perturbed and accent runs skip it too. That list, the register and `check_ledger.py --final` meet at each release:
+it is made with no pending fact of its enabled units (ADD-A122, ADD-A135).
 
 **The perturbed run** (R4's derivation check) repeats this with the stand-in's layer stating, under each scheme, a
 fixed colour for every declared input but one whose fact that applies is a derivation (and `kde-breeze`'s `accent`, below), an input with no fact yet included
@@ -5778,7 +6075,8 @@ are compared, while `m3_role`'s own rows are its vector table's (S2.2).
   name its read). It checks working documents, so
   it is run by hand while they change and is not part of `scripts/check_release.sh`; it is deleted when the
   documents are archived.
-- The showcases' element lists and parity gates follow the connectors (R21).
+- The showcases' element lists and parity gates follow the connectors (R21), a widget a connector draws through a
+  stand-in entry from that entry (S21.3).
 - `scripts/check_spec_names.py`, `scripts/check_spec_entries.py`: run by hand as `check_spec_trace.py` is; the
   catalogue parser they share, `scripts/spec_catalogue.py`, is also imported by `generate_widgets.py` and
   `check_facts.py` until `docs/property-registry.toml` gives the keys (S17); all deleted when the documents are
@@ -5803,7 +6101,7 @@ release (S16). The test validates each bundled preset through `from_preset` wher
 and through `from_preset_synthetic` with one synthetic layer per listed path (one per map entry no base states, its
 listed fields together, ADD-A133), a listed `default_size` exempt from its check rather than stated, a listed part drawn (S17; ADD-A131) and a listed input's value folded into the preset's input base (S17; ADD-A132), where
 it is not; every table is
-empty at the release, so it is the plain route then (ADD-A128).
+empty at each release, so it is the plain route then (ADD-A128).
 **S19.2** Today's inheritance rules (`[uniform]`, `[per_platform]`) become expressions in each preset's bases,
 converted by a script from `docs/inheritance-rules.toml` before it is removed, then checked by the gate; the
 `[wrong_safety_nets]` are not converted, as the facts replace them.
@@ -5847,7 +6145,15 @@ rows share them, the trace's header gives them once and every row written so tak
 
 ## S21. Release and compatibility (R21)
 
-**S21.1** 0.8.0, one release, on `v0.8.0-rc1`; every platform preset, `ios-26` included, complete and passing the gate.
+**S21.1** Released in steps (the 0.8.0 plan's D13, D14; ADD-A135, ledger queue #168): 0.8.0, on `v0.8.0-rc1`, holds
+the units of its scope, everything 0.7.0's model holds (the plan's *0.8.0's scope*); then follow-up releases, each on
+its own `v<version>-rc1` branch, its number by SemVer against the previous release (a breaking one the next minor),
+each enabling further units, until the catalogue's last. At every release every platform preset, `ios-26` included,
+states every field the model then holds, and the release passes the same gates over its enabled units: the facts
+gate with no fact of those units skipped or pending (S17), `check_ledger.py --final` over them (S17's pending facts,
+the register), every `[pending]` table empty (S17, S19.1), each connector's contract test with no `pending` entry
+(S21.3). The last follow-up release also passes the facts gate with no fact skipped and `check_facts_trace.py` over
+every trace line. Rejected: one release holding every unit (the plan's D13 (A)); releases by capability (D13 (C)).
 **S21.2** Every public enum is exhaustive (S1), so a connector maps each in full: `IconRole`, `IconSet`,
 `watch::ThemeChangeEvent`, `VersionMatch`, `DiagnosticEntry`, `crate::Error` and every other enum of today's API
 that stays lose their `#[non_exhaustive]`. Every public
@@ -5869,10 +6175,23 @@ toolkit's pinned source, and in the third case the limit and its size. egui's `C
 `Color` and gpui's `Hsla` are float types, whose case (whether the renderer takes them unclamped and premultiplies
 them itself) each connector states when it ports to `Color` (the 0.8.0 plan's M2.1), the toolkits' sources not being
 in the facts' source cache. A connector test fails when a resolved field is neither mapped nor listed. The connectors' milestones apply it
-(R21). While 0.8.0 is built, a table may hold `pending` entries, resolved fields the connector does not map yet, which
+(R21). While the units are built, a table may hold `pending` entries, resolved fields the connector does not map yet, which
 the test accepts; from the connectors' port to the model (the 0.8.0 plan's M2.1) a commit that adds a resolved field
-adds it to every connector's table, mapped or `pending` (the generator lists the new fields), and 0.8.0 is released
-with none (ADD-A118).
+adds it to every connector's table, mapped or `pending` (the generator lists the new fields), and each release is made
+with none (ADD-A118, ADD-A135).
+
+**A stand-in entry** (ADD-A135; ledger queue #169; the 0.8.0 plan's *Widgets 0.7.0 styles through stand-ins*). Until
+a widget's unit is enabled, a connector that 0.7.0 styles the widget for (a menu bar, a number input, a code editor,
+a group box, a loading placeholder, a chart, a drag image's border, gpui's description list) keeps that mapping, from
+the model's enabled roles and widgets, as 0.7.0 maps it from its own fields. Its contract table records it as a
+stand-in entry: the widget (the catalogue's entry, or none for a widget no catalogue entry names: gpui's description
+list), the resolved fields it reads, and the unit that replaces it (none where the widget has no entry: the entry
+stays). The contract test accepts it and fails one whose
+widget's unit is enabled; the unit's connector task replaces it with the widget's own mapping, so a release enabling
+that unit is made with no stand-in entry for it. The showcases' element lists draw such a widget from its stand-in
+entry (S18). Rejected: the widgets dropped until their units (each loses what 0.7.0 shows); `pending` entries for them
+(a `pending` entry is a resolved field not mapped yet, and these are mappings of a widget the model does not hold);
+their units in 0.8.0 (the plan rejects it, against D13's timing).
 
 ## S22. Additions register
 
@@ -6018,6 +6337,8 @@ lines that cite it.
 | ADD-A132 | inputs per scheme and contrast (ledger queue #148, from its survey, ADD-A131's checks 4–6), and the T6 code review's spec items (its S1 and F4), then its eight checks' fixes: an input replaced slot by slot, a slot a scheme with no contrast or one, a layer's value there its contrast base, else its per-scheme value, the last applying layer's that has one winning (the code's `input_value`); the preset's accent inputs one group in every layer above the preset, a layer stating any at a scheme stating every one's per-scheme value there, so the inputs in force at a slot come from one layer, `AccentInputsMissing` judged so per scheme for an `Accent`, a mapping (also at each of the palette's schemes), a stand-in (one stating `accent` alone refused on `macos-*`, `windows-11`, `ios-*`) and each under `set_preset`, a reader stating its group by construction; on `kde-breeze` Plasma's derivation in one accent-derivation layer, directly above the preset, its `kde_accent` and `kde_accent_wm` roles and inactive input roles as bases over the accent in force at each slot where a layer above the preset gives that accent and nothing elsewhere (the preset's own statements showing there), its no-accent branch compared by the accent run's `#00000000` row, each layer above replacing the roles it states, and the accent layer stating the `accent` alone (ADD-A112's roles in the accent layer, and their per-slot rule under a skipped mapping, removed), a reader's or stand-in's results and a KDE port's roles left out (S8) at a slot where the accent layer or a palette gives the accent in force; a reader's partial group stated as none at that scheme, or, for a failure under one contrast, without that contrast's group bases, its per-scheme values kept, reported as `ReaderStatus::Fallback`; a reader stating an input's contrast base where its platform gives one (macOS's increased contrast); the KDE reader's `input.accent`: `AccentColor` where set and not equal to `transparent`, else the portal's `Highlight` (the `Selection` background) at the read scheme in its common bases and `#00000000` at that scheme in its `for_preset.kde-breeze` part; S8's and S14's palette leave-out naming a stand-in's colours too; S12's missing input per slot over the layers whose inputs apply, at `inputs.<name>.<scheme>` and `inputs.<name>.contrast.<c>.<scheme>`; an input listed per scheme, `inputs.<name>.<scheme>`, a pending contrast base never listed; a listed input's synthetic per-scheme value folded into the preset's own input base, marked synthetic per input and scheme, ending ADD-A131's refusal of a preset listing an input; one-scheme input tables in S11; a map fact compared whole, `{}` no entries; the boxed patches in the sketches. Rejected: whole replacement (a one-scheme reader and a port beside a mapping erase a scheme), per scheme without the group (an accent mixes with another layer's derived inputs at a scheme or contrast), the group per slot without the per-scheme anchor, the stand-in's accent left out, `kde-breeze`'s roles in the accent layer above every layer or stated by the preset itself, the synthetic input in a layer above the stand-in or in a slot beneath it. Follow-ups: code, the stale "whole" comments (`next/inputs.rs`, `resolve/mod.rs`, `gate/mod.rs`), `accent_inputs_held` per scheme for `set_accent`, `set_preset` and `set_reader_stand_in` (and the mapping when palettes land), S12's missing input per slot over applying layers in place of `listed_inputs_unstated` and the preset-only test in `set_preset` and `preset_stack`, the `[pending]` reader taking `inputs.<name>.<scheme>` (`toml/read.rs`'s `listed_input`), `from_preset_synthetic`'s fold with its per-input-and-scheme mark in place of `input_layers`' tag for inputs and the refusal of a listed input removed, the gate's synthetic input at its listed scheme alone (`synthetic_value`) and its skip by the mark, `derived_accent`'s stale doc comment (`resolve/mod.rs`: "`kde-breeze`'s derived roles enter with its preset, M1b"), the accent-derivation layer in S8's order, its roles only at the slots where a layer above the preset gives the accent in force, its own `LayerKind` (Theme-derived, stating no accent input) in `stacked` and `validate` (`resolve/mod.rs`'s stack: `stacked`, `shared_layers` and `synthetic_places`, whose place indices assume the application layers start at 1 or 2; derived on every change as the accent layer is) with S8's per-slot leave-out of a reader's, stand-in's or port's results, a test on `kde-breeze` (`accent_derivation_layer`: a stand-in stating accent X gives at both schemes the roles, inactive input roles and `[WM]` roles `set_accent(X)` gives with an empty stand-in, but those it states; an `Accent` or a stand-in's accent at one scheme leaves the other scheme's roles, inactive input roles and `[WM]` roles equal to the theme without it; a stand-in shaped as the KDE reader, results at one scheme, shows them there and the derivation at the other, and under `set_accent` the derivation of the `Accent` at both; no stated accent, no layer), the gate's perturbed stand-in (`stand_in`, `tests/facts_gate/run.rs`) stating every input but one whose applying fact is a derivation (an input with no fact stated), as it filters roles, the accent run's `#00000000` row on the preset's own scheme files against the no-accent facts, and no `accent` on `kde-breeze`, the KDE reader's results and `[WM]` references under its read scheme only, `reader::kde`'s accent read (`AccentColor` where set and not equal to `transparent`, else the `Selection` background and, for `kde-breeze`, `#00000000`, both at the read scheme; a test: a stand-in shaped as that reader with no `AccentColor`, under `set_preset(adwaita)`, shows the `Selection` background at the read scheme and `adwaita`'s accent at the other, and on `kde-breeze` the preset's look at the unread scheme), the accent-derivation layer derived for the slot in force on every change of the stack and slot and validated at every slot where it states its roles, the `ReaderStatus::Fallback` failure for an accent input, the gate's `listed_key` (`gate/mod.rs`) mapping a listed input with its scheme and its table check taking each listed input's schemes from the pending facts' `scheme:` conditions, `validate/checks.rs`'s `states` judging an input per slot (it takes any entry as stated), the stale doc comments of `toml/read.rs` (`listed_input`), `toml/layer.rs`, `validate/mod.rs` (`listed_inputs_unstated`) and `resolve/mod.rs` (the synthetic input tag), the test `from_preset_refuses_a_listed_input_as_missing` (`theme/tests.rs`) re-pinned to `inputs.<name>.<scheme>`, the gate comparing a map fact whole (fixture `gate_value_map_fact_whole`: a preset's extra entry against `{}` differs, maps differing in order alone agree), and in M1b the macOS reader's `contrast.increased` bases of its five inputs and the Windows reader's accent and ramp all or none per scheme and their contrast bases all or none per contrast (today's `read_accent_shades` keeps the shades it could read), reported as `ReaderStatus::Fallback`; scripts, `generate_preset.py` listing a pending input per scheme and writing a per-contrast base's stated schemes (its `INPUT_CONTRAST` left-out removed); facts, the KDE lane's SUSE-Cafe facts measured with no `AccentColor` (`scheme_file` SUSE-Cafe's, `accent = "#00000000"`) for the accent run's tinting no-accent row, the Windows lane's high-contrast accent and ramp facts, which decide the Windows reader's `contrast.high` bases, and each lane's input facts (`windows-11`, `ios-*`, `material-3` have none yet) per scheme, per contrast where the platform differs; ledger, #148 decided, and #149's "a preset listing an input refused" and "a missing declared input" (at `inputs.<name>`) superseded by this row (the fold; the per-slot check) | S1, S6.1, S7, S8, S9, S9.1, S9.2, S9.3, S9.5, S11, S12, S14, S16, S17, S19.1; catalogue (the `kde-breeze` accent-derivation layer: the inactive input roles, a reader's accent, the `[WM]` roles; the KDE readers list's `AccentColor` read); trace KDE (K2.11, K3.51, K3.54, the reader's `AccentColor` row); rationale R2.6 (the accent-dependent roles' derivation) |
 | ADD-A133 | a map entry every field of which is a listed path (task 16b, `macos-tahoe`'s keyed icon contexts, ledger queue #156): the listed paths below one entry of a map of bare blocks that no base of the preset states share one synthetic layer, which creates the entry with every listed field stated and states its keyed name (S17, S12's created entry and declared keyed name, S19.1); rejected: stating unmeasured fields, and judging per-path layers together for creation alone | S12, S17, S19.1 |
 | ADD-A134 | a spec batch (ledger queue #155's open spec lines, #158, #159, #160 (2)–(4), #161 (1), (2), (4), #162 (2)–(5), and the 17c review's `FaceTraits`), decided from the sources: the synthetic route's two refusals, a layer value stated as an expression and a place at, above or below an earlier layer's, stated in S17 with their `ProblemKind`s, S1's and the M1a design's rule naming them (rejected: a pass per layer prefix; no check); `BlendMode::Difference`, CSS's `difference` against the backdrop, WinUI's caret a white `token.caret.color` whose caret parts' fill is one `Difference` layer of it (rejected: a `Caret.color` form `Inverse`, a keyed `@dest_invert`, a part composite-mode field, the caret stated inexactly); `Wrap::WordChar`, Pango's `WORD_CHAR`, XAML's `Wrap` and Qt's `WrapAtWordBoundaryOrAnywhere`, each member defined and mapped (rejected: XAML's `Wrap` as `Word` or `Char`; a fallback flag); WinUI's caret blink timeout in S2.2's arithmetic, `mul(p, add(n, mul(<fallback>, sub(1, min(n, 1)))))`, S2.2's integer-arithmetic note naming the fallback form and S17's quote check leaving the constants of S2.2's named forms unchecked as the forms' own (rejected: a platform function, a conditional expression, a reader value); `TransitionKind::Keyframes` and `TransitionEngine::CssAnimation`, md-focus-ring's entrance as one keyframe transition of the indicator's width, the indicator leaving at once (rejected: an `Interpolate` transition from the rest ring, an overshooting curve, a keyed kind, keyframes on every `Transition`, a loop); `material-3`'s preset Compose's baseline scheme, its roles sourced literals and its `input.accent` the baseline `primary` (U550), `m3_role` in the accent-derivation layer where a layer above gives the seed, S8's leave-out and the gate's perturbed and accent runs extended to it (rejected: a seed in the preset, no derivation, `#00000000`, a rule); `headline` `= token.text.roles.title2`, `body_emphasized` `body_large_emphasized`, `caption_emphasized` `body_small_emphasized` in both flavours (U562; rejected: `title_medium`, the draft's baseline alternatives); `blur` CSS's blur radius and `ShadowLayer.falloff` (`Gaussian`, `KirigamiSmoothstep`, Kirigami's `ShadowedRectangle`, with `shapes::kirigami_shadow_alpha`; U403; rejected: a Gaussian fit, a generic smoothstep, the falloff on `Shadow`); `hide_pointer_delay` the idle delay, absent where none exists (rejected: the key press's delay with a new idle field; one field for both); Kirigami's `wideScreen` as `Compact` and `Regular`, horizontal, the connector passing the window less its drawers (U402; rejected: Material's names, `gridUnit × 60`, a drawer expression); a layer over the whole box, RoundButton's gloss, appended to the fill and to each edge's paint (rejected: a recorded inexactness, an over-stroke layer); the iOS button's `drop_target` in the catalogue, its citation pending the header pass (#159); #155's catalogue lines (macOS's `label`, `user_fixed_pitch` and `monospaced_digit_system` slots, the button's `focus_visible_when` under `cond full_keyboard_access`, the indicator anchor and gap as bases outside `menu`); `fonts::FaceTraits` among S1's and S21.2's structs a caller fills in full (rejected: `#[non_exhaustive]` with a constructor taking every field, the same break). Follow-ups: code (an M1b task), `BlendMode::Difference`, `Wrap::WordChar`, `ShadowLayer.falloff` with `ShadowFalloff` and S12's refusal of a `KirigamiSmoothstep` layer's spread or inset, `shapes::kirigami_shadow_alpha` (through the clean room, D10; done when `vectors_kirigami_shadow_alpha` passes over its table, generated by a headless render at `kirigami@6.31.0`), `TransitionKind::Keyframes` and `TransitionEngine::CssAnimation` with S12's checks, each with its TOML spelling (`difference`, `word_char`, `falloff = "gaussian"` / `"kirigami_smoothstep"`, `keyframes`, `css_animation`), the accent-derivation layer on `material-3` (its role list, `m3_role` statements, S8's leave-out) and the gate's `material-3` accent run and no-accent perturbed run; scripts, `check_facts.py` (`accent` alone in `material`, `falloff` on every shadow layer, the new names), `generate_preset.py` (the layer's roles left to the layer), `check_fact_citations.py` (the zero-fallback form's `1`s left unchecked, its `k` and the count's operands checked, with a self-test) and `check_function_vectors.py` (the `kirigami_shadow_alpha` table); connectors, each contract table (S21.3, R23) gains rows for `BlendMode::Difference`, `ShadowLayer.falloff` (both members) and `Wrap::WordChar`, mapped with the toolkit's lines or listed as its limit; facts, Windows (`token.caret.color` white and the caret parts' `Difference` fill, U506; the blink timeout expression, U505's period still pending; the keyed styles' and label's `wrap` `word` from XAML `Wrap` to `word_char`, U518), KDE (`falloff` on every layer, Kirigami's entries `kirigami_smoothstep`, U403; the size classes, U402; the gloss on each edge's paint; and a check of the widget caret, which `QTextLayout::drawCursor` draws with `RasterOp_NotDestination`, inverting what lies beneath whatever the pen's colour, where the target has no alpha channel, `qtbase@6.12.0 src/gui/text/qtextlayout.cpp:1362-1375`: the facts' `= role.view.foreground`, `docs/facts/kde/tokens.toml:1648`, holds only on a target with one), GNOME (`hide_pointer_delay` absent, `docs/facts/gnome/tokens.toml:2136`; `falloff` on every layer), the pending `hide_pointer_delay` facts now meaning the idle delay (Material's U553, `docs/facts/material/tokens.toml:10034`, filed under MAT-P3-15†, the key-press fade's row; macOS's U329, `docs/facts/macos/tokens.toml:40037`; iOS's U472, `docs/facts/ios/tokens.toml:5149`), each measured or sourced as that, Material (the baseline roles and accent, U550, the accent-run facts, U552's keyframe transition, U562's three slots, `falloff`), macOS (#155's two keyed styles), iOS (`drop_target`, U475, after the header pass), Windows' shadow layers' `falloff` | S1, S2.2, S2.3, S2.5, S2.7, S2.8, S2.10, S4.2, S7.3, S8, S9.1, S9.2, S12, S16, S17, S21.2; catalogue; traces KDE and Material; M1a design; and its check's fixes (the Material trace's slots, Kirigami's `defaultColumnWidth`, the quote check's form constants, Qt's caret, the smoothstep's spread and inset, the fallback form for any `k`, the gloss's edges and pixels, the follow-ups, the colour roles' limit, the SDK citations' check) |
+| ADD-A135 | a spec batch (ledger queue #163, #164 (2), (3), #165, #166, #167's spec lines, #168, #169, #171–#173, and the facts lanes' round 3's four questions, 4f4c00a9), decided from the sources: `NSLineBreakByCharWrapping` `char` and `NSLineBreakByWordWrapping` measured with an overlong word, `word` or `word_char`, pending until then (U256; rejected: either read from the header's comment); a pending fact shadowed by a later pending fact exempt, the earlier narrowed once the later is measured (rejected: narrowing under every later pending fact; an exemption for the same register id only); `FillClip::Center`, the fill to the stroke's centre line inside the box, Breeze's frame, the Qt example a pen on the box's own outline (U680; rejected: Breeze's stroke `center` over `box`, a recorded inexactness, a fill inset length); NSComboButton's two triggers, `primary` under `menu` and `long_press` under the keyed `{menu, @menu_on_hold}` on `macos-*`, the button with an action, iOS's name for the same (rejected: a keyed condition, the action being the application's per button; `menu` read as one of the two; a `MenuTrigger` member for both); `FullKeyboardAccess` the setting under which controls take keyboard focus, on macOS Keyboard navigation as `isFullKeyboardAccessEnabled` reports it, not the accessibility setting of that name (rejected: a rename after the macOS label; one condition per setting); the releases in steps (the plan's D13, D14): S21.1 restated, S17's and S21.3's release statements per release over its enabled units, `check_ledger.py --final` over the enabled units' pending facts and register rows (a row of a unit not enabled where every pending fact naming it is) (rejected: the plan's D13 (A) and (C)); S21.3's stand-in entry, a 0.7.0 mapping kept for a widget whose unit is not enabled, the test failing it once the unit is (rejected: the widgets dropped, `pending` entries, their units in 0.8.0); the GNOME reader's accent libadwaita's OKLCH chroma and hue classification, the accent's colour stated (GN-3.15; rejected: the raw colour, a nearest colour by distance); the readers' helpers, `reader.<helper>.tsv`, `vectors_reader_<helper>` a unit test in the helper's module, the three listed, and the `string` column type (rejected: the helpers in S2.2's function table, no table, escaped `text`); the GNOME reader's readings (sources and fallbacks, the scheme light where none is given, an unread flag false, no font DPI) and S16's *Which reader*, a Linux desktop with no reader of its own read under `adwaita`, the portal's `org.freedesktop.appearance` settings first, then 0.7.0's own chain for the scheme and motion (`GTK_THEME`, gsettings' `color-scheme`, `reduced-motion` and `enable-animations`, `gtk-3.0/settings.ini`; the orchestrator's decision on the check), `from_system(Some(id))` only the desktop's preset (rejected: `PlatformUnsupported` there, which loses the scheme 0.7.0 gives, D13; the portal alone, light where 0.7.0 found dark; the GNOME reader whole there, reads beyond 0.7.0's); a negative shadow `spread`, CSS's, GTK's and Breeze's, an outer layer shrunk to nothing casting nothing, a zero radius staying zero where a shape grows (rejected: the spread at least zero; open, queue #174: a radius below the spread, and Breeze's kept window radius, its options named; #175: S2.4's stroke growth, pre-existing); a part a content variant leaves without content (the label under `icon_only`) no part absence, its facts naming that variant nowhere, as `adwaita`'s (rejected: an absence; a map of emptied parts with the gate skipping them; pending facts); a platform resource that is a colour only under a condition no role, the part referencing that colour (WinUI's elevation borders; rejected: a role only under a condition, a base from a gradient stop); WinUI's system colours keeping their placeholder bases, the reader's under `contrast_high`, the preset's rule there Aquatic's colours, measured (rejected: an input with `contrast.high` bases; the placeholder in force); S12's keyframe `icon.animation` refusal (#163, implemented in 70fd4f6c); `kirigami_shadow_alpha`'s table on `compiled_source`, the pinned shader on a pinned renderer (Mesa's software rasteriser) within a tolerance its header states, `fwidth` and GLSL's built-ins being inexact, its points outside the shape's antialiased edge, its zero beyond the drawn area (#167); S9.4's scaling as implemented (the text-scaling task): `AndroidNonLinear` the platform's converter, not Compose's copy, a line height above a font scale of 1.05 kept in proportion to its font, spacing through the curve, `DynamicType`'s ratio of the category's size to the default's and its no-value cases until D-5, the `dynamic_type` table serving `ios-26` alone (#176); `check_ledger.py --final` counting a state model's pending entry as a pending fact. Follow-ups: code, `FillClip::Center` (`center`), S12's range check accepting a negative `spread`, the gate's shadowed-pending exemption, `reader::select` and the watcher's backend for the desktops without a reader (the portal-only read and its test), the GNOME reader's accent through `adw_accent_nearest` once wired, the GNOME reader's scheme and motion chain on the desktops without a reader, the connectors' contract tests accepting stand-in entries and failing one of an enabled unit; scripts, `check_facts.py` (the exemption with self-test cases, `center`), `check_ledger.py --final` over the enabled units (a state model's pending entry by its widget's unit), `check_function_vectors.py` (the `reader.` kind, `string`, the waiting report, a tolerance on `kirigami_shadow_alpha`'s generated table, `token.text.scaling` counted as calling its curve, self-tests), `tools/kde-vectors`' offscreen GL harness on the pinned Mesa; connectors, each contract table's `FillClip::Center` row and the stand-in entries (the plan's table); facts, KDE (U680's two `fill_clip` facts `center`; the window shadows' corners under the negative spread weighed), macOS (`@menu_on_hold` and the set `[menu, @menu_on_hold]` in both state models, `menu_trigger` stated from `NSComboButton.h:18` and U333's and U616's trigger lines removed, whether the probe's unified buttons had an action and the look differs; the state models' and U331's and U611's wording for Keyboard navigation; a control's `wrap` measured), iOS (the label facts naming `icon_only` nowhere, U255's `icon_only` label lines removed; `wrap` under U256), GNOME (the eight accents' facts, #171), Windows (the three elevation-border role facts removed, a part under `contrast_high` referencing `role.@system_window_text` with the brush's citation; the eight system colours' rule under `contrast_high`, pending a register row for Aquatic's measurement on the Windows runner); ledger, #163–#169's and #171–#173's status | S1, S2.2, S2.4, S2.5, S2.7, S2.8, S3.1, S6.3, S7.1, S9.3, S9.4, S12, S16, S17, S18, S19.1, S21.1, S21.3; catalogue (the button's `menu_trigger`, `focus_visible_when` and `macos-*` keyed variants, the link's `focus_visible_when`, the conditions table, the readers); traces GNOME (GN-3.15), macOS (MAC-X13, MAC-N29†), KDE (K1.20, K3.1), Windows (W3-35) |
+| ADD-A136 | a spec batch (the macOS facts lane's round 4 questions, 3b7c8b03: the weight trait against the face, non-data evidence files, dots in evidence paths, U236's and U311's rows; ledger queue #174, #175, #176), decided from the sources and the runs: `Font.weight` the number that, asked of the same fonts, gives the drawn face, on Apple's platforms the face's `wght` coordinate (the variation's, else the axis's default; a font without the axis its `usWeightClass`), read from the font through the run's analysis, the weight trait no evidence and ADD-A123's `ns_font_weight` withdrawn, as macOS 15 draws `.SFNS-Semibold` at 590, `.SFNS-Medium` at 510 and `.SFNS-Heavy` at 860 under traits mapping to 600 or 700 or 400 (run 42215651196) (rejected: the trait by WebKit's thresholds, which draws another weight on SF's variable font; `kCTFontCSSWeightAttribute`, the trait's mapping on macOS 15 and the face's on macOS 26; the trait and a `wght` axis both, which S12 forbids); an evidence file cited, or the input an analysis output's `input_image` names (a recording and its crop), and a run's records, from which no fact's value is read, not evidence, a closed list of names (`settings.txt`, `environment.txt`) beside README.md and `run.toml`, data no citation reads staying on the harness's branch (rejected: records named as an analysis's input; records left out of the repository; an exemption by file type); an evidence path's TOML key written as TOML writes it, a non-bare key quoted (`"chevron.forward"`), the `evidence` a literal string, as the fact keys already quote a map entry (rejected: a backslash escape TOML does not have; JSON pointers for TOML, which rewrites every citation; keys renamed by the harness, names Apple's API does not give); S2.4's *Growing an outline*, one rule for an `Outside` or `Center` stroke's outer edge, an outset and a shadow's growing spread: a radius above zero grows by the whole distance, a zero radius stays zero, as GTK grows a rounded rectangle (#174 (1), #175; rejected: the distance added to every radius; CSS's spread factor `1 + (r − 1)³`, which a browser's box shadow applies, `material-3`'s elevations among them, but which changes nothing on `material-3`'s one shadowed part, the button's body, whose radii are at least 8 px and capsules at least 14 px against spreads of at most 4 px; a per-layer choice); `ShadowLayer.corner_radius` (`corner_radius_px`), one circular radius on all four corners which the layer's spread leaves, none on a `KirigamiSmoothstep` layer, Breeze's window shadows the window's radius plus half a pixel (overlap 3 px) and its popup shadows the frame radius (overlap 2 px, `kstyle/breezemetrics.h:172`), where the spread's rule would move each corner's arc 0.83 to 1.45 px inward (#174 (2), the form the orchestrator's; rejected: the full `Corners` form, as both sources set one radius and one number interpolates simply; a known inexactness; the drawn shadow measured and the nearest layer stated, the same inexactness; an enum keeping the part's radii, which cannot add the half pixel; the spread's rule keeping radii for every layer, against GTK and libadwaita's layers); `ios-13`'s `dynamic_type` rows and `macos-monterey`'s and `ios-13`'s `sf_tracking` rows (U237, U462) from a second Web Archive capture of the HIG's Typography page, the last after macOS 15's and iOS 18's release and before the page switched to describing 26 that holds the tables, describing those releases, else those rows pending under U237 and U462; equal rows cite both snapshots, a differing table selected by S2.2's enum operand then (#176; the pin to be fetched); the register's U144 and U146 settled in method (the faces' 510, 510, 590, 860), U236 narrowed to `macos-monterey`'s two translucent selection roles under Increase Contrast and U311 to the leading variants' style, axes and features and four weights; queue #160 (1)'s status. Follow-ups: code, `ShadowLayer.corner_radius` with its TOML spelling, S12's Kirigami refusal and its interpolation, the growth rule in the stroke's outer edge, the outset and the spread (a zero radius kept) with tests, `Font.weight`'s doc comment; scripts, `check_fact_citations.py` (`ns_font_weight` out of the conversions after the facts are re-cited, the records list and its self-test, quoted TOML keys in an evidence path, `at()` splitting outside quotes, self-tests), `check_facts.py`'s evidence-path parsing likewise; connectors, each contract table's `ShadowLayer.corner_radius` row; facts, macOS (every weight re-cited to the face's coordinate through `read_fonts.py`, U144's and U146's four weights and the five `*_emphasized` styles' 590 on both presets, `small_system`'s weight from the face, not `kCTFontCSSWeightAttribute` on macOS 15; U311's four weights; the uncited files of runs 42215651196 and 42272240639 cited or left on `v0.8.0-tools-probe-m2`), iOS (the text styles' and the button label's weights read from the face by the iOS host, the trait-converted facts pending under a register row of the iOS lane until then), KDE (`corner_radius_px` on every layer of the window and popup entries, `token.elevation.window_*` and `popup_*`, each an expression on the frame radius its surface reads), the orchestrator (the HIG capture fetched, pinned in `sources.toml` with `describes` and its generations, and compared with `hig-typography@2026-02-09`) | S2.4, S2.5, S2.8, S9.4, S12, S17; catalogue (the iOS button's `@role_primary`); traces KDE (K3.1, K3.2), macOS (MAC-X18); ledger (U144, U146, U236, U311; queue #160, #174–#176) |
 | ADD-A137 | the evidence root (the maintainer's decision of 2026-11-08, the 0.8.0 plan's D6 evidence item decided early; ledger queue #177): measured evidence in the evidence repository `native-theme-evidence` at `docs/evidence/`'s paths, pinned in `sources.toml` by one `evidence = true` `git` entry with a fixed id, a `docs/evidence/` path resolved against `NATIVE_THEME_EVIDENCE` or that entry's checkout in the source cache, read only from a clean checkout at the pinned commit | S17 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |

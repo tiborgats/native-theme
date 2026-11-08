@@ -129,6 +129,10 @@ A `[[fact]]` (S17 *Fields*):
   text as a key (`{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }`; S11, ADD-A123), any other map a snake_case key
   (S1's key grammar), a unit-valued entry with its unit's suffix (`button_ms = <n>`), and each entry's value is
   checked as the map's value type.
+- A shadow layer (`ShadowLayer`, S2.5) states its `falloff`, and its keys are its fields (a one-unit field by its
+  suffixed key, `corner_radius_px`); a `kirigami_smoothstep` layer stating `corner_radius_px` is refused (S12;
+  ADD-A136: Kirigami's shadow follows the item's corners). S2.4's *Growing an outline* is geometry the resolver and
+  the connectors compute; no fact states its result, so this script has nothing of it to check.
 - A compound field (`Sides<…>`, `Axes<…>`, not inside a `Value`) stated whole as `"absent"`, `"auto"` or `"none"`
   is a finding (compound_problems: the key's core type followed into the value, as map_problems follows it): such a
   field is no `Value`, S6.1 patching it per member (spec line 1755, *Compound fields*), and a `may_be_absent` mark
@@ -155,7 +159,9 @@ A `[[fact]]` (S17 *Fields*):
   `<id> <path>:<line or l1-l2>` or `<id> #<JSON pointer>`, its id a `[[source]]` of sources.toml; `quote` a non-empty
   string; `conversion` a list of check_fact_citations.CONVERSIONS' names; `absent` a list of non-empty names, `[]` where
   the platform has no name for what it lacks (S17 *Absence*, ADD-A120); `tolerance` a number >= 0, or a table from a
-  leaf path to such a number; `evidence` `docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`. A fact
+  leaf path to such a number; `evidence` `docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`, the
+  path in a TOML file a dotted key as TOML writes one (key_segments: a key that is no bare key quoted,
+  `macos.symbols."chevron.forward".size`; ADD-A136; check_fact_citations.py reads the value there). A fact
   with a `read` citation states a plain `= input.…` reference (S17 *`read`*).
 - A pending fact (S17 *A pending measurement*, ADD-A122): `pending = "U<n>"` in place of `value` (exactly one of
   them), no `[[fact.cite]]`; `key`, `pending` and `rows` required, `when`, `scheme_file` and `accent` as a fact's; the
@@ -175,7 +181,9 @@ A `[[fact]]` (S17 *Fields*):
   latest flag is refused by `not_states` (`latest` implies its flag), or where no one order of the flags can make
   every latest flag its set's latest while every flag either names is present (orders_possible: each latest flag set
   after the other present members of its set, those every entry gives it, without a cycle). Anything else
-  may hold together (`not_drawn` is not read: a shadowing there is a finding to narrow).
+  may hold together (`not_drawn` is not read: a shadowing there is a finding to narrow). A later fact that is itself
+  pending is exempt (ADD-A135, ledger queue #164 (3)): the combination stays pending, and once that fact is measured
+  the earlier one is shadowed by a value and its `when` narrowed then.
 - The generation rule (S17 *Generations*): a fact with `preset:<id>` in `when.conditions` has every citation serving
   that generation; a fact without one has citations that together serve each generation of its directory among the
   presets that exist (existing_presets(); a `preset:` in `not_conditions` takes that generation out). A citation's
@@ -904,9 +912,17 @@ def key_info(ctx: Context, key: str):
     """(problem or None, dimension or None, widget name or None, kind, the core's type of the key or None) of a
     fact's key; kind is "widget", "role", "token" or "input". A segment that is no snake_case name (a quoted one, a
     TOML bare key such as `Cantarell`) is an entry of a map keyed by text (TEXT_MAP: `per_family`, `per_language`;
-    S17, S11, ADD-A123), the core's types walked with TEXT_ENTRY in its place."""
+    S17, S11, ADD-A123), the core's types walked with TEXT_ENTRY in its place. Read once per key and context."""
     if not isinstance(key, str) or not key:
         return "the key is not a non-empty string", None, None, None, None
+    cache = ctx.__dict__.setdefault("_key_info", {})
+    if key not in cache:
+        cache[key] = read_key_info(ctx, key)
+    return cache[key]
+
+
+def read_key_info(ctx: Context, key: str):
+    """key_info of a non-empty string key, read."""
     parsed = key_segments(key)
     if isinstance(parsed, str):
         return parsed, None, None, None, None
@@ -1409,8 +1425,15 @@ def value_problems(ctx, value, dim, where="value", typ=None) -> list:
             fields = ctx.structs[e]
             out += [f"{where}.{k}: `{k}` is not a field of {e}" for k in value
                     if k not in fields and re.sub(r"_(px|ms|deg|pt)$", "", k) not in fields]
-        elif e == "ShadowLayer" and "falloff" not in value:
-            out.append(f"{where}: a shadow layer states its `falloff` (S2.5: no default stands in for it)")
+        elif e == "ShadowLayer":
+            fields = ctx.structs.get(e, {})
+            out += [f"{where}.{k}: `{k}` is not a field of ShadowLayer (S2.5)" for k in value
+                    if k not in fields and re.sub(r"_(px|ms|deg|pt)$", "", k) not in fields]
+            if "falloff" not in value:
+                out.append(f"{where}: a shadow layer states its `falloff` (S2.5: no default stands in for it)")
+            elif value.get("falloff") == "kirigami_smoothstep" and "corner_radius_px" in value:
+                out.append(f"{where}: a `kirigami_smoothstep` layer states `corner_radius_px` (S12; S2.5: Kirigami's "
+                           f"shadow follows the item's corners)")
         entry = MAP_TYPE.fullmatch(e) if e else None
         if entry and TEXT_MAP.fullmatch(e):
             # a map keyed by text: its keys the text as written, its values the map's value type (S11, ADD-A123)
@@ -1679,6 +1702,12 @@ def cite_problems(ctx, item: Item, cite: Cite) -> list:
     if "evidence" in c and (not parse_evidence(c["evidence"]) or ".." in c["evidence"].split("#")[0].split("/")):
         out.append((cite.ln("evidence"), f"evidence {c['evidence']!r} is not "
                                          f"`docs/evidence/<harness>/<date>-run-<id>/<image>/<file>#<path>`"))
+    elif "evidence" in c:
+        file, path = parse_evidence(c["evidence"])[:2]
+        parsed = key_segments(path) if file.endswith(".toml") else None
+        if isinstance(parsed, str):
+            out.append((cite.ln("evidence"), f"evidence path {path!r} is not a TOML dotted key as TOML writes one "
+                                             f"(S17 *`evidence`*): {parsed}"))
     return out
 
 
@@ -2806,61 +2835,94 @@ def whens_overlap(a, b, model) -> bool:
     `first`/`last`/`only` values; a context one requires and the other refuses) and by the widget's state models
     (`model`: two states of one exclusive group, which the reduction leaves one of; two variants of one
     `exclusive_variants` group; two or more variants no listed or product set holds)."""
-    a = a if isinstance(a, dict) else {}
-    b = b if isinstance(b, dict) else {}
-    la = {k: v for k, v in a.get("latest", {}).items() if isinstance(v, str)} if isinstance(a.get("latest"), dict) \
-        else {}
-    lb = {k: v for k, v in b.get("latest", {}).items() if isinstance(v, str)} if isinstance(b.get("latest"), dict) \
-        else {}
-    if any(la[s] != lb[s] for s in la.keys() & lb.keys()):
+    return forms_overlap(WhenForm.of(a), WhenForm.of(b), model)
+
+
+@dataclass
+class WhenForm:
+    """A `when` as whens_overlap reads it, each list of names a set (a value that is not a table reads as `{}`)."""
+    latest: dict          # {set: flag} of its `latest` table's string flags
+    held: dict            # {k: the names `k` lists} for OVERLAP_KINDS
+    refused: dict         # {k: the names `not_k` lists} for OVERLAP_KINDS
+    refuses_own: dict     # {k: whether `not_k` refuses a name `k` lists} for OVERLAP_KINDS
+    kinds: dict           # {one-valued condition kind: its values the `conditions` name}
+    direction: tuple      # (whether it has `direction`, its value)
+    size_class: dict      # {axis: (the size classes it names, those it refuses)}
+    position: dict
+    context: list
+    not_context: list
+
+    @staticmethod
+    def of(w):
+        w = w if isinstance(w, dict) else {}
+        kinds = {}
+        for c in when_lists(w, "conditions"):
+            head, _, arg = c.partition(":")
+            if head in ("scheme", "preset", "flavor", "idiom", "input", "posture", "device_model"):
+                kinds.setdefault(head, set()).add(arg)
+            elif head == "container_size":
+                container, _, size = arg.partition(":")
+                kinds.setdefault(f"container_size:{container}", set()).add(size)
+        sc = w.get("size_class") if isinstance(w.get("size_class"), dict) else {}
+        held = {k: when_lists(w, k) for k in OVERLAP_KINDS}
+        refused = {k: when_lists(w, f"not_{k}") for k in OVERLAP_KINDS}
+        return WhenForm(
+            {k: v for k, v in w["latest"].items() if isinstance(v, str)} if isinstance(w.get("latest"), dict) else {},
+            held, refused, {k: not held[k].isdisjoint(refused[k]) for k in OVERLAP_KINDS}, kinds,
+            ("direction" in w, w.get("direction")),
+            {axis: (when_lists(sc, axis), when_lists(sc, f"not_{axis}")) for axis in ("horizontal", "vertical")},
+            w.get("position") if isinstance(w.get("position"), dict) else {},
+            w.get("context") if isinstance(w.get("context"), list) else [],
+            w.get("not_context") if isinstance(w.get("not_context"), list) else [])
+
+
+OVERLAP_KINDS = ("states", "variants", "conditions", "sizes", "densities")
+
+
+def forms_overlap(a: WhenForm, b: WhenForm, model) -> bool:
+    """whens_overlap over two `when`s' forms."""
+    la, lb = a.latest, b.latest
+    if la and lb and any(la[s] != lb[s] for s in la.keys() & lb.keys()):
         return False
+    for k in OVERLAP_KINDS:
+        if a.refuses_own[k] or b.refuses_own[k] or not a.held[k].isdisjoint(b.refused[k]) \
+                or not b.held[k].isdisjoint(a.refused[k]):
+            return False
     latest = {**la, **lb}
-    held = {}
-    for k in ("states", "variants", "conditions", "sizes", "densities"):
-        held[k] = when_lists(a, k) | when_lists(b, k)
-        if k == "states":
-            held[k] |= set(latest.values())
-        if held[k] & (when_lists(a, f"not_{k}") | when_lists(b, f"not_{k}")):
+    held_states = a.held["states"] | b.held["states"]
+    if latest:
+        flags = set(latest.values())
+        if not (flags.isdisjoint(a.refused["states"]) and flags.isdisjoint(b.refused["states"])):
             return False
-    if len(held["sizes"]) > 1 or len(held["densities"]) > 1:
+        held_states |= flags
+    if len(a.held["sizes"] | b.held["sizes"]) > 1 or len(a.held["densities"] | b.held["densities"]) > 1:
         return False
-    kinds = {}
-    for c in held["conditions"]:
-        head, _, arg = c.partition(":")
-        if head in ("scheme", "preset", "flavor", "idiom", "input", "posture", "device_model"):
-            kinds.setdefault(head, set()).add(arg)
-        elif head == "container_size":
-            container, _, size = arg.partition(":")
-            kinds.setdefault(f"container_size:{container}", set()).add(size)
-    if any(len(v) > 1 for v in kinds.values()):
+    if any(len(v | b.kinds[k]) > 1 if k in b.kinds else len(v) > 1 for k, v in a.kinds.items()) or any(
+            len(v) > 1 for k, v in b.kinds.items() if k not in a.kinds):
         return False
-    if "direction" in a and "direction" in b and a["direction"] != b["direction"]:
+    if a.direction[0] and b.direction[0] and a.direction[1] != b.direction[1]:
         return False
-    sa = a.get("size_class") if isinstance(a.get("size_class"), dict) else {}
-    sb = b.get("size_class") if isinstance(b.get("size_class"), dict) else {}
     for axis in ("horizontal", "vertical"):
-        on = when_lists(sa, axis) | when_lists(sb, axis)
-        if len(on) > 1 or on & (when_lists(sa, f"not_{axis}") | when_lists(sb, f"not_{axis}")):
+        on = a.size_class[axis][0] | b.size_class[axis][0]
+        if len(on) > 1 or on & (a.size_class[axis][1] | b.size_class[axis][1]):
             return False
-    pa = a.get("position") if isinstance(a.get("position"), dict) else {}
-    pb = b.get("position") if isinstance(b.get("position"), dict) else {}
+    pa, pb = a.position, b.position
     if any(k in pa and k in pb and pa[k] != pb[k] for k in ("first", "last", "only", "parity")):
         return False
     for x, y in ((a, b), (b, a)):
-        ctx_x = x.get("context") if isinstance(x.get("context"), list) else []
-        not_y = y.get("not_context") if isinstance(y.get("not_context"), list) else []
-        if any(c in not_y for c in ctx_x):
+        if any(c in y.not_context for c in x.context):
             return False
     if model is not None:
         states, groups, sets = model[:3]
         recency = model[3] if len(model) > 3 else {}
-        if latest and not orders_possible(latest, held["states"], recency):
+        if latest and not orders_possible(latest, held_states, recency):
             return False
-        if any(len(held["states"] & g) > 1 for g in states):
+        if any(len(held_states & g) > 1 for g in states):
             return False
-        if any(len(held["variants"] & g) > 1 for g in groups):
+        variants = a.held["variants"] | b.held["variants"]
+        if any(len(variants & g) > 1 for g in groups):
             return False
-        if len(held["variants"]) > 1 and not any(held["variants"] <= x for x in sets):
+        if len(variants) > 1 and not any(variants <= x for x in sets):
             return False
     return True
 
@@ -2909,30 +2971,55 @@ def widget_models(items) -> dict:
     return out
 
 
+def fact_runs(items) -> dict:
+    """{file: [(fact, its run, its index in the run)] in file order} over the facts (not the palette's) whose key is a
+    string, a run the file's facts of one key (canonical_key) and one accent run (`scheme_file` and `accent`, or
+    neither) in file order: the facts S17 *Which fact applies* compares with each other."""
+    out, runs, unhashed = {}, {}, []
+    for it in items:
+        d = it.data
+        if it.table == "fact" and not it.palette and isinstance(d.get("key"), str):
+            k = (it.file, canonical_key(d["key"]), d.get("scheme_file"), d.get("accent"))
+            try:
+                run = runs.setdefault(k, [])
+            except TypeError:   # a `scheme_file` or `accent` that is no string (a finding of fact_shared_problems)
+                run = next((r for x, r in unhashed if x == k), None)
+                if run is None:
+                    run = []
+                    unhashed.append((k, run))
+            out.setdefault(it.file, []).append((it, run, len(run)))
+            run.append(it)
+    return out
+
+
+def run_forms(forms, run) -> list:
+    """The WhenForm of each fact of a run (fact_runs), read once into `forms` ({id of the run: its forms})."""
+    out = forms.get(id(run))
+    if out is None:
+        out = forms[id(run)] = [WhenForm.of(it.data.get("when")) for it in run]
+    return out
+
+
 def pending_problems(ctx, items) -> list:
     """S17 *Which fact applies*: a pending fact that a later fact of its key, in its file and of its run (the accent
     run's `scheme_file` and `accent`, or neither), shadows on a combination both `when`s may hold in (whens_overlap)
-    is a finding: the combination would pass with the later fact's value."""
+    is a finding: the combination would pass with the later fact's value. A later pending fact is exempt (ADD-A135):
+    the combination stays pending."""
     models = widget_models(items)
-    facts = {}
-    for it in items:
-        if it.table == "fact" and not it.palette and isinstance(it.data.get("key"), str):
-            facts.setdefault(it.file, []).append(it)
+    forms = {}
     out = []
-    for file, fs in facts.items():
-        for i, pend in enumerate(fs):
+    for file, fs in fact_runs(items).items():
+        for pend, run, i in fs:
             d = pend.data
             if "pending" not in d:
                 continue
             widget = key_info(ctx, d["key"])[2]
             model = models.get((pend.platform, widget)) if widget else None
-            run = (d.get("scheme_file"), d.get("accent"))
-            for later in fs[i + 1:]:
-                ld = later.data
-                if canonical_key(ld["key"]) != canonical_key(d["key"]) or (
-                        ld.get("scheme_file"), ld.get("accent")) != run:
+            rf = run_forms(forms, run)
+            for later, form in zip(run[i + 1:], rf[i + 1:]):
+                if "pending" in later.data:
                     continue
-                if whens_overlap(d.get("when"), ld.get("when"), model):
+                if forms_overlap(rf[i], form, model):
                     out.append((file, pend.line, f"pending fact {d['key']!r} ({d['pending']}) is shadowed by the later "
                                                  f"fact at line {later.line} on a combination both `when`s hold in "
                                                  f"(S17 *Which fact applies*: narrow its `when` or place it after)"))
@@ -2945,23 +3032,18 @@ def present_problems(ctx, items) -> list:
     with no earlier fact of its key, in its file and of its run, stating `"absent"` or a `drawn_as` table on a
     combination both `when`s may hold in (whens_overlap) is a finding: it brings back nothing."""
     models = widget_models(items)
-    facts = {}
-    for it in items:
-        if it.table == "fact" and not it.palette and isinstance(it.data.get("key"), str):
-            facts.setdefault(it.file, []).append(it)
+    forms = {}
     out = []
-    for file, fs in facts.items():
-        for i, pres in enumerate(fs):
+    for file, fs in fact_runs(items).items():
+        for pres, run, i in fs:
             d = pres.data
             if d.get("value") != "present" or key_info(ctx, d["key"])[4] != PART_PATCH:
                 continue
             widget = key_info(ctx, d["key"])[2]
             model = models.get((pres.platform, widget)) if widget else None
-            run = (d.get("scheme_file"), d.get("accent"))
-            if not any(canonical_key(e.data["key"]) == canonical_key(d["key"])
-                       and (e.data.get("scheme_file"), e.data.get("accent")) == run
-                       and (e.data.get("value") == "absent" or isinstance(e.data.get("value"), dict))
-                       and whens_overlap(e.data.get("when"), d.get("when"), model) for e in fs[:i]):
+            rf = run_forms(forms, run)
+            if not any((e.data.get("value") == "absent" or isinstance(e.data.get("value"), dict))
+                       and forms_overlap(form, rf[i], model) for e, form in zip(run[:i], rf)):
                 out.append((file, pres.line, f"{d['key']!r} = \"present\" follows no fact of its key making the "
                                              f"part absent or drawn as another where it holds (S17, S6.3: `present` "
                                              f"draws a part over an `Absent` or `DrawnAs` stated before it)"))
@@ -3649,7 +3731,8 @@ pub struct IndicationBox { pub part: Key, pub outset: Value<Px> }
 pub enum RippleEffect { AndroidPatterned }
 pub enum Shadow { Layers(Vec<ShadowLayer>), Elevation(Key) }
 pub struct ShadowLayer { pub x: Value<Px>, pub y: Value<Px>, pub blur: Value<Px>, pub spread: Value<Px>,
-                         pub color: Value<Color>, pub inset: bool, pub falloff: ShadowFalloff }
+                         pub color: Value<Color>, pub inset: bool, pub falloff: ShadowFalloff,
+                         pub corner_radius: Option<Value<Px>> }
 pub enum ShadowFalloff { Gaussian, KirigamiSmoothstep }
 pub struct ElementData { pub progress: f32, pub caret_height: Px }
 pub struct TextRoles { pub body: Value<TextStyle> }
@@ -4235,6 +4318,23 @@ SELF_TEST_CASES = [
      'color = "#00000024", inset = false, falloff = "gaussian" }',
      'color = "#00000024", inset = false, falloff = "smoothstep" }',
      ["value.layers[0].falloff: 'smoothstep' is not a unit variant of ShadowFalloff"]),
+    # a layer's own corner radius (S2.5, S12; ADD-A136): `corner_radius_px`, refused on a Kirigami layer
+    ("WinUI: a shadow layer's own corner radius", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "gaussian", corner_radius_px = 4.5 }',
+     []),
+    ("WinUI: a shadow layer's corner radius with its unit", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "gaussian", corner_radius_px = "4px" }',
+     ["value.layers[0].corner_radius_px: a suffixed key takes a plain number"]),
+    ("WinUI: a shadow layer's full corners", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "gaussian", corners_px = 4 }',
+     ["value.layers[0].corners_px: `corners_px` is not a field of ShadowLayer"]),
+    ("WinUI: a Kirigami layer's own corner radius", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "kirigami_smoothstep", corner_radius_px = 4 }',
+     ["value.layers[0]: a `kirigami_smoothstep` layer states `corner_radius_px`"]),
     ("WinUI: a shadow layer's Kirigami falloff", "docs/facts/windows/buttons.toml",
      'color = "#00000024", inset = false, falloff = "gaussian" }',
      'color = "#00000024", inset = false, falloff = "kirigami_smoothstep" }', []),
@@ -4461,6 +4561,17 @@ SELF_TEST_CASES = [
     ("KDE accent: an evidence path out of form", "docs/facts/kde/colors.toml", "2026-11-03-run-2/kde-breeze-light/",
      "2026-11-03/kde-breeze-light/", ["is not `docs/evidence/<harness>/<date>-run-<id>/<image>/<file>#<path>`",
                                       "no citation serves kde-breeze"]),
+    ("evidence: a TOML path with an unterminated quote", "docs/facts/macos/buttons.toml",
+     'macos-26/probe.toml#macos.fonts.sizes.systemFontSize"', 'macos-26/probe.toml#macos.\\"chevron.size"',
+     ["is not a TOML dotted key as TOML writes one (S17 *`evidence`*): key 'macos.\"chevron.size': the quote"]),
+    ("evidence: a TOML path with a quote inside a bare key", "docs/facts/macos/buttons.toml",
+     'evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.sizes.'
+     'systemFontSize"', "evidence = 'docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos."
+                        "symbols.chevron\"forward\".size'", ["is not a TOML dotted key"]),
+    ("evidence: a quoted TOML path", "docs/facts/macos/buttons.toml",
+     'evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.sizes.'
+     'systemFontSize"', "evidence = 'docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos."
+                        "symbols.\"chevron.forward\".size'", []),
     ("KDE accent: an image run.toml maps elsewhere", "docs/evidence/kde-accent/2026-11-03-run-2/run.toml",
      'preset = "kde-breeze"', 'preset = "adwaita"', ["no citation serves kde-breeze"]),
     # accent fields outside kde/
@@ -4505,6 +4616,15 @@ SELF_TEST_CASES = [
      _PENDING + _LATER.replace('when = { states = ["hover"] }\n', ""), ["is shadowed by the later fact at line 8"]),
     ("pending: shadowed where both hold (no exclusive group on gnome/)", "docs/facts/gnome/pending.toml", None,
      _PENDING + _LATER, ["is shadowed by the later fact"]),
+    # a later pending fact is exempt (S17 *Which fact applies*; ADD-A135, ledger queue #164 (3))
+    ("pending: shadowed by a later pending fact", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _PENDING.replace('states = ["pressed"]', 'states = ["pressed", "hover"]').replace('"U1"', '"U2"'),
+     []),
+    ("pending: shadowed by a later pending fact holding everywhere", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _PENDING.replace('when = { states = ["pressed"] }\n', ""), []),
+    ("pending: a later pending fact, then a value", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _PENDING.replace('"U1"', '"U2"') + _LATER.replace('when = { states = ["hover"] }\n', ""),
+     ["(U1) is shadowed by the later fact at line 14", "(U2) is shadowed by the later fact at line 14"]),
     ("pending: a later fact refusing its state", "docs/facts/gnome/pending.toml", None,
      _PENDING + _LATER.replace('states = ["hover"]', 'not_states = ["pressed"]'), []),
     ("pending: a later fact under the other scheme", "docs/facts/gnome/pending.toml", None,
