@@ -1791,6 +1791,11 @@ else
 fi
 run_check "data documents: fact citations self-test" \
     python3 scripts/check_fact_citations.py --self-test
+# The verifiers' tooling (the 0.8.0 plan's "Facts, independently"): the
+# units, the verifier's brief and its leak check, the comparison and the
+# audit sample, on fixtures.
+run_check "data documents: verifier tooling self-test" \
+    python3 scripts/verify_facts.py --self-test
 # The 0.8.0 model's typed widgets (specification S6.1): the declarations
 # generated under native-theme/src/widgets/ are what the catalogue and
 # scripts/widget_units.toml state, until the catalogue is archived.
