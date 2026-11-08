@@ -557,7 +557,7 @@ mod tests {
 
     #[test]
     fn every_row_of_the_table() {
-        let table = include_str!("../vectors/reader.qfont_from_string.tsv");
+        let table = include_str!("../../tests/vectors/reader.qfont_from_string.tsv");
         let mut lines = table.lines().filter(|l| !l.starts_with('#'));
         assert_eq!(
             lines.next(),

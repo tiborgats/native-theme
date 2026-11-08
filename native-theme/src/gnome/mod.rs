@@ -3,13 +3,15 @@
 //! from the XDG Desktop Portal's Settings interface (through ashpd) and
 //! gsettings, into a [`ReaderState`] and a reader layer (S8, S9.3, S9.5).
 //!
-//! The conditions, the text-scaling factor and the accent are the layer's
-//! portable part, which any preset takes; the icon theme, a freedesktop
-//! theme's name, is its own preset's (`for_preset.<own>`). The accent is a
-//! setting GNOME defines independently of the scheme, so it is stated under
-//! both schemes (S9.3). The fonts wait for the clean room's Pango parser
-//! (the 0.8.0 plan's D10, decision F7), so the reader patches no text-role
-//! slot yet.
+//! The conditions, the text-scaling factor, the accent and the fonts are
+//! the layer's portable part, which any preset takes; the icon theme, a
+//! freedesktop theme's name, is its own preset's (`for_preset.<own>`). The
+//! accent is a setting GNOME defines independently of the scheme, so it is
+//! stated under both schemes (S9.3): the accent libadwaita shows, the
+//! portal's colour classified by the clean room's [`adw_accent_nearest`]
+//! (the 0.8.0 plan's D10). The fonts patch the text-role slots `body` and
+//! `monospace`, parsed by the clean room's
+//! [`helpers::pango_font_description`].
 //!
 //! # Sources
 //!
@@ -19,7 +21,8 @@
 //! `SettingChanged` signal.
 //!
 //! - `org.freedesktop.appearance color-scheme`: light or dark.
-//! - `org.freedesktop.appearance accent-color`: the accent colour.
+//! - `org.freedesktop.appearance accent-color`: the accent colour, which
+//!   libadwaita classifies into one of its nine accents.
 //! - `org.freedesktop.appearance contrast`: high contrast.
 //! - `org.freedesktop.appearance reduced-motion`: reduced motion.
 //! - `org.gnome.desktop.interface color-scheme`: light or dark, where the
@@ -28,6 +31,9 @@
 //! - `org.gnome.desktop.interface text-scaling-factor`: the text scale.
 //! - `org.gnome.desktop.interface overlay-scrolling`: overlay scroll bars.
 //! - `org.gnome.desktop.interface icon-theme`: the icon theme.
+//! - `org.gnome.desktop.interface font-name`: the `body` slot's font.
+//! - `org.gnome.desktop.interface monospace-font-name`: the `monospace`
+//!   slot's font.
 //! - `org.gnome.desktop.a11y.interface high-contrast`: high contrast, where
 //!   the portal reports none.
 //! - `org.gnome.desktop.a11y.interface reduced-motion`: reduced motion, where
@@ -39,7 +45,14 @@
 //!   text-scaling factor is reported (`toolkit_scale_carries_text_scale`),
 //!   fixed for a session.
 
+mod helpers;
+pub(crate) mod portal;
+
 use ashpd::desktop::settings::{ColorScheme, Contrast as PortalContrast, ReducedMotion};
+
+use helpers::adw_accent_nearest;
+
+use crate::blocks::BlockPatch;
 
 use crate::color::Color;
 use crate::inputs::{Contrast, InputName, InputValue};
@@ -48,7 +61,7 @@ use crate::presets::PresetId;
 use crate::reader::Reading;
 use crate::resolve::ReaderState;
 use crate::selector::Scheme;
-use crate::tokens::IconTokensPatch;
+use crate::tokens::{IconTokensPatch, TextRolesPatch, TextTokensPatch};
 use crate::value::{SchemeMap, Value};
 
 /// The text-scaling factor of unscaled text, S16's no-reader state's: the
@@ -106,6 +119,10 @@ struct GnomeData {
     overlay_scrolling: Option<bool>,
     /// The icon theme's name (`Adwaita`, `Papirus`). `None`: not given.
     icon_theme: Option<String>,
+    /// gsettings' `font-name`, a Pango font description. `None`: not given.
+    font_name: Option<String>,
+    /// gsettings' `monospace-font-name`. `None`: not given.
+    monospace_font_name: Option<String>,
 }
 
 /// Whether the user asked for high contrast: the portal's `contrast`, or
@@ -146,17 +163,38 @@ fn text_scaling_factor(data: &GnomeData) -> f32 {
         .unwrap_or(UNSCALED)
 }
 
-/// The portal's accent as a colour, opaque; `None` where a channel lies
+/// The accent libadwaita shows for the portal's accent: each channel
+/// narrowed to single precision and the colour classified into one of its
+/// nine accents ([`adw_accent_nearest`],
+/// `libadwaita@1.10.0 src/adw-settings-impl-portal.c:124-141`), that
+/// accent's colour ([`helpers::accent_color`]). `None` where a channel lies
 /// outside `0..=1`, which the XDG portal specification reads as "accent
-/// colour not set".
+/// colour not set", so the preset's own accent shows (S9.3).
 fn portal_accent((r, g, b): (f64, f64, f64)) -> Option<Color> {
     let channel = |value: f64| (0.0..=1.0).contains(&value).then_some(value as f32);
-    Some(Color {
-        r: channel(r)?,
-        g: channel(g)?,
-        b: channel(b)?,
-        a: 1.0,
-    })
+    helpers::accent_color(adw_accent_nearest(channel(r)?, channel(g)?, channel(b)?))
+}
+
+/// The text-role slots the reader patches from `data`'s font strings
+/// ([`helpers::font_patch`]), the point sizes converted by `own`'s
+/// `token.text.font_dpi`, GNOME reporting none (S9.4); `None` where it
+/// patches none.
+fn text_roles(data: &GnomeData, own: PresetId) -> Option<TextRolesPatch> {
+    if data.font_name.is_none() && data.monospace_font_name.is_none() {
+        return None;
+    }
+    let font_dpi = own.font_dpi();
+    let slot = |text: &Option<String>| {
+        text.as_deref()
+            .and_then(|text| helpers::font_patch(text, font_dpi))
+            .map(BlockPatch::Fields)
+    };
+    let roles = TextRolesPatch {
+        body: slot(&data.font_name),
+        monospace: slot(&data.monospace_font_name),
+        ..TextRolesPatch::default()
+    };
+    (roles != TextRolesPatch::default()).then_some(roles)
 }
 
 /// The reader's state and layer from what the portal and gsettings gave,
@@ -169,7 +207,8 @@ fn portal_accent((r, g, b): (f64, f64, f64)) -> Option<Color> {
 ///   font DPI: GNOME lays fonts out at the preset's `token.text.font_dpi`
 ///   (S9.4).
 /// - The common bases: `input.accent` at both schemes, the accent being a
-///   setting GNOME defines independently of the scheme (S9.3).
+///   setting GNOME defines independently of the scheme (S9.3); the
+///   text-role slots `body` and `monospace` ([`text_roles`]).
 /// - `for_preset.<own>`: `token.icons.theme`.
 fn build_gnome_reading(data: &GnomeData, own: PresetId) -> Reading {
     let mut state = ReaderState::new(data.scheme, text_scaling_factor(data));
@@ -185,6 +224,12 @@ fn build_gnome_reading(data: &GnomeData, own: PresetId) -> Reading {
             InputName::accent(),
             InputValue::new(SchemeMap::new(accent.clone(), accent)),
         ));
+    }
+    if let Some(roles) = text_roles(data, own) {
+        layer.bases.tokens.text = Some(Box::new(TextTokensPatch {
+            roles: Some(Box::new(roles)),
+            ..TextTokensPatch::default()
+        }));
     }
     if let Some(theme) = &data.icon_theme {
         let mut own_bases = Bases::default();
@@ -263,6 +308,8 @@ pub(crate) fn build_reading(
         session_type,
         overlay_scrolling: flag(gsetting("org.gnome.desktop.interface", "overlay-scrolling")),
         icon_theme: gsetting("org.gnome.desktop.interface", "icon-theme"),
+        font_name: gsetting("org.gnome.desktop.interface", "font-name"),
+        monospace_font_name: gsetting("org.gnome.desktop.interface", "monospace-font-name"),
     };
     build_gnome_reading(&data, own)
 }
@@ -289,23 +336,7 @@ pub(crate) fn build_reading(
 /// the factor twice; the reader cannot see a client's backend (docs/todo.md,
 /// *Font DPI*).
 pub(crate) async fn read(own: PresetId) -> Reading {
-    // Connect to the portal and read the four appearance settings, each of
-    // which can fail independently, all within one deadline.
-    let (portal_scheme, accent, contrast, portal_motion) = with_deadline(
-        async {
-            let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
-            let scheme = settings.color_scheme().await.ok();
-            let accent = settings.accent_color().await.ok();
-            let contrast = settings.contrast().await.unwrap_or_default();
-            let reduced_motion = settings.reduced_motion().await.ok();
-            Some((scheme, accent, contrast, reduced_motion))
-        },
-        PORTAL_DEADLINE,
-    )
-    .await
-    .flatten()
-    .unwrap_or_default();
-
+    let (portal_scheme, accent, contrast, portal_motion) = read_portal().await;
     let start = std::time::Instant::now();
     build_reading(
         portal_scheme,
@@ -322,6 +353,33 @@ pub(crate) async fn read(own: PresetId) -> Reading {
         },
         own,
     )
+}
+
+/// The portal's four `org.freedesktop.appearance` settings: the colour
+/// scheme, the accent, the contrast and reduced motion, each `None` (the
+/// contrast its default) where the portal does not give it: no D-Bus
+/// session, a sandbox, an old portal, no answer within [`PORTAL_DEADLINE`]
+/// (one for all four), or the setting missing.
+async fn read_portal() -> (
+    Option<ColorScheme>,
+    Option<ashpd::desktop::Color>,
+    PortalContrast,
+    Option<ReducedMotion>,
+) {
+    with_deadline(
+        async {
+            let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
+            let scheme = settings.color_scheme().await.ok();
+            let accent = settings.accent_color().await.ok();
+            let contrast = settings.contrast().await.unwrap_or_default();
+            let reduced_motion = settings.reduced_motion().await.ok();
+            Some((scheme, accent, contrast, reduced_motion))
+        },
+        PORTAL_DEADLINE,
+    )
+    .await
+    .flatten()
+    .unwrap_or_default()
 }
 
 /// Detect which desktop portal backend is running from the session bus names.

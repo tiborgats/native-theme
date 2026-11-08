@@ -60,4 +60,22 @@ impl PresetId {
     pub fn from_key(key: &str) -> Option<PresetId> {
         PresetId::all().iter().copied().find(|id| id.key() == key)
     }
+
+    /// The preset's own `token.text.font_dpi`, the DPI a reader converts
+    /// the point sizes it reads by where its platform reports none (S9.4);
+    /// `None` where its file states none as a number in its bases.
+    #[cfg_attr(
+        not(all(target_os = "linux", feature = "portal")),
+        allow(
+            dead_code,
+            reason = "a reader's: no reader reading points is linked in this build"
+        )
+    )]
+    pub(crate) fn font_dpi(self) -> Option<f32> {
+        let file = crate::toml::layer::read_preset(self.source()).ok()?;
+        match file.layer.bases.tokens.text?.font_dpi? {
+            crate::value::Value::Stated(dpi) => Some(dpi),
+            _ => None,
+        }
+    }
 }
