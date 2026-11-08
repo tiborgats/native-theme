@@ -10,10 +10,12 @@
 //! `NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme
 //! --test facts_gate` gates those two alone, its report saying it ran a
 //! subset. An id no bundled preset has, an empty name or an id named twice
-//! fails the test; unset, every bundled preset runs. A subset is no gate:
-//! `scripts/check_release.sh` never sets the variable, so every mode of it
-//! gates every preset, and the release's run (`FACTS_GATE_RELEASE=1`)
-//! refuses a subset.
+//! fails the test; `none` runs no preset, the facts' own checks alone;
+//! unset, every bundled preset runs. A subset is no gate:
+//! `scripts/check_release.sh` gates every preset in every mode (`--commit`
+//! and `--quick` one preset per step, beside `none`'s step, the facts' own
+//! checks every step also runs), and the release's run
+//! (`FACTS_GATE_RELEASE=1`) refuses a subset.
 //!
 //! `NT_FACTS_GATE_SHARD=k/N` runs the `k`th of `N` shards of the work
 //! (`run::Shard`): each condition vector checked by one shard alone, the
@@ -80,12 +82,16 @@ const PRESETS_VARIABLE: &str = "NT_FACTS_GATE_PRESETS";
 
 /// The presets `facts_gate` runs, in [`PresetId::all`]'s order: every
 /// bundled preset where `value`, [`PRESETS_VARIABLE`]'s value, is `None`,
-/// else those its comma-separated list names. An id no bundled preset has,
-/// an empty name or an id named twice is an error, never an empty run.
+/// none where it is `none` (the facts' own checks alone), else those its
+/// comma-separated list names. An id no bundled preset has, an empty name
+/// or an id named twice is an error, never an empty run.
 fn selected_presets(value: Option<&str>) -> Result<Vec<PresetId>, String> {
     let Some(value) = value else {
         return Ok(PresetId::all().to_vec());
     };
+    if value.trim() == "none" {
+        return Ok(Vec::new());
+    }
     let mut named = Vec::new();
     for name in value.split(',').map(str::trim) {
         let known = || {
@@ -2278,6 +2284,19 @@ fn facts_gate_presets_unknown_id_fails() {
     assert!(twice.contains("named twice"), "{twice}");
 }
 
+/// [`PRESETS_VARIABLE`] `none`: `facts_gate` runs no preset, the facts' own
+/// checks alone; `none` beside an id is no bundled preset's id.
+#[test]
+fn facts_gate_presets_none() {
+    assert_eq!(selected_presets(Some("none")), Ok(Vec::new()));
+    assert_eq!(selected_presets(Some(" none ")), Ok(Vec::new()));
+    let beside = selected_presets(Some("none,adwaita")).unwrap_err();
+    assert!(
+        beside.contains("`none` is no bundled preset's id"),
+        "{beside}"
+    );
+}
+
 /// [`run::SHARD_VARIABLE`] names one shard of the gate's work, `k/N`;
 /// unset, the whole run; any other value fails.
 #[test]
@@ -2588,7 +2607,12 @@ fn facts_gate() {
     {
         write_listed(&directory, shard, &presets, &report);
     }
-    let mut scope = if subset {
+    let mut scope = if ids.is_empty() {
+        format!(
+            "no preset, the facts' own checks alone, as {PRESETS_VARIABLE} names (unset it to \
+             gate every preset)"
+        )
+    } else if subset {
         format!(
             "a subset, {} of {} bundled presets ({}) as {PRESETS_VARIABLE} names (unset it to \
              gate every preset)",

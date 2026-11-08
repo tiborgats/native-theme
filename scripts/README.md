@@ -333,6 +333,19 @@ The step cache (`step_cache.sh`, below) skips a step whose declared inputs are
 unchanged since it last passed; the summary lists each as
 `unchanged since <commit>`, and `--no-cache` runs every step.
 
+The facts gate (`native-theme/tests/facts_gate.rs`'s `facts_gate`) is a step
+of its own; the other test steps skip it (`-- --skip facts_gate --exact`), since no `cfg` reaches it and
+one run gates every target and feature set. The full run gates every preset
+in one step. `--commit` and `--quick` gate it in parts the cache skips one by
+one: `facts gate (the facts, no preset)` (`NT_FACTS_GATE_PRESETS=none`),
+cached on every facts directory, then `facts gate (<preset>)` for each
+bundled preset, cached on its preset file (the other presets' files left
+out), its platform's facts directory (the gate's own `DIRECTORIES` table),
+`docs/facts/*.toml` (the evidence pin among them),
+`scripts/widget_units.toml` and the crate and test code. Every part also runs
+the facts' own checks, so the parts together run every check the whole gate
+runs, and a change to any code re-runs every part.
+
 ```sh
 ./scripts/check_release.sh --quick
 ./scripts/check_release.sh --commit
@@ -349,7 +362,8 @@ rustdoc's, rustfmt's, Python's, nextest's), both scripts' own hashes, the
 environment (but `_`, `SHLVL`, `OLDPWD`), the step's description and command,
 and the content of its declared inputs (`CACHE_INPUTS` in `check_release.sh`:
 files, directories and globs by path and content, a missing one by name;
-`__pycache__` folders left out). A cargo step's inputs (`@rust:<crates>`) are
+`__pycache__` folders left out; an input `!<pattern>` leaves out each file the
+others name whose path the pattern matches). A cargo step's inputs (`@rust:<crates>`) are
 the workspace manifest, lock and tool configuration, every Cargo configuration
 file Cargo would read, and the directory of each workspace package the crates
 reach on this host with every feature on; where that reach holds a registry
@@ -361,7 +375,8 @@ it ran; a step with no declaration always runs. The records are in
 
 `--self-test` shows that a declared file edited, added, renamed or removed, a
 glob's new match, the script edited, the command or the environment changed,
-re-run the step, and that a failure records nothing; `check_release.sh` runs it
+re-run the step, that a file a `!<pattern>` leaves out changes nothing while
+its neighbours still do, and that a failure records nothing; `check_release.sh` runs it
 in every mode.
 
 ```sh

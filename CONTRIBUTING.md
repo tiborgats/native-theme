@@ -186,9 +186,12 @@ NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme --test fact
 ```
 
 An id no bundled preset has, an empty name or an id named twice fails the
-test; the gate's report (`-- --nocapture`) says it ran a subset. A subset is no
-gate: `scripts/check_release.sh` never sets the variable, so all its modes gate
-every preset, and the release's run (`FACTS_GATE_RELEASE=1`) refuses a subset.
+test; `none` runs no preset, the facts' own checks alone. The gate's report
+(`-- --nocapture`) says it ran a subset. A subset is no gate:
+`scripts/check_release.sh` runs every preset, in its full run in one step, in
+`--commit` and `--quick` each preset in a step of its own beside the facts'
+own checks (`none`), which its step cache skips one by one, and the release's
+run (`FACTS_GATE_RELEASE=1`) refuses a subset.
 
 `NT_FACTS_GATE_SHARD=k/N` runs the `k`th of `N` shards of the gate's work:
 each condition vector is checked by one shard alone, and the rest of the run
