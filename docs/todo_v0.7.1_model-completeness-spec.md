@@ -2832,6 +2832,16 @@ pub enum SubpixelOrder { None, Rgb, Bgr, Vrgb, Vbgr }
 `TextRendering` is `token.text.rendering`. The readers read the text-rendering settings (ClearType's, fontconfig's and GNOME's `font-antialiasing`,
 `font-hinting`, `font-rgba-order`, macOS's font smoothing); a toolkit applies what it can (R23).
 
+**The rendering drawn** (ADD-A141; the hosts facts round, U508). Each field states what the toolkit's own text drawing
+uses, which is the antialiasing it draws with, not every parameter the system holds: `contrast` is the enhanced
+contrast of that antialiasing, and `subpixel_order` and `lcd_filter`, which only subpixel antialiasing reads, are
+`Absent` under `Grayscale` and `None` (S6.3's mark on every `TextRendering` field). WinUI draws its text greyscale
+whatever ClearType's settings (the WinUI host's TextBlocks draw no coloured pixel, run 42308526155, `read_host.py`'s
+`[text_rendering]`), so `windows-11` states `contrast` as DirectWrite's greyscale enhanced contrast, which the host
+read as 1 (`grayscale_enhanced_contrast`), not ClearType's 0.5, and its subpixel order and LCD filter `Absent`; a
+reader on such a platform reads the same parameter. Rejected: ClearType's parameters, the system's (a contrast and an
+order the toolkit's text never takes); a contrast field per antialiasing (two fields of which the toolkit uses one).
+
 ### S4.1 Motion
 
 ```rust
@@ -2887,6 +2897,18 @@ of its own. The catalogue's *token.motion* lists name each key, or, where a plat
 read, its family; the facts lanes name each key by this rule. A key carries no unit suffix in a path (`token.motion.durations.button`);
 in TOML a keyed duration's key takes `_ms` as a field's does (`button_ms`), and a keyed scalar (params) none, its
 number in the unit its declaration names (S10, S11; ADD-A123).
+
+**A motion in no time** (ADD-A141; U50). A keyed motion the platform runs in no time, a duration measured or stated as
+zero, has its duration and no keyed timing: `token.motion.timings` holds entries for the curves the platform runs, and
+a zero duration runs none, as a transition's stated zero has an `Absent` timing (S2.7's *A zero duration*). So
+`windows-11` states `token.motion.durations.scroll_into_view` `0ms` (the WinUI host: the view moves to its final
+offset in one step, run 42308526155) and declares no `scroll_into_view` timing; the keyboard placement's motion, the
+key's one reader (the catalogue's placement strategies), takes the duration alone. A timing key is declared for a
+duration key only where the platform runs a curve for it; the two maps are keyed alike (above) but need not hold the
+same keys. A `Transition` over such a motion states its zero itself, `duration_ms = 0` with an `Absent` timing, not a
+reference to the key, which S2.7 would have keep a timing. Rejected: an entry
+`Absent`, the map's entries made `Value<Timing>` (a second spelling of "no entry", a type changed for one key); a
+placeholder curve (`linear`, which no source gives, as S2.7 rejects for a transition).
 
 ### S4.2 Caret and behaviour (R12, R17)
 
