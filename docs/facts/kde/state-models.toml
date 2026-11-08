@@ -10,19 +10,20 @@
 # (QAbstractButton releases it when it is disabled) nor focused (QWidget passes the focus on); a tool button is never
 # round (only the push button panel reads _kde_round_button); a deactivating window takes the focus flags (S7.2,
 # ADD-A126: Qt sets no focus widget while no window is active, and hasFocus() is being the focus widget)
-# `@recording` is a state axis (S10's flag, the ledger's queue #79): KKeySequenceWidget's key button while it
-# records, so only a `@key_sequence` button holds it
+# No `@recording` state (the ledger's queue #79): KKeySequenceWidget's key button changes only its text while it
+# records ("Input" or the partial sequence, then " …"). Its click starts the recorder directly, and the private
+# startRecording() that would hold it down (setDown(true), kkeysequencewidget.cpp:373-377) has no caller at the pin;
+# so it draws the button's own states
 [[model]]
 widget = "button"
 available = true
 variants = ["flat", "warning", "circular", "toggle", "menu", "tool", "icon_only", "with_icon", "@inline_small", "@inline_large", "@command_link", "@key_sequence", "@float", "close", "previous", "next", "overflow", "clear_field", "reveal", "minimize", "maximize", "restore"]
 sizes = []
 densities = []
-flags = ["@recording"]
-axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default", "@recording"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }] }
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }] }
 exclusive = []
 variant_sets = [["flat", "toggle"], ["flat", "warning"], ["warning", "toggle"], ["flat", "warning", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["tool", "@inline_small"], ["tool", "@inline_small", "flat"], ["tool", "@inline_large"], ["tool", "@inline_large", "flat"]]
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { variants = ["circular", "tool"] }, { states = ["@recording"], not_variants = ["@key_sequence"] }, { states = ["focused"], conditions = ["window_inactive"] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { variants = ["circular", "tool"] }, { states = ["focused"], conditions = ["window_inactive"] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
 rows = ["K1.20", "K1.21", "K1.22", "K1.24", "K1.25", "K1.26", "K1.29", "K1.152", "K-RL02†"]
 
 [[model.cite]]
@@ -83,8 +84,18 @@ absent = ["roundButton"]
 
 [[model.cite]]
 kind = "published"
-source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:373-377"
-quote = "void KKeySequenceWidgetPrivate::startRecording() { keyButton->setDown(true); recorder->startRecording(); updateShortcutDisplay();"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:526-530"
+quote = "void KKeySequenceWidget::captureKeySequence() { d->recorder->setWindow(window()->windowHandle()); d->recorder->startRecording(); }"
+
+[[model.cite]]
+kind = "published"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:416"
+quote = "connect(d->keyButton, &QPushButton::clicked, this, &KKeySequenceWidget::captureKeySequence);"
+
+[[model.cite]]
+kind = "published"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:401-407"
+quote = "if (recorder->isRecording()) { // make it clear that input is still going on s.append(inputRecordingMarkupSuffix); } s = QLatin1Char(' ') + s + QLatin1Char(' '); keyButton->setText(s);"
 
 [[model.cite]]
 kind = "published"
@@ -102,8 +113,9 @@ quote = "return (QApplication::focusWidget() == w);"
 # style as focus, and Breeze draws that focus's pen only under State_KeyboardFocusChange, which the style item sets
 # from the control's last focus reason, in or out: the flag `@keyboard_focus_change` (Q1.8, Q1.9); a deactivating
 # window takes the focus flags (S7.2, ADD-A126: the window's content item gives up its focus)
-# `@recording` is a state axis (the ledger's queue #79): kirigami-addons' KeySequenceItem's main button while it
-# records, so only a `@key_sequence` button holds it
+# No `@recording` state (the ledger's queue #79): kirigami-addons' KeySequenceItem's main button is checkable and
+# records while it is checked (KeySequenceItem.qml:121-122, :148-157), so it draws the `checked` state of a `toggle`
+# button, focused; recording changes only its text ("Input", then " ... ", :126-140)
 [[model]]
 widget = "button"
 when = { conditions = ["flavor:kirigami"] }
@@ -111,11 +123,11 @@ available = true
 variants = ["flat", "circular", "toggle", "menu", "tool", "icon_only", "with_icon", "help", "@highlighted", "@ka_floating", "@key_sequence", "@ka_download", "close", "back", "previous", "next", "overflow", "clear_field", "reveal", "remove", "play", "volume"]
 sizes = []
 densities = []
-flags = ["@recording", "@keyboard_focus_change"]
-axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default", "@recording"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+flags = ["@keyboard_focus_change"]
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
 variant_sets = [["flat", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["circular", "flat"], ["circular", "toggle"], ["circular", "flat", "toggle"], ["circular", "@highlighted"], ["circular", "flat", "@highlighted"], ["flat", "@highlighted"], ["tool", "@highlighted"], ["tool", "flat", "@highlighted"]]
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["@recording"], not_variants = ["@key_sequence"] }, { states = ["focused"], conditions = ["window_inactive"] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["focused"], conditions = ["window_inactive"] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
 rows = ["Q1.8", "Q1.9", "Q2.4", "Q2.48", "K-KA-26†", "K-KA-43†"]
 
 [[model.cite]]
@@ -177,6 +189,16 @@ quote = "if (scope && !effectiveEnable && activeFocus) { da->clearFocusInScope(s
 kind = "published"
 source = "kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:148-153"
 quote = "onCheckedChanged: { if (checked) { root.__previousSequence = helper.keySequenceNativeText(root.keySequence) helper.window = helper.renderWindow(parent.Window.window) mainButton.forceActiveFocus() helper.startRecording()"
+
+[[model.cite]]
+kind = "published"
+source = "kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:121-122"
+quote = "checkable: true focus: checked"
+
+[[model.cite]]
+kind = "published"
+source = "kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:139"
+quote = "return \" \" + text + (helper.isRecording ? \" ... \" : \" \");"
 
 [[model.cite]]
 kind = "published"

@@ -4952,41 +4952,12 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themereso
 quote = "<SolidColorBrush x:Key=\"SystemControlTransparentBrush\" Color=\"Transparent\" />"
 
 
-# The elevation borders' high-contrast brushes. Their light and dark brushes are LinearGradientBrushes, which a
-# colour role cannot hold: a part states such a gradient as its own Linear paint.
-
-[[fact]]
-key = "role.@control_elevation_border"
-when = { conditions = ["contrast_high"] }
-value = "= role.@system_window_text"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:506"
-quote = "<SolidColorBrush x:Key=\"ControlElevationBorderBrush\" Color=\"{ThemeResource SystemColorWindowTextColor}\" />"
-
-[[fact]]
-key = "role.@circle_elevation_border"
-when = { conditions = ["contrast_high"] }
-value = "= role.@system_window_text"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:507"
-quote = "<SolidColorBrush x:Key=\"CircleElevationBorderBrush\" Color=\"{ThemeResource SystemColorWindowTextColor}\" />"
-
-[[fact]]
-key = "role.@accent_control_elevation_border"
-when = { conditions = ["contrast_high"] }
-value = "= role.@system_window_text"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:508"
-quote = "<SolidColorBrush x:Key=\"AccentControlElevationBorderBrush\" Color=\"{ThemeResource SystemColorWindowTextColor}\" />"
+# No role for the three elevation borders (ControlElevationBorderBrush, CircleElevationBorderBrush,
+# AccentControlElevationBorderBrush; ADD-A135, S3.1): in the Default and Light dictionaries they are
+# LinearGradientBrushes (Common_themeresources_any.xaml:186-205, :382-405), a colour only in the HighContrast
+# dictionary (SystemColorWindowTextColor, :506-508). A part states the gradient as its own paint and, under
+# contrast_high, references role.@system_window_text citing the brush. No HighContrast dictionary of the button
+# unit names them (Button, ToggleButton, AppBarToggleButton, SplitButton, RepeatButton state their own brushes there).
 
 # The accent and its ramp: WinUI's SystemAccentColor and SystemAccentColorLight1-3 / Dark1-3 resources hold
 # UISettings.GetColorValue's UIColorType_Accent* values (read facts).
