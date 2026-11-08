@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 56879340ee1e7b2d2f26629d78a7bba2dfed55abc979b4b43dd30fc05b79d054
+# generated lines: sha256 edbb2ba570d611a438f94f639233816633f6b7d84d1d994fe2fdb55c00ca6d95
 
 [preset]
 id = "kde-breeze"
@@ -3513,17 +3513,17 @@ motion.animation_steps = 10
 motion.kwin_speed_factor = "= token.motion.speed_factor"
 # docs/facts/kde/tokens.toml:1506
 shadow.strength = 255
-# docs/facts/kde/tokens.toml:10705
+# docs/facts/kde/tokens.toml:10773
 layout.grid_unit = 18
-# docs/facts/kde/tokens.toml:10715
+# docs/facts/kde/tokens.toml:10783
 layout.small_spacing = 4
-# docs/facts/kde/tokens.toml:10725
+# docs/facts/kde/tokens.toml:10793
 layout.medium_spacing = 6
-# docs/facts/kde/tokens.toml:10735
+# docs/facts/kde/tokens.toml:10803
 layout.large_spacing = 8
-# docs/facts/kde/tokens.toml:11267
+# docs/facts/kde/tokens.toml:11335
 color.contrast = 4
-# docs/facts/kde/tokens.toml:11294
+# docs/facts/kde/tokens.toml:11362
 color.frame_contrast = 0.2
 
 [tokens.focus]
@@ -3583,7 +3583,7 @@ popup_very_large = [{ x_px = 0, y_px = "= add(6px, 0px)", blur_px = 24, spread_p
 [tokens]
 # docs/facts/kde/tokens.toml:1561
 size_classes = {}
-# docs/facts/kde/tokens.toml:11324
+# docs/facts/kde/tokens.toml:11392
 material = "absent"
 
 [tokens.behavior]
@@ -4547,307 +4547,307 @@ set = "freedesktop"
 theme = "breeze"
 # docs/facts/kde/tokens.toml:8162
 theme_fallback = "hicolor"
-# docs/facts/kde/tokens.toml:8177
+# docs/facts/kde/tokens.toml:8185
 sizes.toolbar.size_px = 22
-# docs/facts/kde/tokens.toml:8192
+# docs/facts/kde/tokens.toml:8210
 sizes.toolbar.axes = {}
-# docs/facts/kde/tokens.toml:8203
+# docs/facts/kde/tokens.toml:8221
 sizes.toolbar.symbol_variants = []
-# docs/facts/kde/tokens.toml:8214
+# docs/facts/kde/tokens.toml:8232
 sizes.toolbar.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:8268
+# docs/facts/kde/tokens.toml:8286
 sizes.toolbar.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:8303
+# docs/facts/kde/tokens.toml:8321
 sizes.toolbar.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:8323
+# docs/facts/kde/tokens.toml:8341
 sizes.toolbar.weight = "absent"
-# docs/facts/kde/tokens.toml:8334
+# docs/facts/kde/tokens.toml:8352
 sizes.toolbar.scale = "absent"
-# docs/facts/kde/tokens.toml:8345
+# docs/facts/kde/tokens.toml:8363
 sizes.toolbar.state_effect = "absent"
-# docs/facts/kde/tokens.toml:8356
+# docs/facts/kde/tokens.toml:8374
 sizes.toolbar.animation = "absent"
-# docs/facts/kde/tokens.toml:8367
+# docs/facts/kde/tokens.toml:8385
 sizes.keyed.main_toolbar.size_px = 22
-# docs/facts/kde/tokens.toml:8382
+# docs/facts/kde/tokens.toml:8410
 sizes.keyed.main_toolbar.axes = {}
-# docs/facts/kde/tokens.toml:8393
+# docs/facts/kde/tokens.toml:8421
 sizes.keyed.main_toolbar.symbol_variants = []
-# docs/facts/kde/tokens.toml:8404
+# docs/facts/kde/tokens.toml:8432
 sizes.keyed.main_toolbar.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:8454
+# docs/facts/kde/tokens.toml:8482
 sizes.keyed.main_toolbar.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:8489
+# docs/facts/kde/tokens.toml:8517
 sizes.keyed.main_toolbar.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:8509
+# docs/facts/kde/tokens.toml:8537
 sizes.keyed.main_toolbar.weight = "absent"
-# docs/facts/kde/tokens.toml:8520
+# docs/facts/kde/tokens.toml:8548
 sizes.keyed.main_toolbar.scale = "absent"
-# docs/facts/kde/tokens.toml:8531
+# docs/facts/kde/tokens.toml:8559
 sizes.keyed.main_toolbar.state_effect = "absent"
-# docs/facts/kde/tokens.toml:8542
+# docs/facts/kde/tokens.toml:8570
 sizes.keyed.main_toolbar.animation = "absent"
-# docs/facts/kde/tokens.toml:8553
+# docs/facts/kde/tokens.toml:8581
 sizes.small.size_px = 16
-# docs/facts/kde/tokens.toml:8568
+# docs/facts/kde/tokens.toml:8606
 sizes.small.axes = {}
-# docs/facts/kde/tokens.toml:8579
+# docs/facts/kde/tokens.toml:8617
 sizes.small.symbol_variants = []
-# docs/facts/kde/tokens.toml:8590
+# docs/facts/kde/tokens.toml:8628
 sizes.small.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:8640
+# docs/facts/kde/tokens.toml:8678
 sizes.small.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:8675
+# docs/facts/kde/tokens.toml:8713
 sizes.small.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:8695
+# docs/facts/kde/tokens.toml:8733
 sizes.small.weight = "absent"
-# docs/facts/kde/tokens.toml:8706
+# docs/facts/kde/tokens.toml:8744
 sizes.small.scale = "absent"
-# docs/facts/kde/tokens.toml:8717
+# docs/facts/kde/tokens.toml:8755
 sizes.small.state_effect = "absent"
-# docs/facts/kde/tokens.toml:8728
+# docs/facts/kde/tokens.toml:8766
 sizes.small.animation = "absent"
-# docs/facts/kde/tokens.toml:8739
+# docs/facts/kde/tokens.toml:8777
 sizes.large.size_px = 48
-# docs/facts/kde/tokens.toml:8754
+# docs/facts/kde/tokens.toml:8802
 sizes.large.axes = {}
-# docs/facts/kde/tokens.toml:8765
+# docs/facts/kde/tokens.toml:8813
 sizes.large.symbol_variants = []
-# docs/facts/kde/tokens.toml:8776
+# docs/facts/kde/tokens.toml:8824
 sizes.large.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:8826
+# docs/facts/kde/tokens.toml:8874
 sizes.large.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:8861
+# docs/facts/kde/tokens.toml:8909
 sizes.large.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:8881
+# docs/facts/kde/tokens.toml:8929
 sizes.large.weight = "absent"
-# docs/facts/kde/tokens.toml:8892
-sizes.large.scale = "absent"
-# docs/facts/kde/tokens.toml:8903
-sizes.large.state_effect = "absent"
-# docs/facts/kde/tokens.toml:8914
-sizes.large.animation = "absent"
-# docs/facts/kde/tokens.toml:8925
-sizes.panel.size_px = 48
 # docs/facts/kde/tokens.toml:8940
-sizes.panel.axes = {}
+sizes.large.scale = "absent"
 # docs/facts/kde/tokens.toml:8951
-sizes.panel.symbol_variants = []
+sizes.large.state_effect = "absent"
 # docs/facts/kde/tokens.toml:8962
+sizes.large.animation = "absent"
+# docs/facts/kde/tokens.toml:8973
+sizes.panel.size_px = 48
+# docs/facts/kde/tokens.toml:8998
+sizes.panel.axes = {}
+# docs/facts/kde/tokens.toml:9009
+sizes.panel.symbol_variants = []
+# docs/facts/kde/tokens.toml:9020
 sizes.panel.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:9012
+# docs/facts/kde/tokens.toml:9070
 sizes.panel.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:9047
+# docs/facts/kde/tokens.toml:9105
 sizes.panel.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:9067
+# docs/facts/kde/tokens.toml:9125
 sizes.panel.weight = "absent"
-# docs/facts/kde/tokens.toml:9078
+# docs/facts/kde/tokens.toml:9136
 sizes.panel.scale = "absent"
-# docs/facts/kde/tokens.toml:9089
+# docs/facts/kde/tokens.toml:9147
 sizes.panel.state_effect = "absent"
-# docs/facts/kde/tokens.toml:9100
+# docs/facts/kde/tokens.toml:9158
 sizes.panel.animation = "absent"
-# docs/facts/kde/tokens.toml:9111
+# docs/facts/kde/tokens.toml:9169
 sizes.dialog.size_px = 32
-# docs/facts/kde/tokens.toml:9126
+# docs/facts/kde/tokens.toml:9194
 sizes.dialog.axes = {}
-# docs/facts/kde/tokens.toml:9137
+# docs/facts/kde/tokens.toml:9205
 sizes.dialog.symbol_variants = []
-# docs/facts/kde/tokens.toml:9148
+# docs/facts/kde/tokens.toml:9216
 sizes.dialog.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:9198
+# docs/facts/kde/tokens.toml:9266
 sizes.dialog.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:9233
+# docs/facts/kde/tokens.toml:9301
 sizes.dialog.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:9253
+# docs/facts/kde/tokens.toml:9321
 sizes.dialog.weight = "absent"
-# docs/facts/kde/tokens.toml:9264
+# docs/facts/kde/tokens.toml:9332
 sizes.dialog.scale = "absent"
-# docs/facts/kde/tokens.toml:9275
+# docs/facts/kde/tokens.toml:9343
 sizes.dialog.state_effect = "absent"
-# docs/facts/kde/tokens.toml:9286
+# docs/facts/kde/tokens.toml:9354
 sizes.dialog.animation = "absent"
-# docs/facts/kde/tokens.toml:9297
+# docs/facts/kde/tokens.toml:9365
 sizes.keyed.small.size_px = 16
-# docs/facts/kde/tokens.toml:9307
+# docs/facts/kde/tokens.toml:9375
 sizes.keyed.small.axes = {}
-# docs/facts/kde/tokens.toml:9318
+# docs/facts/kde/tokens.toml:9386
 sizes.keyed.small.symbol_variants = []
-# docs/facts/kde/tokens.toml:9329
+# docs/facts/kde/tokens.toml:9397
 sizes.keyed.small.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:9384
+# docs/facts/kde/tokens.toml:9452
 sizes.keyed.small.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:9424
+# docs/facts/kde/tokens.toml:9492
 sizes.keyed.small.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:9444
+# docs/facts/kde/tokens.toml:9512
 sizes.keyed.small.weight = "absent"
-# docs/facts/kde/tokens.toml:9455
+# docs/facts/kde/tokens.toml:9523
 sizes.keyed.small.scale = "absent"
-# docs/facts/kde/tokens.toml:9466
+# docs/facts/kde/tokens.toml:9534
 sizes.keyed.small.state_effect = "absent"
-# docs/facts/kde/tokens.toml:9483
+# docs/facts/kde/tokens.toml:9551
 sizes.keyed.small.animation = "absent"
-# docs/facts/kde/tokens.toml:9494
+# docs/facts/kde/tokens.toml:9562
 sizes.keyed.small_medium.size_px = 22
-# docs/facts/kde/tokens.toml:9504
+# docs/facts/kde/tokens.toml:9572
 sizes.keyed.small_medium.axes = {}
-# docs/facts/kde/tokens.toml:9515
+# docs/facts/kde/tokens.toml:9583
 sizes.keyed.small_medium.symbol_variants = []
-# docs/facts/kde/tokens.toml:9526
+# docs/facts/kde/tokens.toml:9594
 sizes.keyed.small_medium.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:9581
+# docs/facts/kde/tokens.toml:9649
 sizes.keyed.small_medium.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:9621
+# docs/facts/kde/tokens.toml:9689
 sizes.keyed.small_medium.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:9641
+# docs/facts/kde/tokens.toml:9709
 sizes.keyed.small_medium.weight = "absent"
-# docs/facts/kde/tokens.toml:9652
+# docs/facts/kde/tokens.toml:9720
 sizes.keyed.small_medium.scale = "absent"
-# docs/facts/kde/tokens.toml:9663
+# docs/facts/kde/tokens.toml:9731
 sizes.keyed.small_medium.state_effect = "absent"
-# docs/facts/kde/tokens.toml:9680
+# docs/facts/kde/tokens.toml:9748
 sizes.keyed.small_medium.animation = "absent"
-# docs/facts/kde/tokens.toml:9691
+# docs/facts/kde/tokens.toml:9759
 sizes.keyed.medium.size_px = 32
-# docs/facts/kde/tokens.toml:9701
+# docs/facts/kde/tokens.toml:9769
 sizes.keyed.medium.axes = {}
-# docs/facts/kde/tokens.toml:9712
+# docs/facts/kde/tokens.toml:9780
 sizes.keyed.medium.symbol_variants = []
-# docs/facts/kde/tokens.toml:9723
+# docs/facts/kde/tokens.toml:9791
 sizes.keyed.medium.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:9778
+# docs/facts/kde/tokens.toml:9846
 sizes.keyed.medium.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:9818
+# docs/facts/kde/tokens.toml:9886
 sizes.keyed.medium.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:9838
+# docs/facts/kde/tokens.toml:9906
 sizes.keyed.medium.weight = "absent"
-# docs/facts/kde/tokens.toml:9849
+# docs/facts/kde/tokens.toml:9917
 sizes.keyed.medium.scale = "absent"
-# docs/facts/kde/tokens.toml:9860
+# docs/facts/kde/tokens.toml:9928
 sizes.keyed.medium.state_effect = "absent"
-# docs/facts/kde/tokens.toml:9877
+# docs/facts/kde/tokens.toml:9945
 sizes.keyed.medium.animation = "absent"
-# docs/facts/kde/tokens.toml:9888
+# docs/facts/kde/tokens.toml:9956
 sizes.keyed.large.size_px = 48
-# docs/facts/kde/tokens.toml:9898
+# docs/facts/kde/tokens.toml:9966
 sizes.keyed.large.axes = {}
-# docs/facts/kde/tokens.toml:9909
+# docs/facts/kde/tokens.toml:9977
 sizes.keyed.large.symbol_variants = []
-# docs/facts/kde/tokens.toml:9920
+# docs/facts/kde/tokens.toml:9988
 sizes.keyed.large.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:9975
+# docs/facts/kde/tokens.toml:10043
 sizes.keyed.large.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:10015
+# docs/facts/kde/tokens.toml:10083
 sizes.keyed.large.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:10035
+# docs/facts/kde/tokens.toml:10103
 sizes.keyed.large.weight = "absent"
-# docs/facts/kde/tokens.toml:10046
+# docs/facts/kde/tokens.toml:10114
 sizes.keyed.large.scale = "absent"
-# docs/facts/kde/tokens.toml:10057
+# docs/facts/kde/tokens.toml:10125
 sizes.keyed.large.state_effect = "absent"
-# docs/facts/kde/tokens.toml:10074
+# docs/facts/kde/tokens.toml:10142
 sizes.keyed.large.animation = "absent"
-# docs/facts/kde/tokens.toml:10085
+# docs/facts/kde/tokens.toml:10153
 sizes.keyed.huge.size_px = 64
-# docs/facts/kde/tokens.toml:10095
+# docs/facts/kde/tokens.toml:10163
 sizes.keyed.huge.axes = {}
-# docs/facts/kde/tokens.toml:10106
+# docs/facts/kde/tokens.toml:10174
 sizes.keyed.huge.symbol_variants = []
-# docs/facts/kde/tokens.toml:10117
+# docs/facts/kde/tokens.toml:10185
 sizes.keyed.huge.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:10172
+# docs/facts/kde/tokens.toml:10240
 sizes.keyed.huge.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:10212
+# docs/facts/kde/tokens.toml:10280
 sizes.keyed.huge.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:10232
+# docs/facts/kde/tokens.toml:10300
 sizes.keyed.huge.weight = "absent"
-# docs/facts/kde/tokens.toml:10243
+# docs/facts/kde/tokens.toml:10311
 sizes.keyed.huge.scale = "absent"
-# docs/facts/kde/tokens.toml:10254
+# docs/facts/kde/tokens.toml:10322
 sizes.keyed.huge.state_effect = "absent"
-# docs/facts/kde/tokens.toml:10271
+# docs/facts/kde/tokens.toml:10339
 sizes.keyed.huge.animation = "absent"
-# docs/facts/kde/tokens.toml:10282
+# docs/facts/kde/tokens.toml:10350
 sizes.keyed.enormous.size_px = 128
-# docs/facts/kde/tokens.toml:10292
+# docs/facts/kde/tokens.toml:10360
 sizes.keyed.enormous.axes = {}
-# docs/facts/kde/tokens.toml:10303
+# docs/facts/kde/tokens.toml:10371
 sizes.keyed.enormous.symbol_variants = []
-# docs/facts/kde/tokens.toml:10314
+# docs/facts/kde/tokens.toml:10382
 sizes.keyed.enormous.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:10369
+# docs/facts/kde/tokens.toml:10437
 sizes.keyed.enormous.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:10409
+# docs/facts/kde/tokens.toml:10477
 sizes.keyed.enormous.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:10429
+# docs/facts/kde/tokens.toml:10497
 sizes.keyed.enormous.weight = "absent"
-# docs/facts/kde/tokens.toml:10440
+# docs/facts/kde/tokens.toml:10508
 sizes.keyed.enormous.scale = "absent"
-# docs/facts/kde/tokens.toml:10451
+# docs/facts/kde/tokens.toml:10519
 sizes.keyed.enormous.state_effect = "absent"
-# docs/facts/kde/tokens.toml:10468
+# docs/facts/kde/tokens.toml:10536
 sizes.keyed.enormous.animation = "absent"
-# docs/facts/kde/tokens.toml:10483
+# docs/facts/kde/tokens.toml:10551
 sizes.keyed.for_labels.size_px = 16
-# docs/facts/kde/tokens.toml:10503
+# docs/facts/kde/tokens.toml:10571
 sizes.keyed.for_labels.axes = {}
-# docs/facts/kde/tokens.toml:10514
+# docs/facts/kde/tokens.toml:10582
 sizes.keyed.for_labels.symbol_variants = []
-# docs/facts/kde/tokens.toml:10525
+# docs/facts/kde/tokens.toml:10593
 sizes.keyed.for_labels.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/tokens.toml:10580
+# docs/facts/kde/tokens.toml:10648
 sizes.keyed.for_labels.fill = "= active(role.window.foreground)"
-# docs/facts/kde/tokens.toml:10620
+# docs/facts/kde/tokens.toml:10688
 sizes.keyed.for_labels.rendering_mode = "from_icon"
-# docs/facts/kde/tokens.toml:10640
+# docs/facts/kde/tokens.toml:10708
 sizes.keyed.for_labels.weight = "absent"
-# docs/facts/kde/tokens.toml:10651
+# docs/facts/kde/tokens.toml:10719
 sizes.keyed.for_labels.scale = "absent"
-# docs/facts/kde/tokens.toml:10662
+# docs/facts/kde/tokens.toml:10730
 sizes.keyed.for_labels.state_effect = "absent"
-# docs/facts/kde/tokens.toml:10679
+# docs/facts/kde/tokens.toml:10747
 sizes.keyed.for_labels.animation = "absent"
-# docs/facts/kde/tokens.toml:10692
+# docs/facts/kde/tokens.toml:10760
 mirroring = { nav_back = { swap_with = "nav_forward" }, nav_forward = { swap_with = "nav_back" } }
 # S4.5
 animated_visuals = {}
 
 [tokens.kde]
-# docs/facts/kde/tokens.toml:10800
+# docs/facts/kde/tokens.toml:10868
 disabled.intensity = "darken"
-# docs/facts/kde/tokens.toml:10830
+# docs/facts/kde/tokens.toml:10898
 disabled.intensity_amount = 0.1
-# docs/facts/kde/tokens.toml:10855
+# docs/facts/kde/tokens.toml:10923
 disabled.color = "none"
-# docs/facts/kde/tokens.toml:10885
+# docs/facts/kde/tokens.toml:10953
 disabled.color_amount = 0.0
-# docs/facts/kde/tokens.toml:10910
+# docs/facts/kde/tokens.toml:10978
 disabled.contrast = "fade"
-# docs/facts/kde/tokens.toml:10940
+# docs/facts/kde/tokens.toml:11008
 disabled.contrast_amount = 0.65
-# docs/facts/kde/tokens.toml:10965
+# docs/facts/kde/tokens.toml:11033
 disabled.color_color = "#383838"
-# docs/facts/kde/tokens.toml:10990
+# docs/facts/kde/tokens.toml:11058
 inactive.intensity = "none"
-# docs/facts/kde/tokens.toml:11020
+# docs/facts/kde/tokens.toml:11088
 inactive.intensity_amount = 0.0
-# docs/facts/kde/tokens.toml:11045
+# docs/facts/kde/tokens.toml:11113
 inactive.color = "fade"
-# docs/facts/kde/tokens.toml:11075
+# docs/facts/kde/tokens.toml:11143
 inactive.color_amount = 0.025
-# docs/facts/kde/tokens.toml:11100
+# docs/facts/kde/tokens.toml:11168
 inactive.contrast = "tint"
-# docs/facts/kde/tokens.toml:11130
+# docs/facts/kde/tokens.toml:11198
 inactive.contrast_amount = 0.1
-# docs/facts/kde/tokens.toml:11155
+# docs/facts/kde/tokens.toml:11223
 inactive.color_color = "#706f6e"
-# docs/facts/kde/tokens.toml:11180
+# docs/facts/kde/tokens.toml:11248
 inactive_enabled = false
-# docs/facts/kde/tokens.toml:11200
+# docs/facts/kde/tokens.toml:11268
 inactive_change_selection_color = true
-# docs/facts/kde/tokens.toml:11220
+# docs/facts/kde/tokens.toml:11288
 tint_factor = "none"
-# docs/facts/kde/tokens.toml:11242
+# docs/facts/kde/tokens.toml:11310
 titlebar_is_accent_colored = false
 
 [widgets.button.body]
