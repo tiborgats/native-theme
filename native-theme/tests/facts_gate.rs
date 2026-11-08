@@ -17,10 +17,11 @@
 //!
 //! The gate's parallel steps run on as many threads as the machine has;
 //! `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no
-//! number above zero fails. The count sets the speed and adds little memory:
-//! each condition vector's combinations are enumerated as they are checked,
-//! a chunk at a time, never all held, so each thread adds about 60 MB and the
-//! six presets peak near 3 GB on 32 threads (`run::thread_count`).
+//! number above zero fails. The count sets the speed and the memory: as many
+//! condition vectors are checked at once as there are threads, each one's
+//! combinations enumerated as they are checked, a chunk at a time, never all
+//! held, so each thread adds about 120 MB and the six presets peak near
+//! 4 GB on 16 threads, 6 GB on 32 (`run::thread_count`).
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -522,8 +523,8 @@ fn stand_in_inputs(root: &Path, presets: &[(String, Preset)]) -> Vec<String> {
     let units = units::Units::repository().unwrap();
     let platform = run::Platform::read(&root.join("gnome"), &units, &mut report);
     let preset = &presets[0].1;
-    let repo = root.parent().and_then(Path::parent).unwrap();
-    let keys = run::prepare(&platform, preset.id(), repo, &mut report);
+    let evidence = facts::Evidence::new(root.parent().and_then(Path::parent).unwrap());
+    let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
     let conditions = run::conditions(&["scheme:light".to_owned()], None).unwrap();
     let resolved = preset
         .resolve(&conditions, &native_theme::Layer::default())

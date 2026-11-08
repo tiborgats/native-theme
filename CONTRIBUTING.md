@@ -192,10 +192,11 @@ every preset, and the release's run (`FACTS_GATE_RELEASE=1`) refuses a subset.
 
 The gate runs its parallel steps on as many threads as the machine has;
 `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no number
-above zero fails the test. The count sets the speed and adds little memory:
-each condition vector's combinations are enumerated as they are checked, a
-chunk at a time, never all held, so each thread adds about 60 MB and the six
-presets peak near 3 GB on 32 threads.
+above zero fails the test. The count sets the speed and the memory: as many
+condition vectors are checked at once as there are threads, each one's
+combinations enumerated as they are checked, a chunk at a time, never all
+held, so each thread adds about 120 MB and the six presets peak near 4 GB on
+16 threads, 6 GB on 32.
 
 ## Project structure
 
