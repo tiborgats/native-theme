@@ -1357,6 +1357,43 @@ fn gate_fixture_pending_counted_and_shadowed() {
     );
 }
 
+/// A pending fact a later pending fact shadows where both hold is exempt
+/// (S17 *Which fact applies*, ADD-A135): no failure, the combination
+/// pending under the later fact, both listed.
+#[test]
+fn gate_fixture_pending_shadowed_by_pending() {
+    let report = fixture_report("pending_later_pending");
+    assert_eq!(report.failures, Vec::<String>::new());
+    let ids: BTreeSet<&str> = report
+        .pending
+        .values()
+        .map(|(id, _, _)| id.as_str())
+        .collect();
+    assert_eq!(ids, BTreeSet::from(["U1", "U2"]), "{:?}", report.pending);
+    assert!(
+        report.pending.values().all(|(_, _, count)| *count > 0),
+        "{:?}",
+        report.pending
+    );
+}
+
+/// The exemption is a later pending fact's alone: a pending fact a later
+/// stated fact shadows fails, shadowed by that fact, though a pending fact
+/// later still shadows both there.
+#[test]
+fn gate_fixture_pending_shadowed_by_stated_before_pending() {
+    let report = fixture_report("pending_stated_between");
+    assert!(!report.failures.is_empty(), "{report:?}");
+    assert!(
+        report.failures.iter().all(|failure| failure.contains(
+            "gnome/button.toml fact 6: the pending fact U1 of `button.body.opacity` is shadowed \
+             by gnome/button.toml fact 8 under"
+        )),
+        "{:?}",
+        report.failures
+    );
+}
+
 /// A recency set's orders are combinations of their own (S17, ADD-A124):
 /// a preset that states the `latest` hover fact's value under every order
 /// fails where pressed is the latest.
@@ -1441,6 +1478,29 @@ fn gate_fixture_not_drawn_context() {
     let report = fixture_report("not_drawn_context");
     assert_eq!(report.failures, Vec::<String>::new());
     assert!(report.queried > 0, "{report:?}");
+}
+
+/// An `axes.contexts` entry that lists selectors is a chain of ancestors,
+/// outermost first, each the element inside the one before (S17): the
+/// preset's rule naming both ancestors holds in it, and the fact naming the
+/// nearest button the inner, flat one; a value wrong there alone fails, in
+/// the chain's combinations, on the key and never on the context's reading.
+#[test]
+fn gate_fixture_context_chain() {
+    let report = fixture_report("context_chain");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.queried > 0, "{report:?}");
+    let wrong = fixture_report_with("context_chain", "wrong.toml");
+    assert!(!wrong.failures.is_empty(), "{wrong:?}");
+    assert!(
+        wrong
+            .failures
+            .iter()
+            .all(|failure| failure.contains("button.body.min_width")
+                && failure.contains("context: Some(Array(")),
+        "{:?}",
+        wrong.failures
+    );
 }
 
 /// A `not_drawn` entry naming a size is evaluated by the count and by the

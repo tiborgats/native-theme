@@ -1875,13 +1875,13 @@ pub struct Resolved {
     theme: ResolvedTheme,
     stack: Stack,
     window: WindowConditions,
-    /// Each combination context read so far, as [`context_element`] reads
+    /// Each combination context read so far, as [`context_chain`] reads
     /// it: a gate's run queries millions of combinations in a few contexts.
     contexts: Arc<Mutex<Vec<ContextRead>>>,
 }
 
-/// A combination context and its ancestor as [`context_element`] reads it.
-type ContextRead = (Item, Result<ContextElement, Unread>);
+/// A combination context and its ancestors as [`context_chain`] reads it.
+type ContextRead = (Item, Result<Vec<ContextElement>, Unread>);
 
 /// A value the gate read, a part's or a widget value's tree (whole, or at
 /// a key's place), and the places its evaluation read a synthetic layer's
@@ -2190,13 +2190,13 @@ impl Resolved {
     ) -> Result<Session<'r>, Unread> {
         let widget = widget_kind(&combination.widget)?;
         let parsed = Parsed::of(combination)?;
-        let context = match &combination.context {
-            Some(context) => Some(self.context_element(context)?),
-            None => None,
+        let ancestors = match &combination.context {
+            Some(context) => self.context_chain(context)?,
+            None => Vec::new(),
         };
         let mut scope = self.root(root);
-        if let Some(context) = &context {
-            scope = self.context_scope(context, scope, metrics)?;
+        for ancestor in &ancestors {
+            scope = self.context_scope(ancestor, scope, metrics)?;
         }
         let mut session = Session {
             resolved: self,
@@ -2246,14 +2246,14 @@ impl Resolved {
         Ok(session)
     }
 
-    /// [`context_element`] of `context`, read once for every combination
-    /// in it.
-    fn context_element(&self, context: &Item) -> Result<ContextElement, Unread> {
+    /// [`context_chain`] of `context`, read once for every combination in
+    /// it.
+    fn context_chain(&self, context: &Item) -> Result<Vec<ContextElement>, Unread> {
         let mut contexts = self.contexts.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some((_, read)) = contexts.iter().find(|(held, _)| held == context) {
             return read.clone();
         }
-        let read = context_element(context);
+        let read = context_chain(context);
         contexts.push((context.clone(), read.clone()));
         read
     }
@@ -2294,10 +2294,10 @@ struct ContextElement {
 
 /// Whether the model holds what the combination context `context` names:
 /// [`Resolved::session`] skips each combination in a context naming a
-/// widget or part it does not hold yet, once the combination's names read
-/// ([`names_read`]).
+/// widget or part it does not hold yet, an ancestor of a chain among them,
+/// once the combination's names read ([`names_read`]).
 pub fn context_held(context: &Item) -> bool {
-    !matches!(context_element(context), Err(Unread::NotHeld(_)))
+    !matches!(context_chain(context), Err(Unread::NotHeld(_)))
 }
 
 /// Whether the names `combination` holds read, as [`Resolved::session`]
@@ -2306,7 +2306,20 @@ pub fn names_read(combination: &Combination) -> bool {
     Parsed::of(combination).is_ok()
 }
 
-/// The ancestor a combination's `context` names, read.
+/// The ancestors a combination's `context` names, outermost first, read:
+/// a state model's `axes.contexts` entry is one ancestor's selector, or a
+/// list of them, a chain, each the element inside the one before (S17).
+fn context_chain(context: &Item) -> Result<Vec<ContextElement>, Unread> {
+    match context {
+        Item::Array(chain) if chain.is_empty() => {
+            Err(Unread::Refused("an empty context chain".to_owned()))
+        }
+        Item::Array(chain) => chain.iter().map(context_element).collect(),
+        ancestor => Ok(vec![context_element(ancestor)?]),
+    }
+}
+
+/// The ancestor one selector of a combination's `context` names, read.
 fn context_element(context: &Item) -> Result<ContextElement, Unread> {
     let mut table = Table::new();
     table.insert("context".to_owned(), Item::Array(vec![context.clone()]));
@@ -2392,7 +2405,8 @@ pub struct Combination {
     pub density: Option<String>,
     /// The direction: `ltr` or `rtl`; `None`: the root's.
     pub direction: Option<String>,
-    /// The ancestor context, as S11's context selector writes it.
+    /// The ancestor context, as S11's context selector writes it, or a
+    /// chain of them, a list, outermost first (S17's `axes.contexts`).
     pub context: Option<Item>,
     /// How many siblings of the same part precede the element.
     pub before: usize,

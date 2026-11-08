@@ -162,8 +162,18 @@ pub struct Report {
     of_group: Vec<usize>,
     /// The groups by run, key and fact.
     group_index: HashMap<(String, String, String), usize>,
-    /// The failures recorded, each once.
-    seen: HashSet<String>,
+    /// The failures recorded, each once: their places in `failures` by a
+    /// hash of their text, so each text is held once ([`text_hash`]).
+    seen: HashMap<u64, Vec<usize>>,
+}
+
+/// A hash of a failure's text, by which [`Report`] finds whether it holds
+/// the failure already.
+fn text_hash(text: &str) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    text.hash(&mut hasher);
+    hasher.finish()
 }
 
 /// The failures of one run, fact and key (S17's report, grouped).
@@ -185,9 +195,16 @@ impl Report {
 
     /// A failure of the run, key and fact `group` (its run, key and fact).
     fn fail_in(&mut self, group: (String, String, String), failure: String) {
-        if !self.seen.insert(failure.clone()) {
+        let hash = text_hash(&failure);
+        let held = self.seen.get(&hash).is_some_and(|places| {
+            places
+                .iter()
+                .any(|at| self.failures.get(*at) == Some(&failure))
+        });
+        if held {
             return;
         }
+        self.seen.entry(hash).or_default().push(self.failures.len());
         let index = match self.group_index.get(&group) {
             Some(index) => *index,
             None => {
@@ -702,16 +719,23 @@ fn applying_at(
             .filter(|(_, (_, holds))| **holds)
             .map(|(at, (fact, _))| (at, fact))
     };
-    let (at, last) = holding().next_back()?;
-    for (_, earlier) in holding() {
-        if let Stated::Pending(id) = &earlier.fact.stated
-            && !std::ptr::eq(earlier, last)
-        {
+    let (at, _) = holding().next_back()?;
+    // A pending fact a later stated fact shadows fails; a later pending
+    // fact is exempt, the combination pending under it (S17 *Which fact
+    // applies*, ADD-A135), as `check_facts.py`'s `pending_problems` reads it.
+    let Some((stated_at, stated)) = holding()
+        .rev()
+        .find(|(_, fact)| !matches!(fact.fact.stated, Stated::Pending(_)))
+    else {
+        return Some(at);
+    };
+    for (_, earlier) in holding().take_while(|(earlier_at, _)| *earlier_at < stated_at) {
+        if let Stated::Pending(id) = &earlier.fact.stated {
             report.fail(format!(
                 "{}: the pending fact {id} of `{}` is shadowed by {} under {}",
                 earlier.fact.place(),
                 earlier.fact.key,
-                last.fact.place(),
+                stated.fact.place(),
                 combination()
             ));
         }
