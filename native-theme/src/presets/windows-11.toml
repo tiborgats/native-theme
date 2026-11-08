@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 10dac5d54a106dab3c5596d0b63dc2bea531e523d1cf9b1fa8fea07e9b411e41
+# generated lines: sha256 64585ba0b5fdfe0a6de55973a15f82e54836d1044cfb4ddbd7b4c2de1bc0c770
 
 [preset]
 id = "windows-11"
@@ -229,71 +229,71 @@ exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat"], ["primar
 "widgets.button.body.padding.bottom_px" = "U1"
 # docs/facts/windows/button.toml:802
 "widgets.button.body.padding.left_px" = "U1"
-# docs/facts/windows/button.toml:18218
+# docs/facts/windows/button.toml:18220
 "widgets.button.label.text.wrap" = "U518"
-# docs/facts/windows/button.toml:18245
+# docs/facts/windows/button.toml:18247
 "widgets.button.label.text.decoration" = "U518"
-# docs/facts/windows/button.toml:18250
+# docs/facts/windows/button.toml:18252
 "widgets.button.label.text.mnemonic_decoration" = "U518"
-# docs/facts/windows/button.toml:18255
+# docs/facts/windows/button.toml:18257
 "widgets.button.label.text.font.width" = "U518"
-# docs/facts/windows/button.toml:18260
+# docs/facts/windows/button.toml:18262
 "widgets.button.label.text.font.axes" = "U518"
-# docs/facts/windows/button.toml:18265
+# docs/facts/windows/button.toml:18267
 "widgets.button.label.text.font.features" = "U518"
-# docs/facts/windows/button.toml:18287
+# docs/facts/windows/button.toml:18289
 "widgets.button.label.text.scaling_role" = "U518"
-# docs/facts/windows/button.toml:18295
+# docs/facts/windows/button.toml:18297
 "widgets.button.icon.icon.size_px" = "U517"
-# docs/facts/windows/button.toml:18300
+# docs/facts/windows/button.toml:18302
 "widgets.button.icon.icon.rendering_mode" = "U517"
-# docs/facts/windows/button.toml:18305
+# docs/facts/windows/button.toml:18307
 "widgets.button.icon.icon.weight" = "U517"
-# docs/facts/windows/button.toml:18310
+# docs/facts/windows/button.toml:18312
 "widgets.button.icon.icon.scale" = "U517"
-# docs/facts/windows/button.toml:18315
+# docs/facts/windows/button.toml:18317
 "widgets.button.icon.icon.axes" = "U517"
-# docs/facts/windows/button.toml:18320
+# docs/facts/windows/button.toml:18322
 "widgets.button.icon.icon.state_effect" = "U517"
-# docs/facts/windows/button.toml:18325
+# docs/facts/windows/button.toml:18327
 "widgets.button.icon.icon.symbol_variants" = "U517"
-# docs/facts/windows/button.toml:18330
+# docs/facts/windows/button.toml:18332
 "widgets.button.icon.icon.symbolic_colors" = "U517"
-# docs/facts/windows/button.toml:18335
+# docs/facts/windows/button.toml:18337
 "widgets.button.icon.icon.animation" = "U517"
-# docs/facts/windows/button.toml:18340
+# docs/facts/windows/button.toml:18342
 "widgets.button.icon.transitions" = "U517"
-# docs/facts/windows/button.toml:18345
+# docs/facts/windows/button.toml:18347
 "widgets.button.values.icon_placement" = "U517"
-# docs/facts/windows/button.toml:18350
+# docs/facts/windows/button.toml:18352
 "widgets.button.values.icon_text_gap_px" = "U517"
-# docs/facts/windows/button.toml:18355
+# docs/facts/windows/button.toml:18357
 "widgets.button.values.label_position" = "U517"
-# docs/facts/windows/button.toml:18361
+# docs/facts/windows/button.toml:18363
 "widgets.button.body.interaction" = "U517"
-# docs/facts/windows/button.toml:18373
+# docs/facts/windows/button.toml:18375
 "widgets.button.menu_indicator.glyph.source" = "U519"
-# docs/facts/windows/button.toml:18379
+# docs/facts/windows/button.toml:18381
 "widgets.button.menu_indicator.glyph.stroke" = "U519"
-# docs/facts/windows/button.toml:18385
+# docs/facts/windows/button.toml:18387
 "widgets.button.menu_indicator.glyph.draw_extent" = "U519"
-# docs/facts/windows/button.toml:18391
+# docs/facts/windows/button.toml:18393
 "widgets.button.menu_indicator.glyph.draw_start" = "U519"
-# docs/facts/windows/button.toml:18397
+# docs/facts/windows/button.toml:18399
 "widgets.button.menu_indicator.glyph.axes" = "U519"
-# docs/facts/windows/button.toml:18403
+# docs/facts/windows/button.toml:18405
 "widgets.button.menu_indicator.glyph.mirroring" = "U519"
-# docs/facts/windows/button.toml:18453
+# docs/facts/windows/button.toml:18455
 "widgets.button.menu_indicator.min_height_px" = "U519"
-# docs/facts/windows/button.toml:18459
+# docs/facts/windows/button.toml:18461
 "widgets.button.menu_indicator.transform" = "U519"
-# docs/facts/windows/button.toml:18495
+# docs/facts/windows/button.toml:18497
 "widgets.button.menu_indicator.margin" = "U519"
-# docs/facts/windows/button.toml:18507
+# docs/facts/windows/button.toml:18509
 "widgets.button.menu_indicator.min_width_px" = "U519"
-# docs/facts/windows/button.toml:18513
+# docs/facts/windows/button.toml:18515
 "widgets.button.values.menu_indicator_anchor" = "U519"
-# docs/facts/windows/button.toml:18519
+# docs/facts/windows/button.toml:18521
 "widgets.button.values.menu_indicator_gap_px" = "U519"
 # docs/facts/windows/roles.toml:7454
 "colors.light.global.drop_highlight" = "U513"
@@ -2079,9 +2079,9 @@ padding.bottom_px = 0
 padding.left_px = 0
 # docs/facts/windows/button.toml:2689
 text.fill = "= role.@text_fill_primary"
-# docs/facts/windows/button.toml:18228
+# docs/facts/windows/button.toml:18230
 text.case = "mixed"
-# docs/facts/windows/button.toml:18270
+# docs/facts/windows/button.toml:18272
 text.word_spacing_px = 0
 # docs/facts/windows/button.toml:2435
 text.font.style = "normal"
@@ -2097,7 +2097,7 @@ text.max_lines = "none"
 [widgets.button.icon]
 # docs/facts/windows/button.toml:2714
 icon.fill = "= role.@text_fill_primary"
-# docs/facts/windows/button.toml:16852
+# docs/facts/windows/button.toml:16854
 glyph = "absent"
 
 [widgets.button.menu_indicator]
@@ -2105,37 +2105,37 @@ glyph = "absent"
 glyph.fill = "= role.@text_fill_secondary"
 # docs/facts/windows/button.toml:15755
 glyph.size_px = 12
-# docs/facts/windows/button.toml:15800
-transitions = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
+# docs/facts/windows/button.toml:15803
+transitions = []
 
 [widgets.button.subtitle]
-# docs/facts/windows/button.toml:16596
+# docs/facts/windows/button.toml:16598
 absent = true
 
 [widgets.button.values]
-# docs/facts/windows/button.toml:16722
+# docs/facts/windows/button.toml:16724
 subtitle_gap_px = "absent"
-# docs/facts/windows/button.toml:16733
+# docs/facts/windows/button.toml:16735
 menu_trigger = "absent"
-# docs/facts/windows/button.toml:16744
+# docs/facts/windows/button.toml:16746
 shows_icon = "absent"
-# docs/facts/windows/button.toml:16755
+# docs/facts/windows/button.toml:16757
 back_display_mode = "absent"
-# docs/facts/windows/button.toml:16766
+# docs/facts/windows/button.toml:16768
 display_mode = "absent"
-# docs/facts/windows/button.toml:16788
+# docs/facts/windows/button.toml:16790
 hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
-# docs/facts/windows/button.toml:16799
+# docs/facts/windows/button.toml:16801
 back_title_fallback = false
-# docs/facts/windows/button.toml:16810
+# docs/facts/windows/button.toml:16812
 help_tooltip_on_click = false
-# docs/facts/windows/button.toml:16821
+# docs/facts/windows/button.toml:16823
 presentations = []
-# docs/facts/windows/button.toml:16832
+# docs/facts/windows/button.toml:16834
 focus_visible_when = "= token.behavior.focus_visible_when"
-# docs/facts/windows/button.toml:16616
+# docs/facts/windows/button.toml:16618
 repeat_delay_ms = "absent"
-# docs/facts/windows/button.toml:16658
+# docs/facts/windows/button.toml:16660
 repeat_interval_ms = "absent"
 
 [[rules]]
@@ -3423,21 +3423,21 @@ target = "button.label"
 [rules.set]
 # docs/facts/windows/button.toml:7810
 text.fill = "= role.@text_fill_primary"
-# docs/facts/windows/button.toml:18088
+# docs/facts/windows/button.toml:18090
 text.font.family = "Segoe UI Variable"
-# docs/facts/windows/button.toml:18124
+# docs/facts/windows/button.toml:18126
 text.font.size_px = 12
-# docs/facts/windows/button.toml:18140
+# docs/facts/windows/button.toml:18142
 text.font.weight = 400
-# docs/facts/windows/button.toml:18161
+# docs/facts/windows/button.toml:18163
 text.font.style = "normal"
-# docs/facts/windows/button.toml:18172
+# docs/facts/windows/button.toml:18174
 text.letter_spacing_px = 0
-# docs/facts/windows/button.toml:18183
+# docs/facts/windows/button.toml:18185
 text.line_height = "auto"
-# docs/facts/windows/button.toml:18194
+# docs/facts/windows/button.toml:18196
 text.elision = "none"
-# docs/facts/windows/button.toml:18205
+# docs/facts/windows/button.toml:18207
 text.max_lines = "none"
 
 [[rules]]
@@ -3823,21 +3823,21 @@ target = "button.menu_indicator"
 [rules.set]
 # docs/facts/windows/button.toml:9548
 glyph.fill = "= role.@text_fill_secondary"
-# docs/facts/windows/button.toml:15892
+# docs/facts/windows/button.toml:15907
 glyph.size_px = 8
-# docs/facts/windows/button.toml:15918
+# docs/facts/windows/button.toml:15933
 glyph.mirroring = "always"
-# docs/facts/windows/button.toml:16441
+# docs/facts/windows/button.toml:16456
 transform.scale_x = 1
-# docs/facts/windows/button.toml:16468
+# docs/facts/windows/button.toml:16483
 transform.scale_y = 1
-# docs/facts/windows/button.toml:16495
+# docs/facts/windows/button.toml:16510
 transform.rotate_deg = 0
-# docs/facts/windows/button.toml:16512
+# docs/facts/windows/button.toml:16527
 transform.translate_x_px = 0
-# docs/facts/windows/button.toml:16529
+# docs/facts/windows/button.toml:16544
 transform.translate_y_px = 0
-# docs/facts/windows/button.toml:16546
+# docs/facts/windows/button.toml:16561
 transform.origin = [0, 0]
 
 [[rules]]
@@ -5319,6 +5319,8 @@ target = "button.menu_indicator"
 [rules.set]
 # docs/facts/windows/button.toml:15744
 min_width_px = 12
+# docs/facts/windows/button.toml:15814
+transitions = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 
 [[rules]]
 when = { variants = ["menu"], not_variants = ["tool"] }
@@ -5335,7 +5337,7 @@ when = { variants = ["menu"], not_variants = ["tool"], states = ["hover"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:15816
+# docs/facts/windows/button.toml:15831
 transitions = [{ properties = ["glyph"], kind = { keyed = { key = "pointer_over", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 
 [[rules]]
@@ -5343,7 +5345,7 @@ when = { variants = ["menu"], not_variants = ["tool"], states = ["pressed"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:15838
+# docs/facts/windows/button.toml:15853
 transitions = [{ properties = ["glyph"], kind = { keyed = { key = "pressed", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 
 [[rules]]
@@ -5351,23 +5353,15 @@ when = { variants = ["menu"], not_variants = ["tool"], states = ["disabled"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:15860
+# docs/facts/windows/button.toml:15875
 transitions = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
-
-[[rules]]
-when = { variants = ["menu", "tool"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16569
-transitions = []
 
 [[rules]]
 when = { not_variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16583
+# docs/facts/windows/button.toml:16585
 absent = true
 
 [[rules]]
@@ -5375,9 +5369,9 @@ when = { not_variants = ["@repeat"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/windows/button.toml:16616
+# docs/facts/windows/button.toml:16618
 repeat_delay_ms = "absent"
-# docs/facts/windows/button.toml:16658
+# docs/facts/windows/button.toml:16660
 repeat_interval_ms = "absent"
 
 [[rules]]
@@ -5385,9 +5379,9 @@ when = { variants = ["@repeat"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/windows/button.toml:16700
+# docs/facts/windows/button.toml:16702
 repeat_delay_ms = 500
-# docs/facts/windows/button.toml:16711
+# docs/facts/windows/button.toml:16713
 repeat_interval_ms = 33
 
 [[rules]]
@@ -5395,7 +5389,7 @@ when = { variants = ["tool", "toggle"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17746
+# docs/facts/windows/button.toml:17748
 fill = "= role.@subtle_fill_transparent"
 
 [[rules]]
@@ -5403,7 +5397,7 @@ when = { variants = ["tool", "toggle"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17767
+# docs/facts/windows/button.toml:17769
 fill = "= role.@subtle_fill_secondary"
 
 [[rules]]
@@ -5411,7 +5405,7 @@ when = { variants = ["tool", "toggle"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17788
+# docs/facts/windows/button.toml:17790
 fill = "= role.@subtle_fill_tertiary"
 
 [[rules]]
@@ -5419,7 +5413,7 @@ when = { variants = ["tool", "toggle"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17809
+# docs/facts/windows/button.toml:17811
 fill = "= role.@subtle_fill_disabled"
 
 [[rules]]
@@ -5427,7 +5421,7 @@ when = { variants = ["tool", "toggle"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17830
+# docs/facts/windows/button.toml:17832
 fill = "= role.@accent_fill_default"
 
 [[rules]]
@@ -5435,7 +5429,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17851
+# docs/facts/windows/button.toml:17853
 fill = "= role.@accent_fill_secondary"
 
 [[rules]]
@@ -5443,7 +5437,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17872
+# docs/facts/windows/button.toml:17874
 fill = "= role.@accent_fill_tertiary"
 
 [[rules]]
@@ -5451,7 +5445,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17893
+# docs/facts/windows/button.toml:17895
 fill = "= role.@accent_fill_disabled"
 
 [[rules]]
@@ -5459,7 +5453,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17915
+# docs/facts/windows/button.toml:17917
 fill = "= role.@system_button_face"
 
 [[rules]]
@@ -5467,7 +5461,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17936
+# docs/facts/windows/button.toml:17938
 fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5475,7 +5469,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17957
+# docs/facts/windows/button.toml:17959
 fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5483,7 +5477,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17978
+# docs/facts/windows/button.toml:17980
 fill = "= role.@system_window"
 
 [[rules]]
@@ -5491,7 +5485,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:17999
+# docs/facts/windows/button.toml:18001
 fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5499,7 +5493,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18020
+# docs/facts/windows/button.toml:18022
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5507,7 +5501,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18041
+# docs/facts/windows/button.toml:18043
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5515,7 +5509,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18062
+# docs/facts/windows/button.toml:18064
 fill = "= role.@system_gray_text"
 
 [[rules]]
@@ -5523,13 +5517,13 @@ when = { variants = ["menu"], not_variants = ["tool"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:18409
+# docs/facts/windows/button.toml:18411
 margin.top_px = 0
-# docs/facts/windows/button.toml:18420
+# docs/facts/windows/button.toml:18422
 margin.right_px = 0
-# docs/facts/windows/button.toml:18431
+# docs/facts/windows/button.toml:18433
 margin.bottom_px = 0
-# docs/facts/windows/button.toml:18442
+# docs/facts/windows/button.toml:18444
 margin.left_px = 8
 
 [[rules]]
@@ -5537,9 +5531,9 @@ when = { not_variants = ["menu"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/windows/button.toml:18527
+# docs/facts/windows/button.toml:18529
 menu_indicator_anchor = "inline"
-# docs/facts/windows/button.toml:18543
+# docs/facts/windows/button.toml:18545
 menu_indicator_gap_px = 0
 
 [[rules]]

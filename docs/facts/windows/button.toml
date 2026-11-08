@@ -15796,9 +15796,24 @@ quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=
 # the icon's State, the player running the segment between the two states' markers of AnimatedChevronDownSmall,
 # timed by the visual (duration and timing absent), with no delay. A `Keyed` transition of group `Glyph`, the part
 # drawing a glyph; its colour changes at once (a DiscreteObjectKeyFrame). The visual's entry is
-# `token.icons.animated_visuals.chevron_down_small` (tokens.toml).
+# `token.icons.animated_visuals.chevron_down_small` (tokens.toml). An app-bar button's chevron (`menu` with
+# `tool`) is a FontIcon with no Transitions, and outside `menu` no indicator is drawn: the base states none and the
+# drop-down button's transitions hold where it is drawn (S6.1 merges a rule's transitions by key, so an empty list
+# cannot remove a base transition).
 [[fact]]
 key = "button.menu_indicator.transitions"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["Transitions"]
+
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { variants = ["menu"], not_variants = ["tool"] }
 value = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 rows = ["W2-18", "W3-28"]
 
@@ -16564,19 +16579,6 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
 quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
 absent = ["RenderTransform"]
-
-
-[[fact]]
-key = "button.menu_indicator.transitions"
-when = { variants = ["menu", "tool"] }
-value = []
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
-quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
-absent = ["Transitions"]
 
 
 # A whole part's absence (ADD-A121): only DropDownButton and an app-bar button with a Flyout draw the chevron
