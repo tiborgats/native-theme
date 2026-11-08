@@ -118,6 +118,10 @@ inputs = [
 ]
 # S9.1: every declared input but on kde-breeze
 accent_inputs = ["accent", "selected_content_background", "highlight", "keyboard_focus_indicator", "selected_control"]
+# S10: SF Symbols' named scales the facts state (IconStyle.scale)
+symbol_scales = [
+    "medium",  # docs/facts/macos/tokens.toml:44847
+]
 
 [declare.params.pointer_repeat]
 # S4.6: one unit per group, the pointer repeat's delay and interval in ms
