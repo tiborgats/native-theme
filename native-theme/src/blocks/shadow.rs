@@ -38,7 +38,10 @@ pub struct ShadowLayer {
     /// The blur radius, CSS's: under [`ShadowFalloff::Gaussian`] twice the
     /// blur's standard deviation.
     pub blur: Value<Px>,
-    /// The spread.
+    /// The spread, which may be negative, as CSS's spread distance may: a
+    /// negative one shrinks an outer layer's shape on every side and grows
+    /// an inset layer's inner shape.
+    #[parts(signed)]
     pub spread: Value<Px>,
     /// The shadow's colour.
     pub color: Value<Color>,

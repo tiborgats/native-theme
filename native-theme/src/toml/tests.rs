@@ -9,7 +9,7 @@ use crate::blocks::BlockPatch;
 use crate::blocks::focus::FocusVisibleWhen;
 use crate::blocks::motion::Timing;
 use crate::blocks::outline::{
-    CornerCurve, Corners, CornersPatch, EdgePatch, PixelSnap, Radius, StrokePatch,
+    CornerCurve, Corners, CornersPatch, EdgePatch, FillClip, PixelSnap, Radius, StrokePatch,
 };
 use crate::blocks::paint::{BlendMode, Paint, PaintKind, PaintLayer, PaintPatch};
 use crate::blocks::part_style::PartStylePatch;
@@ -970,6 +970,19 @@ fn stroke_shorthand_round_trips() {
         problems("[widgets.button.body.stroke]\nwidth_px = 1\ntop.width_px = 2"),
         ["widgets.button.body.stroke.top.width_px: states the field width_px states too"]
     );
+}
+
+/// `fill_clip` reads each `FillClip` member by its S11 spelling, `center`
+/// the fill to the stroke's centre line (S2.4, ADD-A135).
+#[test]
+fn stroke_fill_clip_reads_each_member() {
+    let clip = |name: &str| match body_of(&format!("stroke.fill_clip = \"{name}\"")).stroke {
+        Some(BlockPatch::Fields(stroke)) => stroke.fill_clip,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(clip("box"), Some(FillClip::Box));
+    assert_eq!(clip("inner_edge"), Some(FillClip::InnerEdge));
+    assert_eq!(clip("center"), Some(FillClip::Center));
 }
 
 #[test]

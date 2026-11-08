@@ -194,6 +194,11 @@ pub enum FillClip {
     /// To the stroke's inner edge, its corners the outline's radii less the
     /// inset (CSS's `background-clip: padding-box`).
     InnerEdge,
+    /// To the stroke's centre line where it lies inside the box: inset by
+    /// half each edge's width for an `Inside` stroke, by none for a `Center`
+    /// or `Outside` one, its corners the outline's radii less the inset
+    /// (a Qt painter's brush under a pen on the box inset by half its width).
+    Center,
 }
 
 /// A shape replacing a part's corners' outline: a closed set implemented once

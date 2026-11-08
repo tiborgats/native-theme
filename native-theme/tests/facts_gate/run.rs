@@ -1132,6 +1132,20 @@ pub fn conditions(vector: &[String], flavor: Option<&str>) -> Result<Conditions,
     Ok(out)
 }
 
+/// Whether a fact's `when` cannot hold under the run's `flavor` (S10,
+/// S17): its `not_conditions` name that flavour, or its `conditions` name
+/// another; its own combination is then no combination of that run.
+fn excludes_flavor(when: &Value, flavor: Option<&str>) -> bool {
+    let Some(flavor) = flavor else {
+        return false;
+    };
+    let own = format!("flavor:{flavor}");
+    strings(when.get("not_conditions")).contains(&own)
+        || strings(when.get("conditions"))
+            .iter()
+            .any(|condition| condition.starts_with("flavor:") && *condition != own)
+}
+
 /// A fact's own `when` as combinations (S17: "The gate also resolves each
 /// fact's own `when`"): its conditions (each scheme where it names none),
 /// its flags, its variants, its first size, density and context, its
@@ -1914,6 +1928,9 @@ fn check(
             let Some(when) = &prepared.written else {
                 continue;
             };
+            if excludes_flavor(when, flavor) {
+                continue;
+            }
             let widget = key.key.widget();
             let Some((vectors, combination)) =
                 own_combination(when, widget.as_deref().unwrap_or_default(), &schemes)
@@ -2756,6 +2773,16 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
                     leaf_of(key, applying.held_of(at))
                 })
         };
+        // A block no fact of its own states here is stated by its leaves'
+        // facts that apply (S17 *Which fact applies*): each leaf's
+        // comparison is the block's. A whole part with no fact is drawn,
+        // which its own verdict compares.
+        if fact.is_none()
+            && !key.key.whole_part()
+            && stated_by_leaves(widget_keys, facts, &key.name)
+        {
+            continue;
+        }
         let whole = composed(key, fact, &leaf, pass, report, &describe);
         match verdict(
             &key.name,
@@ -2794,6 +2821,15 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
             Verdict::Drawn | Verdict::Done => {}
         }
     }
+}
+
+/// Whether a key below `block` among `keys` has a fact that applies, as
+/// `facts` holds each key's.
+fn stated_by_leaves(keys: &[&KeyFacts<'_>], facts: &[Option<&Prepared<'_>>], block: &str) -> bool {
+    let below = format!("{block}.");
+    keys.iter()
+        .zip(facts)
+        .any(|(key, fact)| fact.is_some() && key.name.starts_with(&below))
 }
 
 /// The keys of `keys` that are blocks holding the key at `index`: a part

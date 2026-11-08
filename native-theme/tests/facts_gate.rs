@@ -310,6 +310,17 @@ fn gate_fixture_whole_block_over_leaf_facts() {
     );
 }
 
+/// A block stated per leaf and whole after its leaves under a narrower
+/// `when` (S17 *Which fact applies*): where the block's fact does not hold,
+/// its leaves' facts state it, so the block is no key without a fact
+/// there; on a flat button the block's `absent` applies.
+#[test]
+fn gate_fixture_block_beside_its_leaves() {
+    let report = fixture_report("block_beside_leaves");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+}
+
 /// A token's block stated whole and its leaf after it (S17 *Which fact
 /// applies*, for every key): the block's fact compares the block but the
 /// leaf where the leaf's later fact applies, which compares the leaf; a
@@ -1142,6 +1153,18 @@ fn gate_fixture_refused_key_skips_no_variant() {
         report.failures
     );
     assert!(report.variants_not_held.is_empty(), "{report:?}");
+}
+
+/// A fact whose `when` excludes a flavour (`not_conditions` naming it, or
+/// `conditions` naming another) is no combination of that flavour's run
+/// (S10, S17): its variant `@main_only`, the default flavour's alone, is
+/// checked in the default flavour's run, where the preset states it, and
+/// never queried under `flavor:alt`, whose declarations lack it.
+#[test]
+fn gate_fixture_flavor_excluded_fact() {
+    let report = fixture_report("flavor_excluded");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
 }
 
 /// Each rule of the projection (ADD-A128), one variant each: a variant
