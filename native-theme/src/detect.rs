@@ -188,9 +188,31 @@ pub(crate) fn gsettings_get(
 }
 
 /// The session type, `$XDG_SESSION_TYPE` (`x11`, `wayland`, …).
-#[cfg(all(target_os = "linux", feature = "portal"))]
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 pub(crate) fn session_type() -> Option<String> {
     std::env::var("XDG_SESSION_TYPE").ok()
+}
+
+/// The X server's `Xft.dpi` resource, from `xrdb -query` within
+/// [`SUBPROCESS_TIMEOUT`]: its line `Xft.dpi:\t<dpi>`, where the DPI is a
+/// number above zero; `None` where xrdb is missing, fails or times out, or
+/// sets none (0.7.0's read, `2796b26e:native-theme/src/detect.rs:454-471`).
+#[cfg(all(target_os = "linux", feature = "kde"))]
+pub(crate) fn xft_dpi() -> Option<f32> {
+    parse_xft_dpi(&stdout_with_timeout(
+        "xrdb",
+        &["-query"],
+        SUBPROCESS_TIMEOUT,
+    )?)
+}
+
+/// The `Xft.dpi` of `xrdb -query`'s output `out` ([`xft_dpi`]).
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn parse_xft_dpi(out: &str) -> Option<f32> {
+    out.lines()
+        .filter_map(|line| line.strip_prefix("Xft.dpi:"))
+        .filter_map(|rest| rest.trim().parse::<f32>().ok())
+        .find(|dpi| dpi.is_finite() && *dpi > 0.0)
 }
 
 /// Reset the process-wide detection caches, so the next detection of the
@@ -616,6 +638,21 @@ pub fn system() -> &'static DetectionContext {
 /// returns the compile-time constant; elsewhere, the platform's failure.
 fn detect_icon_theme_inner() -> Result<String, IconThemeFailure> {
     icon_theme::detect_icon_theme_outcome()
+}
+
+/// `Xft.dpi`'s line of `xrdb -query`'s output, a number above zero; any
+/// other line, or none, gives none.
+#[cfg(all(test, target_os = "linux", feature = "kde"))]
+#[test]
+fn xft_dpi_is_its_line_of_the_resources() {
+    assert_eq!(
+        parse_xft_dpi("Xft.antialias:\t1\nXft.dpi:\t120\nXft.hinting:\t1\n"),
+        Some(120.0)
+    );
+    assert_eq!(parse_xft_dpi("Xft.dpi:\t0\n"), None);
+    assert_eq!(parse_xft_dpi("Xft.dpi:\tbig\n"), None);
+    assert_eq!(parse_xft_dpi("*.dpi:\t96\n"), None);
+    assert_eq!(parse_xft_dpi(""), None);
 }
 
 #[cfg(test)]

@@ -1748,3 +1748,106 @@ fn a_macos_reading_over_adwaita_takes_its_common_part() {
     );
     assert_eq!(root_role(&theme, background), before);
 }
+
+/// A KDE reading over `kde-breeze` (S9.3, S9.5): with its scheme file it
+/// validates as the reader layer, its state is the system's, and the
+/// resolved theme shows its results at the scheme it read: a colour group's
+/// role, the `[WM]` fallback's reference, its common accent; and its
+/// scheme inputs where the preset's roles reference them.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+#[test]
+fn a_kde_reading_over_kde_breeze() {
+    use crate::blocks::part_style::RoleRef;
+    use crate::kde::tests::{KDEGLOBALS_DARK, SCHEME_FILE, data, ini, rgb};
+    use crate::kde::{SchemeFile, build_reading};
+    use crate::roles::{GlobalRole, SurfaceRole, SurfaceSet};
+
+    let mut theme = synthetic_theme(PresetId::KdeBreeze);
+    let reading = build_reading(
+        &data(KDEGLOBALS_DARK, SchemeFile::Read(ini(SCHEME_FILE))),
+        PresetId::KdeBreeze,
+    );
+    let status = theme.take(reading, PresetId::KdeBreeze).unwrap();
+    assert_eq!(status, ReaderStatus::Read);
+    assert_eq!(theme.scheme(), Scheme::Dark);
+    let read = |color: crate::color::Color| Some(color.to_srgb8_clamped());
+    assert_eq!(
+        root_role(
+            &theme,
+            RoleRef::Set(SurfaceSet::View, SurfaceRole::Background)
+        ),
+        read(rgb(10, 11, 12))
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Keyed(crate::key!("wm_active_background"))),
+        read(rgb(40, 41, 42))
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Global(GlobalRole::Accent)),
+        root_role(
+            &theme,
+            RoleRef::Set(SurfaceSet::Selection, SurfaceRole::Background)
+        )
+    );
+    // kdeglobals states no `[Colors:View] ForegroundLink`: the preset's role
+    // references the scheme input, which the scheme file leaves unset, so
+    // Breeze's dark value shows.
+    assert!(root_role(&theme, RoleRef::Set(SurfaceSet::View, SurfaceRole::Link)).is_some());
+}
+
+/// A KDE reading whose scheme file is unreadable validates too, its status
+/// the fallback naming the failure (S9.3).
+#[cfg(all(target_os = "linux", feature = "kde"))]
+#[test]
+fn a_kde_reading_without_its_scheme_file() {
+    use crate::kde::tests::{KDEGLOBALS_DARK, data};
+    use crate::kde::{SchemeFile, build_reading};
+
+    let mut theme = synthetic_theme(PresetId::KdeBreeze);
+    let why = "the colour scheme `Synthetic` has no readable scheme file".to_string();
+    let reading = build_reading(
+        &data(KDEGLOBALS_DARK, SchemeFile::Unreadable(why.clone())),
+        PresetId::KdeBreeze,
+    );
+    assert_eq!(
+        theme.take(reading, PresetId::KdeBreeze).unwrap(),
+        ReaderStatus::Fallback(crate::error::ReaderFailure::Platform(why))
+    );
+}
+
+/// A KDE reading over another preset (S9.5): its common part applies, the
+/// accent and the `body` font; its own part, KDE's results, does not.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+#[test]
+fn a_kde_reading_over_adwaita_takes_its_common_part() {
+    use crate::blocks::part_style::RoleRef;
+    use crate::kde::tests::{KDEGLOBALS_DARK, data, rgb};
+    use crate::kde::{SchemeFile, build_reading};
+    use crate::roles::{GlobalRole, SurfaceRole, SurfaceSet};
+
+    let mut theme = synthetic_adwaita();
+    theme.pick(Some(Scheme::Dark)).unwrap();
+    let background = RoleRef::Set(SurfaceSet::View, SurfaceRole::Background);
+    let before = root_role(&theme, background.clone());
+    let text = format!("{KDEGLOBALS_DARK}\n[General]\nAccentColor=1,2,3\n");
+    let reading = build_reading(&data(&text, SchemeFile::Unnamed), PresetId::KdeBreeze);
+    assert_eq!(
+        theme.take(reading, PresetId::KdeBreeze).unwrap(),
+        ReaderStatus::Read
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Global(GlobalRole::Accent)),
+        Some(rgb(1, 2, 3).to_srgb8_clamped())
+    );
+    assert_eq!(root_role(&theme, background), before);
+    let resolved = theme
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = resolved.root_scope(&root());
+    let tokens = resolved.tokens(&scope).unwrap();
+    let body = tokens.text.roles.body.as_ref().unwrap().font.clone();
+    assert_eq!(body.family.as_deref(), Some("Synthetic Sans"));
+}

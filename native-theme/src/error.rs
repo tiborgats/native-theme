@@ -960,6 +960,11 @@ pub(crate) mod reader_names {
         #[cfg_attr(not(feature = "svg-rasterize"), allow(dead_code))]
         SVG_RASTERIZER = "svg-rasterizer";
         #[cfg_attr(
+            not(all(feature = "watch", feature = "kde", target_os = "linux")),
+            allow(dead_code)
+        )]
+        KDE_WATCHER = "kde-watcher";
+        #[cfg_attr(
             not(all(feature = "watch", feature = "portal", target_os = "linux")),
             allow(dead_code)
         )]

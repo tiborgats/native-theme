@@ -56,6 +56,8 @@
 
 #[cfg(all(feature = "watch", feature = "portal", target_os = "linux"))]
 mod gnome;
+#[cfg(all(feature = "watch", feature = "kde", target_os = "linux"))]
+mod kde;
 #[cfg(all(feature = "watch", feature = "macos", target_os = "macos"))]
 mod macos;
 
@@ -138,7 +140,10 @@ impl ThemeSubscription {
     /// backend closes its D-Bus connection here.
     ///
     /// Compiled where a backend exists to call it, and for tests.
-    #[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+    #[cfg(any(
+        test,
+        all(target_os = "linux", any(feature = "kde", feature = "portal"))
+    ))]
     pub(crate) fn new(
         shutdown_tx: mpsc::Sender<()>,
         thread: JoinHandle<()>,
@@ -191,7 +196,7 @@ impl Drop for ThemeSubscription {
 /// `panic = "abort"` a panicking callback aborts the process.
 #[cfg(any(
     test,
-    all(target_os = "linux", feature = "portal"),
+    all(target_os = "linux", any(feature = "kde", feature = "portal")),
     all(target_os = "macos", feature = "macos"),
 ))]
 fn fire(callback: &impl Fn(ThemeChangeEvent)) {
@@ -209,7 +214,7 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
 /// design value, not a platform fact.
 #[cfg(any(
     test,
-    all(target_os = "linux", feature = "portal"),
+    all(target_os = "linux", any(feature = "kde", feature = "portal")),
     all(target_os = "macos", feature = "macos"),
 ))]
 const DEBOUNCE_MS: u32 = 300;
@@ -217,7 +222,7 @@ const DEBOUNCE_MS: u32 = 300;
 /// [`DEBOUNCE_MS`] as a [`Duration`](std::time::Duration).
 #[cfg(any(
     test,
-    all(target_os = "linux", feature = "portal"),
+    all(target_os = "linux", any(feature = "kde", feature = "portal")),
     all(target_os = "macos", feature = "macos"),
 ))]
 const DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(DEBOUNCE_MS as u64);
@@ -226,7 +231,10 @@ const DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(DEBOUNCE_
 /// [`DEBOUNCE`] after the last of them; `is_relevant` sorts them. Returns
 /// when `events` disconnects or `shutdown` is signalled or disconnected,
 /// which is checked on every iteration, at least every 200ms.
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal"))
+))]
 fn fire_debounced<T>(
     events: &mpsc::Receiver<T>,
     shutdown: &mpsc::Receiver<()>,
@@ -264,7 +272,10 @@ fn fire_debounced<T>(
 /// fired arrived, and whether its burst is due. Every method takes the time
 /// as an argument, so the tests drive it with made-up instants: what a
 /// burst fires does not depend on how the test machine schedules threads.
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal"))
+))]
 #[derive(Debug, Default)]
 struct Debounce {
     /// When the last relevant message not yet fired arrived; `None` while
@@ -272,7 +283,10 @@ struct Debounce {
     last: Option<std::time::Instant>,
 }
 
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal"))
+))]
 impl Debounce {
     /// A relevant message arrived at `now`: the pending burst, or a new
     /// one, is due [`DEBOUNCE`] after it.
@@ -330,7 +344,9 @@ impl Debounce {
 /// detection caches it reads through before it reads.
 ///
 /// The watcher observes what the platform's reader reads (the reader module
-/// lists its sources): on GNOME and Budgie the portal's `SettingChanged`
+/// lists its sources): on KDE `kdeglobals`, `kdedefaults/kdeglobals` and
+/// `kcmfonts` in the config directory; on GNOME and Budgie the portal's
+/// `SettingChanged`
 /// for the `org.freedesktop.appearance` settings and the
 /// `org.gnome.desktop.interface` and `org.gnome.desktop.a11y.interface`
 /// keys the reader reads; on a desktop with no reader of its own the same
@@ -347,8 +363,9 @@ impl Debounce {
 /// for.
 ///
 /// On Linux the backend is the one of the desktop the reader is chosen by:
-/// GNOME's for GNOME and Budgie, the portal-only read's for every desktop
-/// with no reader of its own (both with `portal`). An unrecognised
+/// KDE's for KDE (with `kde`), GNOME's for GNOME and Budgie, the
+/// portal-only read's for every desktop with no reader of its own (both
+/// with `portal`). An unrecognised
 /// `XDG_CURRENT_DESKTOP` counts as the desktop of its portal backend, which
 /// this asks, as [`Theme::from_system`](crate::Theme::from_system) does,
 /// else as KDE where the user's `kdeglobals` exists.
@@ -359,17 +376,23 @@ impl Debounce {
 /// platform-specific backend is available for the current desktop
 /// environment or platform, and
 /// [`Error::ReaderFailed`](crate::Error::ReaderFailed) if the backend could
-/// not start: the watcher thread could not connect to the session bus or
-/// subscribe to the portal's `SettingChanged` signal. The GNOME backend
+/// not start: KDE, the config directory is unresolved (`$XDG_CONFIG_HOME` is
+/// not an absolute path and `$HOME` is unset or empty) or cannot be watched
+/// (it does not exist, or the inotify limits are reached); GNOME, Budgie and
+/// the portal-only desktops, the watcher thread could not connect to the
+/// session bus or subscribe to the portal's `SettingChanged` signal. The KDE
+/// backend sets up its watch on the calling thread, and the GNOME backend
 /// returns only once its thread is subscribed.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
     #[cfg(target_os = "linux")]
     {
-        #[cfg(not(feature = "portal"))]
+        #[cfg(not(any(feature = "kde", feature = "portal")))]
         let _ = callback;
         match linux_backend(pollster::block_on(crate::detect::refined_linux_desktop())) {
+            #[cfg(feature = "kde")]
+            Some(LinuxBackend::Kde) => kde::watch_kde(callback),
             #[cfg(feature = "portal")]
             Some(LinuxBackend::Gnome) => gnome::watch_gnome(callback, gnome::GNOME),
             #[cfg(feature = "portal")]
@@ -417,6 +440,9 @@ pub fn on_theme_change(
 #[cfg(target_os = "linux")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LinuxBackend {
+    /// [`kde::watch_kde`].
+    #[cfg(feature = "kde")]
+    Kde,
     /// [`gnome::watch_gnome`] of the GNOME reader's sources.
     #[cfg(feature = "portal")]
     Gnome,
@@ -431,6 +457,8 @@ enum LinuxBackend {
 #[cfg(target_os = "linux")]
 fn linux_backend(desktop: crate::detect::LinuxDesktop) -> Option<LinuxBackend> {
     match desktop {
+        #[cfg(feature = "kde")]
+        crate::detect::LinuxDesktop::Kde => Some(LinuxBackend::Kde),
         #[cfg(feature = "portal")]
         crate::detect::LinuxDesktop::Gnome | crate::detect::LinuxDesktop::Budgie => {
             Some(LinuxBackend::Gnome)
@@ -447,7 +475,22 @@ fn linux_backend(desktop: crate::detect::LinuxDesktop) -> Option<LinuxBackend> {
         | crate::detect::LinuxDesktop::Wayfire
         | crate::detect::LinuxDesktop::CosmicDe
         | crate::detect::LinuxDesktop::Unknown => Some(LinuxBackend::Portal),
-        _ => None,
+        #[cfg(not(feature = "kde"))]
+        crate::detect::LinuxDesktop::Kde => None,
+        #[cfg(not(feature = "portal"))]
+        crate::detect::LinuxDesktop::Gnome
+        | crate::detect::LinuxDesktop::Budgie
+        | crate::detect::LinuxDesktop::Xfce
+        | crate::detect::LinuxDesktop::Cinnamon
+        | crate::detect::LinuxDesktop::Mate
+        | crate::detect::LinuxDesktop::LxQt
+        | crate::detect::LinuxDesktop::Hyprland
+        | crate::detect::LinuxDesktop::Sway
+        | crate::detect::LinuxDesktop::River
+        | crate::detect::LinuxDesktop::Niri
+        | crate::detect::LinuxDesktop::Wayfire
+        | crate::detect::LinuxDesktop::CosmicDe
+        | crate::detect::LinuxDesktop::Unknown => None,
     }
 }
 
@@ -456,8 +499,22 @@ fn linux_backend(desktop: crate::detect::LinuxDesktop) -> Option<LinuxBackend> {
 mod tests {
     use super::*;
 
-    /// The watcher follows the reader on an unrecognised desktop: a GNOME
-    /// portal backend gets GNOME's watcher, `kdeglobals` or not (M4-36).
+    /// The watcher follows the reader on an unrecognised desktop: a KDE
+    /// portal backend gets KDE's watcher, `kdeglobals` or not (M4-36).
+    #[cfg(all(target_os = "linux", feature = "kde"))]
+    #[test]
+    fn an_unknown_desktop_with_a_kde_portal_is_watched_as_kde() {
+        for kdeglobals in [false, true] {
+            let desktop = crate::detect::refine_linux_desktop(
+                crate::detect::LinuxDesktop::Unknown,
+                Some(crate::detect::LinuxDesktop::Kde),
+                || kdeglobals,
+            );
+            assert_eq!(linux_backend(desktop), Some(LinuxBackend::Kde));
+        }
+    }
+
+    /// A GNOME portal backend gets GNOME's watcher, `kdeglobals` or not.
     #[cfg(all(target_os = "linux", feature = "portal"))]
     #[test]
     fn an_unknown_desktop_with_a_gnome_portal_is_watched_as_gnome() {
@@ -472,8 +529,8 @@ mod tests {
     }
 
     /// An unrecognised desktop that nothing names is watched as its
-    /// portal-only read reads it, with `portal` (S16's *Which reader*);
-    /// without it, and on KDE until its reader returns, there is no
+    /// portal-only read reads it, with `portal` (S16's *Which reader*), and
+    /// KDE by KDE's watcher, with `kde`; without the feature there is no
     /// watcher.
     #[cfg(target_os = "linux")]
     #[test]
@@ -486,15 +543,24 @@ mod tests {
         assert_eq!(linux_backend(desktop), Some(LinuxBackend::Portal));
         #[cfg(not(feature = "portal"))]
         assert_eq!(linux_backend(desktop), None);
+        #[cfg(feature = "kde")]
+        assert_eq!(
+            linux_backend(crate::detect::LinuxDesktop::Kde),
+            Some(LinuxBackend::Kde)
+        );
+        #[cfg(not(feature = "kde"))]
         assert_eq!(linux_backend(crate::detect::LinuxDesktop::Kde), None);
     }
 
     /// The source-to-notification table (M1-T6-08): for each linked reader,
     /// every source its module lists under `# Sources`, and the notification
-    /// its watcher observes for it: a `namespace key` of the portal's
-    /// `SettingChanged` (GNOME, the portal-only read), a notification's name
-    /// (macOS). The KDE and Windows rows return with their readers.
+    /// its watcher observes for it: a file in the config directory (KDE), a
+    /// `namespace key` of the portal's `SettingChanged` (GNOME, the
+    /// portal-only read), a notification's name (macOS).
     const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
+        ("kde", "kdeglobals", "kdeglobals"),
+        ("kde", "kdedefaults/kdeglobals", "kdedefaults/kdeglobals"),
+        ("kde", "kcmfonts", "kcmfonts"),
         (
             "gnome",
             "org.freedesktop.appearance color-scheme",
@@ -615,6 +681,7 @@ mod tests {
 
     /// Each reader's module source, whose docs list its sources.
     const READER_MODULES: &[(&str, &str)] = &[
+        ("kde", include_str!("../kde/mod.rs")),
         ("gnome", include_str!("../gnome/mod.rs")),
         ("portal", include_str!("../gnome/portal.rs")),
         ("macos", include_str!("../macos.rs")),
@@ -635,7 +702,7 @@ mod tests {
 
     /// The notifications the table gives for `reader`'s sources.
     #[cfg(any(
-        all(target_os = "linux", feature = "portal"),
+        all(target_os = "linux", any(feature = "kde", feature = "portal")),
         all(target_os = "macos", feature = "macos"),
     ))]
     fn table_notifications(reader: &str) -> impl Iterator<Item = &'static str> {
@@ -667,6 +734,23 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// The KDE watcher observes the file of every KDE row, and no other.
+    #[cfg(all(target_os = "linux", feature = "kde"))]
+    #[test]
+    fn the_kde_watcher_observes_every_kde_source() {
+        for file in table_notifications("kde") {
+            assert!(
+                kde::WATCHED_FILES.contains(&file),
+                "the KDE watcher does not observe `{file}`"
+            );
+        }
+        assert_eq!(
+            kde::WATCHED_FILES.len(),
+            table_notifications("kde").count(),
+            "kde: a watched file with no row"
+        );
     }
 
     /// The GNOME watcher fires on the `SettingChanged` of every GNOME row.

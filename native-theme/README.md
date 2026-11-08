@@ -166,7 +166,7 @@ native-theme = { version = "0.8", features = ["system-icons"] }
 
 | Feature | Role |
 |---|---|
-| `kde` | The KDE icon theme, read from the `kdeglobals` files as KConfig cascades them (Linux) |
+| `kde` | The KDE Plasma reader, `Theme::from_system`: `kdeglobals` as KConfig cascades it, the colour scheme file it names and `kcmfonts`; and the KDE icon theme (Linux) |
 | `macos` | The macOS reader, `Theme::from_system`: AppKit's appearances, colours and settings; the running macOS version and its generation, in `pipeline::diagnose_platform_support` |
 | `windows` | The running Windows version and its generation, in `pipeline::diagnose_platform_support` |
 | `portal` | The GNOME and Budgie reader, and the portal-only read of the Linux desktops with no reader of their own: the XDG Desktop Portal and gsettings (Linux) |
