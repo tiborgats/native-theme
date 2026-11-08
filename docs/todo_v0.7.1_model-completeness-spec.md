@@ -3606,7 +3606,11 @@ counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`;
 S12 refuses `fill` absent where the stroke can be absent too); `Glyph.size` and `fill` on a `SystemControl` source
 (S15: the rendering draws the parts it replaces, and where it is not drawn those parts draw their own style, so
 the glyph's size and fill are never drawn; ADD-A125, ADD-A126);
-`RippleStyle.color`, `alpha` and `padding` where its `effect` is absent (no press ripple to draw, ADD-A125); `TextStyle.decoration`, `mnemonic_decoration`, `letter_spacing`, `word_spacing`;
+`RippleStyle.color`, `alpha` and `padding` where its `effect` is absent (no press ripple to draw, ADD-A125); `TextStyle.decoration`, `mnemonic_decoration`, `letter_spacing` (not
+`word_spacing`: a platform whose text has no word spacing draws the font's own spaces, with nothing added, so it states
+`0px`, S17's zero by omission, its absence citation naming the property the platform's text attributes lack, as every
+bundled preset's facts state the value; ADD-A141, the MT-C1 and MC-C1 tie-breaks; rejected: `Absent`, a second spelling of the
+same look, which the verifiers wrote);
 in a keyed text style and a slot only, `TextStyle.fill`, `elision`, `wrap` and `max_lines`, each where the
 platform's style does not set it (S2.8, ADD-A130);
 `Decoration.by_word`; an `Edge`'s `width` and `paint` (an edge not drawn);
@@ -4424,7 +4428,13 @@ Beside its accent (above) and its scheme inputs (S9.1), it states:
   value KConfig hands to Qt's colour parser (one starting with `#`, or one without a comma, `:40-53`), which KConfig's
   writer never writes, and an empty value or `invalid`, which KConfig reads as an invalid colour (`:37-39`), are read
   as unset, a recorded inexactness. Rejected: Qt's colour parser through the clean room, for spellings only a hand
-  edit gives; an invalid colour, which the model cannot hold.
+  edit gives; an invalid colour, which the model cannot hold. The scheme test reads the colour so read (ADD-A141; the
+  clean room's `kde_color_scheme` description, §2.3, readers-cr2): where the `Window` set's `BackgroundNormal` is empty
+  or `invalid`, Plasma takes the invalid colour's grey, 0, calls the scheme dark and paints the window black, while the
+  reader, reading the default, calls it light, the same recorded inexactness, kept because the scheme and the colours
+  the reader states then agree. Rejected: Plasma's dark for those two spellings alone (it needs no colour parser, but a
+  dark scheme over the default light colours the reader states matches neither Plasma's black window nor the reader's
+  own colours).
 - the scheme file (S9.1): `[General] ColorScheme`, which the colours KCM keeps in kdeglobals with `BreezeLight` as its
   default (`plasma-workspace@6.8.2 kcms/colors/colorssettings.kcfg:6-11`), names the scheme by its file's base name:
   the file is `color-schemes/<name>.colors` in the first data directory where it is a file, as Qt's
@@ -4488,7 +4498,13 @@ Beside its accent (above) and its scheme inputs (S9.1), it states:
   does not set: none of plasma-workspace, plasma-integration and plasma-desktop names it at its pin, and KWin's own
   platform plugin reads it for KWin's windows, `kwin@6.8.2 src/plugins/qpa/screen.cpp:22-25`; the reader's environment
   is the application's); the `RESOURCE_MANAGER` property read directly, Qt's route (an X11 client library for the
-  text `xrdb -query` gives).
+  text `xrdb -query` gives). Qt's xcb plugin also takes an XSETTINGS manager's `Xft/DPI` (DPI × 1024) over the
+  resources' value, read at start and on each change (`qxcbscreen.cpp:81-89`, `:385-396`; the clean room's
+  `qxcb_xft_dpi` description, readers-cr2), which the reader does not read: open (ADD-A141) on whether a Plasma X11
+  session's XSETTINGS manager (kde-gtk-config's xsettingsd, at no pin) sets an `Xft/DPI` that differs from `Xft.dpi`.
+  A KDE render-host read of both on a Plasma X11 session settles it: where they can differ, the reader reads the
+  setting first, `qxcb_xft_dpi` taking it as a second input through the clean room; where they cannot, `Xft.dpi`
+  alone stands.
 
 **The GNOME reader's readings** (ADD-A135, ADD-A138; ledger queue #171, #173, #179). Its sources are the XDG Settings portal's
 `org.freedesktop.appearance` namespace and gsettings, each setting the portal does not give (no session bus, no
@@ -4524,20 +4540,21 @@ setting neither gives stated by nothing, so it keeps the no-reader state's value
   `monospace-font-name`, in its common bases (S9.5; ADD-A138), each string parsed by `pango_font_description` (S2.2's
   readers' helpers); a string naming no family patches no slot. Of the description it keeps the family, the first
   non-empty entry of its comma-separated list (the model's family is one name; the list is GN-FM02†'s, the readers
-  unit's); the size, a point size converted by its own preset's `token.text.font_dpi` (S9.4; it reports no DPI,
-  above) and an absolute (`px`) size taken as it is, unpatched where the description sets none or zero; the
-  weight, unpatched outside 1 to 1000, S2.8's scale; the style (normal, oblique, italic; another integer, which only
-  `style=N` gives, unpatched); the width, Pango's permille as S2.8's percent; and small caps, as `TextCase::SmallCaps`.
-  A weight, style or width the string does not name is Pango's normal one, which the string means (a description
-  is a whole font), and is stated so; a description without small caps leaves the style's `case`, which may be a
-  transform no font names (`Upper`, S2.8). Pango's other variants (`All-Small-Caps`, `Petite-Caps`,
-  `All-Petite-Caps`, `Unicase`, `Title-Caps`), its gravity and its colour are not read, nor its `@` variations and
-  `#` features, which GN-1.193 maps to `Font.axes` and `Font.features` (the readers unit). GN-1.193 stays open on one
-  question: how a variation on `wght` or `wdth`, or an `smcp` feature, each a route S12 refuses in `axes` and
-  `features` (S2.8's `weight`, `width` and `TextCase::SmallCaps` being the only ones), meets the description's own
-  weight, width and variant. Pango's source at its pin (`pango@1.58.2`) settles it, read for which of the two the
-  drawn text follows where a description gives both, S2.8's *Weight* (the drawn face's coordinate) then stating the
-  weight; until then a `@` or `#` segment changes nothing the reader states.
+  unit's), and the size, a point size converted by its own preset's `token.text.font_dpi` (S9.4; it reports no DPI,
+  above) and an absolute (`px`) size taken as it is, unpatched where the description sets none or zero; nothing else
+  (ADD-A141; the GN-C1 tie-break). GTK 4 takes only the family and the size from `gtk-font-name`, which GNOME sets from
+  `font-name`, and never its weight (`gtk@4.24.1 gtk/gtksettings.c:1356-1390`, as the GNOME facts cite it on the card
+  button's inherited weight, `docs/facts/gnome/button.toml`), so a label that inherits its weight draws GTK's initial
+  `normal` whatever the string names: the body slot's weight, style, width and case stay the preset's, which are GTK's
+  CSS, and a patch of them would state a look GTK does not draw. The `monospace` slot takes the same two fields, the
+  ones a monospace setting is known to give, until the GNOME facts cite which fields libadwaita takes from
+  `monospace-font-name` (its style manager at `libadwaita@1.10.0`), a recorded open item; a field they show it takes is
+  added then. Pango's variants, gravity and colour, its `@` variations and its `#` features are not read, as GTK
+  applies none of them from the setting, so GN-1.193's question (how a `wght` or `wdth` variation or an `smcp` feature
+  meets the description's own weight, width and variant) asks nothing of the reader, the description's weight, width
+  and variant being unread too; it stays the readers unit's for a source that applies them. Rejected: ADD-A138's
+  weight, style, width and small caps (GTK draws none of them from the setting, the tie-break's card button); the
+  whole description stated as the slot's font.
 - `token.icons.theme` from `icon-theme` under `for_preset.adwaita`, a freedesktop theme's name being its own
   preset's (S9.5).
 Rejected: the portal's raw accent (it is not what any libadwaita application shows where the two differ); a nearest
