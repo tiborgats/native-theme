@@ -1495,7 +1495,7 @@ def self_test() -> int:
             n[0] += 1
             write_fixture(root, files, ("adwaita", "macos-tahoe", "macos-monterey"))
             ctx = Context(root, core_text=SELF_TEST_CORE, cat_text=check_facts.SELF_TEST_CATALOGUE,
-                          sources_text=sources, rows=check_facts.SELF_TEST_ROWS)
+                          sources_text=sources, rows=check_facts.SELF_TEST_ROWS, evidence=root)
             return [f"{f}:{ln}: {w}" for f, ln, w in check(ctx)[0]]
 
         got = run_two(two)
