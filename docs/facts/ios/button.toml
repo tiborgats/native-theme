@@ -307401,3 +307401,810 @@ key = "button.icon.icon.fill"
 when = { states = ["drop_target"] }
 pending = "U475"
 rows = []
+
+# tint_dimmed (the tie-break of IO-C1, from the verifier's state model): UIKit dims a view's tint while its
+# tintAdjustmentMode is dimmed, behind a presented alert (UIView.h, D-16), and a button draws in its tint, so the
+# button's colours change (U685: an iOS host pass drawing each style, form and state under the dimmed tint). Run
+# 42269041636's tint scene (Measure.swift's buttonRow: UIButton.Configuration.plain() and .filled(), title "Button",
+# the default size, at rest on the iPhone) read both titles' textColor under the dimmed mode, below; the bezel and
+# every other combination unread. Its view tree keeps the buttons' alpha and layer opacity at 1 and their shadow
+# opacity at 0 under both modes, so the opacity and shadow facts above stand; the layout keeps the facts above, as
+# the header names only the tint.
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["tint_dimmed"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["tint_dimmed"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { conditions = ["tint_dimmed"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["tint_dimmed"] }
+pending = "U685"
+rows = ["D-16"]
+
+# the title under the dimmed tint: pending wherever the reading below does not reach (each piece refuses a name
+# the readings require, so no reading shadows it)
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], not_variants = ["flat", "primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed", "idiom:pad"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed", "contrast_increased"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed", "bold_text"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed", "button_shapes"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["pressed"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["disabled"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["checked"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["hover"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["focus_visible"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["@loading"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["drop_target"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["open"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["route_active"], variants = ["flat"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], sizes = ["mini"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], sizes = ["small"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], sizes = ["large"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "toggle"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@corner_fixed"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@corner_small"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@corner_medium"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@corner_large"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "pill"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "with_icon"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "icon_only"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "menu"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@indicator_popup"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@menu_on_hold"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@cancel"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@role_primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "destructive"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@pointer_highlight"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@pointer_lift"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat", "@pointer_hover"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "tint_dimmed"], variants = ["flat", "@corner_dynamic"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "toolbar_editor" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "input" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "search_field" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "calendar", part = "header" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "edit_menu" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "find_bar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "ink_toolbar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "component.document_launch_view" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "status_page", part = "action_area" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["flat"], context = [{ scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed", "idiom:pad"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed", "contrast_increased"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed", "bold_text"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed", "button_shapes"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["pressed"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["disabled"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["checked"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["hover"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["focus_visible"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["@loading"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["drop_target"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["open"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], states = ["route_active"], variants = ["primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], sizes = ["mini"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], sizes = ["small"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], sizes = ["large"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "toggle"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@corner_fixed"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@corner_small"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@corner_medium"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@corner_large"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "pill"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "with_icon"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "icon_only"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "menu"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@indicator_popup"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@menu_on_hold"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@cancel"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@role_primary"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "destructive"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@pointer_highlight"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@pointer_lift"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary", "@pointer_hover"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "tint_dimmed"], variants = ["primary", "@corner_dynamic"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "tint_dimmed"], variants = ["primary", "glass"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "tint_dimmed"], variants = ["primary", "clear"] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "toolbar_editor" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "input" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "search_field" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "calendar", part = "header" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "edit_menu" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "find_bar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "ink_toolbar" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "component.document_launch_view" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "status_page", part = "action_area" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["tint_dimmed"], variants = ["primary"], context = [{ scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U685"
+rows = ["D-16"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["flat"], not_variants = ["toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+value = "#3c3c434c"
+rows = ["D-16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml#scene_read.0.view.20.text_color.hex"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["flat"], not_variants = ["toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+value = "#ebebf54c"
+rows = ["D-16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml#scene_read.27.view.20.text_color.hex"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["primary"], not_variants = ["toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+value = "#3c3c434c"
+rows = ["D-16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml#scene_read.0.view.24.text_color.hex"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["primary"], not_variants = ["toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+value = "#ebebf54c"
+rows = ["D-16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml#scene_read.27.view.24.text_color.hex"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["flat"], not_variants = ["toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+value = "#3c3c434c"
+rows = ["D-16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/measure1/index.toml#scene_read.0.view.25.text_color.hex"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["flat"], not_variants = ["toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+value = "#ebebf54c"
+rows = ["D-16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/measure1/index.toml#scene_read.27.view.25.text_color.hex"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["primary"], not_variants = ["glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+value = "#3c3c434c"
+rows = ["D-16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/measure1/index.toml#scene_read.0.view.30.text_color.hex"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["primary"], not_variants = ["glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+value = "#ebebf54c"
+rows = ["D-16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/measure1/index.toml#scene_read.27.view.30.text_color.hex"
+tolerance = 0
+
+# open (the tie-break of IO-C1, from the verifier's state model): `isHeld` while the button presents its menu
+# (UIButton.h:88-89), a state change that updates its configuration (UIButton.h:79); its colours, opacity and shadow
+# are unmeasured (U686: an iOS host pass holding each menu button's menu open). The layout, corners and text leaves
+# keep the facts above, as no source names a change of them.
+[[fact]]
+key = "button.body.fill"
+when = { states = ["open"] }
+pending = "U686"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { states = ["open"] }
+pending = "U686"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { states = ["open"] }
+pending = "U686"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { states = ["open"] }
+pending = "U686"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { states = ["open"] }
+pending = "U686"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { states = ["open"] }
+pending = "U686"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { states = ["open"] }
+pending = "U686"
+rows = []
+
+# route_active (the catalogue's shared flag on `route`; the tie-break of IO-C1, from the verifier's state model):
+# AVRoutePickerView takes its `activeTintColor` while AirPlay is active (AVRoutePickerView.h:124-127), whose default
+# colour no header states; the route picker's colours there are unmeasured (U122).
+[[fact]]
+key = "button.body.fill"
+when = { states = ["route_active"] }
+pending = "U122"
+rows = ["C-42†"]
+
+[[fact]]
+key = "button.body.stroke"
+when = { states = ["route_active"] }
+pending = "U122"
+rows = ["C-42†"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { states = ["route_active"] }
+pending = "U122"
+rows = ["C-42†"]
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { states = ["route_active"] }
+pending = "U122"
+rows = ["C-42†"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { states = ["route_active"] }
+pending = "U122"
+rows = ["C-42†"]
