@@ -1147,7 +1147,7 @@ kind = "git"
 evidence = true
 repository = "https://github.com/tiborgats/native-theme-evidence.git"
 tag = "commit"
-commit = "342ac5a6bfe26225d9dfe209d51e1ff9d3238c97"
+commit = "f3cd95eadde0f0d058157e008ab69a4cb314d038"
 generations = []
 note = "The evidence repository: docs/evidence/<harness>/<date>-run-<id>/<image>/ at the paths a measured citation names, read by the checkers, the generators that read evidence and the facts gate from a clean checkout at this commit (NATIVE_THEME_EVIDENCE, else <cache>/native-theme-evidence/). Its first commit, 5146132c, holds docs/evidence/ of v0.8.0-rc1 at 4ee2b529 (the same tree), its second, 342ac5a6, its README and licence files; the pin then moves with the facts commits that add runs."
 
