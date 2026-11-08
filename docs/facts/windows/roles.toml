@@ -6671,7 +6671,7 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themereso
 quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorSelectedTextBrush\" Color=\"{StaticResource TextOnAccentFillColorSelectedText}\" />"
 
 # The Selection set's other roles: WinUI's selected text has its highlight and its text alone (TextBox's
-# SelectionHighlightColor, TextOnAccentFillColorSelectedText), no alternate, status, decoration, shade, border
+# SelectionHighlightColor, TextOnAccentFillColorSelectedText), no alternate, decoration, shade, border
 # or status-background colour, and no disabled selection colour: the theme dictionaries name none, as for the Window
 # set's absences above (M1b round 2, the mop-up lane). Its muted text and link, which the catalogue requires in
 # every set, keep the window's colours, as selected text keeps its foreground (M1b round 3).
@@ -6788,56 +6788,68 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themereso
 quote = "<ResourceDictionary x:Key=\"Light\">"
 absent = []
 
+# The Selection set's status text colours: selected text keeps its own colour (text.h), so a status text keeps
+# the global status colour, by the catalogue's rule for a platform without per-set values (on windows-11 the
+# `fill`, as in the Window set; the tie-break of WN-C1).
 [[fact]]
 key = "role.selection.negative"
-value = "absent"
+value = "= role.global.status.error.fill"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
-quote = "<ResourceDictionary x:Key=\"Default\">"
-absent = []
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/Inc/text.h:170-177"
+quote = "Otherwise, selected text has the same foreground as // regular text, highlight is rendered semi transparent and over text."
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
-quote = "<ResourceDictionary x:Key=\"Light\">"
-absent = []
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:168"
+quote = "<SolidColorBrush x:Key=\"SystemFillColorCriticalBrush\" Color=\"{StaticResource SystemFillColorCritical}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:372"
+quote = "<SolidColorBrush x:Key=\"SystemFillColorCriticalBrush\" Color=\"{StaticResource SystemFillColorCritical}\" />"
 
 [[fact]]
 key = "role.selection.neutral"
-value = "absent"
+value = "= role.global.status.warning.fill"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
-quote = "<ResourceDictionary x:Key=\"Default\">"
-absent = []
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/Inc/text.h:170-177"
+quote = "Otherwise, selected text has the same foreground as // regular text, highlight is rendered semi transparent and over text."
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
-quote = "<ResourceDictionary x:Key=\"Light\">"
-absent = []
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:167"
+quote = "<SolidColorBrush x:Key=\"SystemFillColorCautionBrush\" Color=\"{StaticResource SystemFillColorCaution}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:371"
+quote = "<SolidColorBrush x:Key=\"SystemFillColorCautionBrush\" Color=\"{StaticResource SystemFillColorCaution}\" />"
 
 [[fact]]
 key = "role.selection.positive"
-value = "absent"
+value = "= role.global.status.success.fill"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
-quote = "<ResourceDictionary x:Key=\"Default\">"
-absent = []
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/Inc/text.h:170-177"
+quote = "Otherwise, selected text has the same foreground as // regular text, highlight is rendered semi transparent and over text."
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
-quote = "<ResourceDictionary x:Key=\"Light\">"
-absent = []
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:166"
+quote = "<SolidColorBrush x:Key=\"SystemFillColorSuccessBrush\" Color=\"{StaticResource SystemFillColorSuccess}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:370"
+quote = "<SolidColorBrush x:Key=\"SystemFillColorSuccessBrush\" Color=\"{StaticResource SystemFillColorSuccess}\" />"
 
 [[fact]]
 key = "role.selection.decoration_focus"

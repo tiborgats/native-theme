@@ -2394,15 +2394,17 @@ absent = []
 # the navigation drawer, the docked search bar's dropdown); only the internal, unpublished
 # StyleableExpandedDockedSearchBarWithGap takes the role unscaled (SearchBar.kt:1014-1030, ComponentStyles.kt:688), which
 # no public component draws (MAT-X1, ADD-A122)
+# Compose sets the role's alpha (`Color.copy(alpha = …)`), so `with_alpha`, which `alpha`'s multiplication equals
+# only on an opaque role (S2.2)
 [[fact]]
 key = "role.global.scrim"
-value = "= alpha(role.@scrim, 0.32)"
+value = "= with_alpha(role.@scrim, 0.32)"
 rows = ["MAT-X1", "MAT-X23", "MAT-SF04†"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-scrim.scss:20-23"
-quote = "/// md.comp.scrim.container.opacity $container-opacity: 0.32; /// md.comp.scrim.container.color $container-color: md-sys-color.$scrim;"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ScrimTokens.kt:22-23"
+quote = "inline val ContainerColor: ColorToken get() = ColorSchemeKeyTokens.Scrim"
 
 [[fact.cite]]
 kind = "published"

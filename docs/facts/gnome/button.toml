@@ -29,6 +29,24 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:201-204"
 quote = ".card { @at-root %card, & { background-color: var(--card-bg-color); color: var(--card-fg-color);"
 
+# a card in an OSD (`.osd .card`, (0,2,0), outranks `.card` and `button.card`): its colour, its background and its
+# shadow are the OSD's, on the card button and on a menu button's outer node alike (the tie-break of GN-C1)
+[[fact]]
+key = "button.body.bindings"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"] }
+value = [{ role = { role = { surface = "foreground" }, value = "srgb(1, 1, 1, 0.9)" } }]
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-218"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent); color: $osd_fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:291"
+quote = "$osd_fg_color: RGB(255 255 255 / 90%);"
+
 # GTK's CSS `min-width` and `min-height` bound the content box: GTK adds the border and padding (and the margin)
 # to them, so the box's minimum is the CSS minimum plus the part's own padding, which holds the border (a button
 # draws none), and a variant's padding carries through (S2.11, ADD-A125)
@@ -1245,6 +1263,44 @@ rows = ["GN-1.252"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:210-214"
 quote = "@media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color, 0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%); }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
+quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
+[[fact]]
+key = "button.body.shadow"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"] }
+value = "absent"
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-219"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent); color: $osd_fg_color; box-shadow: none;"
+
+
+[[fact]]
+key = "button.body.shadow"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], conditions = ["contrast_high"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-223"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent); color: $osd_fg_color; box-shadow: none; @media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color; }"
 
 [[fact.cite]]
 kind = "published"
@@ -3100,17 +3156,35 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:328-329"
 quote = "&.card { background-color: var(--card-bg-color);"
 
-# `font-weight: inherit`: the inherited (body) weight, not the button's bold
+# `font-weight: inherit`: the inherited weight, not the button's bold, which is GTK's initial `normal` (GTK takes only
+# the family and the size from `gtk-font-name`, never its weight, so the body slot's weight, which the GNOME reader
+# patches from `font-name`, is not what GTK draws here; the tie-break of GN-C1)
 [[fact]]
 key = "button.label.text.font.weight"
 when = { variants = ["@card"], not_variants = ["menu"] }
-value = "= token.text.roles.body.font.weight"
+value = 400
 rows = ["GN-1.35"]
 
 [[fact.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:331"
 quote = "font-weight: inherit;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:921-926"
+quote = "gtk_css_style_property_register (\"font-weight\", GTK_CSS_PROPERTY_FONT_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_SIZE, font_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:136"
+quote = "PANGO_WEIGHT_NORMAL = 400,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:1356-1390"
+quote = "settings_update_font_values (GtkSettings *settings)"
+absent = ["pango_font_description_get_weight"]
 
 [[fact]]
 key = "button.body.padding"
@@ -3226,6 +3300,66 @@ quote = "&.keyboard-activating, &:active { background-image: image($view_active_
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:328-329"
 quote = "&.card { background-color: var(--card-bg-color);"
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"] }
+value = "= alpha(surface.foreground, 0.1)"
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["hover"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.04)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:274"
+quote = "$view_hover_color: color-mix(in srgb, currentColor 4%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:336-337"
+quote = "&:hover { background-image: image($view_hover_color);"
+
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["pressed"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.08)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:275"
+quote = "$view_active_color: color-mix(in srgb, currentColor 8%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:340-342"
+quote = "&.keyboard-activating, &:active { background-image: image($view_active_color);"
 
 [[fact]]
 key = "button.body.fill"
@@ -3979,6 +4113,164 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
 
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:1"
+quote = "$button_color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:28-29"
+quote = "@at-root %button_basic_raised, & { background-color: $button_color;"
+
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["hover"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.15)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:2"
+quote = "$button_hover_color: color-mix(in srgb, currentColor 15%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:35-37"
+quote = "&:hover { background-color: $button_hover_color; }"
+
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["pressed"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:3"
+quote = "$button_active_color: color-mix(in srgb, currentColor 30%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:39-42"
+quote = "&.keyboard-activating, &:active { background-color: $button_active_color; }"
+
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["open"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:4"
+quote = "$button_checked_color: color-mix(in srgb, currentColor 30%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:44-45"
+quote = "&:checked { background-color: $button_checked_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
+quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
+
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["open", "hover"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:5"
+quote = "$button_checked_hover_color: color-mix(in srgb, currentColor 35%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:47-48"
+quote = "&:hover { background-color: $button_checked_hover_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
+quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
+
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["open", "pressed"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-217"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:6"
+quote = "$button_checked_active_color: color-mix(in srgb, currentColor 40%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:51-53"
+quote = "&.keyboard-activating, &:active { background-color: $button_checked_active_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
+quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
+
 # the inner button's inset ring (high contrast) and drop ring, drawn over the outer card's shadow
 [[fact]]
 key = "button.body.shadow"
@@ -4068,6 +4360,113 @@ quote = "@media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color, 
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
+# a menu button's card node in an OSD: its outer node draws the OSD card's shadow (none; under high contrast its 1px
+# border), its inner button its own layers, as for the card above
+[[fact]]
+key = "button.body.shadow"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], conditions = ["contrast_high"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:31-33"
+quote = "@media (prefers-contrast: more) { box-shadow: inset 0 0 0 1px $border_color; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-223"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent); color: $osd_fg_color; box-shadow: none; @media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
+quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
+
+[[fact]]
+key = "button.body.shadow"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["drop_target"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
+quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:301"
+quote = "$drop_target_color: var(--accent-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-219"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent); color: $osd_fg_color; box-shadow: none;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
+
+[[fact]]
+key = "button.body.shadow"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["drop_target"], conditions = ["contrast_high"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(srgb(1, 1, 1, 0.9), token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
+quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:301"
+quote = "$drop_target_color: var(--accent-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:216-223"
+quote = ".osd &, &.osd { background-color: color-mix(in srgb, currentColor 10%, transparent); color: $osd_fg_color; box-shadow: none; @media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
+quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:291"
+quote = "$osd_fg_color: RGB(255 255 255 / 90%);"
 
 [[fact.cite]]
 kind = "published"
@@ -4879,6 +5278,52 @@ quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
 kind = "published"
 source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
 quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
+
+# a disabled menu button in a header bar or a toolbar: the toolbar drops the menu button's own `filter` and the
+# menu button drops its inner button's, so nothing dims it, a label menu button, one in a linked box (where its inner
+# button is raised again) or one of the styles the toolbar does not flatten alike; the flat icon, AdwButtonContent and
+# arrow buttons below dim by the flat look's own filter (the tie-break of GN-C1)
+[[fact]]
+key = "button.body.opacity"
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], variants = ["menu"], not_variants = ["@raised", "primary", "destructive", "@opaque", "flat"], states = ["disabled"], not_states = ["open"] }
+value = 1
+rows = ["GN-1.29", "GN-1.151"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:10-13"
+quote = "menubutton:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) { &:disabled { filter: none; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:400-402"
+quote = "> button:disabled:not(:checked) { filter: none; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1429-1434"
+quote = "gtk_css_number_value_new (1, GTK_CSS_NUMBER));"
+
+[[fact]]
+key = "button.body.opacity"
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], variants = ["menu"], not_variants = ["@raised", "primary", "destructive", "@opaque", "flat"], states = ["disabled"], not_states = ["open"] }
+value = 1
+rows = ["GN-1.29", "GN-1.151"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:10-13"
+quote = "menubutton:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) { &:disabled { filter: none; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:400-402"
+quote = "> button:disabled:not(:checked) { filter: none; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1429-1434"
+quote = "gtk_css_number_value_new (1, GTK_CSS_NUMBER));"
 
 [[fact]]
 key = "button.body.opacity"

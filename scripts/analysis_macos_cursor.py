@@ -32,9 +32,12 @@ L = (r + g + b) / 3 of a pixel:
 
 It writes `cursor.toml` into the image folder, `[typing.<appearance>]`: `frames`; `first_key_frame`, the first frame
 whose text ink exceeds the first frame's by more than 20 (a typed character drawn); `drawn_before_key`, whether the
-cursor is drawn in each of the 5 frames before it; `hidden_from_frame`, the first frame from 3 before
-`first_key_frame` on in which it is not drawn; `hides_on_key`, true where it is drawn before the key and hidden within
-2 frames of the key's first frame; `shown_again_frame`, the first later frame in which it is drawn again (after the
+cursor is drawn in each of the frames from the fifth to the third before it (not in the two frames just before it:
+macOS hides the pointer on the key-down, which the recording shows a frame or two before the typed character's ink,
+so the cursor is gone there; run 42328425189's recordings hide it one frame before the ink, 1-based frames 110 and
+133 against 111 and 134, the cursor fully drawn through 109 and 132); `hidden_from_frame`, the first frame from 3
+before `first_key_frame` on in which it is not drawn; `hides_on_key`, true where it is drawn before the key and hidden
+within 2 frames of the key's first frame; `shown_again_frame`, the first later frame in which it is drawn again (after the
 1 pt move), and `hidden_again_frame`, the first later frame in which it is hidden again; `fade_frames`, the frames
 between the last frame drawn at more than 80 % of the drawn darkness and `hidden_from_frame` (0: from fully drawn to
 hidden in one frame); `hide_interval_ms`, the time from the last drawn frame to `hidden_from_frame` (the frames'

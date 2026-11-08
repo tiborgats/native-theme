@@ -22,6 +22,7 @@ sizes = []
 densities = []
 axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }] }
 exclusive = []
+exclusive_variants = [["icon_only", "with_icon"], ["@inline_small", "@inline_large"]]
 variant_sets = [["flat", "toggle"], ["flat", "warning"], ["warning", "toggle"], ["flat", "warning", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["tool", "@inline_small"], ["tool", "@inline_small", "flat"], ["tool", "@inline_large"], ["tool", "@inline_large", "flat"]]
 not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { variants = ["circular", "tool"] }, { states = ["focused"], conditions = ["window_inactive"] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
 rows = ["K1.20", "K1.21", "K1.22", "K1.24", "K1.25", "K1.26", "K1.29", "K1.152", "K-RL02†"]
@@ -30,6 +31,11 @@ rows = ["K1.20", "K1.21", "K1.22", "K1.24", "K1.25", "K1.26", "K1.29", "K1.152",
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4513-4530"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:233-246"
+quote = "const bool hasIcon = !toolButtonOption->icon.isNull() || (toolButtonOption->features & QStyleOptionToolButton::Arrow); const bool iconOnly = toolButtonOption->toolButtonStyle == Qt::ToolButtonIconOnly || (toolButtonOption->text.isEmpty() && hasIcon); if (hasPopupMenu) { return ToolButtonMenuArrowStyle::SubControl; } if (hasDelayedMenu) { return ToolButtonMenuArrowStyle::InlineSmall; } if (hasInlineIndicator && !iconOnly) { return ToolButtonMenuArrowStyle::InlineLarge; }"
 
 [[model.cite]]
 kind = "published"
@@ -116,19 +122,44 @@ quote = "return (QApplication::focusWidget() == w);"
 # No `@recording` state (the ledger's queue #79): kirigami-addons' KeySequenceItem's main button is checkable and
 # records while it is checked (KeySequenceItem.qml:121-122, :148-157), so it draws the `checked` state of a `toggle`
 # button, focused; recording changes only its text ("Input", then " ... ", :126-140)
+# `@keyboard_focus_change` is a state the drawing distinguishes, so it is among the axes' states as well as declared;
+# a ToolButton with a menu and a label draws Breeze's inline large arrow (`@inline_large`, one menu style at a time,
+# as the widgets'); transient touch input (`input:touch`) widens kirigami-addons' floating button's padding; the
+# search field's, input's and chip's buttons are the contexts the icon sizes name
 [[model]]
 widget = "button"
 when = { conditions = ["flavor:kirigami"] }
 available = true
-variants = ["flat", "circular", "toggle", "menu", "tool", "icon_only", "with_icon", "help", "@highlighted", "@ka_floating", "@key_sequence", "@ka_download", "close", "back", "previous", "next", "overflow", "clear_field", "reveal", "remove", "play", "volume"]
+variants = ["flat", "circular", "toggle", "menu", "tool", "icon_only", "with_icon", "help", "@highlighted", "@inline_large", "@ka_floating", "@key_sequence", "@ka_download", "close", "back", "previous", "next", "overflow", "clear_field", "reveal", "remove", "play", "volume"]
 sizes = []
 densities = []
 flags = ["@keyboard_focus_change"]
-axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default", "@keyboard_focus_change"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "input:touch"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "chip" }] }
 exclusive = []
-variant_sets = [["flat", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["circular", "flat"], ["circular", "toggle"], ["circular", "flat", "toggle"], ["circular", "@highlighted"], ["circular", "flat", "@highlighted"], ["flat", "@highlighted"], ["tool", "@highlighted"], ["tool", "flat", "@highlighted"]]
+exclusive_variants = [["icon_only", "with_icon"]]
+variant_sets = [["flat", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["circular", "flat"], ["circular", "toggle"], ["circular", "flat", "toggle"], ["circular", "@highlighted"], ["circular", "flat", "@highlighted"], ["flat", "@highlighted"], ["tool", "@highlighted"], ["tool", "flat", "@highlighted"], ["tool", "@inline_large"], ["tool", "@inline_large", "flat"], ["tool", "@inline_large", "@highlighted"], ["toggle", "@key_sequence"]]
 not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["focused"], conditions = ["window_inactive"] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
 rows = ["Q1.8", "Q1.9", "Q2.4", "Q2.48", "K-KA-26†", "K-KA-43†"]
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:91"
+quote = "\"menu\": controlRoot.Accessible.role === Accessible.ButtonMenu,"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:412-414"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:233-246"
+quote = "const bool hasIcon = !toolButtonOption->icon.isNull() || (toolButtonOption->features & QStyleOptionToolButton::Arrow); const bool iconOnly = toolButtonOption->toolButtonStyle == Qt::ToolButtonIconOnly || (toolButtonOption->text.isEmpty() && hasIcon); if (hasPopupMenu) { return ToolButtonMenuArrowStyle::SubControl; } if (hasDelayedMenu) { return ToolButtonMenuArrowStyle::InlineSmall; } if (hasInlineIndicator && !iconOnly) { return ToolButtonMenuArrowStyle::InlineLarge; }"
+
+[[model.cite]]
+kind = "published"
+source = "kirigami-addons@1.15.0 src/components/FloatingButton.qml:64-66"
+quote = "readonly property real __padding: radius === Infinity ? Math.round(Math.max(__effectiveIconSize.width, __effectiveIconSize.height) * (Math.sqrt(2) - 1)) : Kirigami.Settings.hasTransientTouchInput ? (Kirigami.Units.largeSpacing * 2) : Kirigami.Units.largeSpacing"
 
 [[model.cite]]
 kind = "published"
@@ -204,3 +235,51 @@ quote = "return \" \" + text + (helper.isRecording ? \" ... \" : \" \");"
 kind = "published"
 source = "qtdeclarative@6.12.0 src/quick/items/qquickwindow.cpp:225-229"
 quote = "void QQuickWindow::focusOutEvent(QFocusEvent *ev) { Q_D(QQuickWindow); if (d->contentItem) d->contentItem->setFocus(false, ev->reason());"
+
+# KTitleWidget (component.title_widget, Qt Widgets only; K1.270, K2.15): its title's text level, one of four (level 1
+# where none is set), and its comment's message type, one of four (Info where none is set); no state, condition or
+# context: its style sheets hold one size and one colour, rebuilt on palette and font changes only. A QWidget, so the
+# `kirigami` flavour has none (the catalogue's `available = false` there)
+[[model]]
+widget = "component.title_widget"
+available = true
+variants = ["@level_1", "@level_2", "@level_3", "@level_4", "@plain", "@info", "@warning", "@error"]
+sizes = []
+densities = []
+axes = { states = [], conditions = [], contexts = [] }
+exclusive = []
+exclusive_variants = [["@level_1", "@level_2", "@level_3", "@level_4"], ["@plain", "@info", "@warning", "@error"]]
+variant_products = [[{ any = ["@level_1", "@level_2", "@level_3", "@level_4"] }, { any = ["@plain", "@info", "@warning", "@error"] }]]
+not_drawn = []
+rows = ["K1.270", "K2.15"]
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:34-55"
+quote = "QString textStyleSheet() const"
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:112"
+quote = "int level = 1;"
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.h:115-120"
+quote = "enum MessageType { PlainMessage, InfoMessage, WarningMessage, ErrorMessage, };"
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:29"
+quote = ", messageType(KTitleWidget::InfoMessage)"
+
+[[model]]
+widget = "component.title_widget"
+when = { conditions = ["flavor:kirigami"] }
+available = false
+rows = ["K2.15"]
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.h:57"
+quote = "class KWIDGETSADDONS_EXPORT KTitleWidget : public QWidget"

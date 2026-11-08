@@ -4746,274 +4746,58 @@ quote = "@interface UIColor (UIAccessibility)"
 absent = []
 
 
+# The set's status text colour: UIKit states no per-surface status colour (its system colours, UIColorSystemColors,
+# are global), so the set takes the global status role by the catalogue's rule for a platform without per-set
+# values (the role record's `negative`, `neutral`, `positive`; the tie-break of IO-C1, from the verifier)
 [[fact]]
 key = "role.window.negative"
-value = "absent"
+value = "= role.global.status.error.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 
 [[fact]]
 key = "role.window.neutral"
-value = "absent"
+value = "= role.global.status.warning.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 
 [[fact]]
 key = "role.window.positive"
-value = "absent"
+value = "= role.global.status.success.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 
 [[fact]]
@@ -7795,272 +7579,56 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "@interface UIColor (UIAccessibility)"
 absent = []
 
+# The set's status text colour: UIKit states no per-surface status colour (its system colours, UIColorSystemColors,
+# are global), so the set takes the global status role by the catalogue's rule for a platform without per-set
+# values (the role record's `negative`, `neutral`, `positive`; the tie-break of IO-C1, from the verifier)
 [[fact]]
 key = "role.selection.negative"
-value = "absent"
+value = "= role.global.status.error.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.selection.neutral"
-value = "absent"
+value = "= role.global.status.warning.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.selection.positive"
-value = "absent"
+value = "= role.global.status.success.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.selection.decoration_focus"
@@ -10695,272 +10263,56 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "@interface UIColor (UIAccessibility)"
 absent = []
 
+# The set's status text colour: UIKit states no per-surface status colour (its system colours, UIColorSystemColors,
+# are global), so the set takes the global status role by the catalogue's rule for a platform without per-set
+# values (the role record's `negative`, `neutral`, `positive`; the tie-break of IO-C1, from the verifier)
 [[fact]]
 key = "role.dialog.negative"
-value = "absent"
+value = "= role.global.status.error.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.dialog.neutral"
-value = "absent"
+value = "= role.global.status.warning.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.dialog.positive"
-value = "absent"
+value = "= role.global.status.success.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.dialog.decoration_focus"
@@ -13477,272 +12829,56 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "@interface UIColor (UIAccessibility)"
 absent = []
 
+# The set's status text colour: UIKit states no per-surface status colour (its system colours, UIColorSystemColors,
+# are global), so the set takes the global status role by the catalogue's rule for a platform without per-set
+# values (the role record's `negative`, `neutral`, `positive`; the tie-break of IO-C1, from the verifier)
 [[fact]]
 key = "role.popover.negative"
-value = "absent"
+value = "= role.global.status.error.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.popover.neutral"
-value = "absent"
+value = "= role.global.status.warning.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.popover.positive"
-value = "absent"
+value = "= role.global.status.success.standalone"
 rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-96"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:99-101"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:112-115"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:117-133"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:135-141"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:104-253"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:31-113"
-quote = "@interface UIColor : NSObject <NSSecureCoding, NSCopying>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:116-118"
-quote = "@interface UIColor (UINSItemProvider) <NSItemProviderReading, NSItemProviderWriting>"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:129-132"
-quote = "@interface UIColor (UIColorNamedColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:134-150"
-quote = "@interface UIColor (DynamicColors)"
-absent = []
-
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIColor.h:152-158"
-quote = "@interface UIColor (ProminenceSupport)"
-absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIInterface.h:113-262"
 quote = "@interface UIColor (UIColorSystemColors)"
-absent = []
 
-[[fact.cite]]
-kind = "published"
-source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityAdditions.h:67-70"
-quote = "@interface UIColor (UIAccessibility)"
-absent = []
 
 [[fact]]
 key = "role.popover.decoration_focus"

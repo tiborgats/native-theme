@@ -16,6 +16,9 @@
 #     by its name, so an input added, removed, renamed or edited changes it.
 #     A directory's `__pycache__` folders are left out: Python writes them
 #     while a check runs, from the sources beside them, which are hashed.
+#     An input `!<pattern>` leaves out every file the other inputs name
+#     whose path the bash pattern matches (a step that reads one bundled
+#     preset leaves out the others, which the crate's directory holds).
 # A failed step records nothing; a step whose inputs change while it runs
 # records nothing either. A step that declares no inputs always runs.
 #
@@ -28,7 +31,8 @@
 #
 # runs the self-test: a step re-runs after any declared input, the base (the
 # script's own hash among it), the command or the environment changes, and a
-# failed step records nothing.
+# failed step records nothing; a file an input `!<pattern>` leaves out
+# changes nothing, its neighbours still do.
 
 STEP_CACHE_DIR=""
 STEP_CACHE_LABEL=""
@@ -51,10 +55,28 @@ step_cache_environment() {
 
 # The content hash of the inputs $@: a directory's files (symbolic links
 # followed) by path and content, a file by path and content, a glob's
-# matches, a missing input by name.
+# matches, a missing input by name; each file an input `!<pattern>` matches
+# left out.
 step_cache_inputs() {
+    local input
+    local excluded=()
+    for input in "$@"; do
+        if [[ "$input" == '!'* ]]; then
+            excluded+=("${input#!}")
+        fi
+    done
+    step_cache_listing "$@" | step_cache_excluding ${excluded[@]+"${excluded[@]}"} | sha256sum | cut -d' ' -f1
+}
+
+# The lines step_cache_inputs hashes for the inputs $@, the `!<pattern>`
+# inputs skipped: `sha256sum` lines, `directory <path>` and
+# `missing <input>`.
+step_cache_listing() {
     local input match matches
     for input in "$@"; do
+        if [[ "$input" == '!'* ]]; then
+            continue
+        fi
         if [[ "$input" == *[*?[]* ]]; then
             mapfile -t matches < <(compgen -G "$input" | sort)
             if [ "${#matches[@]}" -eq 0 ]; then
@@ -74,7 +96,25 @@ step_cache_inputs() {
                 printf 'missing %s\n' "$match"
             fi
         done
-    done | sha256sum | cut -d' ' -f1
+    done
+}
+
+# Standard input's lines but each `sha256sum` line whose path one of the
+# patterns $@ matches.
+step_cache_excluding() {
+    local line path pattern
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^[0-9a-f]{64}\ [\ *](.*)$ ]]; then
+            path="${BASH_REMATCH[1]}"
+            for pattern in "$@"; do
+                # shellcheck disable=SC2053  # the pattern matches as a glob
+                if [[ "$path" == $pattern ]]; then
+                    continue 2
+                fi
+            done
+        fi
+        printf '%s\n' "$line"
+    done
 }
 
 # Prints the key of the step $1 with the inputs before `--` and the command
@@ -184,6 +224,16 @@ step_cache_self_test() {
     printf 'a\n' >"$dir/tree/file.txt"
     expect "the file restored" ran
     expect "restored, unchanged" skipped
+    inputs+=("!$dir/tree/inputs/sub/*.left")
+    expect "an exclusion that matches nothing" skipped
+    printf 'f\n' >"$dir/tree/inputs/sub/out.left"
+    expect "a file an exclusion leaves out added" skipped
+    printf 'f2\n' >"$dir/tree/inputs/sub/out.left"
+    expect "a file an exclusion leaves out edited" skipped
+    printf 'b3\n' >"$dir/tree/inputs/sub/nested.txt"
+    expect "its neighbour edited" ran
+    rm "$dir/tree/inputs/sub/out.left"
+    expect "a file an exclusion leaves out removed" skipped
     printf '#!/bin/bash\n# edited\n' >"$dir/tree/script.sh"
     expect "the script edited" ran
     expect "the command's arguments changed" ran 0 --flag

@@ -932,6 +932,7 @@ note = "Only packages/tokens is cited. @fluentui/tokens has never had a stable v
 [[source]]
 id = "windows-dev-docs@f54166ed"
 kind = "git"
+project = "windows-dev-docs"
 site = "learn.microsoft.com"
 repository = "https://github.com/MicrosoftDocs/windows-dev-docs.git"
 tag = "commit"
@@ -940,7 +941,7 @@ release = "learn.microsoft.com/windows/apps (Windows app design and WinUI pages)
 generations = ["windows-11"]
 researched = "2026-10-29"
 proof = "git ls-remote https://github.com/MicrosoftDocs/windows-dev-docs.git refs/heads/main"
-sparse = ["hub/apps/design", "hub/apps/develop/ui"]
+sparse = ["hub/apps/design", "hub/apps/develop/ui", "hub/apps/desktop/modernize/ui"]
 note = "Documentation has no tags. The published line is `main`: the pages' git_commit_id 7b6ada41764877abf34578ddb4c9571b6097cd9a (buttons, color, xaml-theme-resources) is in the public repository, 30 commits behind this head; the default branch `docs` has diverged and is not published."
 
 [[source]]
@@ -1161,7 +1162,7 @@ kind = "git"
 evidence = true
 repository = "https://github.com/tiborgats/native-theme-evidence.git"
 tag = "commit"
-commit = "87037558ed4f3681a3c42dfed779cc3bb487abb1"
+commit = "48a3ca02867c36618921f5c9e9e2ec9522aa447a"
 generations = []
 note = "The evidence repository: docs/evidence/<harness>/<date>-run-<id>/<image>/ at the paths a measured citation names, read by the checkers, the generators that read evidence and the facts gate from a clean checkout at this commit (NATIVE_THEME_EVIDENCE, else <cache>/native-theme-evidence/). Its first commit, 5146132c, holds docs/evidence/ of v0.8.0-rc1 at 4ee2b529 (the same tree), its second, 342ac5a6, its README and licence files; the pin then moves with the facts commits that add runs."
 

@@ -7,10 +7,10 @@ available = true
 variants = ["primary", "destructive", "flat", "pill", "circular", "toggle", "menu", "icon_only", "with_icon", "close", "back", "previous", "next", "add", "clear_field", "reveal", "play", "volume", "pane_toggle", "@raised", "@osd", "@opaque", "@card", "@with_arrow", "@arrow_only", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button", "@tab_overflow", "@custom_child", "@image_text_box"]
 sizes = []
 densities = []
-axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "open", "drop_target"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "popover" }, { scope = "any", widget = "layout", variants = ["@linked"] }, { scope = "any", widget = "layout", variants = ["@linked", "vertical"] }, { scope = "any", variants = ["@osd"] }] }
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "open", "drop_target"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "popover" }, { scope = "any", widget = "layout", variants = ["@linked"] }, { scope = "any", widget = "layout", variants = ["@linked", "vertical"] }, { scope = "any", variants = ["@osd"] }, [{ widget = "toolbar", part = "bar" }, { widget = "layout", variants = ["@linked"] }], [{ widget = "toolbar", part = "bar" }, { widget = "layout", variants = ["@linked", "vertical"] }], [{ widget = "window", part = "title_bar" }, { widget = "layout", variants = ["@linked"] }], [{ widget = "window", part = "title_bar" }, { widget = "layout", variants = ["@linked", "vertical"] }]] }
 exclusive = []
 exclusive_variants = [["icon_only", "with_icon", "@custom_child"], ["@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none"], ["@with_arrow", "@arrow_only"]]
-variant_sets = [["back", "icon_only"], ["@tab_button", "@tab_overflow"]]
+variant_sets = [["back", "icon_only"], ["close", "icon_only"], ["@tab_button", "icon_only"], ["@tab_button", "@tab_overflow", "icon_only"]]
 variant_products = [
   # a plain button: its content (an icon, AdwButtonContent, a custom child; the label the base), its shape, its colour
   # style, toggle or not
@@ -45,7 +45,7 @@ variant_products = [
    { any = ["pill", "circular"] },
    { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd", "@card"] }],
 ]
-not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["open"], not_variants = ["menu", "back"] }, { variants = ["@with_arrow"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["icon_only"] }, { variants = ["menu"], not_variants = ["icon_only", "with_icon", "@custom_child", "@with_arrow", "@arrow_none"] }, { variants = ["@arrow_up"], not_variants = ["menu"] }, { variants = ["@arrow_start"], not_variants = ["menu"] }, { variants = ["@arrow_end"], not_variants = ["menu"] }, { variants = ["@arrow_none"], not_variants = ["menu"] }, { variants = ["@image_text_box"], not_variants = ["with_icon"] }, { variants = ["back"], not_variants = ["icon_only"] }, { variants = ["@tab_overflow"], not_variants = ["@tab_button"] }]
+not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "drop_target"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["@with_arrow"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["icon_only"] }, { variants = ["menu"], not_variants = ["icon_only", "with_icon", "@custom_child", "@with_arrow", "@arrow_none"] }, { variants = ["@arrow_up"], not_variants = ["menu"] }, { variants = ["@arrow_start"], not_variants = ["menu"] }, { variants = ["@arrow_end"], not_variants = ["menu"] }, { variants = ["@arrow_none"], not_variants = ["menu"] }, { variants = ["@image_text_box"], not_variants = ["with_icon"] }, { variants = ["back"], not_variants = ["icon_only"] }, { variants = ["close"], not_variants = ["icon_only"] }, { variants = ["@tab_button"], not_variants = ["icon_only"] }, { variants = ["@tab_overflow"], not_variants = ["@tab_button"] }]
 rows = ["GN-1.26", "GN-3.11"]
 
 [[model.cite]]
@@ -89,6 +89,35 @@ quote = "gtk_widget_add_css_class (self->button, \"image-text-button\");"
 kind = "published"
 source = "libadwaita@1.10.0 src/adw-tab-button.c:107-121"
 quote = "const char *icon_name = \"adw-tab-counter-symbolic\"; char *label_text = NULL; if (self->view) { guint n_pages = adw_tab_view_get_n_pages (self->view); small_label = n_pages >= 10; if (n_pages < 100) { display_label = TRUE; label_text = g_strdup_printf (\"%u\", n_pages); } else { icon_name = \"adw-tab-overflow-symbolic\"; } }"
+
+# its inner button is classed `.image-button`, so AdwTabButton is drawn as an icon button: `@tab_button` only with
+# `icon_only` (the tie-break of GN-C1; S17's declarations check names the set `[@tab_button, icon_only]`)
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-button.ui:6-33"
+quote = "<object class=\"GtkButton\" id=\"button\">"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-button.ui:32-34"
+quote = "<style> <class name=\"image-button\"/> </style>"
+
+# `close` (GtkSearchBar's and AdwSheetControls' close buttons, classed `.close`) holds an icon, so it is an icon
+# button too: `close` only with `icon_only`
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksearchbar.c:386-388"
+quote = "bar->close_button = gtk_button_new_from_icon_name (\"window-close-symbolic\"); gtk_widget_set_valign (bar->close_button, GTK_ALIGN_CENTER); gtk_widget_add_css_class (bar->close_button, \"close\");"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-sheet-controls.c:121-122"
+quote = "gtk_widget_add_css_class (button, \"close\"); gtk_button_set_child (GTK_BUTTON (button), image);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:1100-1101"
+quote = "if (GTK_IS_IMAGE (child)) update_style_classes_from_child_type (button, ICON_CHILD);"
 
 # the content variants: a GtkButton has one child, a label, an icon or another widget (`with_icon` is AdwButtonContent,
 # which classes its button `.image-text-button`; `@custom_child` a widget with no class); `@image_text_box` is an
@@ -239,6 +268,23 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkwidget.c:8295-8312"
 quote = "_gtk_widget_synthesize_crossing (widget, NULL, device,"
 
+# nor pressed, nor a drop target, while insensitive: making a widget insensitive clears its active flag, and an
+# insensitive widget is never picked, for a press or for a drag's motion (the tie-break of GN-C1)
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwidget.c:6253-6257"
+quote = "data.flags_to_set = GTK_STATE_FLAG_INSENSITIVE; data.flags_to_unset = GTK_STATE_FLAG_PRELIGHT | GTK_STATE_FLAG_ACTIVE;"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwidget.c:10520-10522"
+quote = "if (!(flags & GTK_PICK_INSENSITIVE) && !_gtk_widget_is_sensitive (widget)) return FALSE;"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmain.c:1368-1377"
+quote = "case GDK_DRAG_ENTER: case GDK_DRAG_MOTION:"
+
 [[model.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtktogglebutton.c:441-442"
@@ -250,8 +296,10 @@ source = "gtk@4.24.1 gtk/gtkbutton.c:1-1194"
 quote = "/* GTK - The GIMP Toolkit"
 absent = ["GTK_STATE_FLAG_CHECKED"]
 
-# `open`: only GtkMenuButton (its toggle button checked while the popover shows) and AdwBackButton (checked while its
-# navigation menu shows) open anything
+# `open`: GtkMenuButton (its toggle button checked while the popover shows), AdwBackButton (checked while its
+# navigation menu shows) and any button that is a GtkPopoverBin's child, which the bin classes `.has-open-popup`
+# while its popover is mapped (a public widget, `gtk/gtk.h:217`; the checked card button draws it, `_buttons.scss:354`;
+# every other button draws as without it): drawn on every button (the tie-break of GN-C1)
 [[model.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1258-1281"
@@ -262,11 +310,33 @@ kind = "published"
 source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
 quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkpopoverbin.c:116-126"
+quote = "on_popover_map (GtkPopoverBin *self) { gtk_widget_add_css_class (self->child, \"has-open-popup\"); }"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtk.h:217"
+quote = "#include <gtk/gtkpopoverbin.h>"
+
 # an OSD ancestor, any widget classed `.osd` (R25.9): the checked card button's background under it (`.osd &`)
 [[model.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
 quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+
+# a linked box inside a header bar or a toolbar (`%toolbar .linked button`, a chain of the two, outermost first): its
+# buttons are raised again, while the toolbar's `menubutton:disabled` rule still applies (the tie-break of GN-C1)
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:20-26"
+quote = ".linked button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) { &.arrow-button, &.image-button, &.image-text-button { @extend %button_basic_raised; } }"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:18"
+quote = "@extend %toolbar;"
 
 # the popover context: a popover nearer than the toolbar restores the raised look
 [[model.cite]]

@@ -588,8 +588,14 @@ reading that table (the helper is `pub(crate)`, which `native-theme/tests/platfo
 The helpers are exactly these, each a `pub(crate)` function of the reader module that uses it: `pango_font_description`
 (the GNOME reader's, Pango's `pango_font_description_from_string`, `pango@1.58.2 pango/fonts.c:1613-1729`, read for
 the gsettings font strings), `qfont_from_string` (the KDE reader's, Qt's `QFont::fromString`, `qtbase@6.12.0
-src/gui/text/qfont.cpp:2246-2320`, for kdeglobals' font entries) and `adw_accent_nearest` (the GNOME reader's,
-libadwaita's `adw_accent_color_nearest_from_rgba`, `libadwaita@1.10.0 src/adw-accent-color.c:159-199`, S9.3).
+src/gui/text/qfont.cpp:2246-2320`, for kdeglobals' font entries), `adw_accent_nearest` (the GNOME reader's,
+libadwaita's `adw_accent_color_nearest_from_rgba`, `libadwaita@1.10.0 src/adw-accent-color.c:159-199`, S9.3),
+`kde_color_scheme` (the KDE reader's, Plasma's dark-or-light test of the palette's window colour, plasma-integration's
+`KHintsSettings::determineColorScheme` and xdg-desktop-portal-kde's `readFdoColorScheme` over Qt's `qGray`,
+`plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:469-485`, `xdg-desktop-portal-kde@6.8.2
+src/settings.cpp:259-273`, `qtbase@6.12.0 src/gui/painting/qrgb.h:36-37`, S9.3; ADD-A140) and `qxcb_xft_dpi` (the
+KDE reader's, Qt's xcb plugin reading `Xft.dpi` from the X resources, `qtbase@6.12.0
+src/plugins/platforms/xcb/qxcbscreen.cpp:298-314`, `:366-373`, `:856-876`, S9.3; ADD-A140).
 `check_function_vectors.py` reads this list as it reads S2.2's functions: a listed helper with a table and no
 implementation is reported as waiting (its implementer receives the table first, D10); an implemented one without
 its table or test is a finding, and so is a `reader.` table of a name not listed. A table's columns may take the type
@@ -3245,6 +3251,19 @@ else the file's `[ColorEffects:Inactive] Enable` where it states one, else true 
 has none (`colorsapplicator.cpp:154-155`); `titlebar_is_accent_colored` as `applyScheme()` reads it
 (`TitlebarIsAccentColored`, else `accentActiveTitlebar`, else false, `:152-153`).
 
+**Unset and empty** (ADD-A140; ledger queue #180, the KDE facts lane's round 5). "Unset" above is a key the file does
+not hold. kdeglobals can also hold a key with an empty value: `applyScheme()` writes every key of both effect groups
+from the scheme file, an empty one where the file lacks it (`colorsapplicator.cpp:340-359`; `kconfig@6.31.0
+src/core/kconfiggroup.cpp:835-841` writing a null value as empty), and KConfig reads an empty value as it reads any
+present one: a bool as true, since it reads every value but `false`, `no`, `off` and `0`, in any case, as true
+(`:249-255`), so an empty `[ColorEffects:Inactive] Enable` or `ChangeSelectionColor` is true; a number as its
+default, the conversion failing (`:256-268`); a colour as an invalid colour (`src/gui/kconfiggroupgui.cpp:37-39`).
+The reader reads each so, and reads every bool entry as KConfig does; an empty `Color`, which KColorScheme reads only
+while a colour effect is on (`kcolorscheme.cpp:47-49`), is stated as its unset default, a recorded inexactness (the
+model holds no invalid colour). A KDE port's `.colors` file, which no `applyScheme()` wrote, holds each key or leaves
+it unset. Rejected: an empty value read as unset (the port's: where the scheme file sets no `Enable`, KDE then draws
+the inactive effects the reader would state off).
+
 These values are the scheme's: Plasma writes kdeglobals' effects and contrast from the scheme file
 (`colorsapplicator.cpp:311-318`, `:340-359`), and the tint and title-bar options are in the scheme file alone. So the reader states
 its `token.kde`, and its other scheme-file tokens (`token.params.color.contrast`, `frame_contrast`), as a `Tokens` rule
@@ -3725,7 +3744,7 @@ pub struct ReaderState {                                   // the system conditi
     pub container_sizes: Vec<(WidgetRef, Key)>, pub system_settings: Vec<Key>,
     pub text_scaling_factor: f32,                          // S9.4
     pub font_dpi: Option<f32>,                             // the system's font DPI where the platform has a setting
-                                                           // (KDE's `forceFontDPI`, `Xft.dpi`); None: the preset's
+                                                           // (KDE's `Xft.dpi` on X11, S9.3); None: the preset's
                                                            // `token.text.font_dpi` (S9.4)
     pub content_size_category: Option<ContentSizeCategory>,   // iOS's, for `DynamicType` and `uifm_scaled`
                                                            // (S9.4); None: the default category, the one the
@@ -4002,7 +4021,8 @@ an `[Inactive]` group (`kcolorscheme.cpp:345-351`). A value the file lacks, a wh
 KColorScheme reads it unset over the file, cited, never left missing: `Header`'s from the file's `[Colors:Window]`,
 with KColorScheme's `Header` defaults beneath (`kcolorscheme.cpp:330-333`); another set's from KColorScheme's defaults
 for that set (the `default*Colors` tables, `:122-216`); a key an `[Inactive]` group lacks from those same defaults, not
-from the set's active value (`:345-357`). So every declared input has a value, the lists, not a missing value, carry
+from the set's active value (`:345-357`); the reader states each so, with every other colour key it reads (S9.3's *The
+KDE reader's readings*; ADD-A140). So every declared input has a value, the lists, not a missing value, carry
 what the file lacks, and `kde_accent` follows `applyScheme()` where it reads an unset key itself (S2.2: in a tinting
 scheme it tints such a key as `applyScheme()` does, from the invalid colour it reads). And `kde_scheme.wm.<key>` for the four `KdeWmKey`s (S4.8), what
 `applyScheme()` writes into `[WM]` with no accent (`colorsapplicator.cpp:287-309`): the file's `[WM]` key where it
@@ -4249,6 +4269,126 @@ in a scheme where they differ); `#00000000` in the common bases (S9.5 carries it
 would mix and seed from transparent black). The new reads per
 platform are the rows of the traceability whose target is a reader read (S20); each is a `reader::<platform>` change.
 
+**The KDE reader's readings** (ADD-A140; ledger queue #180, from the KDE reader's port on `readers-kw`, ce325f32).
+Beside its accent (above) and its scheme inputs (S9.1), it states:
+- the scheme by Plasma's own test, the one plasma-integration gives every Qt application on Plasma as its colour
+  scheme and xdg-desktop-portal-kde publishes as `org.freedesktop.appearance` `color-scheme`: dark where Qt's grey of
+  the palette's window colour (`qGray`, an integer weighted mean of its 8-bit channels) is below a fixed threshold,
+  else light (`plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:469-485`, "Matches
+  xdg-desktop-portal-kde readFdoColorScheme()" at `:474`; `xdg-desktop-portal-kde@6.8.2 src/settings.cpp:259-273`,
+  which never answers "no preference"; the colours KCM's dark and light filter, `plasma-workspace@6.8.2
+  kcms/colors/filterproxymodel.cpp:108-114`; `qtbase@6.12.0 src/gui/painting/qrgb.h:36-41`). That colour is the
+  active `Window` set's `BackgroundNormal` of the colours the palette is built from (KColorScheme's application
+  palette, `kcolorscheme@6.31.0 src/kcolorscheme.cpp:671`; their source and an unset key, below). Both sources are
+  LGPL code, so the reader takes the test through the clean room (the 0.8.0 plan's D10) as the reader helper
+  `kde_color_scheme` (S2.2), whose description cites those lines and whose vector table is generated through `qGray`
+  (the KDE facts lane's round 5, d7fe49f2, found no fact key for the rule). Rejected: the portal's `color-scheme`
+  alone (it needs no clean room, but gives nothing where no session bus or portal answers within the readers' D-Bus
+  deadline, and the `kde` feature would take on the `portal` feature's D-Bus dependency for a value the files already
+  give); the portal first and the test after it (the test, and so the clean room, is needed anyway, and the two routes
+  to one value differ only while the portal's palette lags kdeglobals); no test (`ReaderState.scheme` has no unknown,
+  S8, and a `Fallback` on every read where nothing failed would carry nothing, ADD-A138); Kirigami's
+  `ColorUtils::brightnessForColor` (`kirigami@6.31.0 src/platform/colorutils.cpp:21-28`), a colour's brightness by
+  BT.601 luma, not the scheme Plasma reports; 0.7.0's BT.601 luminance (`2796b26e:native-theme/src/kde/mod.rs:469-480`),
+  which matches neither rule and calls light a mid-grey window Plasma calls dark.
+- the colours' source: its results, its inactive input roles, the accent's `Selection` background and the test's
+  window colour come from the kdeglobals cascade where it has a `[Colors:View]` group, from which plasma-integration
+  builds the palette (`khintssettings.cpp:445-446`); where it has none, from the file plasma-integration takes
+  instead, the colours of the look-and-feel package `[KDE] LookAndFeelPackage` names (`org.kde.breeze.desktop` by
+  default, `:45`), `plasma/look-and-feel/<package>/contents/colors` in the data directories, else the scheme file
+  (below; `BreezeLight.colors` where the one named is not found), each read as kdeglobals is (`:447-466`). Rejected:
+  kdeglobals whatever it holds (without a `[Colors:View]` group Plasma's applications draw another file's colours).
+- every colour key it reads (above, and the scheme inputs) that its file leaves unset as KColorScheme reads it there,
+  never by leaving it to the layers beneath: the group's value (`kcolorscheme.cpp:251-278`), else for `Header` the
+  file's `[Colors:Window]` value, else the set's entry in KColorScheme's default tables, `DecorationFocus` and
+  `DecorationHover` from `defaultDecorationColors` (`:119-216`; `Header`'s, `:330-333`); a key an `[Inactive]` group
+  lacks from the same defaults, not from the set's active value (`:344-357`); and where the file has no `Header`
+  group, `Header`'s inactive input roles are its active values, `Window`'s over `Header`'s table, as KColorScheme
+  reads them with no `[Colors:Header][Inactive]` group (`:330-333`, `:344-351`; S2.2's `kde_accent`), not
+  `[Colors:Window][Inactive]`. The colour effects, amounts and colour KColorScheme reads unset (`:36-49`) are stated
+  so too (S4.8, with its empty values, *Unset and empty*). The tables are constants of the reader, each citing its
+  row in the table and the KDE fact that cites that row, as its contrast defaults cite theirs: the KDE facts lane's
+  round 5 (d7fe49f2) cites each set's default row on that set's `scheme:light` scheme-input facts, `Header`'s and the
+  `[Inactive]` reads on theirs, and each effect's default on its `token.kde` fact; a row is the constant's value even
+  where the fact's own value, Breeze Light's file, differs from it (`DecorationHover`, the lane's one such row).
+  Rejected: the layers beneath, the preset's Breeze
+  values (the port's interim): KColorScheme's tables are Breeze Light's ("These numbers come from the default color
+  scheme which is currently Breeze Light", `:119-120`), so under the dark scheme `kde-breeze` would show Breeze Dark's
+  value where every KDE application draws the table's, and a scheme input left to the preset would mix Breeze's file
+  into the user's under `kde_accent` (S9.1: none is left missing); Breeze Light's scheme file read at run time
+  (KColorScheme reads its compiled tables, and the installed file may differ or be missing).
+- each colour entry as KConfig reads a colour (`kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:36-93`) in the form
+  KConfig writes, three or four comma-separated integers, the fourth the alpha (`:134-150`), a list of another length
+  or a component that is no integer in a byte's range being the key's default, as KConfig returns it (`:54-81`); a
+  value KConfig hands to Qt's colour parser (one starting with `#`, or one without a comma, `:40-53`), which KConfig's
+  writer never writes, and an empty value or `invalid`, which KConfig reads as an invalid colour (`:37-39`), are read
+  as unset, a recorded inexactness. Rejected: Qt's colour parser through the clean room, for spellings only a hand
+  edit gives; an invalid colour, which the model cannot hold.
+- the scheme file (S9.1): `[General] ColorScheme`, which the colours KCM keeps in kdeglobals with `BreezeLight` as its
+  default (`plasma-workspace@6.8.2 kcms/colors/colorssettings.kcfg:6-11`), names the scheme by its file's base name:
+  the file is `color-schemes/<name>.colors` in the first data directory where it is a file, as Qt's
+  `QStandardPaths::locate` finds it for the KCM that applies the scheme (`kcms/colors/colors.cpp:468-474`;
+  `kcms/colors/plasma-apply-colorscheme.cpp:136`) and for plasma-integration (`khintssettings.cpp:457-458`): the data home (`$XDG_DATA_HOME` where it is absolute, else
+  `~/.local/share`), then the absolute entries of `$XDG_DATA_DIRS`, cleaned and without duplicates, `/usr/local/share`
+  and `/usr/share` where none is left (`qtbase@6.12.0 src/corelib/io/qstandardpaths_unix.cpp:221-236`, `:370-399`,
+  `:451-453`; `qstandardpaths.cpp:453-462`). A file found there that cannot be read is S9.1's unreadable scheme file
+  (*The KDE reader without its scheme file*), not a reason to look further; a name that is not one plain path component
+  names no file, the same case, the KCM listing only the `*.colors` files directly in a `color-schemes` directory
+  (`kcms/colors/colorsmodel.cpp:174-178`). Rejected: the first readable file (the port; Qt locates by existence, and
+  Plasma's applications read the file it finds).
+- the fonts (K3.46): `body` from `[General] font`, `monospace` from `fixed` and `caption` from `smallestReadableFont`
+  in its common bases, and the keyed styles `toolbar` from `toolBarFont` and `menu` from `menuFont` under
+  `for_preset.kde-breeze`, each string parsed by `qfont_from_string` (S2.2); a string Qt refuses, or one setting none
+  of the fields kept, patches nothing. Of Qt's fields it keeps the family where it is not empty; the size, a pixel size
+  as it is and a point size converted by its DPI (S9.4), unpatched where it is not above zero; the weight, unpatched
+  outside S2.8's scale; the style (`QFont::Style`'s normal, italic and oblique; another value unpatched); and the
+  capitalization, each `QFont::Capitalization` but `MixedCase` as the `TextCase` member of the same meaning
+  (`AllUppercase` `Upper`, `AllLowercase` `Lower`, `SmallCaps`, `Capitalize`; `qtbase@6.12.0 src/gui/text/qfont.h:99-105`,
+  `qfont.cpp:1742-1746`), `MixedCase`, "the normal text rendering option where no capitalization change is applied"
+  (`:1742`), leaving the style's `case`, as the GNOME reader leaves it where the description names no small caps
+  (ADD-A138). The stretch, the spacings, the style name, the features and the axes are the readers unit's (K3.46): Qt's
+  stretch "applies a stretch transform that changes the width of all characters" (`qfont.cpp:1605-1610`), no face's
+  width (S2.8's `width`); and where the string names a style, Qt matches the face by that name and ignores the weight
+  and style in matching (`qfont.cpp:871-873`), so a string whose style name and numbers disagree is stated by its
+  numbers until the readers unit maps the style name, a recorded inexactness. Rejected: the stretch as `Font.width`;
+  the capitalization left to the readers unit (Qt's enum maps one to one, and the GNOME reader states its small caps
+  at the slice); `Mixed` stated for `MixedCase` (it would undo a preset's case transform the user never chose).
+- `animations_off` and `reduced_motion` where `[KDE] AnimationDurationFactor` is zero (K3.30, K3.90), the one setting
+  standing for both, as KDE's portal publishes `reduced-motion` from it (`settings.cpp:286-292`) and plasma-integration
+  gives Qt's motion preference from it (`khintssettings.cpp:488-491`, which takes a factor within Qt's fuzzy bound of
+  zero as zero; the reader compares with zero, as the portal does); the factor, a finite number not below zero, as
+  `token.motion.speed_factor` under `for_preset.kde-breeze` (K3.30), another value unread.
+- the icon sizes (K3.63, K1.158) under `for_preset.kde-breeze`: the icon theme's `index.theme` `[Icon Theme]` keys the
+  facts read, `ToolbarDefault` into `token.icons.sizes.toolbar`, `MainToolbarDefault` into `keyed.main_toolbar`,
+  `SmallDefault` into `small`, `DesktopDefault` into `large`, `DialogDefault` into `dialog` and `PanelDefault` into
+  `panel` (`docs/facts/kde/tokens.toml:8156-9097`); a key the theme omits, or one KConfig does not read as an integer,
+  is KIconTheme's own default for its group (`kiconthemes@6.31.0 src/kicontheme.cpp:160-167`, the keys read over them
+  at `:469-472`), and a whole number not above zero is not stated. The six defaults are cited on the KDE
+  `token.icons.sizes` facts as the KDE lane cites KColorScheme's rows on the scheme inputs' (above; a KDE facts
+  follow-up), the reader's constants citing them, which it states once they land. Rejected: the preset's value for an omitted key (Breeze's `DesktopDefault` is not KIconTheme's Desktop default,
+  `breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:8` against `kicontheme.cpp:161`, so a theme without the key
+  would show Breeze's size where KDE draws its default); the defaults dropped as no fact holds them (the port; the
+  pinned source states them, so facts can).
+- the font DPI (S9.4; K3.46): on an X11 session (`$XDG_SESSION_TYPE` `x11`) only, `Xft.dpi` as Qt's xcb plugin takes
+  its logical DPI from it (`qtbase@6.12.0 src/plugins/platforms/xcb/qxcbscreen.cpp:856-876`): of the X resources'
+  `Xft.dpi:` lines the last Qt parses, as an integer or else a decimal rounded (`:298-314`, `:366-373`), where it is
+  above zero; parsed by the reader helper `qxcb_xft_dpi` (S2.2), Qt's code being LGPL, from the resources as 0.7.0 read
+  them (`xrdb -query`). Where the session sets none, Qt falls back to the DPI `kde-breeze`'s `token.text.font_dpi`
+  states (`:870-875`), so the reader reports none. Off X11 it reports none: Qt's Wayland screen gives that same
+  logical DPI unless `QT_WAYLAND_FORCE_DPI` is set (`qtbase@6.12.0 src/plugins/platforms/wayland/qwaylandscreen.cpp:150-160`,
+  the preset's fact, `docs/facts/kde/tokens.toml:7938-7946`), and the `Xft.dpi` Plasma sets for Xwayland there is the
+  Xwayland scale, no font setting (platform-facts' *Font DPI override* and *Scale factor*,
+  `docs/facts/imported/kde.toml:701`, `:711`). Not read: `kcmfonts`' `forceFontDPI` (Plasma 6.8 removed it with krdb,
+  its only reader, `c675077b`, `fe367323`, and on Plasma 6.7 krdb gave it to X11 as `Xft.dpi`, so `Xft.dpi` holds it
+  wherever it applies; the same row), so `kcmfonts` leaves the reader and its watcher; 0.7.0's `xrandr` step (Qt's
+  logical DPI takes no physical DPI, `:870-874`) and its fixed DPI (the preset's token states Qt's). Rejected:
+  `forceFontDPI` before `Xft.dpi` (the port: on Plasma 6.8 a value left over from 6.7, which nothing reads, would
+  override the one Qt uses); `QT_WAYLAND_FORCE_DPI` (a variable of each Qt process's own environment, which Plasma
+  does not set: none of plasma-workspace, plasma-integration and plasma-desktop names it at its pin, and KWin's own
+  platform plugin reads it for KWin's windows, `kwin@6.8.2 src/plugins/qpa/screen.cpp:22-25`; the reader's environment
+  is the application's); the `RESOURCE_MANAGER` property read directly, Qt's route (an X11 client library for the
+  text `xrdb -query` gives).
+
 **The GNOME reader's readings** (ADD-A135, ADD-A138; ledger queue #171, #173, #179). Its sources are the XDG Settings portal's
 `org.freedesktop.appearance` namespace and gsettings, each setting the portal does not give (no session bus, no
 answer within the readers' D-Bus deadline, the setting missing) read from gsettings where GNOME keeps it, and a
@@ -4381,9 +4521,84 @@ MAC-I07) are the readers unit's reads, their weights then by S2.8's *Weight*. Re
 system font to the other presets as if the user had chosen it); the face's `wght` coordinate read now (it needs
 `unsafe` Core Text calls, for a slot the reader does not patch); WebKit's thresholds (withdrawn, ADD-A136).
 
+**The Windows reader's readings** (ADD-A140; ledger queue #180, from the Windows reader's port on `readers-kw`,
+32e65ba1). It reads `UISettings` (WinRT), `SPI_GETHIGHCONTRAST` and, under high contrast, `GetSysColor`, and states:
+- the scheme dark where `UISettings.GetColorValue(Foreground)` is light by Microsoft's `IsColorLight`, an integer
+  weighted sum of the 8-bit channels against a fixed bound, "If the foreground is light, then Dark mode is enabled"
+  (*Support Dark and Light themes in Win32 apps*, `ms.date` 2026-06-16, `windows-dev-docs@f54166ed
+  hub/apps/desktop/modernize/ui/apply-windows-themes.md:5`, `:75-78`, `:88`), else light; the page's sample code is
+  under the repository's MIT licence (`LICENSE-CODE`), so it needs no clean room. The read fails
+  (`ReaderFailure::Platform`) only where `UISettings` or that foreground cannot be read, the scheme having no other
+  source. Rejected: 0.7.0's BT.601 luminance against a threshold no Microsoft source states
+  (`2796b26e:native-theme/src/windows.rs:118-125`).
+- `animations_off` and `reduced_motion` where `UISettings.AnimationsEnabled` is false (W3-37): "Gets whether
+  animations are enabled for the user interface" (`winrt-api@4c1e9164
+  windows.ui.viewmanagement/uisettings_animationsenabled.md:13`), the property WinUI's controls read to leave their
+  animations out (`microsoft-ui-xaml@2.5.1 src/controls/dev/dll/SharedHelpers.cpp:29-33`, called as at
+  `src/controls/dev/AnimatedIcon/AnimatedIcon.cpp:432`), a safe call whose change the watcher hears
+  (`AnimationsEnabledChanged`, Windows 10 2004, `windows.ui.viewmanagement/uisettings.md:25`).
+  `SPI_GETCLIENTAREAANIMATION` "Determines whether animations are enabled or disabled", for content that "can cause
+  seizures in users with photo-sensitive epilepsy" (`sdk-api@656e9656
+  sdk-api-src/content/winuser/nf-winuser-systemparametersinfow.md:126`, `:128`), is the setting platform-facts names
+  Windows' reduced motion (`docs/facts/imported/windows.toml:1414-1415`) and the one 0.7.0 read into its
+  `reduce_motion`; the two read the same on the three Windows probe images (`:1889-1890`), though no Microsoft page
+  says they are one setting. So Windows has one motion setting, as KDE has its factor (above), and it stands for both
+  conditions, which keeps 0.7.0's reduced motion (D13); the desktops with no reader of their own differ, gsettings
+  holding two settings there, each its own condition (S16). Rejected: `SPI_GETCLIENTAREAANIMATION` (an `unsafe` call,
+  its change a `WM_SETTINGCHANGE` the windowless watcher does not receive, and not what WinUI reads); both, a condition
+  holding where either is off (two reads of what the probe found one setting); `animations_off` alone (the port:
+  reduced motion would never hold on Windows, where 0.7.0 reported it).
+- `reduced_transparency` where `UISettings.AdvancedEffectsEnabled` is false (W3-38; the registry's
+  `EnableTransparency` not read beside it, the API reporting the same *Transparency effects* setting,
+  `docs/facts/imported/windows.toml:1911-1912`); the text-scaling factor `UISettings.TextScaleFactor` where it is
+  finite and above zero, else unscaled (S9.4); `Contrast::High` where `SPI_GETHIGHCONTRAST` reports
+  `HCF_HIGHCONTRASTON` (W3-35). A setting it cannot read keeps the no-reader state's value, with no `Fallback`, as
+  the GNOME reader's unread flags do.
+- its accent group as S9.2 and S9.3 state it: `input.accent` in its common bases and the six ramp shades under
+  `for_preset.<own>`, at both schemes, the whole group left out with a `Fallback` naming the input where one cannot be
+  read; no `contrast.high` bases until the Windows facts' high-contrast inputs decide them (above, S22's follow-up).
+- the system colours (W3-35; ADD-A135): under high contrast the eight `GetSysColor` colours as `role.@system_*` in a
+  reader rule under `contrast_high` and `preset:<own>`, with no scheme condition: `GetSysColor` has one value per
+  index, and WinUI fills its `SystemColor*Color` resources from it with no theme argument
+  (`microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/theming/FrameworkTheming.cpp:145-158`, `:219-232`;
+  `src/dxaml/xcp/components/theminginterop/SystemThemingInterop.cpp:202`), a value the platform defines independently
+  of the scheme, which S9.3 states under both. Outside high contrast they are not read, WinUI drawing no classic
+  system colour there, so those slots are ones the platform gives none at (ADD-A138), no `Fallback`. Rejected: the
+  rule under the scheme read as well (after a `pick` of the other scheme under high contrast the preset's placeholders
+  would show where WinUI shows the same system colours).
+- no text-role slot, no font DPI, no system metric and no icon size, which 0.7.0 read
+  (`2796b26e:native-theme/src/windows.rs`: `NONCLIENTMETRICSW`'s message, caption, menu and status fonts into the
+  default, title-bar, menu, tooltip and status-bar fonts, `:182-191`, `:584-592`; a font DPI fixed at
+  `USER_DEFAULT_SCREEN_DPI`, `:145-152`; `SM_CXVSCROLL`, `SM_CYVTHUMB` and `SM_CXBORDER` into the scrollbar's groove
+  width and minimum thumb length and the border width, `:245-256`; `SM_CXSMICON` and `SM_CXICON` into the small and
+  large icon sizes, `:508-515`, `:603-607`). Under the 0.8.0 plan's D13 (0.8.0 covers what 0.7.0 covers) none of them
+  loses a field: every field 0.8.0's model holds for them resolves on `windows-11` from its facts, and only the
+  reading goes:
+  - the fonts: the `body` slot (the slice) and the window's title, the menu's, the tooltip's and the status bar's
+    text (their units, all 0.8.0's) are WinUI's type ramp in the facts (`TextBlock_themeresources.xaml`,
+    `docs/facts/windows/tokens.toml:2316-2490`), which WinUI's controls draw with, while WinUI's source reads none of
+    the `NONCLIENTMETRICS` fonts (by search of `microsoft-ui-xaml@2.5.1 src/`), so 0.7.0's read put Win32's
+    non-client fonts over WinUI's. Whether `windows-11`'s title is drawn by the system's caption, and so in its font,
+    is the window unit's question, whose readers step reads that font if so.
+  - the font DPI: 0.7.0's fixed DPI is the preset's `token.text.font_dpi`, `USER_DEFAULT_SCREEN_DPI`
+    (`docs/facts/windows/tokens.toml:2498-2505`): the same conversion (S9.4).
+  - the system metrics: the scrollbar's sizes (the indicators unit) and the border width (each part's stroke) are
+    WinUI's in the facts, and WinUI's source reads none of those metrics (the same search); the run-time scrollbar
+    sizes the trace names are W1-066's `UISettings` reads, the indicators unit's readers step.
+  - the icon sizes: `token.icons.sizes.small` and `.large` (the slice) are pending on `windows-11` (U516), and 0.8.0
+    releases with no pending fact (S17). Where U516's facts state them as the Win32 shell's small and large icon
+    metrics, the reader reads those, as 0.7.0 did (`GetSystemMetricsForDpi` at the base DPI, inside `windows.rs`'s
+    `unsafe` exception, the 0.8.0 plan's D4), each target read from its own preset's fact's source as ADD-A138 has the
+    macOS reader read; where they state WinUI's own sizes, it reads nothing: open on U516 (the Windows facts).
+    `SM_CXSMICON` for the title-bar icon is W1-010's, the window unit's readers step.
+  Rejected: 0.7.0's reads restored at the slice (they would state Win32's values over the facts' WinUI values, the
+  reader's layer differing from its own preset's facts on the OS they were measured on, as ADD-A138 rejects for the
+  macOS reader).
+
 **S9.4 Points, then text scaling.** A font size, line height, letter spacing or word spacing stated in points becomes logical pixels first, as
 `pt × dpi / 72`, where `dpi` is `ReaderState.font_dpi` where the reader reports one (the platform's setting: on KDE
-`forceFontDPI` or `Xft.dpi`, as `platform-facts.md` records them under *Font DPI override*) and otherwise the current
+`Xft.dpi` on an X11 session, as Qt reads it, S9.3's *The KDE reader's readings*, `platform-facts.md`'s *Font DPI
+override* recording `forceFontDPI`, which reaches Qt only through it; ADD-A140) and otherwise the current
 preset's `token.text.font_dpi`, stated per preset from its platform's facts, or by the definition below where the
 point is the logical pixel (no number is stated here for the others); one stated in pixels is already logical. Where the platform's point is its logical pixel (AppKit's and UIKit's points, their toolkits'
 logical unit, in which they lay out and which the screen's scale turns into device pixels: the iOS host's
@@ -4473,9 +4688,11 @@ over the style each slot references, their sizes in logical pixels (S9.4), compo
 the user's fonts reach the parts whose leaves reference the slots and the preset's token rules on the referenced styles still
 apply over them), and everything else, its own platform's keyed roles, tokens and inputs, under
 `for_preset.<its own preset>`. A reader patches exactly the slots its platform has a setting for (the KDE reader
-`body` from `[General] font`, `monospace` from `fixed`, `caption` from `smallestReadableFont`, …; the GNOME reader `body`
+`body` from `[General] font`, `monospace` from `fixed` and `caption` from `smallestReadableFont`, S9.3's *The KDE
+reader's readings*; the GNOME reader `body`
 and `monospace`; a reader that reads each style's size, every slot; the macOS reader none at the slice, macOS having no
-font setting, S9.3's *The macOS reader's readings*, ADD-A138); a slot it does not patch keeps the current preset's style, and a slot that shares
+font setting, S9.3's *The macOS reader's readings*, ADD-A138; the Windows reader none, WinUI drawing its own type
+ramp, S9.3's *The Windows reader's readings*, ADD-A140); a slot it does not patch keeps the current preset's style, and a slot that shares
 another's references that slot (S4.4), so under any preset the patch on `body` reaches every slot that preset shares
 with `body`. Its rules split the same way (S9.3): a rule on the portable part (a text-role slot
 read under a condition) applies to any preset, every other rule carries `preset:<its own preset>`, so the portable
@@ -6209,9 +6426,10 @@ are compared, while `m3_role`'s own rows are its vector table's (S2.2).
   (S17's quote, absence, evidence and citation rules), `scripts/check_facts_trace.py` (every live trace row of an
   enabled unit in a fact's or a state-model entry's `rows`, or carrying a verdict, S20), `scripts/check_function_vectors.py` (S2.2, S13),
   `scripts/check_sources.py` and `scripts/update_sources.sh` (S17's sources), `scripts/generate_platform_facts.py`
-  (`platform-facts.md` from the facts), and the one-off converters `scripts/import_platform_facts.py` (today's rows
-  as lane input) and `scripts/convert_inheritance_rules.py` (S19.2): new, in `scripts/check_release.sh` or not as
-  the 0.8.0 plan's table of scripts states (ADD-A117).
+  (`platform-facts.md` from the facts), `scripts/verify_facts.py` (the verifiers' units, briefs and mechanical
+  comparisons of state models and facts, and the audit sample), and the one-off converters
+  `scripts/import_platform_facts.py` (today's rows as lane input) and `scripts/convert_inheritance_rules.py` (S19.2):
+  new, in `scripts/check_release.sh` or not as the 0.8.0 plan's table of scripts states (ADD-A117).
 - `scripts/check_connector_parity.py`: rewritten to apply its naming and sibling rules over the new resolved types'
   leaves.
 
@@ -6466,6 +6684,7 @@ lines that cite it.
 | ADD-A137 | the evidence root (the maintainer's decision of 2026-11-08, the 0.8.0 plan's D6 evidence item decided early; ledger queue #177): measured evidence in the evidence repository `native-theme-evidence` at `docs/evidence/`'s paths, pinned in `sources.toml` by one `evidence = true` `git` entry with a fixed id, a `docs/evidence/` path resolved against `NATIVE_THEME_EVIDENCE` or that entry's checkout in the source cache, read only from a clean checkout at the pinned commit | S17 |
 | ADD-A138 | a spec batch (ledger queue #178, the macOS reader study of 2026-11-08; #179, the GNOME reader's port on `readers-m1b2`, 3d465b6f and aa8ac27d), decided from the sources and the runs: the macOS reader's increased contrast, Aqua and DarkAqua read either way, which AppKit resolves under the contrast in force (runs 41195846264 and 41006842699), the increased-contrast names giving no appearance (`NSAppearance.h:73-74`), the reads filed by `accessibilityDisplayShouldIncreaseContrast` as the inputs' per-scheme values and the roles' bases, or as the inputs' `contrast.increased` bases and the roles' `contrast_increased` reader rules, S9.2's group exception for a reader's group under a contrast alone (rejected: the increased-contrast names, through `extern` statics or strings; the preset's values copied into the slots not read; the reads under the flag also as per-scheme values; the group rule per slot for every layer, which changes `set_accent`'s check for a group no application needs); a slot the platform gives the reader no value at in the state it reads no failure and no `Fallback` (rejected: `Fallback` on every macOS read, which says nothing; a status of its own, for a state the platform is always in); each macOS target read from the property its own preset's fact measured, a reference fact read at the role it references: `tertiaryLabelColor` for the disabled text where 0.7.0 read `disabledControlTextColor`, `secondarySelectedControlColor` into `role.@selected_control_secondary` for the inactive selection where 0.7.0 read `unemphasizedSelectedContentBackgroundColor` into the selection (rejected: a literal port); of the 27 keyed roles, the slice's port states `@system_red`, `@system_orange`, `@system_green`, `@system_blue` and `@selected_control_secondary`, and `@selected_control` follows its accent input, the other 21 the readers unit's (rejected: all 27 at the slice; `@selected_control_secondary` left to the readers unit, which drops 0.7.0's inactive selection from the port); `full_keyboard_access` and `overlay_scrollbars` read where `MainThreadMarker::new()` succeeds, `false` elsewhere with no `Fallback`, documented on `from_system`, `from_system_async`, `reload_reader` and `reload_reader_async` (rejected: `dispatch2`'s `run_on_main`, which can deadlock; `AppleKeyboardUIMode`, undocumented; `Option<bool>`; `Fallback`); the macOS reader patching no text-role slot at the slice, 0.7.0's weight-trait mapping removed (rejected: the system font's family and size; the face's `wght` read now, through `unsafe` Core Text calls; WebKit's thresholds); the GNOME reader's accent none for a NaN channel, as for one outside `0..=1` (rejected: libadwaita's pink, its comparisons' fall-through); the GNOME reader's fonts, `body` from `font-name` and `monospace` from `monospace-font-name` in its common bases, the family's first entry, the size, weight, style, width and small caps kept, a weight, style or width the string does not name stated as Pango's normal one, the style's `case` left without small caps, the other variants, gravity, colour, variations and features not read (rejected: the family list as one name; the other variants mapped to the nearest `TextCase`; `Mixed` stated without small caps); GN-1.193 open on how a `wght`, `wdth` or `smcp` segment meets the description's weight, width and variant (Pango's source at its pin, then S2.8's *Weight*); the portal-only desktops' watcher, `GTK_THEME` and `gtk-3.0/settings.ini` not watched. Follow-ups: code, the macOS reader (both appearances filed by the flag, `ReaderState.contrast`, the two re-targeted reads, the five keyed roles and the five accent inputs, `full_keyboard_access` read at the slice beside `overlay_scrollbars` under the one gate with the `NSApplication` and `NSResponder` features, no font read and `nsfont_weight_to_css` removed with its `unsafe` statics and `msg_send!`, tests of the filing under either flag and of the status), the four entry points' documentation of the main-thread reads, a test that a NaN accent channel states none (`portal_accent` already gives none on `readers-m1b2`); facts, GNOME (the eight accents' facts, #171, and a test comparing the reader's nine colours with them once they land); the readers unit, MAC-DF01 to MAC-DF05†'s 21 keyed roles, MAC-I07's user fonts, GN-1.193 (its question read from Pango at its pin); ledger, #171's status, #178, #179 | S7.1, S9.2, S9.3, S9.4, S9.5, S16; catalogue (the readers: GN-3.15, MAC-X13, MAC-X22); traces macOS (MAC-X13, MAC-X22) |
 | ADD-A139 | the `@recording` flag withdrawn (ledger queue #79, the KDE facts lane's round 4, c4b3e51c): KDE's key-sequence buttons draw no themed value of their own while they record, only their text changing, which the model does not theme: KKeySequenceWidget's key button is not held pressed, its click starting the recorder directly (`kxmlgui@6.31.0 src/kkeysequencewidget.cpp:416`, `:526-530`) and the private `startRecording()` that would call `setDown(true)` (`:373-377`) having no caller at the pin, so it draws its usual states, its text alone changing (`:390-407`); kirigami-addons' KeySequenceItem's main button is checkable and records while it is checked (`kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:121-122`, `:148-153`), so it draws a `toggle` button's `checked` state, its text alone changing (`:139`); the flag leaves `button`'s keyed flags, `shortcuts_dialog`'s flags item and the rename table's row 117, K-RL02†'s recording line goes (its text change noted on the key button's line), and K-KA-43†'s recorder is `variants {toggle,@key_sequence}`, its recording `{checked}`, the cancel button's glyph under `prev button {checked}` (rejected: the flag kept with no themed effect, a keyed flag no rule selects on, which S12 refuses). Follow-ups: facts, KDE (the set `["toggle", "@key_sequence"]` in the Kirigami button model's `variant_sets`, whose `not_drawn` draws `checked` only on a `toggle`); ledger, #79's status | the catalogue (`button`'s flags, `shortcuts_dialog`'s flags and notes, the rename table's row 117); traces KDE (K-RL02†, K-KA-43†); gap map KDE (K-RL02†); ledger (queue #79) |
+| ADD-A140 | a spec batch (ledger queue #180, the KDE and Windows readers' port on `readers-kw`, ce325f32, 32e65ba1, 11131443, its nine open choices and the readings it left unstated), decided from the sources at their pins: the KDE scheme by Plasma's own test, Qt's `qGray` of the palette's window colour against plasma-integration's and xdg-desktop-portal-kde's fixed threshold (`khintssettings.cpp:469-485`, `settings.cpp:259-273`, `qrgb.h:36-37`), through the clean room as the reader helper `kde_color_scheme`, its table generated through `qGray` (rejected: the portal's `color-scheme` alone, no answer where no portal does, or first, the test and its clean room needed anyway; no test; Kirigami's `brightnessForColor`, a colour's brightness; 0.7.0's BT.601 luminance, which matches neither); an empty kdeglobals value, which `applyScheme()` writes for each effect key a scheme file lacks, read as KConfig reads it, an empty bool true and an empty number its default, an empty colour stated as its default (a recorded inexactness), and every bool entry as KConfig reads one (S4.8's *Unset and empty*, from the KDE facts lane's round 5; rejected: an empty value read as unset); the KDE colours' source plasma-integration's (kdeglobals with a `[Colors:View]` group, else the look-and-feel package's colours, else the scheme file); every colour key the KDE reader reads that its file leaves unset as KColorScheme reads it, its default tables and effect defaults as constants citing their rows and the KDE facts that cite them (d7fe49f2), a row the value even where Breeze Light's differs (`DecorationHover`), `Header` without a group of its own reading its inactive input roles from `Window`'s active values (rejected: Breeze's preset values beneath, Breeze Dark's where KDE draws the tables' Breeze Light; Breeze Light's file read at run time); a colour entry in KConfig's comma form, its other spellings unset (rejected: Qt's colour parser for hand edits); the scheme file `color-schemes/<ColorScheme>.colors` in the first data directory where `QStandardPaths::locate` finds it, an unreadable one the existing fallback (rejected: the first readable); the KDE fonts' family, size, weight, style and capitalization (`MixedCase` leaving the case), the stretch (a glyph transform), spacings, style name, features and axes the readers unit's, the style name's precedence over the numbers a recorded inexactness (rejected: the stretch as `Font.width`; the capitalization deferred; `Mixed` stated); `AnimationDurationFactor` zero setting `animations_off` and `reduced_motion`, compared with zero as the portal does; the icon sizes by the facts' keys, `MainToolbarDefault` among them, an omitted key KIconTheme's group default from KDE facts (rejected: the preset's value, Breeze's `DesktopDefault` not being KIconTheme's; the defaults dropped); the KDE font DPI `Xft.dpi` on X11 only, as Qt's xcb plugin reads it, through the clean room as the reader helper `qxcb_xft_dpi`, none on Wayland, where Qt's logical DPI is the preset's (`qwaylandscreen.cpp:150-160`), `forceFontDPI` and `kcmfonts` not read (rejected: `forceFontDPI` first, a stale value on Plasma 6.8; `QT_WAYLAND_FORCE_DPI`; the `RESOURCE_MANAGER` property read directly); the Windows scheme by Microsoft's `IsColorLight` (the citation checked: `ms.date` 2026-06-16, the formula and the rule at `windows-dev-docs@f54166ed hub/apps/desktop/modernize/ui/apply-windows-themes.md:5`, `:75-78`, `:88`; the port names commit c7a7d5ac, not the pin, and the page lies outside the pin's sparse paths); `UISettings.AnimationsEnabled`, which WinUI reads, setting `animations_off` and `reduced_motion` (rejected: `SPI_GETCLIENTAREAANIMATION`, `unsafe` and unwatched; both; `animations_off` alone, which drops 0.7.0's reduced motion); the system colours under `contrast_high` with no scheme condition, `GetSysColor` giving one value per index (rejected: under the scheme read too); the Windows reads 0.7.0 made and the port dropped (the non-client fonts, the fixed font DPI, the scrollbar and border metrics, the small and large icon sizes) checked against D13: no field lost, each resolving from the `windows-11` facts and WinUI's source reading none of them, but the icon sizes, pending under U516, which the reader reads from the shell's metrics where U516's facts state them so (rejected: 0.7.0's reads restored at the slice); the Windows reader's other readings stated (reduced transparency, the text scale, high contrast, an unread setting no `Fallback`, the accent group, the failure cases). Follow-ups: code, the KDE reader (the luminance test replaced by `kde_color_scheme` once the clean room delivers it, its description and table first; the colours' source; KColorScheme's tables and effect defaults as cited constants, in the results, the inactive results, the scheme inputs, the accent's `Selection` background and the scheme's window colour, once `facts-kde-r5` merges; the effect keys' empty values and every bool entry read as KConfig reads them (an empty `[ColorEffects:Inactive] Enable` true); `Header`'s inactive input roles without a `Header` group from `Window`'s active values; the scheme file located by existence, an unreadable one the fallback; the capitalization mapped; `MainToolbarDefault` into `keyed.main_toolbar` and KIconTheme's group defaults once their facts land; the font DPI through `qxcb_xft_dpi` on X11 alone, the `forceFontDPI` read and `kcmfonts` removed from the reader, its watcher (`watch/kde.rs:12`), the `kde` feature's comment in `Cargo.toml` and the README's feature table; tests for each), the Windows reader (`reduced_motion` beside `animations_off`; the `IsColorLight` citation at the pin; `FrameworkTheming.cpp` cited at `microsoft-ui-xaml@2.5.1`, `:145-158`, `:219-232`, not the gap maps' 8463f45; the small and large icon sizes per U516); the clean room, `kde_color_scheme` and `qxcb_xft_dpi` (descriptions, `reader.<helper>.tsv` tables, implementations); sources, `windows-dev-docs@f54166ed`'s sparse list gaining `hub/apps/desktop/modernize/ui`; facts, KDE (`facts-kde-r5`, d7fe49f2, merged: KColorScheme's default rows and effect defaults cited; KIconTheme's six group defaults, a new citation in the same form), Windows (U516); ledger, #180. Open: KIconTheme's defaults as facts, U516, and whether `windows-11`'s title is the system caption's (the window unit) | S2.2 (*The readers' helpers*), S4.8 (*Unset and empty*), S8 (`ReaderState.font_dpi`), S9.1, S9.3 (*The KDE reader's readings*, *The Windows reader's readings*), S9.4, S9.5; catalogue (the readers: KDE, Windows); traces KDE (K3.46, K3.63), Windows (W3-37) |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

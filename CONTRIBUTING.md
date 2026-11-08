@@ -186,9 +186,32 @@ NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme --test fact
 ```
 
 An id no bundled preset has, an empty name or an id named twice fails the
-test; the gate's report (`-- --nocapture`) says it ran a subset. A subset is no
-gate: `scripts/check_release.sh` never sets the variable, so all its modes gate
-every preset, and the release's run (`FACTS_GATE_RELEASE=1`) refuses a subset.
+test; `none` runs no preset, the facts' own checks alone. The gate's report
+(`-- --nocapture`) says it ran a subset. A subset is no gate:
+`scripts/check_release.sh` runs every preset, in its full run in one step, in
+`--commit` and `--quick` each preset in a step of its own beside the facts'
+own checks (`none`), which its step cache skips one by one, and the release's
+run (`FACTS_GATE_RELEASE=1`) refuses a subset.
+
+`NT_FACTS_GATE_SHARD=k/N` runs the `k`th of `N` shards of the gate's work:
+each condition vector is checked by one shard alone, and the rest of the run
+by every shard but recorded by the first. The presets' `[pending]` tables are
+checked against the listed paths of all the shards at once: each shard writes
+those it found to the directory `NT_FACTS_GATE_LISTED` names, and the gate
+with `NT_FACTS_GATE_MERGE` naming it checks the tables instead of gating.
+Together they find what the whole run finds (`gate_shards_add_up`). CI runs
+the gate so, one job per shard and one for the tables; the release's run
+refuses a shard.
+
+CI runs the gate on Linux with the default features alone, and
+`scripts/check_release.sh` runs it once, because no code on its path depends
+on the target or the features. `scripts/check_gate_cfg.py` keeps it so: it
+finds the path from the sources (the gate's test files, then every module
+their `use` and `mod` graph reaches) and fails on any `cfg`, `cfg!` or
+`cfg_attr` along it but a test-only one or a lint-level `cfg_attr`. Where it
+fails, move the platform code off the gate's path, or the gate must run on
+every configuration again. Every mode of `check_release.sh` and CI's parity
+job run it.
 
 The gate runs its parallel steps on as many threads as the machine has;
 `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no number

@@ -905,8 +905,17 @@ absent = []
 # shadow by its own); its box is the surface shrunk by Shadow_Overlap on every side (the padding's overlap term),
 # so the spread is minus the overlap; its blur the renderer's radius, CSS's blur radius (standard deviation half
 # of it, calculateBlurStdDev: falloff `gaussian`); its colour breezerc's ShadowColor (role.global.shadow_reference) with the alpha set (QColor::setAlphaF,
-# with_alpha) to the layer's opacity times ShadowStrength / 255, breezerc's default 255 (token.params.shadow is no
-# group of the slice yet: the strength stated as its default). ShadowNone draws no shadow: the empty entry.
+# with_alpha) to the layer's opacity times ShadowStrength / 255 (token.params.shadow.strength, below, the reader's
+# breezerc [Common] ShadowStrength). Each layer is rendered around a box of its own radius, which the spread leaves:
+# S2.5's `corner_radius` (ADD-A136), which the model's ShadowLayer does not hold yet (its code follow-up), so the
+# layers state none until it does, the reader refusing the key meanwhile. Its values then: a window's layer the
+# decoration's scaled radius plus half a pixel, `= add(mul(2.5px, 2), 0.5px)` (breezedecoration.cpp:829, :872-875;
+# Frame_FrameRadius 2.5 times the decoration's smallSpacing, kdecoration/breeze.h:27-29, which Breeze's comments give
+# as 2 on Wayland, while kdecoration's DecorationSettings derives it from the title font, a quarter of its 'M'
+# height rounded up to even, at least 2, kdecoration@6.8.2 src/decorationsettings.cpp:18-31: the comments' 2 holds
+# while that height is at most 10 px, a reading for the KDE host to confirm); a popup's the style's frame radius,
+# 5 (breezeshadowhelper.cpp:205-208, breezehelper.h:345-348, breezemetrics.h:31, :42).
+# ShadowNone draws no shadow: the empty entry.
 
 [[fact]]
 key = "token.elevation.window_none"
@@ -931,7 +940,7 @@ quote = "// None CompositeShadowParams(),"
 
 [[fact]]
 key = "token.elevation.window_small"
-value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -977,7 +986,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.window_medium"
-value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1023,7 +1032,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.window_large"
-value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1069,7 +1078,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.window_very_large"
-value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1113,12 +1122,13 @@ kind = "published"
 source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
 quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
 
+
 # an inactive window's decoration shadow is drawn at half strength (createShadowObject(0.5), K1.18)
 
 [[fact]]
 key = "token.elevation.window_small"
 when = { conditions = ["window_inactive"] }
-value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1165,7 +1175,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 [[fact]]
 key = "token.elevation.window_medium"
 when = { conditions = ["window_inactive"] }
-value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1212,7 +1222,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 [[fact]]
 key = "token.elevation.window_large"
 when = { conditions = ["window_inactive"] }
-value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1259,7 +1269,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 [[fact]]
 key = "token.elevation.window_very_large"
 when = { conditions = ["window_inactive"] }
-value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1326,7 +1336,7 @@ quote = "// None CompositeShadowParams(),"
 
 [[fact]]
 key = "token.elevation.popup_small"
-value = [{ x_px = 0, y_px = "= add(3px, 0px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.26, div(255, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(3px, -2px)", blur_px = 6, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.16, div(255, 255)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(3px, 0px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.26, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(3px, -2px)", blur_px = 6, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.16, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.2"]
 
 [[fact.cite]]
@@ -1367,7 +1377,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.popup_medium"
-value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.24, div(255, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.14, div(255, 255)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.24, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.14, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.2"]
 
 [[fact.cite]]
@@ -1408,7 +1418,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.popup_large"
-value = [{ x_px = 0, y_px = "= add(5px, 0px)", blur_px = 20, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.22, div(255, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(5px, -3px)", blur_px = 10, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.12, div(255, 255)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(5px, 0px)", blur_px = 20, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.22, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(5px, -3px)", blur_px = 10, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.12, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.2"]
 
 [[fact.cite]]
@@ -1449,7 +1459,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.popup_very_large"
-value = [{ x_px = 0, y_px = "= add(6px, 0px)", blur_px = 24, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.2, div(255, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(6px, -3px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.1, div(255, 255)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(6px, 0px)", blur_px = 24, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.2, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(6px, -3px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.1, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.2"]
 
 [[fact.cite]]
@@ -1487,6 +1497,26 @@ conversion = ["negate"]
 kind = "published"
 source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
 quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+
+# the shadows' strength (S4.6's `shadow` group, ADD-A44): breezerc's [Common] ShadowStrength, read by the decoration
+# and the style alike, at its default where the file states none; the elevations above scale each layer's opacity by
+# it over 255
+
+[[fact]]
+key = "token.params.shadow.strength"
+value = 255
+rows = ["K3.1", "K3.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:12-16"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
 
 # Kirigami's and qqc2-desktop-style's surfaces draw their shadow with Kirigami's ShadowedRectangle, whose falloff is
 # a smoothstep over a rounded rectangle's distance field (shadowedrectangle.frag:36-45), not S2.5's (CSS) Gaussian
@@ -3269,8 +3299,6 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:32"
 quote = "return Platform.Theme.defaultFont.pointSize * factor;"
 
-
-
 [[fact]]
 key = "token.text.keyed.heading_1.font.weight"
 value = 400
@@ -4042,8 +4070,6 @@ quote = "case 2: factor = 1.20;"
 kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:32"
 quote = "return Platform.Theme.defaultFont.pointSize * factor;"
-
-
 
 [[fact]]
 key = "token.text.keyed.heading_2.font.weight"
@@ -4817,8 +4843,6 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:32"
 quote = "return Platform.Theme.defaultFont.pointSize * factor;"
 
-
-
 [[fact]]
 key = "token.text.keyed.heading_3.font.weight"
 value = 400
@@ -5590,8 +5614,6 @@ quote = "case 4: factor = 1.10;"
 kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:32"
 quote = "return Platform.Theme.defaultFont.pointSize * factor;"
-
-
 
 [[fact]]
 key = "token.text.keyed.heading_4.font.weight"
@@ -8152,6 +8174,14 @@ kind = "published"
 source = "breeze-icons@6.31.0 icons/breeze.theme.in:114"
 quote = "Inherits=hicolor"
 
+# An icon size an icon theme's index.theme omits (S9.3, ADD-A140: the KDE reader's icon sizes). KIconTheme reads each
+# group's `<Group>Default` key with the group's built-in default beneath (kiconthemes@6.31.0 src/kicontheme.cpp:469-472,
+# cited on each fact), the defaults its group table holds (:154-157, :160-167). So each of the six size facts below
+# cites, beside Breeze's value, the default KIconTheme takes for its group where a theme leaves the key unset or holds a
+# value KConfig does not convert to an integer (kconfig@6.31.0 src/core/kconfiggroup.cpp:256-268): the table,
+# declaration through the group's row. Every default equals Breeze's value but Desktop's 32, where Breeze states
+# DesktopDefault=48 (token.icons.sizes.large.size).
+
 [[fact]]
 key = "token.icons.sizes.toolbar.size"
 value = "22px"
@@ -8166,6 +8196,16 @@ quote = "ToolbarDefault=22"
 kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-162"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22},"
 
 [[fact]]
 key = "token.icons.sizes.toolbar.axes"
@@ -8357,6 +8397,16 @@ kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
 
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-163"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22}, {KIconLoader::MainToolbar, \"MainToolbar\", 22},"
+
 [[fact]]
 key = "token.icons.sizes.keyed.main_toolbar.axes"
 value = {}
@@ -8542,6 +8592,16 @@ quote = "SmallDefault=16"
 kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-164"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22}, {KIconLoader::MainToolbar, \"MainToolbar\", 22}, {KIconLoader::Small, \"Small\", 16},"
 
 [[fact]]
 key = "token.icons.sizes.small.axes"
@@ -8729,6 +8789,16 @@ kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
 
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-161"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32},"
+
 [[fact]]
 key = "token.icons.sizes.large.axes"
 value = {}
@@ -8915,6 +8985,16 @@ kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
 
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-165"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22}, {KIconLoader::MainToolbar, \"MainToolbar\", 22}, {KIconLoader::Small, \"Small\", 16}, {KIconLoader::Panel, \"Panel\", 48},"
+
 [[fact]]
 key = "token.icons.sizes.panel.axes"
 value = {}
@@ -9100,6 +9180,16 @@ quote = "DialogDefault=32"
 kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-166"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22}, {KIconLoader::MainToolbar, \"MainToolbar\", 22}, {KIconLoader::Small, \"Small\", 16}, {KIconLoader::Panel, \"Panel\", 48}, {KIconLoader::Dialog, \"Dialog\", 32},"
 
 [[fact]]
 key = "token.icons.sizes.dialog.axes"
@@ -10770,6 +10860,10 @@ quote = "color = mix(color, vec4(vec3(dot(color.rgb, vec3(0.2126, 0.7152, 0.0722
 # ---- token.kde and token.params.color (S4.8, S4.6): KColorScheme's effects and contrast as Breeze's scheme files
 # state them, applyScheme() copying them into kdeglobals (colorsapplicator.cpp:311-359). Both files state the same.
 # Written by the KDE facts lane (roles half).
+# Each effect fact also cites KColorScheme's read of its key with the default it takes where the key is unset
+# (kcolorscheme@6.31.0 src/kcolorscheme.cpp:36-50: one default for the Disabled group, the other for the Inactive
+# group, read only where the group's Enable holds, by default true for Disabled and false for Inactive, :39-40; the
+# effect colour read only where the colour effect is on, :47-49, else the transparent black of :23).
 
 [[fact]]
 key = "token.kde.disabled.intensity"
@@ -10796,6 +10890,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:41"
+quote = "_effects[Intensity] = cfg.readEntry(\"IntensityEffect\", (int)(state == QPalette::Disabled ? IntensityDarken : IntensityNoEffect));"
+
 [[fact]]
 key = "token.kde.disabled.intensity_amount"
 value = 0.1
@@ -10815,6 +10914,11 @@ quote = "IntensityAmount=0.1"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:44"
+quote = "_amount[Intensity] = cfg.readEntry(\"IntensityAmount\", state == QPalette::Disabled ? 0.10 : 0.0);"
 
 [[fact]]
 key = "token.kde.disabled.color"
@@ -10841,6 +10945,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:42"
+quote = "_effects[Color] = cfg.readEntry(\"ColorEffect\", (int)(state == QPalette::Disabled ? ColorNoEffect : ColorDesaturate));"
+
 [[fact]]
 key = "token.kde.disabled.color_amount"
 value = 0.0
@@ -10860,6 +10969,11 @@ quote = "ColorAmount=0"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:45"
+quote = "_amount[Color] = cfg.readEntry(\"ColorAmount\", state == QPalette::Disabled ? 0.0 : -0.9);"
 
 [[fact]]
 key = "token.kde.disabled.contrast"
@@ -10886,6 +11000,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:43"
+quote = "_effects[Contrast] = cfg.readEntry(\"ContrastEffect\", (int)(state == QPalette::Disabled ? ContrastFade : ContrastTint));"
+
 [[fact]]
 key = "token.kde.disabled.contrast_amount"
 value = 0.65
@@ -10906,6 +11025,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:46"
+quote = "_amount[Contrast] = cfg.readEntry(\"ContrastAmount\", state == QPalette::Disabled ? 0.65 : 0.25);"
+
 [[fact]]
 key = "token.kde.disabled.color_color"
 value = "#383838"
@@ -10925,6 +11049,11 @@ quote = "Color=56,56,56"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:47-49"
+quote = "if (_effects[Color] > ColorNoEffect) { _color = cfg.readEntry(\"Color\", state == QPalette::Disabled ? QColor(56, 56, 56) : QColor(112, 111, 110)); }"
 
 [[fact]]
 key = "token.kde.inactive.intensity"
@@ -10951,6 +11080,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:41"
+quote = "_effects[Intensity] = cfg.readEntry(\"IntensityEffect\", (int)(state == QPalette::Disabled ? IntensityDarken : IntensityNoEffect));"
+
 [[fact]]
 key = "token.kde.inactive.intensity_amount"
 value = 0.0
@@ -10970,6 +11104,11 @@ quote = "IntensityAmount=0"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:44"
+quote = "_amount[Intensity] = cfg.readEntry(\"IntensityAmount\", state == QPalette::Disabled ? 0.10 : 0.0);"
 
 [[fact]]
 key = "token.kde.inactive.color"
@@ -10996,6 +11135,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:42"
+quote = "_effects[Color] = cfg.readEntry(\"ColorEffect\", (int)(state == QPalette::Disabled ? ColorNoEffect : ColorDesaturate));"
+
 [[fact]]
 key = "token.kde.inactive.color_amount"
 value = 0.025
@@ -11015,6 +11159,11 @@ quote = "ColorAmount=0.025"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:45"
+quote = "_amount[Color] = cfg.readEntry(\"ColorAmount\", state == QPalette::Disabled ? 0.0 : -0.9);"
 
 [[fact]]
 key = "token.kde.inactive.contrast"
@@ -11041,6 +11190,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:43"
+quote = "_effects[Contrast] = cfg.readEntry(\"ContrastEffect\", (int)(state == QPalette::Disabled ? ContrastFade : ContrastTint));"
+
 [[fact]]
 key = "token.kde.inactive.contrast_amount"
 value = 0.1
@@ -11061,6 +11215,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:46"
+quote = "_amount[Contrast] = cfg.readEntry(\"ContrastAmount\", state == QPalette::Disabled ? 0.65 : 0.25);"
+
 [[fact]]
 key = "token.kde.inactive.color_color"
 value = "#706f6e"
@@ -11080,6 +11239,11 @@ quote = "Color=112,111,110"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:47-49"
+quote = "if (_effects[Color] > ColorNoEffect) { _color = cfg.readEntry(\"Color\", state == QPalette::Disabled ? QColor(56, 56, 56) : QColor(112, 111, 110)); }"
 
 [[fact]]
 key = "token.kde.inactive_enabled"

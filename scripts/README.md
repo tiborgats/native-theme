@@ -333,6 +333,19 @@ The step cache (`step_cache.sh`, below) skips a step whose declared inputs are
 unchanged since it last passed; the summary lists each as
 `unchanged since <commit>`, and `--no-cache` runs every step.
 
+The facts gate (`native-theme/tests/facts_gate.rs`'s `facts_gate`) is a step
+of its own; the other test steps skip it (`-- --skip facts_gate --exact`), since no `cfg` reaches it and
+one run gates every target and feature set. The full run gates every preset
+in one step. `--commit` and `--quick` gate it in parts the cache skips one by
+one: `facts gate (the facts, no preset)` (`NT_FACTS_GATE_PRESETS=none`),
+cached on every facts directory, then `facts gate (<preset>)` for each
+bundled preset, cached on its preset file (the other presets' files left
+out), its platform's facts directory (the gate's own `DIRECTORIES` table),
+`docs/facts/*.toml` (the evidence pin among them),
+`scripts/widget_units.toml` and the crate and test code. Every part also runs
+the facts' own checks, so the parts together run every check the whole gate
+runs, and a change to any code re-runs every part.
+
 ```sh
 ./scripts/check_release.sh --quick
 ./scripts/check_release.sh --commit
@@ -349,7 +362,8 @@ rustdoc's, rustfmt's, Python's, nextest's), both scripts' own hashes, the
 environment (but `_`, `SHLVL`, `OLDPWD`), the step's description and command,
 and the content of its declared inputs (`CACHE_INPUTS` in `check_release.sh`:
 files, directories and globs by path and content, a missing one by name;
-`__pycache__` folders left out). A cargo step's inputs (`@rust:<crates>`) are
+`__pycache__` folders left out; an input `!<pattern>` leaves out each file the
+others name whose path the pattern matches). A cargo step's inputs (`@rust:<crates>`) are
 the workspace manifest, lock and tool configuration, every Cargo configuration
 file Cargo would read, and the directory of each workspace package the crates
 reach on this host with every feature on; where that reach holds a registry
@@ -361,7 +375,8 @@ it ran; a step with no declaration always runs. The records are in
 
 `--self-test` shows that a declared file edited, added, renamed or removed, a
 glob's new match, the script edited, the command or the environment changed,
-re-run the step, and that a failure records nothing; `check_release.sh` runs it
+re-run the step, that a file a `!<pattern>` leaves out changes nothing while
+its neighbours still do, and that a failure records nothing; `check_release.sh` runs it
 in every mode.
 
 ```sh
@@ -415,6 +430,30 @@ Requires Python 3.
 ```sh
 python3 scripts/check_panic_patterns.py native-theme/src
 python3 scripts/check_panic_patterns.py --self-test
+```
+
+## check_gate_cfg.py
+
+The facts gate runs on one configuration only (CI's Linux `facts-gate`
+jobs, `check_release.sh`'s single gate step), which holds while no code on
+its path depends on the target or the features. This check finds the path
+from the sources, never from a list kept by hand: the gate's test files
+(`facts_gate.rs` and its `#[path]` modules), the crate root, then every
+module the `use` trees, paths and macro invocations of a module on the path
+reach through the `mod` declarations and re-exports, and every module with
+an `impl` of a type on the path; the derive crate and the build script are
+always on it. Along the path it fails on every `cfg`, `cfg!` and `cfg_attr`
+but a test-only one, a lint-level `cfg_attr` and a `cfg` on the declaration
+of a module off the path, each finding saying why. One edge is cut by name
+(`CUTS`: `icons::model`'s `icon_svg`, the bundled SVGs), and the cut fails
+where that function is named elsewhere on the path or the edge is gone.
+`--list` prints each module on the path and what reached it; `--self-test`
+runs its built-in scenarios. Every mode of `check_release.sh` and CI's parity
+job run both. Exits 0, 1 on a finding, 2 on an unreadable source.
+
+```sh
+python3 scripts/check_gate_cfg.py --list
+python3 scripts/check_gate_cfg.py --self-test
 ```
 
 ## check_features.sh
@@ -1161,6 +1200,113 @@ Requires Python 3.11 and git.
 python3 scripts/check_fact_citations.py
 python3 scripts/check_fact_citations.py --self-test
 ```
+
+## verify_facts.py
+
+The verifiers' tooling (the 0.8.0 plan's "Facts, independently"), which
+makes the lane-against-verifier comparison mechanical. It reads the facts
+and state models as `check_facts.py` does, at a commit, through `git show`.
+A fact's identity is its key (as a TOML dotted key), its `when` (empty lists
+left out, name lists as sets), its `scheme_file` and its `accent`.
+
+Each unit goes through two steps, as the plan asks: the verifier derives the
+state model first, and states values only for the combinations both models
+draw.
+
+```sh
+python3 scripts/verify_facts.py units --out units.toml
+python3 scripts/verify_facts.py brief KD-C1 /tmp/KD-C1-model --units units.toml \
+    --lane-brief lane-brief.md --no-combinations
+#   the verifier writes /tmp/KD-C1-model/state-models.toml
+python3 scripts/verify_facts.py compare-model KD-C1 /tmp/KD-C1-model/state-models.toml --units units.toml
+python3 scripts/verify_facts.py brief KD-C1 /tmp/KD-C1-facts --units units.toml \
+    --lane-brief lane-brief.md --combinations-from /tmp/KD-C1-model/model-compare.toml
+#   the verifier writes /tmp/KD-C1-facts/facts.toml
+python3 scripts/verify_facts.py compare KD-C1 /tmp/KD-C1-facts/facts.toml --units units.toml \
+    --combinations-from /tmp/KD-C1-model/model-compare.toml
+python3 scripts/verify_facts.py sample KD-C1 --compared /tmp/KD-C1-facts --seed 1
+python3 scripts/verify_facts.py --self-test
+```
+
+- `units`: the facts to verify since each platform's baseline (the M1a
+  tie-break commits, built in; `--since kde=<commit>` or `--since <commit>`
+  overrides them). A fact is to verify when it is new, or differs in any
+  field but `rows`, and is not pending. Per platform and kind (`cited`,
+  `measured`) they are split by key prefix into units of near equal size,
+  at most 1,000 facts each; a unit under 300 joins a neighbour where the two
+  fit in 1,000 (a kind with fewer facts stays one small unit). Unit ids look
+  like `KD-C1` and `MC-M4`. It writes a units file (TOML, `--out`) holding
+  each unit's scope and fact identities, and prints the counts per platform
+  and kind. The same commits give the same file.
+- `brief <unit> <out-dir> --lane-brief <lane-brief.md>`: the verifier's
+  folder. It holds `README.md`, `keys.toml`, `combinations.toml`, `pins.toml`
+  (the platform's `sources.toml` entries with their source-cache paths),
+  `catalogue.md` (the catalogue's entry format, shared value types, shared
+  flags and selector notation, and each widget's whole entry), `spec.md`
+  (the specification's normative sections S1 to S21, each found by its
+  heading; not S22, the additions register, nor the traces, gap maps or
+  `platform-facts.md`, which state platform values) and `facts-format.md`
+  (the lane brief's format sections). `--no-combinations` leaves the combinations out
+  (the state-model step); `--combinations-from` writes only those a
+  `compare-model` result agrees on (the facts step). A measured unit also
+  gets copies of its cited evidence files, with each run's `run.toml` and
+  `analysis/` scripts, taken from the evidence root (a clean checkout at the
+  pin). The folder holds no lane value or citation. The leak check proves
+  it: every value and citation string of the unit's facts is looked for in
+  the folder (the evidence copies left out). Each hit is printed with its
+  class: `identity`, `specification`, `sources` or `template` (the file's
+  own input holds the string too, so the hit is unavoidable), `trivial`
+  (under four characters, or a keyword), `normative-value` (a platform
+  value, such as a citation, a literal or a font or icon name, that the
+  specification's or catalogue's own text holds: a leak to report), or
+  `leak`. A leak or a normative value exits 1. So that the brief passes,
+  it elides each of the unit's platform values and citations in its copies
+  of the normative text (`spec.md`, `catalogue.md`, `facts-format.md`) with
+  a visible marker, `⟦elided: a value of this unit⟧` or `⟦elided: a
+  citation of this unit⟧`, keeping the text around it; its `README.md`
+  lists each elision by file, line and class, never the string. Trivial
+  strings and those of the unit's identities stay.
+- `compare-model <unit> <verifier-state-models.toml>`: the lane's state
+  models of the unit's widgets against the verifier's, entry by entry. It
+  lists every declaration that differs (axes, flags, variants, sizes,
+  `not_drawn`, exclusive groups, variant sets and products, recency) with
+  the members only one side states. It also lists the state combinations
+  and variant sets that `check_facts.py`'s expansion gives one side only.
+  Each combination of the unit is then agreed, or refused where the
+  verifier's model cannot draw it and the lane's can. A combination the
+  lane's own model cannot draw either is kept, marked `lane_model_refuses`.
+  It writes `model-compare.toml`.
+- `compare <unit> <verifier-facts.toml>`: the unit's facts (with
+  `--combinations-from`, those of the agreed combinations) against the
+  verifier's, by identity. It normalises colour spellings, number
+  formatting, expression spacing and equivalent selectors and key spellings,
+  and lists each normalisation with the facts it changed and the pairs that
+  agree only through it. A pair that still differs, where one side holds an
+  expression or a reference, is resolved: both values are evaluated in the
+  combination, under each scheme (and preset) it leaves open, the references
+  read from the lane's own facts, S2.2's arithmetic, `alpha`, `with_alpha`,
+  `mix` and `pick` evaluated. A pair equal in every case is **equivalent by
+  resolution**, its own class, listed with the resolved values and never
+  counted as agreed. `surface.`, `element.` and the platform functions are
+  not evaluated, and `absent` never equals a transparent colour. It writes `tiebreak.toml` (the counts, a summary
+  line in the ledger's *Verification rates* form, and every disagreement and
+  one-sided fact with both values and citations) and `agreed.toml` into
+  `--out` (default: the verifier file's folder).
+- `sample <unit> --compared <dir> --seed <n>`: the audit sample of the
+  agreed facts: `max(--min 10, ceil(--rate 0.05 × agreed))` facts, picked
+  by a SHA-256 order of the seed and the identity, so one seed always gives
+  the same sample. It writes `sample.toml`, which records the seed.
+
+`--self-test` runs every subcommand on fixtures in a temporary git
+repository. It covers the units' counts and splitting, the brief's files,
+the specification's sections (S17's heading among them, S22 left out) and
+its leak check (a planted citation is caught, a platform value in the
+catalogue elided and listed, an unelided one reported), the model comparison and the two-step flow, the
+resolution (equivalent, equal under one scheme only, `absent` against a
+transparent colour, an unevaluated function), each normalisation, an identity mismatch, one-sided facts and the sample's
+determinism. It runs in `check_release.sh` and in CI's parity job.
+
+Requires Python 3.11 and git.
 
 ## import_platform_facts.py
 

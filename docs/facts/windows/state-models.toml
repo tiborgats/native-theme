@@ -15,11 +15,11 @@ available = true
 variants = ["primary", "flat", "toggle", "menu", "tool", "@repeat"]
 sizes = []
 densities = []
-axes = { states = ["hover", "pressed", "disabled", "focus_visible", "checked", "indeterminate", "default"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ widget = "dialog", part = "action_area" }, { widget = "toolbar", part = "bar" }] }
+axes = { states = ["hover", "pressed", "disabled", "focus_visible", "checked", "indeterminate", "default"], conditions = ["scheme:light", "scheme:dark", "contrast_high", "window_inactive"], contexts = [{ widget = "dialog", part = "action_area" }, { widget = "toolbar", part = "bar" }] }
 exclusive = [["disabled", "pressed", "hover"], ["indeterminate", "checked"]]
 exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat"], ["primary", "flat", "tool", "@repeat"]]
 variant_sets = [["toggle", "tool"], ["menu", "tool"]]
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["indeterminate"], variants = ["tool"] }, { states = ["disabled", "focus_visible"] }, { states = ["default"], not_context = [{ widget = "dialog", part = "action_area" }] }]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["indeterminate"], variants = ["tool"] }, { states = ["disabled", "focus_visible"] }, { states = ["default"], not_context = [{ widget = "dialog", part = "action_area" }] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
 rows = ["W1-018", "W1-019", "W1-020", "W1-022", "W1-099", "W1-102"]
 
 [[model.cite]]
@@ -46,6 +46,29 @@ quote = "IFC(GoToState(bUseTransitions, L\"Focused\", &bIgnored));"
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/Button_Partial.cpp:46"
 quote = "if (xaml::FocusState_Unfocused != focusState && bIsEnabled)"
+
+# An inactive window draws no focus rectangle: the window's deactivation sets the plugin unfocused, and the focus
+# manager then gives no focus target, the element keeping its focus for the window's return (S7.2: a platform that
+# keeps the focus flags states the inactive window's focus; the tie-break of WN-C1, from the verifier's model).
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/ContentRoot/ActivationManager.cpp:37-40"
+quote = "if (focusManager->IsPluginFocused() != m_fWindowActive) { IFC_RETURN(focusManager->SetWindowFocus(m_fWindowActive, shiftPressed)); }"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:3252"
+quote = "SetPluginFocusStatus(isFocused);"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:2704-2705"
+quote = "// Get the element we need to draw the focus rect on.  Returning nullptr will cause the focus rectangle // to not be drawn"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:2724-2727"
+quote = "if (!IsPluginFocused()) { return nullptr; }"
 
 [[model.cite]]
 kind = "published"

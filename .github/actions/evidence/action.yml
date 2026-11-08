@@ -1,8 +1,9 @@
 # The evidence the facts cite lives in its own repository, pinned by commit in
 # docs/facts/sources.toml (the `[[source]]` with `evidence = true`; the 0.8.0
 # plan's *The evidence repository*, spec S17 *The evidence root*). Every job
-# whose steps read evidence (the facts gate in `cargo test -p native-theme`,
-# check_function_vectors.py) runs this one step after its checkout, so the
+# whose steps read evidence (the facts gate's jobs and its fixtures' tests in
+# `cargo test -p native-theme`, check_function_vectors.py) runs this one step
+# after its checkout, so the
 # jobs cannot differ: it fetches that commit alone (depth 1) into
 # $RUNNER_TEMP/native-theme-evidence, byte for byte (no line-ending
 # conversion), and sets NATIVE_THEME_EVIDENCE to it for the job's later steps.

@@ -259,11 +259,16 @@ jobs:
           - { name: "macOS (system-fonts)", os: macos-latest, flags: "--features system-fonts" }
     steps:
       - uses: actions/checkout@v6
-      # The facts gate reads the evidence at its pin.
+      # The facts gate's fixtures read the evidence at its pin.
       - uses: ./.github/actions/evidence
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test -p native-theme ${{ matrix.flags }}
+      # Every test but the facts gate itself, which the facts-gate jobs run:
+      # no `cfg` reaches it (its code, the gate module, resolution and the
+      # presets hold none; the platform readers, icon loaders, font lookup
+      # and watchers that do are not on its path), so its outcome is one
+      # for every target and feature set. Its fixtures' tests run here.
+      - run: cargo test -p native-theme ${{ matrix.flags }} -- --skip facts_gate --exact
       # Both connectors enable `system-icons` by default, and its icon code
       # imports the platform crates, so it must build alone on each platform.
       - name: Check system-icons alone
@@ -276,6 +281,70 @@ jobs:
         env:
           RUSTFLAGS: -Dwarnings
         run: cargo check -p native-theme --all-features
+
+  # The facts gate (native-theme/tests/facts_gate.rs's `facts_gate`), once,
+  # on Linux with the default features: its outcome depends on no target and
+  # no feature (the test jobs' comment says why). Its work is split into as
+  # many shards as the matrix has jobs (NT_FACTS_GATE_SHARD, each condition
+  # vector checked by one shard alone, the rest recorded by the first),
+  # each job one shard. Each job takes its shard from its place in the
+  # matrix, so every shard runs once. A preset's
+  # listed paths are found over all its vectors, so each shard writes those
+  # it found (NT_FACTS_GATE_LISTED) and the facts-gate-listed job checks the
+  # presets' `[pending]` tables against them all (NT_FACTS_GATE_MERGE);
+  # `gate_shards_add_up` shows that the shards and that check together find
+  # what the whole run finds.
+  facts-gate:
+    name: Facts gate ${{ matrix.shard }}
+    needs: fmt
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/evidence
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: The job's shard
+        env:
+          SHARD: ${{ matrix.shard }}
+          INDEX: ${{ strategy.job-index }}
+          TOTAL: ${{ strategy.job-total }}
+        run: |
+          if [ "$SHARD" != "$((INDEX + 1))" ]; then
+            echo "the matrix's shard $SHARD is not the job's place $((INDEX + 1)) of $TOTAL"
+            exit 1
+          fi
+          echo "NT_FACTS_GATE_SHARD=$SHARD/$TOTAL" >>"$GITHUB_ENV"
+          echo "NT_FACTS_GATE_LISTED=$RUNNER_TEMP/listed" >>"$GITHUB_ENV"
+      - run: cargo test -p native-theme --test facts_gate -- --exact facts_gate
+      # Written before the gate's verdict, so a failing shard's too.
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: facts-gate-listed-${{ matrix.shard }}
+          path: ${{ runner.temp }}/listed/
+          if-no-files-found: error
+
+  facts-gate-listed:
+    name: Facts gate, the listed paths
+    needs: facts-gate
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: facts-gate-listed-*
+          path: ${{ runner.temp }}/listed
+          merge-multiple: true
+      - run: cargo test -p native-theme --test facts_gate -- --exact facts_gate
+        env:
+          NT_FACTS_GATE_MERGE: ${{ runner.temp }}/listed
 
   features:
     name: Feature combinations
@@ -526,10 +595,17 @@ jobs:
       - run: python3 scripts/check_function_vectors.py --self-test
       - run: python3 scripts/check_facts_trace.py --enabled
       - run: python3 scripts/check_facts_trace.py --self-test
+      # The verifiers' tooling on its fixtures (a temporary git repository).
+      - run: python3 scripts/verify_facts.py --self-test
       # The line citations of today's platform-facts.md and the deleted
       # inheritance-rules.toml name the commit they read (`@fc6109d1`).
       - run: python3 scripts/check_pinned_citations.py
       - run: python3 scripts/check_pinned_citations.py --self-test
+      # The facts gate runs on Linux alone (the facts-gate jobs): no `cfg` on
+      # its path, found from the sources' `use` and `mod` graph, may depend on
+      # the target or the features.
+      - run: python3 scripts/check_gate_cfg.py
+      - run: python3 scripts/check_gate_cfg.py --self-test
       # The evidence lives in native-theme-evidence, pinned by
       # docs/facts/sources.toml: no file under docs/evidence/ is tracked here,
       # as scripts/check_release.sh checks too.

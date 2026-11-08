@@ -1274,15 +1274,32 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:117"
 quote = "overflow: TextOverflow = TextOverflow.Clip,"
 
+# Compose wraps on Android with the framework's line breaker and, unless a style asks for hyphens, no hyphenation,
+# under which a word wider than the line still breaks inside (S2.8's `WordChar`)
 [[fact]]
 key = "button.label.text.wrap"
-value = "word"
+value = "word_char"
 rows = ["MAT-B15"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:118"
 quote = "softWrap: Boolean = true,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui-text/src/androidMain/kotlin/androidx/compose/ui/text/AndroidParagraph.android.kt:841-851"
+quote = "private fun toLayoutHyphenationFrequency(hyphens: Hyphens): Int = when (hyphens) {"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui-text/src/androidMain/kotlin/androidx/compose/ui/text/android/LayoutCompat.android.kt:138"
+quote = "internal const val DEFAULT_HYPHENATION_FREQUENCY = HYPHENATION_FREQUENCY_NONE"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/text/Layout.java:127-128"
+quote = "Mid-word breaks may still happen when a word is wider than the * layout and there is otherwise no valid break."
 
 [[fact]]
 key = "button.label.text.max_lines"
@@ -10641,6 +10658,97 @@ kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-icon-button-xlarge.scss:34"
 quote = "$outlined-outline-width: 3px;"
 
+# the checked outlined toggles draw no border under flavour expressive either: the size facts above give the
+# outlined forms' widths, which a checked outlined toggle leaves (Compose's border null when checked, its width
+# animated to zero and the stroke dropped there, ToggleButton.kt:1722-1741)
+[[fact]]
+key = "button.body.stroke.top.width"
+when = { variants = ["toggle", "@outlined"], states = ["checked"], not_variants = ["icon_only"], conditions = ["flavor:expressive"] }
+value = "absent"
+rows = ["MAT-B12"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1382-1385"
+quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
+
+[[fact]]
+key = "button.body.stroke.right.width"
+when = { variants = ["toggle", "@outlined"], states = ["checked"], not_variants = ["icon_only"], conditions = ["flavor:expressive"] }
+value = "absent"
+rows = ["MAT-B12"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1382-1385"
+quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
+
+[[fact]]
+key = "button.body.stroke.bottom.width"
+when = { variants = ["toggle", "@outlined"], states = ["checked"], not_variants = ["icon_only"], conditions = ["flavor:expressive"] }
+value = "absent"
+rows = ["MAT-B12"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1382-1385"
+quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
+
+[[fact]]
+key = "button.body.stroke.left.width"
+when = { variants = ["toggle", "@outlined"], states = ["checked"], not_variants = ["icon_only"], conditions = ["flavor:expressive"] }
+value = "absent"
+rows = ["MAT-B12"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1382-1385"
+quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
+
+[[fact]]
+key = "button.body.stroke.top.width"
+when = { variants = ["icon_only", "@outlined", "toggle"], states = ["checked"], not_variants = ["@fab", "@extended_fab"], conditions = ["flavor:expressive"] }
+value = "absent"
+rows = ["MAT-N4"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButtonDefaults.kt:798-801"
+quote = "public fun outlinedIconToggleButtonBorder(enabled: Boolean, checked: Boolean): BorderStroke? { if (checked) { return null }"
+
+[[fact]]
+key = "button.body.stroke.right.width"
+when = { variants = ["icon_only", "@outlined", "toggle"], states = ["checked"], not_variants = ["@fab", "@extended_fab"], conditions = ["flavor:expressive"] }
+value = "absent"
+rows = ["MAT-N4"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButtonDefaults.kt:798-801"
+quote = "public fun outlinedIconToggleButtonBorder(enabled: Boolean, checked: Boolean): BorderStroke? { if (checked) { return null }"
+
+[[fact]]
+key = "button.body.stroke.bottom.width"
+when = { variants = ["icon_only", "@outlined", "toggle"], states = ["checked"], not_variants = ["@fab", "@extended_fab"], conditions = ["flavor:expressive"] }
+value = "absent"
+rows = ["MAT-N4"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButtonDefaults.kt:798-801"
+quote = "public fun outlinedIconToggleButtonBorder(enabled: Boolean, checked: Boolean): BorderStroke? { if (checked) { return null }"
+
+[[fact]]
+key = "button.body.stroke.left.width"
+when = { variants = ["icon_only", "@outlined", "toggle"], states = ["checked"], not_variants = ["@fab", "@extended_fab"], conditions = ["flavor:expressive"] }
+value = "absent"
+rows = ["MAT-N4"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButtonDefaults.kt:798-801"
+quote = "public fun outlinedIconToggleButtonBorder(enabled: Boolean, checked: Boolean): BorderStroke? { if (checked) { return null }"
+
 [[fact]]
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only"], not_variants = ["@fab", "@extended_fab"] }
@@ -15577,10 +15685,12 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
 quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
 
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["flat"], not_conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }]
 rows = ["MAT-X9"]
 
 [[fact.cite]]
@@ -15608,10 +15718,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:319-322"
 quote = "val outgoingAnimationSpec = outgoingStateLayerAnimationSpecFor(currentInteraction) launch { animatedAlpha.animateTo(0f, outgoingAnimationSpec) }"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["@outlined"], not_variants = ["menu"], not_conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }]
 rows = ["MAT-X9"]
 
 [[fact.cite]]
@@ -15639,10 +15787,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:319-322"
 quote = "val outgoingAnimationSpec = outgoingStateLayerAnimationSpecFor(currentInteraction) launch { animatedAlpha.animateTo(0f, outgoingAnimationSpec) }"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["icon_only"], not_conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }]
 rows = ["MAT-X9"]
 
 [[fact.cite]]
@@ -15669,6 +15855,42 @@ quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDura
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:319-322"
 quote = "val outgoingAnimationSpec = outgoingStateLayerAnimationSpecFor(currentInteraction) launch { animatedAlpha.animateTo(0f, outgoingAnimationSpec) }"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
 
 [[fact]]
 key = "button.body.transitions"
@@ -15747,10 +15969,12 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1753-1756"
 quote = "if (animatable.targetValue != target) { if (!enabled) { // No transition when moving to a disabled state animatable.snapTo(target)"
 
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["flat"], latest = { state_layer = "focus_visible" }, not_conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
+value = [{ properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
 rows = ["MAT-X9"]
 
 [[fact.cite]]
@@ -15773,10 +15997,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:314-317"
 quote = "val incomingAnimationSpec = incomingStateLayerAnimationSpecFor(newInteraction) launch { animatedAlpha.animateTo(targetAlpha, incomingAnimationSpec) }"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["@outlined"], not_variants = ["menu"], latest = { state_layer = "focus_visible" }, not_conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
+value = [{ properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
 rows = ["MAT-X9"]
 
 [[fact.cite]]
@@ -15799,10 +16061,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:314-317"
 quote = "val incomingAnimationSpec = incomingStateLayerAnimationSpecFor(newInteraction) launch { animatedAlpha.animateTo(targetAlpha, incomingAnimationSpec) }"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["icon_only"], latest = { state_layer = "focus_visible" }, not_conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
+value = [{ properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
 rows = ["MAT-X9"]
 
 [[fact.cite]]
@@ -15825,9 +16125,47 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:314-317"
 quote = "val incomingAnimationSpec = incomingStateLayerAnimationSpecFor(newInteraction) launch { animatedAlpha.animateTo(targetAlpha, incomingAnimationSpec) }"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the FABs morph no corners (FloatingActionButton.kt:171-174: Surface takes its fixed `shape`), so their own facts
+# below state their lists and this one leaves them out
 [[fact]]
 key = "button.body.transitions"
-when = { not_variants = ["menu"], conditions = ["flavor:expressive"] }
+when = { not_variants = ["menu", "@fab", "@extended_fab"], conditions = ["flavor:expressive"] }
 value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
 rows = ["MAT-B13", "MAT-X7", "MAT-X9", "MAT-B11", "MAT-X12"]
 
@@ -15917,10 +16255,12 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:119"
 quote = "progress.animateTo(1f, spec)"
 
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["flat"], conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
 rows = ["MAT-X9", "MAT-B11", "MAT-X12"]
 
 [[fact.cite]]
@@ -15974,10 +16314,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:119"
 quote = "progress.animateTo(1f, spec)"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["@outlined"], not_variants = ["menu"], conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
 rows = ["MAT-X9", "MAT-B11", "MAT-X12"]
 
 [[fact.cite]]
@@ -16031,10 +16409,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:119"
 quote = "progress.animateTo(1f, spec)"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["icon_only"], conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
 rows = ["MAT-X9", "MAT-N5", "MAT-X12"]
 
 [[fact.cite]]
@@ -16082,6 +16498,42 @@ quote = "progress.animateTo(1f, spec, initialVelocity = -v)"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:119"
 quote = "progress.animateTo(1f, spec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
 
 [[fact]]
 key = "button.body.transitions"
@@ -16190,10 +16642,12 @@ kind = "published"
 source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimateAsState.kt:506"
 quote = "animatable.animateTo(newTarget, animSpec)"
 
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["toggle", "@outlined"], not_variants = ["icon_only"], conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.fast_spatial", engine = "compose_animatable" }, { properties = ["stroke"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }, { properties = ["stroke_width"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.fast_spatial", engine = "compose_animatable" }]
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.fast_spatial", engine = "compose_animatable" }, { properties = ["stroke"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }, { properties = ["stroke_width"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.fast_spatial", engine = "compose_animatable" }]
 rows = ["MAT-X9", "MAT-X12", "MAT-B12"]
 
 [[fact.cite]]
@@ -16276,6 +16730,42 @@ quote = "val animatedBorder = animateBorderStrokeAsState(border)"
 kind = "published"
 source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimateAsState.kt:506"
 quote = "animatable.animateTo(newTarget, animSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
 
 [[fact]]
 key = "button.body.transitions"
@@ -16640,10 +17130,12 @@ kind = "published"
 source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimateAsState.kt:506"
 quote = "animatable.animateTo(newTarget, animSpec)"
 
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["flat"], latest = { state_layer = "focus_visible" }, conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
+value = [{ properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }, { properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
 rows = ["MAT-X9", "MAT-B11", "MAT-X12"]
 
 [[fact.cite]]
@@ -16692,10 +17184,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:119"
 quote = "progress.animateTo(1f, spec)"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["@outlined"], not_variants = ["menu"], latest = { state_layer = "focus_visible" }, conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
+value = [{ properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }, { properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
 rows = ["MAT-X9", "MAT-B11", "MAT-X12"]
 
 [[fact.cite]]
@@ -16744,10 +17274,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:119"
 quote = "progress.animateTo(1f, spec)"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["icon_only"], latest = { state_layer = "focus_visible" }, conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }]
+value = [{ properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }, { properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
 rows = ["MAT-X9", "MAT-N5", "MAT-X12"]
 
 [[fact.cite]]
@@ -16791,10 +17359,48 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:119"
 quote = "progress.animateTo(1f, spec)"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
+
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["toggle", "@outlined"], not_variants = ["icon_only"], latest = { state_layer = "focus_visible" }, conditions = ["flavor:expressive"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.fast_spatial", engine = "compose_animatable" }, { properties = ["stroke"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }, { properties = ["stroke_width"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.fast_spatial", engine = "compose_animatable" }]
+value = [{ properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["corners"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.fast_spatial", engine = "compose_animatable" }, { properties = ["stroke"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.default_effects", engine = "compose_animatable" }, { properties = ["stroke_width"], kind = "interpolate", duration_ms = "absent", delay_ms = 0, timing = "= token.motion.timings.fast_spatial", engine = "compose_animatable" }, { properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
 rows = ["MAT-X9", "MAT-X12", "MAT-B12"]
 
 [[fact.cite]]
@@ -16878,6 +17484,42 @@ quote = "animatable.animateTo(newTarget, animSpec)"
 # :109; FastOutSlowInEasing, animation-core Easing.kt:50; TweenSpec's delay 0, AnimationSpec.kt:97-100), with no from
 # (it applies from any state); the state layer's fade is the latest state_layer flag's incoming one (15 ms to hover, 45 ms
 # to focus), or the rest's where only the press is held. Expressive adds the corner morph as its rest lists do.
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
 
 [[fact]]
 key = "button.body.transitions"
@@ -18357,10 +18999,12 @@ quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
 # same rule, which each fact cites with the rule's ground). TextButton there takes a fixed shape, so no flavour adds
 # the Expressive corner morph. The colours, opacities and elevations stay the menu-button tokens' (the facts above).
 
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["menu"], not_variants = ["primary"] }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }]
 rows = ["MAT-N8", "MAT-X9"]
 
 [[fact.cite]]
@@ -18397,6 +19041,42 @@ quote = "elevation: ButtonElevation? = null,"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/DatePicker.kt:2528-2542"
 quote = "// TODO: Replace with the official MenuButton when implemented. @Composable private fun YearPickerMenuButton( onClick: () -> Unit, expanded: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit, ) { TextButton( onClick = onClick, modifier = modifier, shape = CircleShape, colors = ButtonDefaults.textButtonColors(contentColor = LocalContentColor.current), elevation = null,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
 
 [[fact]]
 key = "button.body.transitions"
@@ -18839,10 +19519,12 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/DatePicker.kt:2528-2542"
 quote = "// TODO: Replace with the official MenuButton when implemented. @Composable private fun YearPickerMenuButton( onClick: () -> Unit, expanded: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit, ) { TextButton( onClick = onClick, modifier = modifier, shape = CircleShape, colors = ButtonDefaults.textButtonColors(contentColor = LocalContentColor.current), elevation = null,"
 
+# the base's two shadow transitions stay in this merged list (S6.1: a rule's keyed list replaces only the items of
+# its keys; S17 states the merged list); inert here, as this form's shadow never changes
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["menu"], not_variants = ["primary"], latest = { state_layer = "focus_visible" } }
-value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
+value = [{ properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }, { properties = ["state_layer"], kind = "interpolate", duration_ms = 45, delay_ms = 0, timing = "linear", engine = "compose_animatable" }]
 rows = ["MAT-N8", "MAT-X9"]
 
 [[fact.cite]]
@@ -18889,3 +19571,39 @@ quote = "elevation: ButtonElevation? = null,"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/DatePicker.kt:2528-2542"
 quote = "// TODO: Replace with the official MenuButton when implemented. @Composable private fun YearPickerMenuButton( onClick: () -> Unit, expanded: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit, ) { TextButton( onClick = onClick, modifier = modifier, shape = CircleShape, colors = ButtonDefaults.textButtonColors(contentColor = LocalContentColor.current), elevation = null,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:51-61"
+quote = "to != null -> ElevationDefaults.incomingAnimationSpecForInteraction(to) // Moving to default, from a previous state from != null -> ElevationDefaults.outgoingAnimationSpecForInteraction(from)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:98-101"
+quote = "is PressInteraction.Press -> DefaultOutgoingSpec is DragInteraction.Start -> DefaultOutgoingSpec is HoverInteraction.Enter -> HoveredOutgoingSpec is FocusInteraction.Focus -> DefaultOutgoingSpec"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:107"
+quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f, 0.60f, 1.00f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
+quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
+quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
+quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:61"
+quote = "if (spec != null) animateTo(target, spec) else snapTo(target)"
+
