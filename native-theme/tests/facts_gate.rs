@@ -1144,6 +1144,18 @@ fn gate_fixture_refused_key_skips_no_variant() {
     assert!(report.variants_not_held.is_empty(), "{report:?}");
 }
 
+/// A fact whose `when` excludes a flavour (`not_conditions` naming it, or
+/// `conditions` naming another) is no combination of that flavour's run
+/// (S10, S17): its variant `@main_only`, the default flavour's alone, is
+/// checked in the default flavour's run, where the preset states it, and
+/// never queried under `flavor:alt`, whose declarations lack it.
+#[test]
+fn gate_fixture_flavor_excluded_fact() {
+    let report = fixture_report("flavor_excluded");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+}
+
 /// Each rule of the projection (ADD-A128), one variant each: a variant
 /// only skipped facts name goes, out of its three-member exclusive group
 /// too, which keeps its other two; one a kept fact names as well stays;

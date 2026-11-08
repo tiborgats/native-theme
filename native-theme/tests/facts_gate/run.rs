@@ -1132,6 +1132,20 @@ pub fn conditions(vector: &[String], flavor: Option<&str>) -> Result<Conditions,
     Ok(out)
 }
 
+/// Whether a fact's `when` cannot hold under the run's `flavor` (S10,
+/// S17): its `not_conditions` name that flavour, or its `conditions` name
+/// another; its own combination is then no combination of that run.
+fn excludes_flavor(when: &Value, flavor: Option<&str>) -> bool {
+    let Some(flavor) = flavor else {
+        return false;
+    };
+    let own = format!("flavor:{flavor}");
+    strings(when.get("not_conditions")).contains(&own)
+        || strings(when.get("conditions"))
+            .iter()
+            .any(|condition| condition.starts_with("flavor:") && *condition != own)
+}
+
 /// A fact's own `when` as combinations (S17: "The gate also resolves each
 /// fact's own `when`"): its conditions (each scheme where it names none),
 /// its flags, its variants, its first size, density and context, its
@@ -1914,6 +1928,9 @@ fn check(
             let Some(when) = &prepared.written else {
                 continue;
             };
+            if excludes_flavor(when, flavor) {
+                continue;
+            }
             let widget = key.key.widget();
             let Some((vectors, combination)) =
                 own_combination(when, widget.as_deref().unwrap_or_default(), &schemes)
