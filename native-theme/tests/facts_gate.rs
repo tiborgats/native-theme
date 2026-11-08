@@ -10,10 +10,26 @@
 //! `NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme
 //! --test facts_gate` gates those two alone, its report saying it ran a
 //! subset. An id no bundled preset has, an empty name or an id named twice
-//! fails the test; unset, every bundled preset runs. A subset is no gate:
-//! `scripts/check_release.sh` never sets the variable, so every mode of it
-//! gates every preset, and the release's run (`FACTS_GATE_RELEASE=1`)
-//! refuses a subset.
+//! fails the test; `none` runs no preset, the facts' own checks alone;
+//! unset, every bundled preset runs. A subset is no gate:
+//! `scripts/check_release.sh` gates every preset in every mode (`--commit`
+//! and `--quick` one preset per step, beside `none`'s step, the facts' own
+//! checks every step also runs), and the release's run
+//! (`FACTS_GATE_RELEASE=1`) refuses a subset.
+//!
+//! `NT_FACTS_GATE_SHARD=k/N` runs the `k`th of `N` shards of the work
+//! (`run::Shard`): each condition vector checked by one shard alone, the
+//! rest by every shard as far as the vectors need it and recorded by the
+//! first; its report names the shard. A preset's listed paths are found
+//! over all its vectors, so no shard checks its `[pending]` table: each
+//! writes the listed paths it found to the directory
+//! `NT_FACTS_GATE_LISTED` names, and `facts_gate` with
+//! `NT_FACTS_GATE_MERGE` naming that directory checks every preset's table
+//! against all the shards' findings instead of gating. The shards and that
+//! check find what the whole run finds (`gate_shards_add_up`). CI runs the
+//! gate so, a job per shard, on one target with one feature set: no `cfg`
+//! reaches the gate, so its outcome is one for all. A shard is no gate
+//! alone, and the release's run refuses one.
 //!
 //! The gate's parallel steps run on as many threads as the machine has;
 //! `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no
@@ -42,6 +58,7 @@ mod run;
 #[path = "facts_gate/units.rs"]
 mod units;
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use native_theme::PresetId;
@@ -65,12 +82,16 @@ const PRESETS_VARIABLE: &str = "NT_FACTS_GATE_PRESETS";
 
 /// The presets `facts_gate` runs, in [`PresetId::all`]'s order: every
 /// bundled preset where `value`, [`PRESETS_VARIABLE`]'s value, is `None`,
-/// else those its comma-separated list names. An id no bundled preset has,
-/// an empty name or an id named twice is an error, never an empty run.
+/// none where it is `none` (the facts' own checks alone), else those its
+/// comma-separated list names. An id no bundled preset has, an empty name
+/// or an id named twice is an error, never an empty run.
 fn selected_presets(value: Option<&str>) -> Result<Vec<PresetId>, String> {
     let Some(value) = value else {
         return Ok(PresetId::all().to_vec());
     };
+    if value.trim() == "none" {
+        return Ok(Vec::new());
+    }
     let mut named = Vec::new();
     for name in value.split(',').map(str::trim) {
         let known = || {
@@ -96,6 +117,134 @@ fn selected_presets(value: Option<&str>) -> Result<Vec<PresetId>, String> {
         .copied()
         .filter(|id| named.contains(id))
         .collect())
+}
+
+/// The environment variable naming the directory a shard of `facts_gate`
+/// writes the listed paths it found to ([`write_listed`]).
+const LISTED_VARIABLE: &str = "NT_FACTS_GATE_LISTED";
+
+/// The environment variable naming the directory of every shard's listed
+/// paths, which `facts_gate` then checks instead of gating ([`read_listed`],
+/// [`check_listed`]).
+const MERGE_VARIABLE: &str = "NT_FACTS_GATE_MERGE";
+
+/// The directory the variable `name` names; `None` where it is unset.
+fn directory_variable(name: &str) -> Option<PathBuf> {
+    std::env::var_os(name).map(PathBuf::from)
+}
+
+/// The listed paths `report`, the shard `shard`'s report of a run over
+/// `presets`, found (`Report::listed`), written to `directory` as
+/// `listed-<k>-of-<N>.tsv`: a line naming the presets, then one per path,
+/// its key, its register ids and its combinations, tab-separated.
+fn write_listed(
+    directory: &Path,
+    shard: run::Shard,
+    presets: &[(String, Preset)],
+    report: &run::Report,
+) {
+    let ids: Vec<&str> = presets.iter().map(|(_, preset)| preset.id()).collect();
+    let mut text = format!("presets\t{}\n", ids.join(","));
+    for (key, (found, count)) in &report.listed {
+        assert!(
+            !key.contains(['\t', '\n']) && found.iter().all(|id| !id.contains(['\t', '\n', ' '])),
+            "the listed path {key:?} ({found:?}) does not write as one line"
+        );
+        let found: Vec<&str> = found.iter().map(String::as_str).collect();
+        text.push_str(&format!("{key}\t{}\t{count}\n", found.join(" ")));
+    }
+    std::fs::create_dir_all(directory).unwrap();
+    let file = directory.join(format!("listed-{}-of-{}.tsv", shard.index + 1, shard.count));
+    std::fs::write(&file, text).unwrap_or_else(|error| panic!("{}: {error}", file.display()));
+}
+
+/// The listed paths a run found (`Report::listed`): by key, the register
+/// ids and the combinations.
+type Listed = BTreeMap<String, (BTreeSet<String>, u64)>;
+
+/// Every shard's listed paths in `directory` ([`write_listed`]), merged as
+/// one run's: each path's ids joined and its combinations added. An error
+/// where a file is no shard's, the shards name different counts, one of
+/// them is missing, a file names other presets than `presets`, or a line
+/// does not read.
+fn read_listed(directory: &Path, presets: &[(String, Preset)]) -> Result<Listed, String> {
+    let ids: Vec<&str> = presets.iter().map(|(_, preset)| preset.id()).collect();
+    let header = format!("presets\t{}", ids.join(","));
+    let mut shards = BTreeMap::new();
+    let mut count = None;
+    let entries = std::fs::read_dir(directory)
+        .map_err(|error| format!("{}: {error}", directory.display()))?;
+    for entry in entries {
+        let path = entry.map_err(|error| error.to_string())?.path();
+        let name = path
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let shard = name
+            .strip_prefix("listed-")
+            .and_then(|rest| rest.strip_suffix(".tsv"))
+            .and_then(|rest| rest.split_once("-of-"))
+            .and_then(|(k, n)| run::shard_of(Some(&format!("{k}/{n}"))).ok())
+            .ok_or_else(|| format!("{name}: no shard's listed paths"))?;
+        if *count.get_or_insert(shard.count) != shard.count {
+            return Err(format!(
+                "{name}: another count of shards than its neighbours'"
+            ));
+        }
+        shards.insert(shard.index, path);
+    }
+    let count = count.ok_or_else(|| format!("{}: no shard's listed paths", directory.display()))?;
+    if shards.len() != count {
+        let missing: Vec<String> = (1..=count)
+            .filter(|k| !shards.contains_key(&(k - 1)))
+            .map(|k| k.to_string())
+            .collect();
+        return Err(format!(
+            "the shards {} of {count} are missing",
+            missing.join(", ")
+        ));
+    }
+    let mut listed = Listed::new();
+    for path in shards.values() {
+        let text = std::fs::read_to_string(path)
+            .map_err(|error| format!("{}: {error}", path.display()))?;
+        let mut lines = text.lines();
+        if lines.next() != Some(header.as_str()) {
+            return Err(format!(
+                "{}: not a run over {}",
+                path.display(),
+                ids.join(", ")
+            ));
+        }
+        for line in lines {
+            let fields: Vec<&str> = line.split('\t').collect();
+            let (Some(key), Some(found), Some(combinations), 3) =
+                (fields.first(), fields.get(1), fields.get(2), fields.len())
+            else {
+                return Err(format!("{}: `{line}` does not read", path.display()));
+            };
+            let combinations: u64 = combinations
+                .parse()
+                .map_err(|_| format!("{}: `{line}` does not read", path.display()))?;
+            let entry = listed.entry((*key).to_owned()).or_default();
+            entry.0.extend(
+                found
+                    .split(' ')
+                    .filter(|id| !id.is_empty())
+                    .map(str::to_owned),
+            );
+            entry.1 += combinations;
+        }
+    }
+    Ok(listed)
+}
+
+/// Each of `presets`' `[pending]` tables against the listed paths
+/// `report` holds, the shards' findings merged (`run::listed_paths`).
+fn check_listed(presets: &[(String, Preset)], report: &mut run::Report) {
+    for (_, preset) in presets {
+        run::listed_paths(preset, report);
+    }
 }
 
 /// [`PRESETS_VARIABLE`]'s value; `None` where it is unset. A value that is
@@ -160,7 +309,7 @@ fn fixture_report_with(name: &str, file: &str) -> run::Report {
 }
 
 /// A listed path's register ids found, in order.
-fn ids_of(ids: &std::collections::BTreeSet<String>) -> Vec<&str> {
+fn ids_of(ids: &BTreeSet<String>) -> Vec<&str> {
     ids.iter().map(String::as_str).collect()
 }
 
@@ -2158,6 +2307,144 @@ fn facts_gate_presets_unknown_id_fails() {
     assert!(twice.contains("named twice"), "{twice}");
 }
 
+/// [`PRESETS_VARIABLE`] `none`: `facts_gate` runs no preset, the facts' own
+/// checks alone; `none` beside an id is no bundled preset's id.
+#[test]
+fn facts_gate_presets_none() {
+    assert_eq!(selected_presets(Some("none")), Ok(Vec::new()));
+    assert_eq!(selected_presets(Some(" none ")), Ok(Vec::new()));
+    let beside = selected_presets(Some("none,adwaita")).unwrap_err();
+    assert!(
+        beside.contains("`none` is no bundled preset's id"),
+        "{beside}"
+    );
+}
+
+/// [`run::SHARD_VARIABLE`] names one shard of the gate's work, `k/N`;
+/// unset, the whole run; any other value fails.
+#[test]
+fn facts_gate_shard_variable() {
+    assert_eq!(run::shard_of(None), Ok(run::Shard::WHOLE));
+    assert_eq!(
+        run::shard_of(Some("1/1")),
+        Ok(run::Shard { index: 0, count: 1 })
+    );
+    assert_eq!(
+        run::shard_of(Some(" 3 / 8 ")),
+        Ok(run::Shard { index: 2, count: 8 })
+    );
+    for refused in [
+        "", "0/4", "5/4", "1/0", "2", "1/2/3", "a/4", "-1/4", "1.5/4",
+    ] {
+        let error = run::shard_of(Some(refused)).unwrap_err();
+        assert!(error.contains("is no shard"), "{refused}: {error}");
+    }
+}
+
+/// The shards add up to the whole run ([`run::Shard`]): over every fixture
+/// case whose preset reads, each split into two, three and five shards,
+/// the shards' reports merged hold exactly the whole run's failures, groups,
+/// pending, listed and skipped facts and counts; and some shard but the
+/// first checks a condition vector, so the split is no first-shard run.
+#[test]
+fn gate_shards_add_up() {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
+    let base = std::fs::read_to_string(fixtures.join("base.toml")).unwrap();
+    let mut cases: Vec<PathBuf> = std::fs::read_dir(&fixtures)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|case| case.join("preset.toml").is_file())
+        .collect();
+    cases.sort();
+    let listed =
+        std::env::temp_dir().join(format!("native-theme-shards-listed-{}", std::process::id()));
+    let mut split = 0;
+    let mut gated = 0;
+    for case in &cases {
+        let Ok(preset) = Preset::from_toml(&fixture_text(case, &base, "preset.toml")) else {
+            continue;
+        };
+        gated += 1;
+        let root = case.join("docs/facts");
+        let presets = vec![("gnome".to_owned(), preset)];
+        let whole = run::run(&root, fixture_evidence(&root), &presets);
+        for count in [2, 3, 5] {
+            let _ = std::fs::remove_dir_all(&listed);
+            let mut merged = run::Report::default();
+            for index in 0..count {
+                let shard = run::Shard { index, count };
+                let part = run::run_shard(&root, fixture_evidence(&root), &presets, shard);
+                if index > 0 && part.compared > 0 {
+                    split += 1;
+                }
+                write_listed(&listed, shard, &presets, &part);
+                merged.merge(part);
+            }
+            assert_eq!(read_listed(&listed, &presets), Ok(merged.listed.clone()));
+            check_listed(&presets, &mut merged);
+            assert_eq!(
+                merged.findings(),
+                whole.findings(),
+                "{}: {count} shards",
+                case.display()
+            );
+        }
+    }
+    let _ = std::fs::remove_dir_all(&listed);
+    assert!(gated > 10, "{gated} fixture cases gated");
+    assert!(split > 0, "no shard but the first checked a vector");
+}
+
+/// The shards' listed paths are refused unless every shard of one count
+/// wrote them over the same presets ([`read_listed`]).
+#[test]
+fn facts_gate_listed_refused() {
+    let base = std::env::temp_dir().join(format!(
+        "native-theme-listed-refused-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&base);
+    let (_, presets) = fixture("passes", "preset.toml");
+    let report = run::Report::default();
+    let write = |k: usize, n: usize| {
+        write_listed(
+            &base,
+            run::Shard {
+                index: k - 1,
+                count: n,
+            },
+            &presets,
+            &report,
+        );
+    };
+    let refused = |want: &str| {
+        let error = read_listed(&base, &presets).unwrap_err();
+        assert!(error.contains(want), "{error}");
+    };
+    std::fs::create_dir_all(&base).unwrap();
+    refused("no shard's listed paths");
+    write(1, 3);
+    write(3, 3);
+    refused("the shards 2 of 3 are missing");
+    write(2, 3);
+    assert_eq!(read_listed(&base, &presets), Ok(Default::default()));
+    write(1, 2);
+    refused("another count of shards");
+    std::fs::remove_file(base.join("listed-1-of-2.tsv")).unwrap();
+    std::fs::write(base.join("listed-2-of-3.tsv"), "presets\tother\n").unwrap();
+    refused("not a run over");
+    let header = format!("presets\t{}", presets.first().unwrap().1.id());
+    std::fs::write(
+        base.join("listed-2-of-3.tsv"),
+        format!("{header}\nkey\tU1\n"),
+    )
+    .unwrap();
+    refused("does not read");
+    std::fs::write(base.join("notes.txt"), "").unwrap();
+    refused("notes.txt: no shard's listed paths");
+    std::fs::remove_dir_all(&base).unwrap();
+}
+
 /// [`run::THREADS_VARIABLE`] sets the gate's threads; unset, the machine's
 /// parallelism; a value that is no number above zero fails.
 #[test]
@@ -2291,6 +2578,12 @@ fn facts_gate() {
         !(subset && std::env::var_os("FACTS_GATE_RELEASE").is_some()),
         "the release's gate runs every bundled preset: unset {PRESETS_VARIABLE}"
     );
+    let shard = run::shard();
+    assert!(
+        !(shard != run::Shard::WHOLE && std::env::var_os("FACTS_GATE_RELEASE").is_some()),
+        "the release's gate runs every shard at once: unset {}",
+        run::SHARD_VARIABLE
+    );
     let presets: Vec<(String, Preset)> = ids
         .iter()
         .map(|id| {
@@ -2302,9 +2595,47 @@ fn facts_gate() {
             (directory, Preset::bundled(*id).unwrap())
         })
         .collect();
+    if let Some(directory) = directory_variable(MERGE_VARIABLE) {
+        assert!(
+            shard == run::Shard::WHOLE && std::env::var_os("FACTS_GATE_RELEASE").is_none(),
+            "{MERGE_VARIABLE} checks the shards' listed paths: unset {} and FACTS_GATE_RELEASE",
+            run::SHARD_VARIABLE
+        );
+        let mut report = run::Report::default();
+        report.listed = read_listed(&directory, &presets)
+            .unwrap_or_else(|error| panic!("{MERGE_VARIABLE}: {error}"));
+        check_listed(&presets, &mut report);
+        eprintln!(
+            "facts gate: the listed paths of {} presets over the shards' findings in {}, {} \
+             found; {} failures:",
+            presets.len(),
+            directory.display(),
+            report.listed.len(),
+            report.failures.len()
+        );
+        for failure in &report.failures {
+            eprintln!("    {failure}");
+        }
+        assert!(
+            report.failures.is_empty(),
+            "{} failures of the listed paths (listed above)",
+            report.failures.len()
+        );
+        return;
+    }
     let evidence = facts::evidence_root(&root).unwrap_or_else(|error| panic!("{error}"));
-    let report = run::run(&root, &evidence, &presets);
-    let scope = if subset {
+    let report = run::run_shard(&root, &evidence, &presets, shard);
+    if shard != run::Shard::WHOLE
+        && let Some(directory) = directory_variable(LISTED_VARIABLE)
+    {
+        write_listed(&directory, shard, &presets, &report);
+    }
+    let mut scope = if ids.is_empty() {
+        format!(
+            "no preset, the facts' own checks alone, as {PRESETS_VARIABLE} names (unset it to \
+             gate every preset)"
+        )
+    } else if subset {
         format!(
             "a subset, {} of {} bundled presets ({}) as {PRESETS_VARIABLE} names (unset it to \
              gate every preset)",
@@ -2315,6 +2646,15 @@ fn facts_gate() {
     } else {
         format!("{} presets", presets.len())
     };
+    if shard != run::Shard::WHOLE {
+        scope.push_str(&format!(
+            ", shard {} of {} as {} names (unset it to gate every shard), its listed paths \
+             checked over every shard's ({LISTED_VARIABLE}, then {MERGE_VARIABLE})",
+            shard.index + 1,
+            shard.count,
+            run::SHARD_VARIABLE
+        ));
+    }
     eprintln!(
         "facts gate: {scope}, {} keys compared over {} distinct combinations in {:?}; \
          {} pending facts; skipped: {} facts of {} keys the model does not hold, {} facts of a unit \

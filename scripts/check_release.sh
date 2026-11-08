@@ -136,10 +136,11 @@ fi
 
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 
-# The facts gate limited to some presets is a development aid, no gate
-# (native-theme/tests/facts_gate.rs): every mode gates every preset, even
-# where the caller's environment names a subset.
-unset NT_FACTS_GATE_PRESETS
+# The facts gate limited to some presets or to one shard is a development
+# aid, no gate (native-theme/tests/facts_gate.rs): every mode gates every
+# preset and every shard, even where the caller's environment names a subset
+# or a shard (--commit and --quick name each part they run, facts_gate_steps).
+unset NT_FACTS_GATE_PRESETS NT_FACTS_GATE_SHARD
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colour + icon vocabulary
@@ -548,15 +549,22 @@ run_tests_min()  { _run_tests_impl "$2" "$1" "${@:3}"; }
 # doctests (no target selected, a package with a doctested library), so the
 # step runs the tests it ran before. `--no-tests=pass` leaves a run of no
 # test to run_tests' minimum, as with `cargo test`; `--status-level fail`
-# lists the failures alone, and the summary line is run_tests' count.
+# lists the failures alone, and the summary line is run_tests' count. The
+# arguments after a `--` go to the test binaries, the doctests' too
+# (`--skip <name> --exact` alone: nextest takes libtest's filters).
 cargo_tests() {
     if [[ ! $HAVE_NEXTEST ]]; then
         cargo test "$@"
         return
     fi
-    cargo nextest run --no-tests=pass --status-level fail --final-status-level fail "$@" || return
-    if doctests_selected "$@"; then
-        cargo test "$@" --doc
+    local cargo_args=()
+    while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do
+        cargo_args+=("$1")
+        shift
+    done
+    cargo nextest run --no-tests=pass --status-level fail --final-status-level fail "${cargo_args[@]}" "$@" || return
+    if doctests_selected "${cargo_args[@]}"; then
+        cargo test "${cargo_args[@]}" --doc "$@"
     fi
 }
 
@@ -834,12 +842,22 @@ fi
 #     panic lints, rustdoc) reads what rustc and the build scripts read, as
 #     cache_inputs lists it;
 #   * a test step also reads what its tests read: native-theme-derive's unit
-#     tests read nothing; the facts gate reads docs/ (the facts),
+#     tests read nothing; the facts gate's fixtures read docs/ (the facts),
 #     scripts/widget_units.toml and the evidence (EVIDENCE_PIN), layers and
 #     platform_vectors their fixtures under native-theme/tests.
 #     native-theme's library tests (the desktop they run on), its doctests,
 #     native-theme-build's tests (a `cargo check` of a fresh project, with no
 #     lock, against crates.io) and every connector's are not cached;
+#   * the facts gate's parts (facts_gate_steps): the facts' own checks read
+#     every facts directory, the shared facts (docs/facts/*.toml, the
+#     evidence pin among them) and scripts/widget_units.toml; a bundled
+#     preset's checks read those but only its platform's facts directory
+#     (gate_directory), and of the bundled presets its own alone, so the
+#     others' files are left out of its part's inputs (`!<pattern>`,
+#     scripts/step_cache.sh). Each preset's part also runs the facts' own
+#     checks over every directory, which the facts' part caches on all of
+#     them; a preset whose directory is not found has no entry and always
+#     runs;
 #   * the Python data checks read scripts/ (their modules), docs/,
 #     native-theme/src, native-theme/tests and ROADMAP.md, and run rustfmt,
 #     whose version is in the key; check_facts.py and check_function_vectors.py
@@ -860,6 +878,7 @@ CACHE_TRUSTED_BUILD_CODE="native-theme native-theme-derive"
 PY_DATA_INPUTS="scripts docs native-theme/src native-theme/tests ROADMAP.md"
 EVIDENCE_PIN="docs/facts/sources.toml"
 STRICT_PANIC_INPUTS="scripts/check_strict_panic.sh"
+GATE_CFG_INPUTS="scripts/check_gate_cfg.py native-theme/src native-theme/tests native-theme/build.rs native-theme-derive/src"
 declare -A CACHE_INPUTS=(
     ["panic-pattern scan (native-theme, native-theme-derive)"]="scripts/check_panic_patterns.py native-theme/src native-theme-derive/src"
     ["clippy (native-theme, native-theme-derive, all targets and features)"]="@rust:native-theme,native-theme-derive"
@@ -867,7 +886,10 @@ declare -A CACHE_INPUTS=(
     ["strict-panic (native-theme, Linux features)"]="@rust:native-theme $STRICT_PANIC_INPUTS"
     ["strict-panic (native-theme, no features)"]="@rust:native-theme $STRICT_PANIC_INPUTS"
     ["test (native-theme-derive)"]="@rust:native-theme-derive"
-    ["test (native-theme, layers, vectors and facts gate)"]="@rust:native-theme docs scripts/widget_units.toml $EVIDENCE_PIN"
+    ["test (native-theme, layers, vectors and the facts gate's fixtures)"]="@rust:native-theme docs scripts/widget_units.toml $EVIDENCE_PIN"
+    ["facts gate (the facts, no preset)"]="@rust:native-theme docs/facts scripts/widget_units.toml"
+    ["the facts gate's path holds no cfg"]="$GATE_CFG_INPUTS"
+    ["the facts gate's path: self-test"]="scripts/check_gate_cfg.py"
     ["docs (native-theme)"]="@rust:native-theme"
     ["docs, private items (native-theme, Linux features)"]="@rust:native-theme"
 )
@@ -892,6 +914,27 @@ for preset in native-theme/src/presets/*.toml; do
     preset=$(basename "$preset" .toml)
     CACHE_INPUTS["the bundled preset $preset is generated from its facts"]="$PY_DATA_INPUTS"
     CACHE_INPUTS["data documents: the bundled preset $preset is generated from its facts"]="$PY_DATA_INPUTS"
+done
+# The bundled presets, each a part of the facts gate in --commit and --quick.
+GATE_PRESETS=$(for preset in native-theme/src/presets/*.toml; do basename "$preset" .toml; done)
+# The facts directory the preset $1 is checked against, as the gate's own
+# table (DIRECTORIES in native-theme/tests/facts_gate.rs) names it; nothing
+# where the table has no such line.
+gate_directory() {
+    sed -nE "s/^    \(\"$1\", \"([a-z0-9-]+)\"\),\$/\1/p" native-theme/tests/facts_gate.rs
+}
+for preset in $GATE_PRESETS; do
+    directory=$(gate_directory "$preset")
+    if [ -z "$directory" ] || [ "$(wc -l <<<"$directory")" -ne 1 ]; then
+        continue
+    fi
+    others=""
+    for other in $GATE_PRESETS; do
+        if [ "$other" != "$preset" ]; then
+            others="$others !native-theme/src/presets/$other.toml"
+        fi
+    done
+    CACHE_INPUTS["facts gate ($preset)"]="@rust:native-theme$others docs/facts/$directory docs/facts/*.toml scripts/widget_units.toml"
 done
 
 if [[ $STEP_CACHE ]]; then
@@ -923,6 +966,29 @@ if [[ $HAVE_NEXTEST ]]; then
     print_info "test steps: cargo nextest (doctests: cargo test --doc)"
 fi
 
+# The facts gate (native-theme/tests/facts_gate.rs's `facts_gate`), a step
+# of its own. The full run gates every preset in one step, which nothing
+# caches. --commit and --quick gate it in parts the step cache skips one by
+# one (CACHE_INPUTS): the facts' own checks, no preset
+# (NT_FACTS_GATE_PRESETS=none), then each bundled preset alone; every part
+# runs the facts' own checks too, so together they run every check the
+# whole gate runs. The other test steps skip `facts_gate` (GATE_SKIP): no
+# `cfg` reaches it, so its outcome is one for every target and feature set,
+# which scripts/check_gate_cfg.py checks in every mode.
+FACTS_GATE=(cargo test -p native-theme --test facts_gate -- --exact facts_gate)
+GATE_SKIP=(-- --skip facts_gate --exact)
+facts_gate_steps() {
+    if [[ ! $COMMIT_MODE && ! $QUICK_MODE ]]; then
+        run_tests "facts gate (every preset)" "${FACTS_GATE[@]}"
+        return
+    fi
+    run_tests "facts gate (the facts, no preset)" env NT_FACTS_GATE_PRESETS=none "${FACTS_GATE[@]}"
+    local preset
+    for preset in $GATE_PRESETS; do
+        run_tests "facts gate ($preset)" env NT_FACTS_GATE_PRESETS="$preset" "${FACTS_GATE[@]}"
+    done
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # --quick: the per-task gate (the header lists it), then its summary.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -930,6 +996,8 @@ if [[ $QUICK_MODE ]]; then
     print_section "Per-task gate (--quick)"
     run_check "cargo fmt (all crates)" cargo fmt --all
     run_check "step cache: self-test" bash scripts/step_cache.sh --self-test
+    run_check "the facts gate's path holds no cfg" python3 scripts/check_gate_cfg.py
+    run_check "the facts gate's path: self-test" python3 scripts/check_gate_cfg.py --self-test
     run_check "panic-pattern scan (native-theme, native-theme-derive)" \
         python3 scripts/check_panic_patterns.py native-theme/src native-theme-derive/src
     run_check "clippy (native-theme, native-theme-derive, all targets and features)" \
@@ -940,8 +1008,9 @@ if [[ $QUICK_MODE ]]; then
         bash scripts/check_strict_panic.sh -p native-theme-derive --lib
     run_tests "test (native-theme-derive)" cargo_tests -p native-theme-derive
     run_tests "test (native-theme, library)" cargo_tests -p native-theme --lib
-    run_tests "test (native-theme, layers, vectors and facts gate)" \
-        cargo_tests -p native-theme --test layers --test platform_vectors --test facts_gate
+    run_tests "test (native-theme, layers, vectors and the facts gate's fixtures)" \
+        cargo_tests -p native-theme --test layers --test platform_vectors --test facts_gate "${GATE_SKIP[@]}"
+    facts_gate_steps
     run_tests "doctests (native-theme)" cargo test -p native-theme --doc
     run_check "docs (native-theme)" env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme --no-deps
     msrv_checks
@@ -1086,6 +1155,8 @@ else
 fi
 run_check "panic-pattern scan: self-test" python3 scripts/check_panic_patterns.py --self-test
 run_check "step cache: self-test" bash scripts/step_cache.sh --self-test
+run_check "the facts gate's path holds no cfg" python3 scripts/check_gate_cfg.py
+run_check "the facts gate's path: self-test" python3 scripts/check_gate_cfg.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: cargo check
@@ -1368,6 +1439,8 @@ for crate in $WORKSPACE_CRATES; do
             probe_min=0
         fi
         run_tests_min "$probe_min" "test ($crate)" cargo_tests -p "$crate"
+    elif [ "$crate" = "native-theme" ]; then
+        run_tests "test ($crate)" cargo_tests -p "$crate" "${GATE_SKIP[@]}"
     else
         run_tests "test ($crate)" cargo_tests -p "$crate"
     fi
@@ -1378,7 +1451,8 @@ done
 # lookup. On a host with Breeze and Adwaita installed the tests that need them
 # run too; elsewhere they skip themselves.
 run_tests "test (native-theme, Linux features)" \
-    cargo_tests -p native-theme --features "$NT_FEATURES"
+    cargo_tests -p native-theme --features "$NT_FEATURES" "${GATE_SKIP[@]}"
+facts_gate_steps
 # The freedesktop stem index against freedesktop-icons' unfiltered lookup over
 # the host's installed Breeze and Adwaita themes: `#[ignore]`d for its run time
 # (~30-50 s), so the per-commit subset leaves it to the full run. On a host
