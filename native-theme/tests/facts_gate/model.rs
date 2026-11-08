@@ -795,72 +795,143 @@ impl Mentioned {
     }
 }
 
-/// A variant option, its context and the sizes it takes there.
-type VariantSizes<'m> = (Vec<String>, Option<&'m Value>, Vec<Option<String>>);
+/// A projected variant option, a context and the sizes the option takes
+/// there: one block of a state model's combinations, each of its sizes
+/// with each flag set and density ([`Space`]).
+#[derive(PartialEq)]
+pub struct Block<'m> {
+    pub variants: Vec<String>,
+    pub context: Option<&'m Value>,
+    pub sizes: Vec<Option<String>>,
+}
 
-/// Each combination of `model` under the condition vectors `vectors` (S17),
-/// projected by `mentioned` where it is given, given to `each` with its
-/// context once per distinct combination; `requires_variants` and the size
-/// rules applied, and, for the count alone (no `mentioned`, [`count`]),
-/// `not_drawn`, which the run matches as the query does. The count of
-/// combinations.
-pub fn combinations(
-    model: &Model,
-    vectors: &[Vec<String>],
-    mentioned: Option<&Mentioned>,
-    mut each: impl FnMut(Point, Option<&Value>),
-) -> u64 {
-    let Some(mentioned) = mentioned else {
-        return count(model, vectors);
-    };
-    let mut flag_sets: Vec<(Vec<String>, Vec<String>)> = Vec::new();
-    for states in state_sets(&model.states, &model.exclusive) {
-        for order in orders(&states, &model.recency) {
-            let pair = (mentioned.states_of(&states), mentioned.states_of(&order));
-            if !flag_sets.contains(&pair) {
-                flag_sets.push(pair);
+/// Each combination of a state model under one condition vector (S17),
+/// projected by what its rules and facts tell apart ([`Mentioned`]), each
+/// distinct one once: per block ([`Block`]), each of its sizes with each
+/// flag set (the flags and the order they were set in) and density;
+/// `requires_variants` and the size rules applied. The blocks `left_out`
+/// marks are not enumerated, only counted.
+pub struct Space<'m> {
+    pub flag_sets: Vec<(Vec<String>, Vec<String>)>,
+    pub densities: Vec<Option<String>>,
+    pub blocks: Vec<Block<'m>>,
+    left_out: Vec<bool>,
+}
+
+impl<'m> Space<'m> {
+    /// The combinations of `model` projected by `mentioned`, each block
+    /// `leave_out` tells left out.
+    pub fn of(
+        model: &'m Model,
+        mentioned: &Mentioned,
+        leave_out: impl Fn(&Space<'m>, &Block<'m>) -> bool,
+    ) -> Space<'m> {
+        let mut flag_sets: Vec<(Vec<String>, Vec<String>)> = Vec::new();
+        for states in state_sets(&model.states, &model.exclusive) {
+            for order in orders(&states, &model.recency) {
+                let pair = (mentioned.states_of(&states), mentioned.states_of(&order));
+                if !flag_sets.contains(&pair) {
+                    flag_sets.push(pair);
+                }
             }
         }
-    }
-    let contexts: Vec<Option<&Value>> = std::iter::once(None)
-        .chain(model.contexts.iter().map(Some))
-        .collect();
-    let spelled = |context: Option<&Value>| context.map(Value::to_string);
-    let densities = densities(model);
-    let mut variant_sizes: Vec<VariantSizes<'_>> = Vec::new();
-    for context in &contexts {
-        for variants in variant_options(model) {
-            let sizes = size_options(model, &variants, *context);
-            let entry = (mentioned.variants_of(&variants), *context, sizes);
-            if !variant_sizes.contains(&entry) {
-                variant_sizes.push(entry);
+        let contexts: Vec<Option<&Value>> = std::iter::once(None)
+            .chain(model.contexts.iter().map(Some))
+            .collect();
+        let mut blocks: Vec<Block<'m>> = Vec::new();
+        for context in &contexts {
+            for variants in variant_options(model) {
+                let block = Block {
+                    sizes: size_options(model, &variants, *context),
+                    variants: mentioned.variants_of(&variants),
+                    context: *context,
+                };
+                if !blocks.contains(&block) {
+                    blocks.push(block);
+                }
             }
         }
+        let mut space = Space {
+            flag_sets,
+            densities: densities(model),
+            blocks,
+            left_out: Vec::new(),
+        };
+        let left_out = space
+            .blocks
+            .iter()
+            .map(|block| leave_out(&space, block))
+            .collect();
+        space.left_out = left_out;
+        space
     }
-    let mut count = 0_u64;
-    for conditions in vectors {
-        for (variants, context, sizes) in &variant_sizes {
-            let written = spelled(*context);
-            for (states, order) in &flag_sets {
-                for size in sizes {
-                    for density in &densities {
-                        count += 1;
+
+    /// The number of combinations of `block`.
+    fn count_of(&self, block: &Block<'_>) -> u64 {
+        let len = |len: usize| u64::try_from(len).unwrap_or(u64::MAX);
+        len(self.flag_sets.len())
+            .saturating_mul(len(block.sizes.len()))
+            .saturating_mul(len(self.densities.len()))
+    }
+
+    /// The number of combinations, those left out among them.
+    pub fn count(&self) -> u64 {
+        self.blocks
+            .iter()
+            .map(|block| self.count_of(block))
+            .fold(0, u64::saturating_add)
+    }
+
+    /// Each combination under the condition vector `conditions` but the
+    /// left-out blocks', in order, given to `each` with its context; the
+    /// number left out.
+    pub fn each(
+        &self,
+        conditions: &[String],
+        mut each: impl FnMut(Point, Option<&'m Value>),
+    ) -> u64 {
+        let spelled = |context: Option<&Value>| context.map(Value::to_string);
+        let mut left_out = 0_u64;
+        for (block, left) in self.blocks.iter().zip(&self.left_out) {
+            if *left {
+                left_out = left_out.saturating_add(self.count_of(block));
+                continue;
+            }
+            let written = spelled(block.context);
+            for (states, order) in &self.flag_sets {
+                for size in &block.sizes {
+                    for density in &self.densities {
                         let point = Point {
-                            conditions: conditions.clone(),
+                            conditions: conditions.to_vec(),
                             context: written.clone(),
-                            variants: variants.clone(),
+                            variants: block.variants.clone(),
                             states: states.clone(),
                             order: order.clone(),
                             size: size.clone(),
                             density: density.clone(),
                         };
-                        each(point, *context);
+                        each(point, block.context);
                     }
                 }
             }
         }
+        left_out
     }
-    count
+
+    /// Whether `point` in the context `context` is one of the combinations,
+    /// those left out among them (its conditions and spelled context not
+    /// compared).
+    pub fn holds(&self, point: &Point, context: Option<&Value>) -> bool {
+        self.blocks.iter().any(|block| {
+            block.variants == point.variants
+                && block.context == context
+                && block.sizes.contains(&point.size)
+        }) && self
+            .flag_sets
+            .iter()
+            .any(|(states, order)| *states == point.states && *order == point.order)
+            && self.densities.contains(&point.density)
+    }
 }
 
 /// None and each of the entry's densities.
@@ -877,7 +948,7 @@ fn densities(model: &Model) -> Vec<Option<String>> {
 /// them names ([`names_rest`]), the latter counted once per distinct set of
 /// such entries and sizes, as the options of a widget with many variant
 /// products share a few.
-fn count(model: &Model, vectors: &[Vec<String>]) -> u64 {
+pub fn count(model: &Model, vectors: &[Vec<String>]) -> u64 {
     let flag_sets: Vec<(Vec<String>, u64)> = state_sets(&model.states, &model.exclusive)
         .into_iter()
         .map(|states| {

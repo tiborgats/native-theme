@@ -1286,7 +1286,7 @@ fn gate_fixture_not_drawn_sizes() {
     };
     let count = |text: &str| {
         let models = model::Model::read("probe", text).unwrap();
-        model::combinations(&models[0], &[Vec::new()], None, |_, _| {})
+        model::count(&models[0], &[Vec::new()])
     };
     assert_eq!(count(&state_model("")), 4);
     assert_eq!(

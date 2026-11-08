@@ -2292,6 +2292,20 @@ struct ContextElement {
     size: Option<ControlSize>,
 }
 
+/// Whether the model holds what the combination context `context` names:
+/// [`Resolved::session`] skips each combination in a context naming a
+/// widget or part it does not hold yet, once the combination's names read
+/// ([`names_read`]).
+pub fn context_held(context: &Item) -> bool {
+    !matches!(context_element(context), Err(Unread::NotHeld(_)))
+}
+
+/// Whether the names `combination` holds read, as [`Resolved::session`]
+/// reads them before its context.
+pub fn names_read(combination: &Combination) -> bool {
+    Parsed::of(combination).is_ok()
+}
+
 /// The ancestor a combination's `context` names, read.
 fn context_element(context: &Item) -> Result<ContextElement, Unread> {
     let mut table = Table::new();

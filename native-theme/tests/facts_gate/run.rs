@@ -10,14 +10,14 @@ use std::time::{Duration, Instant};
 
 use native_theme::gate::{
     Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole,
-    Tolerance, Unread, When, content_variants, is_listed_default, listed_key, parse_key,
-    parse_value, parse_when, parts, set_whole, widgets,
+    Tolerance, Unread, When, content_variants, context_held, is_listed_default, listed_key,
+    names_read, parse_key, parse_value, parse_when, parts, set_whole, widgets,
 };
 use native_theme::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
 
 use super::facts::{self, Fact, Stated};
-use super::model::{self, Mentioned, Model, Point, strings};
+use super::model::{self, Block, Mentioned, Model, Point, Space, strings};
 use super::units::Units;
 
 /// The gate's font measurement (S17 *The gate*, the design's "fixed,
@@ -1270,12 +1270,71 @@ fn combination_of(point: Point, widget: &str, context: Option<&Value>) -> Combin
     combination
 }
 
-/// A widget's state model in force for one preset and flavour: what its
-/// rules and facts tell apart, and its condition vectors.
+/// A data combination's fields, as a state model's enumeration gives them
+/// ([`combination_of`]).
+fn point_of(combination: &Combination) -> Point {
+    Point {
+        conditions: Vec::new(),
+        context: None,
+        variants: combination.variants.clone(),
+        states: combination.states.clone(),
+        order: combination.order.clone(),
+        size: combination.size.clone(),
+        density: combination.density.clone(),
+    }
+}
+
+/// Whether the gate skips each combination of `block`, of the widget
+/// `widget`'s state model whose combinations are `space`, on its context
+/// alone ([`Resolved::session`]): the context names what the model does
+/// not hold yet, and every name the block's combinations hold reads, so
+/// none is refused before its context is read (a combination's names read
+/// where each of them does).
+fn context_skips(widget: &str, space: &Space<'_>, block: &Block<'_>) -> bool {
+    let Some(context) = block.context else {
+        return false;
+    };
+    let reads = |set: &dyn Fn(&mut Combination)| {
+        let mut combination = Combination::new(widget);
+        set(&mut combination);
+        names_read(&combination)
+    };
+    !context_held(context)
+        && reads(&|combination| combination.variants.clone_from(&block.variants))
+        && space.flag_sets.iter().all(|(states, order)| {
+            reads(&|combination| {
+                combination.states.clone_from(states);
+                combination.order.clone_from(order);
+            })
+        })
+        && block
+            .sizes
+            .iter()
+            .all(|size| reads(&|combination| combination.size.clone_from(size)))
+        && space
+            .densities
+            .iter()
+            .all(|density| reads(&|combination| combination.density.clone_from(density)))
+}
+
+/// A widget's state model in force for one preset and flavour: its
+/// combinations, projected onto what its rules and facts tell apart, those
+/// the gate skips on their context alone left out ([`context_skips`]), and
+/// its condition vectors.
 struct Planned<'m> {
     entry: &'m Model,
-    mentioned: Mentioned,
+    space: Space<'m>,
     vectors: Vec<Vec<String>>,
+}
+
+impl Planned<'_> {
+    /// Whether its enumeration gives `combination`, left out or not.
+    fn gives(&self, combination: &Combination) -> bool {
+        let point = point_of(combination);
+        let context = combination.context.as_ref();
+        self.space.holds(&point, context)
+            && combination_of(point, &self.entry.widget, context) == *combination
+    }
 }
 
 /// Combinations each held once, in the order first given, told apart by a
@@ -1309,48 +1368,68 @@ impl Distinct {
 }
 
 /// A condition vector's combinations, given in turn to the function it is
-/// called with ([`plan_vector`]).
-type Combinations<'c> = dyn Fn(&mut dyn FnMut(Combination)) + 'c;
+/// called with, and the number of those left out, which the gate skips
+/// ([`plan_vector`]).
+type Combinations<'c> = dyn Fn(&mut dyn FnMut(Combination)) -> u64 + 'c;
+
+/// The state models of `planned` whose vectors hold `vector`, one per
+/// widget, and the combinations of `own`, the facts' own `when`s', that
+/// none of their enumerations gives.
+fn vector_plan<'p, 'm>(
+    planned: &'p [Planned<'m>],
+    own: Option<&'p Distinct>,
+    vector: &[String],
+) -> (Vec<&'p Planned<'m>>, Vec<&'p Combination>) {
+    let models: Vec<&Planned<'_>> = planned
+        .iter()
+        .filter(|planned| planned.vectors.iter().any(|held| held == vector))
+        .collect();
+    let rest = own
+        .iter()
+        .flat_map(|own| &own.held)
+        .filter(|combination| !models.iter().any(|planned| planned.gives(combination)))
+        .collect();
+    (models, rest)
+}
 
 /// The widget combinations of the condition vector `vector`, each once,
 /// given to `each` as they are enumerated: each state model's of `planned`
 /// whose vectors hold `vector`, in turn (one model per widget, each giving
-/// each of its combinations once, [`model::combinations`]), then each of
-/// `own`, the facts' own `when`s', that none of them gave.
+/// each of its combinations once, [`Space::each`]), then each of `own`,
+/// the facts' own `when`s', that none of them gives. Those the gate skips
+/// on their context alone are left out, never enumerated
+/// ([`context_skips`]); the number of them.
 fn plan_vector(
     planned: &[Planned<'_>],
     own: Option<&Distinct>,
     vector: &[String],
     each: &mut dyn FnMut(Combination),
-) {
-    let mut given = vec![false; own.map_or(0, |own| own.held.len())];
-    let vectors = [vector.to_vec()];
-    for planned in planned
-        .iter()
-        .filter(|planned| planned.vectors.iter().any(|held| held == vector))
-    {
+) -> u64 {
+    let (models, rest) = vector_plan(planned, own, vector);
+    let mut left_out = 0_u64;
+    for planned in models {
         let widget = &planned.entry.widget;
-        model::combinations(
-            planned.entry,
-            &vectors,
-            Some(&planned.mentioned),
-            |point, context| {
-                let combination = combination_of(point, widget, context);
-                if let Some(slot) = own
-                    .and_then(|own| own.position(&combination))
-                    .and_then(|at| given.get_mut(at))
-                {
-                    *slot = true;
-                }
-                each(combination);
-            },
-        );
+        left_out = left_out.saturating_add(planned.space.each(vector, |point, context| {
+            each(combination_of(point, widget, context));
+        }));
     }
-    for (combination, given) in own.iter().flat_map(|own| &own.held).zip(given) {
-        if !given {
-            each(combination.clone());
-        }
+    for combination in rest {
+        each(combination.clone());
     }
+    left_out
+}
+
+/// The number of the widget combinations of the condition vector `vector`
+/// ([`plan_vector`]), those left out among them.
+fn vector_count(planned: &[Planned<'_>], own: Option<&Distinct>, vector: &[String]) -> u64 {
+    let (models, rest) = vector_plan(planned, own, vector);
+    models
+        .iter()
+        .map(|planned| planned.space.count())
+        .chain(std::iter::once(
+            u64::try_from(rest.len()).unwrap_or(u64::MAX),
+        ))
+        .fold(0, u64::saturating_add)
 }
 
 /// Runs the gate over the facts root `root` for `presets`, each with the
@@ -1416,7 +1495,7 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
                 &entry.axis_conditions,
                 &["light".to_owned(), "dark".to_owned()],
             );
-            let count = model::combinations(entry, &vectors, None, |_, _| {});
+            let count = model::count(entry, &vectors);
             report.combinations.insert(
                 format!("{} {} {:?}", entry.file, entry.widget, entry.conditions),
                 count,
@@ -1817,9 +1896,12 @@ fn check(
         );
         let vectors = model::condition_vectors(&entry.axis_conditions, &schemes);
         global_vectors.extend(vectors.iter().cloned());
+        let space = Space::of(entry, &mentioned, |space, block| {
+            context_skips(&entry.widget, space, block)
+        });
         planned.push(Planned {
             entry,
-            mentioned,
+            space,
             vectors,
         });
     }
@@ -1862,13 +1944,9 @@ fn check(
     vectors.extend(own.keys().cloned());
     let vectors: Vec<Vec<String>> = vectors.into_iter().collect();
     let plan = |vector: &[String], each: &mut dyn FnMut(Combination)| {
-        plan_vector(&planned, own.get(vector), vector, each);
+        plan_vector(&planned, own.get(vector), vector, each)
     };
-    let count = |vector: &[String]| {
-        let mut count = 0_u64;
-        plan(vector, &mut |_| count += 1);
-        count
-    };
+    let count = |vector: &[String]| vector_count(&planned, own.get(vector), vector);
     let root = root_inputs();
     // As many vectors checked at once as there are threads, the threads
     // shared among those being checked ([`Threads`]); those the state
@@ -2590,13 +2668,14 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
         }
     };
     let mut chunk: Vec<Combination> = Vec::new();
-    combinations(&mut |combination| {
+    let left_out = combinations(&mut |combination| {
         chunk.push(combination);
         if chunk.len() >= PROBED_BY_THREAD.saturating_mul(run.threads.each()) {
             probe_chunk(&mut chunk, report);
         }
     });
     probe_chunk(&mut chunk, report);
+    report.combinations_skipped += left_out;
     // The distinct ones compared in chunks too, each chunk's findings
     // merged in order before the next is compared.
     let threads = run.threads.each();
