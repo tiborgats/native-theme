@@ -104,6 +104,108 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
     crate::pipeline::OsVersion::new(v.major, v.minor, v.build)
 }
 
+/// COM's multithreaded apartment, kept for the process from the first call
+/// to the process's end: `CoIncrementMTAUsage`, once, on a thread of its
+/// own, its cookie never given back; the failure where it failed. Called
+/// before every stock icon load (`winicons`) and every start of the Windows
+/// watcher (`watch::windows`).
+///
+/// When the last thread uninitializes COM in the process, COM unloads the
+/// servers it loaded (`ProcessUninitialize`, `CleanUpDllsForProcess`) and
+/// refuses COM work starting on other threads meanwhile. A stock icon load
+/// runs on the caller's thread, which this crate does not own: on one that
+/// has not initialized COM, the load uses the MTA another thread keeps ("A
+/// thread has an implicit MTA apartment type if it does not initialize the
+/// COM apartment itself, and if another thread has already initialized the
+/// MTA in the process",
+/// <https://learn.microsoft.com/en-us/windows/win32/api/objidlbase/ne-objidlbase-apttypequalifier>),
+/// and the shell's server it runs in (`thumbcache.dll`) was unloaded under
+/// it, an access violation (CI run 42554706381, the Windows watcher's thread
+/// uninitializing). The Windows watcher's thread initializes and
+/// uninitializes its own apartment: its start failed where another
+/// thread's uninitialization was the last (0x8000000E, "the application is
+/// exiting", and 0x80080008, `CO_E_SERVER_STOPPING`; CI run 42556588847),
+/// and its own, where it was the last, shut COM down under the process's
+/// other COM work. `CoIncrementMTAUsage` is COM's call for an API that
+/// "requires COM to be initialized, but has no information about whether
+/// the current thread is already in an apartment, and does not need the
+/// current thread to go into a particular apartment"; it "ensures that the
+/// system doesn't free resources related to MTA support, even if the MTA
+/// thread count goes to 0"
+/// (<https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coincrementmtausage>).
+/// Kept for the process, no thread's uninitialization is the last.
+#[cfg(all(
+    target_os = "windows",
+    any(feature = "system-icons", all(feature = "windows", feature = "watch"))
+))]
+pub(crate) fn mta_kept() -> Result<(), &'static str> {
+    static KEPT: std::sync::OnceLock<Result<(), String>> = std::sync::OnceLock::new();
+    KEPT.get_or_init(|| {
+        // On a thread of its own: the call puts a thread in no apartment
+        // into the MTA, and the caller's thread is left as it is. The usage
+        // outlives the thread (its cookie may be given back from any other).
+        let keeper = std::thread::Builder::new()
+            .spawn(|| {
+                // SAFETY: CoIncrementMTAUsage writes its cookie into a value
+                // the binding owns and returns; it is not called during
+                // process shutdown or from DllMain, which its documentation
+                // rules out. The cookie is dropped without
+                // CoDecrementMTAUsage: the usage is kept for the process, on
+                // purpose.
+                unsafe { ::windows::Win32::System::Com::CoIncrementMTAUsage() }
+                    .map(|_kept_for_the_process| ())
+                    .map_err(|err| err.to_string())
+            })
+            .map_err(|err| format!("no thread to call it on: {err}"))?;
+        keeper
+            .join()
+            .map_err(|_| "its thread panicked".to_owned())?
+    })
+    .as_ref()
+    .copied()
+    .map_err(String::as_str)
+}
+
+/// Runs `test` while another thread joins the process's multithreaded
+/// apartment and leaves it again and again, as other COM users of a process
+/// may: each leaving is the process's last uninitialization of COM unless
+/// something keeps it ([`mta_kept`]).
+#[cfg(all(
+    test,
+    target_os = "windows",
+    any(feature = "system-icons", all(feature = "windows", feature = "watch"))
+))]
+pub(crate) fn while_another_thread_leaves_the_mta<R>(test: impl FnOnce() -> R) -> R {
+    use ::windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize};
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    /// Sets its flag when dropped: the test's end, or its unwinding.
+    struct SetOnDrop<'a>(&'a AtomicBool);
+    impl Drop for SetOnDrop<'_> {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::Relaxed);
+        }
+    }
+
+    let done = AtomicBool::new(false);
+    std::thread::scope(|scope| {
+        scope.spawn(|| {
+            while !done.load(Ordering::Relaxed) {
+                // SAFETY: a successful CoInitializeEx, S_FALSE included, is
+                // balanced by one CoUninitialize on this thread, with no COM
+                // object created between them.
+                unsafe {
+                    if CoInitializeEx(None, COINIT_MULTITHREADED).is_ok() {
+                        CoUninitialize();
+                    }
+                }
+            }
+        });
+        let _running = SetOnDrop(&done);
+        test()
+    })
+}
+
 /// The eight `GetSysColor` colours WinUI's `HighContrast` theme dictionaries
 /// draw with, each a `SystemColor*Color` resource, `GetSysColor` of its
 /// index (`microsoft-ui-xaml@2.5.1

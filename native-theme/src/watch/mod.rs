@@ -388,7 +388,8 @@ impl Debounce {
 /// (it does not exist, or the inotify limits are reached); GNOME, Budgie and
 /// the portal-only desktops, the watcher thread could not connect to the
 /// session bus or subscribe to the portal's `SettingChanged` signal;
-/// Windows, the watcher thread did not start or could not subscribe to
+/// Windows, COM's multithreaded apartment could not be kept for the process,
+/// or the watcher thread did not start or could not subscribe to
 /// `UISettings::ColorValuesChanged` or `TextScaleFactorChanged`. The KDE
 /// backend sets up its watch on the calling thread, and the GNOME and
 /// Windows backends return only once their thread is subscribed.
@@ -1140,6 +1141,23 @@ mod tests {
     #[test]
     fn windows_subscribe_and_drop_returns() {
         assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
+    }
+
+    /// After a first subscription, the watcher starts and drops two hundred
+    /// times while another thread joins the process's multithreaded
+    /// apartment and leaves it again and again. Each leaving would be the
+    /// process's last uninitialization of COM unless something keeps it, and
+    /// a watcher starting meanwhile fails (0x8000000E, "the application is
+    /// exiting"; CI run 42556588847). The first subscription comes before the
+    /// other thread starts, so that, with the MTA kept, its leaving never
+    /// uninitializes COM in the process under another test's COM work.
+    #[cfg(all(target_os = "windows", feature = "watch", feature = "windows"))]
+    #[test]
+    fn windows_subscribe_and_drop_returns_while_another_thread_leaves_the_mta() {
+        assert_subscribe_and_drop_returns(1, std::time::Duration::from_secs(5));
+        crate::windows::while_another_thread_leaves_the_mta(|| {
+            assert_subscribe_and_drop_returns(200, std::time::Duration::from_secs(5));
+        });
     }
 
     /// A few rounds keep the test short.
