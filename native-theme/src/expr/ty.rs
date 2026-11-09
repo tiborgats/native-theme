@@ -1620,6 +1620,12 @@ mod tests {
         ] {
             assert_eq!(typed(text, Ty::Color), Ty::Color, "{text}");
         }
+        // `kirigami_label_icon_size` is implemented: a length, over the body
+        // font's height as S2.2 has it called.
+        assert_eq!(
+            typed("kirigami_label_icon_size(body_font_height)", Ty::Length),
+            Ty::Length
+        );
     }
 
     #[test]
