@@ -2643,7 +2643,8 @@ changes a fill is a `{focus_visible}` rule, R12).
 **The underline** (ADD-A146). An `Underline` is that ring's bottom side alone: a line `width` high whose top edge
 lies `offset.bottom` below the bottom edge of the part's box (above it where negative), reaching from the box's
 left edge moved out by `offset.left` to its right edge moved out by `offset.right`, in `paint` and `dash`.
-`offset.top` places nothing and is stated `0px`. Its `corners` round the four corners of the line's own rectangle,
+`offset.top` places nothing and is stated `0px`, a zero by omission (S17), as the sides of a margin that place
+nothing are (the catalogue's `menu_indicator_anchor`). Its `corners` round the four corners of the line's own rectangle,
 a `Full` corner half that rectangle's smaller side; `FollowPart`, which follows an outline the line does not, is
 refused under `Underline` (S12). Its `shadow` is cast by the line's rectangle, and it enters, leaves and is timed as
 a ring is (below). It is Breeze's focus line, a pen line along the bottom edge of the label's text rect, moved down
