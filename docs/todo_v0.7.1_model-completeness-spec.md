@@ -35,7 +35,14 @@ platform is stated here: values come from the facts (S17) in the value phase.
   (`color`, `center`, `minimize`), as the code does; prose is British.
 - **Units.** `Px(f32)`, logical pixels; `Ms(f32)`, milliseconds; `Deg(f32)`, degrees; `Fraction(f32)`, `0..=1`
   (opacities, amounts); plain `f32` for unitless numbers (scales, factors) and for velocities (px per second, stated
-  at the field); colours extended sRGB (S2.1). `Scalar` is `Px | Ms | Deg | Fraction | Number(f32)`, for keyed
+  at the field); colours extended sRGB (S2.1). `Ms` is a duration: a point in time the motion runtime takes (S2.7's
+  `Motion` and `MotionUpdate`) is a `std::time::Duration` counted from an origin the connector fixes, never an `Ms`,
+  whose `f32` no longer holds the millisecond after 4.7 hours (2^24 ms), so a run's elapsed time, the difference of
+  two such points, would move in steps of 2 ms and more (ADD-A146; rejected: an `f64` newtype in ms, a second time
+  type where the toolkits hold or convert to a `Duration`; `Ms` with an origin the connector moves, which a `Motion`
+  holding runs of different starts cannot follow). The ripple's `start_uptime` stays an `Ms`: it is the single
+  Android itself converts the uptime to for its noise phase, no point a difference is taken from (S2.12). `Scalar` is
+  `Px | Ms | Deg | Fraction | Number(f32)`, for keyed
   values whose unit their declaration states (S10). A length may be negative only where its field says so (offsets,
   translations, letter and word spacing, a margin, a shadow layer's `spread`, S2.5); elsewhere a negative result is
   zero (S2.2).
@@ -46,7 +53,8 @@ platform is stated here: values come from the facts (S17) in the value phase.
 - **`#[non_exhaustive]`** (R21): every public struct has it, except the closed value structs (`Color`, `Sides`,
   `Axes`, `Rect`, `Size`, `Point`, `ViewBox`, `TiledEdges`, `SetMatch`, `OutlineCorners`, and the newtypes `Px`, `Ms`,
   `Deg`, `Fraction`, `Key`) and the inputs their caller fills in full (a connector: `WindowConditions`, `RootInputs`
-  and the `SizeClasses` in it, `Sibling`, `PlacementInput`, `SystemAppearance`; a reader or a stand-in application:
+  and the `SizeClasses` in it, `Sibling`, `PlacementInput`, `SystemAppearance`, and `MotionUpdate`, each field of
+  which the runtime reads (S2.7; ADD-A146; `Drawn`, which only `Motion::sample` makes, keeps the attribute); a reader or a stand-in application:
   `ReaderState`; a caller of `fonts::select_face`, the egui connector and `system_face`: `FaceTraits`, one candidate
   face described in full, each field an operand of the match, ADD-A134), so a field added
   later breaks every such caller's build, as a new enum variant does (R21);
@@ -460,7 +468,7 @@ refuses nothing that check would pass, and the check refuses what the merge cann
 | `ka_card_border(background, text)`, `ka_banner_line(type_text, frame)`, `ka_contrast_text(c)` | colour | kirigami-addons' FormCard background, banner and avatar code (ADD-A66): `ka_card_border` is `qt_darker(background, 120)` (QML's `Qt.darker(background, 1.2)`) where `background` is dark (alpha above 0, luma at most 0.6) and `kirigami_lerp(background, text, 0.15)` otherwise (`kirigami-addons@1.15.0 src/formcard/private/FormCardBackground.qml:16-23`); `ka_banner_line` is `type_text`'s HSL hue and saturation at `frame`'s HSL lightness, opaque (`src/components/Banner.qml:239-255`) |
 | `kqc_series_color(seed, count, index)`, `kte_minimap_mark(mark, background)`, `kte_mark_underlay(hue_from, background, foreground)` | colour | KQuickCharts' `ColorGradientSource.cpp`, KTextEditor's `kateviewhelpers.cpp`: the marks' HSV recolouring, and their underlay in HSL (one colour's hue and saturation at the background's lightness moved toward the foreground, K-P3-12†) (ADD-A57, ADD-A90) |
 | `sf_tracking(font_size, design: TrackingDesign)` | length | Apple's size-to-tracking tables for SF Pro, SF Pro Rounded, New York (ADD-A54); `TrackingDesign = SfPro \| SfProRounded \| NewYork`. The tables are the HIG's (`hig-typography@2026-02-09`, `typography.json`: *SF Pro*, *SF Pro Rounded*, *New York*, the macOS one, *macOS tracking values*, giving SF Pro's values), each row a size in points and a tracking in 1/1000 em; the function reads the 1/1000 em column, the points column being that value times the size, rounded to two places (it differs only there, SF Pro's 52 and 53 pt swapped against the macOS table's): `font_size` in points (S9.4's DPI, as `round_pt` converts it), the tracking `t(size) · size / 1000` points, converted back to px. A size between two rows takes `t` linearly interpolated between them, one below the first row or above the last that row's `t`: the HIG states that the system font "dynamically adjusts tracking at every point size" (its *Typography*, the developer note on mockups), so the tracking is continuous in the size, and interpolation gives each row's value at its size exactly. Rejected: the nearest or the next lower row (a step the platform does not draw, no source); measuring Core Text's tracking at every size (a probe read the slice does not need, its sizes being the table's; ledger queue #154) |
-| `uikit_prominence(c, prominence: UiProminence)` | colour | `UIColor.withProminence(_:)` (X-CO-5); `UiProminence = Primary \| Secondary \| Tertiary \| Quaternary`, `UIColor.Prominence`'s cases as the gap map's X-CO-5 row states them from Apple's documentation (read 2026-10-28); the iOS lane confirms them against the pinned Xcode's `UIColor.h` (ADD-A121) |
+| `uikit_prominence(c, prominence: UiProminence)` | colour | `UIColor.withProminence(_:)` (X-CO-5); `UiProminence = Primary \| Secondary \| Tertiary \| Quaternary`, `UIColor.Prominence`'s four cases (`UIColorProminencePrimary` … `Quaternary`, `xcode@26.6 UIKit/UIColor.h:23-28`; ADD-A121, the header read for ADD-A146) |
 | `gtk_contrast_pick(c, on_light, on_dark)` | colour | `on_light` where GTK finds `c` light, else `on_dark`, to `gtkcolorswatch.c`'s lightness test (GN-2.27) |
 | `shadow_extent(shadow, side: BoxSide)` | length | how far a shadow reaches beyond the box on that side, over its layers, to GTK's `gtk_css_shadow_value_get_extents` (GN-1.282†); `BoxSide = Top \| Right \| Bottom \| Left`, a physical side, as a shadow's offsets are physical (S2.4, S2.5): a value it gives to a `Sides` field, which mirrors, is restated by a rule under `dir rtl` (ADD-A121) |
 | `gtk_wheel_step(page_size)` | length | GTK's scroll step, the page size to the power 2/3, to `gtk@4.24.1 gtk/gtkscrolledwindow.c:1206-1228` (GN-P3-15†; a range's wheel step is its adjustment's page increment, the application's, `gtk/gtkrange.c:1888-1896`, not this function; ADD-A130) |
@@ -526,14 +534,14 @@ A function is added to this table only with the platform rule that needs it and 
 function treats a translucent input (mixes, keeps or ignores alpha) is read from its source in the value phase and
 recorded in its facts (R5.4). A platform
 that computes a stored colour by composition (KDE's `overlayColors`) gets a function; composition drawn over what
-lies beneath is a paint layer (R5.4, R6). Type checking: every operand and result is typed (colour, length,
-duration, angle, number, font size, text, bool, name); a name operand is checked against the enum or declared key
+lies beneath is a paint layer (R5.4, R6). Type checking: every operand and result is typed (*Typing*'s operand
+types, above, `enum<E>`, shadow and paint among them); a name operand is checked against the enum or declared key
 set the function's parameter names (`design: TrackingDesign`, `group: KdeGroup`, `role_kind: KdeRoleKind`, `kde_accent`'s `key: KdeSchemeKey`,
 `kde_shade`'s `role: KdeShadeRole`, `uikit_prominence`'s `prominence: UiProminence`, `shadow_extent`'s `side: BoxSide`,
 `kde_accent_wm`'s `key: KdeWmKey`;
 `m3_role`'s `role` is a declared keyed colour role, `uifm_scaled`'s `text_role` a `TextRoles` slot or a declared text
-style); a bare number takes the type of
-the other operand; `mul(T, number)`, `div(T, number)`, `div(T, T)` (a number), `add(T, T)`, `sub(T, T)`, `min(T, T)`, `max(T, T)`, `floor(T)` and `round(T)` give a `T`, and `round_pt` takes and gives a font size;
+style); in `add`, `sub`, `min` and `max`, and only there, a bare number takes the type of
+the other operand (*Typing*; in `mul` and `div` a number operand stays a number, so `div(4px, 2)` is a length; ADD-A146); `mul(T, number)`, `div(T, number)`, `div(T, T)` (a number), `add(T, T)`, `sub(T, T)`, `min(T, T)`, `max(T, T)`, `floor(T)` and `round(T)` give a `T`, and `round_pt` takes and gives a font size;
 where one operand of `add`, `sub`, `min` or `max` is a font size and the other a length, the length is taken as px
 and the result is a font size (S2.2's operand types, as M1a task 2 implemented it, ADD-A121);
 a mismatch is an error when the layer is added (S12). A function that reads inputs or reader values itself
@@ -708,7 +716,7 @@ composite mode as WinUI's `UIElement.CompositeMode` sets it (a field on every pa
 own fill states); the caret stated inexactly, white or the text's colour (white vanishes over a light field, the
 text's colour differs over a selection or a dark background).
 
-**A layer over the border** (ADD-A134). A part's `fill` is drawn beneath its stroke, so a layer the platform draws
+**A layer over the border** (ADD-A134). A part's `fill` is drawn beneath its stroke (S2.11's *Drawing order*), so a layer the platform draws
 over the whole box, its border included, is appended to the `fill` and to the paint of each drawn edge alike: both
 are drawn in the box's coordinates (above), so a gradient so appended has the same colour at a border pixel in
 either, and the border shows it over its own colour as the platform draws it. qqc2-desktop-style's `RoundButton`
@@ -741,7 +749,8 @@ pub enum CornerCurve { Circular, Continuous }
 pub struct Stroke { pub top: Edge, pub right: Edge, pub bottom: Edge, pub left: Edge,
                     pub position: StrokePosition,
                     pub outset: Value<Px>,       // the gap between the box and an `Outside` stroke (iOS's
-                                                 // `strokeOutset`, CD-1); absent where no outset is drawn
+                                                 // `strokeOutset`, CD-1); absent on an `Inside` or `Center`
+                                                 // stroke only, where it has no meaning (below; ADD-A146)
                     pub fill_clip: FillClip }    // how far the part's fill reaches under the stroke (ADD-A121)
 pub struct Edge { pub width: Value<Px>, pub paint: Value<Paint>, pub dash: Value<DashPattern>,   // ADD-A32
                   pub snap: PixelSnap }                                                    // ADD-A33
@@ -802,8 +811,8 @@ pub fn follow_part(part_radius: Px, offset: Px) -> Px;                          
 
 A `Concentric` corner's container is the nearest enclosing part or element whose catalogue entry lists `corners`,
 decided by the catalogue, not by resolved values (a root that lists no corners, one that draws nothing, is skipped;
-a full-screen part's container is the display, S4.6). The container's own corners may be `Full`,
-`Concentric` or `FollowPart`, numbers only after layout (iOS 26 nests concentric containers): the `Scope` identifies
+a full-screen part's container is the display, S4.6). The container's own corners may be `Full` or
+`Concentric`, numbers only after layout (iOS 26 nests concentric containers): the `Scope` identifies
 the container and holds its stated corners (S8), and the connector passes as `container_radius` the radius it
 computed for the container's matching corner, which it has, as it lays out and queries top-down. A square container,
 or the display with no radius (S4.6), passes 0, so the corner is its minimum, or square without one. `inset` is, per
@@ -891,7 +900,16 @@ stated `Center` with `Box` (it would move the pen's outer half outside the box);
 inexactness (the difference shows under a see-through pen, Breeze's flat button fading its hover pen,
 `breezehelper.cpp:714-725`); a fill inset of its own length (a field for one platform's half width). The
 difference shows where the stroke is translucent (WinUI's elevation strokes, W1-018). A stroke `Absent` has no
-`fill_clip`: the fill covers the box. A change of it takes effect at once (an enum, S2.7).
+`fill_clip`: the fill covers the box. A change of it is a change of a value with no interpolation (an enum; S2.7's
+*A value with no interpolation*): at once where no transition times the `Stroke` group, else as its run leaves its
+delay.
+
+**The outset** (`Stroke.outset`; ADD-A146). On an `Outside` stroke it is a length, `0px` where the stroke lies at
+the box's edge, a platform with no such property stating that zero by omission, cited as an absence (S17), never
+`Absent`: an `Outside` stroke with no gap is one look and has one spelling, as a text with no added spacing has
+(S6.3). On an `Inside` or `Center` stroke, which no gap moves, the field has no meaning and is `Absent`, its one
+spelling there (S12 refuses an outset `Absent` where the stroke's `position` is `Outside` and stated where it is
+not).
 
 TOML shorthands: `corners_px = <n>` sets the four corners to the plain radius `Radius::Px` (no other variant has a
 shorthand: a capsule states each corner, `top_left = { full = { maximum_px = … } }`, S11); the curve beside it is
@@ -915,15 +933,32 @@ are not mirrored under right-to-left, as CSS's physical `border-*-radius` and `b
 neither is a shadow's `x` offset (S2.5). A platform that mirrors one of them (a segmented control's first segment
 rounding its start corners in either direction, a sidebar pane's stroke on its content side) states it by a rule
 under the direction (`dir rtl`, S7). What mirrors with the layout is the layout's own geometry, `Sides` (S1),
-alignments (`Alignment`, and the start and end of every other alignment value), placement (S13: `PlacementSide`,
-`PlacementAlign`, and its `Sides`), a presentation's start or end edge (`EdgeSide`), and of a part's drawing only a
+every value naming a horizontal end of the layout by `Start`, `End`, `Leading` or `Trailing` (*Who mirrors*, below:
+`Alignment` and the catalogue's other enums; placement, S13: `PlacementSide`, `PlacementAlign`, and its `Sides`; a
+presentation's start or end edge, `EdgeSide`), and of a part's drawing only a
 translation (a transform's `translate_x`, a presentation's `Translate.dx`), for S2.6's reason: it is a displacement
 in the mirrored layout, while a corner, an edge, a transform's origin or a light source belongs to the drawing.
 
 **Who mirrors: the query.** Values are stated for a left-to-right layout; the query returns them physical, already
 mirrored for the element's direction (its own, else its scope's, S8): for `rtl` it swaps `left` and `right` in
-`Sides`, swaps `Start` and `End` in the alignments, `PlacementSide`, `PlacementAlign` and `EdgeSide` it lists above,
-and negates `translate_x` and `Translate.dx`, so in a resolved value `left` and `Start` are the physical left. A
+`Sides`, negates `translate_x` and `Translate.dx`, and swaps `Start` with `End` and `Leading` with `Trailing`
+wherever a part style, a widget value or a token it returns for the element holds a variant so named, of the
+core's `EdgeSide`, `PlacementSide` and `PlacementAlign` and of every enum the catalogue declares (its shared value
+types, `Alignment` and `Side` among them, and each entry's own). The test is the variant's name (ADD-A146): the
+word alone or one of the words of an `UpperCamelCase` name is swapped for its counterpart (`Start` and `End`,
+`Leading` and `Trailing`, `TopEnd` and `TopStart`, `EndColumn` and `StartColumn`, `TrailingInline` and
+`LeadingInline`; `BothEnds` holds none of the four). So in those enums the four words name a horizontal end of the
+layout and nothing else, and every variant holding one has its counterpart in the same enum, which
+`scripts/generate_widgets.py --check` refuses a catalogue enum without; a counterpart no preset states for the
+left-to-right layout is there as the query's right-to-left result. The `vertical` member of an `Axes` is not
+swapped, a vertical alignment's `Start` being the top in either direction, and neither is a text's `Elision`
+(S2.8), whose `Start` and `End` are the text's own ends and follow the text's direction, not the layout's (as
+Pango's ellipsize modes name them, `pango@1.58.2 pango/pango-layout.h:100-102`). So in a resolved value `left`,
+`Start` and `Leading` are the physical left. Rejected: the swap only in an enum holding both words whole (the
+generator's first test: it left `TopEnd` and `EndColumn` logical beside a physical `Side::End`, two meanings of one word
+in resolved values, with no list telling a connector which enums it must mirror itself); every start and end value
+returned logical, numbers alone mirrored (it reopens ADD-A112, and each connector then mirrors what its toolkit
+does not). A
 rule under `dir rtl` states these values the same way, for the left-to-right layout, and the query mirrors them with
 the rest, so a platform that keeps one unmirrored states its mirror image there (a translation kept: the rule's
 `translate_x` negated); the physical values (corners, stroke edges, shadow offsets, paints, the origin) a rule under
@@ -954,7 +989,8 @@ pub enum ShadowFalloff { Gaussian,             // CSS's: a Gaussian blur, its de
 **Layer order** (ADD-A141; the GN-C1 verifier's question). `Layers` lists its layers bottom first, as `Paint`
 does (S2.3), each painted over the ones before it, so the model has one order for every list of layers; the layers
 without `inset` are painted beneath the part's fill and the inset layers over it, beneath its stroke, as CSS paints a
-`box-shadow` (W3C CSS Backgrounds and Borders Level 3, *Drop Shadows*). A CSS `box-shadow` list paints its first
+`box-shadow` (W3C CSS Backgrounds and Borders Level 3, *Drop Shadows*; the part's whole order is S2.11's *Drawing
+order*). A CSS `box-shadow` list paints its first
 shadow on top, so a fact states it reversed (libadwaita's `0 0 0 1px $border_color, 0 1px 3px 1px …, 0 2px 6px 2px
 …` the widest layer first); material-web's elevation, its `::before` shadow beneath its `::after`, is already bottom
 first. A part a platform draws from two nodes of one box (GTK's menu button, the outer `menubutton` node and its inner
@@ -1054,6 +1090,16 @@ pub struct Transform { pub scale_x: Value<f32>, pub scale_y: Value<f32>, pub rot
                                                                // corner, physical (below)
 ```
 
+**How the components compose** (ADD-A146). As CSS's individual transform properties do (W3C CSS Transforms Level 2,
+`translate`, `rotate` and `scale`, followed directly): about `origin`, the part is scaled, then rotated, then
+translated, so the translation is in the layout's own axes, neither scaled nor rotated, and a part moved and turned
+together is turned about its own origin and then moved. A positive `rotate` turns clockwise as drawn, y pointing
+down, as S2.3's angles count; a source that counts the other way (a y-up coordinate system, AppKit's unflipped
+views) is stated negated. A transition or a loop interpolates each component apart. Rejected: the components as
+successive canvas calls in the struct's order (the translation would be scaled and turned with the part, where it
+is a displacement in the layout, the reason it mirrors, below; the two readings differ as soon as two components
+are set together).
+
 A transform's translation is stated for a left-to-right layout and mirrored with it, as `Sides` and alignments are,
 the one part of a part's drawing that mirrors (S1, S2.4, R16):
 under right-to-left the query returns `translate_x` negated (S2.4), so a part moved toward its end moves toward the
@@ -1112,6 +1158,8 @@ pub enum TransitionEngine {                   // closed; each implemented once i
     ComposeAnimatable,                        // Compose's Animatable.animateTo (animate*AsState, the state
                                               // layer, the elevation)
     ComposeTransition,                        // a child animation of Compose's updateTransition
+    ComposeShapeMorph,                        // Compose's AnimatedShapeState, its corners' morph: a reversal
+                                              // keeps the velocity, another target starts at rest (S2.7; ADD-A146)
     ComposeHeld,                              // ButtonGroup's press fraction, its run back held (S2.7)
     WinUi,                                    // WinUI's brush transitions and visual-state storyboards
     WinUiAnimatedIcon { visual: Key },        // WinUI's AnimatedIcon player (a `Keyed` icon transition), its
@@ -1181,14 +1229,14 @@ whole icon whose animation is other than absent) would have no effect, and S12 r
 
 Semantics (R9): the query is stateless: the connector compares successive query results per element and part, and
 a transition starts when a property's resolved value changes (under the value engines; Breeze's start on their test,
-`GtkSwitch` on an activation, `ComposeHeld` on `pressed` becoming kept and `WinUiAnimatedIcon` on a change of its
-governing key, *The engine*, below; ADD-A126);
+`GtkSwitch` on an activation, `ComposeHeld` on `pressed` becoming kept, `WinUiAnimatedIcon` on a change of its
+governing key and `CssAnimation` as its block or part becomes drawn, *The engine*, below; ADD-A126, ADD-A146);
 the transition stated by the style
 after the change governs, both directions; among that style's transitions for a property group that apply (`from`,
 below), the later in stated order wins, a later rule's over an earlier one's and over the base's; a property
 whose group has no transition that applies in that style takes its new value at once, in the frame of the change (no
 transition is no animation, never a toolkit's default one); appearing
-layers interpolate from transparent black (`#00000000`) and vanishing ones to it, layers match by stack position, colours interpolate in the space
+layers interpolate from transparent black (`#00000000`) and vanishing ones to it (but under `WinUi`, whose member states both, *The engine*, below), layers match by stack position, colours interpolate in the space
 `token.motion.color_space` names (*Colour interpolation*, below; ADD-A125); a
 stroke or an edge whose width becomes absent (the whole stroke stated `Absent`, or the edge) interpolates to zero width
 and its paint to transparent black, and one that appears from them, a width interpolated to zero or below ending it (Compose's
@@ -1201,7 +1249,8 @@ reading**, so a platform that reaches the new value by running an animation back
 value) to its start value (the new), with a curve `f` (Qt's `Backward` direction, which applies `f` to the time
 remaining) states the curve `1 − f(1 − t)`, the in-cubic run backward being the
 out-cubic (ADD-A122);
-a material giving way to a colour crossfades. A part hidden at rest is a `shown` part exactly when its source
+a material giving way to a colour crossfades, as any two matched layers of different kinds do, and a value with
+nothing between its two takes the new one as the run leaves its delay (*A value with no interpolation*, below). A part hidden at rest is a `shown` part exactly when its source
 animates its entrance or its exit (it draws it on, grows, trims, fades or slides it in or out by state): it states
 `shown = false` where it is hidden, its hidden style holding the values it enters from and leaves to (*A part not shown at rest*, below);
 otherwise it is `Absent` where it is hidden (a part drawn at rest at zero or transparent values, Material's rail
@@ -1259,6 +1308,34 @@ mark, W1-039); under it a change of the group's other values takes effect at onc
 `DiscreteObjectKeyFrame`, `CommonStyles/CheckBox_themeresources.xaml:319-321`); a repeating one is
 `IconStyle.animation` (R25.12).
 
+**A value with no interpolation** (ADD-A146). Under an `Interpolate` transition a number, a length, an angle and
+a colour move between their two values, and so does what a section gives a way between: a corner by the radii the
+connector computes for it, whatever its `Radius` kind, and an outline by `morph` (S2.4), matched layers of one
+kind (S2.3, S2.5; above), a glyph's `Path` of the same commands (*The glyph's drawing apart*, below). A leaf with
+nothing between its two is any other: a plain enum (a stroke's `position` and `fill_clip`, a corner's `curve`, a
+layer's `blend`, a text's `case`, `wrap` and `elision`, a glyph stroke's `cap`), a bool, a key, a string (a font's
+family), an icon's or a glyph's source otherwise, and a list or a map whose two sides differ in length or in keys
+(a font's axes), a paint's and a shadow's layers and a gradient's stops apart, which the layers' rules hold
+(below).
+Such a value is drawn as its old value until the run leaves its delay and as its new value from then, so at the
+change where the run has no delay, under every engine: GTK draws a transition's start through its delay, and the
+end from there where the two values do not interpolate (`gtk@4.24.1 gtk/gtkcsstransition.c:59-60`, `:75-76`), and a
+stated zero with a delay already takes its new value as the delay ends (*A zero duration*, below). Two matched
+paint layers of different kinds (a colour and a gradient, two gradients of another kind, repeat or number of
+stops, a pattern and another, a material and a colour) crossfade, the old one vanishing as the new one appears,
+each as a vanishing and an appearing layer does, as GTK cross-fades two images it cannot interpolate
+(`gtk/gtkcssimage.c:83-96`, `gtk/gtkcssimagelinear.c:664-676`) and as shadow layers of two falloffs do (S2.5), but
+under `WinUi`, whose member states its own (*The engine*, below). A `text`, `icon` or `glyph` block that becomes
+`Absent` or drawn on a part that stays drawn, under a transition of its group, fades by its paints, which vanish
+and appear as layers do, its other values the drawn end's throughout, there being no other end, as for a part
+entering from its hidden style (*A part not shown at rest*, below); a block with no paint of its own (an icon under
+`Original`, S2.9) is one value with no interpolation, drawn until the run leaves its delay or from then. Rejected: the rule per engine, each to
+its source (Compose's text-style interpolation takes such a value's new one at half the fraction,
+`androidx@e4d933c9 compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/SpanStyle.kt:732`, the one
+other reading a pinned source states, which no fact meets yet: a toolkit shown to draw otherwise where a fact needs
+it is a class 2 change, made with that fact); the new value at the change whatever the delay (the end drawn before
+a delayed run has started, which GTK does not draw).
+
 **Colour interpolation** (`token.motion.color_space`, S4.1, R9, ADD-A125). A transition, a presentation step and a
 loop's keyframes move a colour, a paint layer's included, through the intermediate colours of the space its toolkit
 interpolates in, which the preset states as a token (a rule may restate it under a condition), `ColorInterpolation`, a closed set implemented once in
@@ -1276,7 +1353,9 @@ its source, for every `t` a timing gives, overshoot included:
 - `StraightSrgb` (ADD-A141): each channel and the alpha interpolated apart without premultiplying, as fractions, with
   no 8-bit step: WinUI's composition path (below), measured. Whether the compositor clamps a channel or the alpha that
   overshoots `0..=1` is unmeasured, no WinUI run having driven a colour past `t = 1`: the member's vector table measures
-  it (rows with `t` outside `0..=1`, below); until then its result there is unknown, which no `windows-11` fact
+  it (rows with `t` outside `0..=1`, below); until then the compositor's result there is unknown, and the function
+  returns the straight interpolation extrapolated and unclamped (S2.1), a state of the build no fact claims
+  (ADD-A146), which no `windows-11` fact
   meets, every WinUI timing the facts state being a cubic Bézier whose control points lie in `0..=1`
   (`docs/facts/windows/tokens.toml`), so none overshoots.
 - `Oklab`: L, a, b and the straight alpha interpolated apart and clamped to `0..=1`, `±0.5`, `±0.5` and `0..=1`
@@ -1290,8 +1369,9 @@ its source, for every `t` a timing gives, overshoot included:
   `compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/Color.kt:539-579`, clamps the fraction
   instead, which the transitions' converter does not).
 
-Transparent black, `#00000000`, is the colour an appearing paint starts from and a vanishing one ends at (above;
-rejected: the paint's own colour at zero alpha, which is not what Compose and Qt Quick draw when they animate to
+Transparent black, `#00000000`, is the colour an appearing paint starts from and a vanishing one ends at under
+every engine but `WinUi`, whose member states its own (*The engine*, below; ADD-A146;
+rejected: the paint's own colour at zero alpha for every engine, which is not what Compose and Qt Quick draw when they animate to
 `Color.Transparent` or `transparent`): the
 straight spaces' toolkits fade to it (Compose's border fades to `Color.Transparent`, `compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1730`,
 `Color.Transparent` is `Color(0x00000000)`, `Color.kt:307-308`; QML's `transparent`), and under `PremultipliedSrgb` every
@@ -1390,8 +1470,8 @@ Compose's, and a motion no token states is Compose's (the switch handle's FastSp
 the tokens state that Compose does not draw stays, with no transition where no source times it (the filled field's
 hover layer, MAT-I11; R1.6's reading). The members:
 
-- **The value engines**, `GtkCss`, `AdwAnimation`, `QtQuick`, `ComposeAnimatable`, `ComposeTransition`, `ComposeHeld`
-  and `WinUi`,
+- **The value engines**, `GtkCss`, `AdwAnimation`, `QtQuick`, `ComposeAnimatable`, `ComposeTransition`,
+  `ComposeShapeMorph`, `ComposeHeld` and `WinUi`,
   start a transition when a value it times changes (the comparison above, the style after governing by `from`, the
   transition that governs naming the engine), `ComposeHeld` on a press (below). It moves from the value **drawn** at that change, a
   running transition's value included, to the new value, over its own delay and duration counted from the change and
@@ -1494,7 +1574,7 @@ hover layer, MAT-I11; R1.6's reading). The members:
     `compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:46-62`). A
     spring starts at the running motion's velocity, `animateTo`'s default (`Animatable.kt:227-243`; zero once a motion
     has ended, `:354-361`), per component of the value in the space it moves in (`token.motion.color_space` for a
-    colour); a tween ignores it. Its play time is the elapsed time divided by the speed factor, read every frame, a
+    colour; *How a spring runs*, below); a tween ignores it. Its play time is the elapsed time divided by the speed factor, read every frame, a
     factor of zero ending it at once (`SuspendAnimation.kt:279-281`, `:328-337`), while its spec is fixed at its start,
     a spec change with an unchanged target applying at the next target change (`AnimateAsState.kt:483-492`): so under
     the Compose engines the factor is the engine's, applied once, `material-3` stating its durations plain and its
@@ -1510,6 +1590,22 @@ hover layer, MAT-I11; R1.6's reading). The members:
     stiffness 1500 at the value type's default threshold, the delay dropped (`Transition.kt:1615-1626`, `:1644-1659`,
     `:1757`; `AnimationSpec.kt:834-838`; `VectorizedAnimationSpec.kt:801`, `:839`), so a checkbox unchecked while its
     mark still draws retracts by that spring, not by its delayed snap (`material3/…/Checkbox.kt:595-612`).
+  - `ComposeShapeMorph` (ADD-A146; ledger queue #137), Compose's `AnimatedShapeState`, which morphs the buttons',
+    icon buttons' and toggle buttons' corners between their shapes (`androidx@e4d933c9
+    compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:47-121`): a
+    progress from 0 to 1 between a start shape and a target shape, each corner the two shapes' corner interpolated
+    at it (`:66-79`), as `ComposeAnimatable` in everything but where a run starts while one runs. A change back to
+    the shape the running morph started from, a reversal, swaps the two shapes, sets the progress to 1 less what it
+    was and runs it on to 1 at the running velocity negated, so the corners turn where they are drawn at the speed
+    they had (`:84-95`); a change to any other shape takes the corners drawn as its start and runs the progress
+    from 0 as a run from rest (`:96-120`, `snapTo` ending the run, whose velocity `animateTo` then reads as zero,
+    `Animatable.kt:354-361`), where `ComposeAnimatable` would keep the velocity; a change to the shape it already
+    heads for starts nothing (`:82`). Its spring runs on the progress, one component whose unit is the run (*How a
+    spring runs*, below). It times the `Corners` group, the one value `AnimatedShapeState` moves, and no other
+    (S12); a corner Compose animates as a value of its own (`animateDpAsState`) is `ComposeAnimatable`'s. Rejected:
+    the two cases as a rule of `ComposeAnimatable` for `Corners` (that member is `animateTo` on the value, which
+    keeps the velocity toward any target, as a corner under `animate*AsState` does: other code with another
+    interruption rule is another member, R9).
   - `ComposeHeld`, ButtonGroup's press (MAT-N6), a value engine as `ComposeAnimatable` is but for its start, timing
     not a box but the segment's press fraction, 0 at rest and 1 pressed, its spring's overshoot kept
     (`material3/…/ButtonGroup.kt:1000`, `:1034-1037`): it starts wherever `pressed` becomes kept, whether or not a
@@ -1549,13 +1645,18 @@ hover layer, MAT-I11; R1.6's reading). The members:
     `src/dxaml/xcp/components/vsm/CVisualStateManager2.cpp:104-118`). A brush
     transition runs only between solid colour brushes neither of which animates: a new brush that is none or of
     another kind takes effect at once, and one from no brush fades in from the new colour at zero alpha
-    (`WUCBrushManager.cpp:525-534`, `:578-579`), transparent black only where the compositor's space premultiplies,
-    which its measurement decides (*Colour interpolation*, above). An animation that states its own `From` starts there
+    (`WUCBrushManager.cpp:525-534`, `:578-579`), which under `StraightSrgb`, the compositor's measured space
+    (*Colour interpolation*, above), is not transparent black: the colour stands and its alpha rises. So under
+    `WinUi` an appearing colour layer starts from its own colour at zero alpha, a vanishing one is gone at once, and
+    two matched layers of different kinds change at once, where the other engines fade to and from transparent
+    black and crossfade (ADD-A146). An animation that states its own `From` starts there
     (`animation.cpp:748-758`), which the in-box templates do only in presentations (a search of `src/controls/dev/`
     outside its tests finds these: `CommonStyles/CalendarView_themeresources.xaml:463`, `:878`,
     `CommonStyles/MediaTransportControls_themeresources.xaml:122`, `:134`,
     `CommandBarFlyout/CommandBarFlyout_themeresources.xaml:655-660`). Whether the compositor's handoff also matches the velocity, and what a theme switch does,
-    are measured (the catalogue's Open items, W-P3-16†).
+    are measured (the catalogue's Open items, W-P3-16†), as are what it does under each presence and as animations
+    turn off; until those two are measured the member ignores the presence, as `QtQuick` does, and lets a running
+    transition run on as animations turn off: states of the build, which no fact claims (ADD-A146).
   - `WinUiAnimatedIcon`, WinUI's `AnimatedIcon`, which plays the segment of its source's animation between the
     markers of the state it leaves and the one it enters (`src/controls/dev/AnimatedIcon/AnimatedIcon.cpp:313-330`;
     the marker names `<from>To<to>_Start` and `_End`, `:15-17`), a visual state setting only its `State`. The source
@@ -1634,8 +1735,11 @@ hover layer, MAT-I11; R1.6's reading). The members:
   focus (`animations/breezewidgetstateengine.h:45-103`, `breezestyle.cpp:3943-3944`, `:8117-8118`; the enable fade
   mixes palettes only in item text, `:1615-1626`, and competes in no frame); the resolution hands the tests of every
   rule that can apply to this element in the current resolution (its widget, variants and context), in rank order,
-  as `ResolvedPartStyle.breeze_tests`, a run's rank its test's position there and the tests the reduction reads
-  (S8). Of an element's seen runs that time a
+  as `ResolvedPartStyle.breeze_tests`, each with the groups its transitions list in those rules and whether a
+  `FocusIndicator.transition` names it (S6.1), a run's rank its test's position there, and a group's tests, which
+  the reduction reads, the entries that list the group, the indicator's those a `FocusIndicator.transition` names
+  (S8; ADD-A146: a test alone names no group, and one drawing function's test must not take another's flags).
+  Of an element's seen runs that time a
   group, the first that runs draws it; with none, the part draws its rest value.
 
   At each update, for each group: where the group's governing transition (*Two engines on one group*, below) is
@@ -1757,12 +1861,16 @@ qqc2 draws it through Breeze with no engine data (K1.30), draws Breeze's rest va
 and its single `transition` in the style after, where it applies (`from`), governs it, with no `governing` call,
 which takes a `PropertyGroup`.
 A loop's keyframes draw over a transition of the same property, as GTK applies its animations after its transitions
-(`gtkcssanimatedstyle.c:993-1001`, `:1033-1036`). The connector calls `update` in every frame in which the element's
-query result, its kept flags, the window's conditions, its laid-out boxes, the speed factor or its presence differ
+(`gtkcssanimatedstyle.c:993-1001`, `:1033-1036`; *A loop*, below). The connector calls `update` in every frame in which the element's
+query result, its widget's `loop`, its kept flags, the window's conditions, its laid-out boxes, the speed factor or
+its presence differ
 from its last update (a show, a paint after frames unpainted and an unmap among them), or `activated`, `replayed`
-or `pressed_through` is set, the first update passing
+or `pressed_through` is set, or the window's resolution reports a change that suspends (`Resolution.suspends`) or a
+theme change under `Crossfade` (S4.3), which every `Motion` of the window hears, its styles changed or not, as
+only `Motion` knows whether it holds a run such a change ends (ADD-A146: `adwaita`'s reduced-motion change moves
+no value, S4.3, and would otherwise reach no `Motion`), the first update passing
 `before` equal to `after` and starting nothing; a part that becomes drawn (`before` `None`) is drawn at once with
-the style after's values, starting nothing (a `WinUiAnimatedIcon` visual as at the element's first update, at
+the style after's values, starting nothing but a `CssAnimation` that times it and a loop (above; *A loop*, below) (a `WinUiAnimatedIcon` visual as at the element's first update, at
 progress 0 with no segment played, as a templated `AnimatedIcon` starts, `AnimatedIcon.cpp:23`, `:47`), and one that becomes `Absent` (`after` `None`) ends every run at once
 and draws nothing (`sample` returning `None`), the connector keeping its `Motion` while it is `NotDrawn` (a `DrawnAs` part is its substitute's element, with its own
 `Motion`); and `sample` in every frame it draws the element, in each frame
@@ -1775,12 +1883,20 @@ or none (a stack's page, a closed `GtkRevealer`'s child, `gtk/gtkrevealer.c:228`
 `:954`); hidden, it or an ancestor; removed from the element tree with its `Motion` kept, to be added again (an
 element a container removes and appends again, as Compose's leaving its composition, `ComposeAnimatable`, above), while an element
 destroyed drops its `Motion`. Which presence a minimised window's elements have is the lanes' to measure (the
-catalogue's Open items). Each engine keys its own state to one of these, as its member says: `GtkCss` defers a change only under
+catalogue's Open items, register U187); until it is, they are `Unpainted`, as an occluded window's are. A connector
+whose toolkit holds no such states (one that builds its elements anew in every frame) reports the nearest it can
+tell, by this order (ADD-A146): an element laid out and clipped, scrolled out or occluded is `Unpainted`; one its
+application does not build in a frame, its `Motion` kept, is `Removed`; one whose `Motion` the connector drops is
+destroyed; `Unmapped` and `Hidden` are reported only where the toolkit, or the application's own container (a
+stack showing another page, a widget it hides), states them. Each connector's contract lists the presences it
+reports and from what (S21.3). Rejected: `Unpainted` for an element not built (the engines would run its
+transitions unseen and show it mid-run, where the toolkits whose trees drop an element end them, Compose's leaving
+its composition and GTK's removed node, above). Each engine keys its own state to one of these, as its member says: `GtkCss` defers a change only under
 `Hidden` (GTK drops its transitions only on a toplevel's realize or unrealize and on a reparent,
 `gtk/gtkcssnode.c:1287-1299`, its root check `:1291-1293`, `:737`, `gtk/gtkwidget.c:8079`, `:8098`); `AdwAnimation`
 skips under `Unmapped`, `Hidden` and `Removed`; Breeze defers its tests under all but `Painted`; the Compose members
 drop their runs under `Removed`; `QtQuick` ignores the presence; `GtkSwitch`'s slide goes on but under `Removed`;
-`WinUi`'s are measured (the catalogue's Open items). So an `adwaita` stack page across a theme switch, `Unmapped`,
+`WinUi`'s are measured (the catalogue's Open items), and until then it ignores the presence (its member, above). So an `adwaita` stack page across a theme switch, `Unmapped`,
 is styled at the switch under the suspension and shown later in the new theme at once, its `AdwAnimation`s
 skipped; a widget scrolled out, `Unpainted`, takes its CSS transitions and plays its `AdwAnimation`s unseen, while
 Breeze's tests wait for its next paint. Animations off have one home, the speed factor (R9: the model never zeroes a
@@ -1796,7 +1912,60 @@ once, by its cut as the update the factor's change makes meets zero durations (a
 once the element has no frame clock (`gtk/gtkcsswidgetnode.c:127-128`) from its next style update; whether that
 update is the toggle's frame is measured, confirming this or correcting it as a class 2 change; each
 `WinUiAnimatedIcon` segment started after the toggle jumps to its end (`AnimatedIcon.cpp:431-440`), while what its
-running segment does, a compositor animation, is measured with what `WinUi` does (the catalogue's Open items).
+running segment does, a compositor animation, is measured with what `WinUi` does (the catalogue's Open items), both
+running on until then (`WinUi`'s member, above; ADD-A146).
+
+**A loop** (ADD-A146). A loop repeats its keyframes over the part's style, whatever state the part is in while the
+loop is stated, and names no engine: one rule runs it on every preset. *Its value.* At the phase `p`, the fraction
+of its period passed, a field takes the value between the keyframe before `p` that states it and the next that
+does, at the span's fraction as that earlier keyframe's `timing` maps it, the loop's `timing` where the keyframe
+states none or where the span starts at the implicit 0, as Compose eases each interval of its key frames by the
+key frame it starts from (`androidx@e4d933c9
+compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/VectorizedAnimationSpec.kt:231-233`,
+`:398-420`). Where no keyframe at 0 states the field, its value there is the part's own, the field's `base` (the
+value the part draws without the loop, a running transition's included), and likewise at 1: CSS's underlying value
+(W3C CSS Animations Level 1, followed directly), as GTK takes a property's own value at the two ends
+(`gtk@4.24.1 gtk/gtkcsskeyframes.c:747-750`). So after its last keyframe a field moves on to its value at 1, and
+each period starts again at 0, never run backward: a source that plays there and back (CSS's `alternate`, Compose's
+`RepeatMode.Reverse`) states both ways in one period. A value with no interpolation (above) is the earlier
+keyframe's through its span and the next one's from that keyframe on (`gtkcsskeyframes.c:776-783`), which is how a
+sequence of frames is stated. GTK eases the whole period by the animation's curve and takes the keyframes
+linearly within it (`gtk/gtkcssanimation.c:103-104`), which differs from the rule here only under a curve other
+than `Linear` over several keyframes; no CSS animation of `adwaita` at the pin repeats (its one,
+`needs_attention`, runs once, `libadwaita@1.10.0 src/stylesheet/_common.scss:106-114`; its spinners are code,
+`src/adw-spinner-paintable.c`, `gtk@4.24.1 gtk/gtkspinner.c:168-169`), so a GTK loop that meets it is a class 2
+change, made with its fact. *Its phase.*
+The phase is the element part's own: it starts at 0 at the first update at
+which the part is drawn with a loop that runs (one stated, its period above zero, S2.2), the element's first
+update included, as Compose starts an infinite transition at its first frame in the composition
+(`androidx@e4d933c9
+compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/InfiniteTransition.kt:172-181`)
+and libadwaita plays its spinner as its widget maps (`libadwaita@1.10.0
+src/adw-spinner-paintable.c:182-184`, `:542-545`), and counts the frame time from there, under every presence
+while the `Motion` is kept. While the loop runs and its period stays, a change of the part's style, of its state or
+of a keyframe's resolved value is drawn at the phase it meets, the keyframes resolving over the style as it is
+then, as GTK keeps an animation of the same name across a style change and computes its keyframes against the
+style of each frame (`gtk/gtkcssanimatedstyle.c:948-962`, `gtk/gtkcssanimation.c:106-112`). It starts again at 0
+where its resolved period changes, as Compose restarts on a changed duration scale (`InfiniteTransition.kt:172-181`),
+where the loop is stated again after `Absent` or a zero period, and where the part is drawn again after it was not.
+Two sources read do otherwise, each a class 2 change made with the fact that meets it, the rule above standing
+until then as a recorded inexactness of that preset. Compose restarts an infinite animation whose initial or target
+value changes, with no continuity (`InfiniteTransition.kt:106-121`, `:251-262`), which its circular indicator's,
+constants, never do (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt:631-655`).
+Breeze's busy indicators share one clock: its engine runs a single animation
+whose value every busy progress bar of the process draws, a bar that turns busy joining it at the phase it has, and
+a new duration is set on it as it runs, Qt keeping its time (`breeze@6.8.2
+kstyle/animations/breezebusyindicatorengine.cpp:66-77`, `:80-108`, `:117-146`), so two busy bars on `kde-breeze`
+move in step where this rule starts each at its own 0: the unit that holds `progress_bar` meets it with its
+`kde-breeze` facts (a clock a loop states, shared or its own). *Its place.* The
+connector hands `Motion` the loops that draw on the part: the part's own (`icon.animation`, in its style) and its
+widget's or component's `loop` value (`MotionUpdate.widget_loop`, of which `Motion` takes the keyframes naming the
+part), and `sample` draws them over the transitions' values (above). Rejected: one clock shared by every element
+as the rule (Breeze's alone among the sources read; two Compose or libadwaita spinners shown apart would turn in
+step, which those toolkits do not draw); the phase kept across a period change at its fraction as the rule (Qt's,
+above, where Compose, whose duration scale is the speed factor the periods are stated with, restarts); a pure
+function of the loop and the time since its start, the phase the connector's (each connector would restate the
+starts above, and a loop draws over the transitions `Motion` holds).
 
 **A theme change and a state change in one update** (ADD-A126). The engines compare the update as any other, both
 flag sets kept under the new resolution (above), so a theme change by itself turns no Breeze test, a state change in
@@ -1824,30 +1993,40 @@ pub struct Drawn { pub style: ResolvedPartStyle, pub rect: Rect,   // what to dr
                                                                      // `WinUiAnimatedIcon` transition governs
 impl Motion {
     pub fn update(&mut self, update: &MotionUpdate<'_>, places: Option<&mut Places>,
-                  style_with: &mut dyn FnMut(StateFlags, &WindowConditions) -> Option<Drawn>);
+                  style_with: &mut dyn FnMut(StateFlags, &WindowConditions) -> Option<(ResolvedPartStyle, Rect)>);
                                                             // the frames above; `places` where a `BreezeTabBar` test
                                                             // runs, `style_with` as for `sample` (a hand-off's start,
                                                             // `AdwAnimation`'s start test, a Breeze rest value,
                                                             // S2.10's indicator end: `kept_after` less
                                                             // `focus_visible`, `conditions_after`)
-    pub fn sample(&self, now: Ms, places: Option<&Places>,
-                  style_with: &mut dyn FnMut(StateFlags, &WindowConditions) -> Option<Drawn>)
+    pub fn sample(&self, now: Duration, places: Option<&Places>,
+                  style_with: &mut dyn FnMut(StateFlags, &WindowConditions) -> Option<(ResolvedPartStyle, Rect)>)
                   -> Option<Drawn>;                         // `None`: nothing to draw, the part `NotDrawn`;
                                                             // `style_with` queries and lays out the part, in the
                                                             // current resolution, under other flags and window
                                                             // conditions (Breeze's and `AdwAnimation`'s ends; the
                                                             // connector resolves toggled conditions with a scratch
-                                                            // `WindowState`), `None` where it is `NotDrawn` there,
+                                                            // `WindowState`): its style and its box there, the
+                                                            // two things asked of it (ADD-A146: no `Drawn`, whose
+                                                            // `shown` and `icon_progress` are `Motion`'s to
+                                                            // give), `None` where it is `NotDrawn` there,
                                                             // an end at which the part is drawn at once
-    pub fn take_slide_end(&mut self, now: Ms) -> bool;      // a `GtkSwitch` slide's end, reported once (above)
-    pub fn layout_fraction(&self, now: Ms) -> Option<f32>;  // a `ComposeHeld` segment's press fraction, read
-                                                            // before the frame's layout (above)
-}
+    pub fn take_slide_end(&mut self, now: Duration) -> bool;   // a `GtkSwitch` slide's end, reported once (above)
+    pub fn layout_fraction(&self, now: Duration) -> Option<f32>;   // a `ComposeHeld` segment's press fraction,
+                                                            // read before the frame's layout (above)
+}                                                           // `now`: the frame's time, as `MotionUpdate.at`
 pub struct MotionUpdate<'a> {
-    pub at: Ms,                                             // the update's frame time
+    pub at: Duration,                                       // the update's frame time: a `std::time::Duration`
+                                                            // from an origin the connector fixes for the window
+                                                            // (one origin for every `Motion` and `Places` of it),
+                                                            // monotonic; never an `Ms` (S1; ADD-A146)
     pub key: u64,                                           // the element's id among its widget instance's (`Places`)
     pub presence: Presence,                                 // the element's presence in this frame (above)
     pub speed_factor: f32,                                  // `token.motion.speed_factor` resolved (Compose's scale)
+    pub color_space: ColorInterpolation,                    // `token.motion.color_space` resolved in the element's
+                                                            // scope (*Colour interpolation*, above); a run moves
+                                                            // its colours in the space of the update that starts
+                                                            // it (ADD-A146)
     pub before: Option<&'a ResolvedPartStyle>, pub after: Option<&'a ResolvedPartStyle>,   // the last query result,
                                                             // under the old resolution, and this one; `None`: the
                                                             // part `NotDrawn` there (`Absent`, below)
@@ -1858,14 +2037,21 @@ pub struct MotionUpdate<'a> {
     pub kept_before: StateFlags, pub kept_after: StateFlags,   // both under the resolution after (above)
     pub conditions_before: &'a WindowConditions, pub conditions_after: &'a WindowConditions,   // S8
     pub change: Change,                                     // `Resolution.change` (S8)
-    pub theme_change: &'a ResolvedThemeChange,              // the new resolution's token (S4.3)
-    pub suspended_until: Option<Ms>,                        // the window's `Suspend` window, kept by the connector
-                                                            // with its `WindowState` from `Resolution.suspends` (S4.3)
+    pub theme_change: &'a ResolvedThemeChange,              // the new resolution's token (S4.3); staged: enters
+                                                            // with the tokens unit, as the token does (S6.1)
+    pub suspended_until: Option<Duration>,                  // the end of the window's `Suspend` window, on `at`'s
+                                                            // clock, kept by the connector with its `WindowState`
+                                                            // from `Resolution.suspends` (S4.3); staged likewise
     pub activated: bool, pub slide_to: Option<Rect>,        // a `GtkSwitch`'s activation, and its other end on every
                                                             // update while a slide runs (above)
     pub replayed: bool,                                     // an `AdwAnimation { replays }`'s widget inputs changed
     pub pressed_through: bool,                              // a press and its release within this update
                                                             // (`ComposeHeld`, above)
+    pub widget_loop: Option<(&'a ResolvedLoop, PartRef)>,   // the widget's or component's resolved `loop` value
+                                                            // where one is stated, and the part this `Motion`
+                                                            // draws, whose keyframes it takes (*A loop*, above;
+                                                            // ADD-A146); the part's own `icon.animation` is in
+                                                            // `after`
 }
 ```
 
@@ -1903,7 +2089,8 @@ field-path list on every transition, its grammar and its checks, for the one pai
 `draw_extent` and `draw_start` in its place. A `Path` source moves to one of the same commands in the same view box
 point by point, each command's coordinates interpolated, while the part stays shown (Compose's check pulled to its
 dash, `material3/…/Checkbox.kt:720-724`); entering and leaving, the drawn end's path stands throughout (below); any
-other change of the source takes the new source at the run's start. So Compose's checkbox, whose drawn fraction
+other change of the source is a value with no interpolation, the new source drawn as the run leaves its delay
+(above; ADD-A146). So Compose's checkbox, whose drawn fraction
 and shape move by a spatial spring and whose colour by an effects curve (`Checkbox.kt:595-634`), states both, and a
 platform moving them alike states `Glyph` alone, as for `StrokeWidth` (above).
 
@@ -2042,8 +2229,38 @@ computed by `native_theme::timing::damping_coefficient(mass, stiffness, damping_
 is undamped, below 1 underdamped, 1 critically damped, above 1 overdamped. A source stating the coefficient
 (libadwaita's `adw_spring_params_new_full`, AppKit's `CASpringAnimation.damping`) is converted by the inverse, a
 measured one by its analysis script (S17). `rest_epsilon` is libadwaita's `epsilon` and Compose's
-`visibilityThreshold`; a platform's spring with no mass of its own states the mass its evaluation uses, cited as any
-value.
+`visibilityThreshold`, each read as its own arithmetic reads it (below); a platform's spring with no mass of its own
+states the mass its evaluation uses, cited as any value.
+
+**How a spring runs** (ADD-A146; ledger queue #98). A spring's motion is its engine's arithmetic, and the two
+toolkits whose springs the presets state do not share one: they end a spring at different times, and take its
+velocity and its threshold in different units. *libadwaita's*, in a presentation step and under `AdwAnimation`
+(`libadwaita@1.10.0 src/adw-spring-animation.c:101-153`, `:176-243`, `:265-282`): the run goes from 0 to 1 between
+its two ends; `timing::evaluate(timing, t)` gives the fraction of the way at the fraction `t` of the spring's own
+duration, `timing::spring_duration(timing) -> Option<Ms>`, the one libadwaita estimates from `rest_epsilon` and
+`clamp` in whole milliseconds (an underdamped or critically damped spring's where its envelope falls below
+`rest_epsilon`, whatever the distance, `:209`; `None` for an undamped one, which never rests), times the resolved
+`time_scale`, and the run draws its end from that duration on; `initial_velocity` is in runs per second, and
+`rest_epsilon` on the run from 0 to 1. A presentation step names no engine, so every preset's spring-timed step runs
+so. *Compose's*, under the Compose members: the spring runs per component of the value, in the component's own unit,
+from the value drawn at the velocity handed over, in that unit per second (the engines' members, above), by
+Compose's simulation of unit mass at the play time in whole milliseconds (`androidx@e4d933c9
+compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/FloatAnimationSpec.kt:139-155`,
+`SpringSimulation.kt:55-69`), and ends, at its target and at zero velocity, at Compose's estimated duration, the
+largest over the components, each estimated from its distance and its velocity, both divided by the threshold
+(`FloatAnimationSpec.kt:169-187`, `VectorizedAnimationSpec.kt:1038-1048`, `Animation.kt:81-83`, `:261-283`). So
+there `rest_epsilon` is that threshold, absolute in the component's unit (a logical pixel for a length, a colour's
+component in `token.motion.color_space`, the run for `ComposeHeld`'s fraction and `ComposeShapeMorph`'s progress),
+`mass` is stated 1 and `clamp` false, Compose having neither, and `initial_velocity` is the velocity of a run that
+starts from rest, in the component's unit per second, zero in Compose's code (`Animatable.kt:354-361`) and so in
+every `material-3` fact. Both are implemented once in `native_theme::timing`,
+libadwaita's as `evaluate` and `spring_duration`, Compose's beside them as a component's value and velocity at a
+play time and a run's duration, which `Motion` calls; each is checked as S2.2's platform functions are, by a vector
+table generated from the pinned code. Rejected: every spring through `evaluate` (a run from 0 to 1 cannot carry the
+velocity of a component whose two ends are equal, and it ends at libadwaita's time, where *The engine*'s rules hang
+on the end: the velocity zero once a motion has ended, `ComposeTransition`'s interruption while a run has not
+finished, a `shown` part drawn while a run runs); Compose's arithmetic for every spring (libadwaita's estimate reads
+no distance, so its presentations would end at another frame).
 
 Today's `AnimatedIcon` goes (R9's loops extend it), with its types (`FramesData`, `FrameList`, `TransformData`,
 `TransformAnimation`, `EmptyFrameListError`) and the loaders that return it (`load_icon_indicator`, the icon loaders'
@@ -2293,7 +2510,10 @@ pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>,   // absent on 
                                                           // 0 draws nothing, a cap included; a drawn span of a
                                                           // stroked path takes the stroke's cap at both its ends;
                                                           // on a filled path below 1 nothing, 1 or more the whole
-                   pub draw_start: Value<Fraction>,       // where along the path drawing starts (a spinner's arc)
+                   pub draw_start: Value<Fraction>,       // where along the path drawing starts (a spinner's arc);
+                                                          // a span reaching past the end of a closed path runs
+                                                          // on from its start, of an open one ends there (*The
+                                                          // drawn span*, below; ADD-A146)
                    pub mirroring: GlyphMirroring }   // Segoe Fluent's per-glyph mirroring (R11)
 pub enum GlyphSource {
     FontCodePoint { family: String, code_point: u32 },   // the family's fallbacks are the text tokens'
@@ -2329,6 +2549,21 @@ moves between a number and `Absent`. Rejected: the identity, 1 and 0, on every g
 beside the marks, and the 1 is no literal of the source, which S17's zero by omission does not hold, so every whole
 glyph would need a citation form of its own); either spelling at will (one look, two spellings, which the verifiers
 split on).
+
+**The drawn span** (ADD-A146). The span drawn runs from `draw_start` over `draw_extent` of the path's length, the
+extent taken as at most 1, one whole path. On a closed path (one ended by `Close`) a span that reaches past the
+path's end runs on from its start, so an arc whose start travels round a circle is one unbroken arc at every start:
+Compose draws its circular indicator as an arc from an angle over a sweep, the determinate one from 12 o'clock,
+270°, over up to a whole turn, through the circle's 0° (`androidx@e4d933c9
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt:537-554`,
+`:745-763`). On an open path the span ends at the path's end, there being no path beyond it. material-web carries
+no span past its path's end, its determinate arc a dash from the path's
+start on a turned circle and its indeterminate one moved by rotations, a `transform` (`material-web@2.5.0
+progress/internal/circular-progress.ts:26-35`, `progress/internal/_circular-progress.scss:90-102`, `:116-123`), so
+the two agree wherever both draw. Rejected: the span cut at the path's end on every path (a loop moving
+`draw_start` round a circle would lose the arc's head once a turn, which the facts would have to hide by a rotation
+for a look the path already states); S12 refusing keyframes that can carry a span past 1 (it refuses Compose's own
+arc).
 
 `IconStyle.fill` is the paint the platform's recolouring gives an icon (a symbolic icon, a template image, a symbol in
 its rendering mode's colours). It may be absent where `rendering_mode` is `Original`, which recolours nothing, and only
@@ -2401,11 +2636,26 @@ below, so it is a `Ring`. `FilledRing`, which no section defined apart from `Rin
 kind of its own (it would draw the same band, two spellings for one look); a ring filled inside as well (a focus that
 changes a fill is a `{focus_visible}` rule, R12).
 
+**The underline** (ADD-A146). An `Underline` is that ring's bottom side alone: a line `width` high whose top edge
+lies `offset.bottom` below the bottom edge of the part's box (above it where negative), reaching from the box's
+left edge moved out by `offset.left` to its right edge moved out by `offset.right`, in `paint` and `dash`.
+`offset.top` places nothing and is stated `0px`. Its `corners` round the four corners of the line's own rectangle,
+a `Full` corner half that rectangle's smaller side; `FollowPart`, which follows an outline the line does not, is
+refused under `Underline` (S12). Its `shadow` is cast by the line's rectangle, and it enters, leaves and is timed as
+a ring is (below). It is Breeze's focus line, a pen line along the bottom edge of the label's text rect, moved down
+from it (`breeze@6.8.2 kstyle/breezehelper.cpp:407-421`; a tab's, on its text rect, `kstyle/breezestyle.cpp:7154`,
+`:7165`), the placement of whose pixel row the KDE lane confirms with the `tab` unit. Rejected: a line inside the
+box along its bottom edge (a negative `offset.bottom` states it, with no second reading); a text underline at the
+font's position (a `Decoration`, S2.8, which a `{focus_visible}` rule sets, and which follows the glyphs, not the
+part's box).
+
 **Where the ring lies** (ADD-A122). `offset` measures, on each side, from the part's box to the ring's **inner** edge,
 outward positive, as CSS's `outline-offset` does; the ring is `width` wide outward from there, so a ring drawn inside
 the box flush with its edge has `offset` equal to minus `width` (libadwaita's default `$offset: -$width`,
-`libadwaita@1.10.0 src/stylesheet/_drawing.scss:12`, `:21-22`). An offset of zero or more is the geometry of an
-`Outside` stroke with that `Stroke.outset`, one reading for the part's stroke and its ring. A platform that sets the ring's outer edge states the
+`libadwaita@1.10.0 src/stylesheet/_drawing.scss:12`, `:21-22`). An offset of zero or more is, in its edges, the
+geometry of an `Outside` stroke with that `Stroke.outset`, one reading for the part's stroke and its ring; their
+corners differ where the part's corner is square, which the stroke keeps square (S2.4's *Growing an outline*) and a
+`FollowPart` ring rounds (below; ADD-A146). A platform that sets the ring's outer edge states the
 inner one by an expression: WinUI shrinks the element's box by `FocusVisualMargin` to the focus visual's bounds and
 draws the outer ring inside them (`microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389`,
 `src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:445-455`), so its offset is the margin negated less the
@@ -2423,7 +2673,8 @@ every side the ring follows the ellipse of its own boxes, inscribed in its inner
 `FollowPart` corner whose two sides' offsets differ, as for any corner). `follow_part` grows a square part's corner too, as CSS's outline does (material-web's ring around a
 square shape); GTK and WinUI keep a zero radius zero (`gtkcssboxesimplprivate.h:498-501`, `FocusRectManager.cpp:74`),
 so their presets state `Radius::Px(0)` on the ring's corners where the part's corner is square (GN-3.29, W3-20). The indicator's `shadow` is cast by the ring's inner outline (the part's box grown
-by `offset`, with those inner corners): a layer with `inset` draws inside it, one without outside it, under the ring.
+by `offset`, with those inner corners): a layer with `inset` draws inside it, one without outside it, under the ring,
+both over the part's stroke and everything the part draws (S2.11's *Drawing order*).
 So WinUI's inner ring, drawn just inside the outer ring (`FocusRectManager.cpp:449-455`), is one `inset` layer with
 no offset or blur, its `spread` the secondary thickness and its colour the secondary brush (W3-19, ADD-A17).
 Rejected: the outer edge (WinUI's reading), under which a ring's width change moves its gap to the part and the inner
@@ -2483,13 +2734,15 @@ pub struct PartStyle {
     pub focus: Value<FocusIndicator>,
     pub interaction: Value<Interaction>,     // a state layer and a press ripple (S2.12); may be absent
     pub padding: Sides<Value<Px>>,
-    pub margin: Sides<Value<Px>>,            // outside the box; may be negative (GN-1.18, GN-1.73, GN-1.119)
+    pub margin: Sides<Value<Px>>,            // outside the box; may be negative (GN-1.18, GN-1.73, GN-1.119);
+                                              // no margin is `0px`, never absent (below; ADD-A146)
     pub min_width: Value<Px>, pub min_height: Value<Px>,   // `auto` on every part: no minimum beyond the content
     pub max_width: Value<Px>, pub max_height: Value<Px>,   // `auto` on every part: no maximum, the content
                                                            // decides (resolves `Length::Auto`, S6.1)
     pub cursor: Value<CursorShape>,
     pub touch_target: Value<Px>,             // the minimum interactive size around the drawn box; layout only,
-                                              // never drawn (MAT-X22)
+                                              // never drawn (MAT-X22); absent where the platform sets none,
+                                              // never `0px` (below; ADD-A146)
     pub bindings: Vec<Binding>,
     pub transitions: Vec<Transition>,
 }
@@ -2533,6 +2786,68 @@ box, the content inside the stroke as well (the platforms that draw a stroke ove
 each subtract it, and a stroke whose width moves, Compose's outlined toggle, would move the content, which it does
 not); CSS's content-box sizing for the limits (GTK's alone; WinUI's, AppKit's, UIKit's and Compose's sizes are the
 whole box, and Breeze's facts already state it so).
+
+**Drawing order** (ADD-A146). A part is drawn bottom first, in one order the other sections cite: its shadow's
+layers without `inset` (S2.5); its `fill`, as far as the stroke's `fill_clip` lets it reach (S2.4); the shadow's
+`inset` layers; the part's own `text`, `icon` or `glyph`; the parts nested in it, each drawn so in turn; its
+`interaction`, the ripple and over it the state layer (S2.12), which lies beneath the part's
+own content and its nested parts instead where the part's catalogue entry says so (the filled text field's and the
+combo box's); its `stroke`; the focus indicator's shadow and over it the indicator (S2.10). `opacity` and
+`transform` take all of it, the shadow, the interaction and the indicator included, as one group, as GTK pushes a
+node's opacity around its shadows, background, border, content and outline (`gtk@4.24.1
+gtk/gtkwidget.c:12178-12179`, `:12217-12231`, `:12237-12238`).
+
+In two places of that order the sources read differ among themselves. The first is the stroke against the
+content, the part's own and its nested parts'. The model draws the stroke over the content: Compose's `Modifier.border` draws its content first (`androidx@e4d933c9
+compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Border.kt:212-214`, `:282-286`),
+`Surface` putting the border outside the background, the indication and the content
+(`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Surface.kt:246-262`, `:545-564`);
+WinUI draws the border of a rounded element that has children after them, "on top of any child content that might
+encroach into the border area" (`microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/hw/BaseContentRenderer.cpp:749-773`,
+`:778-803`, `src/dxaml/xcp/core/hw/hwwalk.cpp:1622`, `:1654`,
+`src/dxaml/xcp/core/core/elements/framework.cpp:2629-2655`); and Core Animation composites a layer's border above
+its content and sublayers (`xcode@26.6 QuartzCore/CALayer.h:615-618`). GTK and Qt paint the content after the
+border: a GTK node its background and border, then its own drawing and its children (`gtk/gtkwidget.c:12217-12228`),
+as CSS's painting order has them, Qt's style a button's bevel and then its label (`qtbase@6.12.0
+src/widgets/styles/qcommonstyle.cpp:1300-1305`); and WinUI paints a square or childless element's border before its
+children (`BaseContentRenderer.cpp:749-773`). The two orders draw alike wherever the content keeps clear of the
+stroke, which those platforms' layout makes the rule: it holds the content inside the border, GTK's and WinUI's
+presets stating the padding with the border's width added and Breeze's content lying inside its frame width (*The
+box*, above), so the content meets the stroke only
+where a nested part's negative margin, or a padding narrower than the stroke inside the box, carries it there. In
+the slice they draw alike everywhere: on the presets whose platform paints the content after the border, the one
+negative margin toward a parent's edge is `kde-breeze`'s menu indicator's, moved into the button's padding (K1.27),
+which holds a glyph centred in its own box, clear of the pen, and `adwaita`'s linked buttons overlap a sibling, not
+a parent (`libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-21`). A
+part that draws content over its parent's stroke, on a preset whose platform paints the content after the border,
+is reported to the ledger's queue with the fact that meets it (the plan's *Spec changes*) and gets its order by a
+class 2 change, a member on `Stroke` stating it; until then the model's order stands for it, a recorded
+inexactness. A layer the platform draws over the whole box, its border included, needs none: it is appended to the
+fill and to each edge's paint (S2.3). The indicator is last where a source orders it: GTK paints the outline after
+the node's content (`gtk/gtkwidget.c:12231`), WinUI the focus rectangle after an element's children and its border
+(`hwwalk.cpp:1707-1709`), Qt's style the focus rectangle after the label (`qcommonstyle.cpp:1306-1311`), Compose's
+`Surface` its inset focus ring by an indication outside the border (`Surface.kt:226-245`). The
+second place is the `interaction` block's, which is Compose's, over the content (S2.12); material-web's button draws its ripple beneath
+its content and over its outline (`material-web@2.5.0 button/internal/button.ts:109-116`,
+`button/internal/_shared.scss:96`), which `material-3` does not take, following Compose where the tokens are silent
+(R1.6): the two differ only over content of another colour than the layer's, the button's layer taking the content's
+own (S2.12). Rejected: the content over the stroke as the model's order (CSS's: it hides the border of Compose's
+outlined surfaces under content that reaches their edge, an outlined card's image, and of WinUI's rounded
+containers, the platforms on which content lies under an `Inside` stroke with no negative margin); an order member
+on every `Stroke` now (a leaf every stroke fact of every preset states and cites, for a case no fact meets); the
+order stated once per preset (WinUI holds both, by an element's corners and children).
+
+**One spelling for none** (ADD-A146). A part with no margin is laid out at its box with nothing added, so each side
+of its `margin` is `0px`, on a platform whose layout has no margin property too, which states that zero by omission,
+its citation an absence naming the property its layout lacks (S17): `margin` is never `Absent`. It is the rule
+letter and word spacing follow, for their reason (S6.3: one look, one spelling, where the lanes had written a
+platform without the property as `Absent` and one with it as `0px`). `touch_target` goes the other way for the
+same end: a minimum of zero and no minimum are one layout, and its one spelling is `Absent`, stated wherever the
+platform sets no minimum interactive size, never `0px`; a size is stated only where the platform states one. A
+stroke's `outset` has both, by its position (S2.4). Rejected: `Absent` for no margin (a second spelling of `0px`
+that a connector would have to read as zero on some presets and receive as zero on others); `0px` for no touch
+target as well (a number where the platform has no such notion, and every bundled preset whose platform sets none
+already states `Absent`).
 
 **A template laid out by margins** (ADD-A141; U1). Where a platform's template positions a widget's content by the
 margins of its template parts and uses no `Padding` (WinUI's AppBarButton and AppBarToggleButton: the
@@ -2634,8 +2949,8 @@ pub enum RippleEffect { AndroidPatterned }   // closed; each implemented once in
 `PartStyle.interaction` is Compose's ripple node on a part (R3, ADD-A124): one state layer, the hover, focus or drag
 feedback, and the press ripple, a block of the part apart from its paints, as Compose draws its indication apart from
 the container (`androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Surface.kt:246-262`).
-It is drawn over the part's fill and the parts nested in it and beneath its stroke, the ripple beneath the state
-layer: the ripple node draws its content first and then its ripples and its state layer
+It is drawn over the part's fill, its own content and the parts nested in it and beneath its stroke, the ripple
+beneath the state layer (its place in S2.11's *Drawing order*): the ripple node draws its content first and then its ripples and its state layer
 (`compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:373-377`), and
 `Modifier.surface` draws the border over the indication, the border node drawing its content first
 (`Surface.kt:562-564`; `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Border.kt:212-214`,
@@ -2853,7 +3168,7 @@ value is evaluated in the scope outside it (R5.2). Colour-role definitions do no
 ```rust
 pub struct Tokens {
     pub motion: MotionTokens,              // durations, timings (keyed), the speed factor
-    pub theme_change: ThemeChange,
+    pub theme_change: ThemeChange,         // S4.3; staged: enters with the tokens unit (S6.1)
     pub elevation: Vec<(Key, Vec<ShadowLayer>)>,   // the platform's ramp, or empty (R8)
     pub text: TextTokens,
     pub icons: IconTokens,                 // S4.5
@@ -2862,7 +3177,7 @@ pub struct Tokens {
     pub behavior: Behavior,
     pub size_classes: Vec<(SizeClass, SizeClassThreshold)>,   // where the platform states widths (R16)
     pub params: Vec<(Key, Vec<(Key, Value<Scalar>)>)>,       // keyed scalar groups (S4.6)
-    pub pointer: PointerTokens,                              // S4.7
+    pub pointer: PointerTokens,                              // S4.7; staged as `theme_change` is
     pub kde: Value<KdeTokens>,                               // `kde-breeze` only (S4.8)
     pub material: Value<MaterialScheme>,                     // `material-3` only (S4.8)
 }
@@ -3244,7 +3559,9 @@ a state change within it fading where libadwaita draws it at once). The suspensi
 it (`Resolution.suspends`, S8), as it compares the layers, the reader's values and the conditions apart, on a change
 of the scheme in force (`Theme::scheme`, S16), whichever of the reader and the application's `pick` moves it, a
 reader's change a `pick` hides moving none (`adw_style_manager_set_color_scheme` and `update_dark`,
-`adw-style-manager.c:979-991`, `:327-336`), the reader's accent, document or monospace font or contrast, or of a
+`adw-style-manager.c:979-991`, `:327-336`), the reader's accent, monospace font or contrast (the document font, on
+whose change libadwaita suspends too, above, the GNOME reader does not read, S9.3, so its change reaches no
+resolution and suspends nothing; ADD-A146), or of a
 condition the new resolution's
 `Suspend.conditions` names, and the connector keeps its end with the window's `WindowState`
 (`MotionUpdate.suspended_until`, S2.7); any other change, the interface font and the text scaling (GTK settings GTK
@@ -3377,7 +3694,8 @@ shape.
 ### S4.7 Pointer
 
 `PointerTokens { theme: Value<String>, size: Value<Px>, color: Value<Color>, drag_cursors: Vec<(Key, String)> }`,
-read where the platform reports them (ADD-A46).
+read where the platform reports them (ADD-A46). `theme` is the cursor theme's name as the platform's setting stores
+it, and `size` that setting's nominal cursor size, in logical pixels as every `Px` is (GN-3.46, K3.64; ADD-A146).
 
 ### S4.8 Platform scheme tokens
 
