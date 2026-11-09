@@ -801,7 +801,7 @@ placement unit, spec ADD-A120); S7; S8 without
   with it and no `Header` group, one lacking a colour group, S17), measured by spike K's script; the run's non-preset
   scheme files read from the source cache, which the facts-gate jobs fetch (S17, ADD-A142).
 - **For D6:** the cost, the evidence size and the gate's run time measured and extrapolated.
-- **Gate:** as M1a's, over all eight presets, with the accent run; the pull request's CI green on macOS and Windows.
+- **Gate:** as M1a's, over all eight presets, with the KDE accent run; the pull request's CI green on macOS and Windows.
 
 ## M2 — The model's core, complete (after D6; in series)
 
