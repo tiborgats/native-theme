@@ -982,6 +982,57 @@ mod tests {
         });
     }
 
+    /// Every stock icon role loads, twenty times over, while another thread
+    /// of the process opens and closes its COM apartment again and again, as
+    /// the Windows watcher's thread does each time a subscription starts and
+    /// drops. Closing the last apartment of the process unloads every DLL
+    /// COM loaded in it (combase's `ProcessUninitialize`), the shell's for a
+    /// load running at that moment among them (CI run 42554706381).
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn stock_icons_load_while_another_thread_closes_its_apartment() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use windows::Win32::System::Com::{
+            COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize,
+        };
+
+        /// Sets its flag when dropped: the loads' end, or their unwinding.
+        struct SetOnDrop<'a>(&'a AtomicBool);
+        impl Drop for SetOnDrop<'_> {
+            fn drop(&mut self) {
+                self.0.store(true, Ordering::Relaxed);
+            }
+        }
+
+        let done = AtomicBool::new(false);
+        std::thread::scope(|scope| {
+            scope.spawn(|| {
+                while !done.load(Ordering::Relaxed) {
+                    // SAFETY: a successful CoInitializeEx, S_FALSE included,
+                    // is balanced by one CoUninitialize on this thread, with
+                    // no COM object created between them.
+                    unsafe {
+                        if CoInitializeEx(None, COINIT_APARTMENTTHREADED).is_ok() {
+                            CoUninitialize();
+                        }
+                    }
+                }
+            });
+            let loading = SetOnDrop(&done);
+            let loads: Vec<_> = (0..20)
+                .flat_map(|_| stock_roles())
+                .map(|role| (role, load_role(role), last_failure()))
+                .collect();
+            drop(loading);
+            for (role, icon, failure) in loads {
+                assert!(
+                    matches!(icon, Some(IconData::Rgba(_))),
+                    "{role:?} should load as RGBA; failed at: {failure}"
+                );
+            }
+        });
+    }
+
     #[cfg(target_os = "windows")]
     #[test]
     fn glyph_icon_returns_rgba() {

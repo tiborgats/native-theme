@@ -16,11 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: "drop+winicons cdb", mode: cdb, args: "watch::tests::windows_subscribe_and_drop_returns winicons::" }
-          - { name: "drop+winicons", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::" }
-          - { name: "drop+stock", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::tests::stock winicons::tests::load_by_name_stock_icon winicons::tests::rgba_dimensions_correct" }
-          - { name: "drop+glyph", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::tests::glyph winicons::tests::load_by_name_glyph winicons::tests::load_by_name_named winicons::tests::load_by_name_hex" }
-          - { name: "drop+idi", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::tests::idi_question" }
+          - { name: "repro test", mode: plain5, args: "winicons::tests::stock_icons_load_while_another_thread_closes_its_apartment --exact" }
+          - { name: "repro test cdb", mode: cdb, args: "winicons::tests::stock_icons_load_while_another_thread_closes_its_apartment --exact" }
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/evidence
@@ -43,6 +40,7 @@ jobs:
         if: matrix.mode == 'plain5'
         shell: bash
         run: |
+          set +e
           fails=0
           for i in 1 2 3 4 5; do
             "$TEST_EXE" ${{ matrix.args }} --nocapture
