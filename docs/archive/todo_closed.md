@@ -1010,6 +1010,46 @@ and many have since drifted, as the archive's [README](README.md) warns.
       reader leaves to the preset.
   *Closed 2026-11-09 (ADD-A145), fixed by e43dd1f2, decb44c8 and ce325f32:* KColorScheme's effects are the platform function `kde_effects` (S2.2, the clean room's, `native-theme/src/platform/kde_effects.rs`, e43dd1f2); kde-breeze's disabled roles, `role.<set>.disabled.*`, are its KDE facts over the active roles and `token.kde` (`docs/facts/kde/roles.toml`, the preset generated from them at decb44c8); and the KDE reader states the active roles and `token.kde` from kdeglobals' `[ColorEffects:*]` and no disabled colour of its own (`native-theme/src/kde/mod.rs`, ce325f32), so the disabled roles follow the user's scheme as KColorScheme derives them. The item's `colors.rs` is 0.7.0's reader (`native-theme/src/kde/colors.rs` at 265e9abb, removed by 1bfa44d9). The switch's disabled outlines continue under *KDE: the switch's hover and disabled thumb outlines* in `docs/todo.md` (M3 unit buttons and toggles).
 
+### material-3: the display names "Material 3" and "Material 3 Expressive"
+
+- [x] [v0.7.x] When M2d rewrites the preset
+      (`docs/archive/todo_v0.7.0_code-review-plan.md`, M2d Step 15), its line of
+      the `bundled_presets!` table (`native-theme/src/presets.rs`) and its TOML
+      `name` become "Material 3", with "Material 3 Expressive" for the second
+      Material preset; the menus say "Material" until then. The screenshot half of
+      the entry this continues closed at the v0.7.0 release asset run
+      (`docs/archive/todo_closed.md`, *material-3: the screenshot names and the
+      display name*).
+  *Closed 2026-11-09 in a55cdcd2:* `PresetId::display_name` (S16) names `material-3` "Material 3" (`native-theme/src/presets/mod.rs`, the presets table, which holds each preset's key, file and name on one line); Expressive is a flavour of `material-3`, not a second preset (R1.6), so no preset is named "Material 3 Expressive"; the 0.8.0 preset files hold no `name` (S11's `[preset]` table: `id` and `generation`). The connectors take their theme's name from `Theme::preset().display_name()` when M2.1 ports them to the model (S16).
+
+### macOS: the reader and the SF Symbols loader on macOS 10.15 and earlier
+
+- [x] [1.0] For the platform readers (M4-44, deferred by M4's triage,
+      2026-10-13): the macOS reader calls
+      `NSAppearance.performAsCurrentDrawingAppearance(_:)` and the SF Symbols
+      loader `NSImage(systemSymbolName:accessibilityDescription:)`, both
+      introduced in macOS 11.0 (Apple's documentation JSON, `introducedAt`,
+      read 2026-10-13; objc2-app-kit 0.3.2 does not encode availability).
+      On macOS 10.15 and earlier the unrecognised selector raises an
+      Objective-C exception, which objc2's `msg_send` unwinds (objc2 0.6.4
+      `src/macros/mod.rs:983-985`), instead of an `Err`; no GitHub runner is
+      older than macOS 14, so this is unreproduced. Since M4 T24 the crate
+      README states macOS 11 as the minimum. Gate it at runtime: in
+      `read_macos`, `os_version().major >= 11` (or objc2's `available!`)
+      else `Error::ReaderFailed`; in `load_sf_icon_by_name`, `None`.
+  *Closed 2026-11-09, fixed by f551c4ee and a55cdcd2:* the macOS reader refuses macOS before 11 with `ReaderFailure::Platform` (`native-theme/src/macos.rs` `read`, `has_drawing_appearance`: `performAsCurrentDrawingAppearance:` is `API_AVAILABLE(macos(11.0))`, AppKit's `NSAppearance.h:36` at xcode@26.6; f551c4ee), and the SF Symbols loader returns `None` there without sending the selector (`native-theme/src/sficons.rs` `has_symbol_images`: `imageWithSystemSymbolName:accessibilityDescription:` is `API_AVAILABLE(macos(11.0))`, `NSImage.h:82`; a55cdcd2).
+
+### Linux font DPI: the `xrandr` fallback has no facts row
+
+- [x] [v0.7.x] From the kde-breeze validator after M4 T34 (D3, deferred to Step
+      8): the font-DPI chain ends with the physical DPI `xrandr` reports
+      (`detect_physical_dpi`, `native-theme/src/detect.rs:473-485`, the last
+      step of `detect_system_font_dpi`, `:636`), and no
+      `docs/platform-facts.md` row says that any desktop uses it for fonts.
+      Find a source (Plasma, gnome-settings-daemon) and add the row, or drop
+      the step so the chain ends at 96.
+  *Closed 2026-11-09 (ADD-A140, queue #180), fixed by 3ca6715d:* the step is dropped. The KDE reader's font DPI is `Xft.dpi` on an X11 session alone (`native-theme/src/kde/font_dpi.rs`, `read_font_dpi`), as Qt's xcb plugin takes no physical DPI for its logical DPI (`qtbase@6.12.0 src/plugins/platforms/xcb/qxcbscreen.cpp:856-876`); 0.7.0's chain, with its `xrandr` step, went with the old model at f873f462.
+
 ## Toolkit Connectors
 
 ### Closed items from native-theme-egui connector
@@ -2528,6 +2568,9 @@ platform (`native-theme/src/watch/`).
 - [x] [v0.7.0] For M4 (connectors): on GNOME and Budgie X11 the connectors apply a text-scaling factor the toolkit already applied. gnome-settings-daemon 51.0 writes XSETTINGS `Xft/DPI` and the `Xft.dpi` resource as 96 × `text-scaling-factor` × the window scale (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), and winit 0.30.13 (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:146`) and gpui-pre-linux 0.3.8 (`src/linux/x11/client.rs:2672-2677`) take their X11 scale factor from that DPI over 96. On an X11 session, and for any client through Xwayland, the window scale then carries the factor, and `AccessibilityPreferences::scaled` multiplies text by it again: text at factor² × the UI scale, and every other length scaled by the factor, which GTK does not do. Native Wayland clients are right. The connectors should not apply the factor where winit or gpui already did. Found in the M2e Step 7 review (2026-10-11).
   *Closed by M8 T8 (2026-10-17, d6ca9889):* on an `x11` session (`$XDG_SESSION_TYPE`, `detect::session_type`, now also under the `portal` feature) the GNOME reader reports `text_scaling_factor = 1.0` (`toolkit_scale_carries_text_scale` in `native-theme/src/gnome/mod.rs`, injected through `GnomePortalData::session_type` as the KDE DPI chain injects it), so the connectors apply nothing the toolkit's `Xft.dpi` scale factor carried; on a `wayland` session, or where the session type is not set, the factor is reported and applied once, as before. `AccessibilityPreferences::text_scaling_factor`'s doc says it is the factor the toolkit has not applied. The Xwayland half stays, the next entry.
   Archived 2026-10-17 (M8 T21): ticked in 775b26c0; its "above", "below" and "next entry" mean `docs/todo.md` at 6980aa05.
+- [x] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (`docs/archive/todo_closed.md`, *Closed items from Font DPI*, "For M4 (connectors): on GNOME and Budgie X11"; its Xwayland half is the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
+  M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
+  *Closed 2026-11-09 (ADD-A140, queue #180; ADD-A135), fixed by 3ca6715d and 3d465b6f:* no Linux reader's font DPI carries the display scale on Wayland. The KDE reader reads `Xft.dpi` on an X11 session only and reports none on Wayland, where Qt's logical DPI is the preset's (`qtbase@6.12.0 src/plugins/platforms/wayland/qwaylandscreen.cpp:150-160`) and the `Xft.dpi` Plasma sets for Xwayland is the Xwayland scale; `forceFontDPI` is no longer read (`native-theme/src/kde/font_dpi.rs`, 3ca6715d). The GNOME reader reports none, the preset's `token.text.font_dpi` standing (S9.4; `native-theme/src/gnome/mod.rs`, 3d465b6f). Its "the next entry" is the [upstream] Xwayland item, which stays open in `docs/todo.md`, *Font DPI*.
 
 ### Icon-theme detection commands have no timeout
 - [x] [v0.7.0] The icon-theme detection runs `gsettings get <schema> icon-theme` (`native-theme/src/model/icons.rs` `gsettings_icon_theme`) and `xfconf-query -c xsettings -p /Net/IconThemeName` (`detect_xfce_icon_theme`) with `Command::output()`, which waits as long as the command runs; a hung D-Bus session blocks the caller (pre-existing). `detect.rs`'s `run_gsettings_with_timeout` (`:180-218`) bounds its own gsettings calls by `SUBPROCESS_TIMEOUT` (2 s), but it runs only `gsettings` and returns `Option<String>`, dropping why a call gave nothing (not found, unsuccessful status, stderr, empty output, timed out) — which the icon-theme error now reports. Needed: a general run-with-timeout helper that takes the program and its arguments and returns `io::Result<Output>`, with a timeout reported as its own reason ("timed out after 2 s"), so `command_icon_theme` keeps naming every failure.

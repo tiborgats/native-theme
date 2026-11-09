@@ -39,7 +39,6 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `text_area.highlight` on `macos-*` (macOS 15's highlight styles, MAC-X28; listed drawn).
 - `avatar.fallback_icon` on `adwaita` (AdwAvatar's icon fallback, which GN-2.14 does not name; listed absent until the
   facts state it).
-- `button`: iOS 26's further bar-item roles (none declared yet).
 - `role.@highlight` on `macos-*` (`highlightColor`): a literal per scheme, provisional until a probe pass sets an
   explicit highlight colour other than the accent's and reads it (run 41006842699's accent pass already moved the
   effective highlight, `selectedTextBackgroundColor`, `os-probe-macos-26/probe.toml:635` against
@@ -1756,8 +1755,9 @@ spaces:
     in both pinned SDKs: `primary` makes the title heavier in every style, `cells.<scheme>.<style>__role_primary`
     weight trait 0.3 against 0.0, its weight the drawn face's, S2.8's *Weight*, ADD-A136, while the typed `primary` is the filled style; the cancel and destructive roles
     draw as normal on a standalone button and are variants for the hosts that draw them otherwise (above), their
-    facts there; iOS 26's further
-    bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types `@info`, `@contact_add`; `@share` the system Action bar item (`UIBarButtonSystemItemAction`,
+    facts there; iOS 26 adds no further bar-item role: `UIBarButtonItem.h` in the Xcode 26.6 SDK makes the
+    prominent style (`:31`, `primary` in `context toolbar.bar`, above), the fixed space item (`:113`), the shared
+    background (`:157`, `:166`, the toolbar's TB-5) and `identifier` (`:180`) iOS 26's, none a role; ADD-A125); the button types `@info`, `@contact_add`; `@share` the system Action bar item (`UIBarButtonSystemItemAction`,
     `forms.<scheme>.bar_system_action`), in `context toolbar.bar` as `add` is (the share button, its glyph UIKit's,
     X-IC-5; the close type is the typed `close`; the add bar item the typed `add`); done is the typed `done`;
     `@indicator_popup` (the pop-up indicator, `UIButtonConfigurationIndicatorPopup`, on a pull-down button; automatic is the base, and `none`, which draws as automatic in every

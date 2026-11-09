@@ -12,7 +12,7 @@ section, and a `[v0.7.0]` item that would sit under Deferred (pre-1.0) is under 
 (v0.7.0). Closed items move to [`archive/todo_closed.md`](archive/todo_closed.md) as they
 close, under the headings they had, each with the commit that closed it. Cite an entry by
 its file, its `###` heading and its opening words, quoted, as many as make it unique
-under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux readers'"): a
+under that heading (`docs/todo.md`, *Font DPI*, "An X11 client through Xwayland"): a
 `docs/todo.md:N` citation is valid at the commit that wrote it
 (`git show <commit>:docs/todo.md`), since entries move as they close. A preset
 value is cited by its TOML key path, which no preset edit shifts (`adwaita.toml`
@@ -838,17 +838,6 @@ model, the platform presets and the three connectors
       disabled; OS-probe run 40348854007 holds the first measurement. The
       hovered half stays open.
 
-### material-3: the display names "Material 3" and "Material 3 Expressive"
-
-- [ ] [v0.7.x] When M2d rewrites the preset
-      (`docs/archive/todo_v0.7.0_code-review-plan.md`, M2d Step 15), its line of
-      the `bundled_presets!` table (`native-theme/src/presets.rs`) and its TOML
-      `name` become "Material 3", with "Material 3 Expressive" for the second
-      Material preset; the menus say "Material" until then. The screenshot half of
-      the entry this continues closed at the v0.7.0 release asset run
-      (`docs/archive/todo_closed.md`, *material-3: the screenshot names and the
-      display name*).
-
 ### Model: one `*_text_color` field, two meanings
 
 - [ ] [1.0] For M3: `docs/platform-facts.md` §2.1.4's
@@ -882,22 +871,6 @@ model, the platform presets and the three connectors
       break), or carry a resolved layout in `Resolved`/`SystemTheme` and let the
       generated check replace `check_layout`. Kept unchanged in M3 because no
       break was approved for it.
-
-### macOS: the reader and the SF Symbols loader on macOS 10.15 and earlier
-
-- [ ] [1.0] For the platform readers (M4-44, deferred by M4's triage,
-      2026-10-13): the macOS reader calls
-      `NSAppearance.performAsCurrentDrawingAppearance(_:)` and the SF Symbols
-      loader `NSImage(systemSymbolName:accessibilityDescription:)`, both
-      introduced in macOS 11.0 (Apple's documentation JSON, `introducedAt`,
-      read 2026-10-13; objc2-app-kit 0.3.2 does not encode availability).
-      On macOS 10.15 and earlier the unrecognised selector raises an
-      Objective-C exception, which objc2's `msg_send` unwinds (objc2 0.6.4
-      `src/macros/mod.rs:983-985`), instead of an `Err`; no GitHub runner is
-      older than macOS 14, so this is unreproduced. Since M4 T24 the crate
-      README states macOS 11 as the minimum. Gate it at runtime: in
-      `read_macos`, `os_version().major >= 11` (or objc2's `available!`)
-      else `Error::ReaderFailed`; in `load_sf_icon_by_name`, `None`.
 
 ### System icons: `.scale()` after a measurement on macOS and Windows
 
@@ -1525,16 +1498,6 @@ model, the platform presets and the three connectors
       `SolidBackgroundFillColorTertiary`, `#f9f9f9` / `#282828`, and
       *windows-11: what WinUI 3 draws* is closed, in
       `docs/archive/todo_closed.md`.
-
-### Linux font DPI: the `xrandr` fallback has no facts row
-
-- [ ] [v0.7.x] From the kde-breeze validator after M4 T34 (D3, deferred to Step
-      8): the font-DPI chain ends with the physical DPI `xrandr` reports
-      (`detect_physical_dpi`, `native-theme/src/detect.rs:473-485`, the last
-      step of `detect_system_font_dpi`, `:636`), and no
-      `docs/platform-facts.md` row says that any desktop uses it for fonts.
-      Find a source (Plasma, gnome-settings-daemon) and add the row, or drop
-      the step so the chain ends at 96.
 
 ### Dependencies: zbus 6 and the three unmaintained-crate advisories
 
@@ -3685,8 +3648,6 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 ## Deferred (pre-1.0)
 
 ### Font DPI
-- [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (`docs/archive/todo_closed.md`, *Closed items from Font DPI*, "For M4 (connectors): on GNOME and Budgie X11"; its Xwayland half is the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
-  M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
 - [ ] [upstream] An X11 client through Xwayland on a GNOME or Budgie Wayland session draws the text-scaling factor twice: it gets the `Xft.dpi` gnome-settings-daemon writes as 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), winit 0.30.13 and gpui-pre-linux 0.3.9 take their X11 scale factor from it (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:145-146`; `src/linux/x11/client.rs:2671-2678`), and the GNOME reader, which sees a `wayland` session, reports the factor, which the connectors apply again. Core cannot see a client's backend, and the connectors' entry points take no window (M8 Step 6 ruling, 2026-10-16). The lengths winit and gpui scale by the factor on X11, which GTK does not, are theirs, not ours. The same holds for an X11 session started with `startx` from a text login: it runs in the text login's session, whose `XDG_SESSION_TYPE` is `tty` (one of pam_systemd's session types, `pam_systemd(8)` `type=`, systemd 262), so the reader reports the factor and the X11 toolkit's `Xft.dpi` scale carries it too. The rule stays `x11` exactly (Step 6 ruling); `DISPLAY` or `WAYLAND_DISPLAY` would guess the backend, not know it. Waits on a way for the reader to learn the backend the client actually uses (Xwayland, `startx`), which no toolkit exposes to a theme reader today.
   *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: gpui-pre-linux 0.3.10 takes its X11 scale factor from `Xft.dpi` at `src/linux/x11/client.rs:2674-2681` (0.3.9 `:2671-2678`), and gpui-fast-linux 0.1.12 does the same (`:2711-2718`).
 

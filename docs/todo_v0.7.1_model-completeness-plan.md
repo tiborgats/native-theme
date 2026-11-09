@@ -561,7 +561,7 @@ table (under *Colour roles and text ramp*) says.
 | `DefaultsBorderSpec` (`ThemeDefaults.border`) | `model/border.rs:25`; `model/defaults.rs:102` | `<set>.border`; each part's own stroke, corners, shadow, padding (R20) | slice and each widget's unit |
 | `ColorMode`, `Theme.light`, `Theme.dark` | `model/mod.rs:19`, `:274-278` | the `Scheme` condition (S7.1) | M1a's core |
 | `AccessibilityPreferences` | `lib.rs:417` | conditions (S7.1) and `ReaderState.text_scaling_factor` (S9) | M1a's core, M1b |
-| `Theme.name` | `model/mod.rs:270` | `Theme::preset().display_name()` (S16) | M1a's core |
+| `Theme.name` | `model/mod.rs:270` | `Theme::preset().display_name()` (S16) | M1a's core (`Theme::preset`), M1b's close (`display_name`) |
 | `WindowTheme` | `w:17` | `window` | window and chrome |
 | `DialogTheme` (`DialogButtonOrder`, `DialogEntranceStyle`), `PopoverTheme`, `TooltipTheme`, `MenuTheme` | `w:817`, `w:659`, `w:304`, `w:259` | `dialog` (`action_layout.row_order`, `presentations`), `popover`, `tooltip`, `menu` | overlays |
 | `ButtonTheme` | `w:43` | `button` | slice (M1a) |
@@ -1090,11 +1090,11 @@ tasks; the generator's drift check makes the code follow.
 - [x] `v0.7.1-rc1` merged to `main` (D5; fast-forwarded on the maintainer's request, 2026-10-29)
 - [x] M0 setup (2026-10-30)
 - [x] Spikes M · G · K · I · W · A (2026-10-30, all yes)
-- [ ] M1a slice core
+- [x] M1a slice core (2026-11-06)
 - [ ] M1b slice complete
 - [ ] D6 checkpoint
 - [x] D6's evidence item: the evidence repository (the maintainer, 2026-11-08)
-- [ ] The evidence repository's switch (the tooling task, then *The evidence repository*'s steps)
+- [x] The evidence repository's switch (the tooling task, then *The evidence repository*'s steps; 2026-11-08)
 - [x] D13 0.8.0's scope, (B) (2026-11-06)
 - [x] D14 the follow-up releases' version numbers, (a) by logic (2026-11-06)
 - [ ] M2 model core
