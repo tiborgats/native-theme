@@ -1574,7 +1574,10 @@ spaces:
     `backButtonDisplayMode` (C-2).
   - `help_tooltip_on_click: Value<bool>` — KDE's ContextualHelpButton shows its tooltip on click (Q2.48).
   - `hit_extension: Sides<Value<Px>>` — margins that enlarge the hit area beyond the drawn button (K-KA-26†; a
-    minimum size is `body.touch_target`).
+    minimum size is `body.touch_target`). On `kde-breeze`, where it is required, a button the platform gives no
+    extension states a zero on each side, S17's zero by omission (Qt's `QAbstractButton::hitButton` tests the rect
+    alone, `qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:895-898`, as the KD-C1 verifier cites it), never
+    `Absent`, which means a platform without the value (ADD-A141; the KD-C1 verifier's question).
   - `display_mode: Value<PasteDisplayMode>`, `PasteDisplayMode { Icon, Label, IconAndLabel }` — iOS's paste control
     (C-17).
   - `scaffold_placement: Value<Placement>` — where Material's scaffold puts the FAB (strategy
@@ -1833,7 +1836,9 @@ spaces:
   own while they record, only their text changing, the QWidget one in its usual states (K-RL02†), the Quick one a
   checked `toggle` (K-KA-43†); state flags used: hover,
   pressed, focused, focus_visible, disabled, checked (iOS's selected bar item, `UIBarButtonItem.isSelected`, a toggle's on state,
-  `button @ variant toggle`, P3-3†), indeterminate (WinUI's toggle), selected (macOS's selected toolbar item, the one
+  `button @ variant toggle`, P3-3†), indeterminate (WinUI's toggle; AppKit's toggle in the mixed state, which an
+  NSButton takes with `allowsMixedState`, `NSButton.h:147` at xcode@16.4, `:150` at xcode@26.6, never with `checked`,
+  `NSCell.h:71-74`, the MC-C1 tie-break, U693; ADD-A141), selected (macOS's selected toolbar item, the one
   `NSToolbar.selectedItemIdentifier` names among its selectable items, MAC-TL11†), open, default, drop_target (a spring-loaded button under a drag, P3-11†, MAC-X21), dragged (a
   toolbar item dragged in the customization, MAC-P3-6†, P4-10†), over_dark_content (on `clear`: the clear glass's
   dimming layer where the content beneath is bright, X-MT-10).
@@ -1841,9 +1846,16 @@ spaces:
   AppBarButton, AppBarToggleButton, accent and subtle templates; their Checked* and Indeterminate* states name the
   check state with them, so `checked` and `indeterminate` each combine with that group) and `[indeterminate, checked]`
   (the template takes the Indeterminate* states while `IsChecked` is null and the Checked* states only otherwise,
-  `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-133`; ADD-A122); others none (states
+  `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-133`; ADD-A122); `adwaita`:
+  `[disabled, hover]`, `[disabled, pressed]`, `[disabled, focused]`, `[disabled, focus_visible]` and `[disabled,
+  drop_target]`, GTK never holding those flags on an insensitive widget, and `material-3`: `[disabled, hover]`,
+  `[disabled, pressed]` and `[disabled, focus_visible]`, each pair a group of its own as the other flags combine
+  (S10's *A flag the platform clears*; ADD-A141, in place of the state models' `not_drawn` pairs); `macos-*`:
+  `[indeterminate, checked]`, as on `windows-11`: an NSButton's state is one `NSControlStateValue`, the mixed state a
+  value of its own beside on and off (`NSCell.h:71-74`), so a connector reporting both is answered with the mixed
+  state, the one the value holds in place of on (ADD-A141, in place of the state models' `not_drawn` pair); others none (states
   combine: libadwaita's CSS and Breeze's branches combine flags; K1.29's "pressed wins" is a rule order, not a group;
-  `material-3`'s are recency sets, below); precedence: state models (S17). Recency sets: `material-3`:
+  `material-3`'s other precedences are recency sets, below); precedence: state models (S17). Recency sets: `material-3`:
   `state_layer = [focus_visible, hover]` (Material's recency sets, above: Compose's ripple, `Button.kt:156-157`,
   `Surface.kt:253-264`; `pressed` combines; Material draws no dragged layer on a button, MAT-X29) and
   `elevation = [pressed, focus_visible, hover]` (the elevated, filled and tonal buttons, toggle buttons and FABs:
@@ -8482,7 +8494,12 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   `@error` one look, a style sheet naming the palette's highlighted-text and highlight colours for the comment's text
   and background, and `@plain` none (`ktitlewidget.cpp:57-80`): one rule for the three, referring to
   `role.selection.foreground` and `role.selection.background`, where Qt applies that sheet; it passes colour names
-  where `palette()` takes role names, so the value phase measures what Qt draws and states the rule from it.
+  where `palette()` takes role names, so the value phase measures what Qt draws and states the rule from it. The
+  base is what KTitleWidget draws by default, level 1 and the message type `Info` (`ktitlewidget.cpp:112`, `:29`, as
+  the KD-C1 verifier cites them), so `@level_1` and `@info` are the base under another name, stating no rule of
+  their own, and an element holding neither draws as one holding both; `@plain` is the message type whose rule
+  differs from the base (its comment's `fill` `Absent`) (ADD-A141; the KD-C1 verifier's question). Rejected: a base
+  with no level and no message type (a look KTitleWidget never draws).
 - **Sizes:** none. **Flags:** none. **Exclusive groups:** none; precedence: state models (S17).
 - **may_be_absent:** none beyond S6.3's drawing fields (a widget given no icon or comment has none queried, S6.3;
   `@plain`'s comment paints no background, its `fill` `Absent`, a drawing field).
@@ -8995,7 +9012,7 @@ platform:
 | `link`, `link_visited` | link text, visited link text | `link` required; `link_visited` may_be_absent on `macos-*`, `windows-11`, `ios-*`, `material-3` (no visited state: macOS draws no visited link, gap-map-macos's §2.28 note; WinUI's hyperlinks have none, gap-map-windows' `:1695` note; `link`'s state-model sources for `ios-*` and `material-3` name none) | K3.54, GN-1.265 |
 | `negative`, `neutral`, `positive` | the set's status text colours (KDE `ForegroundNegative`, `ForegroundNeutral`, `ForegroundPositive`); a platform without per-set values states `negative = role.global.status.error.standalone`, `neutral = role.global.status.warning.standalone`, `positive = role.global.status.success.standalone` (`windows-11`, which has no standalone status colour, the `fill` instead) (KDE's neutral is a warning, rename row 86; `StatusRoles`' own `neutral` is another colour) | `negative` may_be_absent on `macos-*`; `neutral` may_be_absent on `material-3` and `macos-*`, `positive` may_be_absent on `material-3` and `macos-*` (the status each references is absent there: Material has no warning or success role, below; AppKit declares no status colour, `NSColor.h:77-401`, the macOS status roles absent, below; ADD-A130) | K3.54, Q3.10; gap-map-material's colour-role note (no warning or success role) |
 | `decoration_focus`, `decoration_hover` | KDE's focus and hover decoration colours of the set | `decoration_focus` may_be_absent on every preset but `kde-breeze`, `decoration_hover` may_be_absent on every preset but `kde-breeze` (KColorScheme's decoration roles; the other platforms state focus by `token.focus` and hover per part) | Q3.11, Q3.12, K3.54 |
-| `border` | the set's stroke colour (translucent where the platform's is) | required, but may_be_absent on `macos-*` in the `Selection` set (AppKit declares no colour for a selection's outline, only the selected content's and text's backgrounds and the text on them, `NSColor.h:210-211`, `:221-222`, `:232-235`, `:240-241`: the facts state it absent, or the outline a selected row's capture shows; a part stroking inside a selected row states its own colour, a separator's; ADD-A130) | all; absorbs today's `border.color` and `border.opacity` as `alpha(...)` |
+| `border` | the set's stroke colour (translucent where the platform's is) | required, but may_be_absent on `macos-*` in the `Selection` set (AppKit declares no colour for a selection's outline, only the selected content's and text's backgrounds and the text on them, `NSColor.h:210-211`, `:221-222`, `:232-235`, `:240-241`: the facts state it absent, or the outline a selected row's capture shows; a part stroking inside a selected row states its own colour, a separator's; ADD-A130), and on `windows-11` in the `Selection` set (WinUI names no selection outline: `ListViewItemPresenter` takes the selected item's backgrounds, its foreground and its selection indicator's brushes and no selected border brush, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ListViewItem_themeresources.xaml:256`; ADD-A141, the WN-C1 tie-break) | all; absorbs today's `border.color` and `border.opacity` as `alpha(...)` |
 | `shade` | the translucent shade line/overlay of the set (libadwaita `*_shade_color`) | may_be_absent on every preset but `adwaita` (libadwaita's shade colours, no other platform's); on `adwaita` a set GN-1.270 names no shade of states `= role.window.shade` (`--shade-color`) | GN-1.270 |
 | `disabled` | `DisabledRoles`: a record of the colour fields above (the record itself is always there) | each field may_be_absent on the presets the `DisabledRoles` paragraph below names for it | R5.1 |
 
@@ -9012,7 +9029,10 @@ but `Header`, whose darker shade libadwaita states, GN-1.15).
 
 `DisabledRoles` has the same colour fields as `SurfaceRoles` except `disabled`. Each may_be_absent, with its presets:
 `background` (`adwaita`, `macos-*`, `windows-11`, `material-3`), `background_alternate` (every preset but
-`kde-breeze`), `foreground` (`adwaita`), `foreground_inactive` (every preset but `kde-breeze`), `foreground_active`
+`kde-breeze`), `foreground` (`adwaita`; `windows-11` in the `Selection` set, where WinUI names no disabled selected
+text colour and dims the disabled item by its opacity, `ListViewItemPresenter`'s `DisabledOpacity` beside its
+`SelectedDisabledBackground`, `ListViewItem_themeresources.xaml:256`, as libadwaita's widgets dim, below; ADD-A141, the
+WN-C1 tie-break), `foreground_inactive` (every preset but `kde-breeze`), `foreground_active`
 (every preset but `kde-breeze`), `link` (every preset but `kde-breeze`), `link_visited` (every preset but
 `kde-breeze`), `negative` (every preset but `kde-breeze`), `neutral` (every preset but `kde-breeze`), `positive`
 (every preset but `kde-breeze`), `decoration_focus` (every preset but `kde-breeze`), `decoration_hover` (every preset
@@ -9027,7 +9047,7 @@ field and set absent, as libadwaita's own widgets dim by opacity (below): the `V
 `insensitive_bg_color` and `insensitive_fg_color` (`src/stylesheet/_compat-colors.scss:12-13`), public named colours
 libadwaita defines for applications' own drawing and its stylesheet does not use itself (GN-1.176, ADD-A122); `macos-*`, `windows-11`,
 `ios-*` and `material-3` state the disabled text colour, `foreground` (today's `defaults.disabled_text_color`; on `ios-*`
-D-9, D-20), and `ios-*` its disabled background too (D-20), their other disabled looks being per-part rules. On
+D-9, D-20; on `windows-11` in every set but `Selection`, above), and `ios-*` its disabled background too (D-20), their other disabled looks being per-part rules. On
 KDE each field but `border` is the KColorScheme disabled effect applied to the active value (`kde_effects(c,
 background, disabled, <role kind>)`, the kind `foreground`, `decoration` or `background` per field, `background` the
 set's active background, `active(role.<set>.background)`, never the effected one, which reads `token.kde.disabled`,
@@ -9163,7 +9183,7 @@ six computed backgrounds (`background_active` …) are KColorScheme's tints of t
 | `shadow_reference` | what the platform names as the shadow colour (today's `shadow_color`; macOS `shadowColor`, Material `shadow`) | may_be_absent on `adwaita`, `windows-11`, `ios-*` (no named shadow colour: their shadows state each layer's colour, GN-3.01, W3-01, X-SH-1); `kde-breeze` names one (breezerc `ShadowColor`, K3.1, K3.2) | today's `shadow_color`, MAT-X5, K3.1 |
 | `selection_text_background` | the highlight behind selected text (today's `text_selection_background`) | required on every preset (every platform highlights selected text; a platform that does not distinguish it from selected items states a reference to the `Selection` set, below) | today's fields; GN-3.40, X-SE-1, MAC-X15, W3-25 |
 | `selection_text_foreground` | the selected text's colour (today's `text_selection_color`); absent where the text keeps its own colour | may_be_absent on `adwaita` (GN-3.41), `windows-11` (W3-25), `material-3` (Compose's `TextSelectionColors` holds a handle and a background colour only, gap-map-material's note on `compose/MaterialTheme.kt:279-281`), `ios-*` (X-SE-1 names the highlight colour alone) | today's fields |
-| `selection_text_background_unfocused` | an unfocused field's selection (WinUI's `SelectionHighlightColorWhenNotFocused`, AppKit's unemphasised selection, libadwaita's selection without `:focus-within`; ADD-A49) | may_be_absent on `kde-breeze`, `ios-*`, `material-3` (no unfocused selection colour: KDE's changes with the window, a `window_inactive` rule, K1.45) | W1-032, W3-25, MAC-I05, GN-3.40 |
+| `selection_text_background_unfocused` | an unfocused field's selection (WinUI's `SelectionHighlightColorWhenNotFocused`, AppKit's unemphasised selection, libadwaita's selection without `:focus-within`; ADD-A49) | may_be_absent on `kde-breeze`, `ios-*`, `material-3` (no unfocused selection colour: KDE's changes with the window, a `window_inactive` rule, K1.45) and on `windows-11` (WinUI hides an unfocused box's selection by default: `SelectionHighlightColorWhenNotFocused` defaults to transparent, which hides it, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/native/text/Controls/TextBoxBase.cpp:4356`, `:4287`, so nothing is drawn, the role WinUI's only where an application sets the property; ADD-A141, the WN-C1 tie-break) | W1-032, W3-25, MAC-I05, GN-3.40 |
 | `selection_text_foreground_unfocused` | an unfocused field's selected text (macOS's unemphasised selected text colour) | may_be_absent on every preset but `macos-*` (AppKit's alone, MAC-I05) | MAC-I05 |
 | `find_highlight` | the find/search match highlight | may_be_absent on `adwaita`, `kde-breeze`, `windows-11`, `material-3` (no find-highlight colour of the platform's: KDE's editor states its match fill on `code_editor.find_match`, K-SF08†) | MAC-DF04, MAC-X15, TA-2, C-25 |
 | `drop_highlight` | the drop-target highlight | may_be_absent on `kde-breeze`, `material-3` (no drop-target colour of their own: their drop indicators are stated on the parts, K1.182, MAT-L10) | R12, GN-3.66†, MAC-X21, W3-49†, C-24 |
@@ -9418,9 +9438,9 @@ sets it (WinUI's trimming and wrapping, `TextBlock_themeresources.xaml:10-51`), 
 
 **GNOME.** libadwaita's classes: `title_1`, `title_2`, `title_3`, `title_4`, `heading`, `body`, `caption_heading`,
 `caption`, `document`, `monospace`, `numeric` [GN-1.189]. `document` takes its family and size from
-`document-font-name` [GN-1.191]; `numeric` carries the `tnum` feature [GN-1.192]; `font.axes` and `font.features`
-receive
-the Pango `@axis=` and `#feature=` segments of the font settings [GN-1.193]; `line_height` of `body`, `caption` and
+`document-font-name` [GN-1.191]; `numeric` carries the `tnum` feature [GN-1.192]; the Pango `@axis=` and
+`#feature=` segments of the font settings reach no `font.axes` or `font.features`, as GTK 4 takes only the family and
+the size from `gtk-font-name` and the GNOME reader patches those alone (S9.3, ADD-A141) [GN-1.193]; `line_height` of `body`, `caption` and
 `document` is a multiple of the font size [GN-1.190]. The relative label sizes the stylesheet states are keyed styles
 whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subtitles, progress text),
 `narrow_switcher_label`,
@@ -9575,7 +9595,7 @@ token.motion.speed_factor)`, an unscaled one a plain duration (R9).
 
 | Platform | Keys (one per duration the platform states) | Rows |
 |---|---|---|
-| libadwaita | the stylesheet's transition variables `backdrop`, `focus`, `button`, `row`, `toggle` (`$backdrop_transition` …, `libadwaita@1.10.0 src/stylesheet/_common.scss:2-7`, `widgets/_lists.scss:1-3`, `widgets/_toggle-group.scss:5-7`), `scrollbar` (`$_scrollbar_transition`, `widgets/_scrolling.scss:4`) and `needs_attention` (the keyframes' name, `_common.scss:114`), and its inline transitions by S4.1's step 2, the class (its CSS node's widget) and, where one class states different values, the transition in the source's words: `tab_bar` (AdwTabBar's separator and tab fades, one duration, `widgets/_tab-view.scss:39`, `:59`), `tab_thumbnail` (AdwTabThumbnail's shadow, `:199`; its background colour's transition on the same line states no duration, CSS's 0s, so it changes at once and the key does not cover it), `bottom_sheet_border_radius` and `bottom_sheet_box_shadow` (AdwBottomSheet's sheet and outline, `widgets/_bottom-sheet.scss:10`, `:30`), `expander_row` (AdwExpanderRow's arrow rotation, `widgets/_lists.scss:392`), `places_view` (GtkPlacesView's server-list arrow, `widgets/_file-chooser.scss:68`) and `toggle_group` (AdwToggleGroup's separators, `widgets/_toggle-group.scss:142`) (ADD-A123); the timed animations defined in code: AdwToastOverlay's `toast_overlay_show`, `toast_overlay_hide`, `toast_overlay_replace` (`src/adw-toast-overlay.c:20-22`), AdwTab's `tab_close_btn`, `tab_attention_indicator` (`adw-tab.c:19`, `:28`), AdwTabOverview's `tab_overview_scroll` and `tab_overview` (`SCROLL_ANIMATION_DURATION`, `TRANSITION_DURATION`, `adw-tab-overview.c:29-30`), AdwEntryRow's `entry_row` (`adw-entry-row.c:18`), AdwViewStack's `view_stack` (`adw-view-stack.c:1653`), the deprecated AdwFlap's fold, `flap_fold`, and AdwLeaflet's mode transition, `leaflet_mode` (`adw-flap.c:1551`, `adw-leaflet.c:2445`), AdwTabBox's `tab_box_open`, `tab_box_close`, `tab_box_focus`, `tab_box_scroll`, `tab_box_resize`, `tab_box_reorder`, `tab_box_icon_resize` (`adw-tab-box.c:30-36`) and AdwTabGrid's `tab_grid_open`, `tab_grid_close`, `tab_grid_focus`, `tab_grid_resize`, `tab_grid_reorder`, `tab_grid_icon_resize` (`adw-tab-grid.c:29-34`), each class stating different values for its transitions; the revealer and stack defaults, `revealer` and `stack`; the animated scroll, `scrolled_window` (GtkScrolledWindow's `ANIMATION_DURATION`, `gtk@4.24.1 gtk/gtkscrolledwindow.c:189`) | GN-3.18, GN-3.21, GN-3.22, GN-3.24 |
+| libadwaita | the stylesheet's transition variables `backdrop`, `focus`, `button`, `row`, `toggle` (`$backdrop_transition` …, `libadwaita@1.10.0 src/stylesheet/_common.scss:2-7`, `widgets/_lists.scss:1-3`, `widgets/_toggle-group.scss:5-7`), `scrollbar` (`$_scrollbar_transition`, `widgets/_scrolling.scss:4`) and `needs_attention` (the keyframes' name, `_common.scss:114`), and its inline transitions by S4.1's step 2, the class (its CSS node's widget) and, where one class states different values, the transition in the source's words: `tab_bar` (AdwTabBar's separator and tab fades, one duration, `widgets/_tab-view.scss:39`, `:59`), `tab_thumbnail_box_shadow` (AdwTabThumbnail's shadow, `:199`; its background colour's transition on the same line states no duration, CSS's 0s, so it changes at once and the key does not cover it; the class's code runs a fade of its own, `adw-tab-thumbnail.c:18`, so the class states two values and each key takes its transition's name, the code's fade named by the GNOME facts in its source's words, `tab_thumbnail_<that word>`, as AdwBottomSheet's two are; ADD-A141, the GN-C1 verifier's question), `bottom_sheet_border_radius` and `bottom_sheet_box_shadow` (AdwBottomSheet's sheet and outline, `widgets/_bottom-sheet.scss:10`, `:30`), `expander_row` (AdwExpanderRow's arrow rotation, `widgets/_lists.scss:392`), `places_view` (GtkPlacesView's server-list arrow, `widgets/_file-chooser.scss:68`) and `toggle_group` (AdwToggleGroup's separators, `widgets/_toggle-group.scss:142`) (ADD-A123); the timed animations defined in code: AdwToastOverlay's `toast_overlay_show`, `toast_overlay_hide`, `toast_overlay_replace` (`src/adw-toast-overlay.c:20-22`), AdwTab's `tab_close_btn`, `tab_attention_indicator` (`adw-tab.c:19`, `:28`), AdwTabOverview's `tab_overview_scroll` and `tab_overview` (`SCROLL_ANIMATION_DURATION`, `TRANSITION_DURATION`, `adw-tab-overview.c:29-30`), AdwEntryRow's `entry_row` (`adw-entry-row.c:18`), AdwViewStack's `view_stack` (`adw-view-stack.c:1653`), the deprecated AdwFlap's fold, `flap_fold`, and AdwLeaflet's mode transition, `leaflet_mode` (`adw-flap.c:1551`, `adw-leaflet.c:2445`), AdwTabBox's `tab_box_open`, `tab_box_close`, `tab_box_focus`, `tab_box_scroll`, `tab_box_resize`, `tab_box_reorder`, `tab_box_icon_resize` (`adw-tab-box.c:30-36`) and AdwTabGrid's `tab_grid_open`, `tab_grid_close`, `tab_grid_focus`, `tab_grid_resize`, `tab_grid_reorder`, `tab_grid_icon_resize` (`adw-tab-grid.c:29-34`), each class stating different values for its transitions; the revealer and stack defaults, `revealer` and `stack`; the animated scroll, `scrolled_window` (GtkScrolledWindow's `ANIMATION_DURATION`, `gtk@4.24.1 gtk/gtkscrolledwindow.c:189`) | GN-3.18, GN-3.21, GN-3.22, GN-3.24 |
 | kde-breeze | `animations` (Breeze's `Animations`, its state engines' duration: while kdeglobals sets `AnimationDurationFactor`, `= floor(mul(<base>, token.motion.speed_factor))`, `<base>` the literal the factor is multiplied by at `breeze@6.8.2 kstyle/breezestyle.cpp:2080` (not breezerc's `AnimationsDuration`), the product truncated to whole ms, a positive result turning Breeze's animations on whatever breezerc says (`:2081-2083`) and zero, which a factor below 0.01 gives, turning them off (`:2085`), so the duration is then zero; while the factor is unset, breezerc's `AnimationsDuration`, zero where its `AnimationsEnabled` is off (`:2076-2078`, `kstyle/animations/breezeanimations.cpp:49-55`); Qt's `SH_Widget_Animation_Duration` too, `breezestyle.cpp:937-938`, which the dock widgets' and toolbars' re-layout and KCollapsibleGroupBox's expansion reference, the last with the source's floor by `max`, `kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:114-116`); `decoration_shadow` (the decoration's shadow fade, a base times `token.params.motion.kwin_speed_factor`, the factor KWin's configuration gives, kwinrc's over kdeglobals', `floor`ed, `kdecoration/breezedecoration.cpp:379-389`, K1.17, ADD-A123); `line_edit_icon_button` (Qt's side-icon fade, unscaled, `qtbase@6.12.0 src/widgets/widgets/qlineedit_p.cpp:432`); `tab_bar` (Qt's tab move, `ANIMATION_DURATION`, unscaled, `src/widgets/widgets/qtabbar_p.h:30`); `message_widget` (KMessageWidget's timeline, `kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60`); `variant` (QVariantAnimation's own default, unscaled, which QTreeView's expand takes, K1.185†, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`); Kirigami `very_short`, `short`, `long`, `very_long` (derived from `long`, with the source's floor by `max`, ADD-A56) and `human_moment` (unscaled) | K1.17, K1.185†, K3.31, K3.37, K3.38†, Q3.23–Q3.25, Q3.27 |
 | windows-11 | `control_normal`, `control_fast`, `control_fast_after`, `control_faster` (WinUI's `ControlNormalAnimationDuration`, `ControlFastAnimationDuration`, `ControlFastAnimationAfterDuration`, `ControlFasterAnimationDuration`, `Common_themeresources_any.xaml:603-606`); `connected_service` (ConnectedAnimationService's default, `src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26`); `scroll_into_view` (the scroll into view, measured, W-P4-3†); one entry per built-in theme transition the facts measure, named as WinUI names its class less `Transition` and `Animation` (`EntranceThemeTransition` `entrance_theme`: entrance, content, add and delete, reorder, reposition, popup, pane, drill in, press tilt, fade, split open and close, drag item) | W3-30, W3-32, W3-33, W3-34, W-P4-3† |
 | macos-* | by family, the facts lanes naming each key: the AppKit durations (`NSAnimationContext`'s default, the window resize time, per-control durations the probe records), `navigation` | MAC-X11 |
@@ -9608,7 +9628,8 @@ default easing curve for its timelines (`QTimeLine`'s, `qtbase@6.12.0 src/coreli
 `fast_out_slow_in` and `slow_out_fast_in`, and its control key spline `control_fast_out_slow_in`
 (`ControlFastOutSlowInKeySpline`, `Common_themeresources_any.xaml:602`) (W3-31), the connected animation's
 `connected_service` (`microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:27-28`,
-W3-33) and the scroll into view's `scroll_into_view` (measured, W-P4-3†); UIKit's default
+W3-33) (the scroll into view has none: its measured duration is zero, W-P4-3†, S4.1's *A motion in no time*,
+ADD-A141); UIKit's default
 spring, `default` (X-MO-2), the navigation push and pop's `navigation` (measured, X-MO-3), and AppKit's media-timing curves by family (MAC-X11); Material's easing tokens `standard`,
 `standard_accelerate`, `standard_decelerate`, `emphasized`, `emphasized_accelerate`, `emphasized_decelerate`, `legacy`,
 `legacy_accelerate`, `legacy_decelerate`, `linear` (`EasingStandardCubicBezier` …, `MotionTokens.kt:40-68`; `linear`'s
@@ -9631,7 +9652,8 @@ Q3.26); `material-3` `oklab` (Compose's `ColorVectorConverter.kt:30-48`; MAT-X13
 animations' space, `CompositionColorSpace_Rgb` (`SharedTransitionAnimations.cpp:111`, the brush transitions its
 controls' colours move by, W1-023), whose arithmetic (premultiplied or straight) the compositor holds, not the cache:
 a measurement, the WinUI host capturing a brush transition's middle frame between two colours of different alpha and
-the facts stating the member it matches (a pending fact until then; the Open items); `macos-*` (MAC-X11) and `ios-*`
+the facts stating the member it matches (a pending fact until then; the Open items): straight, with no 8-bit
+truncation, `straight_srgb` (run 42308526155, U157; S2.7, ADD-A141); `macos-*` (MAC-X11) and `ios-*`
 (X-MO-1) Core Animation's colour interpolation, which no cached source states: a measurement likewise, the probe and
 the iOS host capturing a colour transition's middle frame. A member is added where none matches (S2.7).
 
@@ -9918,7 +9940,10 @@ holds.
 
 - `UISettings.GetColorValue` for `AccentDark1`–`3`, `AccentLight1`–`3`: W3-12.
 - `SPI_GETKEYBOARDCUES`: W3-21, W3-48†.
-- `SPI_GETCLEARTYPE`, `SPI_GETFONTSMOOTHING`, `SPI_GETFONTSMOOTHINGTYPE`, `SPI_GETFONTSMOOTHINGCONTRAST`: W3-22.
+- `SPI_GETCLEARTYPE`, `SPI_GETFONTSMOOTHING`, `SPI_GETFONTSMOOTHINGTYPE`, `SPI_GETFONTSMOOTHINGCONTRAST`: W3-22,
+  ClearType's settings, which WinUI's greyscale text does not take, so the Windows reader states from them nothing
+  `token.text.rendering` holds for `windows-11`, its rendering parameters being those WinUI draws with, DirectWrite's
+  greyscale enhanced contrast and gamma (S4's *The rendering drawn*, ADD-A141).
 - `SPI_GETCARETWIDTH`, `GetCaretBlinkTime`, `UISettings.CaretWidth`, `UISettings.CaretBlinkRate`,
   `SPI_GETCARETTIMEOUT` (to verify): W3-24.
 - `UISettings.CursorSize`, `SM_CXCURSOR`: W3-29.
@@ -10035,7 +10060,8 @@ rectangle where it applies, and the direction, implemented once to its platform'
 
 The "Parameters" column names `PlacementParams` fields only (S13); what a strategy takes from the connector is a
 `PlacementInput` (the anchor, the pointer, the keyboard's rectangle). The keyboard strategies' motion is no parameter:
-WinUI's scroll into view is `token.motion.durations.scroll_into_view` and its timing (measured, W-P4-3†), and
+WinUI's scroll into view is `token.motion.durations.scroll_into_view`, measured as zero, with no timing (W-P4-3†,
+S4.1's *A motion in no time*, ADD-A141), and
 Android's insets animation is the platform's (MAT-P4-2†); `softInputMode` is no parameter either, it picks which
 `KeyboardAvoid` strategy the window's `keyboard_avoidance` value states (MAT-P4-2†).
 

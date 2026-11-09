@@ -469,7 +469,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.191 | `reader:gnome:document-font-name` | reader |
 | GN-1.192 | `token.text.keyed.numeric.font.features` | token |
 | GN-1.192 | `token.text.roles.numeric (= token.text.keyed.numeric)` | token |
-| GN-1.193 | `reader:gnome:font-name Pango @axis= variations into Font.axes and #feature= into Font.features` | reader |
+| GN-1.193 | `reader:gnome:font-name Pango @axis= variations into Font.axes and #feature= into Font.features (not read while GTK 4 takes only the family and the size from gtk-font-name, S9.3, ADD-A141; the GNOME facts' absence citation to name each field it does not take)` | reader |
 | GN-1.193 | `Font.axes (S2.8)` | field |
 | GN-1.193 | `Font.features (S2.8)` | field |
 | GN-1.194 | `token.text.keyed.smaller` | token |

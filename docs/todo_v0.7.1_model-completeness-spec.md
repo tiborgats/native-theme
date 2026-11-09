@@ -281,10 +281,14 @@ ref      := "role." set "." path        typed colour role of a surface set, a pa
                                           `.font_underline_offset`, … , `.font_size`,
                                           `.line_height`)                              (R25.3)
           | "body_font_height"            the `body` slot's font's height (ascent plus descent,
-                                          `Element.metrics.height` of `body`'s scaled font):
-                                          Kirigami's label-sized icons follow it, rounded down
-                                          to an icon step (Q1.1, `units.cpp:297-356`); part
-                                          expressions only
+                                          `Element.metrics.height` of `body`'s scaled font,
+                                          unrounded: Kirigami keeps a QFontMetricsF and reads
+                                          its fractional height, `kirigami@6.31.0
+                                          src/platform/units.cpp:35`, `:53`, `:275`, as the KDE
+                                          facts' round 6 cites it; ADD-A141):
+                                          Kirigami's label-sized icons follow it, truncated to
+                                          an integer and rounded down to an icon step (Q1.1,
+                                          `units.cpp:297-356`); part expressions only
           | "part." path                  another resolved field of the same part      (R25.3)
           | "widget." part "." path       a resolved field of another part of the same widget (a band
                                           following the frame's shadow, GN-1.282†; a label following its
@@ -438,7 +442,7 @@ refuses nothing that check would pass, and the check refuses what the merge cann
 | `kcu_overlay(under, over)` | colour | `KColorUtils::overlayColors`, to `kcolorutils.cpp` (ADD-A51) |
 | `kirigami_tint(c, tint, alpha)` | colour | Kirigami's `ColorUtils.tintWithAlpha` (ADD-A52), to `kirigami@6.31.0 src/platform/colorutils.cpp:230-245`. QML's `Qt.tint(base, tint)` (`qtdeclarative@6.12.0 src/quick/util/qquickvaluetypes.cpp:62-79`) is the same blend with the tint's own alpha, so it is written `kirigami_tint(base, tint, 1)` (ADD-A122); the two differ only in their end tests, Qt's on the 8-bit alpha (`alpha()` 255 returns the tint, 0 the base) where Kirigami's compares the real alpha with 1 and 0. `QColor::alpha()` rounds the 16-bit alpha to 8 bits (`qt_div_257`, `qtbase@6.12.0 src/gui/painting/qcolor.cpp:1631`, `src/gui/painting/qdrawhelper_p.h:887-888`; an extended-RGB colour's by `qRound`, `qcolor.cpp:1629-1630`), so for a tint whose 16-bit alpha is at least `0xff7f` or at most `0x0080` without being opaque or transparent Qt returns an end where Kirigami blends. The one `Qt.tint` the KDE trace states (Q2.5, `qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:86`) has a tint at alpha 0.8, far from either end; a fact that needs one near an end is a class 2 change (the reference selected by an enum operand, S2.2's vector tables). `Qt.alpha(c, a)` is `with_alpha(c, a)` (ADD-A123), so RoundButton's `Qt.tint(textColor, Qt.alpha(borderColor, 0.8))` is `kirigami_tint(surface.foreground, with_alpha(<border>, <a>), 1)`, exact for a translucent border colour too (a third-party scheme's four-component colour, `kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:55-58`) |
 | `kirigami_lerp(a, b, balance)` | colour | Kirigami's `ColorUtils.linearInterpolation`, to `kirigami@6.31.0 src/platform/colorutils.cpp:61-80`: hue, saturation, value and alpha each interpolated linearly in HSV, the last three clamped to `0..=1` (a hue ≤ 0 — QColor's −1 for a colour without one, and pure red's 0 — taken from the other colour, else 0; the hue's `fmod` by 1 not wrapped further); `balance` is clamped to `0..=1` (S12 refuses a stated one outside it), since Kirigami does not clamp it and outside that range the hue can leave `0..1`, where QColor's `fromHsvF` returns an invalid colour the model has no value for. Every `linearInterpolation` of Kirigami, qqc2-desktop-style and kirigami-addons the KDE trace states: the frame colours (Q3.15 lists each), Kirigami's list subtitle (Q1.87), separator (Q1.95) and badge (Q2.26, and inside `kirigami_badge_text`), kirigami-addons' page fill (K-KA-6†), status message (K-KA-10†), radio selector (K-KA-25†) and inside `ka_card_border` (ADD-A121) |
-| `kirigami_label_icon_size(font_height)`, `kirigami_badge_text(text_color, background)` | length, colour | Kirigami's `units.cpp` and `Badge.qml` (ADD-A53); `text_color` and `background` are colours (the theme's text colour and the badge's background, `Badge.qml:67-81`): `text_color`, or, where `ColorUtils.brightnessForColor` (luma above 0.5 is light) puts it on the same side as `background`, black on a light `background` and white on a dark one, then `kirigami_lerp(<that>, background, 0.17)` (`Badge.qml:72-80`) |
+| `kirigami_label_icon_size(font_height)`, `kirigami_badge_text(text_color, background)` | length, colour | Kirigami's `units.cpp` and `Badge.qml` (ADD-A53); `font_height` is the fractional height (`body_font_height`, above), which the function truncates toward zero before it steps, as `roundedIconSize` takes an `int` (`units.cpp:297-327`; Noto Sans 10 at 96 DPI, 17.6875 px, is 17 and steps down to 16, the KDE render host's reading, U400; ADD-A141); `text_color` and `background` are colours (the theme's text colour and the badge's background, `Badge.qml:67-81`): `text_color`, or, where `ColorUtils.brightnessForColor` (luma above 0.5 is light) puts it on the same side as `background`, black on a light `background` and white on a dark one, then `kirigami_lerp(<that>, background, 0.17)` (`Badge.qml:72-80`) |
 | `ka_card_border(background, text)`, `ka_banner_line(type_text, frame)`, `ka_contrast_text(c)` | colour | kirigami-addons' FormCard background, banner and avatar code (ADD-A66): `ka_card_border` is `qt_darker(background, 120)` (QML's `Qt.darker(background, 1.2)`) where `background` is dark (alpha above 0, luma at most 0.6) and `kirigami_lerp(background, text, 0.15)` otherwise (`kirigami-addons@1.15.0 src/formcard/private/FormCardBackground.qml:16-23`); `ka_banner_line` is `type_text`'s HSL hue and saturation at `frame`'s HSL lightness, opaque (`src/components/Banner.qml:239-255`) |
 | `kqc_series_color(seed, count, index)`, `kte_minimap_mark(mark, background)`, `kte_mark_underlay(hue_from, background, foreground)` | colour | KQuickCharts' `ColorGradientSource.cpp`, KTextEditor's `kateviewhelpers.cpp`: the marks' HSV recolouring, and their underlay in HSL (one colour's hue and saturation at the background's lightness moved toward the foreground, K-P3-12†) (ADD-A57, ADD-A90) |
 | `sf_tracking(font_size, design: TrackingDesign)` | length | Apple's size-to-tracking tables for SF Pro, SF Pro Rounded, New York (ADD-A54); `TrackingDesign = SfPro \| SfProRounded \| NewYork`. The tables are the HIG's (`hig-typography@2026-02-09`, `typography.json`: *SF Pro*, *SF Pro Rounded*, *New York*, the macOS one, *macOS tracking values*, giving SF Pro's values), each row a size in points and a tracking in 1/1000 em; the function reads the 1/1000 em column, the points column being that value times the size, rounded to two places (it differs only there, SF Pro's 52 and 53 pt swapped against the macOS table's): `font_size` in points (S9.4's DPI, as `round_pt` converts it), the tracking `t(size) · size / 1000` points, converted back to px. A size between two rows takes `t` linearly interpolated between them, one below the first row or above the last that row's `t`: the HIG states that the system font "dynamically adjusts tracking at every point size" (its *Typography*, the developer note on mockups), so the tracking is continuous in the size, and interpolation gives each row's value at its size exactly. Rejected: the nearest or the next lower row (a step the platform does not draw, no source); measuring Core Text's tracking at every size (a probe read the slice does not need, its sizes being the table's; ledger queue #154) |
@@ -549,7 +553,7 @@ query, so a connector queries again when the data changes, as for a state (R25.3
 pinned upstream source compiled unchanged in a CI tool that calls the internal function (never part of the crate).
 Where the reference is closed, measured inputs and outputs, each with its evidence (S17), are the table; where a
 platform publishes a table (Apple's tracking), that table is the vector table, its rows carrying S17's citations.
-S9.4's scaling curves (`AndroidNonLinear`, `DynamicType`) are checked the same way. The model's own arithmetic
+S9.4's scaling curves (`AndroidNonLinear`, `DynamicType`, `WinUi`) are checked the same way. The model's own arithmetic
 (`alpha`, `with_alpha`, `mix`, `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `round`, `round_pt`, `pick`) is not a platform function: its unit tests
 follow this section's definitions; every other function of the table above is one. A vector table, under `native-theme/tests/vectors/`,
 holds rows of inputs and outputs. Each row is traceable to the reference as a fact is (S17): generated by it (the
@@ -593,7 +597,8 @@ libadwaita's `adw_accent_color_nearest_from_rgba`, `libadwaita@1.10.0 src/adw-ac
 `kde_color_scheme` (the KDE reader's, Plasma's dark-or-light test of the palette's window colour, plasma-integration's
 `KHintsSettings::determineColorScheme` and xdg-desktop-portal-kde's `readFdoColorScheme` over Qt's `qGray`,
 `plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:469-485`, `xdg-desktop-portal-kde@6.8.2
-src/settings.cpp:259-273`, `qtbase@6.12.0 src/gui/painting/qrgb.h:36-37`, S9.3; ADD-A140) and `qxcb_xft_dpi` (the
+src/settings.cpp:259-273`, `qtbase@6.12.0 src/gui/painting/qrgb.h:37-38`, `:40-41`, S9.3; ADD-A140, its lines
+corrected by ADD-A141) and `qxcb_xft_dpi` (the
 KDE reader's, Qt's xcb plugin reading `Xft.dpi` from the X resources, `qtbase@6.12.0
 src/plugins/platforms/xcb/qxcbscreen.cpp:298-314`, `:366-373`, `:856-876`, S9.3; ADD-A140).
 `check_function_vectors.py` reads this list as it reads S2.2's functions: a listed helper with a table and no
@@ -927,6 +932,18 @@ pub enum ShadowFalloff { Gaussian,             // CSS's: a Gaussian blur, its de
                                                // `shadow.size`
 ```
 
+**Layer order** (ADD-A141; the GN-C1 verifier's question). `Layers` lists its layers bottom first, as `Paint`
+does (S2.3), each painted over the ones before it, so the model has one order for every list of layers; the layers
+without `inset` are painted beneath the part's fill and the inset layers over it, beneath its stroke, as CSS paints a
+`box-shadow` (W3C CSS Backgrounds and Borders Level 3, *Drop Shadows*). A CSS `box-shadow` list paints its first
+shadow on top, so a fact states it reversed (libadwaita's `0 0 0 1px $border_color, 0 1px 3px 1px …, 0 2px 6px 2px
+…` the widest layer first); material-web's elevation, its `::before` shadow beneath its `::after`, is already bottom
+first. A part a platform draws from two nodes of one box (GTK's menu button, the outer `menubutton` node and its inner
+button, `menubutton.card > button`) states the outer node's layers first and the inner node's after them, as the
+inner node is painted over the outer. Rejected: CSS's order, first on top (one lane's sources, against `Paint`'s and
+material-web's order, so a connector would read two orders); no stated order (the GNOME and Material facts already
+disagree).
+
 **Blur and falloff** (ADD-A134). `blur` is CSS's blur radius: under `Gaussian` the layer's shape (the part's
 outline moved by `x` and `y`, grown by `spread`, or shrunk where `inset`) is blurred by a Gaussian whose standard
 deviation is half of `blur`, as CSS's `box-shadow` defines it (W3C CSS Backgrounds and Borders Level 3, *Shadow
@@ -1237,6 +1254,12 @@ its source, for every `t` a timing gives, overshoot included:
   and truncated toward zero (Qt's `QVariantAnimation` colour interpolator, which QML's `ColorAnimation` uses,
   `qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22`, `src/corelib/animation/qvariantanimation_p.h:89-94`,
   `qtdeclarative@6.12.0 src/quick/util/qquickanimation.cpp:776-782`).
+- `StraightSrgb` (ADD-A141): each channel and the alpha interpolated apart without premultiplying, as fractions, with
+  no 8-bit step: WinUI's composition path (below), measured. Whether the compositor clamps a channel or the alpha that
+  overshoots `0..=1` is unmeasured, no WinUI run having driven a colour past `t = 1`: the member's vector table measures
+  it (rows with `t` outside `0..=1`, below); until then its result there is unknown, which no `windows-11` fact
+  meets, every WinUI timing the facts state being a cubic Bézier whose control points lie in `0..=1`
+  (`docs/facts/windows/tokens.toml`), so none overshoots.
 - `Oklab`: L, a, b and the straight alpha interpolated apart and clamped to `0..=1`, `±0.5`, `±0.5` and `0..=1`
   before the conversion back to the target colour's space (sRGB for every Material colour); every Oklab value, the
   endpoints and each frame, is held as half-float L, a and b with a 10-bit alpha (`androidx@e4d933c9
@@ -1266,7 +1289,20 @@ src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111`,
 compositor, not this source, holds; and a storyboard animation left on the UI thread blends straight 8-bit ARGB by a
 fraction rounded to 256ths (`src/dxaml/xcp/core/animation/ColorAnimation.cpp:51-131`). `windows-11`'s token is the
 composition path's, which its controls' brush transitions take (W1-023), the member its measurement matches (the
-catalogue's *token.motion.color_space*); a WinUI fact on the other path is the case below. Core Animation's colour
+catalogue's *token.motion.color_space*); a WinUI fact on the other path is the case below. That member is
+`StraightSrgb` (ADD-A141; U157's measurement): the WinUI host's brush transitions between colours of different alpha
+(run 42308526155, `read_host.py`'s `[color_space]`) fit straight interpolation within a level and premultiplied and
+Oklab interpolation only within 16 to 51, and refitted with the 8-bit truncation and without it (each frame's best
+`t` in 2000ths, over the two translucent recordings' 22 distinct frames each, the error a frame's largest channel
+difference) they are off on average by 0.50 and 0.64 levels truncated and 0.14 and 0.05 without where the modelled
+composite is rounded to whole levels before it is compared, and by 0.51 and 0.61 against 0.22 and 0.23 where it is
+not (the independent review's `refit2.py`): the compositor does not truncate as Qt does,
+so `StraightSrgb8`, Qt's, would state a rounding WinUI does not draw. Rejected: `StraightSrgb8` with its truncation
+as a recorded inexactness (a member named and implemented for Qt's arithmetic, stated for a toolkit the measurement
+shows does not share it); a rounded 8-bit member (the frames do not tell rounding from no rounding, and the composition
+path's colours are floats until they are drawn). The refit is to be committed as `read_host.py`'s next revision, stating its method (the `t` grid, the error measure,
+the composite rounded to whole levels or not), before the fact names the member, and its vector table measured on the WinUI host with the colour animation held at set
+progresses (the composition animation's controller paused at a `Progress`), S2.2's measured route. Core Animation's colour
 interpolation, `macos-*`'s and `ios-*`'s, has no source in the cache and is measured likewise. Rejected: R9's one
 space for every platform (Compose's colour transitions pass through other colours, and Qt Quick's wherever the alpha
 changes); a space on every `Transition` (a field each transition states, where one toolkit fixes the space for all of
@@ -2264,6 +2300,17 @@ mirrors some icons in Arabic and Farsi but not Hebrew). Icon lookup takes the el
 language (GTK's `-rtl` and `-ltr` names, SF Symbols' localized forms; R25.8), from the scope its part's query returned
 (`ResolvedTheme::icon`, S16).
 
+**A glyph drawn whole** (ADD-A141; the KD-C1 and GN-C1 verifiers' questions). `draw_extent` and `draw_start` `Absent`
+(S6.3's marks) say that the platform sets no extent for the glyph and draws it whole: the connector draws the whole
+path from its start, as `draw_extent` 1 at `draw_start` 0 would. A glyph states both `Absent` where its platform's
+code sets no extent (the fact's absence citation names the dash or trim calls the drawing code does not make, Breeze's
+`renderArrow` and `setDashPattern`), and numbers where the platform sets one, in every state of the part once any
+state or transition does (Breeze's check mark, hidden at `draw_extent` 0, drawn at its pen's measure), so no transition
+moves between a number and `Absent`. Rejected: the identity, 1 and 0, on every glyph (two spellings of one look
+beside the marks, and the 1 is no literal of the source, which S17's zero by omission does not hold, so every whole
+glyph would need a citation form of its own); either spelling at will (one look, two spellings, which the verifiers
+split on).
+
 `IconStyle.fill` is the paint the platform's recolouring gives an icon (a symbolic icon, a template image, a symbol in
 its rendering mode's colours). It may be absent where `rendering_mode` is `Original`, which recolours nothing, and only
 there (an icon-size context keeps its own mark, S4.5): S12 refuses it absent under any other mode, following references
@@ -2319,12 +2366,21 @@ pub struct FocusIndicator { pub kind: FocusKind, pub width: Value<Px>, pub paint
                                                         // stated where the platform draws otherwise
 pub enum FocusVisibleWhen { Keyboard { timeout: Option<Value<Ms>> },   // None: no timeout (Breeze, K1.21)
                            AnyFocus, FocusWithin, Never }                 // ADD-A16
-pub enum FocusKind { Ring, FilledRing, Underline, Keyed(Key) }   // drawn while the element has `FocusVisible`,
-                                                                // and while its transition out runs (below; R12,
-                                                                // ADD-A126)
-                                                                // Keyed: WinUI's Reveal (W3-20); no indicator:
-                                                                // the part's `focus` is `Absent`
+pub enum FocusKind { Ring, Underline, Keyed(Key) }   // drawn while the element has `FocusVisible`,
+                                                    // and while its transition out runs (below; R12,
+                                                    // ADD-A126)
+                                                    // Keyed: WinUI's Reveal (W3-20); no indicator:
+                                                    // the part's `focus` is `Absent`
 ```
+
+**One ring** (ADD-A141; the KD-C1 verifier's question). A `Ring` is the band `width` wide outward from the inner
+outline *Where the ring lies* defines, between its inner and outer corners, filled with `paint`, whether the platform
+strokes a path along it or fills the region between two outlines: Breeze's focus frame fills the path between two
+rounded rectangles (`breeze@6.8.2 kstyle/breezestyle.cpp:6642-6651`, `:6776-6779`), its inner corners
+`Frame_FrameRadius` and its outer corners those plus the margin (`:6631-6632`), which is a stated corner's outer corner
+below, so it is a `Ring`. `FilledRing`, which no section defined apart from `Ring`, is withdrawn. Rejected: a filled
+kind of its own (it would draw the same band, two spellings for one look); a ring filled inside as well (a focus that
+changes a fill is a `{focus_visible}` rule, R12).
 
 **Where the ring lies** (ADD-A122). `offset` measures, on each side, from the part's box to the ring's **inner** edge,
 outward positive, as CSS's `outline-offset` does; the ring is `width` wide outward from there, so a ring drawn inside
@@ -2437,8 +2493,9 @@ to measure the content and deflates by both to arrange it (`microsoft-ui-xaml@2.
 src/dxaml/xcp/core/core/elements/Border.cpp:356-381`, `:325-352`, `src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:840-845`,
 `:884`). The size limits `min_width` … `max_height` bound the box too, so a platform whose limits bound less than the
 box states them in its own terms plus what lies between: GTK's, which bound the content, as an expression over the
-part's own resolved padding, which holds the border already (`= add(<CSS min>, part.padding.top, part.padding.bottom)`,
-`left` and `right` for a width), so a variant that restates
+part's own resolved padding, which holds the border already (`= add(<CSS min>, add(part.padding.top,
+part.padding.bottom))`, `left` and `right` for a width, S2.2's `add` taking two operands, as the facts write it;
+ADD-A141), so a variant that restates
 its padding carries it through (GTK's pill, `padding: 10px 32px`, is at least 44 px tall, its card button, `padding:
 0`, 24 px, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:323-324`, `:332`): GTK's CSS `min-width` and `min-height`, which GTK adds the margin, border and padding to (`gtk@4.24.1
 gtk/gtksizerequest.c:194-204`, `:297`); Breeze's minimum width on a button with text, which bounds the content with its margins, plus what lies between
@@ -2457,6 +2514,44 @@ box, the content inside the stroke as well (the platforms that draw a stroke ove
 each subtract it, and a stroke whose width moves, Compose's outlined toggle, would move the content, which it does
 not); CSS's content-box sizing for the limits (GTK's alone; WinUI's, AppKit's, UIKit's and Compose's sizes are the
 whole box, and Breeze's facts already state it so).
+
+**A template laid out by margins** (ADD-A141; U1). Where a platform's template positions a widget's content by the
+margins of its template parts and uses no `Padding` (WinUI's AppBarButton and AppBarToggleButton: the
+`AppBarButtonInnerBorder` drawing the fill and stroke at `AppBarButtonInnerBorderMargin` inside the control, the icon's
+`ContentViewbox` and the `TextLabel` at their own margins from the control's edges, `microsoft-ui-xaml@2.5.1
+src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:110-119`), the part whose box draws the fill and stroke
+is the part's box, the margin of that template part is the part's `margin`, and the part's size limits are the
+control's own (its `Width` 68, `:133`, the `ContentRoot`'s `MinHeight`, `:356`) less that margin. The `padding` and
+gaps come from the template's layout, axis by axis, by how it places its content, not from the margins alone, each
+in S2.2's arithmetic over the template's literals and per view state as the template sets them (the label below or
+beside, compact, collapsed):
+- where the template stretches its content across the axis and centres it (the `ContentViewbox`'s
+  `HorizontalAlignment="Stretch"` scaling a 16 px icon uniformly into its centre, the `TextLabel`'s
+  `TextAlignment="Center"`, `:366`, `:369`), the padding on each side bounds the space the content is centred in,
+  the narrowest stretched part's margin from the control less the drawing part's (the label's 2 px less the inner
+  border's 2 px: 0; the Viewbox, stretched to the control's whole width, centres its icon on the same centre), and the
+  model's centring of the content in its content box places it, as the catalogue's button lays out content narrower
+  than its space;
+- where the template stacks its content from one edge of a box taller than it needs (the `ContentRoot`'s auto rows
+  from its top), the near side's padding is the margin difference (the icon's 16 px less the inner border's 6 px:
+  10) and the far side's what the content leaves, `= sub(<the box's size>, add(<the near padding>, <the content's
+  size>))`, the content's size from its parts' sizes and margins and the label's `widget.label.line_height` (S2.2), so
+  the content box holds exactly the content and the centring reproduces the edge;
+- the gap between two content parts is their facing margins added (`icon_text_gap_px`).
+
+So the standalone AppBarButton's icon lies 24 px inside the inner border, where the host reads it (`x = 26` against
+the inner border's `x = 2`), from a padding of 0 and the centring, not from `sub(0px, 2px)`. A border of the drawing
+part adds to the padding only where the content lies inside it (the border rule above); AppBarButton's content is its
+sibling, so its stroke adds nothing there. The check: the model's layout of each view state the WinUI host drew (run
+42308526155's `frames.toml`, `[[app_bar]]` and `[[part]]`: standalone, and in a CommandBar with the labels below and
+to the right) reproduces each content part's `bounds` and the drawing part's, to the bounds' own precision, which the
+Windows lane's analysis compares (`read_host.py`'s next revision), a view state the host did not draw pending
+until it does. Rejected: the padding as each content margin less the drawing part's on every axis (the first
+reading here: it puts the icon 2 px outside the inner border's left edge where WinUI centres it 24 px inside); the
+padding zero and each content part
+its own margin (the catalogue's `label` and `icon` parts have no `margin`, a gap the platform writes as a content
+margin having its one home in the widget's gap values, S2.11 above and the catalogue's *IndicatorAnchor* reading); the
+control's own box as the part's (the fill would cover the margin WinUI leaves undrawn).
 
 **Fields per part.** A part has the fields its catalogue entry lists ("the fields that matter"); the derive
 generates that set per part, a field outside it is not part of that part (a patch setting it is refused, S12; the
@@ -2761,8 +2856,20 @@ pub enum Hinting { None, Slight, Medium, Full }
 pub enum SubpixelOrder { None, Rgb, Bgr, Vrgb, Vbgr }
 ```
 
-`TextRendering` is `token.text.rendering`. The readers read the text-rendering settings (ClearType's, fontconfig's and GNOME's `font-antialiasing`,
-`font-hinting`, `font-rgba-order`, macOS's font smoothing); a toolkit applies what it can (R23).
+`TextRendering` is `token.text.rendering`. The readers read the text-rendering settings the toolkit draws with
+(fontconfig's and GNOME's `font-antialiasing`, `font-hinting`, `font-rgba-order`, macOS's font smoothing; on Windows
+DirectWrite's greyscale parameters, not ClearType's, below); a toolkit applies what it can (R23).
+
+**The rendering drawn** (ADD-A141; the hosts facts round, U508). Each field states what the toolkit's own text drawing
+uses, which is the antialiasing it draws with, not every parameter the system holds: `contrast` is the enhanced
+contrast of that antialiasing, and `subpixel_order` and `lcd_filter`, which only subpixel antialiasing reads, are
+`Absent` under `Grayscale` and `None` (S6.3's mark on every `TextRendering` field). WinUI draws its text greyscale
+whatever ClearType's settings (the WinUI host's TextBlocks draw no coloured pixel, run 42308526155, `read_host.py`'s
+`[text_rendering]`), so `windows-11` states `contrast` as DirectWrite's greyscale enhanced contrast, which the host
+read as 1 (`grayscale_enhanced_contrast`), not ClearType's 0.5, and its subpixel order and LCD filter `Absent`; a
+reader on such a platform states the parameters the toolkit draws with (on Windows DirectWrite's greyscale enhanced
+contrast), not ClearType's settings. Rejected: ClearType's parameters, the system's (a contrast and an
+order the toolkit's text never takes); a contrast field per antialiasing (two fields of which the toolkit uses one).
 
 ### S4.1 Motion
 
@@ -2773,7 +2880,8 @@ pub struct MotionTokens {
     pub speed_factor: Value<f32>,            // R9
     pub color_space: Value<ColorInterpolation>,   // the space colour transitions move through (S2.7; ADD-A125)
 }
-pub enum ColorInterpolation { PremultipliedSrgb, StraightSrgb8, Oklab }   // closed; each to its source (S2.7)
+pub enum ColorInterpolation { PremultipliedSrgb, StraightSrgb8, StraightSrgb, Oklab }   // closed; each to its
+                                                                                       // source (S2.7; ADD-A141)
 ```
 
 The sketch gives the checkers the keys' types (ADD-A123): a `token.motion.durations.<key>` is a duration, a
@@ -2818,6 +2926,18 @@ of its own. The catalogue's *token.motion* lists name each key, or, where a plat
 read, its family; the facts lanes name each key by this rule. A key carries no unit suffix in a path (`token.motion.durations.button`);
 in TOML a keyed duration's key takes `_ms` as a field's does (`button_ms`), and a keyed scalar (params) none, its
 number in the unit its declaration names (S10, S11; ADD-A123).
+
+**A motion in no time** (ADD-A141; U50). A keyed motion the platform runs in no time, a duration measured or stated as
+zero, has its duration and no keyed timing: `token.motion.timings` holds entries for the curves the platform runs, and
+a zero duration runs none, as a transition's stated zero has an `Absent` timing (S2.7's *A zero duration*). So
+`windows-11` states `token.motion.durations.scroll_into_view` `0ms` (the WinUI host: the view moves to its final
+offset in one step, run 42308526155) and declares no `scroll_into_view` timing; the keyboard placement's motion, the
+key's one reader (the catalogue's placement strategies), takes the duration alone. A timing key is declared for a
+duration key only where the platform runs a curve for it; the two maps are keyed alike (above) but need not hold the
+same keys. A `Transition` over such a motion states its zero itself, `duration_ms = 0` with an `Absent` timing, not a
+reference to the key, which S2.7 would have keep a timing. Rejected: an entry
+`Absent`, the map's entries made `Value<Timing>` (a second spelling of "no entry", a type changed for one key); a
+placeholder curve (`linear`, which no source gives, as S2.7 rejects for a transition).
 
 ### S4.2 Caret and behaviour (R12, R17)
 
@@ -3122,7 +3242,7 @@ pub struct TextTokens { pub roles: TextRoles, pub keyed: Vec<(Key, TextStyle)>,
                                                       // the facts (`ReaderState.font_dpi` wins over it where the
                                                       // reader reports one, S9.4); 72 where a point is the
                                                       // logical pixel (ADD-A125)
-pub enum TextScaling { Linear, AndroidNonLinear, DynamicType }   // S9.4
+pub enum TextScaling { Linear, AndroidNonLinear, DynamicType, WinUi }   // S9.4 (`WinUi`: ADD-A141)
 pub struct FontFallbacks { pub families: Vec<String>, pub emoji_family: Value<String>,
                            pub per_language: Vec<(LanguageTag, Vec<String>)>,
                            pub per_family: Vec<(String, Vec<String>)> }   // per-font chains: Core Text's cascade
@@ -3150,6 +3270,16 @@ src/dxaml/xcp/dxaml/themes/generic.xaml:20`), so `windows-11` states the glyph's
 entry `("Segoe Fluent Icons", ["Segoe MDL2 Assets"])` (ADD-A122). In TOML the map is a table keyed by the family names as written (S11):
 `[tokens.text.fallbacks.per_family]` `"Segoe Fluent Icons" = ["Segoe MDL2 Assets"]` (ADD-A123). A family's chain is its `per_family` entry followed by
 `families`, the chain every font ends in (`windows-11`'s holds Segoe UI Symbol, the fallback font for symbols, W-FM01†).
+
+**Family names** (ADD-A141; U557). Each name in `FontFallbacks` is a font family as a font system looks one up, the
+family the font's own `name` table gives (its typographic family, name ID 16, else name ID 1), which fontconfig,
+Core Text and DirectWrite match. Where a platform's chain names font files instead (Android's `fonts.xml` and
+`fallback_order.json`: unnamed, language-tagged families of files, each with a PostScript name), the chain lists each
+file's own family name, in the chain's order, one entry per family where several files share one, read from the files
+the pinned system image ships (`android-system-image@37.1-r9`): a measurement (an analysis of the image's font files),
+cited as measured. Rejected: the file names and the PostScript names (no toolkit looks a family up by either, and a
+PostScript name is one face's); the chain `Absent` on `material-3` (Compose, the reference where the tokens are
+silent, R1.6, draws its text through it).
 
 ### S4.5 Icon sizes
 
@@ -3505,7 +3635,11 @@ counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`;
 S12 refuses `fill` absent where the stroke can be absent too); `Glyph.size` and `fill` on a `SystemControl` source
 (S15: the rendering draws the parts it replaces, and where it is not drawn those parts draw their own style, so
 the glyph's size and fill are never drawn; ADD-A125, ADD-A126);
-`RippleStyle.color`, `alpha` and `padding` where its `effect` is absent (no press ripple to draw, ADD-A125); `TextStyle.decoration`, `mnemonic_decoration`, `letter_spacing`, `word_spacing`;
+`RippleStyle.color`, `alpha` and `padding` where its `effect` is absent (no press ripple to draw, ADD-A125); `TextStyle.decoration`, `mnemonic_decoration` (not
+`letter_spacing` and `word_spacing`: a platform whose text has no such spacing draws the font's own advances and
+spaces, with nothing added, so it states `0px`, S17's zero by omission, its absence citation naming the property the
+platform's text attributes lack, as every bundled preset's facts state both; ADD-A141, the MT-C1 and MC-C1
+tie-breaks; rejected: `Absent`, a second spelling of the same look, which the verifiers wrote for word spacing);
 in a keyed text style and a slot only, `TextStyle.fill`, `elision`, `wrap` and `max_lines`, each where the
 platform's style does not set it (S2.8, ADD-A130);
 `Decoration.by_word`; an `Edge`'s `width` and `paint` (an edge not drawn);
@@ -4323,7 +4457,13 @@ Beside its accent (above) and its scheme inputs (S9.1), it states:
   value KConfig hands to Qt's colour parser (one starting with `#`, or one without a comma, `:40-53`), which KConfig's
   writer never writes, and an empty value or `invalid`, which KConfig reads as an invalid colour (`:37-39`), are read
   as unset, a recorded inexactness. Rejected: Qt's colour parser through the clean room, for spellings only a hand
-  edit gives; an invalid colour, which the model cannot hold.
+  edit gives; an invalid colour, which the model cannot hold. The scheme test reads the colour so read (ADD-A141; the
+  clean room's `kde_color_scheme` description, §2.3, readers-cr2): where the `Window` set's `BackgroundNormal` is empty
+  or `invalid`, Plasma takes the invalid colour's grey, 0, calls the scheme dark and paints the window black, while the
+  reader, reading the default, calls it light, the same recorded inexactness, kept because the scheme and the colours
+  the reader states then agree. Rejected: Plasma's dark for those two spellings alone (it needs no colour parser, but a
+  dark scheme over the default light colours the reader states matches neither Plasma's black window nor the reader's
+  own colours).
 - the scheme file (S9.1): `[General] ColorScheme`, which the colours KCM keeps in kdeglobals with `BreezeLight` as its
   default (`plasma-workspace@6.8.2 kcms/colors/colorssettings.kcfg:6-11`), names the scheme by its file's base name:
   the file is `color-schemes/<name>.colors` in the first data directory where it is a file, as Qt's
@@ -4387,7 +4527,13 @@ Beside its accent (above) and its scheme inputs (S9.1), it states:
   does not set: none of plasma-workspace, plasma-integration and plasma-desktop names it at its pin, and KWin's own
   platform plugin reads it for KWin's windows, `kwin@6.8.2 src/plugins/qpa/screen.cpp:22-25`; the reader's environment
   is the application's); the `RESOURCE_MANAGER` property read directly, Qt's route (an X11 client library for the
-  text `xrdb -query` gives).
+  text `xrdb -query` gives). Qt's xcb plugin also takes an XSETTINGS manager's `Xft/DPI` (DPI × 1024) over the
+  resources' value, read at start and on each change (`qxcbscreen.cpp:81-89`, `:385-396`; the clean room's
+  `qxcb_xft_dpi` description, readers-cr2), which the reader does not read: open (ADD-A141) on whether a Plasma X11
+  session's XSETTINGS manager (kde-gtk-config's xsettingsd, at no pin) sets an `Xft/DPI` that differs from `Xft.dpi`.
+  A KDE render-host read of both on a Plasma X11 session settles it: where they can differ, the reader reads the
+  setting first, `qxcb_xft_dpi` taking it as a second input through the clean room; where they cannot, `Xft.dpi`
+  alone stands.
 
 **The GNOME reader's readings** (ADD-A135, ADD-A138; ledger queue #171, #173, #179). Its sources are the XDG Settings portal's
 `org.freedesktop.appearance` namespace and gsettings, each setting the portal does not give (no session bus, no
@@ -4423,20 +4569,21 @@ setting neither gives stated by nothing, so it keeps the no-reader state's value
   `monospace-font-name`, in its common bases (S9.5; ADD-A138), each string parsed by `pango_font_description` (S2.2's
   readers' helpers); a string naming no family patches no slot. Of the description it keeps the family, the first
   non-empty entry of its comma-separated list (the model's family is one name; the list is GN-FM02†'s, the readers
-  unit's); the size, a point size converted by its own preset's `token.text.font_dpi` (S9.4; it reports no DPI,
-  above) and an absolute (`px`) size taken as it is, unpatched where the description sets none or zero; the
-  weight, unpatched outside 1 to 1000, S2.8's scale; the style (normal, oblique, italic; another integer, which only
-  `style=N` gives, unpatched); the width, Pango's permille as S2.8's percent; and small caps, as `TextCase::SmallCaps`.
-  A weight, style or width the string does not name is Pango's normal one, which the string means (a description
-  is a whole font), and is stated so; a description without small caps leaves the style's `case`, which may be a
-  transform no font names (`Upper`, S2.8). Pango's other variants (`All-Small-Caps`, `Petite-Caps`,
-  `All-Petite-Caps`, `Unicase`, `Title-Caps`), its gravity and its colour are not read, nor its `@` variations and
-  `#` features, which GN-1.193 maps to `Font.axes` and `Font.features` (the readers unit). GN-1.193 stays open on one
-  question: how a variation on `wght` or `wdth`, or an `smcp` feature, each a route S12 refuses in `axes` and
-  `features` (S2.8's `weight`, `width` and `TextCase::SmallCaps` being the only ones), meets the description's own
-  weight, width and variant. Pango's source at its pin (`pango@1.58.2`) settles it, read for which of the two the
-  drawn text follows where a description gives both, S2.8's *Weight* (the drawn face's coordinate) then stating the
-  weight; until then a `@` or `#` segment changes nothing the reader states.
+  unit's), and the size, a point size converted by its own preset's `token.text.font_dpi` (S9.4; it reports no DPI,
+  above) and an absolute (`px`) size taken as it is, unpatched where the description sets none or zero; nothing else
+  (ADD-A141; the GN-C1 tie-break). GTK 4 takes only the family and the size from `gtk-font-name`, which GNOME sets from
+  `font-name`, and never its weight (`gtk@4.24.1 gtk/gtksettings.c:1356-1390`, as the GNOME facts cite it on the card
+  button's inherited weight, `docs/facts/gnome/button.toml`), so a label that inherits its weight draws GTK's initial
+  `normal` whatever the string names: the body slot's weight, style, width and case stay the preset's, which are GTK's
+  CSS, and a patch of them would state a look GTK does not draw. The `monospace` slot takes the same two fields, the
+  ones a monospace setting is known to give, until the GNOME facts cite which fields libadwaita takes from
+  `monospace-font-name` (its style manager at `libadwaita@1.10.0`), a recorded open item; a field they show it takes is
+  added then. Pango's variants, gravity and colour, its `@` variations and its `#` features are not read, as GTK
+  applies none of them from the setting, so GN-1.193's question (how a `wght` or `wdth` variation or an `smcp` feature
+  meets the description's own weight, width and variant) asks nothing of the reader, the description's weight, width
+  and variant being unread too; it stays the readers unit's for a source that applies them. Rejected: ADD-A138's
+  weight, style, width and small caps (GTK draws none of them from the setting, the tie-break's card button); the
+  whole description stated as the slot's font.
 - `token.icons.theme` from `icon-theme` under `for_preset.adwaita`, a freedesktop theme's name being its own
   preset's (S9.5).
 Rejected: the portal's raw accent (it is not what any libadwaita application shows where the two differ); a nearest
@@ -4628,10 +4775,10 @@ font-derived lengths, by the preset's `token.text.scaling`: `Linear` (a product)
 `FontScaleConverter`, which scales large sizes less (MAT-X19): the platform's converter (`frameworks-base@android-17.0.0_r1
 core/java/android/content/res/FontScaleConverterFactory.java`, its curves applying from its first table's key less
 0.01, `:142`), not Compose's own copy (`androidx.compose.ui.unit.fontscaling`, outside the pinned sparse checkout),
-which the text-scaling task (a5de6753) reports to differ from it for font scales from 1.03 to 1.05 (ADD-A135); or
+which the text-scaling task (a5de6753) reports to differ from it for font scales from 1.03 to 1.05 (ADD-A135);
 `DynamicType`, each text style's size for the
 reader's or stand-in's `content_size_category` (`ContentSizeCategory`, S8), to Apple's published table (the curve `uifm_scaled` uses for
-lengths). A part's font is scaled by the curve of its `TextStyle.scaling_role`, `body`'s when `None`; a reader that
+lengths); or `WinUi`, WinUI's own curve, which scales small sizes more (below; ADD-A141). A part's font is scaled by the curve of its `TextStyle.scaling_role`, `body`'s when `None`; a reader that
 reads each style's size reports the default category. A font size is scaled once, where its own style is resolved: a
 `Font.size` stated as an expression over other font sizes (`= mul(token.text.roles.body.font.size, <factor>)`) reads
 them converted and not yet scaled, and its result is scaled by its own style's curve (S2.2), so a size derived from
@@ -4680,6 +4827,27 @@ multiple of the size) follows the scaled font; one stated in points or pixels is
 factor; under `AndroidNonLinear`, scaled as Android scales a letter spacing stated in sp, read in the value phase from
 Compose's `FontScaling` with the line height's rule; under `DynamicType`, as UIKit's fonts per category give it, read
 in the value phase with the leading (D-5). A spacing keeps its sign.
+
+**`WinUi`** (ADD-A141; the hosts facts round, U508). WinUI scales a text element's font size by a curve of its own:
+`TextFormatting::GetScaledFontSize` gives `m + max(18 − e·ln(m), 0) × (f − 1)`, `m = max(s, 1)`, for a size `s` in px
+above zero at the text scale factor `f` (a size below 1 px scaled from 1 px, `:195`, `:203`), and leaves a size at or
+below zero as it is (`microsoft-ui-xaml@2.5.1
+src/dxaml/xcp/core/text/common/TextFormatting.cpp:181-204`; the code's `exp(1)` and 18, not its comment's `-2.5 ln
+s_i + 15`), so a small size grows more than a large one: the WinUI host's TextBlocks at 150 % grew by 1.59 at 10 px
+and 1.05 at 68 px, as the curve's 15.87 and 71.27 px would give (run 42308526155's README; its `text-scale/frames.toml`
+and `text-text_scale.png`, which the README says were kept, are not in the evidence repository at the pin, `aeeb1969`,
+so the match is unchecked until they are committed from the run's artifact, before any fact cites them). `windows-11`
+states `token.text.scaling = "win_ui"`, the Windows reader supplying the factor (`UISettings.TextScaleFactor`,
+S9.3). Under `WinUi` the font size alone goes through the curve, the one value WinUI scales: a line height stated in
+pixels is not scaled (WinUI lays a `LineHeight` out as set, `src/dxaml/xcp/core/text/TextBlock/TextBlock.cpp:1583-1611`;
+`windows-11`'s are `auto`, which follows the scaled font under every kind), and a spacing follows the scaled size
+where it is stated on `font_size`, as WinUI's `CharacterSpacing` is thousandths of the scaled size
+(`src/dxaml/xcp/core/text/RichTextServices/TextFormatter/lineservicescallbacks.cpp:1459`), and is not scaled where it
+is stated in pixels. The curve is a platform function checked as S2.2's are (*Checked against their references*):
+its vector table generated by the function's lines compiled unchanged against a stub of `TextFormatting`'s two fields
+in a CI tool, its arithmetic as they compute it (an MIT source, which needs no clean room), and checked against the
+host's text-scale run once its files are committed. Rejected: `Linear` (at 150 % a 10 px size 15 px where WinUI draws 15.87, a 68 px one 102 px
+where WinUI draws 71.27); a sampled table (the curve is in the source).
 
 **S9.5 What a reader states for any preset.** A reader builds its layer in two parts: its common bases, which any
 preset takes (`input.accent` and its per-contrast bases, except where S8 leaves them out, below; the conditions,
@@ -4824,6 +4992,22 @@ exclusive group comes from the platform's state model (the catalogue names the f
 state names to them); the order of precedence inside a group is a fact, cited from the platform's control code: the
 preset states it as the order of its `exclusive` arrays, and the gate checks that order against the state-model data
 (S17).
+
+**A flag the platform clears** (ADD-A141; the MT-C1 and GN-C1 tie-breaks). Where the platform never holds a flag while
+another holds, clearing or refusing it (GTK never holds hover, active, focus or a drop on an insensitive widget,
+`gtk@4.24.1 gtk/gtkwidget.c:6253-6257`, `:8260-8261`, `:8320-8321`, `:10520-10522`, `gtk/gtkdroptarget.c:204-205`, as
+the GN-C1 verifier cites them; `material-3`'s state models leave out a disabled button's hover, press and focus
+alike), the two form an exclusive group, the flag that stays first (`["disabled", "hover"]`), not a `not_drawn`
+combination: so a connector whose toolkit reports both (one that tracks the pointer over a disabled element) is
+answered as the platform draws it,
+where `not_drawn` only keeps the gate from the pair and leaves the query applying both flags' rules. Where the other
+flags combine among themselves (GTK's and Compose's hover with a press), each pair is a group of its own
+(`[["disabled", "hover"], ["disabled", "pressed"], ["disabled", "focus_visible"]]`), so a flag may be in several
+groups: the groups apply in their declared order, each over the flags the earlier left, its highest held flag staying
+and its others dropped, as the query's drop does. `not_drawn` stays for combinations a connector does not produce or
+the platform has no look for (`checked` outside `toggle`, a variant outside its host). Rejected: `not_drawn` for
+these pairs (the gate's result, but a look the platform never draws for a connector that reports both); one group of
+all of them (`[disabled, pressed, hover]` drops the hover of a pressed button GTK draws hovered).
 
 `recency` names the widget's recency sets (R3, S7.2, ADD-A124), each the flags among which the platform shows the one
 set last, as Compose's state layer shows the latest of hover, focus and drag rather than a fixed precedence. A set's
@@ -5797,7 +5981,13 @@ which fields are struct blocks the valid keys decide (below).
   A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
   a number in the value's canonical unit (a colour's per 8-bit channel, alpha included; channels compare on the 0–255
 scale unclamped, so one outside the gamut lies outside `0..=255`, while a colour measured from drawn pixels is compared
-with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). The gate has no connector, so no case
+with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). A tolerance is at most the precision
+  the analysis's method gives the value, its error bound, which the analysis's docstring states (ADD-A141; the iOS
+  tie-break round 4): a straight colour solved from composites over black and over white, each read to one 8-bit
+  level, holds to `floor(1/α)` levels per straight channel, `α` the solved alpha, as one level of a composite is
+  `1/α` levels of the channel beneath it (`read_buttons.py`'s one-level rule). Readings
+  of merged runs that spread wider than that bound disagree: the fact states the reading the bound holds, or is
+  pending, never a tolerance widened to hold them all. The gate has no connector, so no case
   of the hand-over's connector types is its: it draws the resolved colour as the measured platform's renderer does
   into the capture's frame, then reads it as the measured colour was read from the pixels (ADD-A131). An in-gamut
   colour draws the same in every case, so this matters only where the resolved colour leaves the gamut, and each
@@ -5867,7 +6057,13 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   scaling, S9.4; `pt`; `ms` and `s`; `deg`; `rem` and `em` have none, so a value written in them is cited where the
   platform states it in px, or measured, or, for a factor of the default font size, read through `rem_to_factor`, below); a member is added to a list, or to the conversions below, as a class 1
   change; a span the number, colour or `TimeSpan` notations read (a `TimeSpan`, a byte list) is not read again by the number
-  form, while the text notations only add candidate strings and take no span. A literal
+  form, while the text notations only add candidate strings and take no span. A gradient's angle, which no source
+  writes as a number of degrees, is read as the angle the gradient's own notation computes, S2.3's convention: XAML's
+  `LinearGradientBrush` from its start and end points (ledger queue #38, #57), and QML's `Gradient` from its
+  `orientation`, `Gradient.Vertical`, the default a quote leaves out (`qtdeclarative@6.12.0
+  src/quick/items/qquickrectangle_p.h:123`), 180°, and `Gradient.Horizontal` 90° (ADD-A141; U421, Kirigami's round
+  button's gloss), its `GradientStop`s' positions and colours read by the number and colour notations, a QML colour
+  form the facts need added to them as a class 1 change. A literal
   without a unit takes the value literal's dimension in its
   canonical unit; a literal with a unit must be of the value's dimension, px and pt being distinct, and is normalised
   within it (`0.2s` is `200ms`). Numbers are equal to a relative 1e-4, colours as 8-bit sRGB channels with alpha to
@@ -5884,7 +6080,9 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   literal of the citation's quote as the unitless factor n, which GTK multiplies by the default font size
   (`gtk@4.24.1 gtk/gtkcssnumbervalue.c:405-408`, `gtk_css_font_size_get_default_px`, `gtk/gtkcssenumvalue.c:213-231`,
   GtkSettings' `gtk-font-name`, not the root widget's computed size): the fact keeps GTK's derivation,
-  `= mul(token.text.keyed.body.font.size, 0.75)` for libadwaita's `0.75rem`; without the conversion a `rem` value keeps no literal,
+  `= mul(token.text.roles.body.font.size, 0.75)` for libadwaita's `0.75rem`, the `body` slot, which the GNOME
+  reader's `font-name` patch reaches as GTK's default font size follows the setting, not the keyed `.body` style
+  (ADD-A141; the GN-C1 tie-break, which moved the facts so); without the conversion a `rem` value keeps no literal,
   so a `0.75rem` quote never holds a plain `0.75`. AppKit's width trait has no conversion: no pinned
   source maps `NSFontWidthTrait` to a percent, so a `macos-*` width is measured on the font's `wdth` axis
   (S2.8's *Width*, ADD-A130). Nor has an Apple weight trait (`NSFontWeightTrait`, `UIFontWeightTrait`): S2.8's
@@ -5904,7 +6102,24 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   is missing and that the range is the whole definition and each name the platform's own (taken from where the platform does define
   it, another release or a sibling class). A definition spread over several ranges (an Objective-C class and its
   categories) has one citation per range, the names absent from each. A measured absence is a `measured` citation
-  whose evidence records that nothing is drawn (an image analysis's output).
+  whose evidence records that nothing is drawn (an image analysis's output), or that the platform does not draw the
+  view, as its own view tree records it (`hidden`, an alpha of 0, no size), an analysis's output reading the tree
+  (ADD-A141; the iOS tie-break round 4, U684), with a crop showing no ink where the run kept one; a view the
+  platform hides only for want of room (a title the bar drops when it does not fit) is a layout's outcome, not an
+  absence, so the analysis shows the view hidden where it would fit (a short title, a wide bar) before an absence
+  rests on it.
+  **An absence in time** (ADD-A141; U554). A value that says something never happens (`FocusVisibleWhen::Keyboard`'s
+  `timeout` `None`, a caret that never stops blinking) is an absence: it cites the code path that would end it, an
+  absence citation as above naming the timer or the call that would (`postDelayed`, a timeout property), where the
+  platform's source is pinned (Compose's focus indication follows Android's touch mode, `androidx@e4d933c9
+  compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt:3807-3808`, which
+  `ensureTouchMode` changes on input events and the window manager's report changes after one,
+  `frameworks-base@android-17.0.0_r1 core/java/android/view/ViewRootImpl.java:7766-7800`, its callers at `:8445-8472`,
+  `:9188-9196`, `:9760-9781`, `:5359-5366`, no timer among them, as the Material facts are to cite it). A
+  measurement shows it only for the span it records, so a measured citation alone holds it only where no source is
+  pinned (the closed platforms), its analysis stating the span, a recorded inexactness for any later end. Rejected: a
+  measured span as the whole claim where the source is pinned (`material-3`'s 1.5 s capture, U554); `Absent` for
+  "never" (the field is the platform's value, and `None` is S1's "no limit").
   **A zero stated by omission** (ADD-A122): where the platform's value is zero only because its code sets none (no
   delay: the code acts at once; no offset, no spacing), the fact's value is the zero literal (`"0ms"`, `"0px"`, `0`),
   and its citation is an absence citation as above: the whole definition of the code path that would apply the value
@@ -6106,7 +6321,17 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   such entry gets one of kind `sdk` naming the image) and its exact builds (`[images.os-probe-macos-26]
   preset = "macos-tahoe"`, `source = "xcode@26.6"`, `os = "<build>"`, `toolkit = "<build>"`, the last where a toolkit
   drew or answered); the checker requires the others and that the preset is among the entry's generations. The builds are recorded, not matched: a runner image
-  moves within a release (D1). Every evidence file is cited by a fact, a state-model entry or a
+  moves within a release (D1). Where two builds of the release a preset describes read one fact differently beyond
+  its tolerance (`macos-tahoe`'s facts mix macOS 26.6.2 and 26.7.2 readings, the macOS measured verifier's report),
+  the newest build's reading is the fact's, as R1.5 has a preset describe the newest release a supported runner
+  measures (D12), and the older build's citation leaves that fact; its file stays evidence while another fact,
+  model entry or vector table cites it, and one that loses its last citation leaves the evidence repository's tree in
+  the commit the pin moves to, its history keeping it, as ADD-A136 leaves data no citation reads on the harness's
+  branch, so every evidence file stays cited (below); where they agree, both cite it (ADD-A141; the macOS tie-break round 7). The SDK entry a run names follows the
+  same rule: `xcode@26.6` serves `macos-tahoe` while the newest runner build's Xcode is 26.6, and a newer Xcode on the
+  newest build is pinned as its own entry with its header copies. Rejected: the older build (the first measured, no
+  reason the platform gives); a tolerance wide enough for both (a value no one build draws); a condition per build
+  (the model has none, and R1.5 rejects a per-release overlay). Every evidence file is cited by a fact, a state-model entry or a
   vector table (S2.2, S13), or is the input of a cited analysis output (its `input_image`, above): a recording
   and the crop the harness cut its frames with (`transition-caret.mov` and `.crop`, run 42272240639) are data: the
   analysis that reads the frames names them in its `input_image`, as the files the frames were cut from. Not evidence: a run's README and `run.toml`, and its records, the
@@ -6230,6 +6455,28 @@ no combination of its own; ADD-A131), less those `not_drawn` names and those `re
 declared variants, holds at most one variant of each `exclusive_variants` group (S10) and is listed once, which
 `check_facts.py` checks.
 
+**What the axes and sets hold** (ADD-A141; the KD-C1, GN-C1 and WN-C1 verifiers' questions). `variant_sets` and
+`variant_products` together give every set of variants the platform draws on one element, never a sample: a set the
+platform draws that the entry leaves out is a defect of the model, as a missing state is (the KDE facts' round 6 added
+the KD-C1 verifier's 278; on `ios-*` the system type with an image and a menu, with a menu on hold, and with an image
+and a toggle, which the gate met only where a fact's own `when` named them, the iOS facts lane's round 5, c8610c67),
+so the gate checks each set whether a fact names it or not. Every flag the entry's `flags` declares is in `axes.states`: a declared flag is one some
+rule selects on (S12 refuses a keyed flag none does), so it changes what is drawn, and outside the axes no
+combination would hold it (`@keyboard_focus_change`, which 22 KDE facts select on while the combinations never held
+it, KD-C1); `check_facts.py` refuses a declared flag the axes leave out. `axes.conditions` holds the conditions under
+which the platform draws the widget's own values differently; a condition that reaches the widget only through a
+value its facts reference (a token's rule: the speed factor under `animations_off`) is checked at that value's facts,
+whose combinations hold it, and the verifiers' comparison opens it at the widget (`verify_facts.py`'s resolver,
+f9fb16e4); rejected: every such condition in every widget's axes (each doubles a widget's combinations to check what
+the referenced value's facts already check). A variant the platform draws only inside a host (a nested button:
+AutoSuggestBox's query button, `@query`; the pager's `@first`) is declared with its host's context in
+`axes.contexts` and not drawn outside it (`{ variants = ["@query"], not_context = [{ widget = "autocomplete" }] }`),
+even while the host's unit is not enabled: the gate skips the host's combinations until it is (*While the units are
+built*, below) and checks the variant nowhere else, so no combination the platform never draws is asked for, and
+enabling the host's unit changes no state model. Rejected: such variants left out until their hosts' units (a
+model short of what the platform draws); the variant declared with no host context (the gate would check it at the
+top level, drawn as the base, where the platform never draws it).
+
 **Variant products** (ADD-A122). Where the sets a platform draws are the combinations of independent choices
 (libadwaita's button: a content form, a shape, a colour style, a toggle, each class set or not), an entry states them
 as `variant_products` beside or in place of `variant_sets`: a list of products, each a list of groups, a group
@@ -6268,8 +6515,31 @@ combinations once per scheme and flavour and reusing what the set's rules share,
 the plain list alone, unreviewable at that size; and products left untrimmed, which would assert sets the platform
 does not draw, so the exclusive groups, `requires_variants` and `not_drawn` trim them as they trim listed sets.
 
+**Sets not yet measured** (ADD-A141; the MC-C1 tie-break, U695). Where the sets are drawn but no pass measured them,
+a key's look on a set is unknown exactly where two of its variants each state their own facts of the key: one
+pending fact per such pair, `when` naming the two variants and placed after both, covers every set holding the pair,
+and a set whose variants state the key once at most takes that fact, as S17's *Which fact applies* gives it, each
+variant's facts being its own look over the base's. A measured pair replaces its pending fact by the measured value,
+or by a decision that the pair's looks compose (one variant's facts holding on the other's sets), recorded per key.
+Rejected: one pending fact per set and key (`macos-tahoe`'s 1,209 sets each listed where the pairs cover them, the
+gate's memory a known limit); no pending fact (the later variant's fact on the set, a composition no evidence shows);
+a pending fact on every set holding a variant with facts of its own (the sets where the look follows from one
+variant's facts would wait on a measurement they do not need).
+
 The gate also resolves each fact's own
-`when`, so a fact naming a size class, a position or a direction is checked too. A preset with flavours is checked
+`when`, so a fact naming a size class, a position or a direction is checked too. A fact's own combination is its
+`when`'s positive lists completed with what the widget requires (`requires_variants`) and nothing else; where that
+completion is one the state model does not draw, for a size or a variant its named variants lack (`ios-13`'s 94
+facts naming `mini`, `small` or `large` and no style, which only the configuration styles take, `sizes_by_variant`;
+52 "not available (Size)" failures in the iOS facts lane's round 5) or by `not_drawn`, it is completed once with each
+variant, or set, the state model draws that makes it drawn (for a size, each `sizes_by_variant` entry whose `sizes`
+hold it), each completion the declarations and `not_drawn` leave drawn checked, an undrawn one no failure (the gate
+today refuses the size before it reads `not_drawn`); a `when` no completion makes drawn holds in no combination the platform draws, a finding of the
+fact, not a skip (ADD-A141; the gate's code a follow-up). Rejected: the first such style alone (the lane's proposal: an
+order the entries happen to have picks the one style that checks a fact claiming them all, and a fact naming a
+condition outside the axes would be checked on that style only); the style required in the `when` (a size's look
+held by every style would be split into a fact per style, the same value each); the combination skipped (a fact
+naming a condition outside the axes would go unchecked). A preset with flavours is checked
 once per flavour, each with its flavour's entries. An entry with
 `preset:` (or `flavor:`) replaces the shared entry of its widget for that preset (or flavour). `check_facts.py` checks
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
@@ -6684,7 +6954,8 @@ lines that cite it.
 | ADD-A137 | the evidence root (the maintainer's decision of 2026-11-08, the 0.8.0 plan's D6 evidence item decided early; ledger queue #177): measured evidence in the evidence repository `native-theme-evidence` at `docs/evidence/`'s paths, pinned in `sources.toml` by one `evidence = true` `git` entry with a fixed id, a `docs/evidence/` path resolved against `NATIVE_THEME_EVIDENCE` or that entry's checkout in the source cache, read only from a clean checkout at the pinned commit | S17 |
 | ADD-A138 | a spec batch (ledger queue #178, the macOS reader study of 2026-11-08; #179, the GNOME reader's port on `readers-m1b2`, 3d465b6f and aa8ac27d), decided from the sources and the runs: the macOS reader's increased contrast, Aqua and DarkAqua read either way, which AppKit resolves under the contrast in force (runs 41195846264 and 41006842699), the increased-contrast names giving no appearance (`NSAppearance.h:73-74`), the reads filed by `accessibilityDisplayShouldIncreaseContrast` as the inputs' per-scheme values and the roles' bases, or as the inputs' `contrast.increased` bases and the roles' `contrast_increased` reader rules, S9.2's group exception for a reader's group under a contrast alone (rejected: the increased-contrast names, through `extern` statics or strings; the preset's values copied into the slots not read; the reads under the flag also as per-scheme values; the group rule per slot for every layer, which changes `set_accent`'s check for a group no application needs); a slot the platform gives the reader no value at in the state it reads no failure and no `Fallback` (rejected: `Fallback` on every macOS read, which says nothing; a status of its own, for a state the platform is always in); each macOS target read from the property its own preset's fact measured, a reference fact read at the role it references: `tertiaryLabelColor` for the disabled text where 0.7.0 read `disabledControlTextColor`, `secondarySelectedControlColor` into `role.@selected_control_secondary` for the inactive selection where 0.7.0 read `unemphasizedSelectedContentBackgroundColor` into the selection (rejected: a literal port); of the 27 keyed roles, the slice's port states `@system_red`, `@system_orange`, `@system_green`, `@system_blue` and `@selected_control_secondary`, and `@selected_control` follows its accent input, the other 21 the readers unit's (rejected: all 27 at the slice; `@selected_control_secondary` left to the readers unit, which drops 0.7.0's inactive selection from the port); `full_keyboard_access` and `overlay_scrollbars` read where `MainThreadMarker::new()` succeeds, `false` elsewhere with no `Fallback`, documented on `from_system`, `from_system_async`, `reload_reader` and `reload_reader_async` (rejected: `dispatch2`'s `run_on_main`, which can deadlock; `AppleKeyboardUIMode`, undocumented; `Option<bool>`; `Fallback`); the macOS reader patching no text-role slot at the slice, 0.7.0's weight-trait mapping removed (rejected: the system font's family and size; the face's `wght` read now, through `unsafe` Core Text calls; WebKit's thresholds); the GNOME reader's accent none for a NaN channel, as for one outside `0..=1` (rejected: libadwaita's pink, its comparisons' fall-through); the GNOME reader's fonts, `body` from `font-name` and `monospace` from `monospace-font-name` in its common bases, the family's first entry, the size, weight, style, width and small caps kept, a weight, style or width the string does not name stated as Pango's normal one, the style's `case` left without small caps, the other variants, gravity, colour, variations and features not read (rejected: the family list as one name; the other variants mapped to the nearest `TextCase`; `Mixed` stated without small caps); GN-1.193 open on how a `wght`, `wdth` or `smcp` segment meets the description's weight, width and variant (Pango's source at its pin, then S2.8's *Weight*); the portal-only desktops' watcher, `GTK_THEME` and `gtk-3.0/settings.ini` not watched. Follow-ups: code, the macOS reader (both appearances filed by the flag, `ReaderState.contrast`, the two re-targeted reads, the five keyed roles and the five accent inputs, `full_keyboard_access` read at the slice beside `overlay_scrollbars` under the one gate with the `NSApplication` and `NSResponder` features, no font read and `nsfont_weight_to_css` removed with its `unsafe` statics and `msg_send!`, tests of the filing under either flag and of the status), the four entry points' documentation of the main-thread reads, a test that a NaN accent channel states none (`portal_accent` already gives none on `readers-m1b2`); facts, GNOME (the eight accents' facts, #171, and a test comparing the reader's nine colours with them once they land); the readers unit, MAC-DF01 to MAC-DF05†'s 21 keyed roles, MAC-I07's user fonts, GN-1.193 (its question read from Pango at its pin); ledger, #171's status, #178, #179 | S7.1, S9.2, S9.3, S9.4, S9.5, S16; catalogue (the readers: GN-3.15, MAC-X13, MAC-X22); traces macOS (MAC-X13, MAC-X22) |
 | ADD-A139 | the `@recording` flag withdrawn (ledger queue #79, the KDE facts lane's round 4, c4b3e51c): KDE's key-sequence buttons draw no themed value of their own while they record, only their text changing, which the model does not theme: KKeySequenceWidget's key button is not held pressed, its click starting the recorder directly (`kxmlgui@6.31.0 src/kkeysequencewidget.cpp:416`, `:526-530`) and the private `startRecording()` that would call `setDown(true)` (`:373-377`) having no caller at the pin, so it draws its usual states, its text alone changing (`:390-407`); kirigami-addons' KeySequenceItem's main button is checkable and records while it is checked (`kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:121-122`, `:148-153`), so it draws a `toggle` button's `checked` state, its text alone changing (`:139`); the flag leaves `button`'s keyed flags, `shortcuts_dialog`'s flags item and the rename table's row 117, K-RL02†'s recording line goes (its text change noted on the key button's line), and K-KA-43†'s recorder is `variants {toggle,@key_sequence}`, its recording `{checked}`, the cancel button's glyph under `prev button {checked}` (rejected: the flag kept with no themed effect, a keyed flag no rule selects on, which S12 refuses). Follow-ups: facts, KDE (the set `["toggle", "@key_sequence"]` in the Kirigami button model's `variant_sets`, whose `not_drawn` draws `checked` only on a `toggle`); ledger, #79's status | the catalogue (`button`'s flags, `shortcuts_dialog`'s flags and notes, the rename table's row 117); traces KDE (K-RL02†, K-KA-43†); gap map KDE (K-RL02†); ledger (queue #79) |
-| ADD-A140 | a spec batch (ledger queue #180, the KDE and Windows readers' port on `readers-kw`, ce325f32, 32e65ba1, 11131443, its nine open choices and the readings it left unstated), decided from the sources at their pins: the KDE scheme by Plasma's own test, Qt's `qGray` of the palette's window colour against plasma-integration's and xdg-desktop-portal-kde's fixed threshold (`khintssettings.cpp:469-485`, `settings.cpp:259-273`, `qrgb.h:36-37`), through the clean room as the reader helper `kde_color_scheme`, its table generated through `qGray` (rejected: the portal's `color-scheme` alone, no answer where no portal does, or first, the test and its clean room needed anyway; no test; Kirigami's `brightnessForColor`, a colour's brightness; 0.7.0's BT.601 luminance, which matches neither); an empty kdeglobals value, which `applyScheme()` writes for each effect key a scheme file lacks, read as KConfig reads it, an empty bool true and an empty number its default, an empty colour stated as its default (a recorded inexactness), and every bool entry as KConfig reads one (S4.8's *Unset and empty*, from the KDE facts lane's round 5; rejected: an empty value read as unset); the KDE colours' source plasma-integration's (kdeglobals with a `[Colors:View]` group, else the look-and-feel package's colours, else the scheme file); every colour key the KDE reader reads that its file leaves unset as KColorScheme reads it, its default tables and effect defaults as constants citing their rows and the KDE facts that cite them (d7fe49f2), a row the value even where Breeze Light's differs (`DecorationHover`), `Header` without a group of its own reading its inactive input roles from `Window`'s active values (rejected: Breeze's preset values beneath, Breeze Dark's where KDE draws the tables' Breeze Light; Breeze Light's file read at run time); a colour entry in KConfig's comma form, its other spellings unset (rejected: Qt's colour parser for hand edits); the scheme file `color-schemes/<ColorScheme>.colors` in the first data directory where `QStandardPaths::locate` finds it, an unreadable one the existing fallback (rejected: the first readable); the KDE fonts' family, size, weight, style and capitalization (`MixedCase` leaving the case), the stretch (a glyph transform), spacings, style name, features and axes the readers unit's, the style name's precedence over the numbers a recorded inexactness (rejected: the stretch as `Font.width`; the capitalization deferred; `Mixed` stated); `AnimationDurationFactor` zero setting `animations_off` and `reduced_motion`, compared with zero as the portal does; the icon sizes by the facts' keys, `MainToolbarDefault` among them, an omitted key KIconTheme's group default from KDE facts (rejected: the preset's value, Breeze's `DesktopDefault` not being KIconTheme's; the defaults dropped); the KDE font DPI `Xft.dpi` on X11 only, as Qt's xcb plugin reads it, through the clean room as the reader helper `qxcb_xft_dpi`, none on Wayland, where Qt's logical DPI is the preset's (`qwaylandscreen.cpp:150-160`), `forceFontDPI` and `kcmfonts` not read (rejected: `forceFontDPI` first, a stale value on Plasma 6.8; `QT_WAYLAND_FORCE_DPI`; the `RESOURCE_MANAGER` property read directly); the Windows scheme by Microsoft's `IsColorLight` (the citation checked: `ms.date` 2026-06-16, the formula and the rule at `windows-dev-docs@f54166ed hub/apps/desktop/modernize/ui/apply-windows-themes.md:5`, `:75-78`, `:88`; the port names commit c7a7d5ac, not the pin, and the page lies outside the pin's sparse paths); `UISettings.AnimationsEnabled`, which WinUI reads, setting `animations_off` and `reduced_motion` (rejected: `SPI_GETCLIENTAREAANIMATION`, `unsafe` and unwatched; both; `animations_off` alone, which drops 0.7.0's reduced motion); the system colours under `contrast_high` with no scheme condition, `GetSysColor` giving one value per index (rejected: under the scheme read too); the Windows reads 0.7.0 made and the port dropped (the non-client fonts, the fixed font DPI, the scrollbar and border metrics, the small and large icon sizes) checked against D13: no field lost, each resolving from the `windows-11` facts and WinUI's source reading none of them, but the icon sizes, pending under U516, which the reader reads from the shell's metrics where U516's facts state them so (rejected: 0.7.0's reads restored at the slice); the Windows reader's other readings stated (reduced transparency, the text scale, high contrast, an unread setting no `Fallback`, the accent group, the failure cases). Follow-ups: code, the KDE reader (the luminance test replaced by `kde_color_scheme` once the clean room delivers it, its description and table first; the colours' source; KColorScheme's tables and effect defaults as cited constants, in the results, the inactive results, the scheme inputs, the accent's `Selection` background and the scheme's window colour, once `facts-kde-r5` merges; the effect keys' empty values and every bool entry read as KConfig reads them (an empty `[ColorEffects:Inactive] Enable` true); `Header`'s inactive input roles without a `Header` group from `Window`'s active values; the scheme file located by existence, an unreadable one the fallback; the capitalization mapped; `MainToolbarDefault` into `keyed.main_toolbar` and KIconTheme's group defaults once their facts land; the font DPI through `qxcb_xft_dpi` on X11 alone, the `forceFontDPI` read and `kcmfonts` removed from the reader, its watcher (`watch/kde.rs:12`), the `kde` feature's comment in `Cargo.toml` and the README's feature table; tests for each), the Windows reader (`reduced_motion` beside `animations_off`; the `IsColorLight` citation at the pin; `FrameworkTheming.cpp` cited at `microsoft-ui-xaml@2.5.1`, `:145-158`, `:219-232`, not the gap maps' 8463f45; the small and large icon sizes per U516); the clean room, `kde_color_scheme` and `qxcb_xft_dpi` (descriptions, `reader.<helper>.tsv` tables, implementations); sources, `windows-dev-docs@f54166ed`'s sparse list gaining `hub/apps/desktop/modernize/ui`; facts, KDE (`facts-kde-r5`, d7fe49f2, merged: KColorScheme's default rows and effect defaults cited; KIconTheme's six group defaults, a new citation in the same form), Windows (U516); ledger, #180. Open: KIconTheme's defaults as facts, U516, and whether `windows-11`'s title is the system caption's (the window unit) | S2.2 (*The readers' helpers*), S4.8 (*Unset and empty*), S8 (`ReaderState.font_dpi`), S9.1, S9.3 (*The KDE reader's readings*, *The Windows reader's readings*), S9.4, S9.5; catalogue (the readers: KDE, Windows); traces KDE (K3.46, K3.63), Windows (W3-37) |
+| ADD-A140 | a spec batch (ledger queue #180, the KDE and Windows readers' port on `readers-kw`, ce325f32, 32e65ba1, 11131443, its nine open choices and the readings it left unstated), decided from the sources at their pins: the KDE scheme by Plasma's own test, Qt's `qGray` of the palette's window colour against plasma-integration's and xdg-desktop-portal-kde's fixed threshold (`khintssettings.cpp:469-485`, `settings.cpp:259-273`, `qrgb.h:37-38`, `:40-41`, the lines ADD-A141 corrected), through the clean room as the reader helper `kde_color_scheme`, its table generated through `qGray` (rejected: the portal's `color-scheme` alone, no answer where no portal does, or first, the test and its clean room needed anyway; no test; Kirigami's `brightnessForColor`, a colour's brightness; 0.7.0's BT.601 luminance, which matches neither); an empty kdeglobals value, which `applyScheme()` writes for each effect key a scheme file lacks, read as KConfig reads it, an empty bool true and an empty number its default, an empty colour stated as its default (a recorded inexactness), and every bool entry as KConfig reads one (S4.8's *Unset and empty*, from the KDE facts lane's round 5; rejected: an empty value read as unset); the KDE colours' source plasma-integration's (kdeglobals with a `[Colors:View]` group, else the look-and-feel package's colours, else the scheme file); every colour key the KDE reader reads that its file leaves unset as KColorScheme reads it, its default tables and effect defaults as constants citing their rows and the KDE facts that cite them (d7fe49f2), a row the value even where Breeze Light's differs (`DecorationHover`), `Header` without a group of its own reading its inactive input roles from `Window`'s active values (rejected: Breeze's preset values beneath, Breeze Dark's where KDE draws the tables' Breeze Light; Breeze Light's file read at run time); a colour entry in KConfig's comma form, its other spellings unset (rejected: Qt's colour parser for hand edits); the scheme file `color-schemes/<ColorScheme>.colors` in the first data directory where `QStandardPaths::locate` finds it, an unreadable one the existing fallback (rejected: the first readable); the KDE fonts' family, size, weight, style and capitalization (`MixedCase` leaving the case), the stretch (a glyph transform), spacings, style name, features and axes the readers unit's, the style name's precedence over the numbers a recorded inexactness (rejected: the stretch as `Font.width`; the capitalization deferred; `Mixed` stated); `AnimationDurationFactor` zero setting `animations_off` and `reduced_motion`, compared with zero as the portal does; the icon sizes by the facts' keys, `MainToolbarDefault` among them, an omitted key KIconTheme's group default from KDE facts (rejected: the preset's value, Breeze's `DesktopDefault` not being KIconTheme's; the defaults dropped); the KDE font DPI `Xft.dpi` on X11 only, as Qt's xcb plugin reads it, through the clean room as the reader helper `qxcb_xft_dpi`, none on Wayland, where Qt's logical DPI is the preset's (`qwaylandscreen.cpp:150-160`), `forceFontDPI` and `kcmfonts` not read (rejected: `forceFontDPI` first, a stale value on Plasma 6.8; `QT_WAYLAND_FORCE_DPI`; the `RESOURCE_MANAGER` property read directly); the Windows scheme by Microsoft's `IsColorLight` (the citation checked: `ms.date` 2026-06-16, the formula and the rule at `windows-dev-docs@f54166ed hub/apps/desktop/modernize/ui/apply-windows-themes.md:5`, `:75-78`, `:88`; the port names commit c7a7d5ac, not the pin, and the page lies outside the pin's sparse paths); `UISettings.AnimationsEnabled`, which WinUI reads, setting `animations_off` and `reduced_motion` (rejected: `SPI_GETCLIENTAREAANIMATION`, `unsafe` and unwatched; both; `animations_off` alone, which drops 0.7.0's reduced motion); the system colours under `contrast_high` with no scheme condition, `GetSysColor` giving one value per index (rejected: under the scheme read too); the Windows reads 0.7.0 made and the port dropped (the non-client fonts, the fixed font DPI, the scrollbar and border metrics, the small and large icon sizes) checked against D13: no field lost, each resolving from the `windows-11` facts and WinUI's source reading none of them, but the icon sizes, pending under U516, which the reader reads from the shell's metrics where U516's facts state them so (rejected: 0.7.0's reads restored at the slice); the Windows reader's other readings stated (reduced transparency, the text scale, high contrast, an unread setting no `Fallback`, the accent group, the failure cases). Follow-ups: code, the KDE reader (the luminance test replaced by `kde_color_scheme` once the clean room delivers it, its description and table first; the colours' source; KColorScheme's tables and effect defaults as cited constants, in the results, the inactive results, the scheme inputs, the accent's `Selection` background and the scheme's window colour, once `facts-kde-r5` merges; the effect keys' empty values and every bool entry read as KConfig reads them (an empty `[ColorEffects:Inactive] Enable` true); `Header`'s inactive input roles without a `Header` group from `Window`'s active values; the scheme file located by existence, an unreadable one the fallback; the capitalization mapped; `MainToolbarDefault` into `keyed.main_toolbar` and KIconTheme's group defaults once their facts land; the font DPI through `qxcb_xft_dpi` on X11 alone, the `forceFontDPI` read and `kcmfonts` removed from the reader, its watcher (`watch/kde.rs:12`), the `kde` feature's comment in `Cargo.toml` and the README's feature table; tests for each), the Windows reader (`reduced_motion` beside `animations_off`; the `IsColorLight` citation at the pin; `FrameworkTheming.cpp` cited at `microsoft-ui-xaml@2.5.1`, `:145-158`, `:219-232`, not the gap maps' 8463f45; the small and large icon sizes per U516); the clean room, `kde_color_scheme` and `qxcb_xft_dpi` (descriptions, `reader.<helper>.tsv` tables, implementations); sources, `windows-dev-docs@f54166ed`'s sparse list gaining `hub/apps/desktop/modernize/ui`; facts, KDE (`facts-kde-r5`, d7fe49f2, merged: KColorScheme's default rows and effect defaults cited; KIconTheme's six group defaults, a new citation in the same form), Windows (U516); ledger, #180. Open: KIconTheme's defaults as facts, U516, and whether `windows-11`'s title is the system caption's (the window unit) | S2.2 (*The readers' helpers*), S4.8 (*Unset and empty*), S8 (`ReaderState.font_dpi`), S9.1, S9.3 (*The KDE reader's readings*, *The Windows reader's readings*), S9.4, S9.5; catalogue (the readers: KDE, Windows); traces KDE (K3.46, K3.63), Windows (W3-37) |
+| ADD-A141 | a spec batch (ledger queue #184: the questions collected after ADD-A140 from the hosts facts round, e8c57e3c and run 42308526155; the M1b blind verifiers' tie-breaks WN-C1, KD-C1, GN-C1, MT-C1 and MC-C1, the iOS round 4 and the macOS round 7; the readers-cr2 clean-room description; the KDE facts lane's round 6; the iOS facts lane's round 5, c8610c67), decided from the sources at their pins and the committed runs; the macOS facts lane's round 4 questions (the weight, the run records, dotted evidence keys) were ADD-A136's, and U144, U146 and U311, with no fact pending, retire: `TextScaling::WinUi`, WinUI's `TextFormatting::GetScaledFontSize`, `m + max(18 − e·ln(m), 0) × (f − 1)`, `m = max(s, 1)` (`TextFormatting.cpp:181-204`), which the host's 1.59 at 10 px and 1.05 at 68 px would match, unchecked until the run's `text-scale/` files are committed, the font size alone scaled, a line height in pixels and a pixel spacing not, a vector table from the MIT lines compiled unchanged (rejected: `Linear`; a sampled table); a zero keyed duration with no keyed timing, `windows-11`'s `scroll_into_view` (rejected: `Value<Timing>` entries; a placeholder curve); `TextRendering`'s fields the toolkit's own drawing's, WinUI's greyscale enhanced contrast 1, not ClearType's 0.5, its subpixel order and LCD filter `Absent` under greyscale (rejected: ClearType's parameters; a contrast per antialiasing); `ColorInterpolation::StraightSrgb`, straight and unrounded, WinUI's composition path, whose frames fit it better than Qt's truncating `StraightSrgb8` (0.14 and 0.05 against 0.50 and 0.64 levels with the modelled composite rounded, 0.22 and 0.23 against 0.51 and 0.61 without), its clamping past `0..=1` unmeasured and met by no `windows-11` timing, the refit committed in `read_host.py` with its method before the fact changes (rejected: `StraightSrgb8` as an inexactness; a rounded member); a fallback family the font's own `name`-table family, Android's files read for theirs (rejected: file and PostScript names; the chain absent); a `None` timeout an absence in time, cited from the code path where the source is pinned, a measured span alone only on a closed platform (rejected: `material-3`'s 1.5 s capture as the claim); a template laid out by margins, WinUI's app-bar buttons, its drawing part the body's box, that part's margin the body's `margin`, its size limits the control's, the padding and gaps from the template's layout axis by axis (a centred axis its content's space, the model's centring placing the content; an edge-stacked axis the near margin and what the content leaves on the far side), checked against every view state's `[[part]]` bounds (rejected: each margin less the drawing part's on every axis, which puts the centred icon 2 px outside where WinUI draws it 24 px inside, the review's finding; zero padding with content margins the catalogue's parts lack; the control's box); the blink timeout's `1`s, which S17's quote check already exempts (ADD-A134) and scripts-a136 did not implement, a checker task; `windows-11`'s Selection `border` and `disabled.foreground` and `selection_text_background_unfocused` may be absent, WinUI naming none and hiding the unfocused selection (`ListViewItem_themeresources.xaml:256`, `TextBoxBase.cpp:4287`, `:4356`); a host's nested variant declared with the host's context and not drawn outside it, before the host's unit (rejected: left out; declared with no context); state models listing every drawn variant set, the macOS and iOS ones included, every declared flag in `axes.states`, a condition reaching a widget only through a referenced value checked at that value (rejected: every such condition in every widget's axes); unmeasured product sets pending pair by pair (U695; rejected: per set; none; every set holding a variant with facts); a fact's own combination completed with every variant that draws its named size, an undrawn completion no failure, a `when` drawn nowhere a finding (rejected: the lane's first style; the style required; skipped); a tolerance at most the method's error bound, `floor(1/α)` levels for a colour solved from composites (the iOS round 4's reading confirmed); a measured absence from the platform's view tree, not for a view hidden for want of room (U684); the newest build's reading where two builds of one release differ, a file losing its last citation leaving the evidence tree at the next pin (rejected: the older; a wide tolerance; a condition per build); shadow layers bottom first, as `Paint`, outset beneath the fill and inset over it, a CSS list reversed, a two-node part's outer node first (rejected: CSS's order; none); a glyph whose platform sets no extent `Absent` in `draw_extent` and `draw_start`, drawn whole, numbers in every state where it sets one (rejected: the identity everywhere; either spelling); `FocusKind::FilledRing` withdrawn, Breeze's filled frame a `Ring` (rejected: a filled kind drawing the same band); `kde-breeze`'s `hit_extension` `0px` by omission where a button has none, `Absent` meaning no such value; KTitleWidget's base its defaults, `@level_1` and `@info` the base under another name; a flag the platform clears an exclusive group with it, pairwise where the others combine, a flag in several groups applied in order (rejected: `not_drawn`; one group); `letter_spacing` and `word_spacing` `0px` by omission, never `Absent`; AppKit's `[indeterminate, checked]` an exclusive group, as WinUI's; the GNOME reader's `body` and `monospace` family and size alone, as GTK 4 takes only them from `gtk-font-name` (GN-C1's tie-break; rejected: ADD-A138's weight, style, width and small caps), GN-1.193 nothing the reader reads; GTK's minimum written with a two-operand `add`; `rem_to_factor`'s example on the `body` slot; AdwTabThumbnail's two keys, `tab_thumbnail_box_shadow` and its code's fade; `.osd`'s accent the existing `Role` bindings on the parts binding `Surface(Osd)` (GN-3.17, S3.3), no new mechanism; AppKit's mixed-state toggle among `indeterminate`'s platforms; `facts-format.md`'s per-leaf blocks kept, the verifiers' combinations to follow them; QML's `Gradient` angle in the quote check, `Vertical` 180° (U421); the KDE scheme light where `BackgroundNormal` is empty or `invalid`, kept with the colour's recorded inexactness (rejected: Plasma's dark alone); `qGray`'s lines corrected (`qrgb.h:37-38`, `:40-41`); `body_font_height` unrounded, Kirigami's `QFontMetricsF` height, truncated by `kirigami_label_icon_size` before its step; by R1.6 (ADD-A126) `material-3`'s text button and standard menu button take `md.comp.button`'s 24 px leading and trailing space, the text style's own set deprecated for it (`material-web@2.5.0 tokens/versions/latest/sass/_md-comp-text-button.scss:25-27`, `tokens/versions/latest/sass/_md-comp-button.scss:38-41`) and the menu-button set naming none (`tokens/versions/latest/sass/_md-comp-standard-menu-button.scss`), both implementations drawing that button as their text button (rejected: Compose's 12 dp `TextButtonContentPadding` and material-web's own text button's 12 px, `tokens/_md-comp-text-button.scss:85-86`, the older token set's, both of which the latest tokens override); the macOS round 7's 412 `[style, with_icon]` readings now facts of sets the MC-C1 products draw; the iPhone back title (U684) not yet an absence; a button with no configuration draws no subtitle (U255). Follow-ups: evidence, run 42308526155's `text-scale/frames.toml` and `text-text_scale.png` committed from the run's artifact before any fact cites them; code, `TextScaling::WinUi` and its curve (a platform function with its vector table), `ColorInterpolation::StraightSrgb` once its table is measured (with rows past `0..=1`), `FocusKind::FilledRing` removed (`blocks/focus.rs`), `TextStyle.word_spacing` out of the may-be-absent marks, the GNOME reader's font patch narrowed to family and size with tests, the Windows reader's rendering reads (DirectWrite's greyscale parameters, no ClearType `SPI_*` value into `token.text.rendering`), the gate's own-combination completion (every drawing variant, an undrawn completion no failure, a `when` drawn nowhere reported); scripts, `check_fact_citations.py` (the zero-fallback form's constants, ADD-A134's; QML's `Gradient` angle and colour form; self-tests), `check_facts.py` (a declared flag missing from `axes.states`; a `word_spacing` `Absent`; self-tests), `verify_facts.py`'s brief (combinations per leaf where the canonical forms state leaves), a vector-table harness for `win_ui` (the MIT lines against a stub); facts, Windows (`token.text.scaling` `win_ui`; `contrast` 1 from `grayscale_enhanced_contrast`, `subpixel_order` and `lcd_filter` `Absent`; the `scroll_into_view` timing fact and `[declare]` key removed, U50 retired; `color_space` `straight_srgb` after `read_host.py`'s refit and the host's table pass; `tool`'s padding, margin, size limits and gap per S2.11 from the template's layout, checked against the host's part bounds per view state, U1; the three role absences cited; `blink_timeout` stated once the checker lands, U505; the nested variants' host contexts), Material (U557's names read from the system image; `focus_visible_when`'s absence citations from `ViewRootImpl.java` and `AndroidComposeView.android.kt`; the disabled pairs as exclusive groups in place of `not_drawn`; the text and standard menu buttons' 24 px), GNOME (the disabled pairs as exclusive groups; `token.motion.durations.tab_thumbnail` renamed and the code fade's key added; the multi-layer shadows reversed bottom first, the menu card's outer node first; the facts libadwaita takes from `monospace-font-name`, cited; `settings_update_font_values`' absence citation naming every field GTK does not take from `gtk-font-name`, the style, stretch, variant and variations beside the weight), KDE (`token.focus.kind` and `button.body.focus.kind` `ring`; `hit_extension` `0px` with `hitButton`'s citation; U421's gloss after the checker; the multi-layer shadows' order checked against Breeze's drawing; a KDE render-host read of `Xft/DPI` against `Xft.dpi` on a Plasma X11 session; the window radius's `smallSpacing` of 2 read on the host), macOS (the 412 `[style, with_icon]` readings stated over U695's pending facts; where builds differ the newest build's reading, `macos-tahoe`'s 26.6.2 against 26.7.2; `tokens.toml`'s stale U311 comment and `roles.toml:12679`'s, which still calls U236 pending; the `[indeterminate, checked]` group in place of the `not_drawn` pair), iOS (the state models' products holding the system type's image, menu and toggle sets; `button.subtitle` absent on the base, U255 narrowed; U684's pass with a title that fits), every lane (`kde-breeze.toml`, `windows-11.toml`, `material-3.toml`, `adwaita.toml` and `docs/platform-facts.md` regenerated); sources, the newest macOS 26 runner build's Xcode checked against `xcode@26.6` and pinned where newer; ledger, U1, U50, U255, U421, U505, U508, U519, U557, U684, U695 and #184. Open: hinting and the render engine on `windows-11` (U508); whether a Plasma X11 session's XSETTINGS `Xft/DPI` can differ from `Xft.dpi` (a KDE host read); the window radius's spacing (a KDE host read); the fields libadwaita takes from `monospace-font-name` (the GNOME facts at its pin, through the clean room where code is needed); the iPhone back title (U684, an iOS host pass) | S2.2, S2.5, S2.7, S2.9, S2.10, S2.11, S4, S4.1, S4.4, S6.3, S9.3 (*The KDE reader's readings*, *The GNOME reader's readings*), S9.4, S10, S17 (the quote check, *Absence*, `measured`'s tolerance, the builds, state models, *Sets not yet measured*, the gate's own combinations); catalogue (`button`'s flags, exclusive groups and `hit_extension`, `component.title_widget`, the colour roles' marks, `token.motion`'s keys and colour space, the placement strategies); traces Windows (W-P4-3†, W3-22, W3-36), KDE (K3.20, K-KA-33†), GNOME (GN-1.193); ledger (U1, U50, U144, U146, U255, U311, U421, U505, U508, U519, U557, U684, U695; queue #184) |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

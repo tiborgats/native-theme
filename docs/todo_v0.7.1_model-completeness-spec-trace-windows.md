@@ -685,8 +685,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-20 | `FocusIndicator.kind` (Ring, its inner ring a shadow layer: the HighVisibility default; Reveal: `FocusKind::Keyed(@reveal)`; DottedLine: `FocusIndicator.dash` `Dotted`; ADD-A82) | field |
 | W3-21 | `token.behavior.focus_visible_when (Keyboard { timeout: None }: the system focus visual only on an element whose focus state is Keyboard, focusmgr.cpp:2729-2746; ADD-A16, ADD-A122)` | token |
 | W3-21 | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
-| W3-22 | `token.text.rendering (ADD-B04)` | token |
-| W3-22 | `reader:windows:SPI_GETCLEARTYPE, SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGTYPE, SPI_GETFONTSMOOTHINGCONTRAST` | reader |
+| W3-22 | `token.text.rendering (ADD-B04; the rendering WinUI draws, greyscale: contrast DirectWrite's greyscale enhanced contrast, subpixel order and LCD filter absent, S4's The rendering drawn, ADD-A141)` | token |
+| W3-22 | `reader:windows:SPI_GETCLEARTYPE, SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGTYPE, SPI_GETFONTSMOOTHINGCONTRAST (ClearType's; under WinUI's greyscale drawing the reader states the parameters it draws with, not these, S4's The rendering drawn, ADD-A141)` | reader |
 | W3-23 | `Font.axes (opsz: AxisValue::FollowsSize)` | field |
 | W3-23 | `token.text.roles.*.line_height` (the line height per role) | token |
 | W3-23 | `view_switcher.item_label.text.letter_spacing @ variant @pivot` (`PivotHeaderItemCharacterSpacing`: the Pivot header item's own character spacing, W2-32) | rule |
@@ -764,6 +764,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-36 | `PartStyle.{min_height,padding} (= an expression on text_scale or font_size where the control grows with the text; ADD-A55)` | field |
 | W3-36 | `TextStyle.{wrap,max_lines} (the wrapping)` | field |
 | W3-36 | `IconStyle.size (= an expression on text_scale where the icon grows; ADD-A55)` | field |
+| W3-36 | `token.text.scaling (win_ui, WinUI's TextFormatting::GetScaledFontSize curve, its factor UISettings.TextScaleFactor; S9.4, ADD-A141)` | token |
 | W3-37 | `PartStyle.transitions @ cond animations_off per animation` | rule |
 | W3-37 | `token.motion.speed_factor @ cond animations_off` | rule |
 | W3-37 | `reader:windows:UISettings.AnimationsEnabled` (false: `cond animations_off` and `cond reduced_motion`, Windows' one motion setting, which WinUI reads; `SPI_GETCLIENTAREAANIMATION` not read; S9.3, ADD-A140) | reader |
@@ -880,7 +881,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P4-1† | `window.values.presentations (event @launch_exit)` | field |
 | W-P4-2† | - | out (R1.1) |
 | W-P4-3† | `window.values.keyboard_avoidance (KeyboardAvoid(WinUiScrollIntoView))` | placement |
-| W-P4-3† | `token.motion.durations.scroll_into_view, token.motion.timings.scroll_into_view (the scroll into view, measured)` | token |
+| W-P4-3† | `token.motion.durations.scroll_into_view (the scroll into view, measured: zero, so no keyed timing, S4.1's A motion in no time, ADD-A141)` | token |
 | W-P4-4† | - | out (R1.1) |
 | W-P4-5† | `token.pointer.drag_cursors.<drop operation> (ADD-A46)` | token |
 | W-P4-6† | - | out (R1.1) |
