@@ -128,6 +128,8 @@ pub(super) enum Platform {
     KdeSelectionInactive,
     /// `kde_shade(c, role, contrast)`.
     KdeShade,
+    /// `kirigami_label_icon_size(font_height)`.
+    KirigamiLabelIconSize,
     /// `kirigami_lerp(a, b, balance)`.
     KirigamiLerp,
     /// `kirigami_tint(c, tint, alpha)`.
@@ -154,6 +156,7 @@ impl Platform {
             Func::KdeEffects => Some(Platform::KdeEffects),
             Func::KdeSelectionInactive => Some(Platform::KdeSelectionInactive),
             Func::KdeShade => Some(Platform::KdeShade),
+            Func::KirigamiLabelIconSize => Some(Platform::KirigamiLabelIconSize),
             Func::KirigamiLerp => Some(Platform::KirigamiLerp),
             Func::KirigamiTint => Some(Platform::KirigamiTint),
             Func::M3Role => Some(Platform::M3Role),
@@ -269,6 +272,7 @@ impl Platform {
                     None => Val::Color(c),
                 }
             }
+            Platform::KirigamiLabelIconSize => Val::Length(Px(label_icon_size(number_arg(0)))),
             Platform::KirigamiLerp => {
                 let (a, b, balance) = (arg(0), arg(1), arg(2));
                 // A colour outside sRGB's gamut enters as Qt's extended RGB;
@@ -305,6 +309,23 @@ impl Platform {
             }
         }
     }
+}
+
+/// `kirigami_label_icon_size`'s value for the font height `height`, kept in
+/// the clean room's domain, a finite, non-negative height whose truncation
+/// fits Qt's `int`, so its undefined inputs (−2147483648, its open
+/// questions) are out of reach: a non-finite height is zero, as S2.2's
+/// *Totality* reads a non-finite operand, and a negative one, which no font
+/// has, is zero too; a height past `int`'s range is the largest single
+/// below 2³¹, where the function is the truncated height itself.
+fn label_icon_size(height: f32) -> f32 {
+    let largest = 2.0_f32.powi(31).next_down();
+    let height = if height.is_finite() {
+        height.clamp(0.0, largest)
+    } else {
+        0.0
+    };
+    crate::platform::kirigami_label_icon_size::kirigami_label_icon_size(height)
 }
 
 /// `m3_role`'s value for its `role` operand, from the operands it reads
@@ -747,6 +768,27 @@ mod tests {
                 "{text}"
             );
         }
+    }
+
+    /// `kirigami_label_icon_size` over a length is a length: the height
+    /// truncated and stepped (`tests/vectors/kirigami_label_icon_size.tsv`'s
+    /// first row, the facts' 17.6875 px giving 16). A height outside the
+    /// clean room's domain is kept in it: a negative or non-finite one is
+    /// zero, one past `int`'s range the largest single below 2³¹, never the
+    /// clean room's −2147483648.
+    #[test]
+    fn evaluates_kirigami_label_icon_size() {
+        let size = |text: &str| value(&format!("kirigami_label_icon_size({text})"), Ty::Length);
+        assert_eq!(size("17.6875px"), Val::Length(Px(16.0)));
+        assert_eq!(size("add(token.gap, 60px)"), Val::Length(Px(66.0)));
+        assert_eq!(size("sub(0px, 30px)"), Val::Length(Px(0.0)));
+        assert_eq!(size("element.width"), Val::Length(Px(0.0)));
+        let largest = 2.0_f32.powi(31).next_down();
+        assert_eq!(size("mul(1000000px, 3000)"), Val::Length(Px(largest)));
+        for height in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, -0.9, -1e9] {
+            assert_eq!(label_icon_size(height), 0.0, "{height}");
+        }
+        assert_eq!(label_icon_size(f32::MAX), largest);
     }
 
     #[test]

@@ -19,6 +19,7 @@ use native_theme::platform::kde_accent::{
 use native_theme::platform::kde_effects::{KdeGroupEffects, kde_effects};
 use native_theme::platform::kde_selection_inactive::kde_selection_inactive;
 use native_theme::platform::kde_shade::{KdeShadeRole, kde_shade};
+use native_theme::platform::kirigami_label_icon_size::kirigami_label_icon_size;
 use native_theme::platform::kirigami_lerp::kirigami_lerp;
 use native_theme::platform::kirigami_tint::kirigami_tint;
 use native_theme::platform::m3_role::m3_role;
@@ -138,6 +139,17 @@ fn vectors_kirigami_lerp() {
         )
         .expect("a colour in 16-bit storage");
         assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+/// Every row exact: each size is a whole number of pixels.
+#[test]
+fn vectors_kirigami_label_icon_size() {
+    let rows = rows("kirigami_label_icon_size");
+    assert_eq!(rows.len(), 49);
+    for row in rows {
+        let got = kirigami_label_icon_size(size_px(&row["font_height"]));
+        assert_eq!(got, size_px(&row["size"]), "{row:?}");
     }
 }
 
