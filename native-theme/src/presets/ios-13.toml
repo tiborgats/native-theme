@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 b93dddc156588f4487656493faaaf7796ff940c72bb7072a8018bc3c73f1d0bb
+# generated lines: sha256 ee48b504481e58b8e4ec742e4eb9507ad120f7d160f9ad9360c5ade3c5d188e6
 
 [preset]
 id = "ios-13"
@@ -125,7 +125,7 @@ accent_inputs = ["accent"]
 # S10: SF Symbols' named scales the facts state (IconStyle.scale)
 symbol_scales = [
     "large",  # docs/facts/ios/tokens.toml:1634
-    "medium",  # docs/facts/ios/button.toml:111690
+    "medium",  # docs/facts/ios/button.toml:111330
 ]
 
 [declare.params.opacity]
@@ -136,7 +136,7 @@ keys = [
 ]
 # hand-written: end declare
 
-# docs/facts/ios/state-models.toml:86
+# docs/facts/ios/state-models.toml:95
 [declare.widget.button]
 available = true
 variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
@@ -150,134 +150,134 @@ sizes_by_variant = [{ variant = "flat", sizes = ["mini", "small", "regular", "la
 
 [pending]
 # docs/facts/ios/button.toml:14970
-"widgets.button.body.fill" = ["U115", "U118", "U114", "U116", "U122", "U113", "U112", "U475", "U685", "U686"]
+"widgets.button.body.fill" = ["U115", "U118", "U114", "U116", "U122", "U113", "U112", "U475", "U685", "U686", "U704"]
 # docs/facts/ios/button.toml:64041
-"widgets.button.label.text.fill" = ["U255", "U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686", "U703"]
-# docs/facts/ios/button.toml:84082
-"widgets.button.icon.icon.fill" = ["U115", "U114", "U116", "U120", "U122", "U113", "U112", "U475", "U685", "U686"]
-# docs/facts/ios/button.toml:89868
+"widgets.button.label.text.fill" = ["U255", "U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686", "U703", "U704"]
+# docs/facts/ios/button.toml:83722
+"widgets.button.icon.icon.fill" = ["U115", "U114", "U116", "U120", "U122", "U113", "U112", "U475", "U685", "U686", "U704"]
+# docs/facts/ios/button.toml:89508
 "widgets.button.values.menu_indicator_gap_px" = ["U120", "U114", "U113", "U112"]
-# docs/facts/ios/button.toml:90492
+# docs/facts/ios/button.toml:90132
 "widgets.button.values.menu_indicator_anchor" = ["U120", "U114", "U113", "U112"]
-# docs/facts/ios/button.toml:91500
-"widgets.button.menu_indicator.margin.left_px" = ["U120", "U114", "U122", "U113", "U112"]
-# docs/facts/ios/button.toml:91968
-"widgets.button.menu_indicator.margin.right_px" = ["U120", "U114", "U122", "U113", "U112"]
-# docs/facts/ios/button.toml:92436
-"widgets.button.menu_indicator.min_width_px" = ["U120", "U114", "U122", "U113", "U112"]
-# docs/facts/ios/button.toml:92904
-"widgets.button.menu_indicator.min_height_px" = ["U120", "U114", "U122", "U113", "U112"]
-# docs/facts/ios/button.toml:93310
-"widgets.button.label" = ["U115", "U114", "U255", "U122", "U113", "U112"]
-# docs/facts/ios/button.toml:94623
+# docs/facts/ios/button.toml:91140
+"widgets.button.menu_indicator.margin.left_px" = ["U120", "U114", "U122", "U113", "U112", "U704"]
+# docs/facts/ios/button.toml:91608
+"widgets.button.menu_indicator.margin.right_px" = ["U120", "U114", "U122", "U113", "U112", "U704"]
+# docs/facts/ios/button.toml:92076
+"widgets.button.menu_indicator.min_width_px" = ["U120", "U114", "U122", "U113", "U112", "U704"]
+# docs/facts/ios/button.toml:92544
+"widgets.button.menu_indicator.min_height_px" = ["U120", "U114", "U122", "U113", "U112", "U704"]
+# docs/facts/ios/button.toml:92950
+"widgets.button.label" = ["U115", "U114", "U255", "U122", "U113", "U112", "U704"]
+# docs/facts/ios/button.toml:94263
 "widgets.button.menu_indicator" = ["U113", "U114", "U112"]
-# docs/facts/ios/button.toml:104784
-"widgets.button.subtitle.text.fill" = ["U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686"]
-# docs/facts/ios/button.toml:106668
+# docs/facts/ios/button.toml:104424
+"widgets.button.subtitle.text.fill" = ["U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686", "U704"]
+# docs/facts/ios/button.toml:106308
 "widgets.button.subtitle.text.font.family" = ["U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:107348
+# docs/facts/ios/button.toml:106988
 "widgets.button.subtitle.text.font.size" = ["U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:108868
+# docs/facts/ios/button.toml:108508
 "widgets.button.subtitle.text.font.weight" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:109156
+# docs/facts/ios/button.toml:108796
 "widgets.button.body.focus" = "U112"
-# docs/facts/ios/button.toml:109162
+# docs/facts/ios/button.toml:108802
 "widgets.button.body.transform" = "U124"
-# docs/facts/ios/button.toml:109168
+# docs/facts/ios/button.toml:108808
 "widgets.button.menu_indicator.transform" = ["U122", "U114", "U113", "U112", "U124"]
-# docs/facts/ios/button.toml:109270
+# docs/facts/ios/button.toml:108910
 "widgets.button.body.transitions" = "U125"
-# docs/facts/ios/button.toml:109276
+# docs/facts/ios/button.toml:108916
 "widgets.button.icon.transitions" = "U125"
-# docs/facts/ios/button.toml:109282
+# docs/facts/ios/button.toml:108922
 "widgets.button.menu_indicator.transitions" = ["U122", "U114", "U113", "U112", "U125"]
-# docs/facts/ios/button.toml:109831
-"widgets.button.icon.icon.size_px" = "U126"
-# docs/facts/ios/button.toml:110458
-"widgets.button.icon.icon.rendering_mode" = "U126"
-# docs/facts/ios/button.toml:111074
-"widgets.button.icon.icon.weight" = "U126"
-# docs/facts/ios/button.toml:111701
-"widgets.button.icon.icon.scale" = "U126"
-# docs/facts/ios/button.toml:112285
+# docs/facts/ios/button.toml:109471
+"widgets.button.icon.icon.size_px" = ["U126", "U704"]
+# docs/facts/ios/button.toml:110098
+"widgets.button.icon.icon.rendering_mode" = ["U126", "U704"]
+# docs/facts/ios/button.toml:110714
+"widgets.button.icon.icon.weight" = ["U126", "U704"]
+# docs/facts/ios/button.toml:111341
+"widgets.button.icon.icon.scale" = ["U126", "U704"]
+# docs/facts/ios/button.toml:111925
 "widgets.button.icon.glyph" = "U126"
-# docs/facts/ios/button.toml:112465
+# docs/facts/ios/button.toml:112105
 "widgets.button.menu_indicator.glyph" = ["U122", "U114", "U113", "U112", "U121"]
-# docs/facts/ios/button.toml:112567
+# docs/facts/ios/button.toml:112207
 "widgets.button.menu_indicator.margin.top_px" = ["U122", "U114", "U113", "U112", "U121"]
-# docs/facts/ios/button.toml:112669
+# docs/facts/ios/button.toml:112309
 "widgets.button.menu_indicator.margin.bottom_px" = ["U122", "U114", "U113", "U112", "U121"]
-# docs/facts/ios/button.toml:115260
+# docs/facts/ios/button.toml:114816
 "widgets.button.label.text.font.width" = "U256"
-# docs/facts/ios/button.toml:120146
+# docs/facts/ios/button.toml:119534
 "widgets.button.label.text.scaling_role" = "U256"
-# docs/facts/ios/button.toml:120152
+# docs/facts/ios/button.toml:119540
 "widgets.button.label.text.letter_spacing" = "U256"
-# docs/facts/ios/button.toml:120158
+# docs/facts/ios/button.toml:119546
 "widgets.button.label.text.word_spacing" = "U256"
-# docs/facts/ios/button.toml:135767
+# docs/facts/ios/button.toml:134651
 "widgets.button.subtitle.text.font.style" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:136055
+# docs/facts/ios/button.toml:134939
 "widgets.button.subtitle.text.font.width" = "U256"
-# docs/facts/ios/button.toml:137029
+# docs/facts/ios/button.toml:135913
 "widgets.button.subtitle.text.font.axes" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:138285
+# docs/facts/ios/button.toml:137169
 "widgets.button.subtitle.text.font.features" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:138573
+# docs/facts/ios/button.toml:137457
 "widgets.button.subtitle.text.scaling_role" = "U256"
-# docs/facts/ios/button.toml:138579
+# docs/facts/ios/button.toml:137463
 "widgets.button.subtitle.text.letter_spacing" = "U256"
-# docs/facts/ios/button.toml:138585
+# docs/facts/ios/button.toml:137469
 "widgets.button.subtitle.text.word_spacing" = "U256"
-# docs/facts/ios/button.toml:139559
+# docs/facts/ios/button.toml:138443
 "widgets.button.subtitle.text.line_height" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:140815
+# docs/facts/ios/button.toml:139699
 "widgets.button.subtitle.text.decoration" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:142114
+# docs/facts/ios/button.toml:140998
 "widgets.button.subtitle.text.case" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:143370
+# docs/facts/ios/button.toml:142254
 "widgets.button.subtitle.text.elision" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:144626
+# docs/facts/ios/button.toml:143510
 "widgets.button.subtitle.text.wrap" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:145882
+# docs/facts/ios/button.toml:144766
 "widgets.button.subtitle.text.max_lines" = ["U120", "U114", "U117", "U113", "U112"]
-# docs/facts/ios/button.toml:300495
+# docs/facts/ios/button.toml:299379
 "widgets.button.body.bindings" = "U482"
-# docs/facts/ios/button.toml:300671
+# docs/facts/ios/button.toml:299555
 "widgets.button.body.interaction" = "U482"
-# docs/facts/ios/button.toml:300676
+# docs/facts/ios/button.toml:299560
 "widgets.button.body.margin.top_px" = "U482"
-# docs/facts/ios/button.toml:300681
+# docs/facts/ios/button.toml:299565
 "widgets.button.body.margin.right_px" = "U482"
-# docs/facts/ios/button.toml:300686
+# docs/facts/ios/button.toml:299570
 "widgets.button.body.margin.bottom_px" = "U482"
-# docs/facts/ios/button.toml:300691
+# docs/facts/ios/button.toml:299575
 "widgets.button.body.margin.left_px" = "U482"
-# docs/facts/ios/button.toml:300696
+# docs/facts/ios/button.toml:299580
 "widgets.button.body.max_width_px" = "U482"
-# docs/facts/ios/button.toml:300862
+# docs/facts/ios/button.toml:299746
 "widgets.button.label.padding" = "U482"
-# docs/facts/ios/button.toml:301315
-"widgets.button.icon.icon.axes" = "U483"
-# docs/facts/ios/button.toml:302790
+# docs/facts/ios/button.toml:300199
+"widgets.button.icon.icon.axes" = ["U483", "U704"]
+# docs/facts/ios/button.toml:301674
 "widgets.button.icon.icon.symbol_variants" = "U483"
-# docs/facts/ios/button.toml:304265
-"widgets.button.icon.icon.symbolic_colors" = "U483"
-# docs/facts/ios/button.toml:305336
+# docs/facts/ios/button.toml:303149
+"widgets.button.icon.icon.symbolic_colors" = ["U483", "U704"]
+# docs/facts/ios/button.toml:304220
 "widgets.button.icon.icon.state_effect" = "U483"
-# docs/facts/ios/button.toml:305341
+# docs/facts/ios/button.toml:304225
 "widgets.button.icon.icon.animation" = "U483"
-# docs/facts/ios/button.toml:305392
+# docs/facts/ios/button.toml:304276
 "widgets.button.values.display_mode" = "U484"
-# docs/facts/ios/button.toml:305754
+# docs/facts/ios/button.toml:304638
 "widgets.button.values.label_position" = "U484"
-# docs/facts/ios/button.toml:305759
+# docs/facts/ios/button.toml:304643
 "widgets.button.values.menu_trigger" = "U484"
-# docs/facts/ios/button.toml:305764
+# docs/facts/ios/button.toml:304648
 "widgets.button.values.presentations" = "U484"
-# docs/facts/ios/button.toml:305951
+# docs/facts/ios/button.toml:304835
 "widgets.button.values.shows_icon" = "U484"
-# docs/facts/ios/button.toml:305957
+# docs/facts/ios/button.toml:304841
 "widgets.button.label.text.decoration" = "U485"
 # docs/facts/ios/roles.toml:3960
 "colors.light.global.accent" = ["U451", "U460"]
@@ -3279,13 +3279,13 @@ shadow = "absent"
 opacity = 1.0
 # docs/facts/ios/button.toml:53669
 corners.curve = "continuous"
-# docs/facts/ios/button.toml:78480
+# docs/facts/ios/button.toml:78120
 min_width_px = "auto"
-# docs/facts/ios/button.toml:80233
+# docs/facts/ios/button.toml:79873
 min_height_px = "auto"
-# docs/facts/ios/button.toml:300500
+# docs/facts/ios/button.toml:299384
 cursor = "absent"
-# docs/facts/ios/button.toml:300701
+# docs/facts/ios/button.toml:299585
 touch_target_px = "absent"
 # docs/facts/ios/button.toml:30873
 padding.top_px = 7
@@ -3309,51 +3309,51 @@ corners.bottom_left_px = 6
 text.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/button.toml:74792
 text.font.weight = 400
-# docs/facts/ios/button.toml:112820
+# docs/facts/ios/button.toml:112460
 text.font.style = "normal"
-# docs/facts/ios/button.toml:115266
+# docs/facts/ios/button.toml:114822
 text.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/button.toml:117706
+# docs/facts/ios/button.toml:117178
 text.font.features = {}
-# docs/facts/ios/button.toml:120164
+# docs/facts/ios/button.toml:119552
 text.line_height = "auto"
-# docs/facts/ios/button.toml:124996
+# docs/facts/ios/button.toml:124216
 text.mnemonic_decoration = "absent"
-# docs/facts/ios/button.toml:125033
+# docs/facts/ios/button.toml:124253
 text.case = "mixed"
-# docs/facts/ios/button.toml:127473
+# docs/facts/ios/button.toml:126609
 text.elision = "none"
-# docs/facts/ios/button.toml:129913
+# docs/facts/ios/button.toml:128965
 text.wrap = "word_char"
-# docs/facts/ios/button.toml:132353
+# docs/facts/ios/button.toml:131321
 text.max_lines = "none"
 # docs/facts/ios/button.toml:70960
 text.font.size_px = 17
 
 [widgets.button.values]
-# docs/facts/ios/button.toml:94647
+# docs/facts/ios/button.toml:94287
 icon_placement = "leading"
-# docs/facts/ios/button.toml:97110
+# docs/facts/ios/button.toml:96750
 icon_text_gap_px = 0
-# docs/facts/ios/button.toml:100313
+# docs/facts/ios/button.toml:99953
 subtitle_gap_px = 1
-# docs/facts/ios/button.toml:305350
+# docs/facts/ios/button.toml:304234
 back_title_fallback = true
-# docs/facts/ios/button.toml:305366
+# docs/facts/ios/button.toml:304250
 back_display_mode = "default"
-# docs/facts/ios/button.toml:305397
+# docs/facts/ios/button.toml:304281
 focus_visible_when = "= token.behavior.focus_visible_when"
-# docs/facts/ios/button.toml:305413
+# docs/facts/ios/button.toml:304297
 help_tooltip_on_click = false
-# docs/facts/ios/button.toml:305593
+# docs/facts/ios/button.toml:304477
 hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
-# docs/facts/ios/button.toml:305769
+# docs/facts/ios/button.toml:304653
 repeat_delay_ms = "absent"
-# docs/facts/ios/button.toml:305860
+# docs/facts/ios/button.toml:304744
 repeat_interval_ms = "absent"
 
 [widgets.button.subtitle]
-# docs/facts/ios/button.toml:141103
+# docs/facts/ios/button.toml:139987
 text.mnemonic_decoration = "absent"
 
 [[rules]]
@@ -5205,9 +5205,9 @@ padding.right_px = 0
 padding.bottom_px = 6
 # docs/facts/ios/button.toml:42506
 padding.left_px = 0
-# docs/facts/ios/button.toml:79547
+# docs/facts/ios/button.toml:79187
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81140
+# docs/facts/ios/button.toml:80780
 min_height_px = "auto"
 
 [[rules]]
@@ -5223,9 +5223,9 @@ padding.right_px = 0
 padding.bottom_px = 6
 # docs/facts/ios/button.toml:42632
 padding.left_px = 0
-# docs/facts/ios/button.toml:79673
+# docs/facts/ios/button.toml:79313
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81266
+# docs/facts/ios/button.toml:80906
 min_height_px = "auto"
 
 [[rules]]
@@ -5241,9 +5241,9 @@ padding.right_px = 0
 padding.bottom_px = 6
 # docs/facts/ios/button.toml:42666
 padding.left_px = 0
-# docs/facts/ios/button.toml:79707
+# docs/facts/ios/button.toml:79347
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81300
+# docs/facts/ios/button.toml:80940
 min_height_px = "auto"
 
 [[rules]]
@@ -5259,9 +5259,9 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42688
 padding.left_px = 0
-# docs/facts/ios/button.toml:79729
+# docs/facts/ios/button.toml:79369
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81322
+# docs/facts/ios/button.toml:80962
 min_height_px = "auto"
 
 [[rules]]
@@ -5277,9 +5277,9 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42710
 padding.left_px = 0
-# docs/facts/ios/button.toml:79751
+# docs/facts/ios/button.toml:79391
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81344
+# docs/facts/ios/button.toml:80984
 min_height_px = "auto"
 
 [[rules]]
@@ -5295,9 +5295,9 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42732
 padding.left_px = 0
-# docs/facts/ios/button.toml:79773
+# docs/facts/ios/button.toml:79413
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81366
+# docs/facts/ios/button.toml:81006
 min_height_px = "auto"
 
 [[rules]]
@@ -5313,9 +5313,9 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42754
 padding.left_px = 0
-# docs/facts/ios/button.toml:79795
+# docs/facts/ios/button.toml:79435
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81388
+# docs/facts/ios/button.toml:81028
 min_height_px = "auto"
 
 [[rules]]
@@ -5331,9 +5331,9 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42776
 padding.left_px = 0
-# docs/facts/ios/button.toml:79817
+# docs/facts/ios/button.toml:79457
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81410
+# docs/facts/ios/button.toml:81050
 min_height_px = "auto"
 
 [[rules]]
@@ -5349,9 +5349,9 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42798
 padding.left_px = 0
-# docs/facts/ios/button.toml:79839
+# docs/facts/ios/button.toml:79479
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81432
+# docs/facts/ios/button.toml:81072
 min_height_px = "auto"
 
 [[rules]]
@@ -5367,9 +5367,9 @@ padding.right_px = 0
 padding.bottom_px = 6
 # docs/facts/ios/button.toml:42820
 padding.left_px = 0
-# docs/facts/ios/button.toml:79861
+# docs/facts/ios/button.toml:79501
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81454
+# docs/facts/ios/button.toml:81094
 min_height_px = "auto"
 
 [[rules]]
@@ -5385,9 +5385,9 @@ padding.right_px = 0
 padding.bottom_px = 6
 # docs/facts/ios/button.toml:42842
 padding.left_px = 0
-# docs/facts/ios/button.toml:79883
+# docs/facts/ios/button.toml:79523
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81476
+# docs/facts/ios/button.toml:81116
 min_height_px = "auto"
 
 [[rules]]
@@ -5403,9 +5403,9 @@ padding.right_px = 0
 padding.bottom_px = 6
 # docs/facts/ios/button.toml:42864
 padding.left_px = 0
-# docs/facts/ios/button.toml:79905
+# docs/facts/ios/button.toml:79545
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81498
+# docs/facts/ios/button.toml:81138
 min_height_px = "auto"
 
 [[rules]]
@@ -5421,11 +5421,11 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42886
 padding.left_px = 0
-# docs/facts/ios/button.toml:79927
+# docs/facts/ios/button.toml:79567
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81520
+# docs/facts/ios/button.toml:81160
 min_height_px = "auto"
-# docs/facts/ios/button.toml:300517
+# docs/facts/ios/button.toml:299401
 cursor = "absent"
 
 [[rules]]
@@ -5441,9 +5441,9 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42912
 padding.left_px = 0
-# docs/facts/ios/button.toml:79953
+# docs/facts/ios/button.toml:79593
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81546
+# docs/facts/ios/button.toml:81186
 min_height_px = "auto"
 
 [[rules]]
@@ -5459,9 +5459,9 @@ padding.right_px = 0
 padding.bottom_px = 0
 # docs/facts/ios/button.toml:42938
 padding.left_px = 0
-# docs/facts/ios/button.toml:79979
+# docs/facts/ios/button.toml:79619
 min_width_px = "auto"
-# docs/facts/ios/button.toml:81572
+# docs/facts/ios/button.toml:81212
 min_height_px = "auto"
 
 [[rules]]
@@ -7013,23 +7013,23 @@ target = "button.label"
 [rules.set]
 # docs/facts/ios/button.toml:71833
 text.font.size_px = 15
-# docs/facts/ios/button.toml:75795
+# docs/facts/ios/button.toml:75747
 text.font.weight = 400
-# docs/facts/ios/button.toml:113198
+# docs/facts/ios/button.toml:112790
 text.font.style = "normal"
-# docs/facts/ios/button.toml:115644
+# docs/facts/ios/button.toml:115152
 text.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/button.toml:118084
+# docs/facts/ios/button.toml:117508
 text.font.features = {}
-# docs/facts/ios/button.toml:120542
+# docs/facts/ios/button.toml:119882
 text.line_height = "auto"
-# docs/facts/ios/button.toml:125411
+# docs/facts/ios/button.toml:124583
 text.case = "mixed"
-# docs/facts/ios/button.toml:127851
+# docs/facts/ios/button.toml:126939
 text.elision = "middle"
-# docs/facts/ios/button.toml:130291
+# docs/facts/ios/button.toml:129295
 text.wrap = "none"
-# docs/facts/ios/button.toml:132731
+# docs/facts/ios/button.toml:131651
 text.max_lines = 1
 
 [[rules]]
@@ -7133,7 +7133,7 @@ when = { variants = ["@role_primary"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/ios/button.toml:76847
+# docs/facts/ios/button.toml:76799
 text.font.weight = 600
 
 [[rules]]
@@ -7141,7 +7141,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81826
+# docs/facts/ios/button.toml:81466
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7149,7 +7149,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81852
+# docs/facts/ios/button.toml:81492
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7157,7 +7157,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81868
+# docs/facts/ios/button.toml:81508
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7165,7 +7165,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81894
+# docs/facts/ios/button.toml:81534
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7173,7 +7173,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81910
+# docs/facts/ios/button.toml:81550
 icon.fill = "#3b9dff"
 
 [[rules]]
@@ -7181,7 +7181,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81926
+# docs/facts/ios/button.toml:81566
 icon.fill = "#8cc4ff"
 
 [[rules]]
@@ -7189,7 +7189,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81937
+# docs/facts/ios/button.toml:81577
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7197,7 +7197,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81953
+# docs/facts/ios/button.toml:81593
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -7205,7 +7205,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81964
+# docs/facts/ios/button.toml:81604
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -7213,7 +7213,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81980
+# docs/facts/ios/button.toml:81620
 icon.fill = "#f7f7ff8c"
 
 [[rules]]
@@ -7221,7 +7221,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:81991
+# docs/facts/ios/button.toml:81631
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -7229,7 +7229,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82007
+# docs/facts/ios/button.toml:81647
 icon.fill = "#303036b2"
 
 [[rules]]
@@ -7237,7 +7237,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82018
+# docs/facts/ios/button.toml:81658
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7245,7 +7245,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82034
+# docs/facts/ios/button.toml:81674
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7253,7 +7253,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82045
+# docs/facts/ios/button.toml:81685
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7261,7 +7261,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82061
+# docs/facts/ios/button.toml:81701
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7269,7 +7269,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82072
+# docs/facts/ios/button.toml:81712
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -7277,7 +7277,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82088
+# docs/facts/ios/button.toml:81728
 icon.fill = "#7ebcff"
 
 [[rules]]
@@ -7285,7 +7285,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82099
+# docs/facts/ios/button.toml:81739
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7293,7 +7293,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82115
+# docs/facts/ios/button.toml:81755
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -7301,7 +7301,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82126
+# docs/facts/ios/button.toml:81766
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7309,7 +7309,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82152
+# docs/facts/ios/button.toml:81792
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7317,7 +7317,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82168
+# docs/facts/ios/button.toml:81808
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7325,7 +7325,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82194
+# docs/facts/ios/button.toml:81834
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7333,7 +7333,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82210
+# docs/facts/ios/button.toml:81850
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -7341,7 +7341,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82226
+# docs/facts/ios/button.toml:81866
 icon.fill = "#7ebcff"
 
 [[rules]]
@@ -7349,7 +7349,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82237
+# docs/facts/ios/button.toml:81877
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7357,7 +7357,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82253
+# docs/facts/ios/button.toml:81893
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -7365,7 +7365,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82264
+# docs/facts/ios/button.toml:81904
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -7373,7 +7373,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82280
+# docs/facts/ios/button.toml:81920
 icon.fill = "#f7f7ff8c"
 
 [[rules]]
@@ -7381,7 +7381,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82291
+# docs/facts/ios/button.toml:81931
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -7389,7 +7389,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82307
+# docs/facts/ios/button.toml:81947
 icon.fill = "#303036b2"
 
 [[rules]]
@@ -7397,7 +7397,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82318
+# docs/facts/ios/button.toml:81958
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7405,7 +7405,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82334
+# docs/facts/ios/button.toml:81974
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7413,7 +7413,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82345
+# docs/facts/ios/button.toml:81985
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7421,7 +7421,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82361
+# docs/facts/ios/button.toml:82001
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7429,7 +7429,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82372
+# docs/facts/ios/button.toml:82012
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -7437,7 +7437,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82388
+# docs/facts/ios/button.toml:82028
 icon.fill = "#7ebcff"
 
 [[rules]]
@@ -7445,7 +7445,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82399
+# docs/facts/ios/button.toml:82039
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7453,7 +7453,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82415
+# docs/facts/ios/button.toml:82055
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -7461,7 +7461,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82426
+# docs/facts/ios/button.toml:82066
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7469,7 +7469,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82452
+# docs/facts/ios/button.toml:82092
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7477,7 +7477,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82468
+# docs/facts/ios/button.toml:82108
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7485,7 +7485,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82494
+# docs/facts/ios/button.toml:82134
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7493,7 +7493,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82510
+# docs/facts/ios/button.toml:82150
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -7501,7 +7501,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82526
+# docs/facts/ios/button.toml:82166
 icon.fill = "#7ebcff"
 
 [[rules]]
@@ -7509,7 +7509,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82537
+# docs/facts/ios/button.toml:82177
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7517,7 +7517,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82553
+# docs/facts/ios/button.toml:82193
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -7525,7 +7525,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82564
+# docs/facts/ios/button.toml:82204
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -7533,7 +7533,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82580
+# docs/facts/ios/button.toml:82220
 icon.fill = "#f7f7ff8c"
 
 [[rules]]
@@ -7541,7 +7541,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82591
+# docs/facts/ios/button.toml:82231
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -7549,7 +7549,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82607
+# docs/facts/ios/button.toml:82247
 icon.fill = "#303036b2"
 
 [[rules]]
@@ -7557,7 +7557,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82618
+# docs/facts/ios/button.toml:82258
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -7565,7 +7565,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82639
+# docs/facts/ios/button.toml:82279
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -7573,7 +7573,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82660
+# docs/facts/ios/button.toml:82300
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -7581,7 +7581,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82681
+# docs/facts/ios/button.toml:82321
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -7589,7 +7589,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82702
+# docs/facts/ios/button.toml:82342
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -7597,7 +7597,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82738
+# docs/facts/ios/button.toml:82378
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -7605,7 +7605,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82774
+# docs/facts/ios/button.toml:82414
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -7613,7 +7613,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82795
+# docs/facts/ios/button.toml:82435
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -7621,7 +7621,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82816
+# docs/facts/ios/button.toml:82456
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -7629,7 +7629,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82832
+# docs/facts/ios/button.toml:82472
 icon.fill = "#f7f7ff8c"
 
 [[rules]]
@@ -7637,7 +7637,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82843
+# docs/facts/ios/button.toml:82483
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -7645,7 +7645,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82859
+# docs/facts/ios/button.toml:82499
 icon.fill = "#303036b2"
 
 [[rules]]
@@ -7653,7 +7653,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82870
+# docs/facts/ios/button.toml:82510
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -7661,7 +7661,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82891
+# docs/facts/ios/button.toml:82531
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -7669,7 +7669,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82912
+# docs/facts/ios/button.toml:82552
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -7677,7 +7677,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82933
+# docs/facts/ios/button.toml:82573
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -7685,7 +7685,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82954
+# docs/facts/ios/button.toml:82594
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7693,7 +7693,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82980
+# docs/facts/ios/button.toml:82620
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7701,7 +7701,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:82996
+# docs/facts/ios/button.toml:82636
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7709,7 +7709,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83022
+# docs/facts/ios/button.toml:82662
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7717,7 +7717,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83038
+# docs/facts/ios/button.toml:82678
 icon.fill = "#3b9dff"
 
 [[rules]]
@@ -7725,7 +7725,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83054
+# docs/facts/ios/button.toml:82694
 icon.fill = "#8cc4ff"
 
 [[rules]]
@@ -7733,7 +7733,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83065
+# docs/facts/ios/button.toml:82705
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7741,7 +7741,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83081
+# docs/facts/ios/button.toml:82721
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -7749,7 +7749,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83092
+# docs/facts/ios/button.toml:82732
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -7757,7 +7757,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83108
+# docs/facts/ios/button.toml:82748
 icon.fill = "#f7f7ff8c"
 
 [[rules]]
@@ -7765,7 +7765,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83119
+# docs/facts/ios/button.toml:82759
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -7773,7 +7773,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83135
+# docs/facts/ios/button.toml:82775
 icon.fill = "#303036b2"
 
 [[rules]]
@@ -7781,7 +7781,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83146
+# docs/facts/ios/button.toml:82786
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7789,7 +7789,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83162
+# docs/facts/ios/button.toml:82802
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7797,7 +7797,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83173
+# docs/facts/ios/button.toml:82813
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7805,7 +7805,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83189
+# docs/facts/ios/button.toml:82829
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7813,7 +7813,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83200
+# docs/facts/ios/button.toml:82840
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -7821,7 +7821,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83216
+# docs/facts/ios/button.toml:82856
 icon.fill = "#7ebcff"
 
 [[rules]]
@@ -7829,7 +7829,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83227
+# docs/facts/ios/button.toml:82867
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7837,7 +7837,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83243
+# docs/facts/ios/button.toml:82883
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -7845,7 +7845,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83254
+# docs/facts/ios/button.toml:82894
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7853,7 +7853,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83280
+# docs/facts/ios/button.toml:82920
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7861,7 +7861,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83296
+# docs/facts/ios/button.toml:82936
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7869,7 +7869,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83322
+# docs/facts/ios/button.toml:82962
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7877,7 +7877,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83338
+# docs/facts/ios/button.toml:82978
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -7885,7 +7885,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83354
+# docs/facts/ios/button.toml:82994
 icon.fill = "#7ebcff"
 
 [[rules]]
@@ -7893,7 +7893,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83365
+# docs/facts/ios/button.toml:83005
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7901,7 +7901,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83381
+# docs/facts/ios/button.toml:83021
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -7909,7 +7909,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83392
+# docs/facts/ios/button.toml:83032
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -7917,7 +7917,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83408
+# docs/facts/ios/button.toml:83048
 icon.fill = "#f7f7ff8c"
 
 [[rules]]
@@ -7925,7 +7925,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83419
+# docs/facts/ios/button.toml:83059
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -7933,7 +7933,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83435
+# docs/facts/ios/button.toml:83075
 icon.fill = "#303036b2"
 
 [[rules]]
@@ -7941,7 +7941,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83446
+# docs/facts/ios/button.toml:83086
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -7949,7 +7949,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83462
+# docs/facts/ios/button.toml:83102
 icon.fill = "#409cff"
 
 [[rules]]
@@ -7957,7 +7957,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83473
+# docs/facts/ios/button.toml:83113
 icon.fill = "#007aff"
 
 [[rules]]
@@ -7965,7 +7965,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83489
+# docs/facts/ios/button.toml:83129
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -7973,7 +7973,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83500
+# docs/facts/ios/button.toml:83140
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -7981,7 +7981,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83516
+# docs/facts/ios/button.toml:83156
 icon.fill = "#7ebcff"
 
 [[rules]]
@@ -7989,7 +7989,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83527
+# docs/facts/ios/button.toml:83167
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -7997,7 +7997,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83543
+# docs/facts/ios/button.toml:83183
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -8005,7 +8005,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83554
+# docs/facts/ios/button.toml:83194
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8013,7 +8013,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83580
+# docs/facts/ios/button.toml:83220
 icon.fill = "#409cff"
 
 [[rules]]
@@ -8021,7 +8021,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83596
+# docs/facts/ios/button.toml:83236
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8029,7 +8029,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83622
+# docs/facts/ios/button.toml:83262
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -8037,7 +8037,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83638
+# docs/facts/ios/button.toml:83278
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -8045,7 +8045,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83654
+# docs/facts/ios/button.toml:83294
 icon.fill = "#7ebcff"
 
 [[rules]]
@@ -8053,7 +8053,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83665
+# docs/facts/ios/button.toml:83305
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -8061,7 +8061,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83681
+# docs/facts/ios/button.toml:83321
 icon.fill = "#0033b1bf"
 
 [[rules]]
@@ -8069,7 +8069,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83692
+# docs/facts/ios/button.toml:83332
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8077,7 +8077,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83708
+# docs/facts/ios/button.toml:83348
 icon.fill = "#f7f7ff8c"
 
 [[rules]]
@@ -8085,7 +8085,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83719
+# docs/facts/ios/button.toml:83359
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8093,7 +8093,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83735
+# docs/facts/ios/button.toml:83375
 icon.fill = "#303036b2"
 
 [[rules]]
@@ -8101,7 +8101,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83746
+# docs/facts/ios/button.toml:83386
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8109,7 +8109,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83767
+# docs/facts/ios/button.toml:83407
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8117,7 +8117,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83788
+# docs/facts/ios/button.toml:83428
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8125,7 +8125,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83809
+# docs/facts/ios/button.toml:83449
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8133,7 +8133,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83830
+# docs/facts/ios/button.toml:83470
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8141,7 +8141,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83866
+# docs/facts/ios/button.toml:83506
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8149,7 +8149,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83902
+# docs/facts/ios/button.toml:83542
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8157,7 +8157,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83923
+# docs/facts/ios/button.toml:83563
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8165,7 +8165,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83944
+# docs/facts/ios/button.toml:83584
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8173,7 +8173,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83960
+# docs/facts/ios/button.toml:83600
 icon.fill = "#f7f7ff8c"
 
 [[rules]]
@@ -8181,7 +8181,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83971
+# docs/facts/ios/button.toml:83611
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8189,7 +8189,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83987
+# docs/facts/ios/button.toml:83627
 icon.fill = "#303036b2"
 
 [[rules]]
@@ -8197,7 +8197,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:83998
+# docs/facts/ios/button.toml:83638
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8205,7 +8205,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84019
+# docs/facts/ios/button.toml:83659
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8213,7 +8213,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84040
+# docs/facts/ios/button.toml:83680
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8221,7 +8221,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84061
+# docs/facts/ios/button.toml:83701
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8229,7 +8229,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["idiom:pad", "contrast
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84460
+# docs/facts/ios/button.toml:84100
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8237,7 +8237,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["idiom:pad", "contrast_
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84483
+# docs/facts/ios/button.toml:84123
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8245,7 +8245,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["idiom:pad", "contrast
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84506
+# docs/facts/ios/button.toml:84146
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8253,7 +8253,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["idiom:pad", "contrast_
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84529
+# docs/facts/ios/button.toml:84169
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8261,7 +8261,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["idiom:pad", "contrast
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84552
+# docs/facts/ios/button.toml:84192
 icon.fill = "#0078ff33"
 
 [[rules]]
@@ -8269,7 +8269,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["idiom:pad", "contrast_
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84575
+# docs/facts/ios/button.toml:84215
 icon.fill = "#0a85ff66"
 
 [[rules]]
@@ -8277,7 +8277,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["idiom:pad", "contrast
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84598
+# docs/facts/ios/button.toml:84238
 icon.fill = "#7c7c7c73"
 
 [[rules]]
@@ -8285,7 +8285,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["idiom:pad", "contrast_
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84621
+# docs/facts/ios/button.toml:84261
 icon.fill = "#84848459"
 
 [[rules]]
@@ -8293,7 +8293,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["idiom:pad", "contrast
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84644
+# docs/facts/ios/button.toml:84284
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8301,7 +8301,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["idiom:pad", "contrast_
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84667
+# docs/facts/ios/button.toml:84307
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8309,7 +8309,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["idiom:pad", "contrast
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84690
+# docs/facts/ios/button.toml:84330
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8317,7 +8317,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["idiom:pad", "contrast_
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84713
+# docs/facts/ios/button.toml:84353
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8325,7 +8325,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["idiom:pad", "contrast
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84736
+# docs/facts/ios/button.toml:84376
 icon.fill = "#0078ff33"
 
 [[rules]]
@@ -8333,7 +8333,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["idiom:pad", "contrast_
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84759
+# docs/facts/ios/button.toml:84399
 icon.fill = "#0a85ff66"
 
 [[rules]]
@@ -8341,7 +8341,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["idiom:pad", "contrast
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84782
+# docs/facts/ios/button.toml:84422
 icon.fill = "#7c7c7c73"
 
 [[rules]]
@@ -8349,7 +8349,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["idiom:pad", "contrast_
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84805
+# docs/facts/ios/button.toml:84445
 icon.fill = "#84848459"
 
 [[rules]]
@@ -8357,7 +8357,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84828
+# docs/facts/ios/button.toml:84468
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8365,7 +8365,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84854
+# docs/facts/ios/button.toml:84494
 icon.fill = "#409cff"
 
 [[rules]]
@@ -8373,7 +8373,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84870
+# docs/facts/ios/button.toml:84510
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8381,7 +8381,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84896
+# docs/facts/ios/button.toml:84536
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -8389,7 +8389,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84912
+# docs/facts/ios/button.toml:84552
 icon.fill = "#0a85ff66"
 
 [[rules]]
@@ -8397,7 +8397,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84928
+# docs/facts/ios/button.toml:84568
 icon.fill = "#419bff66"
 
 [[rules]]
@@ -8405,7 +8405,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84939
+# docs/facts/ios/button.toml:84579
 icon.fill = "#0078ff33"
 
 [[rules]]
@@ -8413,7 +8413,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84955
+# docs/facts/ios/button.toml:84595
 icon.fill = "#0041dc33"
 
 [[rules]]
@@ -8421,7 +8421,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84966
+# docs/facts/ios/button.toml:84606
 icon.fill = "#84848459"
 
 [[rules]]
@@ -8429,7 +8429,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84982
+# docs/facts/ios/button.toml:84622
 icon.fill = "#bdbdbd59"
 
 [[rules]]
@@ -8437,7 +8437,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:84993
+# docs/facts/ios/button.toml:84633
 icon.fill = "#7c7c7c73"
 
 [[rules]]
@@ -8445,7 +8445,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85009
+# docs/facts/ios/button.toml:84649
 icon.fill = "#40404073"
 
 [[rules]]
@@ -8453,7 +8453,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85020
+# docs/facts/ios/button.toml:84660
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8461,7 +8461,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85046
+# docs/facts/ios/button.toml:84686
 icon.fill = "#409cff"
 
 [[rules]]
@@ -8469,7 +8469,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85062
+# docs/facts/ios/button.toml:84702
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8477,7 +8477,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85088
+# docs/facts/ios/button.toml:84728
 icon.fill = "#0040dd"
 
 [[rules]]
@@ -8485,7 +8485,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85104
+# docs/facts/ios/button.toml:84744
 icon.fill = "#0a85ff66"
 
 [[rules]]
@@ -8493,7 +8493,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85120
+# docs/facts/ios/button.toml:84760
 icon.fill = "#419bff66"
 
 [[rules]]
@@ -8501,7 +8501,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85131
+# docs/facts/ios/button.toml:84771
 icon.fill = "#0078ff33"
 
 [[rules]]
@@ -8509,7 +8509,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85147
+# docs/facts/ios/button.toml:84787
 icon.fill = "#0041dc33"
 
 [[rules]]
@@ -8517,7 +8517,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85158
+# docs/facts/ios/button.toml:84798
 icon.fill = "#84848459"
 
 [[rules]]
@@ -8525,7 +8525,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85174
+# docs/facts/ios/button.toml:84814
 icon.fill = "#bdbdbd59"
 
 [[rules]]
@@ -8533,7 +8533,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85185
+# docs/facts/ios/button.toml:84825
 icon.fill = "#7c7c7c73"
 
 [[rules]]
@@ -8541,7 +8541,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85201
+# docs/facts/ios/button.toml:84841
 icon.fill = "#40404073"
 
 [[rules]]
@@ -8549,7 +8549,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85212
+# docs/facts/ios/button.toml:84852
 icon.fill = "#ebebf599"
 
 [[rules]]
@@ -8557,7 +8557,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85238
+# docs/facts/ios/button.toml:84878
 icon.fill = "#ebebf5b2"
 
 [[rules]]
@@ -8565,7 +8565,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85254
+# docs/facts/ios/button.toml:84894
 icon.fill = "#3c3c4399"
 
 [[rules]]
@@ -8573,7 +8573,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85280
+# docs/facts/ios/button.toml:84920
 icon.fill = "#3c3c43cc"
 
 [[rules]]
@@ -8581,7 +8581,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85296
+# docs/facts/ios/button.toml:84936
 icon.fill = "#83838359"
 
 [[rules]]
@@ -8589,7 +8589,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85312
+# docs/facts/ios/button.toml:84952
 icon.fill = "#bdbdbd59"
 
 [[rules]]
@@ -8597,7 +8597,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85323
+# docs/facts/ios/button.toml:84963
 icon.fill = "#7c7c7c73"
 
 [[rules]]
@@ -8605,7 +8605,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85339
+# docs/facts/ios/button.toml:84979
 icon.fill = "#40404073"
 
 [[rules]]
@@ -8613,7 +8613,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:85992
+# docs/facts/ios/button.toml:85632
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8621,7 +8621,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86025
+# docs/facts/ios/button.toml:85665
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8629,7 +8629,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86058
+# docs/facts/ios/button.toml:85698
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8637,7 +8637,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86091
+# docs/facts/ios/button.toml:85731
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8645,7 +8645,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86124
+# docs/facts/ios/button.toml:85764
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8653,7 +8653,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86157
+# docs/facts/ios/button.toml:85797
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8661,7 +8661,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86190
+# docs/facts/ios/button.toml:85830
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8669,7 +8669,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86223
+# docs/facts/ios/button.toml:85863
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8677,7 +8677,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86256
+# docs/facts/ios/button.toml:85896
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8685,7 +8685,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86289
+# docs/facts/ios/button.toml:85929
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8693,7 +8693,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86322
+# docs/facts/ios/button.toml:85962
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8701,7 +8701,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86355
+# docs/facts/ios/button.toml:85995
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8709,7 +8709,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86388
+# docs/facts/ios/button.toml:86028
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8717,7 +8717,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86436
+# docs/facts/ios/button.toml:86076
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8725,7 +8725,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86469
+# docs/facts/ios/button.toml:86109
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8733,7 +8733,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86502
+# docs/facts/ios/button.toml:86142
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8741,7 +8741,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86535
+# docs/facts/ios/button.toml:86175
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8749,7 +8749,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86568
+# docs/facts/ios/button.toml:86208
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8757,7 +8757,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86616
+# docs/facts/ios/button.toml:86256
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8765,7 +8765,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86649
+# docs/facts/ios/button.toml:86289
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8773,7 +8773,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86682
+# docs/facts/ios/button.toml:86322
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8781,7 +8781,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86715
+# docs/facts/ios/button.toml:86355
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8789,7 +8789,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86748
+# docs/facts/ios/button.toml:86388
 icon.fill = "#3b9dff"
 
 [[rules]]
@@ -8797,7 +8797,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86781
+# docs/facts/ios/button.toml:86421
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -8805,7 +8805,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["presse
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86814
+# docs/facts/ios/button.toml:86454
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8813,7 +8813,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86862
+# docs/facts/ios/button.toml:86502
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -8821,7 +8821,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86895
+# docs/facts/ios/button.toml:86535
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -8829,7 +8829,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86928
+# docs/facts/ios/button.toml:86568
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -8837,7 +8837,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:86961
+# docs/facts/ios/button.toml:86601
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -8845,7 +8845,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87030
+# docs/facts/ios/button.toml:86670
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -8853,7 +8853,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87063
+# docs/facts/ios/button.toml:86703
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -8861,7 +8861,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87096
+# docs/facts/ios/button.toml:86736
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8869,7 +8869,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87144
+# docs/facts/ios/button.toml:86784
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -8877,7 +8877,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87192
+# docs/facts/ios/button.toml:86832
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -8885,7 +8885,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87225
+# docs/facts/ios/button.toml:86865
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -8893,7 +8893,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87258
+# docs/facts/ios/button.toml:86898
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8901,7 +8901,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87291
+# docs/facts/ios/button.toml:86931
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8909,7 +8909,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87324
+# docs/facts/ios/button.toml:86964
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8917,7 +8917,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87372
+# docs/facts/ios/button.toml:87012
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -8925,7 +8925,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87420
+# docs/facts/ios/button.toml:87060
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -8933,7 +8933,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87453
+# docs/facts/ios/button.toml:87093
 icon.fill = "#007aff"
 
 [[rules]]
@@ -8941,7 +8941,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87522
+# docs/facts/ios/button.toml:87162
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8949,7 +8949,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87555
+# docs/facts/ios/button.toml:87195
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8957,7 +8957,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87588
+# docs/facts/ios/button.toml:87228
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8965,7 +8965,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87621
+# docs/facts/ios/button.toml:87261
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8973,7 +8973,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87654
+# docs/facts/ios/button.toml:87294
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8981,7 +8981,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87687
+# docs/facts/ios/button.toml:87327
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -8989,7 +8989,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87720
+# docs/facts/ios/button.toml:87360
 icon.fill = "#ebebf54c"
 
 [[rules]]
@@ -8997,7 +8997,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87753
+# docs/facts/ios/button.toml:87393
 icon.fill = "#3c3c434c"
 
 [[rules]]
@@ -9005,7 +9005,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87786
+# docs/facts/ios/button.toml:87426
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -9013,7 +9013,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87819
+# docs/facts/ios/button.toml:87459
 icon.fill = "#007aff"
 
 [[rules]]
@@ -9021,7 +9021,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87852
+# docs/facts/ios/button.toml:87492
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -9029,7 +9029,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87885
+# docs/facts/ios/button.toml:87525
 icon.fill = "#007aff"
 
 [[rules]]
@@ -9037,7 +9037,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87918
+# docs/facts/ios/button.toml:87558
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -9045,7 +9045,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87966
+# docs/facts/ios/button.toml:87606
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -9053,7 +9053,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:87999
+# docs/facts/ios/button.toml:87639
 icon.fill = "#007aff"
 
 [[rules]]
@@ -9061,7 +9061,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88032
+# docs/facts/ios/button.toml:87672
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -9069,7 +9069,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88065
+# docs/facts/ios/button.toml:87705
 icon.fill = "#007aff"
 
 [[rules]]
@@ -9077,7 +9077,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["ch
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88098
+# docs/facts/ios/button.toml:87738
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -9085,7 +9085,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88146
+# docs/facts/ios/button.toml:87786
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -9093,7 +9093,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88179
+# docs/facts/ios/button.toml:87819
 icon.fill = "#007aff"
 
 [[rules]]
@@ -9101,7 +9101,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88212
+# docs/facts/ios/button.toml:87852
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -9109,7 +9109,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88245
+# docs/facts/ios/button.toml:87885
 icon.fill = "#007aff"
 
 [[rules]]
@@ -9117,7 +9117,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["presse
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88278
+# docs/facts/ios/button.toml:87918
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -9125,7 +9125,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88326
+# docs/facts/ios/button.toml:87966
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -9133,7 +9133,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88359
+# docs/facts/ios/button.toml:87999
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -9141,7 +9141,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88392
+# docs/facts/ios/button.toml:88032
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -9149,7 +9149,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88425
+# docs/facts/ios/button.toml:88065
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -9157,7 +9157,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88458
+# docs/facts/ios/button.toml:88098
 icon.fill = "#3b9dff"
 
 [[rules]]
@@ -9165,7 +9165,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88491
+# docs/facts/ios/button.toml:88131
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -9173,7 +9173,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88560
+# docs/facts/ios/button.toml:88200
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -9181,7 +9181,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88608
+# docs/facts/ios/button.toml:88248
 icon.fill = "#ffffffbf"
 
 [[rules]]
@@ -9189,7 +9189,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88656
+# docs/facts/ios/button.toml:88296
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -9197,7 +9197,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88689
+# docs/facts/ios/button.toml:88329
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -9205,7 +9205,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88740
+# docs/facts/ios/button.toml:88380
 icon.fill = "#2390ff"
 
 [[rules]]
@@ -9213,7 +9213,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88773
+# docs/facts/ios/button.toml:88413
 icon.fill = "#007affbf"
 
 [[rules]]
@@ -9221,7 +9221,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88806
+# docs/facts/ios/button.toml:88446
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -9229,7 +9229,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88854
+# docs/facts/ios/button.toml:88494
 icon.fill = "#ffffff"
 
 [[rules]]
@@ -9237,7 +9237,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88902
+# docs/facts/ios/button.toml:88542
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -9245,7 +9245,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88935
+# docs/facts/ios/button.toml:88575
 icon.fill = "#007aff"
 
 [[rules]]
@@ -9253,7 +9253,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:88986
+# docs/facts/ios/button.toml:88626
 icon.fill = "#0a84ff"
 
 [[rules]]
@@ -9261,7 +9261,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:89019
+# docs/facts/ios/button.toml:88659
 icon.fill = "#007aff"
 
 [[rules]]
@@ -9269,9 +9269,9 @@ when = { sizes = ["regular"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:89670
+# docs/facts/ios/button.toml:89310
 menu_indicator_gap_px = 4
-# docs/facts/ios/button.toml:90294
+# docs/facts/ios/button.toml:89934
 menu_indicator_anchor = "inline"
 
 [[rules]]
@@ -9279,7 +9279,7 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:89904
+# docs/facts/ios/button.toml:89544
 menu_indicator_gap_px = 4
 
 [[rules]]
@@ -9287,7 +9287,7 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:89946
+# docs/facts/ios/button.toml:89586
 menu_indicator_gap_px = 4
 
 [[rules]]
@@ -9295,7 +9295,7 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:89988
+# docs/facts/ios/button.toml:89628
 menu_indicator_gap_px = 4
 
 [[rules]]
@@ -9303,7 +9303,7 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:90672
+# docs/facts/ios/button.toml:90312
 menu_indicator_anchor = "inline"
 
 [[rules]]
@@ -9311,7 +9311,7 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:90694
+# docs/facts/ios/button.toml:90334
 menu_indicator_anchor = "inline"
 
 [[rules]]
@@ -9319,7 +9319,7 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:90716
+# docs/facts/ios/button.toml:90356
 menu_indicator_anchor = "inline"
 
 [[rules]]
@@ -9327,13 +9327,13 @@ when = { variants = ["menu", "@indicator_popup"], sizes = ["regular"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/ios/button.toml:91434
+# docs/facts/ios/button.toml:91074
 margin.left_px = 0
-# docs/facts/ios/button.toml:91902
+# docs/facts/ios/button.toml:91542
 margin.right_px = 0
-# docs/facts/ios/button.toml:92370
+# docs/facts/ios/button.toml:92010
 min_width_px = "auto"
-# docs/facts/ios/button.toml:92838
+# docs/facts/ios/button.toml:92478
 min_height_px = "auto"
 
 [[rules]]
@@ -9341,13 +9341,13 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/ios/button.toml:91512
+# docs/facts/ios/button.toml:91152
 margin.left_px = 0
-# docs/facts/ios/button.toml:91980
+# docs/facts/ios/button.toml:91620
 margin.right_px = 0
-# docs/facts/ios/button.toml:92448
+# docs/facts/ios/button.toml:92088
 min_width_px = "auto"
-# docs/facts/ios/button.toml:92916
+# docs/facts/ios/button.toml:92556
 min_height_px = "auto"
 
 [[rules]]
@@ -9355,13 +9355,13 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/ios/button.toml:91554
+# docs/facts/ios/button.toml:91194
 margin.left_px = 0
-# docs/facts/ios/button.toml:92022
+# docs/facts/ios/button.toml:91662
 margin.right_px = 0
-# docs/facts/ios/button.toml:92490
+# docs/facts/ios/button.toml:92130
 min_width_px = "auto"
-# docs/facts/ios/button.toml:92958
+# docs/facts/ios/button.toml:92598
 min_height_px = "auto"
 
 [[rules]]
@@ -9369,13 +9369,13 @@ when = { not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"]
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/ios/button.toml:91596
+# docs/facts/ios/button.toml:91236
 margin.left_px = 0
-# docs/facts/ios/button.toml:92064
+# docs/facts/ios/button.toml:91704
 margin.right_px = 0
-# docs/facts/ios/button.toml:92532
+# docs/facts/ios/button.toml:92172
 min_width_px = "auto"
-# docs/facts/ios/button.toml:93000
+# docs/facts/ios/button.toml:92640
 min_height_px = "auto"
 
 [[rules]]
@@ -9383,7 +9383,7 @@ when = { not_variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/ios/button.toml:93538
+# docs/facts/ios/button.toml:93178
 absent = true
 
 [[rules]]
@@ -9391,7 +9391,7 @@ when = { variants = ["menu"], not_variants = ["@indicator_popup"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/ios/button.toml:94425
+# docs/facts/ios/button.toml:94065
 absent = true
 
 [[rules]]
@@ -9399,9 +9399,9 @@ when = { conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bo
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:96970
+# docs/facts/ios/button.toml:96610
 icon_placement = "leading"
-# docs/facts/ios/button.toml:100173
+# docs/facts/ios/button.toml:99813
 icon_text_gap_px = 0
 
 [[rules]]
@@ -9409,9 +9409,9 @@ when = { conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bo
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:96996
+# docs/facts/ios/button.toml:96636
 icon_placement = "leading"
-# docs/facts/ios/button.toml:100199
+# docs/facts/ios/button.toml:99839
 icon_text_gap_px = 0
 
 [[rules]]
@@ -9419,9 +9419,9 @@ when = { conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bo
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:97022
+# docs/facts/ios/button.toml:96662
 icon_placement = "leading"
-# docs/facts/ios/button.toml:100225
+# docs/facts/ios/button.toml:99865
 icon_text_gap_px = 0
 
 [[rules]]
@@ -9429,9 +9429,9 @@ when = { conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bo
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:97048
+# docs/facts/ios/button.toml:96688
 icon_placement = "leading"
-# docs/facts/ios/button.toml:100251
+# docs/facts/ios/button.toml:99891
 icon_text_gap_px = 0
 
 [[rules]]
@@ -9439,7 +9439,7 @@ when = { not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", 
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:101423
+# docs/facts/ios/button.toml:101063
 subtitle_gap_px = "absent"
 
 [[rules]]
@@ -9447,7 +9447,7 @@ when = { conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bo
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:103383
+# docs/facts/ios/button.toml:103023
 subtitle_gap_px = 1
 
 [[rules]]
@@ -9455,7 +9455,7 @@ when = { conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bo
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:103409
+# docs/facts/ios/button.toml:103049
 subtitle_gap_px = 1
 
 [[rules]]
@@ -9463,7 +9463,7 @@ when = { conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bo
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:103435
+# docs/facts/ios/button.toml:103075
 subtitle_gap_px = 1
 
 [[rules]]
@@ -9471,7 +9471,7 @@ when = { conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bo
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:103461
+# docs/facts/ios/button.toml:103101
 subtitle_gap_px = 1
 
 [[rules]]
@@ -9479,7 +9479,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103523
+# docs/facts/ios/button.toml:103163
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -9487,7 +9487,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103549
+# docs/facts/ios/button.toml:103189
 text.fill = "#409cff"
 
 [[rules]]
@@ -9495,7 +9495,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103565
+# docs/facts/ios/button.toml:103205
 text.fill = "#007aff"
 
 [[rules]]
@@ -9503,7 +9503,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103591
+# docs/facts/ios/button.toml:103231
 text.fill = "#0040dd"
 
 [[rules]]
@@ -9511,7 +9511,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103607
+# docs/facts/ios/button.toml:103247
 text.fill = "#3b9dff"
 
 [[rules]]
@@ -9519,7 +9519,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103623
+# docs/facts/ios/button.toml:103263
 text.fill = "#66b0ff"
 
 [[rules]]
@@ -9527,7 +9527,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103634
+# docs/facts/ios/button.toml:103274
 text.fill = "#007affbf"
 
 [[rules]]
@@ -9535,7 +9535,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103650
+# docs/facts/ios/button.toml:103290
 text.fill = "#0040ddbf"
 
 [[rules]]
@@ -9543,7 +9543,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103661
+# docs/facts/ios/button.toml:103301
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -9551,7 +9551,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103677
+# docs/facts/ios/button.toml:103317
 text.fill = "#ebebf58c"
 
 [[rules]]
@@ -9559,7 +9559,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103688
+# docs/facts/ios/button.toml:103328
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -9567,7 +9567,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103704
+# docs/facts/ios/button.toml:103344
 text.fill = "#3c3c43b2"
 
 [[rules]]
@@ -9575,7 +9575,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103715
+# docs/facts/ios/button.toml:103355
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -9583,7 +9583,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103731
+# docs/facts/ios/button.toml:103371
 text.fill = "#409cff"
 
 [[rules]]
@@ -9591,7 +9591,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103742
+# docs/facts/ios/button.toml:103382
 text.fill = "#007aff"
 
 [[rules]]
@@ -9599,7 +9599,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103758
+# docs/facts/ios/button.toml:103398
 text.fill = "#0040dd"
 
 [[rules]]
@@ -9607,7 +9607,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103769
+# docs/facts/ios/button.toml:103409
 text.fill = "#2390ff"
 
 [[rules]]
@@ -9615,7 +9615,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103785
+# docs/facts/ios/button.toml:103425
 text.fill = "#53a6ff"
 
 [[rules]]
@@ -9623,7 +9623,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103796
+# docs/facts/ios/button.toml:103436
 text.fill = "#007affbf"
 
 [[rules]]
@@ -9631,7 +9631,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103812
+# docs/facts/ios/button.toml:103452
 text.fill = "#0040ddbf"
 
 [[rules]]
@@ -9639,7 +9639,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103823
+# docs/facts/ios/button.toml:103463
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -9647,7 +9647,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103849
+# docs/facts/ios/button.toml:103489
 text.fill = "#409cff"
 
 [[rules]]
@@ -9655,7 +9655,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103865
+# docs/facts/ios/button.toml:103505
 text.fill = "#007aff"
 
 [[rules]]
@@ -9663,7 +9663,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103891
+# docs/facts/ios/button.toml:103531
 text.fill = "#0040dd"
 
 [[rules]]
@@ -9671,7 +9671,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103907
+# docs/facts/ios/button.toml:103547
 text.fill = "#2390ff"
 
 [[rules]]
@@ -9679,7 +9679,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103923
+# docs/facts/ios/button.toml:103563
 text.fill = "#53a6ff"
 
 [[rules]]
@@ -9687,7 +9687,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103934
+# docs/facts/ios/button.toml:103574
 text.fill = "#007affbf"
 
 [[rules]]
@@ -9695,7 +9695,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103950
+# docs/facts/ios/button.toml:103590
 text.fill = "#0040ddbf"
 
 [[rules]]
@@ -9703,7 +9703,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103961
+# docs/facts/ios/button.toml:103601
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -9711,7 +9711,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103977
+# docs/facts/ios/button.toml:103617
 text.fill = "#ebebf58c"
 
 [[rules]]
@@ -9719,7 +9719,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:103988
+# docs/facts/ios/button.toml:103628
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -9727,7 +9727,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104004
+# docs/facts/ios/button.toml:103644
 text.fill = "#3c3c43b2"
 
 [[rules]]
@@ -9735,7 +9735,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104015
+# docs/facts/ios/button.toml:103655
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -9743,7 +9743,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104031
+# docs/facts/ios/button.toml:103671
 text.fill = "#409cff"
 
 [[rules]]
@@ -9751,7 +9751,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104042
+# docs/facts/ios/button.toml:103682
 text.fill = "#007aff"
 
 [[rules]]
@@ -9759,7 +9759,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104058
+# docs/facts/ios/button.toml:103698
 text.fill = "#0040dd"
 
 [[rules]]
@@ -9767,7 +9767,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104069
+# docs/facts/ios/button.toml:103709
 text.fill = "#2390ff"
 
 [[rules]]
@@ -9775,7 +9775,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104085
+# docs/facts/ios/button.toml:103725
 text.fill = "#53a6ff"
 
 [[rules]]
@@ -9783,7 +9783,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104096
+# docs/facts/ios/button.toml:103736
 text.fill = "#007affbf"
 
 [[rules]]
@@ -9791,7 +9791,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104112
+# docs/facts/ios/button.toml:103752
 text.fill = "#0040ddbf"
 
 [[rules]]
@@ -9799,7 +9799,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104123
+# docs/facts/ios/button.toml:103763
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -9807,7 +9807,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104149
+# docs/facts/ios/button.toml:103789
 text.fill = "#409cff"
 
 [[rules]]
@@ -9815,7 +9815,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104165
+# docs/facts/ios/button.toml:103805
 text.fill = "#007aff"
 
 [[rules]]
@@ -9823,7 +9823,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104191
+# docs/facts/ios/button.toml:103831
 text.fill = "#0040dd"
 
 [[rules]]
@@ -9831,7 +9831,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104207
+# docs/facts/ios/button.toml:103847
 text.fill = "#2390ff"
 
 [[rules]]
@@ -9839,7 +9839,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104223
+# docs/facts/ios/button.toml:103863
 text.fill = "#53a6ff"
 
 [[rules]]
@@ -9847,7 +9847,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104234
+# docs/facts/ios/button.toml:103874
 text.fill = "#007affbf"
 
 [[rules]]
@@ -9855,7 +9855,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104250
+# docs/facts/ios/button.toml:103890
 text.fill = "#0040ddbf"
 
 [[rules]]
@@ -9863,7 +9863,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104261
+# docs/facts/ios/button.toml:103901
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -9871,7 +9871,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104277
+# docs/facts/ios/button.toml:103917
 text.fill = "#ebebf58c"
 
 [[rules]]
@@ -9879,7 +9879,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104288
+# docs/facts/ios/button.toml:103928
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -9887,7 +9887,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104304
+# docs/facts/ios/button.toml:103944
 text.fill = "#3c3c43b2"
 
 [[rules]]
@@ -9895,7 +9895,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104315
+# docs/facts/ios/button.toml:103955
 text.fill = "#ffffff"
 
 [[rules]]
@@ -9903,7 +9903,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104336
+# docs/facts/ios/button.toml:103976
 text.fill = "#ffffff"
 
 [[rules]]
@@ -9911,7 +9911,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104357
+# docs/facts/ios/button.toml:103997
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -9919,7 +9919,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104378
+# docs/facts/ios/button.toml:104018
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -9927,7 +9927,7 @@ when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "che
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104399
+# docs/facts/ios/button.toml:104039
 text.fill = "#ffffff"
 
 [[rules]]
@@ -9935,7 +9935,7 @@ when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "ch
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104435
+# docs/facts/ios/button.toml:104075
 text.fill = "#ffffff"
 
 [[rules]]
@@ -9943,7 +9943,7 @@ when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disa
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104471
+# docs/facts/ios/button.toml:104111
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -9951,7 +9951,7 @@ when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["dis
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104492
+# docs/facts/ios/button.toml:104132
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -9959,7 +9959,7 @@ when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pre
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104513
+# docs/facts/ios/button.toml:104153
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -9967,7 +9967,7 @@ when = { conditions = ["contrast_increased", "scheme:dark"], not_conditions = ["
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104529
+# docs/facts/ios/button.toml:104169
 text.fill = "#ebebf58c"
 
 [[rules]]
@@ -9975,7 +9975,7 @@ when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pr
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104540
+# docs/facts/ios/button.toml:104180
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -9983,7 +9983,7 @@ when = { conditions = ["contrast_increased", "scheme:light"], not_conditions = [
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104556
+# docs/facts/ios/button.toml:104196
 text.fill = "#3c3c43b2"
 
 [[rules]]
@@ -9991,7 +9991,7 @@ when = { conditions = ["scheme:dark"], states = ["checked"], not_states = ["pres
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104567
+# docs/facts/ios/button.toml:104207
 text.fill = "#ffffff"
 
 [[rules]]
@@ -9999,7 +9999,7 @@ when = { conditions = ["scheme:light"], states = ["checked"], not_states = ["pre
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104588
+# docs/facts/ios/button.toml:104228
 text.fill = "#ffffff"
 
 [[rules]]
@@ -10007,7 +10007,7 @@ when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], not_stat
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104609
+# docs/facts/ios/button.toml:104249
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -10015,7 +10015,7 @@ when = { conditions = ["scheme:light"], states = ["checked", "pressed"], not_sta
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104630
+# docs/facts/ios/button.toml:104270
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -10023,7 +10023,7 @@ when = { not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104655
+# docs/facts/ios/button.toml:104295
 absent = true
 
 [[rules]]
@@ -10031,7 +10031,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["presse
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104748
+# docs/facts/ios/button.toml:104388
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -10039,7 +10039,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["ch
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104796
+# docs/facts/ios/button.toml:104436
 text.fill = "#ffffff"
 
 [[rules]]
@@ -10047,7 +10047,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104844
+# docs/facts/ios/button.toml:104484
 text.fill = "#2390ff"
 
 [[rules]]
@@ -10055,7 +10055,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104877
+# docs/facts/ios/button.toml:104517
 text.fill = "#007affbf"
 
 [[rules]]
@@ -10063,7 +10063,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104910
+# docs/facts/ios/button.toml:104550
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -10071,7 +10071,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104943
+# docs/facts/ios/button.toml:104583
 text.fill = "#007aff"
 
 [[rules]]
@@ -10079,7 +10079,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:104976
+# docs/facts/ios/button.toml:104616
 text.fill = "#3b9dff"
 
 [[rules]]
@@ -10087,7 +10087,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105009
+# docs/facts/ios/button.toml:104649
 text.fill = "#007affbf"
 
 [[rules]]
@@ -10095,7 +10095,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105042
+# docs/facts/ios/button.toml:104682
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -10103,7 +10103,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105075
+# docs/facts/ios/button.toml:104715
 text.fill = "#007aff"
 
 [[rules]]
@@ -10111,7 +10111,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105108
+# docs/facts/ios/button.toml:104748
 text.fill = "#2390ff"
 
 [[rules]]
@@ -10119,7 +10119,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105141
+# docs/facts/ios/button.toml:104781
 text.fill = "#007affbf"
 
 [[rules]]
@@ -10127,7 +10127,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105174
+# docs/facts/ios/button.toml:104814
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -10135,7 +10135,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105207
+# docs/facts/ios/button.toml:104847
 text.fill = "#007aff"
 
 [[rules]]
@@ -10143,7 +10143,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["ch
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105240
+# docs/facts/ios/button.toml:104880
 text.fill = "#ffffff"
 
 [[rules]]
@@ -10151,7 +10151,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105288
+# docs/facts/ios/button.toml:104928
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -10159,7 +10159,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105321
+# docs/facts/ios/button.toml:104961
 text.fill = "#007aff"
 
 [[rules]]
@@ -10167,7 +10167,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105354
+# docs/facts/ios/button.toml:104994
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -10175,7 +10175,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105387
+# docs/facts/ios/button.toml:105027
 text.fill = "#007aff"
 
 [[rules]]
@@ -10183,7 +10183,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105420
+# docs/facts/ios/button.toml:105060
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -10191,7 +10191,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105453
+# docs/facts/ios/button.toml:105093
 text.fill = "#007aff"
 
 [[rules]]
@@ -10199,7 +10199,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105486
+# docs/facts/ios/button.toml:105126
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -10207,7 +10207,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105519
+# docs/facts/ios/button.toml:105159
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -10215,7 +10215,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105552
+# docs/facts/ios/button.toml:105192
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -10223,7 +10223,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105585
+# docs/facts/ios/button.toml:105225
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -10231,7 +10231,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105618
+# docs/facts/ios/button.toml:105258
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -10239,7 +10239,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105651
+# docs/facts/ios/button.toml:105291
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -10247,7 +10247,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105684
+# docs/facts/ios/button.toml:105324
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -10255,7 +10255,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105717
+# docs/facts/ios/button.toml:105357
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -10263,7 +10263,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105750
+# docs/facts/ios/button.toml:105390
 text.fill = "#ffffff"
 
 [[rules]]
@@ -10271,7 +10271,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105798
+# docs/facts/ios/button.toml:105438
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -10279,7 +10279,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105846
+# docs/facts/ios/button.toml:105486
 text.fill = "#ffffff"
 
 [[rules]]
@@ -10287,7 +10287,7 @@ when = { not_conditions = ["contrast_increased", "idiom:pad"], states = ["checke
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105894
+# docs/facts/ios/button.toml:105534
 text.fill = "#ffffffbf"
 
 [[rules]]
@@ -10295,7 +10295,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105942
+# docs/facts/ios/button.toml:105582
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -10303,7 +10303,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:105975
+# docs/facts/ios/button.toml:105615
 text.fill = "#007aff"
 
 [[rules]]
@@ -10311,7 +10311,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106008
+# docs/facts/ios/button.toml:105648
 text.fill = "#2390ff"
 
 [[rules]]
@@ -10319,7 +10319,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106041
+# docs/facts/ios/button.toml:105681
 text.fill = "#007affbf"
 
 [[rules]]
@@ -10327,7 +10327,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106074
+# docs/facts/ios/button.toml:105714
 text.fill = "#0a84ff"
 
 [[rules]]
@@ -10335,7 +10335,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106107
+# docs/facts/ios/button.toml:105747
 text.fill = "#007aff"
 
 [[rules]]
@@ -10343,7 +10343,7 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased", "
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106140
+# docs/facts/ios/button.toml:105780
 text.fill = "#2390ff"
 
 [[rules]]
@@ -10351,7 +10351,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased", 
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106173
+# docs/facts/ios/button.toml:105813
 text.fill = "#007affbf"
 
 [[rules]]
@@ -10359,29 +10359,29 @@ when = { sizes = ["regular"] }
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106512
+# docs/facts/ios/button.toml:106152
 text.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/button.toml:107192
+# docs/facts/ios/button.toml:106832
 text.font.size_px = 13
-# docs/facts/ios/button.toml:107872
+# docs/facts/ios/button.toml:107512
 text.font.weight = 400
-# docs/facts/ios/button.toml:134799
+# docs/facts/ios/button.toml:133683
 text.font.style = "normal"
-# docs/facts/ios/button.toml:136061
+# docs/facts/ios/button.toml:134945
 text.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/button.toml:137317
+# docs/facts/ios/button.toml:136201
 text.font.features = {}
-# docs/facts/ios/button.toml:138591
+# docs/facts/ios/button.toml:137475
 text.line_height = "auto"
-# docs/facts/ios/button.toml:139847
+# docs/facts/ios/button.toml:138731
 text.decoration = "absent"
-# docs/facts/ios/button.toml:141146
+# docs/facts/ios/button.toml:140030
 text.case = "mixed"
-# docs/facts/ios/button.toml:142402
+# docs/facts/ios/button.toml:141286
 text.elision = "none"
-# docs/facts/ios/button.toml:143658
+# docs/facts/ios/button.toml:142542
 text.wrap = "word_char"
-# docs/facts/ios/button.toml:144914
+# docs/facts/ios/button.toml:143798
 text.max_lines = "none"
 
 [[rules]]
@@ -10389,9 +10389,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106652
+# docs/facts/ios/button.toml:106292
 text.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/button.toml:107332
+# docs/facts/ios/button.toml:106972
 text.font.size_px = 13
 
 [[rules]]
@@ -10399,9 +10399,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106674
+# docs/facts/ios/button.toml:106314
 text.font.family = "Helvetica"
-# docs/facts/ios/button.toml:107354
+# docs/facts/ios/button.toml:106994
 text.font.size_px = 12
 
 [[rules]]
@@ -10409,9 +10409,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106696
+# docs/facts/ios/button.toml:106336
 text.font.family = "Helvetica"
-# docs/facts/ios/button.toml:107376
+# docs/facts/ios/button.toml:107016
 text.font.size_px = 12
 
 [[rules]]
@@ -10419,9 +10419,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106718
+# docs/facts/ios/button.toml:106358
 text.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/button.toml:107398
+# docs/facts/ios/button.toml:107038
 text.font.size_px = 13
 
 [[rules]]
@@ -10429,9 +10429,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106740
+# docs/facts/ios/button.toml:106380
 text.font.family = "Helvetica"
-# docs/facts/ios/button.toml:107420
+# docs/facts/ios/button.toml:107060
 text.font.size_px = 12
 
 [[rules]]
@@ -10439,9 +10439,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106762
+# docs/facts/ios/button.toml:106402
 text.font.family = "Helvetica"
-# docs/facts/ios/button.toml:107442
+# docs/facts/ios/button.toml:107082
 text.font.size_px = 12
 
 [[rules]]
@@ -10449,9 +10449,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106784
+# docs/facts/ios/button.toml:106424
 text.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/button.toml:107464
+# docs/facts/ios/button.toml:107104
 text.font.size_px = 13
 
 [[rules]]
@@ -10459,9 +10459,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106806
+# docs/facts/ios/button.toml:106446
 text.font.family = "Helvetica"
-# docs/facts/ios/button.toml:107486
+# docs/facts/ios/button.toml:107126
 text.font.size_px = 12
 
 [[rules]]
@@ -10469,9 +10469,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106828
+# docs/facts/ios/button.toml:106468
 text.font.family = "Helvetica"
-# docs/facts/ios/button.toml:107508
+# docs/facts/ios/button.toml:107148
 text.font.size_px = 12
 
 [[rules]]
@@ -10479,9 +10479,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106850
+# docs/facts/ios/button.toml:106490
 text.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/button.toml:107530
+# docs/facts/ios/button.toml:107170
 text.font.size_px = 13
 
 [[rules]]
@@ -10489,9 +10489,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106872
+# docs/facts/ios/button.toml:106512
 text.font.family = "Helvetica"
-# docs/facts/ios/button.toml:107552
+# docs/facts/ios/button.toml:107192
 text.font.size_px = 12
 
 [[rules]]
@@ -10499,9 +10499,9 @@ when = { not_conditions = ["bold_text", "idiom:pad"], not_states = ["focus_visib
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/ios/button.toml:106894
+# docs/facts/ios/button.toml:106534
 text.font.family = "Helvetica"
-# docs/facts/ios/button.toml:107574
+# docs/facts/ios/button.toml:107214
 text.font.size_px = 12
 
 [[rules]]
@@ -10509,15 +10509,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109384
+# docs/facts/ios/button.toml:109024
 icon.size_px = 15
-# docs/facts/ios/button.toml:110011
+# docs/facts/ios/button.toml:109651
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110638
+# docs/facts/ios/button.toml:110278
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111254
+# docs/facts/ios/button.toml:110894
 icon.scale = "large"
-# docs/facts/ios/button.toml:111881
+# docs/facts/ios/button.toml:111521
 glyph = "absent"
 
 [[rules]]
@@ -10525,15 +10525,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109430
+# docs/facts/ios/button.toml:109070
 icon.size_px = 15
-# docs/facts/ios/button.toml:110057
+# docs/facts/ios/button.toml:109697
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110684
+# docs/facts/ios/button.toml:110324
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111300
+# docs/facts/ios/button.toml:110940
 icon.scale = "large"
-# docs/facts/ios/button.toml:111927
+# docs/facts/ios/button.toml:111567
 glyph = "absent"
 
 [[rules]]
@@ -10541,15 +10541,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109476
+# docs/facts/ios/button.toml:109116
 icon.size_px = 17
-# docs/facts/ios/button.toml:110103
+# docs/facts/ios/button.toml:109743
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110730
+# docs/facts/ios/button.toml:110370
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111346
+# docs/facts/ios/button.toml:110986
 icon.scale = "large"
-# docs/facts/ios/button.toml:111973
+# docs/facts/ios/button.toml:111613
 glyph = "absent"
 
 [[rules]]
@@ -10557,15 +10557,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109492
+# docs/facts/ios/button.toml:109132
 icon.size_px = 17
-# docs/facts/ios/button.toml:110119
+# docs/facts/ios/button.toml:109759
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110746
+# docs/facts/ios/button.toml:110386
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111362
+# docs/facts/ios/button.toml:111002
 icon.scale = "large"
-# docs/facts/ios/button.toml:111989
+# docs/facts/ios/button.toml:111629
 glyph = "absent"
 
 [[rules]]
@@ -10573,15 +10573,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109508
+# docs/facts/ios/button.toml:109148
 icon.size_px = 17
-# docs/facts/ios/button.toml:110135
+# docs/facts/ios/button.toml:109775
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110762
+# docs/facts/ios/button.toml:110402
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111378
+# docs/facts/ios/button.toml:111018
 icon.scale = "large"
-# docs/facts/ios/button.toml:112005
+# docs/facts/ios/button.toml:111645
 glyph = "absent"
 
 [[rules]]
@@ -10589,15 +10589,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109524
+# docs/facts/ios/button.toml:109164
 icon.size_px = 17
-# docs/facts/ios/button.toml:110151
+# docs/facts/ios/button.toml:109791
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110778
+# docs/facts/ios/button.toml:110418
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111394
+# docs/facts/ios/button.toml:111034
 icon.scale = "large"
-# docs/facts/ios/button.toml:112021
+# docs/facts/ios/button.toml:111661
 glyph = "absent"
 
 [[rules]]
@@ -10605,15 +10605,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109540
+# docs/facts/ios/button.toml:109180
 icon.size_px = 17
-# docs/facts/ios/button.toml:110167
+# docs/facts/ios/button.toml:109807
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110794
+# docs/facts/ios/button.toml:110434
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111410
+# docs/facts/ios/button.toml:111050
 icon.scale = "large"
-# docs/facts/ios/button.toml:112037
+# docs/facts/ios/button.toml:111677
 glyph = "absent"
 
 [[rules]]
@@ -10621,15 +10621,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109586
+# docs/facts/ios/button.toml:109226
 icon.size_px = 15
-# docs/facts/ios/button.toml:110213
+# docs/facts/ios/button.toml:109853
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110840
+# docs/facts/ios/button.toml:110480
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111456
+# docs/facts/ios/button.toml:111096
 icon.scale = "large"
-# docs/facts/ios/button.toml:112083
+# docs/facts/ios/button.toml:111723
 glyph = "absent"
 
 [[rules]]
@@ -10637,15 +10637,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109632
+# docs/facts/ios/button.toml:109272
 icon.size_px = 15
-# docs/facts/ios/button.toml:110259
+# docs/facts/ios/button.toml:109899
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110886
+# docs/facts/ios/button.toml:110526
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111502
+# docs/facts/ios/button.toml:111142
 icon.scale = "large"
-# docs/facts/ios/button.toml:112129
+# docs/facts/ios/button.toml:111769
 glyph = "absent"
 
 [[rules]]
@@ -10653,15 +10653,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109678
+# docs/facts/ios/button.toml:109318
 icon.size_px = 17
-# docs/facts/ios/button.toml:110305
+# docs/facts/ios/button.toml:109945
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110932
+# docs/facts/ios/button.toml:110572
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111548
+# docs/facts/ios/button.toml:111188
 icon.scale = "large"
-# docs/facts/ios/button.toml:112175
+# docs/facts/ios/button.toml:111815
 glyph = "absent"
 
 [[rules]]
@@ -10669,15 +10669,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109694
+# docs/facts/ios/button.toml:109334
 icon.size_px = 17
-# docs/facts/ios/button.toml:110321
+# docs/facts/ios/button.toml:109961
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110948
+# docs/facts/ios/button.toml:110588
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111564
+# docs/facts/ios/button.toml:111204
 icon.scale = "large"
-# docs/facts/ios/button.toml:112191
+# docs/facts/ios/button.toml:111831
 glyph = "absent"
 
 [[rules]]
@@ -10685,15 +10685,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109710
+# docs/facts/ios/button.toml:109350
 icon.size_px = 17
-# docs/facts/ios/button.toml:110337
+# docs/facts/ios/button.toml:109977
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110964
+# docs/facts/ios/button.toml:110604
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111580
+# docs/facts/ios/button.toml:111220
 icon.scale = "large"
-# docs/facts/ios/button.toml:112207
+# docs/facts/ios/button.toml:111847
 glyph = "absent"
 
 [[rules]]
@@ -10701,15 +10701,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109726
+# docs/facts/ios/button.toml:109366
 icon.size_px = 17
-# docs/facts/ios/button.toml:110353
+# docs/facts/ios/button.toml:109993
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110980
+# docs/facts/ios/button.toml:110620
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111596
+# docs/facts/ios/button.toml:111236
 icon.scale = "large"
-# docs/facts/ios/button.toml:112223
+# docs/facts/ios/button.toml:111863
 glyph = "absent"
 
 [[rules]]
@@ -10717,15 +10717,15 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109742
+# docs/facts/ios/button.toml:109382
 icon.size_px = 17
-# docs/facts/ios/button.toml:110369
+# docs/facts/ios/button.toml:110009
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:110996
+# docs/facts/ios/button.toml:110636
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111612
+# docs/facts/ios/button.toml:111252
 icon.scale = "large"
-# docs/facts/ios/button.toml:112239
+# docs/facts/ios/button.toml:111879
 glyph = "absent"
 
 [[rules]]
@@ -10733,13 +10733,13 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109788
+# docs/facts/ios/button.toml:109428
 icon.size_px = 17
-# docs/facts/ios/button.toml:110415
+# docs/facts/ios/button.toml:110055
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:111042
+# docs/facts/ios/button.toml:110682
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111658
+# docs/facts/ios/button.toml:111298
 icon.scale = "large"
 
 [[rules]]
@@ -10747,13 +10747,13 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109809
+# docs/facts/ios/button.toml:109449
 icon.size_px = 17
-# docs/facts/ios/button.toml:110436
+# docs/facts/ios/button.toml:110076
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:111063
+# docs/facts/ios/button.toml:110703
 icon.weight = "absent"
-# docs/facts/ios/button.toml:111679
+# docs/facts/ios/button.toml:111319
 icon.scale = "large"
 
 [[rules]]
@@ -10761,11 +10761,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:109820
+# docs/facts/ios/button.toml:109460
 icon.size_px = 15
-# docs/facts/ios/button.toml:110447
+# docs/facts/ios/button.toml:110087
 icon.rendering_mode = "template"
-# docs/facts/ios/button.toml:111690
+# docs/facts/ios/button.toml:111330
 icon.scale = "medium"
 
 [[rules]]
@@ -10773,7 +10773,7 @@ when = { not_variants = ["with_icon", "icon_only", "@info", "@contact_add", "clo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:112771
+# docs/facts/ios/button.toml:112411
 absent = true
 
 [[rules]]
@@ -10781,7 +10781,7 @@ when = { states = ["@loading"], variants = ["with_icon"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:112792
+# docs/facts/ios/button.toml:112432
 absent = true
 
 [[rules]]
@@ -10789,7 +10789,7 @@ when = { states = ["@loading"], variants = ["icon_only"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:112803
+# docs/facts/ios/button.toml:112443
 absent = true
 
 [[rules]]
@@ -10797,7 +10797,7 @@ when = { not_conditions = ["button_shapes"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/ios/button.toml:122604
+# docs/facts/ios/button.toml:121908
 text.decoration = "absent"
 
 [[rules]]
@@ -10805,7 +10805,7 @@ when = { not_conditions = ["button_shapes"], not_variants = ["flat", "@gray", "t
 target = "button.label"
 
 [rules.set]
-# docs/facts/ios/button.toml:122982
+# docs/facts/ios/button.toml:122238
 text.decoration = "absent"
 
 [[rules]]
@@ -10813,11 +10813,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:300868
+# docs/facts/ios/button.toml:299752
 icon.axes = {}
-# docs/facts/ios/button.toml:302386
+# docs/facts/ios/button.toml:301270
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:303818
+# docs/facts/ios/button.toml:302702
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10825,11 +10825,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:300914
+# docs/facts/ios/button.toml:299798
 icon.axes = {}
-# docs/facts/ios/button.toml:302432
+# docs/facts/ios/button.toml:301316
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:303864
+# docs/facts/ios/button.toml:302748
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10837,11 +10837,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:300960
+# docs/facts/ios/button.toml:299844
 icon.axes = {}
-# docs/facts/ios/button.toml:302478
+# docs/facts/ios/button.toml:301362
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:303910
+# docs/facts/ios/button.toml:302794
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10849,11 +10849,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:300976
+# docs/facts/ios/button.toml:299860
 icon.axes = {}
-# docs/facts/ios/button.toml:302494
+# docs/facts/ios/button.toml:301378
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:303926
+# docs/facts/ios/button.toml:302810
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10861,11 +10861,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:300992
+# docs/facts/ios/button.toml:299876
 icon.axes = {}
-# docs/facts/ios/button.toml:302510
+# docs/facts/ios/button.toml:301394
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:303942
+# docs/facts/ios/button.toml:302826
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10873,11 +10873,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301008
+# docs/facts/ios/button.toml:299892
 icon.axes = {}
-# docs/facts/ios/button.toml:302526
+# docs/facts/ios/button.toml:301410
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:303958
+# docs/facts/ios/button.toml:302842
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10885,11 +10885,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301024
+# docs/facts/ios/button.toml:299908
 icon.axes = {}
-# docs/facts/ios/button.toml:302542
+# docs/facts/ios/button.toml:301426
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:303974
+# docs/facts/ios/button.toml:302858
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10897,11 +10897,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301070
+# docs/facts/ios/button.toml:299954
 icon.axes = {}
-# docs/facts/ios/button.toml:302588
+# docs/facts/ios/button.toml:301472
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:304020
+# docs/facts/ios/button.toml:302904
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10909,11 +10909,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301116
+# docs/facts/ios/button.toml:300000
 icon.axes = {}
-# docs/facts/ios/button.toml:302634
+# docs/facts/ios/button.toml:301518
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:304066
+# docs/facts/ios/button.toml:302950
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10921,11 +10921,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301162
+# docs/facts/ios/button.toml:300046
 icon.axes = {}
-# docs/facts/ios/button.toml:302680
+# docs/facts/ios/button.toml:301564
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:304112
+# docs/facts/ios/button.toml:302996
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10933,11 +10933,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301178
+# docs/facts/ios/button.toml:300062
 icon.axes = {}
-# docs/facts/ios/button.toml:302696
+# docs/facts/ios/button.toml:301580
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:304128
+# docs/facts/ios/button.toml:303012
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10945,11 +10945,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301194
+# docs/facts/ios/button.toml:300078
 icon.axes = {}
-# docs/facts/ios/button.toml:302712
+# docs/facts/ios/button.toml:301596
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:304144
+# docs/facts/ios/button.toml:303028
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10957,11 +10957,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301210
+# docs/facts/ios/button.toml:300094
 icon.axes = {}
-# docs/facts/ios/button.toml:302728
+# docs/facts/ios/button.toml:301612
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:304160
+# docs/facts/ios/button.toml:303044
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10969,11 +10969,11 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301226
+# docs/facts/ios/button.toml:300110
 icon.axes = {}
-# docs/facts/ios/button.toml:302744
+# docs/facts/ios/button.toml:301628
 icon.symbol_variants = []
-# docs/facts/ios/button.toml:304176
+# docs/facts/ios/button.toml:303060
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10981,9 +10981,9 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301272
+# docs/facts/ios/button.toml:300156
 icon.axes = {}
-# docs/facts/ios/button.toml:304222
+# docs/facts/ios/button.toml:303106
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -10991,9 +10991,9 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301293
+# docs/facts/ios/button.toml:300177
 icon.axes = {}
-# docs/facts/ios/button.toml:304243
+# docs/facts/ios/button.toml:303127
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -11001,9 +11001,9 @@ when = { not_conditions = ["scheme:dark", "idiom:pad", "contrast_increased", "bo
 target = "button.icon"
 
 [rules.set]
-# docs/facts/ios/button.toml:301304
+# docs/facts/ios/button.toml:300188
 icon.axes = {}
-# docs/facts/ios/button.toml:304254
+# docs/facts/ios/button.toml:303138
 icon.symbolic_colors = {}
 
 [[rules]]
@@ -11011,7 +11011,7 @@ when = { variants = ["close"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:305429
+# docs/facts/ios/button.toml:304313
 help_tooltip_on_click = false
 
 [[rules]]
@@ -11019,7 +11019,7 @@ when = { variants = ["@info"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/ios/button.toml:305445
+# docs/facts/ios/button.toml:304329
 help_tooltip_on_click = false
 
 [[rules]]
@@ -11027,7 +11027,7 @@ when = { conditions = ["scheme:light", "tint_dimmed"], not_conditions = ["idiom:
 target = "button.label"
 
 [rules.set]
-# docs/facts/ios/button.toml:306657
+# docs/facts/ios/button.toml:305541
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -11035,7 +11035,7 @@ when = { conditions = ["scheme:dark", "tint_dimmed"], not_conditions = ["idiom:p
 target = "button.label"
 
 [rules.set]
-# docs/facts/ios/button.toml:306668
+# docs/facts/ios/button.toml:305552
 text.fill = "#ebebf54c"
 
 [[rules]]
@@ -11043,7 +11043,7 @@ when = { conditions = ["scheme:light", "tint_dimmed"], not_conditions = ["idiom:
 target = "button.label"
 
 [rules.set]
-# docs/facts/ios/button.toml:306679
+# docs/facts/ios/button.toml:305563
 text.fill = "#3c3c434c"
 
 [[rules]]
@@ -11051,7 +11051,7 @@ when = { conditions = ["scheme:dark", "tint_dimmed"], not_conditions = ["idiom:p
 target = "button.label"
 
 [rules.set]
-# docs/facts/ios/button.toml:306690
+# docs/facts/ios/button.toml:305574
 text.fill = "#ebebf54c"
 
 [[rules]]

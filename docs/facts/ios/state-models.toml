@@ -40,12 +40,21 @@
 #   effect), and the menu buttons' sets (`menu` the trigger, `@indicator_popup` the indicator, `@menu_on_hold` the long
 #   press; no `toggle`: a selection menu is a pop-up button, `combo_box`); `flat` takes a corner style only with
 #   `toggle`, as plain draws a bezel only while checked (analysis.toml `cells.<scheme>.plain.<size>.selected`; no
-#   bezel at rest, pressed, disabled or toggled off); each configuration style with `@role_primary` (the sets the run
-#   drew, `<style>__role_primary`, the prominent glass ones on 26 too); and the base's own sets (ADD-A141, *What the
+#   bezel at rest, pressed, disabled or toggled off); `@role_primary` on each configuration style's sets, its corner
+#   styles, image, toggle and menu among them (the run drew `<style>__role_primary`, the prominent glass ones on 26
+#   too; `role` is UIButton's own, UIButton.h:91, beside the configuration, so the role takes every set its style
+#   takes, the cleanup lane, ADD-A141); and the base's own sets (ADD-A141, *What the
 #   axes and sets hold*: the system type with no configuration takes an image, `setImage:forState:`, a menu, `menu`
 #   with `@menu_on_hold` its long press, and the selection toggle, `changesSelectionAsPrimaryAction`, UIButton's own
 #   API, so it draws an image with a toggle, a menu with an image and a menu on hold, which the gate met only where a
 #   fact's own `when` named them, the iOS facts lane's round 5, c8610c67; no toggle with a menu, as for the styles).
+#   The button types `@info`, `@contact_add` and `close` take the same menu and toggle, UIButton's own on every type
+#   (the host drew each type selected, analysis.toml `forms.<scheme>.<type>.selected`), so each draws with `toggle`,
+#   with `menu` and with `menu` and `@menu_on_hold`, and with an image, `with_icon` and `icon_only`
+#   (`setImage:forState:`, UIButton.h:122, on every type): whether a system button draws an assigned image in place
+#   of its glyph no pass shows (UIButton.h:147 says its title and image views are nil, while run 42269041636's view
+#   tree holds the type's glyph in an image view, measure1/index.toml `image_views`), so the sets are listed and
+#   their pairs pending (U704, ADD-A145; the cleanup lane).
 #   The pointer style (the iOS facts lane's round 6, U703; ADD-A141, ADD-A144): `pointerInteractionEnabled` and
 #   `pointerStyleProvider` are UIButton's own, as `role` is, so every UIButton form takes one: the base with each of
 #   its sets, each configuration style with its sets and with `@role_primary`, and the button types `@info`,
@@ -102,15 +111,15 @@ axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "
 exclusive = []
 exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"], ["@cancel", "@role_primary", "destructive"]]
 variant_products = [
-  [{ one = ["@gray", "tinted", "primary"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@gray", "tinted", "primary"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["@info", "@contact_add", "close"] }, { one = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
 ]
 not_drawn = [
   { states = ["checked"], not_variants = ["toggle"] },
@@ -434,6 +443,29 @@ absent = ["pointerInteractionEnabled", "pointerStyleProvider", "UIPointerStyle",
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:122"
 quote = "- (void)setImage:(nullable UIImage *)image forState:(UIControlState)state;"
+
+# the button types `@info`, `@contact_add` and `close` with an image: listed, their pairs pending (U704), as the
+# header says a system button's title and image views are nil and no pass assigned one an image (the cleanup lane)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:147"
+quote = "// return title and image views. will always create them if necessary. always returns nil for system buttons"
+
+# the button types drawn with `toggle`: the host drew each selected (the menu, UIButton.h:105 below, on every type too)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.info_light.selected"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.contact_add.selected"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.close.selected"
+tolerance = 0
 
 # `menu` (`@menu_on_hold`: the menu on a long press, not as the primary action)
 [[model.cite]]
@@ -891,21 +923,19 @@ axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "
 exclusive = []
 exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["flat", "@gray", "tinted", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"], ["@cancel", "@role_primary", "destructive"]]
 variant_products = [
-  [{ one = ["@gray", "tinted", "primary"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@gray", "tinted", "primary"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["@info", "@contact_add", "close"] }, { one = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["glass", "clear"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["glass", "clear"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["glass", "clear"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
 ]
 not_drawn = [
   { states = ["checked"], not_variants = ["toggle"] },
@@ -1328,6 +1358,29 @@ absent = ["pointerInteractionEnabled", "pointerStyleProvider", "UIPointerStyle",
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:122"
 quote = "- (void)setImage:(nullable UIImage *)image forState:(UIControlState)state;"
+
+# the button types `@info`, `@contact_add` and `close` with an image: listed, their pairs pending (U704), as the
+# header says a system button's title and image views are nil and no pass assigned one an image (the cleanup lane)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:147"
+quote = "// return title and image views. will always create them if necessary. always returns nil for system buttons"
+
+# the button types drawn with `toggle`: the host drew each selected (the menu, UIButton.h:105 below, on every type too)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.info_light.selected"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.contact_add.selected"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.close.selected"
+tolerance = 0
 
 # `menu` (`@menu_on_hold`: the menu on a long press, not as the primary action)
 [[model.cite]]
