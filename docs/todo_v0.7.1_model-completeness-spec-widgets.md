@@ -160,7 +160,8 @@ breakpoints measure its breakpoint bin, `Measured::Part(dialog.content)` (the `d
 
 ## Entry format
 
-Each `### <widget>` section states, in this order:
+Each `### <widget>` section states these twelve items, in this order (the rules that hold in all of them, *Nesting*,
+*One-edge lines*, *Keys*, *Auto* and *Units*, follow the list):
 
 - **Kind:** typed widget, and which platforms draw it, with the rows (counting the cross-check decisions that found it
   drawn inside an element, R14).
@@ -198,34 +199,19 @@ Each `### <widget>` section states, in this order:
   `toolbar.item_group` in `content`) is queried in the root's scope with the plain part's bindings, opacity and
   transform applied (S2.11), which is the scope the plain part's query returns (S8), so `context w.part` matches the
   plain part too. A nested widget (Nested controls) in a plain part (a response `button` in `dialog.action_area`) is
-  queried in that same scope. The parts named as belonging to an *(element)* (an item's label, icon or
-  mark) are queried with that element; every other part is queried with the widget's element (S2.11). So a part that
+  queried in that same scope. A plain part belongs to the nearest *(element)* part its bullets nest it in (an item's
+  label, icon or mark, each `, in item`), else to the widget's own element, and is queried with the element it
+  belongs to (S2.11): one relation, read from the parent each bullet names (*Nesting*, below; ADD-A146). Rejected: a
+  sentence naming the parts that "belong" to an element beside the nesting, which gave a part one element by the
+  sentence and another by its parent (the catalogue's reader and the model take the parent). So a part that
   a rule selects by its own states, its own variants or flags, by its position among its own siblings, or uses as a
-  context with states of its own is an *(element)*; a part of the widget's element is selected by the widget's states.
+  context with states of its own is an *(element)*; a plain part is selected by the states of the element it belongs
+  to, and reads another element's by `context` (*Flags*).
   An *(element)* part's query also sees its widget's variants (S2.11): a row matches the list's `sidebar`. A part
   whose style reads element data declares it on the part (`data = { <part> = [...] }`); a widget value that reads
   element data (a presentation step's duration over `move_distance` included) declares it under `values` (`data = {
   values = [...] }`) (S8, S10). The root's inputs, `element.window_width`, `window_height`, `screen_width` and
   `screen_height`, come through the scope (S8), not from `Element.data`, and are declared nowhere.
-- **Nesting** (S2.11): parts nest as the entry nests them, the same on every preset. A part nests in the root unless
-  its bullet names its parent (`` `title` *(element)*, in `title_bar_content` ``), or the root's bullet names the box
-  every other part nests in (an overlay's `body`); the parts belonging to an *(element)* part nest in it. A part's
-  `bindings`, `opacity` and `transform` reach every part nested in it and their elements (the title bar's Header
-  binding reaches the title and the caption buttons; the title-bar content's inactive dimming dims them as one
-  group). A part nested in a part that answers `NotDrawn` is still queried, in the scope the `NotDrawn` part's
-  parent returns (as S8 queries the children of a `NotDrawn` element), and is drawn unless it is absent itself: a list's
-  rows nest in `section` and are drawn where no section is; where a nested part is not drawn with its parent (a
-  dialog's title when its header is not drawn), it has its own `may_be_absent` permission. The parts nested in a
-  part a preset draws as another widget (`drawn_as`, below) are still queried, with that widget's element as their
-  host: in the scope returned by the query of the substitute's part that holds content (an overlay's box, `body`; a
-  control's root), the innermost enclosing part's scope (S8), so `context <substitute>` matches them. Each keeps its
-  own style, absence or `drawn_as`; one whose place the substitute's own parts take (a combo box's own label where a
-  date picker's field is drawn as a combo box) is stated `absent = true` by a rule under the same selector as the
-  substitution, and the entry lists it. So kirigami-addons' menu actions, in the drawer or dialog the menu's box is
-  drawn as, are each `drawn_as` a form row (K-KA-31†).
-- **One-edge lines:** a `stroke` drawn on some edges only (a status bar's top line, a toolbar's hairline) states the
-  other edges `Absent`: an `Edge`'s `width` and `paint` may be absent, an edge not drawn (S6.3), the model's one route
-  for "the platform draws no line here"; width zero is never used for it.
 - **Widget values:** typed values beyond parts (gaps, alignment, order, behaviour, placement, breakpoints), each with
   its type. A presentation-transition list is `presentations: Vec<PresentationTransition>` (S2.7), keyed by event,
   one event per occasion: `Appear` and `Disappear` are the element appearing and disappearing, `Move` the element
@@ -270,30 +256,21 @@ Each `### <widget>` section states, in this order:
   S6.3's compound rule: each `Value` member may be `Absent`, its plain members always stated, and one declared
   `Value<T>` (a `Value<Placement>` some platform has none of at all) may also be absent as a whole; any other compound
   type with a plain member (`Transform`'s `origin`, `Corners`' `curve`) is declared `Value<T>` wherever it may be
-  absent.
-- **Keys:** the keys of a typed widget's `Value<Key>` value, of its keyed maps (`Vec<(Key, …)>`) and of its plain key
-  lists (`Vec<Key>`, and a `Key` inside a list's entries) are declared by each preset in its `[declare.widget.<w>]`
-  `keys = { <value> = [ … ] }` (S10), which S12's undeclared-name check checks a stated key against; the entry lists
-  them at the value, per preset where the presets' keys differ, or says the value phase lists them from the facts. A
-  key is `[a-z0-9][a-z0-9_]*` (S1): a value holding icon names, file names or other text with `-` or capitals is a
-  `String`, or a `Glyph` (`GlyphSource::ThemeIcon`) where it names an icon, never a `Key`. A behaviour a
-  platform does not have (no action bound to a click) is not a key: the value is listed under **may_be_absent** with
-  the presets that have none.
-- **Auto:** the core marks `TextStyle.line_height` and, on every part, `min_width`, `min_height` ("no minimum beyond
-  the content") and `max_width`, `max_height` ("no maximum") (S2.11, S6.3); the entries do not repeat those marks, and
-  a size limit the platform does not set is `auto`, never `Absent`. Any other length field that may be `Auto` (a gap,
-  a width or height in a widget value, a length sized by content) says so at the field, `` `<name>_px: Value<Px>`
-  (`Auto` where the platform sizes it by its content) ``; S12 allows `Auto` where the catalogue or the core marks it.
-- **Units** (S1): the type carries the unit. A length is `Value<Px>`, a duration `Value<Ms>`, an angle `Value<Deg>`,
-  an opacity or other fraction `Value<Fraction>`, a unitless number (a factor, a velocity) `Value<f32>`, a count
-  `Value<u32>`. A widget value of one of these scalar types is written as its TOML key spells it, the unit's suffix
-  added from the type (`icon_text_gap_px: Value<Px>`, `show_delay_ms: Value<Ms>`, `start_angle_deg: Value<Deg>`;
-  the Rust field is `icon_text_gap`, `show_delay`, `start_angle`); a path or expression names the Rust field, without
-  the suffix (`values.icon_text_gap`, S1), as the traceability does. A keyed component's values carry no suffix even
-  in their declaration (*Keyed components*). A value of a compound type (`Sides<Value<Px>>`, `Axes<Value<Px>>`, a
-  list, a record) carries no suffix: its members carry their units. A `PartStyle` field is named in paths as S2.11
-  names it (`body.min_width`, `part.min_width`); its TOML key adds the suffix the same way (`min_width_px`).
-- **Variants:** a variant is typed when two or more platforms share its meaning anywhere in the catalogue (R15; the
+  absent. **may_be_absent** lists a compound once, by its own name, never a member alone: its parentheses give the
+  presets, after `every member:` where the members share them, else per member (`` `<member>`: <presets> ``, the
+  members separated by `;`) (ADD-A146; rejected: a dotted member as a name of its own in the list, a second kind of
+  name where the mark is the compound's, S6.3).
+- **Variants:** the item is `none`, or one sub-bullet per element the variants are on and per kind, the widget's own
+  element first (ADD-A146): `on the widget, typed: …`, then `on the widget, keyed, <preset>: …` for each preset that
+  declares keyed ones, then the same for each *(element)* part that has variants of its own (`` on `<part>`, typed:
+  … ``, `` on `<part>`, keyed, <preset>: … ``; an identity is a variant of the part it names). A note in parentheses
+  may stand before the colon. The sub-bullet's first sentence lists the variants, each with its note in parentheses;
+  what follows it is prose and lists none. A content variant (below) is listed with its element, a typed one in the
+  typed sub-bullet and a keyed one in its preset's, and its note says "the content variant". A sub-bullet that does
+  not start with `on ` is a note (the flavour that declares a variant, the variants of a nested widget) and lists
+  nothing. The generator reads the typed sub-bullets. Rejected: the forms the entries had (an inline list, `typed …;
+  keyed …`, `on the <widget>, typed: …`, `typed on <part> …`), four spellings no reader could take alike.
+  A variant is typed when two or more platforms share its meaning anywhere in the catalogue (R15; the
   typed variants are one `Variant` enum, and a widget declares the ones it has), keyed (`@name`) otherwise. A typed
   variant's meaning is the declaring widget's (`inline` is a link inside running text on `link`, a tip inside the
   content on `teaching_tip`), and a keyed `@k` and a typed `k` are different names. A content variant is a pair, a
@@ -301,17 +278,22 @@ Each `### <widget>` section states, in this order:
   every platform (ADD-A61), so it is typed whichever presets style it, except a keyed one whose meaning only one
   platform has, set by the connector by that platform's rule under every preset and ignored where a preset does not
   declare it (S8; ADD-A123). The pairs are exactly these:
-  `button`: `icon_only`, `with_icon`, and GTK's keyed `@custom_child`, `@arrow_only`, `@with_arrow` (the `button`
-  entry's `adwaita` variants give the rule); `segmented_control`: `icon_only`, `with_icon`; `bottom_tab_bar.item`:
+  `button`: `icon_only`, `with_icon`, and GTK's keyed `@custom_child`, `@arrow_only`, `@with_arrow`, `@tab_overflow`
+  (the `button` entry's `adwaita` variants give the rule of each); `segmented_control`: `icon_only`, `with_icon`; `bottom_tab_bar.item`:
   `icon_only`, `with_icon`; `menu.item`: `icon_only`; `list.row`: `icon_only`, `with_icon`, `with_subtitle`,
   `three_line`, `with_avatar`, `with_image`, `with_video`; `breadcrumb.crumb`: `with_icon`; `chip`: `with_icon`;
-  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `combo_box`: `with_icon` (ADD-A127); `splitter`: Material's keyed `@clickable` (the `splitter`
+  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `input`,
+  `text_area`: `with_label` (the field holds a label, on which the rest opacity of its placeholder and affixes
+  depends on `material-3`, `internal/TextFieldImpl.kt:143`; ADD-A146); `combo_box`: `with_icon` (ADD-A127),
+  `with_label` (as `input`'s);
+  `splitter`: Material's keyed `@clickable` (the `splitter`
   entry gives the rule); `badge`:
   `custom_color`; `toolbar`: `with_search`, `with_prompt`; `form`: `collapsed` (KDE's form layout when its wide layout
   does not fit); `form.row`: `bitmap_icon`, `activatable`; `rich_text.code_block`: `fenced`; `window`:
   `no_caption_buttons`, `print`, `page_setup`, `app_chooser`; `rubber_band`: `in_canvas`, `dock_target`; `banner`: `vertical` (the actions wrapped below the
   text, from `actions_wrap`'s outcome); `scroll_view.edge_effect`, `scroll_view.overshoot`: the edge identities `top`,
-  `bottom`, `start`, `end` (one element per edge). An entry that adds one says "the content variant" at it and is
+  `bottom`, `start`, `end` (one element per edge); `scrollbar.arrow_button`: the identities `decrement`, `increment`
+  (the arrow toward the start and the arrow toward the end of the bar's axis, one element per arrow; ADD-A146). An entry that adds one says "the content variant" at it and is
   listed here. The same name on any other widget or part is a variant the application asks for (`vertical` on
   `slider`, `bottom` on `sheet`, `activatable` on `card`), which the query answers `NotAvailable` for where the preset
   does not declare it (S8). A variant the connector sets from a size
@@ -324,13 +306,27 @@ Each `### <widget>` section states, in this order:
   `sizes_by_variant` entry's `default_size` (S10, ADD-A121, ADD-A131); sizes a container restricts, and the default
   size it gives an element that states none, by a `sizes_by_context` entry (S10, ADD-A131: `macos-tahoe`'s toolbar).
 - **Flags:** the element's widget-specific flags: shared (`SharedFlag`, below), keyed (`@name`,
-  `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2).
+  `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2). A flag is set on the
+  element whose state it is and on no other element of the widget (ADD-A146): `open` on the element that opens (an
+  expander's own element, a tree row, a combo box), `selected` and `checked` on the item, `hover`, `pressed` and the
+  focus flags on the element the pointer or the focus is on (S7.2). `disabled` alone is also held from outside:
+  every element of a disabled widget, and every element nested in a disabled *(element)* part, is disabled, as the
+  toolkits propagate it. A nested *(element)* part, and the plain parts that belong to it, read any other flag of
+  their host by `context` (`expander.arrow.glyph @ context expander.body {open}`, `list.disclosure.transform @
+  context list.row {open}`); where a flag is not the widget's own element's, the entry names its element at the
+  flag, as `list` does for `editing` (row, cell). Rejected: the connector copying `open` or `selected` to the nested
+  elements, one fact in two spellings, which the traces had both of.
 - **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags), written
   in the order of precedence the preset's `exclusive` array states (S10); that order is a fact of the platform's
   state model, which the gate checks (S17), so every entry's groups end "precedence: state models (S17)", its
   recency sets, where it has any, following. A widget's groups
   apply to each element of the widget, its *(element)* parts included (S8 drops the excluded flags per element), so
-  "on `item`" names the element whose states the platform's model groups.
+  "on `item`" names the element whose states the platform's model groups. On `adwaita` every widget's groups
+  include S10's pairs `[disabled, f]` for each `f` of `hover`, `pressed`, `focused`, `focus_visible` and
+  `drop_target` the widget uses, GTK clearing or refusing them on an insensitive widget (`gtk@4.24.1
+  gtk/gtkwidget.c:6253-6257`, S10's *A flag the platform clears*); an entry's "others none" speaks of the other
+  flags, and `material-3`'s like pairs are its state models', per widget (ADD-A146; rejected: the pairs repeated in
+  every entry).
   The item also names the widget's **recency sets** (S10's `recency`, S7.2, R3; ADD-A124), each the flags among which
   the platform shows the one set last, written in the set's stated order (its first the latest where the connector
   reports no order), with the source of its members; a rule on the latest of a set is written `latest <set>:<flag>`
@@ -412,8 +408,10 @@ Each `### <widget>` section states, in this order:
   out: the whole widget; `PartPresence::DrawnAs`, S6.1, S11),
   the query answers `Styled::DrawnAs`, and the connector builds that widget's element in the part's place, in the
   host's context (Nested controls); the entry states it at the part. `fields:` part fields that may be
-  `Absent`, beyond the core's own marks (S6.3: `PartStyle.touch_target`, `margin` and `shape`, `Glyph.stroke`, …),
-  which the entries do not repeat. Among those marks are a part's drawing fields, `fill`, `stroke`, `shadow`,
+  `Absent`, beyond the core's own marks (S6.3: `PartStyle.touch_target` and `shape`, `Glyph.stroke`, …),
+  which the entries do not repeat. A `margin` is no such mark: a part with no margin states a zero length, S17's
+  zero by omission cited as an absence, and an entry lists a `margin` here only where the field has no meaning on a
+  preset (a part an AppKit rendering replaces) (S6.3; ADD-A146). Among those marks are a part's drawing fields, `fill`, `stroke`, `shadow`,
   `text`, `icon`, `glyph`, `focus` and `cursor`, on every part of every widget and component (S6.3: a part that paints
   nothing at rest, a menu item, a flat button's or a tab's fill, states `"absent"`, and so does a preset whose
   platform draws no outline or shadow there); where an entry's `fields:` list still names one of them, the item only
@@ -430,6 +428,56 @@ Each `### <widget>` section states, in this order:
 - **Today's fields:** how each field of `docs/property-registry.toml` maps into the new parts.
 - **Notes:** where the widget is drawn in another's context, the nested controls it holds (below), and what the merge
   took from other groups (every name a note uses is in the lists above).
+
+Five rules hold in every entry and are no item of it (ADD-A146: they stood among the items, as if an entry stated
+them):
+
+- **Nesting** (S2.11): parts nest as the entry nests them, the same on every preset. A part nests in the root unless
+  its bullet names its parent (`` `title` *(element)*, in `title_bar_content` ``; an item's label `, in item`; each
+  part of an overlay's box `, in body`), and nothing else states nesting: no sentence of another bullet nests a part
+  or gives it an element (ADD-A146; rejected: a root's bullet naming the box every other part nests in, and a list of
+  the parts belonging to an element, two more spellings the reader did not read). A part's
+  `bindings`, `opacity` and `transform` reach every part nested in it and their elements (the title bar's Header
+  binding reaches the title and the caption buttons; the title-bar content's inactive dimming dims them as one
+  group). A part nested in a part that answers `NotDrawn` is still queried, in the scope the `NotDrawn` part's
+  parent returns (as S8 queries the children of a `NotDrawn` element), and is drawn unless it is absent itself: a list's
+  rows nest in `section` and are drawn where no section is; where a nested part is not drawn with its parent (a
+  dialog's title when its header is not drawn), it has its own `may_be_absent` permission. The parts nested in a
+  part a preset draws as another widget (`drawn_as`, **may_be_absent**) are still queried, with that widget's element as their
+  host: in the scope returned by the query of the substitute's part that holds content (an overlay's box, `body`; a
+  control's root), the innermost enclosing part's scope (S8), so `context <substitute>` matches them. Each keeps its
+  own style, absence or `drawn_as`; one whose place the substitute's own parts take (a combo box's own label where a
+  date picker's field is drawn as a combo box) is stated `absent = true` by a rule under the same selector as the
+  substitution, and the entry lists it. So kirigami-addons' menu actions, in the drawer or dialog the menu's box is
+  drawn as, are each `drawn_as` a form row (K-KA-31†).
+- **One-edge lines:** a `stroke` drawn on some edges only (a status bar's top line, a toolbar's hairline) states the
+  other edges `Absent`: an `Edge`'s `width` and `paint` may be absent, an edge not drawn (S6.3), the model's one route
+  for "the platform draws no line here"; width zero is never used for it.
+- **Keys:** the keys of a typed widget's `Value<Key>` value, of its keyed maps (`Vec<(Key, …)>`) and of its plain key
+  lists (`Vec<Key>`, and a `Key` inside a list's entries) are declared by each preset in its `[declare.widget.<w>]`
+  `keys = { <value> = [ … ] }` (S10), which S12's undeclared-name check checks a stated key against; the entry lists
+  them at the value, per preset where the presets' keys differ, or says the value phase lists them from the facts. A
+  key is `[a-z0-9][a-z0-9_]*` (S1): a value holding icon names, file names or other text with `-` or capitals is a
+  `String`, or a `Glyph` (`GlyphSource::ThemeIcon`) where it names an icon, never a `Key`. A behaviour a
+  platform does not have (no action bound to a click) is not a key: the value is listed under **may_be_absent** with
+  the presets that have none.
+- **Auto:** the core marks `TextStyle.line_height` and, on every part, `min_width`, `min_height` ("no minimum beyond
+  the content") and `max_width`, `max_height` ("no maximum") (S2.11, S6.3); the entries do not repeat those marks, and
+  a size limit the platform does not set is `auto`, never `Absent`. Any other length field that may be `Auto` (a gap,
+  a width or height in a widget value, a length sized by content) says so at the field, `` `<name>_px: Value<Px>`
+  (`Auto` where the platform sizes it by its content) ``; S12 allows `Auto` where the catalogue or the core marks it.
+- **Units** (S1): the type carries the unit. A length is `Value<Px>`, a duration `Value<Ms>`, an angle `Value<Deg>`,
+  an opacity or other fraction `Value<Fraction>`, a unitless number (a factor, a velocity) `Value<f32>`, a count
+  `Value<u32>`. A widget value of one of these scalar types is written as its TOML key spells it, the unit's suffix
+  added from the type (`icon_text_gap_px: Value<Px>`, `show_delay_ms: Value<Ms>`, `start_angle_deg: Value<Deg>`;
+  the Rust field is `icon_text_gap`, `show_delay`, `start_angle`); a path or expression names the Rust field, without
+  the suffix (`values.icon_text_gap`, S1), as the traceability does. A keyed component's values carry no suffix even
+  in their declaration (*Keyed components*). A value of a compound type (`Sides<Value<Px>>`, `Axes<Value<Px>>`, a
+  list, a record) carries no suffix: its members carry their units. A record's members are declared and named as
+  scalar values are: the declaration shows the TOML key with its suffix (`ActionLayout { gap_px: Value<Px>, … }`),
+  the Rust field and every path drop it (`values.action_layout.gap`, `values.message_wrap.wrap_above`) (ADD-A146).
+  A `PartStyle` field is named in paths as S2.11
+  names it (`body.min_width`, `part.min_width`); its TOML key adds the suffix the same way (`min_width_px`).
 
 Names: identifiers are American (`color`, `center`, `minimize`), prose British (S1). Context selectors match the
 ancestor chain the query's `Scope` carries (S8): an element's ancestors are the elements and parts its connector
@@ -536,7 +584,7 @@ spaces:
 | `variant v`, `variant @k`, `variants {v,w}`, `!variant v`, `!variants {v,w}`, `w.part[v]` | the element's (or the named ancestor's) variants: `variants {v,w}` all of them, `!variants {v,w}` none of them (`SetMatch.none_of`); `@k` is keyed, and a rule names only the keyed variants its own preset declares (S12) |
 | `w.part[size s]` | the named ancestor's control size (`ContextMatch.sizes`, ADD-A84) |
 | `cond c`, `!cond c` | a condition (S7.1, snake_case): `window_inactive`, `contrast_high`, `scheme:dark`, `input:touch`, `idiom:pad`, `flavor:kirigami`, `preset:ios-26`, `system_setting:<key>` (ADD-A04), `container_size:sidebar:small`, `tiled:top`, `freeform`, `posture:tabletop`, `device_model:<key>` (ADD-A83) |
-| `context w.part [variant v] [{a}]`, `context any w`, `context nearest {A, B} = A` | `ContextMatch`: an ancestor in the chain the `Scope` carries (S8); `AnyAncestor` or `NearestAmong`. The `variant` and `{…}` written after `context w.part` are that ancestor's; the element's own variants and states are written before the first `context` (`button.body.fill @ variant tool context toolbar.bar`). A bare `context w` (`context combo_box`, `context list variant table`) is the same match as `context any w`: an ancestor of widget `w`, whichever of its parts (`ContextMatch.target` is `WidgetOrPart::Widget(w)`, S1); `context any (surface S)` is an ancestor binding the surface set `S`, whatever its widget (`ContextMatch.surface`, ADD-A68) |
+| `context w.part [variant v] [{a}]`, `context any w`, `context nearest {A, B} = A` | `ContextMatch`: an ancestor in the chain the `Scope` carries (S8); `AnyAncestor` or `NearestAmong`. The `variant` and `{…}` written after `context w.part` are that ancestor's; the element's own variants and states are written before the first `context` (`button.body.fill @ variant tool context toolbar.bar`). A bare `context w` (`context combo_box`, `context list variant table`) is the same match as `context any w`: an ancestor of widget `w`, whichever of its parts (`ContextMatch.target` is `WidgetOrPart::Widget(w)`, S1); `context any (surface S)` is an ancestor binding the surface set `S`, whatever its widget (`ContextMatch.surface`, ADD-A68). An *(element)* part and its plain parts read the states of the element that holds them this way, by that element's part (`list.disclosure.glyph @ context list.row {open}`, `expander.arrow.glyph @ context expander.body {open}`; Entry format's *Flags*, ADD-A146) |
 | `not_context w.part` | `Selector.not_context` |
 | `pos first`, `pos last`, `pos only`, `pos parity odd`, `prev w{…}`, `next w{…}` | `PositionMatch` (parity: ADD-B06; by part: ADD-B07). A `prev` or `next` term that names a part other than the element's own counts among every sibling of that widget (`among {w}`): `prev list.row {hover}` on a `list.row_separator` is the row before it |
 | `… among any`, `… among {w, v}` after a `pos` term | `PositionMatch.among`: siblings of any kind (`SiblingScope::Any`, CONTRA-3) or of the kinds named; without it, siblings of the same kind |
