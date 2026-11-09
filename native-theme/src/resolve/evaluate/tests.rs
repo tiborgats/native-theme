@@ -2103,6 +2103,55 @@ fn android_non_linear_scales_derived_sizes_once() {
     );
 }
 
+/// S9.4's `WinUi`: the font size alone goes through WinUI's curve; a line
+/// height and a spacing stated in px hold, and a spacing stated on
+/// `font_size` follows the scaled size. Synthetic sizes.
+#[test]
+fn win_ui_scales_the_font_size_alone() {
+    use crate::platform::win_ui::win_ui;
+    use crate::units::Length;
+
+    let style = scaled_style(
+        "win_ui",
+        "font.size_px = 10\nline_height_px = 20\nletter_spacing_px = -0.5\n\
+         word_spacing = \"= mul(font_size, 0.5)\"",
+    );
+    let text = scaled_text(&style, 1.5, None);
+    let size = win_ui(10.0, 1.5);
+    assert_eq!(text.font.size, Some(Px(size)));
+    // Small sizes grow more than the factor: 10 px is near 15.87 at 150 %.
+    assert!(size > 15.8);
+    assert_eq!(text.line_height, Some(Length::Px(20.0)));
+    assert_eq!(text.letter_spacing, Some(Px(-0.5)));
+    assert_eq!(text.word_spacing, Some(Px(size * 0.5)));
+
+    let text = scaled_text(&style, 1.0, None);
+    assert_eq!(text.font.size, Some(Px(10.0)));
+}
+
+/// S9.4: under `WinUi` a font size stated over another style's reads it
+/// unscaled and goes through the curve once; a font size read as an
+/// operand is its style's, through the curve; a point is not scaled.
+#[test]
+fn win_ui_scales_derived_sizes_once() {
+    use crate::platform::win_ui::win_ui;
+
+    let style = scaled_style(
+        "win_ui",
+        "font.size = \"= mul(token.text.roles.body.font.size, 2)\"",
+    );
+    let text = scaled_text(&style, 1.5, None);
+    // The body slot's 9pt at the fixture's 72 DPI, doubled, then the curve.
+    assert_eq!(text.font.size, Some(Px(win_ui(18.0, 1.5))));
+
+    let theme = resolved(&[BASE, &style[0], &style[1]], 1.5);
+    assert_eq!(
+        operand(&theme, "token.text.keyed.y.font.size"),
+        Some(Val::FontSize(Px(win_ui(18.0, 1.5))))
+    );
+    assert_eq!(theme.px_per_point(&scope()), Some(1.0));
+}
+
 /// S9.4's `DynamicType`: at the default category the preset's sizes hold;
 /// at another, a size scales by its `scaling_role`'s row of Apple's table
 /// (`body`'s where it states none), the row's own leading becomes the

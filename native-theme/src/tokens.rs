@@ -661,6 +661,9 @@ pub enum TextScaling {
     AndroidNonLinear,
     /// Apple's table of each text style's size per content-size category.
     DynamicType,
+    /// WinUI's curve, which scales small sizes more: the font size alone,
+    /// a line height or a spacing stated in points or pixels not scaled.
+    WinUi,
 }
 
 /// The platform's font fallbacks (S4.4): one chain, per family where the

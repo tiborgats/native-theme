@@ -20,6 +20,7 @@ use native_theme::platform::kirigami_lerp::kirigami_lerp;
 use native_theme::platform::kirigami_tint::kirigami_tint;
 use native_theme::platform::m3_role::m3_role;
 use native_theme::platform::sf_tracking::{TrackingDesign, sf_tracking};
+use native_theme::platform::win_ui::win_ui;
 use native_theme::{
     Color, ContentSizeCategory, KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect,
     KdeRoleKind, MaterialVariant, Scheme, TextRole,
@@ -373,6 +374,16 @@ fn vectors_android_non_linear_inverse() {
     assert_eq!(rows.len(), 1425);
     for row in rows {
         let got = android_non_linear_inverse(size_px(&row["size"]), number(&row["font_scale"]));
+        assert_eq!(got, size_px(&row["result"]), "{row:?}");
+    }
+}
+
+#[test]
+fn vectors_win_ui() {
+    let rows = rows("win_ui");
+    assert_eq!(rows.len(), 1434);
+    for row in rows {
+        let got = win_ui(size_px(&row["size"]), number(&row["factor"]));
         assert_eq!(got, size_px(&row["result"]), "{row:?}");
     }
 }

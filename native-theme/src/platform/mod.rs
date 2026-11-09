@@ -10,8 +10,9 @@
 //! scaling curves live here too: `android_non_linear` ports the Android Open
 //! Source Project's `FontScaleConverter` under its Apache-2.0 licence, and
 //! `dynamic_type` reads Apple's published Dynamic Type table,
-//! `gen_dynamic_type` generated from it. The model's names for their operands
-//! are here.
+//! `gen_dynamic_type` generated from it, and `win_ui` ports WinUI's
+//! `TextFormatting::GetScaledFontSize` under its MIT licence. The model's
+//! names for their operands are here.
 
 pub mod adw_standalone;
 pub mod android_non_linear;
@@ -30,6 +31,7 @@ pub mod kirigami_lerp;
 pub mod kirigami_tint;
 pub mod m3_role;
 pub mod sf_tracking;
+pub mod win_ui;
 
 use kde_shade::KdeShadeRole;
 use sf_tracking::TrackingDesign;

@@ -502,6 +502,17 @@ fn the_straight_colour_spaces_are_two() {
     );
 }
 
+/// `win_ui` is S9.4's `WinUi` scaling (ADD-A141).
+#[test]
+fn win_ui_is_a_text_scaling() {
+    let scaling = layer("[tokens.text]\nscaling = \"win_ui\"")
+        .bases
+        .tokens
+        .text
+        .and_then(|text| text.scaling);
+    assert_eq!(scaling, Some(crate::tokens::TextScaling::WinUi));
+}
+
 /// `filled_ring` names no `FocusKind` (S2.10's *One ring*, ADD-A141):
 /// Breeze's filled frame is a `ring`.
 #[test]
