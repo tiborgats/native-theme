@@ -795,11 +795,14 @@ placement unit, spec ADD-A120); S7; S8 without
   `token.material` groups; the four readers and their watchers ported to S9.3 and S9.5 at the slice's scope
   (`ReaderState`, the KDE scheme groups and unset keys) and linked again, with the split files' reader functions
   restored and S16's system entry points (`Theme::system()`, `from_system`); the reader tests return.
-- **The accent run:** `Palette::from_port` and `apply_palette` (S14, as far as the run needs); the KDE schemes and
+- **The accent run:** `Palette::from_port` and `apply_palette` (S14, as far as the run needs; `from_port` and the
+  `.colors` conversion it shares with the KDE reader in every build, with no feature, ADD-A142); the KDE schemes and
   accents chosen and pinned (at least one that tints, one with the accent-coloured title bar and a `Header` group, one
-  with it and no `Header` group, one lacking a colour group, S17), measured by spike K's script.
+  with it and no `Header` group, one lacking a colour group, S17), measured by spike K's script, BreezeClassic also
+  with no `AccentColor` as SUSE-Cafe was (U698, the no-accent pair S17's *A port's own roles* compares); the run's non-preset
+  scheme files read from the source cache, which the facts-gate jobs fetch (S17, ADD-A142).
 - **For D6:** the cost, the evidence size and the gate's run time measured and extrapolated.
-- **Gate:** as M1a's, over all eight presets, with the accent run; the pull request's CI green on macOS and Windows.
+- **Gate:** as M1a's, over all eight presets, with the KDE accent run; the pull request's CI green on macOS and Windows.
 
 ## M2 — The model's core, complete (after D6; in series)
 
@@ -829,6 +832,10 @@ placement unit, spec ADD-A120); S7; S8 without
    picks (the guide's own example value where it gives one, else the middle of the stated range; the picks listed in
    the ledger for the maintainer's veto); the KDE ports, with their measured facts added to the accent run; the
    projects' published colours as facts (a palette lane and its verifier); the gate's palette run (each pick skipped).
+   Beside it, `material-3`'s accent-derivation layer (its `m3_role` statements and S8's leave-out, S9.2), the gate's
+   perturbed stand-in stating no `accent` there and the `material-3` accent run (S17; ADD-A134, ADD-A142; ledger queue
+   #185), after the Material lane restates the preset's baseline (its roles Compose's sourced literals, its
+   `input.accent` the baseline `primary`, U550) and records the run's facts for the accents it chooses.
 5. S16 complete; S19.3 inside `native-theme`.
 6. S18: `property-registry.toml` generated with its drift test; `check_platform_facts_rows.py` and
    `check_preset_citations.py` rewritten to read the facts (S18); `check_todo_citations.py` rewritten to the model's
