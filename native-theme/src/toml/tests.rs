@@ -479,6 +479,29 @@ fn decoration_line_underline_low_reads() {
     );
 }
 
+/// `straight_srgb` is S2.7's straight unrounded colour space and
+/// `straight_srgb8` Qt's truncating one, two members (ADD-A141).
+#[test]
+fn the_straight_colour_spaces_are_two() {
+    use crate::tokens::ColorInterpolation;
+
+    let space = |name: &str| {
+        layer(&format!("[tokens.motion]\ncolor_space = \"{name}\""))
+            .bases
+            .tokens
+            .motion
+            .and_then(|motion| motion.color_space)
+    };
+    assert_eq!(
+        space("straight_srgb"),
+        Some(Value::Stated(ColorInterpolation::StraightSrgb))
+    );
+    assert_eq!(
+        space("straight_srgb8"),
+        Some(Value::Stated(ColorInterpolation::StraightSrgb8))
+    );
+}
+
 /// `filled_ring` names no `FocusKind` (S2.10's *One ring*, ADD-A141):
 /// Breeze's filled frame is a `ring`.
 #[test]

@@ -124,6 +124,11 @@ pub enum ColorInterpolation {
     /// premultiplying, clamped to `0..=255` and truncated toward zero (Qt's
     /// colour interpolator, QML's `ColorAnimation`).
     StraightSrgb8,
+    /// Each channel and the alpha interpolated apart without premultiplying,
+    /// as fractions, with no 8-bit step (WinUI's composition path). Whether
+    /// a channel or the alpha past `0..=1` is clamped is unmeasured, so a
+    /// `t` outside `0..=1` gives no known colour yet.
+    StraightSrgb,
     /// L, a, b and the straight alpha interpolated apart and clamped to
     /// `0..=1`, `±0.5`, `±0.5` and `0..=1`, every Oklab value held as half
     /// floats with a 10-bit alpha, then converted back to sRGB, each channel
