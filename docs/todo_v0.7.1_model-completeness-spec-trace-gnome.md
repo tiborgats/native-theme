@@ -811,7 +811,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.42 | `input.selection_handle.transform @ variant insertion; text_area.selection_handle.transform @ variant insertion` | rule |
 | GN-2.42 | `input.magnifier.fill; text_area.magnifier.fill` | field |
 | GN-2.43 | `component.emoji_chooser.body.{padding,bindings}, component.emoji_chooser.cell.{fill,corners,text}` (the chooser is a `popover`, `gtkemojichooser.c:248`: its box the popover's, the component its content) | component |
-| GN-2.43 | `menu.item.{fill,padding}, menu.item_label.text @ context autocomplete variant @emoji; menu.body.padding @ context autocomplete variant @emoji` (the emoji completion, a popover of its own attached to a text, `gtkemojicompletion.c:66`, `_emoji-chooser.scss:59-96`: its rows and its contents' padding) | rule |
+| GN-2.43 | `menu.body.padding, menu.item.{padding,margin,corners} @ context autocomplete variant @emoji; menu.item.fill, menu.item_label.text.fill @ {focused} context autocomplete variant @emoji / {hover} context autocomplete variant @emoji; menu.item.fill @ {pressed} context autocomplete variant @emoji` (the emoji completion, a popover of its own attached to a text, `gtkemojicompletion.c:66`: its contents' padding and its rows, `_emoji-chooser.scss:59-96`) | rule |
 | GN-2.43 | `button @ context component.emoji_chooser (the section buttons)` | rule |
 | GN-2.44 | `media_controls.play_overlay.{icon,fill,min_height}` | field |
 | GN-2.44 | `media_controls.play_overlay.corners` | field |

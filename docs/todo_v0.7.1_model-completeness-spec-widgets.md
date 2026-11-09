@@ -6442,8 +6442,10 @@ spaces:
 - **may_be_absent:** parts (`kde-breeze` under `cond flavor:widgets` draws Qt's form layout, labels beside fields,
   so its rules there state absent every part `QFormLayout` does not draw, K1.210): `group_title` (`windows-11`: the
   Toolkit's SettingsCard and SettingsExpander, W2-40†, have no group heading; `kde-breeze` by a rule under `cond
-  flavor:widgets`), `group_description` (`windows-11`: W2-40†'s cards have no text between groups; `kde-breeze` by
-  a rule under `cond flavor:widgets`), `field_label`
+  flavor:widgets`; `material-3` where its facts show none, value phase: MAT-L1–MAT-L3 and MAT-L8 name no group
+  heading), `group_description` (`windows-11`: W2-40†'s cards have no text between groups; `kde-breeze` by
+  a rule under `cond flavor:widgets`; `material-3` where its facts show none, value phase, as `group_title`),
+  `field_label`
   (`adwaita`, `windows-11`, `ios-*`, `material-3`: the label beside or above a field is KDE's and SwiftUI's columns
   form's, Q2.47, K-KA-9†, K1.210, MAC-LY02†, their rows' label being `row_title`; `macos-*` by a rule outside
   `columns`), `row_value` (all but `ios-*`, `material-3`: L-23†, MAT-L1, unless the value phase finds a trailing
@@ -6459,9 +6461,9 @@ spaces:
   `@ka_form_card` while the row draws no background, K-KA-7†), `row_separator` (`windows-11`: the expander items'
   top line is `row.stroke`, W2-40†; `kde-breeze` by a rule outside `@cards` and `@ka_form_card`, and by a rule
   under `flat`, whose separators are empty gaps and whose groups' line is a `separator`, Q2.56†, Qt's form layout
-  drawing none either, K1.210; `macos-*` by a rule under `columns`, as `card`); fields: `row_suffix.icon`
-  (`adwaita`, `macos-*`, `windows-11`; `kde-breeze` by a rule outside `@icon_row`, the chosen icon an icon row
-  shows, K-KA-14†), `page.fill` (all but `kde-breeze`: kirigami-addons' page fill, K-KA-6†; `kde-breeze` by a rule
+  drawing none either, K1.210; `macos-*` by a rule under `columns`, as `card`; `material-3` where its facts show
+  no line between the items, value phase, MAT-L1–MAT-L3 naming none), `row_suffix` (all but `kde-breeze`: the
+  chosen icon an icon row shows, K-KA-14†; `kde-breeze` by a rule outside `@icon_row`); fields: `page.fill` (all but `kde-breeze`: kirigami-addons' page fill, K-KA-6†; `kde-breeze` by a rule
   under `cond flavor:widgets`), `row.focus` (`kde-breeze` under `@ka_form_card`: K-KA-2† draws no focus ring),
   `row.fill` (`kde-breeze` by a rule under `variants {@ka_form_card,@ka_radio_selector}`: the radio selector's row draws no
   background, K-KA-25†; the other kirigami-addons rows' rest fill is drawn transparent, K-KA-2†),
@@ -7486,8 +7488,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **Available:** every preset; `kde-breeze` flavour `kirigami` only (Kirigami's SearchField; Qt Widgets' search
   fields are line edits, `input`).
 - **Parts:**
-  - `layer` — the root, which draws nothing, the field's box and, beside it, the search view and its dim, which
-    are not inside the field's box: `bindings` (empty on every preset).
+  - `layer` — the root, which draws nothing and holds the field's box and, beside it, the search view and its dim,
+    which are not inside the field's box: `bindings` (empty on every preset).
   - `body` — the search field's outer box: `padding`, `bindings`.
   - `bar`, in `body` — GNOME's search bar, GN-2.21; Material's search bar container, MAT-N14; UISearchBar's
     background in its default and prominent styles, C-3; the field (an `input` element) and its buttons are queried
@@ -7614,9 +7616,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **Available:** every preset but `macos-*`, `windows-11` (`available = false`: no such control; macOS's sheet is
   `dialog` variant `@sheet`, MAC-D03); `kde-breeze` flavour `kirigami` only (OverlaySheet, BottomDrawer).
 - **Parts:**
-  - `layer` — the root: the layer over the presenter the sheet is presented in, which draws nothing, the box and
-    what lies beside it (the scrim, AdwBottomSheet's bar, iOS's backdrop): `bindings` (empty on every preset: the
-    box binds the sheet's surface set).
+  - `layer` — the root: the layer over the presenter the sheet is presented in, which draws nothing and holds the
+    box and what lies beside it (the scrim, AdwBottomSheet's bar, iOS's backdrop): `bindings` (empty on every
+    preset: the box binds the sheet's surface set).
   - `body` — the sheet's box: `fill`, `stroke` (GNOME's inner outline, GN-2.17), `corners`, `shadow`, `padding` (the content
     padded by the bottom safe area, K-KA-30†), `margin` (Material's detached side sheet's insets from the window's
     edges, which set its height, MAT-N20), `min_width`, `max_width` (Material's on wide windows, MAT-SF03†; the
@@ -7651,7 +7653,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   its top floor the placement's `edge_margin`, Q2.40, K-SF23†; `material-3` and `ios-*` the strategies the placement
   unit states from MAT-SF03†, MAT-N20 and SF-7†, for the bottom-centred sheet, Material's side sheet, docked over
   the window's full height or detached and inset by `body.margin`, iOS's sheet centred in a regular width, and its
-  page and form sheets filling the window in a compact height; stated by rules under the variants and restated by
+  page and form sheets filling the window in a compact height, a strategy S13 lacks being added with that unit as a
+  class 2 change; stated by rules under the variants and restated by
   rules `@ h_size_class c` and `@ v_size_class c`, SF-7†, ADD-A20. ADD-A146; rejected: an `anchor` enum of four
   places each connector turned into a rectangle, placement being parameters and a named strategy implemented once,
   R16, with `BottomSheet` in S13 already, and a top-floor value beside the placement's own margin);
@@ -7706,8 +7709,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     `requires_variants = [@overlay, bottom]`: `bottom` alone is the BottomDrawer, the one bottom sheet KDE's rows
     hold, its look written under `bottom` (K-KA-30†). Rejected: a look written only under a pair of variants
     (`variants {bottom,@standard}`, `variants {bottom,@ka_bottom_drawer}`), which the typed name alone never
-    matched, a form the
-    platform draws as two variants together being one variant by S10's rule.
+    matched, a form the platform draws as two variants together being one variant by S10's rule.
 - **Sizes and densities:** none. Size classes choose the placement: rules `@ h_size_class c` / `@ v_size_class c`
   (Material's wide windows, MAT-SF03†; iOS's compact height, SF-7†); Kirigami's drag handle shows under
   `cond input:touch`, its transient-touch setting (`kirigami@6.31.0 src/templates/OverlaySheet.qml:275`, Q2.39,
@@ -7980,9 +7982,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   presets that repeat keys at the pointer's interval its base is the reference `= values.repeat_interval`, R20, so
   the value is never absent and a connector reads one value); `climb_after_repeats: Value<u32>` (GtkSpinButton grows its
   step by the application's climb rate after this many repeats, GN-3.69†); `field_gap_px: Value<Px>` (the space
-  between the text and `buttons`, stated on every preset: a zero length where they touch, the spin boxes'; macOS's
-  field-to-stepper gap, MAC-N01; on `ios-*`, where UIKit pairs UIStepper with no field of its own, the gap its
-  facts state for a field laid out beside it, pending until they do; ADD-A146); `popup_offset_x_px`,
+  between the text and `buttons`: a zero length where they touch, the spin boxes'; macOS's field-to-stepper gap,
+  MAC-N01; ADD-A146); `popup_offset_x_px`,
   `popup_offset_y_px: Value<Px>` (W2-01); `invalid_input: Value<InvalidInput>`, `InvalidInput { Revert, Keep }` (W2-01).
 - **Variants:**
   - on the widget, typed: `vertical` (orientation: GNOME's vertical spin button, GN-2.24; Windows' popup is not
@@ -8005,14 +8006,14 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   MAC-N01: Breeze's arrow column and NumberBox's spin buttons have none in K2.3 and W2-01). values:
   `popup_offset_x_px` (every preset but `windows-11`, as for `popup`); `popup_offset_y_px` (every preset but
   `windows-11`, as for `popup`); `invalid_input` (every preset but `windows-11`: NumberBox's validation mode,
-  W2-01); `climb_after_repeats`
+  W2-01); `field_gap_px` (`ios-*`: UIKit pairs UIStepper with no field and states no gap for one the application
+  puts beside it, C-4, so the application's layout places the two); `climb_after_repeats`
   (every preset but `adwaita`: GtkSpinButton's climb, GN-3.69†); fields: `increment.stroke` (all but `windows-11`:
   NumberBox's spin-button border, W2-01), `decrement.stroke` (all but `windows-11`, as for `increment.stroke`),
   `body.fill` (`ios-*`, `macos-*`: their stepper frames no text, its drawn box being `buttons`, C-4, MAC-N01),
   `body.stroke` (`ios-*`, `macos-*`, as for `body.fill`), `buttons.fill` (`adwaita`, `kde-breeze`, `windows-11`:
   the spin boxes draw no box round the two halves, the frame being `body`'s or the nested input's, GN-2.24, K2.3,
-  W2-01), `buttons.stroke` (`adwaita`, `kde-breeze`, `windows-11`, as for `buttons.fill`). The `field_gap_px` is
-  stated on every preset (above).
+  W2-01), `buttons.stroke` (`adwaita`, `kde-breeze`, `windows-11`, as for `buttons.fill`).
 - **State-model source:** GNOME `_spin-button.scss`, `gtkspinbutton.c`; iOS `UIStepper` + `UIControl.State`; KDE
   Breeze `CC_SpinBox` branches (per-arrow hover) and `SpinBox.qml`; macOS `NSStepper` cell states and sizes; Windows
   NumberBox and its spin-button visual states.
@@ -8034,8 +8035,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `@ka_onboarding` (`requires_variants = ["@ka_onboarding"]`, K-KA-45†).
 - **Parts:**
   - `layer` — the root: the layer the tip is presented in (over the window, or its place in the content under
-    `inline`), which draws nothing, the box and what lies beside it (kirigami-addons' frame and blur): `bindings`
-    (empty on every preset: the box binds its set).
+    `inline`), which draws nothing and holds the box and what lies beside it (kirigami-addons' frame and blur):
+    `bindings` (empty on every preset: the box binds its set).
   - `body` — the tip's box: `fill` (fill or material), `stroke`, `corners`, `shadow`, `padding`, `min_width`,
     `max_width` (W2-09; K-KA-45†), `min_height` (kirigami-addons' tip, K-KA-45†), `bindings` (kirigami-addons'
     Tooltip set, K-KA-45†).
@@ -8397,9 +8398,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - The form of an element with no variant (ADD-A146): on `windows-11` SelectorBar (W2-27) is the base, its rest
     values and its state rules both stated with no variant, and `@pivot` and `@navigation_top` are its other forms,
     the three one at a time (`[@pivot, @navigation_top]` one `exclusive_variants` group). Rejected: a keyed variant
-    for SelectorBar too, under which its rest values
-    stood in the base and its state rules under the variant, so a portable `view_switcher` drew SelectorBar at rest
-    with no hover or selected look.
+    for SelectorBar too, under which its rest values stood in the base and its state rules under the variant, so a
+    portable `view_switcher` drew SelectorBar at rest with no hover or selected look.
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** none of its own (the needs-attention dot is a `badge`, variant `attention`, in
   `context view_switcher.item`, GN-1.41, GN-2.33); state flags used: selected, hover, pressed, disabled.
@@ -8430,9 +8430,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 
 - **Kind:** typed widget: GNOME's GtkAssistant (GN-RL01†, GN-2.51), KDE's QWizard in its classic style (K2.22).
   Its host is its ancestor on each preset, as an `about_dialog`'s dialog is: on `adwaita` a `window`, GtkAssistant
-  being a window whose title bar holds the buttons under `@header_bar` (GN-RL01†), so the wizard is queried in
-  `context window.content`; on `kde-breeze` QWizard, a QDialog, whose host the value phase states from its facts,
-  a `dialog` (`separate_window`) or a `window` (K2.22; ADD-A146).
+  being a window, the wizard its content and its title bar holding the buttons under `@header_bar` (GN-RL01†); on
+  `kde-breeze` QWizard is a QDialog, whose host the value phase states from its facts, a `dialog`
+  (`separate_window`) or a `window` (K2.22; ADD-A146).
 - **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: no such
   control; Windows' Aero wizard is Win32, R1.3); `kde-breeze` flavour `widgets` only (QWizard).
 - **Parts:**
@@ -10250,7 +10250,7 @@ The conditions these rows added to S7.1 (ADD-A04 … ADD-A11, ADD-A76, ADD-A83),
 | `Freeform` | an Android desktop-windowing (freeform) window, with its own corner radius (ADD-A83) | MAT-W5† |
 | `Posture(Posture)` | a foldable's posture (Jetpack WindowManager): two stacked panes in tabletop (ADD-A83) | MAT-P3-13† |
 | `DeviceModel(Key)` | the device model, where a measured value differs per model: the display's corner radius (ADD-A83) | W-6, X-CR-4 |
-| `SystemSetting(Key)` | a platform-specific switch the reader reads, declared by the preset in `[declare] conditions` (the traceability's `cond system_setting:<key>` lines are the full set, each with its row). A key is declared by the preset with the first unit whose rule selects on it, S12 refusing a declared key no rule selects on, and the reader's read of it comes with that unit's readers step, so the tokens-and-conditions unit brings only the keys its own token rules select on (ADD-A146; rejected: every key declared at once by that unit, which S12 refuses, or an exemption from S12 for them). A keyed condition holds by its key under any preset that declares it, whichever reader set it (S7.1, S9.5), so one key names one setting on every platform that declares it, and settings that differ take different keys (ADD-A146; rejected: the one key `ui_effects` for Win32's `SPI_GETUIEFFECTS` and KDE's `GraphicEffectsLevel`, under which `windows-11` on a KDE desktop selected its rules by KDE's level). The keys: Win32 `menu_fade`, `tooltip_fade`, `selection_fade`, `combo_animation`, `listbox_smooth_scroll`, `hot_tracking`, `drop_shadow`, `ui_effects` (W3-53†), `menu_animation` (W1-054), `tooltip_animation` (W1-058), `menu_drop_alignment` (`SPI_GETMENUDROPALIGNMENT`, W3-55†), `accent_on_title_bars` (W1-001, W1-013), `material_policy` (W3-07), `show_sounds` (W-P3-11†, declared `for_applications = true`: only applications read it, through `Theme::system`, S10); KDE `graphic_effects_level` (kdeglobals `[KDE] GraphicEffectsLevel` above zero, K-P3-24†), `stacked_widget_transitions` (breezerc `StackedWidgetTransitionsEnabled`, K3.31), `dock_widget_draw_frame` (breezerc `DockWidgetDrawFrame`, K2.10), `outline_enabled` (breezerc `[Common] OutlineEnabled`, K1.9), `rounded_corners`, `no_borders` (K1.10, K-P3-1†), `no_side_borders` (K-P3-1†), `draw_border_on_maximized`, `hide_title_bar` (K1.15), `title_bar_gradient` (K1.14), `outline_close_button` (K1.7), `menu_item_strong_focus` (K1.62), `show_icons_in_menus` (K1.70), `slider_tick_marks` (K1.103), `toolbar_draw_item_separator` (K1.156), `side_panel_draw_frame` (K1.140), `view_draw_focus_indicator` (K1.175), `view_draw_tree_branch_lines` (K1.176), `qqc2_desktop_style` (K-KA-40†), `single_click` (kdeglobals `[KDE] SingleClick`: the file views' hover feedback, K3.73); macOS `wallpaper_tinting` (MAC-W08, MAC-X27) and `title_icons` (MAC-X31†); iOS `glass_look` (X-MT-11) and `pointer_animations` (the Pointer Animations setting, P3-12†, X-PH-1) | W3-53†, W1-054, W1-058, W3-55†, W1-001, W1-013, W3-07, W-P3-11†, K-P3-24†, K3.31, K2.10, K1.9, K1.10, K-P3-1†, K1.15, K1.14, K1.7, K1.62, K1.70, K1.103, K1.156, K1.140, K1.175, K1.176, K-KA-40†, K3.73, MAC-W08, MAC-X27, MAC-X31†, X-MT-11, P3-12† |
+| `SystemSetting(Key)` | a platform-specific switch the reader reads, declared by the preset in `[declare] conditions` (the traceability's `cond system_setting:<key>` lines are the full set, each with its row). A key is declared by the preset with the first unit whose rule selects on it, S12 refusing a declared key no rule selects on, and the reader's read of it comes with that unit's readers step, so the tokens-and-conditions unit brings only the keys its own token rules select on (ADD-A146; rejected: every key declared at once by that unit, which S12 refuses, or an exemption from S12 for them). A keyed condition holds by its key under any preset that declares it, whichever reader set it (S7.1, S9.5), so one key names one setting on every platform that declares it, and settings that differ take different keys (ADD-A146; rejected: the one key `ui_effects` for Win32's `SPI_GETUIEFFECTS` and KDE's `GraphicEffectsLevel`, under which `windows-11` on a KDE desktop selected its rules by KDE's level). The keys: Win32 `menu_fade`, `tooltip_fade`, `selection_fade`, `combo_animation`, `listbox_smooth_scroll`, `hot_tracking`, `drop_shadow`, `ui_effects` (W3-53†), `menu_animation` (W1-054), `tooltip_animation` (W1-058), `menu_drop_alignment` (`SPI_GETMENUDROPALIGNMENT`, W3-55†), `accent_on_title_bars` (W1-001, W1-013), `material_policy` (W3-07), `show_sounds` (W-P3-11†, declared `for_applications = true`: only applications read it, through `Theme::system`, S10); KDE `graphic_effects_level` (kdeglobals `[KDE] GraphicEffectsLevel` other than zero, K-P3-24†), `stacked_widget_transitions` (breezerc `StackedWidgetTransitionsEnabled`, K3.31), `dock_widget_draw_frame` (breezerc `DockWidgetDrawFrame`, K2.10), `outline_enabled` (breezerc `[Common] OutlineEnabled`, K1.9), `rounded_corners`, `no_borders` (K1.10, K-P3-1†), `no_side_borders` (K-P3-1†), `draw_border_on_maximized`, `hide_title_bar` (K1.15), `title_bar_gradient` (K1.14), `outline_close_button` (K1.7), `menu_item_strong_focus` (K1.62), `show_icons_in_menus` (K1.70), `slider_tick_marks` (K1.103), `toolbar_draw_item_separator` (K1.156), `side_panel_draw_frame` (K1.140), `view_draw_focus_indicator` (K1.175), `view_draw_tree_branch_lines` (K1.176), `qqc2_desktop_style` (K-KA-40†), `single_click` (kdeglobals `[KDE] SingleClick`: the file views' hover feedback, K3.73); macOS `wallpaper_tinting` (MAC-W08, MAC-X27) and `title_icons` (MAC-X31†); iOS `glass_look` (X-MT-11) and `pointer_animations` (the Pointer Animations setting, P3-12†, X-PH-1) | W3-53†, W1-054, W1-058, W3-55†, W1-001, W1-013, W3-07, W-P3-11†, K-P3-24†, K3.31, K2.10, K1.9, K1.10, K-P3-1†, K1.15, K1.14, K1.7, K1.62, K1.70, K1.103, K1.156, K1.140, K1.175, K1.176, K-KA-40†, K3.73, MAC-W08, MAC-X27, MAC-X31†, X-MT-11, P3-12† |
 
 Conditions the rows do not need: a "colour filters" or "invert" condition (system-applied, R1.1: K3.93, W3-56†,
 MAC-P4-3†, X-A11-8, MAT-X35†), and a "not responding" condition or an attention mark the shell or the compositor
@@ -10667,7 +10667,7 @@ and the owning group's name where the kinds are the same.
 | colour picker | Windows, KDE, GNOME | typed `color_picker` |
 | media transport controls | macOS, Windows, GNOME, iOS | typed `media_controls` |
 | page control/pager | Windows, KDE, GNOME, iOS | typed `page_indicator` |
-| preference rows/boxed list | GNOME, KDE, macOS, Windows (CTK) | typed `form`; KDE's list section header and inline view header are drawn inside `list` |
+| preference rows/boxed list | GNOME, KDE, macOS, Windows (CTK); iOS and Material through their lists (L-23†, MAT-L1–MAT-L3, MAT-L8) | typed `form`, declared by every preset (ADD-A146); KDE's list section header and inline view header are drawn inside `list` |
 | sheet/bottom sheet | KDE, GNOME, Material, iOS | typed `sheet` |
 | split button | macOS, Windows, GNOME, Material, KDE (K1.155's `MenuButtonPopup`, kirigami-addons' K-KA-27†) | typed `split_button` |
 | status page/placeholder | macOS, KDE, GNOME, iOS | typed `status_page` |
@@ -10690,7 +10690,7 @@ and the owning group's name where the kinds are the same.
 | button group/toggle group | KDE (Q2.3 is a DelayButton), Material | Material's button group is drawn inside `segmented_control`; KDE's DelayButton is a one-platform kind: keyed component `delay_button` |
 | composite dialogs | GNOME, KDE | in where the toolkit draws them in the application's process (R1.1): GNOME's GtkPrintUnixDialog, GtkPageSetupUnixDialog and GtkAppChooserDialog where the application builds them or GtkPrintDialog finds no Print portal (`gtkprintdialog.c:1502-1508`, GN-2.57†): a `window` with the content variants `print`, `page_setup`, `app_chooser` holding a `dialog` with standard widgets, GtkDialog's action area `dialog`'s; KDE's QPrintDialog, QPageSetupDialog, KOpenWithDialog, Qt/KIO widget dialogs: `dialog` with standard widgets (K-P3-9†); the page preview both print dialogs draw is the typed `page_preview`. Out where a portal draws them in its own process (R1.1): xdg-desktop-portal-gnome's (GN-P4-3†), xdg-desktop-portal-kde's in a sandbox (K-P3-9†) |
 | editable label | GNOME, iOS | drawn inside `input` (GNOME's cross-check: GN-2.45 belongs to `[input]`) |
-| emoji chooser | GNOME (KDE's plasma-emojier is a separate Plasma program: out, R1.1) | keyed component `emoji_chooser` |
+| emoji chooser | GNOME (KDE's plasma-emojier is a separate Plasma program: out, R1.1) | keyed component `emoji_chooser`, the content of a `popover`; GTK's emoji completion is `autocomplete` under `adwaita`'s `@emoji` (ADD-A146) |
 | FAB | KDE (RoundButton), Material | drawn inside `button` (a round button and Material's FAB styles are button variants); Material's FAB menu is a keyed component `fab_menu` |
 | full-screen dialog | KDE, Material | drawn inside `dialog` |
 | help button | macOS, KDE | drawn inside `button` (the typed `help`) |

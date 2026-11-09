@@ -189,6 +189,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.64 | `menu.body.corners` | field |
 | K1.64 | `menu.body.corners @ cond not_composited (ADD-A01)` | rule |
 | K1.64 | `menu.body.corners @ {placed_below} context any menu_bar / {placed_above} context any menu_bar / {placed_below} context any combo_box / {placed_above} context any combo_box (the seamless edge)` | rule |
+| K1.64 | `menu_bar.values.menu_placement` (where a title's menu goes, the bar's value, whose result sets the menu's `placed_below` and `placed_above`; its strategy the value phase's) | placement |
 | K1.64 | `menu flags placed_below, placed_above (shared, set by the connector from the placement result)` | flag |
 | K1.65 | `menu.body.fill (alpha by MenuOpacity; kwin_blur material layer)` | field |
 | K1.65 | `menu.body.stroke` | field |
@@ -981,7 +982,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q2.50 | `toast.body.max_width (= min(mul(token.params.layout.grid_unit, <n>), mul(element.window_width, <fraction>)), ADD-A78) @ cond flavor:kirigami` | rule |
 | Q2.51 | `toast.values.durations (short, default, long)` | field |
 | Q2.52 | `toast.values.presentations (Appear: Fade and Translate rise; Disappear: Fade, Translate drop and Scale; @displace: the displaced toasts; each = token.motion.durations.long with its timing; ADD-B10, ADD-A25, ADD-A26)` | field |
-| Q2.53† | `edit_menu.body.fill, edit_menu.body.corners, edit_menu.body.shadow, edit_menu.body.padding @ cond input:touch cond flavor:kirigami` | rule |
+| Q2.53† | `edit_menu.body.fill, edit_menu.body.corners, edit_menu.body.shadow, edit_menu.body.padding @ cond tablet_mode cond flavor:kirigami` (the bar is loaded under Kirigami's tablet mode, `qqc2-desktop-style@6.31.0 org.kde.desktop/private/MobileTextActionsToolBar.qml:17-20`, not by its touch-input setting) | rule |
 | Q2.53† | `button.icon.glyph (ThemeIcon), button.body.fill @ variants {tool,icon_only} context edit_menu (Cut, Copy, Paste)` (in a password field Cut and Copy are left out: which commands the field offers is the content the connector supplies, so the menu holds no button for them, S6.3; no absence rule) | rule |
 | Q2.53† | `edit_menu.values.placement (KirigamiTextActions: centred on the selection's start, above, else below its end; its gap the offset below the selection's end, MobileTextActionsToolBarImpl.qml:42-48)` | placement |
 | Q2.53† | `menu @ context any input / menu @ context any text_area (the desktop context menu)` | rule |
