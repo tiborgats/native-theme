@@ -1119,7 +1119,8 @@ pub enum Timing {
     Linear,
     Steps { count: u32, jump: StepJump },
     Spring { mass: f32, stiffness: f32, damping_ratio: f32,   // the damping as a ratio of critical (below)
-             initial_velocity: f32, rest_epsilon: f32, clamp: bool,
+             initial_velocity: f32, rest_epsilon: f32, clamp: bool,   // the velocity's and the threshold's units
+                                              // are the engine's (*How a spring runs*, below; ADD-A146)
              time_scale: Value<f32> },        // `= token.motion.speed_factor` where the platform scales springs (1
                                               // under the Compose engines, which scale the play time),
                                               // else 1; zero jumps to the end (R9)
@@ -1331,10 +1332,11 @@ and appear as layers do, its other values the drawn end's throughout, there bein
 entering from its hidden style (*A part not shown at rest*, below); a block with no paint of its own (an icon under
 `Original`, S2.9) is one value with no interpolation, drawn until the run leaves its delay or from then. Rejected: the rule per engine, each to
 its source (Compose's text-style interpolation takes such a value's new one at half the fraction,
-`androidx@e4d933c9 compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/SpanStyle.kt:732`, the one
-other reading a pinned source states, which no fact meets yet: a toolkit shown to draw otherwise where a fact needs
-it is a class 2 change, made with that fact); the new value at the change whatever the delay (the end drawn before
-a delayed run has started, which GTK does not draw).
+`androidx@e4d933c9 compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/SpanStyle.kt:732`, another
+reading a pinned source states: a rule per engine, its tests and its citations for a difference of half a run on
+a leaf that cannot move; a toolkit shown to draw otherwise where a fact needs it is a class 2 change, made with
+that fact); the new value at the change whatever the delay (the end drawn before a delayed run has started, which
+GTK does not draw).
 
 **Colour interpolation** (`token.motion.color_space`, S4.1, R9, ADD-A125). A transition, a presentation step and a
 loop's keyframes move a colour, a paint layer's included, through the intermediate colours of the space its toolkit
@@ -1590,13 +1592,15 @@ hover layer, MAT-I11; R1.6's reading). The members:
     stiffness 1500 at the value type's default threshold, the delay dropped (`Transition.kt:1615-1626`, `:1644-1659`,
     `:1757`; `AnimationSpec.kt:834-838`; `VectorizedAnimationSpec.kt:801`, `:839`), so a checkbox unchecked while its
     mark still draws retracts by that spring, not by its delayed snap (`material3/…/Checkbox.kt:595-612`).
-  - `ComposeShapeMorph` (ADD-A146; ledger queue #137), Compose's `AnimatedShapeState`, which morphs the buttons',
-    icon buttons' and toggle buttons' corners between their shapes (`androidx@e4d933c9
-    compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:47-121`): a
+  - `ComposeShapeMorph` (ADD-A146; ledger queue #137), Compose's `AnimatedShapeState`, which morphs a control's
+    corner-based shape between its states (`androidx@e4d933c9
+    compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/AnimatedShape.kt:47-121`,
+    `:171-182`; the buttons' pressed shape, `material3/…/Button.kt:1921-1938`, and the icon, toggle and split
+    buttons', the chips', the list items' and the menus' through the same state): a
     progress from 0 to 1 between a start shape and a target shape, each corner the two shapes' corner interpolated
     at it (`:66-79`), as `ComposeAnimatable` in everything but where a run starts while one runs. A change back to
-    the shape the running morph started from, a reversal, swaps the two shapes, sets the progress to 1 less what it
-    was and runs it on to 1 at the running velocity negated, so the corners turn where they are drawn at the speed
+    the shape the running morph started from, a reversal, swaps the two shapes, sets the progress `p` to `1 − p`
+    and runs it on to 1 at the running velocity negated, so the corners turn where they are drawn at the speed
     they had (`:84-95`); a change to any other shape takes the corners drawn as its start and runs the progress
     from 0 as a run from rest (`:96-120`, `snapTo` ending the run, whose velocity `animateTo` then reads as zero,
     `Animatable.kt:354-361`), where `ComposeAnimatable` would keep the velocity; a change to the shape it already
@@ -1655,7 +1659,7 @@ hover layer, MAT-I11; R1.6's reading). The members:
     `CommonStyles/MediaTransportControls_themeresources.xaml:122`, `:134`,
     `CommandBarFlyout/CommandBarFlyout_themeresources.xaml:655-660`). Whether the compositor's handoff also matches the velocity, and what a theme switch does,
     are measured (the catalogue's Open items, W-P3-16†), as are what it does under each presence and as animations
-    turn off; until those two are measured the member ignores the presence, as `QtQuick` does, and lets a running
+    turn off (register U185); until those two are measured the member ignores the presence, as `QtQuick` does, and lets a running
     transition run on as animations turn off: states of the build, which no fact claims (ADD-A146).
   - `WinUiAnimatedIcon`, WinUI's `AnimatedIcon`, which plays the segment of its source's animation between the
     markers of the state it leaves and the one it enters (`src/controls/dev/AnimatedIcon/AnimatedIcon.cpp:313-330`;
