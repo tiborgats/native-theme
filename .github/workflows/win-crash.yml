@@ -16,10 +16,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: "repro sta", mode: plain5, args: "winicons::tests::stock_icons_load_while_another_thread_uninitializes_an_sta --exact" }
-          - { name: "repro mta", mode: plain5, args: "winicons::tests::stock_icons_load_while_another_thread_uninitializes_the_mta --exact" }
-          - { name: "repro mta cdb", mode: cdb, args: "winicons::tests::stock_icons_load_while_another_thread_uninitializes_the_mta --exact" }
+          - { name: "repro mta", mode: plain5, args: "winicons::tests::stock_icons_load_while_another_thread_leaves_the_mta --exact" }
+          - { name: "repro mta cdb", mode: cdb, args: "winicons::tests::stock_icons_load_while_another_thread_leaves_the_mta --exact" }
           - { name: "drop+stock", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::tests::stock winicons::tests::load_by_name_stock_icon winicons::tests::rgba_dimensions_correct" }
+          - { name: "parallel", mode: plain5, args: "--skip facts_gate --exact" }
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/evidence

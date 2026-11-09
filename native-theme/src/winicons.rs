@@ -982,19 +982,19 @@ mod tests {
         });
     }
 
-    /// Every stock icon role loads, twenty times over, while another thread
-    /// of the process initializes COM as `apartment` and uninitializes it
-    /// again and again, as the process's other COM users may: the Windows
-    /// watcher's thread does each time a subscription starts and drops. The
-    /// last uninitialization in the process unloads the COM servers it
-    /// loaded (combase's `ProcessUninitialize`), the shell's server a load
-    /// was running in among them (CI run 42554706381).
+    /// Every stock icon role loads, two hundred times over, while another
+    /// thread joins the process's multithreaded apartment and leaves it again
+    /// and again. A thread that has not initialized COM uses it as a member
+    /// of the MTA while one exists, and the last thread to uninitialize COM
+    /// in the process unloads the servers COM loaded (combase's
+    /// `ProcessUninitialize`), the shell's server a load was running in among
+    /// them (CI run 42554706381, where the Windows watcher's thread,
+    /// subscribed and dropped a thousand times, uninitialized it).
     #[cfg(target_os = "windows")]
-    fn stock_icons_load_while_another_thread_uninitializes_com(
-        apartment: windows::Win32::System::Com::COINIT,
-    ) {
+    #[test]
+    fn stock_icons_load_while_another_thread_leaves_the_mta() {
         use std::sync::atomic::{AtomicBool, Ordering};
-        use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize};
+        use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize};
 
         /// Sets its flag when dropped: the loads' end, or their unwinding.
         struct SetOnDrop<'a>(&'a AtomicBool);
@@ -1012,14 +1012,14 @@ mod tests {
                     // is balanced by one CoUninitialize on this thread, with
                     // no COM object created between them.
                     unsafe {
-                        if CoInitializeEx(None, apartment).is_ok() {
+                        if CoInitializeEx(None, COINIT_MULTITHREADED).is_ok() {
                             CoUninitialize();
                         }
                     }
                 }
             });
             let loading = SetOnDrop(&done);
-            let loads: Vec<_> = (0..20)
+            let loads: Vec<_> = (0..200)
                 .flat_map(|_| stock_roles())
                 .map(|role| (role, load_role(role), last_failure()))
                 .collect();
@@ -1031,22 +1031,6 @@ mod tests {
                 );
             }
         });
-    }
-
-    #[cfg(target_os = "windows")]
-    #[test]
-    fn stock_icons_load_while_another_thread_uninitializes_an_sta() {
-        stock_icons_load_while_another_thread_uninitializes_com(
-            windows::Win32::System::Com::COINIT_APARTMENTTHREADED,
-        );
-    }
-
-    #[cfg(target_os = "windows")]
-    #[test]
-    fn stock_icons_load_while_another_thread_uninitializes_the_mta() {
-        stock_icons_load_while_another_thread_uninitializes_com(
-            windows::Win32::System::Com::COINIT_MULTITHREADED,
-        );
     }
 
     #[cfg(target_os = "windows")]
