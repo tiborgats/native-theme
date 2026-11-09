@@ -168,6 +168,18 @@ pub(crate) enum SchemeFile {
     Unreadable(String),
 }
 
+/// The colours the palette is built from where kdeglobals has no
+/// `[Colors:View]` group, as the reader found them ([`palette_colors`]).
+pub(crate) struct PaletteColors {
+    /// The file found, read as kdeglobals is; an empty file, every colour
+    /// KColorScheme's default, where none is found or the one found cannot
+    /// be read.
+    pub(crate) colors: Ini,
+    /// Why the file found cannot be read, naming it; `None` where it was
+    /// read or none was found (S9.3).
+    pub(crate) unreadable: Option<String>,
+}
+
 /// What the KDE reader read, in plain types: built from the files in
 /// production, directly in tests.
 pub(crate) struct KdeData {
@@ -176,7 +188,7 @@ pub(crate) struct KdeData {
     /// The colours the palette is built from where kdeglobals has no
     /// `[Colors:View]` group ([`palette_colors`]); `None` where it has one,
     /// kdeglobals' own colours being the palette's.
-    pub(crate) colors: Option<Ini>,
+    pub(crate) colors: Option<PaletteColors>,
     /// The scheme file kdeglobals names.
     pub(crate) scheme_file: SchemeFile,
     /// The font DPI: `Xft.dpi`, on an X11 session
@@ -211,10 +223,12 @@ pub(crate) struct KdeData {
 /// kdeglobals (S9.3); the rest from kdeglobals.
 ///
 /// The status's fallback names the scheme file where it could not be read
-/// and kdeglobals stood in for it (S9.3).
+/// and kdeglobals stood in for it, else the palette's colours file where it
+/// could not be read and KColorScheme's defaults stood in for it (S9.3,
+/// the first failure where both, S1).
 pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
     let ini = &data.kdeglobals;
-    let colors = data.colors.as_ref().unwrap_or(ini);
+    let colors = data.colors.as_ref().map_or(ini, |palette| &palette.colors);
     let scheme = scheme::scheme(colors);
     let mut state = ReaderState::new(scheme, UNSCALED);
     let factor = animation_duration_factor(ini);
@@ -263,7 +277,7 @@ pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
         .entries
         .extend(inactive_results(colors, scheme));
 
-    let fallback = match &data.scheme_file {
+    let scheme_failure = match &data.scheme_file {
         SchemeFile::Unnamed => None,
         SchemeFile::Read(file) => {
             scheme_inputs(file, scheme, &mut own_bases);
@@ -271,9 +285,16 @@ pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
         }
         SchemeFile::Unreadable(why) => {
             scheme_inputs(ini, scheme, &mut own_bases);
-            Some(ReaderFailure::Platform(why.clone()))
+            Some(why)
         }
     };
+    let colors_failure = data
+        .colors
+        .as_ref()
+        .and_then(|palette| palette.unreadable.as_ref());
+    let fallback = scheme_failure
+        .or(colors_failure)
+        .map(|why| ReaderFailure::Platform(why.clone()));
 
     let keyed: Vec<(Key, BlockPatch<_>)> = [
         (crate::key!("toolbar"), font("toolBarFont")),
@@ -503,7 +524,9 @@ fn icon_sizes(index: &Ini) -> IconSizeTokensPatch {
 ///
 /// Fails only where no kdeglobals file can be read
 /// (`ReaderFailure::Platform`, S9.3); a scheme file that cannot be found or
-/// read is the status's fallback, kdeglobals standing in for it.
+/// read is the status's fallback, kdeglobals standing in for it, as is the
+/// palette's colours file found but not readable, KColorScheme's defaults
+/// standing in for it.
 pub(crate) fn read(own: PresetId) -> Result<Reading, ReaderFailure> {
     let files = kdeglobals_files();
     let kdeglobals = read_kconfig_files(&files).ok_or_else(|| {
@@ -571,12 +594,20 @@ fn icon_base_dirs(data_dirs: &[std::path::PathBuf]) -> Vec<std::path::PathBuf> {
 /// - Breeze Light's, `color-schemes/BreezeLight.colors`
 ///   ([`FALLBACK_COLOR_SCHEME`]).
 ///
-/// A name that is not one plain path component names no file. The file is
-/// read as kdeglobals is ([`read_kconfig_files`]): one that cannot be read,
-/// and no file found, are an empty file, every colour KColorScheme's
-/// default. `None` where kdeglobals has a `[Colors:View]` group, from which
+/// Each is found as the scheme file is ([`read_scheme_file`]): a name that
+/// is not one plain path component names no file, and an empty one none,
+/// the next candidate taken as for one not found. The file found is read as
+/// kdeglobals is ([`read_kconfig_file`]). Where none is found, the colours
+/// are an empty file's, every colour KColorScheme's default, with nothing
+/// unreadable; where the one found cannot be read, they are an empty
+/// file's too and no further candidate is taken (Qt locates by existence),
+/// the failure naming the file, the status's fallback ([`build_reading`]).
+/// `None` where kdeglobals has a `[Colors:View]` group, from which
 /// plasma-integration builds the palette itself (`:445-446`).
-pub(crate) fn palette_colors(kdeglobals: &Ini, data_dirs: &[std::path::PathBuf]) -> Option<Ini> {
+pub(crate) fn palette_colors(
+    kdeglobals: &Ini,
+    data_dirs: &[std::path::PathBuf],
+) -> Option<PaletteColors> {
     if has_group(kdeglobals, "Colors:View") {
         return None;
     }
@@ -598,10 +629,35 @@ pub(crate) fn palette_colors(kdeglobals: &Ini, data_dirs: &[std::path::PathBuf])
         .into_iter()
         .flatten()
         .find_map(|path| locate(data_dirs, &path));
-    Some(
-        file.and_then(|file| read_kconfig_files(&[file]))
-            .unwrap_or_else(create_kde_parser),
-    )
+    let colors = match file {
+        None => PaletteColors {
+            colors: create_kde_parser(),
+            unreadable: None,
+        },
+        Some(file) => match read_kconfig_file(&file) {
+            Ok(colors) => PaletteColors {
+                colors,
+                unreadable: None,
+            },
+            Err(error) => PaletteColors {
+                colors: create_kde_parser(),
+                unreadable: Some(format!(
+                    "the palette's colours file {} cannot be read ({error}); KColorScheme's defaults stand in for it",
+                    file.display()
+                )),
+            },
+        },
+    };
+    Some(colors)
+}
+
+/// The KConfig file `file` read as KConfig reads it
+/// ([`read_kconfig_bytes`]); the error where it cannot be read.
+fn read_kconfig_file(file: &std::path::Path) -> std::io::Result<Ini> {
+    let bytes = std::fs::read(file)?;
+    let mut ini = create_kde_parser();
+    read_kconfig_bytes(&mut ini, &bytes);
+    Ok(ini)
 }
 
 /// The file `relative` in the first of `data_dirs` where it is a file, as
@@ -635,17 +691,10 @@ pub(crate) fn read_scheme_file(kdeglobals: &Ini, data_dirs: &[std::path::PathBuf
             "the colour scheme `{name}` names no scheme file; kdeglobals stands in for it"
         ));
     }
-    let files: Vec<std::path::PathBuf> = data_dirs
-        .iter()
-        .map(|dir| dir.join("color-schemes").join(format!("{name}.colors")))
-        .collect();
-    match files.iter().find(|file| file.is_file()) {
-        Some(file) => match std::fs::read(file) {
-            Ok(bytes) => {
-                let mut ini = create_kde_parser();
-                read_kconfig_bytes(&mut ini, &bytes);
-                SchemeFile::Read(ini)
-            }
+    let relative = format!("color-schemes/{name}.colors");
+    match locate(data_dirs, &relative) {
+        Some(file) => match read_kconfig_file(&file) {
+            Ok(ini) => SchemeFile::Read(ini),
             Err(error) => SchemeFile::Unreadable(format!(
                 "the colour scheme `{name}`'s file {} cannot be read ({error}); kdeglobals stands in for it",
                 file.display()
@@ -653,9 +702,9 @@ pub(crate) fn read_scheme_file(kdeglobals: &Ini, data_dirs: &[std::path::PathBuf
         },
         None => SchemeFile::Unreadable(format!(
             "the colour scheme `{name}` has no scheme file ({}); kdeglobals stands in for it",
-            files
+            data_dirs
                 .iter()
-                .map(|file| file.display().to_string())
+                .map(|dir| dir.join(&relative).display().to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
         )),

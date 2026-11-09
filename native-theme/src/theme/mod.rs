@@ -237,10 +237,10 @@ impl Theme {
     /// then), which a palette replacing it keeps. It applies its source for
     /// the current preset, a KDE port on `kde-breeze`, under the palette's
     /// schemes, chosen again on every change of the stack: while it
-    /// applies, the reader's or stand-in's colours, colour inputs (but a
-    /// KDE port's accent inputs, which stay in force: the user's accent is
-    /// derived over the port's scheme inputs, R2.6), KDE's scheme lists and
-    /// `token.kde` are left out. At a scheme the palette lacks it is
+    /// applies, the reader's or stand-in's colours, inputs (every input it
+    /// states, but a KDE port's accent inputs, which stay in force: the
+    /// user's accent is derived over the port's scheme inputs, R2.6), KDE's
+    /// three scheme lists and `token.kde` are left out. At a scheme the palette lacks it is
     /// suspended, and under a contrast condition it states no colours for
     /// it is skipped; the reader's or stand-in's colours apply then.
     ///

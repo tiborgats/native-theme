@@ -1028,6 +1028,69 @@ fn combination_mapping_palette() {
     assert_eq!(problems(&stated, &tinting), NONE);
 }
 
+/// A mapping palette's tinting keys follow the preset's
+/// `token.kde.tint_factor` alone (S8, S12; ADD-A145): a reader whose scheme
+/// tints beneath it demands no key a non-tinting preset does not, and a
+/// reader that does not tint leaves a tinting preset's demand as it is.
+#[test]
+fn combination_mapping_palette_reads_the_presets_tint() -> Result<(), Box<dyn std::error::Error>> {
+    use super::combos::mapping_palette;
+    use super::stack::Stack;
+    let decl = declare(
+        "surface_sets = [\"window\"]\ninputs = [\"accent\", \"inactive.window.foreground_active\"]",
+    );
+    let roles = "[colors.light.surfaces.window]\nforeground_active = \"#000001\"\n\
+                 link = \"#000002\"\ndecoration_focus = \"#000003\"\ndecoration_hover = \"#000004\"\n\
+                 background = \"#000005\"";
+    let problems = |preset_tint: &str, reader_tint: &str| -> Result<Vec<String>, LayerError> {
+        let preset = Layer::from_toml(&format!(
+            "{roles}\n[tokens.kde]\ntint_factor = {preset_tint}"
+        ))?;
+        let reader = Layer::from_toml(&format!("[tokens.kde]\ntint_factor = {reader_tint}"))?;
+        let palette = Layer::from_toml(
+            "[colors.light.surfaces.window]\nforeground_active = \"#100001\"\n\
+             link = \"#100002\"\ndecoration_focus = \"#100003\"\ndecoration_hover = \"#100004\"\n\
+             [inputs.\"inactive.window.foreground_active\"]\nlight = \"#000006\"",
+        )?;
+        let layers = [
+            Stacked {
+                layer: &preset,
+                kind: LayerKind::Preset,
+                left_out: None,
+            },
+            Stacked {
+                layer: &reader,
+                kind: LayerKind::Reader,
+                left_out: None,
+            },
+            Stacked {
+                layer: &palette,
+                kind: LayerKind::Palette,
+                left_out: None,
+            },
+        ];
+        let cx = Context {
+            declarations: &decl,
+            preset: None,
+            kind: LayerKind::Palette,
+            reader_accent_left_out: false,
+            below: &[],
+        };
+        Ok(mapping_palette(&Stack::new(&layers, cx), 2)
+            .iter()
+            .map(Problem::to_string)
+            .collect())
+    };
+    assert_eq!(problems("\"none\"", "0.5")?, NONE);
+    assert_eq!(
+        problems("0.5", "\"none\"")?,
+        ["colors.light.surfaces.window.background: \
+             `colors.light.surfaces.window.background` left to the preset's value under \
+             the palette"]
+    );
+    Ok(())
+}
+
 /// S9.1's accent-dependent roles (S9.2, S14): the one list gives, item for
 /// item, the role paths `mapping_palette` built in place before it was
 /// shared, over every bundled preset's declarations and over every surface
