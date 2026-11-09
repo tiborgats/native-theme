@@ -1081,8 +1081,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K3.46 | `Font.weight, Font.width, Font.style (the style name mapped to them)` | field |
 | K3.46 | `TextStyle.case (ADD-A39)` | field |
 | K3.46 | `reader:kde:kdeglobals font strings (capitalization, letter and word spacing, stretch, style name, features, axes)` | reader |
-| K3.46 | `reader:kde:Xft.dpi on an X11 session -> ReaderState.font_dpi` (the DPI the font strings' point sizes convert by, S9.4: Qt's xcb plugin's logical DPI, parsed by `qxcb_xft_dpi`; none on Wayland, where Qt's logical DPI is the preset's `token.text.font_dpi`; `kcmfonts`' `forceFontDPI`, platform-facts' *Font DPI override*, not read: Plasma 6.7 handed it to X11 as `Xft.dpi` and Plasma 6.8 removed it; S9.3, ADD-A140) | reader |
-| K3.46 | `token.text.font_dpi` (Plasma's DPI where the reader reports none, from the facts, S9.4, ADD-A103) | token |
+| K3.46 | `token.text.font_dpi` (Plasma's DPI, the reader reporting none (S9.4, ADD-A146), from the facts, S9.4, ADD-A103) | token |
 | K3.47 | - (`taskbarFont`, the Plasma panel's font: the shell draws the panel, no application does) | out (R1.1) |
 | K3.48† | `input.preedit.text, text_area.preedit.text (TextStyle.decoration and fill from the input method's attributes)` | field |
 | K3.48† | `input.caret @ {composing}; text_area.caret @ {composing}` | rule |
