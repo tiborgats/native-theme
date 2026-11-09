@@ -2,9 +2,9 @@
 //! placed in `src/cleanroom_readers/`, unchanged but for its panic-free
 //! arithmetic (their vector tests named
 //! `vectors_reader_<helper>` and reading `tests/vectors/`), and what the reader keeps of what
-//! they give: Pango's font-description parser, [`pango_font_description`],
+//! they give: Pango's font-description parser, [`pango_font_description()`],
 //! for the gsettings font strings, and libadwaita's accent classification,
-//! [`adw_accent_nearest`], for the portal's accent (S9.3, S9.5).
+//! [`adw_accent_nearest()`], for the portal's accent (S9.3, S9.5).
 
 #[path = "../cleanroom_readers/adw_accent_nearest.rs"]
 #[allow(
