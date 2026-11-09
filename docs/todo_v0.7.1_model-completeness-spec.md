@@ -154,8 +154,9 @@ pub enum ThemeError { PlatformUnsupported, FeatureDisabled,
 pub enum ReaderStatus { Read, NoReader, StandIn,
                         Fallback(ReaderFailure),            // read, but one source failed and another stood in for
                                                             // it, which the failure names (the KDE scheme file, S9.1,
-                                                            // or an accent input the reader could not read, S9.3;
-                                                            // the first failure where several)
+                                                            // the KDE palette's colours file, or an accent input
+                                                            // the reader could not read, S9.3; the first failure
+                                                            // where several)
                         Failed(ReaderFailure) }             // Failed: a re-read failed; the previous
 pub enum ReaderFailure { Platform(String), Invalid(LayerError) }           // reader layer stays (S8, S16)
 pub enum PortError { NoColorGroup }          // a `.colors` file with no `[Colors:<Set>]` group of a declared set,
@@ -4494,8 +4495,24 @@ Beside its accent (above) and its scheme inputs (S9.1), it states:
   builds the palette (`khintssettings.cpp:445-446`); where it has none, from the file plasma-integration takes
   instead, the colours of the look-and-feel package `[KDE] LookAndFeelPackage` names (`org.kde.breeze.desktop` by
   default, `:45`), `plasma/look-and-feel/<package>/contents/colors` in the data directories, else the scheme file
-  (below; `BreezeLight.colors` where the one named is not found), each read as kdeglobals is (`:447-466`). Rejected:
-  kdeglobals whatever it holds (without a `[Colors:View]` group Plasma's applications draw another file's colours).
+  (below; `BreezeLight.colors` where the one named is not found), each read as kdeglobals is (`:447-466`).
+  Each candidate is found as the scheme file is (below): the first data directory where it is a file, and a package
+  or scheme name that is not one plain path component naming no file, so the next candidate is taken, as for one not
+  found (a recorded inexactness where Qt's `locate` would join the name's components, `qstandardpaths.cpp:453-462`:
+  the reader reads no file outside the directories it names). Where none is found, the colours are an empty file's,
+  every key KColorScheme's default (below), with no `Fallback`: nothing failed, and those defaults are Breeze Light's
+  (`kcolorscheme.cpp:119-120`; one row aside, below), the last candidate's scheme, a slot the platform gives none at
+  (ADD-A138). Where the one found cannot be read, that is no reason to look further (Qt locates by existence): the
+  colours are an empty file's and the status is `ReaderStatus::Fallback`, the failure naming the file, as for the
+  unreadable scheme file (S9.1; the first failure where both fail, S1) (ADD-A145; a140-left's two unstated cases).
+  Both are recorded readings until the clean room's description of plasma-integration's palette where no file is
+  found or the one found cannot be read (`khintssettings.cpp:445-466`, D10) states what Plasma's applications draw
+  there; a different answer takes a spec row. Rejected: kdeglobals whatever it holds (without a `[Colors:View]` group
+  Plasma's applications draw another file's colours), as the stand-in for an unreadable file too; a `Fallback` where
+  none is found (nothing failed, and on a system with no colour files every read would report one, carrying nothing,
+  ADD-A138); no `Fallback` for an unreadable file (a read failed, and the application would learn nothing of it,
+  unlike S9.1's scheme file); the next candidate after an unreadable file (Plasma's applications read the file Qt
+  locates); failing the read (the fonts, conditions and accent the reader has would be lost for one file's colours).
 - every colour key it reads (above, and the scheme inputs) that its file leaves unset as KColorScheme reads it there,
   never by leaving it to the layers beneath: the group's value (`kcolorscheme.cpp:251-278`), else for `Header` the
   file's `[Colors:Window]` value, else the set's entry in KColorScheme's default tables, `DecorationFocus` and
