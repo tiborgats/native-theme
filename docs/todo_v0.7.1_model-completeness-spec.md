@@ -6268,6 +6268,38 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   its id (ADD-A131). Rejected: leaving it unlisted, the part drawn meanwhile (the placeholder rejected below); a
   synthetic `absent = true` (a base absence hides the part in every combination no preset rule draws again, so its
   field facts there go uncompared, where drawn costs nothing: its fields are stated wherever the facts draw it).
+  **Where a listed path is found** (ADD-A144; the pending-table gate's follow-ups). A path is listed in a combination
+  only where the preset's own layer leaves that place itself unstated there, which the gate reads from the steps the
+  place's value is resolved from on the synthetic route: a synthetic layer's step decides the place where no step of
+  another layer states the place there, a step stating it as S6.1 and S12 read it without the synthetic layers (a
+  stated map or keyed list merged in states it; an `Append` states no paint). So:
+  - each entry of a map merged by key whose entries are blocks (S6.1: `token.text.keyed`, `token.icons.sizes.keyed`,
+    `ColorRoles.surfaces`) is a place of its own, resolved from the steps that state that entry, and the map holding
+    it is decided by no step: a synthetic layer's entry (one it creates, the shared layer below, ADD-A133) decides
+    only those of its fields no preset step states there, so a fact of an entry the preset states is compared and
+    never listed, and a fact of the map whole that reads a synthetic entry is skipped as reaching it;
+  - a value merged from several steps and judged whole (a `Value` map, `Font.axes`; a keyed list, which a fact states
+    merged, *Keys and values*) is decided by a synthetic layer only where every step merged into it is a synthetic
+    layer's: a step of the preset merged in, beneath the synthetic one or over it, states the place too (S6.1: a
+    stated map or keyed list in a patch over nothing is the value), as ADD-A128's merged map already reads it;
+  - a paint is decided by the step that sets it: an `Append` states no paint where nothing lies beneath it (S6.1, S12:
+    a paint an `Append` alone gives is unset), so a preset rule appending over the synthetic paint leaves the path
+    listed, the synthetic `Set` deciding it, and the fact there is skipped as reaching it;
+  - a combination in which the part does not resolve drawn (`NotDrawn`, `DrawnAs`) lists none of its fields: S12
+    judges a missing field only where its part resolves drawn, and the gate asks no fact for those fields there (*A
+    part not drawn*, below; ADD-A130), so such a field is listed only from a combination that draws its part;
+  - a pending fact leaves a path listed only in a combination where it applies (*Which fact applies*, below), no
+    later fact of its key holding there; one that several later facts shadow between them, each in some of its
+    combinations, applies nowhere and lists nothing.
+  `generate_preset.py` reads the facts the same way, so the table it writes is the paths the gate finds: a pending
+  fact's combinations those no later fact of its key holds in, the later facts taken together over the combinations
+  the gate draws (a widget's from its state models, as its beneath rules are judged, *State models*), no field of a
+  part where the part is not drawn, and no `Append` counting as beneath. Rejected: a step that holds a map deciding every entry of it (the leak the
+  pending-table branch closed in `value_map` and the gate's other merges keep: a preset's measured entry is then
+  skipped and its key listed as pending though the preset states it); a merged value decided by its deciding step
+  alone, the merged steps ignored (the same leak, the place stated by the preset beside the synthetic value); every
+  combination of a pending fact's `when` counted, the later facts aside (the table would list ids that apply
+  nowhere, which the gate then reports as no listed path's).
   The preset
   lists each in its `[pending]` table with the register's id, or a list of ids where the pending facts that leave it
   listed (each, in some combination, with no fact or base beneath it, an earlier fact of the key holding there, which
