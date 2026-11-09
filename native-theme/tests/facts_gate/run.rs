@@ -2513,9 +2513,13 @@ pub fn declarations_run(
             format!("{:?}", sized(&declared.sizes_by_variant)),
             format!("{:?}", sized(&entry.sizes_by_variant)),
         );
+        // An entry whose context names what the model does not hold yet is
+        // one the preset cannot declare (S12), skipped as its combinations
+        // are ([`context_skips`]).
         let contexts: Vec<(String, Vec<String>, Option<String>)> = entry
             .sizes_by_context
             .iter()
+            .filter(|(selector, _, _)| context_held(selector))
             .map(|(selector, sizes, default)| {
                 (
                     model::selector_spelled(selector),

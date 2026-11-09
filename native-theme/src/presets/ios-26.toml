@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 3a7bfa82cea26caf0ac3bd54a0c4960687be71731efb1677c4d2edbae4e02f3e
+# generated lines: sha256 4104f0b88625e539b9352014e753cc5bd4d582cac7fbffdde6c36e113e684323
 
 [preset]
 id = "ios-26"
@@ -170,13 +170,13 @@ sizes_by_context = []
 # docs/facts/ios/button.toml:242533
 "widgets.button.values.menu_indicator_anchor" = ["U120", "U114", "U113", "U112"]
 # docs/facts/ios/button.toml:243799
-"widgets.button.menu_indicator.margin.left_px" = ["U120", "U114", "U122", "U113", "U112", "U704"]
+"widgets.button.menu_indicator.margin.left_px" = ["U120", "U114", "U113", "U112"]
 # docs/facts/ios/button.toml:244353
-"widgets.button.menu_indicator.margin.right_px" = ["U120", "U114", "U122", "U113", "U112", "U704"]
+"widgets.button.menu_indicator.margin.right_px" = ["U120", "U114", "U113", "U112"]
 # docs/facts/ios/button.toml:244907
-"widgets.button.menu_indicator.min_width_px" = ["U120", "U114", "U122", "U113", "U112", "U704"]
+"widgets.button.menu_indicator.min_width_px" = ["U120", "U114", "U113", "U112"]
 # docs/facts/ios/button.toml:245461
-"widgets.button.menu_indicator.min_height_px" = ["U120", "U114", "U122", "U113", "U112", "U704"]
+"widgets.button.menu_indicator.min_height_px" = ["U120", "U114", "U113", "U112"]
 # docs/facts/ios/button.toml:245933
 "widgets.button.label" = ["U115", "U114", "U255", "U122", "U113", "U112", "U704"]
 # docs/facts/ios/button.toml:248046
@@ -193,14 +193,14 @@ sizes_by_context = []
 "widgets.button.body.focus" = "U112"
 # docs/facts/ios/button.toml:265823
 "widgets.button.body.transform" = "U124"
-# docs/facts/ios/button.toml:265829
-"widgets.button.menu_indicator.transform" = ["U122", "U114", "U113", "U112", "U124"]
+# docs/facts/ios/button.toml:265925
+"widgets.button.menu_indicator.transform" = "U124"
 # docs/facts/ios/button.toml:265931
 "widgets.button.body.transitions" = "U125"
 # docs/facts/ios/button.toml:265937
 "widgets.button.icon.transitions" = "U125"
-# docs/facts/ios/button.toml:265943
-"widgets.button.menu_indicator.transitions" = ["U122", "U114", "U113", "U112", "U125"]
+# docs/facts/ios/button.toml:266039
+"widgets.button.menu_indicator.transitions" = "U125"
 # docs/facts/ios/button.toml:266756
 "widgets.button.icon.icon.size_px" = ["U126", "U704"]
 # docs/facts/ios/button.toml:267647
@@ -211,12 +211,12 @@ sizes_by_context = []
 "widgets.button.icon.icon.scale" = ["U126", "U704"]
 # docs/facts/ios/button.toml:270277
 "widgets.button.icon.glyph" = "U126"
-# docs/facts/ios/button.toml:270457
-"widgets.button.menu_indicator.glyph" = ["U122", "U114", "U113", "U112", "U121"]
-# docs/facts/ios/button.toml:270559
-"widgets.button.menu_indicator.margin.top_px" = ["U122", "U114", "U113", "U112", "U121"]
-# docs/facts/ios/button.toml:270661
-"widgets.button.menu_indicator.margin.bottom_px" = ["U122", "U114", "U113", "U112", "U121"]
+# docs/facts/ios/button.toml:270553
+"widgets.button.menu_indicator.glyph" = "U121"
+# docs/facts/ios/button.toml:270655
+"widgets.button.menu_indicator.margin.top_px" = "U121"
+# docs/facts/ios/button.toml:270757
+"widgets.button.menu_indicator.margin.bottom_px" = "U121"
 # docs/facts/ios/button.toml:272318
 "widgets.button.label.text.font.width" = "U256"
 # docs/facts/ios/button.toml:275336

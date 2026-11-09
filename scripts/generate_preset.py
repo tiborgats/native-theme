@@ -973,7 +973,9 @@ def hides(f: Fact) -> bool:
 def drawn_at(at: dict, scheme: str, presences: list) -> bool:
     """Whether the part resolves drawn wherever `at` holds under the scheme (S6.3, S17 *Which fact applies*): not where
     the last presence fact `presences` gives covering `at` hides it and no later one that may hold there draws it
-    again (check_facts.whens_overlap()); drawn where none covers it, as a part no patch makes absent is."""
+    again (check_facts.whens_overlap()); drawn where none covers it, as a part no patch makes absent is. A pending
+    presence is none of them: the preset leaves it out, so the facts before it decide (S17, ADD-A144)."""
+    presences = [g for g in presences if g.status != PENDING]
     last = next((i for i in range(len(presences) - 1, -1, -1) if covers(presences[i].when, at, scheme)), None)
     if last is None or not hides(presences[last]):
         return True
@@ -4263,11 +4265,13 @@ def self_test() -> int:
                             f"expected {want}")
     # a part not drawn lists none of its fields (S12 judges a missing field only where its part resolves drawn): a
     # pending field holding only where a rule makes its part absent, or draws it as another, lists nothing; a later
-    # fact drawing the part in some of those combinations leaves it listed
+    # fact drawing the part in some of those combinations leaves it listed; a later pending presence, which the preset
+    # leaves out, draws it nowhere, the earlier absence deciding, wherever it holds
     rendering = "button.icon.icon.rendering_mode"
     hidden = [("absent", None, []), ({"drawn_as": "label"}, None, []),
               ("absent", ("present", {"states": ["hover"]}), [(f"widgets.{rendering}", "U34")]),
-              ("absent", (None, {"states": ["hover"]}), [(f"widgets.{rendering}", "U34")]),
+              ("absent", (None, {"states": ["hover"]}), []),
+              ("absent", (None, {"variants": ["flat"]}), []),
               ("absent", ("absent", {"states": ["hover"]}), [])]
     for models in ({}, flat_model):
         for hiding, later, want in hidden:

@@ -1403,6 +1403,55 @@ fn gate_declarations_each_compared() {
     );
 }
 
+/// A state model's `sizes_by_context` entry whose context names a widget
+/// the model does not hold yet (a toolbar, whose unit is not enabled) is
+/// one the preset cannot declare (S12 refuses it, `generate_preset.py`'s
+/// `held_contexts()` leaves it out), so the declarations run skips it as it
+/// skips such a context's combinations (S17, ADD-A128): the preset
+/// declaring none passes, and one held entry is still compared.
+#[test]
+fn gate_declarations_skip_unheld_context() -> Result<(), String> {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
+    let base = std::fs::read_to_string(fixtures.join("base.toml")).map_err(failed)?;
+    let sized = "sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n";
+    let preset = Preset::from_toml(&format!(
+        "{base}\n[declare.widget.button]\nvariants = [\"flat\"]\n{sized}"
+    ))
+    .map_err(failed)?;
+    let failures = |contexts: &str| -> Result<Vec<String>, String> {
+        let models = model::Model::read(
+            "gnome/state-models.toml",
+            &format!(
+                "[[model]]\nwidget = \"button\"\navailable = true\nvariants = [\"flat\"]\n{sized}\
+                 densities = []\nexclusive = []\nrows = []\n\
+                 axes = {{ states = [\"hover\"], conditions = [], contexts = [] }}\n\
+                 sizes_by_context = [{contexts}]\n"
+            ),
+        )?;
+        let platform = run::Platform {
+            name: "gnome".to_owned(),
+            facts: Vec::new(),
+            keys: Vec::new(),
+            models,
+        };
+        let mut report = run::Report::default();
+        run::declarations_run(&platform, &preset, None, &mut report);
+        Ok(report.failures)
+    };
+    let unheld = "{ context = { scope = \"any\", widget = \"toolbar\", part = \"bar\" }, sizes = \
+                  [\"regular\"], default_size = \"regular\" }";
+    assert_eq!(failures(unheld)?, Vec::<String>::new());
+    let held =
+        "{ context = { widget = \"button\" }, sizes = [\"small\"], default_size = \"small\" }";
+    let both = failures(&format!("{unheld}, {held}"))?;
+    assert!(
+        both.iter()
+            .any(|failure| failure.contains("`button` sizes_by_context under")),
+        "{both:?}"
+    );
+    Ok(())
+}
+
 /// A state model's context selector stating an empty list spells as the
 /// one without the key, as the crate's selector holds none (the A131a
 /// review's M1): `states = []` and `variants = []` select as no key does.
