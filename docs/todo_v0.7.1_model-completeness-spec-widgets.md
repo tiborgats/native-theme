@@ -615,10 +615,10 @@ spaces:
   - `content` — the client area: `fill` (the window background, or the platform's material: Mica, Mica Alt, the
     AppKit window material), `bindings` (`Surface(Window)`), `min_width`, `min_height`, `transitions` (Mica's fade to
     its inactive fallback).
-  - `title_bar` — the bar, in `frame`: `fill` (colour, gradient, material), `stroke` and `shadow` (GNOME's bottom shade
+  - `title_bar` — the bar: `fill` (colour, gradient, material), `stroke` and `shadow` (GNOME's bottom shade
     line and side borders as inset layers, its drop shadow; macOS's separator line or shadow), `min_height`,
     `bindings` (`Surface(Header)`, which reach every part nested in the bar, S2.11), `transitions`.
-  - `title_bar_content` — the box holding title and buttons, in `title_bar`: `padding`, `opacity` (the inactive
+  - `title_bar_content`, in `title_bar` — the box holding title and buttons: `padding`, `opacity` (the inactive
     dimming of everything nested in it, as one group), `transitions`.
   - `title` *(element)*, in `title_bar_content` — the title, with its own hover (macOS shows `title_chevron` while the
     title is hovered, MAC-W11†): `text`

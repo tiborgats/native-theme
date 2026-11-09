@@ -208,6 +208,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.71 | `menu.separator.margin` | field |
 | K1.71 | `menu.separator.min_height` (the separator item's height; the line is `menu.separator.stroke`) | field |
 | K1.72 | `menu.scroll_arrow.glyph, menu.scroll_arrow.fill, menu.scroll_arrow.min_height` | field |
+| K1.72 | `menu.scroll_arrow.glyph @ variant top / variant bottom` (the up and the down arrow, one element per scroll area, its identity a variant; ADD-A146) | rule |
 | K1.72 | `menu.values.scrollable` | field |
 | K1.73 | `menu.values.submenu_open_delay` | field |
 | K1.81 | `tooltip.body.shadow` | field |

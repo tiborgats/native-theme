@@ -176,6 +176,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN10 | `menu.values.show_item_icons` | field |
 | MAC-MN11 | `menu.values.indent_step` | field |
 | MAC-MN12 | `menu.scroll_arrow.{glyph,fill,min_height}` | field |
+| MAC-MN12 | `menu.scroll_arrow.glyph @ variant top / variant bottom` (the up and the down arrow, one element per scroll area, its identity a variant; ADD-A146) | rule |
 | MAC-MN13 | `menu.item @ variant palette` | rule |
 | MAC-MN13 | `menu.item.stroke @ variant palette {checked} (selection ring)` | rule |
 | MAC-MN14 | `menu.body.{stroke,shadow,fill}` | field |

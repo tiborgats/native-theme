@@ -150,6 +150,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-M10 | `menu.body.corners @ cond flavor:expressive` | rule |
 | MAT-M10 | `menu.item.corners @ cond flavor:expressive / pos first cond flavor:expressive / pos last cond flavor:expressive / {selected} context combo_box cond flavor:expressive / {checked} cond flavor:expressive` (the selected item's shape: S7.2, as MAT-M1) | rule |
 | MAT-M10 | `menu.group.{fill,corners,padding}` | field |
+| MAT-M10 | `menu.group.corners @ pos first / pos last / pos only / {hover}; menu.group.transitions` (the leading, trailing and standalone group shapes by the group's position among the menu's groups, `material3/…/MenuDefaults.kt:196-207`; the shape while hovered and, by the keyed flag the lane names, after a hover has ended, its morph `FastSpatial`, `material3/…/Menu.kt:288-303`, `:2296-2301`; the group an element, ADD-A146) | rule |
 | MAT-M10 | `menu.values.group_gap` | field |
 | MAT-M10 | `menu.{body.fill,group.fill,item.fill,item_label.text.fill,item_icon.icon.fill} @ variant @vibrant cond flavor:expressive / {selected} variant @vibrant context combo_box cond flavor:expressive / {checked} variant @vibrant cond flavor:expressive` | rule |
 | MAT-M10 | `menu.body.padding, menu.item.{min_width,padding} @ variant horizontal; menu.item.{min_width,padding}, menu.item_icon.icon @ variant icon_only` | rule |
