@@ -63,8 +63,11 @@
 # logical unit, in which every length here is read (the run's `cell_px` is its `cell_pt` times the screen's scale), and
 # S17 reads logical points as px; a `pt` size would be converted by S9.4's `pt × dpi / 72` with a `token.text.font_dpi`
 # no pinned source states for iOS.
-# Font weights are UIFont's weight trait through S17's `ns_font_weight`; `min_width` and `min_height` are `auto` where
-# the frame is the content plus the insets (no minimum beyond the content).
+# Font weights are the drawn face's `wght` coordinate (S2.8, ADD-A136; the weight trait is no evidence): each label's
+# font as run 41020880059 reads it (name, size, text style, traits) is a font of the fonts pass, run 42275185017
+# (`measure1/index.toml` `[[font_style]]`, `[[font_role]]`; `fonts_read.toml` `[styles]`), whose variation's `wght`,
+# else the axis's default, is cited; `min_width` and `min_height` are `auto` where the frame is the content plus the
+# insets (no minimum beyond the content).
 
 # ---- ios-13 ----
 
@@ -74790,6 +74793,10 @@ pending = "U114"
 rows = ["B-3", "TB-4"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): run 41020880059's title font (`title_font`) is `.SFUI-Regular`,
+# UICTFontTextStyleShortBody at 17 pt (medium, large) and UICTFontTextStyleShortSubhead at 15 pt (mini, small),
+# the fonts pass's body and subheadline tight fonts by name, size, text style and traits (fonts_read.py's
+# `font_from` match; its button_titles scene's labels are body tight), whose variation holds no wght: 400
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"] }
 value = 400
@@ -74797,687 +74804,13 @@ rows = ["B-3", "B-13"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled.large.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.tight.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled.medium.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.subheadline.tight.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.0.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.18.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.2.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.20.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.4.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.22.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.6.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.24.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -75745,6 +75078,9 @@ rows = ["B-3", "B-13"]
 
 # the base, UIButton(type: .system) with no configuration (the host's forms.<scheme>.system)
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the system type's title font, `.SFUI-Regular` CTFontRegularUsage at
+# 15 pt, is the fonts pass's `system_button_title` (font_role.14, fonts_read.toml's button_titles `system`
+# `font_from`), whose variation holds no wght: the axis's default
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"], not_variants = ["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route"] }
 value = 400
@@ -75752,75 +75088,8 @@ rows = ["B-12"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.system.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/measure1/index.toml#font_role.14.variation_axes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.system.highlighted.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.system.disabled.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.system.toggle_off.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.system.selected.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.system.selected_highlighted.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.system.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.system.highlighted.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.system.disabled.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.system.toggle_off.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.system.selected.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.system.selected_highlighted.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -76794,61 +76063,17 @@ when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["contras
 pending = "U114"
 rows = ["B-12"]
 
-# UIButton.Role primary: the title's weight trait 0.3 in every style, read at medium; stated
+# UIButton.Role primary: the title's weight trait 0.3 in every style, read at medium; pending
 # with no size, after every fact that states the title's weight
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136) is unread: the role's title font is `.SFUI-Semibold`
+# UICTFontTextStyleShortEmphasizedBody at 17 pt (run 41020880059's `title_font`), a font the fonts pass did not
+# read (its body tight and body bold fonts are other text styles), and the trait's 600 is no evidence; in a toolbar
+# the bar's facts below give the weight
 key = "button.label.text.font.weight"
-when = { conditions = ["preset:ios-13"], variants = ["@role_primary"] }
-value = 600
+when = { conditions = ["preset:ios-13"], variants = ["@role_primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U705"
 rows = ["B-11"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -77133,6 +76358,9 @@ pending = "U114"
 rows = ["B-12"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the item's label font in run 41020880059's view tree, `.SFUI-Regular`
+# UICTFontTextStyleBody at 17 pt, is the fonts pass's body font (font_style.30) by name, size, text style and
+# traits, whose variation holds no wght: 400
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"], not_states = ["pressed", "disabled", "checked"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 value = 400
@@ -77140,27 +76368,8 @@ rows = ["B-3", "TB-4"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.bar_plain.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.bar_plain.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.bar_plain.toggle_off.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.bar_plain.toggle_off.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -77169,6 +76378,9 @@ pending = "U114"
 rows = ["B-3", "TB-4"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the item's label font in run 41020880059's view tree, `.SFUI-Regular`
+# UICTFontTextStyleBody at 17 pt, is the fonts pass's body font (font_style.30) by name, size, text style and
+# traits, whose variation holds no wght: 400
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"], states = ["disabled"], not_states = ["pressed", "checked"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 value = 400
@@ -77176,15 +76388,8 @@ rows = ["B-3", "TB-4"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.bar_plain.disabled.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.bar_plain.disabled.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -77193,6 +76398,9 @@ pending = "U114"
 rows = ["B-3", "TB-4"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the item's label font in run 41020880059's view tree, `.SFUI-Regular`
+# UICTFontTextStyleBody at 17 pt, is the fonts pass's body font (font_style.30) by name, size, text style and
+# traits, whose variation holds no wght: 400
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"], states = ["checked"], not_states = ["pressed", "disabled"], variants = ["toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 value = 400
@@ -77200,15 +76408,8 @@ rows = ["B-3", "TB-4"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.bar_plain.selected.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.bar_plain.selected.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -77217,34 +76418,18 @@ pending = "U114"
 rows = ["B-3", "TB-4"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the done item's label font in run 41020880059's view tree,
+# `.SFUI-Semibold` UICTFontTextStyleEmphasizedBody at 17 pt, is the fonts pass's body bold font (font_style.33)
+# by name, size, text style and traits, whose variation's wght is 590 (the trait's 600 withdrawn)
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"], not_states = ["pressed", "disabled", "checked"], variants = ["done"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = 600
+value = 590
 rows = ["B-3", "TB-4"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.bar_done.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.bold.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.bar_done.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.bar_done.toggle_off.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.bar_done.toggle_off.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -77253,22 +76438,18 @@ pending = "U114"
 rows = ["B-3", "TB-4"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the done item's label font in run 41020880059's view tree,
+# `.SFUI-Semibold` UICTFontTextStyleEmphasizedBody at 17 pt, is the fonts pass's body bold font (font_style.33)
+# by name, size, text style and traits, whose variation's wght is 590 (the trait's 600 withdrawn)
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["done"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = 600
+value = 590
 rows = ["B-3", "TB-4"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.bar_done.disabled.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.bold.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.bar_done.disabled.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -77277,22 +76458,18 @@ pending = "U114"
 rows = ["B-3", "TB-4"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the done item's label font in run 41020880059's view tree,
+# `.SFUI-Semibold` UICTFontTextStyleEmphasizedBody at 17 pt, is the fonts pass's body bold font (font_style.33)
+# by name, size, text style and traits, whose variation's wght is 590 (the trait's 600 withdrawn)
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"], states = ["checked"], not_states = ["pressed", "disabled"], variants = ["done", "toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = 600
+value = 590
 rows = ["B-3", "TB-4"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.bar_done.selected.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.bold.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.bar_done.selected.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -77301,6 +76478,9 @@ pending = "U114"
 rows = ["B-3", "TB-4"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the item's label font in run 41020880059's view tree, `.SFUI-Regular`
+# UICTFontTextStyleBody at 17 pt, is the fonts pass's body font (font_style.30) by name, size, text style and
+# traits, whose variation holds no wght: 400
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"], not_states = ["pressed", "disabled", "checked"], variants = ["back"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 value = 400
@@ -77308,15 +76488,8 @@ rows = ["B-3", "TB-4"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.light.back_default.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#forms.dark.back_default.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -107510,6 +106683,9 @@ pending = "U114"
 rows = ["B-8"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the subtitle's font in run 41020880059's view tree, `.SFUI-Regular`
+# UICTFontTextStyleShortFootnote at 13 pt, is the fonts pass's footnote tight font (font_style.41; fonts_read.toml's
+# button_titles `filled_subtitle` subtitle `font_from`), whose variation holds no wght: 400
 key = "button.subtitle.text.font.weight"
 when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
 value = 400
@@ -107517,51 +106693,8 @@ rows = ["B-8"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__subtitle_Subtitle.medium.normal.subtitle_font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.footnote.tight.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.subtitle.text.font.weight"
@@ -229086,6 +228219,10 @@ pending = "U114"
 rows = ["B-3"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): run 41020880059's title font (`title_font`) is `.SFUI-Regular`,
+# UICTFontTextStyleShortBody at 17 pt (medium, large) and UICTFontTextStyleShortSubhead at 15 pt (mini, small),
+# the fonts pass's body and subheadline tight fonts by name, size, text style and traits (fonts_read.py's
+# `font_from` match; its button_titles scene's labels are body tight), whose variation holds no wght: 400
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-26"] }
 value = 400
@@ -229093,1227 +228230,13 @@ rows = ["B-3", "B-13"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass.large.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.body.tight.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass.medium.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.subheadline.tight.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted.large.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted.mini.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted.small.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted__image_star.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted__image_star__title_none.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_fixed.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_dynamic.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_small.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_medium.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_large.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_capsule.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_on_hold.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted__subtitle_Subtitle.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted__activity_indicator_shown.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.0.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.26.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.2.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.28.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.4.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.30.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.6.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.32.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.16.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.42.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.20.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.46.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.18.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.44.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.22.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.48.title_font.weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -230377,6 +228300,9 @@ rows = ["B-3", "B-13"]
 
 # the base, UIButton(type: .system) with no configuration (the host's forms.<scheme>.system)
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the system type's title font, `.SFUI-Regular` CTFontRegularUsage at
+# 15 pt, is the fonts pass's `system_button_title` (font_role.14, fonts_read.toml's button_titles `system`
+# `font_from`), whose variation holds no wght: the axis's default
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-26"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route"] }
 value = 400
@@ -230384,75 +228310,8 @@ rows = ["B-12"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.system.normal.font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/measure1/index.toml#font_role.14.variation_axes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.system.highlighted.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.system.disabled.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.system.toggle_off.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.system.selected.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.light.system.selected_highlighted.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.dark.system.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.dark.system.highlighted.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.dark.system.disabled.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.dark.system.toggle_off.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.dark.system.selected.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#forms.dark.system.selected_highlighted.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -231252,109 +229111,16 @@ when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contras
 pending = "U114"
 rows = ["B-12"]
 
-# UIButton.Role primary: the title's weight trait 0.3 in every style, read at medium; stated
+# UIButton.Role primary: the title's weight trait 0.3 in every style, read at medium; pending
 # with no size, after every fact that states the title's weight
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136) is unread: the role's title font is `.SFUI-Semibold`
+# UICTFontTextStyleShortEmphasizedBody at 17 pt (run 41020880059's `title_font`), a font the fonts pass did not
+# read (its body tight and body bold fonts are other text styles), and the trait's 600 is no evidence
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-26"], variants = ["@role_primary"] }
-value = 600
+pending = "U705"
 rows = ["B-11"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass__role_primary.medium.normal.font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -266661,6 +264427,9 @@ pending = "U114"
 rows = ["B-8"]
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the subtitle's font in run 41020880059's view tree, `.SFUI-Regular`
+# UICTFontTextStyleShortFootnote at 13 pt, is the fonts pass's footnote tight font (font_style.41; fonts_read.toml's
+# button_titles `filled_subtitle` subtitle `font_from`), whose variation holds no wght: 400
 key = "button.subtitle.text.font.weight"
 when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
 value = 400
@@ -266668,99 +264437,8 @@ rows = ["B-8"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass__subtitle_Subtitle.medium.normal.subtitle_font_weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.footnote.tight.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted__subtitle_Subtitle.medium.normal.subtitle_font_weight"
-tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.subtitle.text.font.weight"
