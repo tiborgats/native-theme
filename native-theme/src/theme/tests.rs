@@ -1684,7 +1684,10 @@ fn kde_accent_over_kde_breeze() {
             .unwrap(),
         )
         .unwrap();
-    assert_eq!(root_role(&theme, view_link()), Some([0xa7, 0x78, 0x07, 0xff]));
+    assert_eq!(
+        root_role(&theme, view_link()),
+        Some([0xa7, 0x78, 0x07, 0xff])
+    );
     assert_eq!(
         root_role(
             &theme,

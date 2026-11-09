@@ -521,9 +521,7 @@ fn variant(arg: Option<&Expr>) -> Option<&str> {
 
 /// The scheme key `name` names.
 pub(crate) fn scheme_key(name: &str) -> Option<KdeSchemeKey> {
-    KdeSchemeKey::ALL
-        .into_iter()
-        .find(|key| key.name() == name)
+    KdeSchemeKey::ALL.into_iter().find(|key| key.name() == name)
 }
 
 /// The `[WM]` key `name` names.
