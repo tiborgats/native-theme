@@ -69,9 +69,10 @@ The hand-written citations (Citations)
 --------------------------------------
 A hand-written value carries its fact's citation too (S11: "Every value carries its fact's citation in a comment"),
 `<file>:<line>` naming the fact's `[[fact]]` (or `[[model]]`) header, which moves when the facts files change.
-`--write` makes each citation it can judge true, in place: it keeps one that names a fact of the preset (the facts
-above, a state model's too) naming its subject, and points a stale one at the first such fact in the file it names,
-else in the platform's files in their order; it changes nothing else on the line. Their subjects:
+`--write` makes each citation it can judge true, in place: it keeps one that names a fact of the preset (those
+*Which facts* below takes, or a state model of them) naming its subject, and points a stale one at the first such
+fact in the file it names, else in the platform's files in their order; it changes nothing else on the line. Their
+subjects:
 - a `[declare]` list entry, `"<name>",  # <citation>`, of a keyed namespace (`text_styles = [`, a
   `[declare.params.<group>]` table's `keys = [`): a fact naming the entry where the model holds the namespace's keys
   (NAMED_BY): its key holding it (`role.@<name>` for `color_roles`, `token.text.keyed.<name>.…`,
