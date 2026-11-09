@@ -10063,8 +10063,11 @@ rows = []
 
 # when Compose shows focus indication (MAT-X34†), measured (U554): on the Android host a real tap leaves a filled
 # button unfocused and drawn at rest, in touch mode, while a Tab key event leaves touch mode, focuses it and draws
-# its focus state layer; a second tap unfocuses it (read_focus.py): shown for keyboard focus, no timeout within the
-# capture
+# its focus state layer; a second tap unfocuses it (read_focus.py): shown for keyboard focus. Its `timeout` none is
+# an absence in time (S17, ADD-A141), cited from the code path that would end it: Compose's input mode follows
+# Android's touch mode (onTouchModeChanged), which changes only in ensureTouchModeLocally, called by ensureTouchMode
+# (a pointer's down or scroll enters touch mode, processPointerEvent) and by the window manager's report
+# (touchModeChanged, its message sent at once, handled by handleWindowTouchModeChanged): no timer among them
 [[fact]]
 key = "token.behavior.focus_visible_when"
 value = { keyboard = {} }
@@ -10074,6 +10077,41 @@ rows = ["MAT-X34†"]
 kind = "measured"
 evidence = "docs/evidence/android-host/2026-11-06-run-42307873328/measure/focus-visible.toml#focus_visible_when"
 tolerance = 0
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt:3807-3809"
+quote = "override fun onTouchModeChanged(isInTouchMode: Boolean) { inputModeManager.inputMode = if (isInTouchMode) Touch else Keyboard }"
+absent = ["postDelayed", "executeDelayed"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewRootImpl.java:7766-7785"
+quote = "boolean ensureTouchMode(boolean inTouchMode) {"
+absent = ["postDelayed", "sendMessageDelayed"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewRootImpl.java:7793-7803"
+quote = "private boolean ensureTouchModeLocally(boolean inTouchMode) {"
+absent = ["postDelayed", "sendMessageDelayed"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewRootImpl.java:8467-8471"
+quote = "// Enter touch mode on down or scroll from any type of a device. final int action = event.getAction(); if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_SCROLL) { ensureTouchMode(true); }"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewRootImpl.java:11793-11800"
+quote = "public void touchModeChanged(boolean inTouchMode) {"
+absent = ["postDelayed", "sendMessageDelayed"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewRootImpl.java:5360-5366"
+quote = "private void handleWindowTouchModeChanged() {"
+absent = ["postDelayed", "sendMessageDelayed"]
 
 # the pointer hidden while typing (MAT-P3-15†): frameworks/native's PointerChoreographer, not pinned: U553
 [[fact]]

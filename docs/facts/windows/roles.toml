@@ -6919,6 +6919,8 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themereso
 quote = "<ResourceDictionary x:Key=\"Light\">"
 absent = []
 
+# WinUI names no selection outline: the list item's presenter takes the selected item's backgrounds, its foreground
+# and its selection indicator's brushes, and no selected border brush (the catalogue's mark, ADD-A141, WN-C1)
 [[fact]]
 key = "role.selection.border"
 value = "absent"
@@ -6935,6 +6937,12 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
 quote = "<ResourceDictionary x:Key=\"Light\">"
 absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ListViewItem_themeresources.xaml:256"
+quote = "<ListViewItemPresenter x:Name=\"Root\""
+absent = ["SelectedBorderBrush"]
 
 [[fact]]
 key = "role.selection.background_active"
@@ -7038,6 +7046,8 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themereso
 quote = "<ResourceDictionary x:Key=\"Light\">"
 absent = []
 
+# WinUI names no disabled selected text colour: the presenter dims a disabled item by its DisabledOpacity beside
+# its SelectedDisabledBackground (the catalogue's mark, ADD-A141, WN-C1)
 [[fact]]
 key = "role.selection.disabled.foreground"
 value = "absent"
@@ -7054,6 +7064,12 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
 quote = "<ResourceDictionary x:Key=\"Light\">"
 absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ListViewItem_themeresources.xaml:256"
+quote = "<ListViewItemPresenter x:Name=\"Root\""
+absent = ["SelectedDisabledForeground", "ForegroundSelectedDisabled"]
 
 [[fact]]
 key = "role.selection.disabled.background"
@@ -7401,7 +7417,8 @@ absent = []
 # ---------------------------------------------------------------------------------------------------------------
 
 # The unfocused selection: a TextBox's SelectionHighlightColorWhenNotFocused defaults to Transparent, and a
-# transparent colour hides the selection while the box is not focused (W1-032).
+# transparent colour hides the selection while the box is not focused (W1-032): nothing is drawn, the role WinUI's
+# only where an application sets the property (the catalogue's mark, ADD-A141, WN-C1).
 [[fact]]
 key = "role.global.selection_text_background_unfocused"
 value = "absent"

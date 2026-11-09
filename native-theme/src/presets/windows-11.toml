@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 64585ba0b5fdfe0a6de55973a15f82e54836d1044cfb4ddbd7b4c2de1bc0c770
+# generated lines: sha256 18167552cdf93db6800227f5eb6e8b7da9353c74c1feb5fd02ab9c378e2a2e2d
 
 [preset]
 id = "windows-11"
@@ -211,14 +211,14 @@ keys = [
 ]
 # hand-written: end declare
 
-# docs/facts/windows/state-models.toml:12
+# docs/facts/windows/state-models.toml:18
 [declare.widget.button]
 available = true
-variants = ["primary", "flat", "toggle", "menu", "tool", "@repeat"]
+variants = ["primary", "flat", "toggle", "menu", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]
 sizes = []
 densities = []
 exclusive = [["disabled", "pressed", "hover"], ["indeterminate", "checked"]]
-exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat"], ["primary", "flat", "tool", "@repeat"]]
+exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"], ["primary", "flat", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]]
 
 [pending]
 # docs/facts/windows/button.toml:718
@@ -295,193 +295,193 @@ exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat"], ["primar
 "widgets.button.values.menu_indicator_anchor" = "U519"
 # docs/facts/windows/button.toml:18521
 "widgets.button.values.menu_indicator_gap_px" = "U519"
-# docs/facts/windows/roles.toml:7454
+# docs/facts/windows/roles.toml:7471
 "colors.light.global.drop_highlight" = "U513"
-# docs/facts/windows/roles.toml:7454
+# docs/facts/windows/roles.toml:7471
 "colors.dark.global.drop_highlight" = "U513"
-# docs/facts/windows/tokens.toml:140
-"tokens.motion.timings.scroll_into_view" = "U50"
-# docs/facts/windows/tokens.toml:2607
+# docs/facts/windows/tokens.toml:2602
 "tokens.icons.theme" = "U516"
-# docs/facts/windows/tokens.toml:2612
+# docs/facts/windows/tokens.toml:2607
 "tokens.icons.theme_fallback" = "U516"
-# docs/facts/windows/tokens.toml:2617
+# docs/facts/windows/tokens.toml:2612
 "tokens.icons.mirroring" = "U516"
-# docs/facts/windows/tokens.toml:2622
+# docs/facts/windows/tokens.toml:2617
 "tokens.icons.sizes.small" = "U516"
-# docs/facts/windows/tokens.toml:2627
+# docs/facts/windows/tokens.toml:2622
 "tokens.icons.sizes.large" = "U516"
-# docs/facts/windows/tokens.toml:2632
+# docs/facts/windows/tokens.toml:2627
 "tokens.icons.sizes.dialog" = "U516"
-# docs/facts/windows/tokens.toml:2637
+# docs/facts/windows/tokens.toml:2632
 "tokens.icons.sizes.panel" = "U516"
-# docs/facts/windows/tokens.toml:2645
+# docs/facts/windows/tokens.toml:2640
 "tokens.icons.sizes.keyed" = "U681"
-# docs/facts/windows/tokens.toml:2650
+# docs/facts/windows/tokens.toml:2645
 "tokens.icons.sizes.toolbar.fill" = "U516"
-# docs/facts/windows/tokens.toml:2655
+# docs/facts/windows/tokens.toml:2650
 "tokens.icons.sizes.toolbar.rendering_mode" = "U516"
-# docs/facts/windows/tokens.toml:2660
+# docs/facts/windows/tokens.toml:2655
 "tokens.icons.sizes.toolbar.weight" = "U516"
-# docs/facts/windows/tokens.toml:2665
+# docs/facts/windows/tokens.toml:2660
 "tokens.icons.sizes.toolbar.scale" = "U516"
-# docs/facts/windows/tokens.toml:2670
+# docs/facts/windows/tokens.toml:2665
 "tokens.icons.sizes.toolbar.axes" = "U516"
-# docs/facts/windows/tokens.toml:2675
+# docs/facts/windows/tokens.toml:2670
 "tokens.icons.sizes.toolbar.state_effect" = "U516"
-# docs/facts/windows/tokens.toml:2680
+# docs/facts/windows/tokens.toml:2675
 "tokens.icons.sizes.toolbar.symbol_variants" = "U516"
-# docs/facts/windows/tokens.toml:2685
+# docs/facts/windows/tokens.toml:2680
 "tokens.icons.sizes.toolbar.symbolic_colors" = "U516"
-# docs/facts/windows/tokens.toml:2690
+# docs/facts/windows/tokens.toml:2685
 "tokens.icons.sizes.toolbar.animation" = "U516"
-# docs/facts/windows/tokens.toml:2741
+# docs/facts/windows/tokens.toml:2736
 "tokens.caret.blink_timeout_ms" = "U505"
-# docs/facts/windows/tokens.toml:2746
+# docs/facts/windows/tokens.toml:2741
 "tokens.caret.solid_while_typing" = "U505"
-# docs/facts/windows/tokens.toml:2753
+# docs/facts/windows/tokens.toml:2748
 "tokens.caret.color" = "U506"
-# docs/facts/windows/tokens.toml:2841
+# docs/facts/windows/tokens.toml:2836
 "tokens.behavior.drag_time_ms" = "U501"
-# docs/facts/windows/tokens.toml:2846
+# docs/facts/windows/tokens.toml:2841
 "tokens.behavior.long_press_ms" = "U501"
-# docs/facts/windows/tokens.toml:2851
+# docs/facts/windows/tokens.toml:2846
 "tokens.behavior.touch.slop_px" = "U501"
-# docs/facts/windows/tokens.toml:2856
+# docs/facts/windows/tokens.toml:2851
 "tokens.behavior.touch.paging_slop_px" = "U501"
-# docs/facts/windows/tokens.toml:2861
+# docs/facts/windows/tokens.toml:2856
 "tokens.behavior.touch.double_tap_time_ms" = "U501"
-# docs/facts/windows/tokens.toml:2866
+# docs/facts/windows/tokens.toml:2861
 "tokens.behavior.touch.double_tap_slop_px" = "U501"
-# docs/facts/windows/tokens.toml:2871
+# docs/facts/windows/tokens.toml:2866
 "tokens.behavior.touch.delay_ms" = "U501"
-# docs/facts/windows/tokens.toml:2888
+# docs/facts/windows/tokens.toml:2883
 "tokens.behavior.hide_pointer_delay_ms" = "U502"
-# docs/facts/windows/tokens.toml:2893
+# docs/facts/windows/tokens.toml:2888
 "tokens.behavior.hide_pointer_fade_ms" = "U502"
-# docs/facts/windows/tokens.toml:2900
+# docs/facts/windows/tokens.toml:2895
 "tokens.behavior.key_repeat" = "U503"
-# docs/facts/windows/tokens.toml:2912
+# docs/facts/windows/tokens.toml:2907
 "tokens.behavior.mnemonics" = "U504"
-# docs/facts/windows/tokens.toml:2917
+# docs/facts/windows/tokens.toml:2912
 "tokens.behavior.mnemonic_when_disabled" = "U504"
-# docs/facts/windows/tokens.toml:2924
+# docs/facts/windows/tokens.toml:2919
 "tokens.behavior.single_click_activates" = "U504"
-# docs/facts/windows/tokens.toml:2969
+# docs/facts/windows/tokens.toml:2964
 "tokens.motion.speed_factor" = "U515"
-# docs/facts/windows/tokens.toml:2977
+# docs/facts/windows/tokens.toml:2972
 "tokens.elevation" = "U511"
-# docs/facts/windows/tokens.toml:2984
+# docs/facts/windows/tokens.toml:2979
 "tokens.size_classes" = "U512"
-# docs/facts/windows/tokens.toml:2996
+# docs/facts/windows/tokens.toml:2997
 "tokens.text.scaling" = "U508"
-# docs/facts/windows/tokens.toml:3011
+# docs/facts/windows/tokens.toml:3012
 "tokens.text.rendering.hinting" = "U508"
-# docs/facts/windows/tokens.toml:3026
+# docs/facts/windows/tokens.toml:3017
+"tokens.text.rendering.subpixel_order" = "U508"
+# docs/facts/windows/tokens.toml:3022
 "tokens.text.rendering.engine" = "U508"
-# docs/facts/windows/tokens.toml:3031
+# docs/facts/windows/tokens.toml:3027
 "tokens.text.rendering.lcd_filter" = "U508"
-# docs/facts/windows/tokens.toml:3058
+# docs/facts/windows/tokens.toml:3054
 "tokens.text.roles.monospace" = "U509"
-# docs/facts/windows/tokens.toml:3067
+# docs/facts/windows/tokens.toml:3063
 "tokens.text.fallbacks.families" = "U520"
-# docs/facts/windows/tokens.toml:3072
+# docs/facts/windows/tokens.toml:3068
 "tokens.text.fallbacks.emoji_family" = "U520"
-# docs/facts/windows/tokens.toml:3118
+# docs/facts/windows/tokens.toml:3114
 "tokens.text.keyed.caption.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3123
+# docs/facts/windows/tokens.toml:3119
 "tokens.text.keyed.caption.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3128
+# docs/facts/windows/tokens.toml:3124
 "tokens.text.keyed.caption.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3155
+# docs/facts/windows/tokens.toml:3151
 "tokens.text.keyed.body.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3160
+# docs/facts/windows/tokens.toml:3156
 "tokens.text.keyed.body.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3165
+# docs/facts/windows/tokens.toml:3161
 "tokens.text.keyed.body.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3192
+# docs/facts/windows/tokens.toml:3188
 "tokens.text.keyed.body_strong.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3197
+# docs/facts/windows/tokens.toml:3193
 "tokens.text.keyed.body_strong.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3202
+# docs/facts/windows/tokens.toml:3198
 "tokens.text.keyed.body_strong.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3229
+# docs/facts/windows/tokens.toml:3225
 "tokens.text.keyed.body_large.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3234
+# docs/facts/windows/tokens.toml:3230
 "tokens.text.keyed.body_large.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3239
+# docs/facts/windows/tokens.toml:3235
 "tokens.text.keyed.body_large.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3266
+# docs/facts/windows/tokens.toml:3262
 "tokens.text.keyed.body_large_strong.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3271
+# docs/facts/windows/tokens.toml:3267
 "tokens.text.keyed.body_large_strong.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3276
+# docs/facts/windows/tokens.toml:3272
 "tokens.text.keyed.body_large_strong.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3303
+# docs/facts/windows/tokens.toml:3299
 "tokens.text.keyed.subtitle.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3308
+# docs/facts/windows/tokens.toml:3304
 "tokens.text.keyed.subtitle.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3313
+# docs/facts/windows/tokens.toml:3309
 "tokens.text.keyed.subtitle.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3340
+# docs/facts/windows/tokens.toml:3336
 "tokens.text.keyed.title.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3345
+# docs/facts/windows/tokens.toml:3341
 "tokens.text.keyed.title.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3350
+# docs/facts/windows/tokens.toml:3346
 "tokens.text.keyed.title.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3377
+# docs/facts/windows/tokens.toml:3373
 "tokens.text.keyed.title_large.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3382
+# docs/facts/windows/tokens.toml:3378
 "tokens.text.keyed.title_large.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3387
+# docs/facts/windows/tokens.toml:3383
 "tokens.text.keyed.title_large.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3414
+# docs/facts/windows/tokens.toml:3410
 "tokens.text.keyed.display.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3419
+# docs/facts/windows/tokens.toml:3415
 "tokens.text.keyed.display.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3424
+# docs/facts/windows/tokens.toml:3420
 "tokens.text.keyed.display.scaling_role" = "U518"
 
 [inputs.accent]
-# docs/facts/windows/roles.toml:7462
+# docs/facts/windows/roles.toml:7479
 light = "#0078d4"
-# docs/facts/windows/roles.toml:7462
+# docs/facts/windows/roles.toml:7479
 dark = "#0078d4"
 
 [inputs.accent_ramp.dark1]
-# docs/facts/windows/roles.toml:7472
+# docs/facts/windows/roles.toml:7489
 light = "#0067c0"
-# docs/facts/windows/roles.toml:7472
+# docs/facts/windows/roles.toml:7489
 dark = "#0067c0"
 
 [inputs.accent_ramp.dark2]
-# docs/facts/windows/roles.toml:7482
+# docs/facts/windows/roles.toml:7499
 light = "#003e92"
-# docs/facts/windows/roles.toml:7482
+# docs/facts/windows/roles.toml:7499
 dark = "#003e92"
 
 [inputs.accent_ramp.dark3]
-# docs/facts/windows/roles.toml:7492
+# docs/facts/windows/roles.toml:7509
 light = "#001a68"
-# docs/facts/windows/roles.toml:7492
+# docs/facts/windows/roles.toml:7509
 dark = "#001a68"
 
 [inputs.accent_ramp.light1]
-# docs/facts/windows/roles.toml:7502
+# docs/facts/windows/roles.toml:7519
 light = "#0091f8"
-# docs/facts/windows/roles.toml:7502
+# docs/facts/windows/roles.toml:7519
 dark = "#0091f8"
 
 [inputs.accent_ramp.light2]
-# docs/facts/windows/roles.toml:7512
+# docs/facts/windows/roles.toml:7529
 light = "#4cc2ff"
-# docs/facts/windows/roles.toml:7512
+# docs/facts/windows/roles.toml:7529
 dark = "#4cc2ff"
 
 [inputs.accent_ramp.light3]
-# docs/facts/windows/roles.toml:7522
+# docs/facts/windows/roles.toml:7539
 light = "#99ebff"
-# docs/facts/windows/roles.toml:7522
+# docs/facts/windows/roles.toml:7539
 dark = "#99ebff"
 
 [colors.light.keyed]
@@ -831,9 +831,9 @@ selection_text_foreground_unfocused = "absent"
 find_highlight = "absent"
 # docs/facts/windows/roles.toml:5867
 scrim = "= role.@smoke_fill_default"
-# docs/facts/windows/roles.toml:7405
-selection_text_background_unfocused = "absent"
 # docs/facts/windows/roles.toml:7422
+selection_text_background_unfocused = "absent"
+# docs/facts/windows/roles.toml:7439
 selection_text_foreground = "absent"
 
 [colors.light.surfaces.window]
@@ -951,61 +951,61 @@ decoration_hover = "absent"
 shade = "absent"
 # docs/facts/windows/roles.toml:6905
 shade_darker = "absent"
-# docs/facts/windows/roles.toml:6922
+# docs/facts/windows/roles.toml:6924
 border = "absent"
-# docs/facts/windows/roles.toml:6939
+# docs/facts/windows/roles.toml:6947
 background_active = "absent"
-# docs/facts/windows/roles.toml:6956
+# docs/facts/windows/roles.toml:6964
 background_link = "absent"
-# docs/facts/windows/roles.toml:6973
+# docs/facts/windows/roles.toml:6981
 background_visited = "absent"
-# docs/facts/windows/roles.toml:6990
+# docs/facts/windows/roles.toml:6998
 background_negative = "absent"
-# docs/facts/windows/roles.toml:7007
+# docs/facts/windows/roles.toml:7015
 background_neutral = "absent"
-# docs/facts/windows/roles.toml:7024
+# docs/facts/windows/roles.toml:7032
 background_positive = "absent"
-# docs/facts/windows/roles.toml:7041
+# docs/facts/windows/roles.toml:7051
 disabled.foreground = "absent"
-# docs/facts/windows/roles.toml:7058
+# docs/facts/windows/roles.toml:7074
 disabled.background = "absent"
-# docs/facts/windows/roles.toml:7075
+# docs/facts/windows/roles.toml:7091
 disabled.background_alternate = "absent"
-# docs/facts/windows/roles.toml:7092
+# docs/facts/windows/roles.toml:7108
 disabled.foreground_inactive = "absent"
-# docs/facts/windows/roles.toml:7109
+# docs/facts/windows/roles.toml:7125
 disabled.foreground_active = "absent"
-# docs/facts/windows/roles.toml:7126
+# docs/facts/windows/roles.toml:7142
 disabled.link = "absent"
-# docs/facts/windows/roles.toml:7143
+# docs/facts/windows/roles.toml:7159
 disabled.link_visited = "absent"
-# docs/facts/windows/roles.toml:7160
+# docs/facts/windows/roles.toml:7176
 disabled.negative = "absent"
-# docs/facts/windows/roles.toml:7177
+# docs/facts/windows/roles.toml:7193
 disabled.neutral = "absent"
-# docs/facts/windows/roles.toml:7194
+# docs/facts/windows/roles.toml:7210
 disabled.positive = "absent"
-# docs/facts/windows/roles.toml:7211
+# docs/facts/windows/roles.toml:7227
 disabled.decoration_focus = "absent"
-# docs/facts/windows/roles.toml:7228
+# docs/facts/windows/roles.toml:7244
 disabled.decoration_hover = "absent"
-# docs/facts/windows/roles.toml:7245
+# docs/facts/windows/roles.toml:7261
 disabled.shade = "absent"
-# docs/facts/windows/roles.toml:7262
+# docs/facts/windows/roles.toml:7278
 disabled.shade_darker = "absent"
-# docs/facts/windows/roles.toml:7279
+# docs/facts/windows/roles.toml:7295
 disabled.border = "absent"
-# docs/facts/windows/roles.toml:7296
+# docs/facts/windows/roles.toml:7312
 disabled.background_active = "absent"
-# docs/facts/windows/roles.toml:7313
+# docs/facts/windows/roles.toml:7329
 disabled.background_link = "absent"
-# docs/facts/windows/roles.toml:7330
+# docs/facts/windows/roles.toml:7346
 disabled.background_visited = "absent"
-# docs/facts/windows/roles.toml:7347
+# docs/facts/windows/roles.toml:7363
 disabled.background_negative = "absent"
-# docs/facts/windows/roles.toml:7364
+# docs/facts/windows/roles.toml:7380
 disabled.background_neutral = "absent"
-# docs/facts/windows/roles.toml:7381
+# docs/facts/windows/roles.toml:7397
 disabled.background_positive = "absent"
 
 [colors.dark.keyed]
@@ -1355,9 +1355,9 @@ selection_text_foreground_unfocused = "absent"
 find_highlight = "absent"
 # docs/facts/windows/roles.toml:5867
 scrim = "= role.@smoke_fill_default"
-# docs/facts/windows/roles.toml:7405
-selection_text_background_unfocused = "absent"
 # docs/facts/windows/roles.toml:7422
+selection_text_background_unfocused = "absent"
+# docs/facts/windows/roles.toml:7439
 selection_text_foreground = "absent"
 
 [colors.dark.surfaces.window]
@@ -1475,61 +1475,61 @@ decoration_hover = "absent"
 shade = "absent"
 # docs/facts/windows/roles.toml:6905
 shade_darker = "absent"
-# docs/facts/windows/roles.toml:6922
+# docs/facts/windows/roles.toml:6924
 border = "absent"
-# docs/facts/windows/roles.toml:6939
+# docs/facts/windows/roles.toml:6947
 background_active = "absent"
-# docs/facts/windows/roles.toml:6956
+# docs/facts/windows/roles.toml:6964
 background_link = "absent"
-# docs/facts/windows/roles.toml:6973
+# docs/facts/windows/roles.toml:6981
 background_visited = "absent"
-# docs/facts/windows/roles.toml:6990
+# docs/facts/windows/roles.toml:6998
 background_negative = "absent"
-# docs/facts/windows/roles.toml:7007
+# docs/facts/windows/roles.toml:7015
 background_neutral = "absent"
-# docs/facts/windows/roles.toml:7024
+# docs/facts/windows/roles.toml:7032
 background_positive = "absent"
-# docs/facts/windows/roles.toml:7041
+# docs/facts/windows/roles.toml:7051
 disabled.foreground = "absent"
-# docs/facts/windows/roles.toml:7058
+# docs/facts/windows/roles.toml:7074
 disabled.background = "absent"
-# docs/facts/windows/roles.toml:7075
+# docs/facts/windows/roles.toml:7091
 disabled.background_alternate = "absent"
-# docs/facts/windows/roles.toml:7092
+# docs/facts/windows/roles.toml:7108
 disabled.foreground_inactive = "absent"
-# docs/facts/windows/roles.toml:7109
+# docs/facts/windows/roles.toml:7125
 disabled.foreground_active = "absent"
-# docs/facts/windows/roles.toml:7126
+# docs/facts/windows/roles.toml:7142
 disabled.link = "absent"
-# docs/facts/windows/roles.toml:7143
+# docs/facts/windows/roles.toml:7159
 disabled.link_visited = "absent"
-# docs/facts/windows/roles.toml:7160
+# docs/facts/windows/roles.toml:7176
 disabled.negative = "absent"
-# docs/facts/windows/roles.toml:7177
+# docs/facts/windows/roles.toml:7193
 disabled.neutral = "absent"
-# docs/facts/windows/roles.toml:7194
+# docs/facts/windows/roles.toml:7210
 disabled.positive = "absent"
-# docs/facts/windows/roles.toml:7211
+# docs/facts/windows/roles.toml:7227
 disabled.decoration_focus = "absent"
-# docs/facts/windows/roles.toml:7228
+# docs/facts/windows/roles.toml:7244
 disabled.decoration_hover = "absent"
-# docs/facts/windows/roles.toml:7245
+# docs/facts/windows/roles.toml:7261
 disabled.shade = "absent"
-# docs/facts/windows/roles.toml:7262
+# docs/facts/windows/roles.toml:7278
 disabled.shade_darker = "absent"
-# docs/facts/windows/roles.toml:7279
+# docs/facts/windows/roles.toml:7295
 disabled.border = "absent"
-# docs/facts/windows/roles.toml:7296
+# docs/facts/windows/roles.toml:7312
 disabled.background_active = "absent"
-# docs/facts/windows/roles.toml:7313
+# docs/facts/windows/roles.toml:7329
 disabled.background_link = "absent"
-# docs/facts/windows/roles.toml:7330
+# docs/facts/windows/roles.toml:7346
 disabled.background_visited = "absent"
-# docs/facts/windows/roles.toml:7347
+# docs/facts/windows/roles.toml:7363
 disabled.background_negative = "absent"
-# docs/facts/windows/roles.toml:7364
+# docs/facts/windows/roles.toml:7380
 disabled.background_neutral = "absent"
-# docs/facts/windows/roles.toml:7381
+# docs/facts/windows/roles.toml:7397
 disabled.background_positive = "absent"
 
 [tokens.motion]
@@ -1553,421 +1553,419 @@ durations.connected_service_ms = 300
 timings.connected_service = { cubic_bezier = [0.8, 0, 0.2, 1] }
 # docs/facts/windows/tokens.toml:130
 durations.scroll_into_view_ms = 0
-# docs/facts/windows/tokens.toml:160
+# docs/facts/windows/tokens.toml:155
 color_space = "straight_srgb8"
 
 [tokens.behavior]
-# docs/facts/windows/tokens.toml:173
+# docs/facts/windows/tokens.toml:168
 double_click_time_ms = 500
-# docs/facts/windows/tokens.toml:185
+# docs/facts/windows/tokens.toml:180
 hover_time_ms = 400
-# docs/facts/windows/tokens.toml:215
+# docs/facts/windows/tokens.toml:210
 focus_visible_when = { keyboard = {} }
-# docs/facts/windows/tokens.toml:2797
+# docs/facts/windows/tokens.toml:2792
 double_click_distance_px = 4
-# docs/facts/windows/tokens.toml:2807
+# docs/facts/windows/tokens.toml:2802
 double_click_height_px = 4
-# docs/facts/windows/tokens.toml:2817
+# docs/facts/windows/tokens.toml:2812
 drag_threshold_px = 4
-# docs/facts/windows/tokens.toml:2828
+# docs/facts/windows/tokens.toml:2823
 drag_min_delay_ms = 0
-# docs/facts/windows/tokens.toml:2877
+# docs/facts/windows/tokens.toml:2872
 hide_pointer_while_typing = false
-# docs/facts/windows/tokens.toml:2930
+# docs/facts/windows/tokens.toml:2925
 spring_loading_ms = 1000
 
 [tokens.params]
-# docs/facts/windows/tokens.toml:247
+# docs/facts/windows/tokens.toml:242
 shape.control_corner_radius = 4
-# docs/facts/windows/tokens.toml:267
+# docs/facts/windows/tokens.toml:262
 shape.overlay_corner_radius = 8
-# docs/facts/windows/tokens.toml:2946
+# docs/facts/windows/tokens.toml:2941
 pointer_repeat.delay = 500
-# docs/facts/windows/tokens.toml:2956
+# docs/facts/windows/tokens.toml:2951
 pointer_repeat.interval = 33
 
 [tokens.focus]
-# docs/facts/windows/tokens.toml:290
+# docs/facts/windows/tokens.toml:285
 kind = "ring"
-# docs/facts/windows/tokens.toml:305
+# docs/facts/windows/tokens.toml:300
 width_px = 2
-# docs/facts/windows/tokens.toml:320
+# docs/facts/windows/tokens.toml:315
 paint = "= role.@focus_stroke_outer"
-# docs/facts/windows/tokens.toml:345
+# docs/facts/windows/tokens.toml:340
 dash = "solid"
-# docs/facts/windows/tokens.toml:357
+# docs/facts/windows/tokens.toml:352
 offset.top_px = "= sub(0px, token.focus.width)"
-# docs/facts/windows/tokens.toml:377
+# docs/facts/windows/tokens.toml:372
 offset.right_px = "= sub(0px, token.focus.width)"
-# docs/facts/windows/tokens.toml:397
+# docs/facts/windows/tokens.toml:392
 offset.bottom_px = "= sub(0px, token.focus.width)"
-# docs/facts/windows/tokens.toml:417
+# docs/facts/windows/tokens.toml:412
 offset.left_px = "= sub(0px, token.focus.width)"
-# docs/facts/windows/tokens.toml:442
+# docs/facts/windows/tokens.toml:437
 corners.top_left = "follow_part"
-# docs/facts/windows/tokens.toml:462
+# docs/facts/windows/tokens.toml:457
 corners.top_right = "follow_part"
-# docs/facts/windows/tokens.toml:482
+# docs/facts/windows/tokens.toml:477
 corners.bottom_right = "follow_part"
-# docs/facts/windows/tokens.toml:502
+# docs/facts/windows/tokens.toml:497
 corners.bottom_left = "follow_part"
-# docs/facts/windows/tokens.toml:522
+# docs/facts/windows/tokens.toml:517
 corners.curve = "circular"
-# docs/facts/windows/tokens.toml:547
+# docs/facts/windows/tokens.toml:542
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.@focus_stroke_inner", inset = true, falloff = "gaussian" }] }
-# docs/facts/windows/tokens.toml:585
+# docs/facts/windows/tokens.toml:580
 transition = "absent"
 
 [tokens.text]
-# docs/facts/windows/tokens.toml:608
+# docs/facts/windows/tokens.toml:603
 keyed.caption.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:633
+# docs/facts/windows/tokens.toml:628
 keyed.caption.font.size_px = 12
-# docs/facts/windows/tokens.toml:653
+# docs/facts/windows/tokens.toml:648
 keyed.caption.font.weight = 400
-# docs/facts/windows/tokens.toml:668
+# docs/facts/windows/tokens.toml:663
 keyed.caption.font.style = "normal"
-# docs/facts/windows/tokens.toml:678
+# docs/facts/windows/tokens.toml:673
 keyed.caption.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:688
+# docs/facts/windows/tokens.toml:683
 keyed.caption.line_height = "auto"
-# docs/facts/windows/tokens.toml:703
+# docs/facts/windows/tokens.toml:698
 keyed.caption.decoration = "absent"
-# docs/facts/windows/tokens.toml:713
+# docs/facts/windows/tokens.toml:708
 keyed.caption.elision = "end"
-# docs/facts/windows/tokens.toml:723
+# docs/facts/windows/tokens.toml:718
 keyed.caption.wrap = "word"
-# docs/facts/windows/tokens.toml:733
+# docs/facts/windows/tokens.toml:728
 keyed.caption.max_lines = "absent"
-# docs/facts/windows/tokens.toml:750
+# docs/facts/windows/tokens.toml:745
 keyed.caption.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:767
+# docs/facts/windows/tokens.toml:762
 keyed.caption.fill = "absent"
-# docs/facts/windows/tokens.toml:784
+# docs/facts/windows/tokens.toml:779
 keyed.caption.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:794
+# docs/facts/windows/tokens.toml:789
 keyed.body.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:819
+# docs/facts/windows/tokens.toml:814
 keyed.body.font.size_px = 14
-# docs/facts/windows/tokens.toml:839
+# docs/facts/windows/tokens.toml:834
 keyed.body.font.weight = 400
-# docs/facts/windows/tokens.toml:854
+# docs/facts/windows/tokens.toml:849
 keyed.body.font.style = "normal"
-# docs/facts/windows/tokens.toml:864
+# docs/facts/windows/tokens.toml:859
 keyed.body.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:874
+# docs/facts/windows/tokens.toml:869
 keyed.body.line_height = "auto"
-# docs/facts/windows/tokens.toml:889
+# docs/facts/windows/tokens.toml:884
 keyed.body.decoration = "absent"
-# docs/facts/windows/tokens.toml:899
+# docs/facts/windows/tokens.toml:894
 keyed.body.elision = "end"
-# docs/facts/windows/tokens.toml:909
+# docs/facts/windows/tokens.toml:904
 keyed.body.wrap = "word"
-# docs/facts/windows/tokens.toml:919
+# docs/facts/windows/tokens.toml:914
 keyed.body.max_lines = "absent"
-# docs/facts/windows/tokens.toml:936
+# docs/facts/windows/tokens.toml:931
 keyed.body.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:953
+# docs/facts/windows/tokens.toml:948
 keyed.body.fill = "absent"
-# docs/facts/windows/tokens.toml:970
+# docs/facts/windows/tokens.toml:965
 keyed.body.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:980
+# docs/facts/windows/tokens.toml:975
 keyed.body_strong.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1005
+# docs/facts/windows/tokens.toml:1000
 keyed.body_strong.font.size_px = 14
-# docs/facts/windows/tokens.toml:1025
+# docs/facts/windows/tokens.toml:1020
 keyed.body_strong.font.weight = 600
-# docs/facts/windows/tokens.toml:1045
+# docs/facts/windows/tokens.toml:1040
 keyed.body_strong.font.style = "normal"
-# docs/facts/windows/tokens.toml:1055
+# docs/facts/windows/tokens.toml:1050
 keyed.body_strong.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:1065
+# docs/facts/windows/tokens.toml:1060
 keyed.body_strong.line_height = "auto"
-# docs/facts/windows/tokens.toml:1080
+# docs/facts/windows/tokens.toml:1075
 keyed.body_strong.decoration = "absent"
-# docs/facts/windows/tokens.toml:1090
+# docs/facts/windows/tokens.toml:1085
 keyed.body_strong.elision = "end"
-# docs/facts/windows/tokens.toml:1100
+# docs/facts/windows/tokens.toml:1095
 keyed.body_strong.wrap = "word"
-# docs/facts/windows/tokens.toml:1110
+# docs/facts/windows/tokens.toml:1105
 keyed.body_strong.max_lines = "absent"
-# docs/facts/windows/tokens.toml:1127
+# docs/facts/windows/tokens.toml:1122
 keyed.body_strong.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:1144
+# docs/facts/windows/tokens.toml:1139
 keyed.body_strong.fill = "absent"
-# docs/facts/windows/tokens.toml:1161
+# docs/facts/windows/tokens.toml:1156
 keyed.body_strong.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:1171
+# docs/facts/windows/tokens.toml:1166
 keyed.body_large.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1196
+# docs/facts/windows/tokens.toml:1191
 keyed.body_large.font.size_px = 18
-# docs/facts/windows/tokens.toml:1216
+# docs/facts/windows/tokens.toml:1211
 keyed.body_large.font.weight = 400
-# docs/facts/windows/tokens.toml:1231
+# docs/facts/windows/tokens.toml:1226
 keyed.body_large.font.style = "normal"
-# docs/facts/windows/tokens.toml:1241
+# docs/facts/windows/tokens.toml:1236
 keyed.body_large.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:1251
+# docs/facts/windows/tokens.toml:1246
 keyed.body_large.line_height = "auto"
-# docs/facts/windows/tokens.toml:1266
+# docs/facts/windows/tokens.toml:1261
 keyed.body_large.decoration = "absent"
-# docs/facts/windows/tokens.toml:1276
+# docs/facts/windows/tokens.toml:1271
 keyed.body_large.elision = "end"
-# docs/facts/windows/tokens.toml:1286
+# docs/facts/windows/tokens.toml:1281
 keyed.body_large.wrap = "word"
-# docs/facts/windows/tokens.toml:1296
+# docs/facts/windows/tokens.toml:1291
 keyed.body_large.max_lines = "absent"
-# docs/facts/windows/tokens.toml:1313
+# docs/facts/windows/tokens.toml:1308
 keyed.body_large.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:1330
+# docs/facts/windows/tokens.toml:1325
 keyed.body_large.fill = "absent"
-# docs/facts/windows/tokens.toml:1347
+# docs/facts/windows/tokens.toml:1342
 keyed.body_large.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:1357
+# docs/facts/windows/tokens.toml:1352
 keyed.body_large_strong.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1382
+# docs/facts/windows/tokens.toml:1377
 keyed.body_large_strong.font.size_px = 18
-# docs/facts/windows/tokens.toml:1402
+# docs/facts/windows/tokens.toml:1397
 keyed.body_large_strong.font.weight = 600
-# docs/facts/windows/tokens.toml:1422
+# docs/facts/windows/tokens.toml:1417
 keyed.body_large_strong.font.style = "normal"
-# docs/facts/windows/tokens.toml:1432
+# docs/facts/windows/tokens.toml:1427
 keyed.body_large_strong.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:1442
+# docs/facts/windows/tokens.toml:1437
 keyed.body_large_strong.line_height = "auto"
-# docs/facts/windows/tokens.toml:1457
+# docs/facts/windows/tokens.toml:1452
 keyed.body_large_strong.decoration = "absent"
-# docs/facts/windows/tokens.toml:1467
+# docs/facts/windows/tokens.toml:1462
 keyed.body_large_strong.elision = "end"
-# docs/facts/windows/tokens.toml:1477
+# docs/facts/windows/tokens.toml:1472
 keyed.body_large_strong.wrap = "word"
-# docs/facts/windows/tokens.toml:1487
+# docs/facts/windows/tokens.toml:1482
 keyed.body_large_strong.max_lines = "absent"
-# docs/facts/windows/tokens.toml:1504
+# docs/facts/windows/tokens.toml:1499
 keyed.body_large_strong.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:1521
+# docs/facts/windows/tokens.toml:1516
 keyed.body_large_strong.fill = "absent"
-# docs/facts/windows/tokens.toml:1538
+# docs/facts/windows/tokens.toml:1533
 keyed.body_large_strong.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:1548
+# docs/facts/windows/tokens.toml:1543
 keyed.subtitle.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1573
+# docs/facts/windows/tokens.toml:1568
 keyed.subtitle.font.size_px = 20
-# docs/facts/windows/tokens.toml:1593
+# docs/facts/windows/tokens.toml:1588
 keyed.subtitle.font.weight = 600
-# docs/facts/windows/tokens.toml:1613
+# docs/facts/windows/tokens.toml:1608
 keyed.subtitle.font.style = "normal"
-# docs/facts/windows/tokens.toml:1623
+# docs/facts/windows/tokens.toml:1618
 keyed.subtitle.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:1633
+# docs/facts/windows/tokens.toml:1628
 keyed.subtitle.line_height = "auto"
-# docs/facts/windows/tokens.toml:1648
+# docs/facts/windows/tokens.toml:1643
 keyed.subtitle.decoration = "absent"
-# docs/facts/windows/tokens.toml:1658
+# docs/facts/windows/tokens.toml:1653
 keyed.subtitle.elision = "end"
-# docs/facts/windows/tokens.toml:1668
+# docs/facts/windows/tokens.toml:1663
 keyed.subtitle.wrap = "word"
-# docs/facts/windows/tokens.toml:1678
+# docs/facts/windows/tokens.toml:1673
 keyed.subtitle.max_lines = "absent"
-# docs/facts/windows/tokens.toml:1695
+# docs/facts/windows/tokens.toml:1690
 keyed.subtitle.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:1712
+# docs/facts/windows/tokens.toml:1707
 keyed.subtitle.fill = "absent"
-# docs/facts/windows/tokens.toml:1729
+# docs/facts/windows/tokens.toml:1724
 keyed.subtitle.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:1739
+# docs/facts/windows/tokens.toml:1734
 keyed.title.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1764
+# docs/facts/windows/tokens.toml:1759
 keyed.title.font.size_px = 28
-# docs/facts/windows/tokens.toml:1784
+# docs/facts/windows/tokens.toml:1779
 keyed.title.font.weight = 600
-# docs/facts/windows/tokens.toml:1804
+# docs/facts/windows/tokens.toml:1799
 keyed.title.font.style = "normal"
-# docs/facts/windows/tokens.toml:1814
+# docs/facts/windows/tokens.toml:1809
 keyed.title.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:1824
+# docs/facts/windows/tokens.toml:1819
 keyed.title.line_height = "auto"
-# docs/facts/windows/tokens.toml:1839
+# docs/facts/windows/tokens.toml:1834
 keyed.title.decoration = "absent"
-# docs/facts/windows/tokens.toml:1849
+# docs/facts/windows/tokens.toml:1844
 keyed.title.elision = "end"
-# docs/facts/windows/tokens.toml:1859
+# docs/facts/windows/tokens.toml:1854
 keyed.title.wrap = "word"
-# docs/facts/windows/tokens.toml:1869
+# docs/facts/windows/tokens.toml:1864
 keyed.title.max_lines = "absent"
-# docs/facts/windows/tokens.toml:1886
+# docs/facts/windows/tokens.toml:1881
 keyed.title.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:1903
+# docs/facts/windows/tokens.toml:1898
 keyed.title.fill = "absent"
-# docs/facts/windows/tokens.toml:1920
+# docs/facts/windows/tokens.toml:1915
 keyed.title.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:1930
+# docs/facts/windows/tokens.toml:1925
 keyed.title_large.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1955
+# docs/facts/windows/tokens.toml:1950
 keyed.title_large.font.size_px = 40
-# docs/facts/windows/tokens.toml:1975
+# docs/facts/windows/tokens.toml:1970
 keyed.title_large.font.weight = 600
-# docs/facts/windows/tokens.toml:1995
+# docs/facts/windows/tokens.toml:1990
 keyed.title_large.font.style = "normal"
-# docs/facts/windows/tokens.toml:2005
+# docs/facts/windows/tokens.toml:2000
 keyed.title_large.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:2015
+# docs/facts/windows/tokens.toml:2010
 keyed.title_large.line_height = "auto"
-# docs/facts/windows/tokens.toml:2030
+# docs/facts/windows/tokens.toml:2025
 keyed.title_large.decoration = "absent"
-# docs/facts/windows/tokens.toml:2040
+# docs/facts/windows/tokens.toml:2035
 keyed.title_large.elision = "end"
-# docs/facts/windows/tokens.toml:2050
+# docs/facts/windows/tokens.toml:2045
 keyed.title_large.wrap = "word"
-# docs/facts/windows/tokens.toml:2060
+# docs/facts/windows/tokens.toml:2055
 keyed.title_large.max_lines = "absent"
-# docs/facts/windows/tokens.toml:2077
+# docs/facts/windows/tokens.toml:2072
 keyed.title_large.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:2094
+# docs/facts/windows/tokens.toml:2089
 keyed.title_large.fill = "absent"
-# docs/facts/windows/tokens.toml:2111
+# docs/facts/windows/tokens.toml:2106
 keyed.title_large.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:2121
+# docs/facts/windows/tokens.toml:2116
 keyed.display.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:2146
+# docs/facts/windows/tokens.toml:2141
 keyed.display.font.size_px = 68
-# docs/facts/windows/tokens.toml:2166
+# docs/facts/windows/tokens.toml:2161
 keyed.display.font.weight = 600
-# docs/facts/windows/tokens.toml:2186
+# docs/facts/windows/tokens.toml:2181
 keyed.display.font.style = "normal"
-# docs/facts/windows/tokens.toml:2196
+# docs/facts/windows/tokens.toml:2191
 keyed.display.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:2206
+# docs/facts/windows/tokens.toml:2201
 keyed.display.line_height = "auto"
-# docs/facts/windows/tokens.toml:2221
+# docs/facts/windows/tokens.toml:2216
 keyed.display.decoration = "absent"
-# docs/facts/windows/tokens.toml:2231
+# docs/facts/windows/tokens.toml:2226
 keyed.display.elision = "end"
-# docs/facts/windows/tokens.toml:2241
+# docs/facts/windows/tokens.toml:2236
 keyed.display.wrap = "word"
-# docs/facts/windows/tokens.toml:2251
+# docs/facts/windows/tokens.toml:2246
 keyed.display.max_lines = "absent"
-# docs/facts/windows/tokens.toml:2268
+# docs/facts/windows/tokens.toml:2263
 keyed.display.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:2285
+# docs/facts/windows/tokens.toml:2280
 keyed.display.fill = "absent"
-# docs/facts/windows/tokens.toml:2302
+# docs/facts/windows/tokens.toml:2297
 keyed.display.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:2315
+# docs/facts/windows/tokens.toml:2310
 roles.body = "= token.text.keyed.body"
-# docs/facts/windows/tokens.toml:2325
+# docs/facts/windows/tokens.toml:2320
 roles.caption = "= token.text.keyed.caption"
-# docs/facts/windows/tokens.toml:2335
+# docs/facts/windows/tokens.toml:2330
 roles.title1 = "= token.text.keyed.title"
-# docs/facts/windows/tokens.toml:2345
+# docs/facts/windows/tokens.toml:2340
 roles.title2 = "= token.text.keyed.subtitle"
-# docs/facts/windows/tokens.toml:2355
+# docs/facts/windows/tokens.toml:2350
 roles.title3 = "= token.text.roles.title2"
-# docs/facts/windows/tokens.toml:2365
+# docs/facts/windows/tokens.toml:2360
 roles.headline = "= token.text.roles.title2"
-# docs/facts/windows/tokens.toml:2375
+# docs/facts/windows/tokens.toml:2370
 roles.subheadline = "= token.text.roles.body"
-# docs/facts/windows/tokens.toml:2385
+# docs/facts/windows/tokens.toml:2380
 roles.large_title = "= token.text.keyed.title_large"
-# docs/facts/windows/tokens.toml:2395
+# docs/facts/windows/tokens.toml:2390
 roles.display_large = "= token.text.keyed.display"
-# docs/facts/windows/tokens.toml:2405
+# docs/facts/windows/tokens.toml:2400
 roles.display_medium = "= token.text.roles.display_large"
-# docs/facts/windows/tokens.toml:2415
+# docs/facts/windows/tokens.toml:2410
 roles.display_small = "= token.text.roles.display_large"
-# docs/facts/windows/tokens.toml:2425
+# docs/facts/windows/tokens.toml:2420
 roles.body_emphasized = "= token.text.keyed.body_strong"
-# docs/facts/windows/tokens.toml:2435
+# docs/facts/windows/tokens.toml:2430
 roles.callout = "= token.text.keyed.body_large"
-# docs/facts/windows/tokens.toml:2445
+# docs/facts/windows/tokens.toml:2440
 roles.footnote = "= token.text.roles.caption"
-# docs/facts/windows/tokens.toml:2455
+# docs/facts/windows/tokens.toml:2450
 roles.caption_emphasized = "= token.text.roles.caption"
-# docs/facts/windows/tokens.toml:2465
+# docs/facts/windows/tokens.toml:2460
 roles.caption2 = "= token.text.roles.caption"
-# docs/facts/windows/tokens.toml:2475
+# docs/facts/windows/tokens.toml:2470
 roles.label = "= token.text.roles.body"
-# docs/facts/windows/tokens.toml:2485
+# docs/facts/windows/tokens.toml:2480
 roles.numeric = "= token.text.roles.body"
-# docs/facts/windows/tokens.toml:2497
+# docs/facts/windows/tokens.toml:2492
 font_dpi = 96
-# docs/facts/windows/tokens.toml:2557
+# docs/facts/windows/tokens.toml:2552
 fallbacks.per_family."Segoe Fluent Icons" = ["Segoe MDL2 Assets"]
-# docs/facts/windows/tokens.toml:3001
+# docs/facts/windows/tokens.toml:3002
 rendering.antialiasing = "grayscale"
-# docs/facts/windows/tokens.toml:3016
-rendering.subpixel_order = "rgb"
-# docs/facts/windows/tokens.toml:3036
+# docs/facts/windows/tokens.toml:3032
 rendering.gamma = 1.8
-# docs/facts/windows/tokens.toml:3046
-rendering.contrast = 0.5
-# docs/facts/windows/tokens.toml:3082
+# docs/facts/windows/tokens.toml:3042
+rendering.contrast = 1.0
+# docs/facts/windows/tokens.toml:3078
 fallbacks.per_language = { en-US = ["Segoe UI"], el-GR = ["Segoe UI"], ru-RU = ["Segoe UI"], ar-SA = ["Segoe UI"], fa-IR = ["Segoe UI"], he-IL = ["Segoe UI"], hi-IN = ["Nirmala UI"], bn-IN = ["Nirmala UI"], ta-IN = ["Nirmala UI"], th-TH = ["Leelawadee UI"], lo-LA = ["Leelawadee UI"], km-KH = ["Leelawadee UI"], my-MM = ["Myanmar Text"], si-LK = ["Nirmala UI"], hy-AM = ["Segoe UI"], ka-GE = ["Segoe UI"], am-ET = ["Ebrima"], ja-JP = ["Yu Gothic UI"], zh-CN = ["Microsoft YaHei UI"], zh-TW = ["Microsoft JhengHei UI"], zh-HK = ["Microsoft JhengHei UI"], ko-KR = ["Malgun Gothic"] }
-# docs/facts/windows/tokens.toml:3096
+# docs/facts/windows/tokens.toml:3092
 keyed.caption.case = "mixed"
-# docs/facts/windows/tokens.toml:3107
+# docs/facts/windows/tokens.toml:3103
 keyed.caption.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3133
+# docs/facts/windows/tokens.toml:3129
 keyed.body.case = "mixed"
-# docs/facts/windows/tokens.toml:3144
+# docs/facts/windows/tokens.toml:3140
 keyed.body.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3170
+# docs/facts/windows/tokens.toml:3166
 keyed.body_strong.case = "mixed"
-# docs/facts/windows/tokens.toml:3181
+# docs/facts/windows/tokens.toml:3177
 keyed.body_strong.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3207
+# docs/facts/windows/tokens.toml:3203
 keyed.body_large.case = "mixed"
-# docs/facts/windows/tokens.toml:3218
+# docs/facts/windows/tokens.toml:3214
 keyed.body_large.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3244
+# docs/facts/windows/tokens.toml:3240
 keyed.body_large_strong.case = "mixed"
-# docs/facts/windows/tokens.toml:3255
+# docs/facts/windows/tokens.toml:3251
 keyed.body_large_strong.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3281
+# docs/facts/windows/tokens.toml:3277
 keyed.subtitle.case = "mixed"
-# docs/facts/windows/tokens.toml:3292
+# docs/facts/windows/tokens.toml:3288
 keyed.subtitle.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3318
+# docs/facts/windows/tokens.toml:3314
 keyed.title.case = "mixed"
-# docs/facts/windows/tokens.toml:3329
+# docs/facts/windows/tokens.toml:3325
 keyed.title.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3355
+# docs/facts/windows/tokens.toml:3351
 keyed.title_large.case = "mixed"
-# docs/facts/windows/tokens.toml:3366
+# docs/facts/windows/tokens.toml:3362
 keyed.title_large.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3392
+# docs/facts/windows/tokens.toml:3388
 keyed.display.case = "mixed"
-# docs/facts/windows/tokens.toml:3403
+# docs/facts/windows/tokens.toml:3399
 keyed.display.word_spacing_px = 0
 
 [tokens.icons]
-# docs/facts/windows/tokens.toml:2519
+# docs/facts/windows/tokens.toml:2514
 sizes.toolbar.size_px = 16
-# docs/facts/windows/tokens.toml:2538
+# docs/facts/windows/tokens.toml:2533
 animated_visuals.chevron_down_small = { duration_ms = 483.3333, markers = { NormalToPointerOver_Start = 0.0, NormalToPointerOver_End = 0.0, NormalToPressed_Start = 0.0, NormalToPressed_End = 0.312068965517241, PointerOverToNormal_Start = 0.0, PointerOverToNormal_End = 0.0, PointerOverToPressed_Start = 0.0, PointerOverToPressed_End = 0.312068965517241, PressedToNormal_Start = 0.346551724137931, PressedToNormal_End = 0.967241379310345, PressedToPointerOver_Start = 0.346551724137931, PressedToPointerOver_End = 0.967241379310345 } }
-# docs/facts/windows/tokens.toml:2577
+# docs/facts/windows/tokens.toml:2572
 animated_visuals.accept = { duration_ms = 2666.6666, markers = { NormalOnToNormalOff_Start = 0.0, NormalOnToNormalOff_End = 0.0253125, NormalOnToPointerOverOn_Start = 0.0315625, NormalOnToPointerOverOn_End = 0.0565625, NormalOnToPressedOn_Start = 0.0628125, NormalOnToPressedOn_End = 0.0878125, NormalOffToNormalOn_Start = 0.0940625, NormalOffToNormalOn_End = 0.2128125, NormalOffToPointerOverOff_Start = 0.2190625, NormalOffToPointerOverOff_End = 0.2440625, NormalOffToPressedOff_Start = 0.2503125, NormalOffToPressedOff_End = 0.2753125, PointerOverOnToPointerOverOff_Start = 0.2815625, PointerOverOnToPointerOverOff_End = 0.3065625, PointerOverOnToNormalOn_Start = 0.3128125, PointerOverOnToNormalOn_End = 0.3378125, PointerOverOnToPressedOn_Start = 0.3440625, PointerOverOnToPressedOn_End = 0.3690625, PointerOverOffToPointerOverOn_Start = 0.3753125, PointerOverOffToPointerOverOn_End = 0.4940625, PointerOverOffToNormalOff_Start = 0.5003125, PointerOverOffToNormalOff_End = 0.5253125, PointerOverOffToPressedOff_Start = 0.5315625, PointerOverOffToPressedOff_End = 0.5565625, PressedOnToPressedOff_Start = 0.5628125, PressedOnToPressedOff_End = 0.5878125, PressedOnToPointerOverOff_Start = 0.5940625, PressedOnToPointerOverOff_End = 0.6190625, PressedOnToNormalOff_Start = 0.6253125, PressedOnToNormalOff_End = 0.6503125, PressedOffToPressedOn_Start = 0.6565625, PressedOffToPressedOn_End = 0.7128125, PressedOffToPointerOverOn_Start = 0.7190625, PressedOffToPointerOverOn_End = 0.8378125, PressedOffToNormalOn_Start = 0.8440625, PressedOffToNormalOn_End = 0.9628125, NormalIndeterminate = 0.9690625, PointerOverIndeterminate = 0.9815625, PressedIndeterminate = 0.9940625 } }
-# docs/facts/windows/tokens.toml:2594
+# docs/facts/windows/tokens.toml:2589
 set = "segoe_fluent"
 
 [tokens.caret]
-# docs/facts/windows/tokens.toml:2698
+# docs/facts/windows/tokens.toml:2693
 blink_style = "hard"
-# docs/facts/windows/tokens.toml:2721
+# docs/facts/windows/tokens.toml:2716
 blink_on_ms = 530
-# docs/facts/windows/tokens.toml:2731
+# docs/facts/windows/tokens.toml:2726
 blink_off_ms = 530
-# docs/facts/windows/tokens.toml:2761
+# docs/facts/windows/tokens.toml:2756
 width_px = 1
-# docs/facts/windows/tokens.toml:2771
+# docs/facts/windows/tokens.toml:2766
 secondary = "absent"
-# docs/facts/windows/tokens.toml:2782
+# docs/facts/windows/tokens.toml:2777
 shown_in_read_only = false
 
 [tokens]
-# docs/facts/windows/tokens.toml:3434
+# docs/facts/windows/tokens.toml:3430
 kde = "absent"
-# docs/facts/windows/tokens.toml:3451
+# docs/facts/windows/tokens.toml:3447
 material = "absent"
 
 [widgets.button.body]
@@ -5793,5 +5791,5 @@ surfaces.selection.background = "= role.@system_control_highlight_accent"
 surfaces.selection.foreground_inactive = "= role.@system_highlight_text"
 # docs/facts/windows/roles.toml:6762
 surfaces.selection.link = "= role.@system_highlight_text"
-# docs/facts/windows/roles.toml:7432
+# docs/facts/windows/roles.toml:7449
 global.selection_text_foreground = "= role.@system_highlight_text"

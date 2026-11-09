@@ -1232,10 +1232,12 @@ source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
 quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 # `.card`'s three-layer shadow (0,1,0), and its high-contrast outline, over the plain button's none and inset ring
+# (its layers bottom first, CSS's list reversed, as a `box-shadow` list paints its first shadow on top: S2.5's *Layer
+# order*, ADD-A141)
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["@card"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+value = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 rows = ["GN-1.252"]
 
 [[fact.cite]]
@@ -1256,7 +1258,7 @@ quote = "/* This approximates the error function, needed for the gaussian integr
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["@card"], conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+value = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
 rows = ["GN-1.252"]
 
 [[fact.cite]]
@@ -3184,7 +3186,7 @@ quote = "PANGO_WEIGHT_NORMAL = 400,"
 kind = "published"
 source = "gtk@4.24.1 gtk/gtksettings.c:1356-1390"
 quote = "settings_update_font_values (GtkSettings *settings)"
-absent = ["pango_font_description_get_weight"]
+absent = ["pango_font_description_get_weight", "pango_font_description_get_style", "pango_font_description_get_stretch", "pango_font_description_get_width", "pango_font_description_get_variant", "pango_font_description_get_variations", "pango_font_description_get_gravity", "pango_font_description_get_features", "pango_font_description_get_color", "PANGO_FONT_MASK_WEIGHT", "PANGO_FONT_MASK_STYLE", "PANGO_FONT_MASK_STRETCH", "PANGO_FONT_MASK_VARIANT", "PANGO_FONT_MASK_VARIATIONS"]
 
 [[fact]]
 key = "button.body.padding"
@@ -4271,11 +4273,12 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
 
-# the inner button's inset ring (high contrast) and drop ring, drawn over the outer card's shadow
+# the inner button's inset ring (high contrast) and drop ring, drawn over the outer card's shadow: the outer
+# `menubutton.card` node's layers first, bottom first, then the inner button's (S2.5's *Layer order*, ADD-A141)
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["menu", "@card"], conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+value = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.38", "GN-1.252"]
 
 [[fact.cite]]
@@ -4306,7 +4309,7 @@ quote = "/* This approximates the error function, needed for the gaussian integr
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["menu", "@card"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+value = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.25", "GN-1.252"]
 
 [[fact.cite]]
@@ -4338,7 +4341,7 @@ quote = "/* This approximates the error function, needed for the gaussian integr
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["menu", "@card"], states = ["drop_target"], conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+value = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.25", "GN-1.252"]
 
 [[fact.cite]]
@@ -4376,7 +4379,7 @@ quote = "/* This approximates the error function, needed for the gaussian integr
 [[fact]]
 key = "button.body.shadow"
 when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.35"]
 
 [[fact.cite]]
@@ -4440,7 +4443,7 @@ quote = "/* This approximates the error function, needed for the gaussian integr
 [[fact]]
 key = "button.body.shadow"
 when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["drop_target"], conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(srgb(1, 1, 1, 0.9), token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(srgb(1, 1, 1, 0.9), token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.35"]
 
 [[fact.cite]]
