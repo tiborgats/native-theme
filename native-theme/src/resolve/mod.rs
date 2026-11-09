@@ -440,12 +440,17 @@ enum Reader {
 ///
 /// The reader's or stand-in's holds S8's palette leave-out too: at the
 /// schemes where a palette above it applies (`palette`), its colour bases,
-/// colour rules, colour inputs but those `kept` (a KDE port's: the accent
-/// inputs, R2.6; ADD-A142), KDE's three lists and `token.kde` are not in
-/// force. Validation reads the colours and inputs of it; its `token.kde`
-/// it keeps, conservatively, as it reads the tokens under every scheme at
-/// once, and a port's `Tokens` rule states every field of `token.kde`
-/// over it at the port's scheme.
+/// colour rules, inputs (every input it states, each a colour) but those
+/// `kept` (a KDE port's: the accent inputs, R2.6; ADD-A142), the three
+/// lists (`groups`, `inactive_groups` and `unset_keys`, separate
+/// `InputBases` fields) and `token.kde` are not in force (ADD-A145).
+/// Validation reads the colours and inputs of it; its `token.kde` it
+/// keeps, conservatively, as it reads the tokens under every scheme at
+/// once, and no check then differs: a port's `Tokens` rule states every
+/// field of `token.kde` over it at the port's scheme, and the one check
+/// reading a `token.kde` value across layers, a mapping palette's
+/// (`validate::combos::mapping_palette`), reads the preset's `tint_factor`
+/// alone (S8, S12).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct LeftOut {
     /// The schemes at which the layer's accent-dependent roles and inactive
@@ -497,7 +502,7 @@ impl LeftOut {
     }
 
     /// Whether a palette above the layer applies at `scheme`, leaving its
-    /// colours, colour inputs but the kept ones, lists and `token.kde` out.
+    /// colours, inputs but the kept ones, three lists and `token.kde` out.
     pub(crate) fn under_palette(&self, scheme: Scheme) -> bool {
         self.palette.contains(&scheme)
     }
@@ -1155,8 +1160,10 @@ impl Stack {
     /// force, and a KDE port's at each scheme where the layer states them
     /// ([`LeftOut`]). Beneath a palette applying at a scheme
     /// ([`Stack::palette_schemes`]), the reader's or stand-in's colours,
-    /// colour inputs, lists and `token.kde` are left out there, a KDE
-    /// port's accent inputs kept (S8, R2.6; ADD-A142).
+    /// inputs (every input it states), the three lists (`groups`,
+    /// `inactive_groups` and `unset_keys`, separate `InputBases` fields) and
+    /// `token.kde` are left out there, a KDE port's accent inputs kept (S8,
+    /// R2.6; ADD-A142, ADD-A145).
     fn derive_derivation(&mut self) {
         self.reader_left_out = None;
         self.port_left_out = None;

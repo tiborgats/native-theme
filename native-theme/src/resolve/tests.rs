@@ -1218,7 +1218,7 @@ fn a_palette_s_refusals() -> Result<(), Box<dyn std::error::Error>> {
 /// S8's leave-out beneath a KDE port, and the user's accent under it
 /// (S8, S14, R2.6; ADD-A142), with a reader-shaped stand-in (its accent
 /// common, its scheme inputs, a list, roles and `token.kde` in its part for
-/// the preset): at the port's scheme its colours, colour inputs, lists and
+/// the preset): at the port's scheme its colours, inputs, lists and
 /// `token.kde` are left out, its accent kept in force (A7's palette case:
 /// a port states no accent, so the reader's or stand-in's is not left
 /// out), and the accent-derivation layer's roles over it show in the
