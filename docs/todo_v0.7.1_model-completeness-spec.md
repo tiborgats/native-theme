@@ -158,8 +158,6 @@ pub enum ReaderStatus { Read, NoReader, StandIn,
                                                             // the first failure where several)
                         Failed(ReaderFailure) }             // Failed: a re-read failed; the previous
 pub enum ReaderFailure { Platform(String), Invalid(LayerError) }           // reader layer stays (S8, S16)
-pub enum PortError { Parse { line: u32 } }   // a `.colors` file it cannot read; a group or key the file lacks is
-                                             // no error, as KColorScheme and `applyScheme()` read it unset (S9.1, S14)
 pub enum PaletteStatus { Applied, Suspended, SkippedForContrast }   // S14
 ```
 
@@ -3913,14 +3911,17 @@ accent layer, which `Theme` derives from the `Accent` the application set on eve
 palette, reader re-read), so which accent shows never depends on call order. The accent is a setting, not a layer
 the application stacks. Every layer's bases apply in that order, then every
 layer's rules in that order. While a palette applies, the reader's or stand-in's colour bases, colour rules, colour inputs (the
-`kde_scheme.*` scheme inputs and their `groups`, `inactive_groups` and `unset_keys` lists among them) and `token.kde` are left out; the palette does not apply while `ContrastIncreased` or `ContrastHigh` holds unless it
+`kde_scheme.*` scheme inputs and their `groups`, `inactive_groups` and `unset_keys` lists among them, and its accent
+inputs, `input.accent` included, whether the palette is a mapping, which states its own, or a KDE port, which states
+none: R19; ADD-A142) and `token.kde` are left out; the palette does not apply while `ContrastIncreased` or `ContrastHigh` holds unless it
 states colours for that condition (colour rules under it, or per-contrast input bases for it, S9), and the reader's or
 stand-in's colours then apply as without it (R19). While the current preset is not the reader's own (S9.5) and declares
 `accent_inputs` beyond `accent` (S9.1), `Theme` leaves the reader's common `input.accent`, with its per-contrast
 bases, out, as it leaves the reader's `for_preset` part out: that preset keeps its own accent and derived inputs,
 and no accent mixes with derived inputs of another (S9.5). On the reader's own preset its accent applies with its
 derived inputs. On `kde-breeze`, at a slot (S9) where a layer above the reader or stand-in gives the `input.accent` in
-force (the accent layer; a mapping palette, under which the reader's or stand-in's accent is left out), the reader's or stand-in's stated
+force (the accent layer; a mapping palette, under which the reader's or stand-in's accent is left out; never a KDE
+port, which states no accent, so under a port only the accent layer gives one above the preset), the reader's or stand-in's stated
 accent-dependent roles and inactive input roles (S9.1's list, the `[WM]` keyed roles among them), in its bases and
 rules, are left out, and a
 KDE port's likewise where the accent layer gives it: each holds the derivation of its own accent, or of none, so the
@@ -4264,6 +4265,10 @@ never `role.global.accent` alone, what `applyScheme()` gives for that scheme wit
   its roles over the layer's, the `Accent`'s accent reaching them by reference; under a contrast for which it is
   skipped (S8), at a scheme it does not serve, or while it is suspended, the derivation of the accent in force shows,
   as without it;
+- a KDE port (S14), which states no accent, and under which, as under every palette, the reader's or stand-in's
+  accent is left out (S8): at a scheme it serves, the preset's `#00000000` is in force, so the layer states nothing and
+  the port's no-accent roles show, or the `Accent`'s, under which the layer's roles over the port's scheme inputs show
+  and the port's are left out (S8; ADD-A142);
 - an accent of `#00000000` from a layer above the preset (the KDE reader's on `kde-breeze` at the scheme it read with
   no `AccentColor`, where its results replace the layer's, S9.3, or one an application or a stand-in states): `kde_accent` and `kde_accent_wm` then give `applyScheme()`'s output with no accent over the scheme
   inputs in force (S2.2): `hasAccent` false (`colorsapplicator.cpp:129-137`), every key copied from the file
@@ -5485,7 +5490,7 @@ tokens for the schemes its project defines (R19). Two sources, each stated in th
   and its `[palette.picks]` table names each value picked from a range the project's guide gives, with the guide's
   words. It is the same file on every platform.
 - **the project's port** for one platform, where one exists (Catppuccin's and Dracula's KDE colour schemes, R19):
-  `Palette::from_port(file, scheme) -> Result<Palette, PortError>` converts a KDE `.colors` file mechanically, and
+  `Palette::from_port(file, scheme) -> Palette` converts a KDE `.colors` file mechanically, and
   that palette is used on `kde-breeze` in place of the mapping. A `.colors` file does not say whether it is light or
   dark, so the caller names its one scheme: each bundled palette states it (Catppuccin Latte light, its other flavours
   and Dracula dark, R19), and an application loading a port names it (no luminance guess).
@@ -5519,11 +5524,36 @@ file's values, a group or key it lacks as S9.1 states, as KColorScheme reads it 
 hold it (S9.1: Dracula's port, which has no `Header` or `Complementary` group, gets `Window`'s values for `Header`,
 `kcolorscheme.cpp:330-333`, and KColorScheme's defaults for `Complementary`); each inactive input role as that path writes it (`:247-284`): for a set the
 list names, in a scheme that does not tint, `Header`'s the file's active `Window` value (Plasma 6.8's substitute) and
-another set's its `[Inactive]` group's value, and in one that tints, the group as that path writes it, read from the
-same code `kde_accent` implements; for a set the list does not name, `= active(role.<set>.<role>)`; and each `[WM]`
-keyed role as `= input.kde_scheme.wm.<key>`, `applyScheme()`'s no-accent result. No group or key is required, so
-`from_port` converts a file that lacks some, as Plasma applies it, and fails only on one it cannot parse (`PortError`,
-S1); S19.1's build test validates every bundled port, Dracula's among them. So Plasma's derivation applies over the
+another set's its `[Inactive]` group's value, and in one that tints, the group as that path writes it: the colours
+`kde_accent` gives with the accent `#00000000` over the port's own scheme inputs (S2.2; S9.2's no-accent branch),
+computed at conversion and stated as colours, so no second derivation exists beside that function (ADD-A142; rejected:
+`= kde_accent(<set>, <key>, inactive)` stated in the port, evaluated over the accent in force: it gives the same colours
+wherever the port's roles show, since S8 leaves them out at every slot where the accent-derivation layer states its
+roles, and only adds an accent-reading expression to a palette); for a set the list does not name, `= active(role.<set>.<role>)`; and each `[WM]`
+keyed role as `= input.kde_scheme.wm.<key>`, `applyScheme()`'s no-accent result. No group or key is required, and
+the file is read as the KDE reader reads a scheme file, by KConfig's rules (S9.3's *The KDE reader's readings*: the
+lines KConfig skips skipped, each colour entry read as KConfig reads a colour), so `from_port` converts every file
+as Plasma applies it and has no error (ADD-A142; rejected: `PortError::Parse { line }` for a line KConfig skips, which
+refuses a file Plasma applies and needs a second reading of the format beside the reader's); S19.1's build test
+validates every bundled port, Dracula's among them. The conversion is one module in every build, on every target,
+with no feature, and the KDE reader reads its scheme file and kdeglobals through the same KConfig reading and the
+same KColorScheme defaults (S9.1, S9.3), so a port and a reading never read a file differently (ADD-A142): palettes are platform-independent (R19), S19.1's build test validates the
+bundled ports on every target, and the facts gate, which runs `from_port` in its accent run (S17), runs without
+features. Its cost is the KConfig parser the reader already uses on Linux (`configparser`, safe Rust with no required
+dependency, MIT or LGPL-3.0) in every build on every target. Rejected: the conversion behind the `kde` feature, or a feature of its own (a bundled
+palette would then resolve with its port in one build and its mapping in another, a feature changing a value, and the
+facts gate would need the feature on every platform); an own KConfig reader instead of the crate (KConfig's rules
+are LGPL code, so a new reader goes through the clean room, D10, for a dependency of some 1,600 lines); the bundled
+ports converted ahead of time by a script (two conversions, the script's and `from_port`'s, which an application's own
+port still needs). A port states no accent input, and under it, as under every palette, the reader's or stand-in's
+accent is left out (S8; R19: under a palette the reader's colour values, the user's accent among them, are not
+applied), so at a slot the
+palette serves the accent in force is the preset's `#00000000`, where the accent-derivation layer states nothing and
+the port's no-accent roles show, or the `Accent`'s, where the layer states its roles over the port's scheme inputs and
+S8 leaves the port's roles out (S9.2). Rejected: the user's accent kept under a port and derived over its scheme, as
+Plasma applies a scheme with the stored accent (`colorsapplicator.cpp:127-136`, as the 0.8.0 plan's KDE measurement
+cites it): R19 decides that a palette replaces the user's accent, so keeping it would be a rationale change (class
+3, the maintainer's). So Plasma's derivation applies over the
 port's own scheme when an accent is set (S9.2), and a non-tinting port's inactive title bar is, without the
 accent-coloured title bar option, the same with an accent as without, as in Plasma (`kde_accent`'s non-tinting branch
 gives `Header` the same `Window` values; under the option, where the file has a `Header` group, the accent tints it,
@@ -5722,7 +5752,7 @@ impl Palette {
                                                           // has; a build test parses and validates every bundled
                                                           // palette, so the error is never met in a release
     pub fn from_toml(text: &str) -> Result<Palette, LayerError>;
-    pub fn from_port(file: &str, scheme: Scheme) -> Result<Palette, PortError>;   // S14
+    pub fn from_port(file: &str, scheme: Scheme) -> Palette;   // S14: every build, no feature (ADD-A142)
     pub fn with_port(self, port: Palette) -> Result<Palette, LayerError>;          // S14
 }
 ```
@@ -5967,7 +5997,8 @@ which fields are struct blocks the valid keys decide (below).
 - **Fields.** `key`, `value`, `rows` and at least one `cite` are required, except on a pending fact, which has `pending` in
   place of `value` and no `cite` (below); `when` is optional (no condition);
   `scheme_file` (`<entry> <path>`, a `sources.toml` entry and the scheme file's path in it) and `accent` (a colour
-  literal) are the accent run's, both or neither, in the `kde` directory only, and `accent` alone is `material-3`'s
+  literal) are the accent run's, both or neither, in the `kde` directory only, a fact with them holding one `scheme:`
+  condition in its `when` (*The accent run*, ADD-A142), and `accent` alone is `material-3`'s
   accent run's, in the `material` directory only (ADD-A134). `rows` lists gap-map row IDs as the
   gap maps write them (`†` included), and is `[]` only for a state-model entry or combination no row names; palette facts leave
   it out (below). Per citation, by `kind`:
@@ -6650,8 +6681,8 @@ the platform derives fails here. iOS's facts are `docs/facts/ios/…` like any p
 `kde_accent` and `kde_accent_wm`, the model's implementation of `applyScheme()`, are checked by a run of their own.
 For each KDE scheme the facts hold (the scheme files the preset's inputs come from, the bundled ports, and the further
 `.colors` files the facts pin as sources) and each accent the facts were measured with, the gate resolves `kde-breeze`
-with that scheme's inputs in force (the preset's own for its files; for every other file a palette converted by
-`Palette::from_port` and applied, under the scheme the facts name for it) and the accent set through `set_accent`, which gives the accent-derivation layer its roles (S9.2; a port's roles left
+with that scheme's inputs in force (the preset's own for its own files; for every other file the palette
+`Palette::from_port` converts from it, applied; each under the scheme its facts name, below) and the accent set through `set_accent`, which gives the accent-derivation layer its roles (S9.2; a port's roles left
 out under it, S8), and compares every accent-dependent role, every inactive input
 role and the four `wm_*` keyed roles with the facts recorded from Plasma with that scheme and accent applied (kind
 `measured`: `applyScheme()`'s output in kdeglobals, read back as the KDE reader reads kdeglobals). Each such fact names, beside
@@ -6665,6 +6696,42 @@ facts that apply without `scheme_file` and `accent`, the preset's no-accent fact
 tinting file (SUSE-Cafe's) with the facts measured with no `AccentColor` (`accent = "#00000000"`): so `kde_accent`'s
 and `kde_accent_wm`'s no-accent branch, which a stated `#00000000` reaches (S9.2, S9.3), is compared, its tinted
 `[Inactive]` groups included (ADD-A132).
+
+- **The scheme a file is applied under** (ADD-A142; ledger queue #104). The facts name it in their `when`: every fact
+  with `scheme_file` holds one `scheme:<s>` condition, and every fact of one pair (`scheme_file` and `accent`) the
+  same one (at the pins BreezeClassic's `scheme:light` and SUSE-Cafe's `scheme:dark`, `docs/facts/kde/accent.toml`).
+  The gate resolves the pair under that scheme, and converts a file that is not the preset's own with it,
+  `from_port(<file>, <s>)` (S14: the caller names a port's scheme). The lane records the scheme Plasma's own test gives
+  the applied file (S9.3's *The KDE reader's readings*), the one the KDE reader then reports, which each pair's measured
+  `role.window.background` lets a verifier check. `check_facts.py` and the gate find a fact with `scheme_file` and no
+  `scheme:` condition or two, and a pair whose facts differ in it. Rejected: a fact field `scheme` (a second home for
+  what the `when` states, and which the gate's scope already reads); a scheme per file in `sources.toml` (an entry is a
+  repository holding several files, and the scheme is the measurement's); Plasma's test run by the gate over the file
+  (a rule beside the facts that name it, in the model, which takes a port's scheme from its caller).
+- **The preset's own scheme files** (ADD-A142). At each scheme, the one `.colors` file that the KDE facts' scheme
+  inputs (`input.kde_scheme.*`) holding that `scheme:<s>` condition cite, as `<entry> <path>` (a citation's `source`
+  less its line part), compared with a fact's `scheme_file` as text: at the pins `breeze@6.8.2
+  colors/BreezeLight.colors` at light and `breeze@6.8.2 colors/BreezeDark.colors` at dark (`docs/facts/kde/inputs.toml`).
+  The gate takes them so from the facts, and fails where a scheme has no such file or several, and where a pair names
+  an own file under the other scheme. A pair on an own file resolves over the preset's own scheme inputs, no port;
+  its `#00000000` row is the one compared with the preset's no-accent facts (above). Rejected: the two paths written in
+  the gate (a second home, which a re-pin of `breeze` leaves stale); every file of the `breeze` entry (BreezeClassic's
+  is one and is not the preset's); every file through `from_port`, the preset's own too (it checks the conversion
+  instead of the preset's statements; that `from_port` of Breeze's files gives the preset's scheme inputs, lists and
+  `token.kde` is a code test of its own).
+- **The scheme files read** (ADD-A142). A file that is not the preset's own is read in place from the source cache
+  (the 0.8.0 plan's D1; `NATIVE_THEME_SOURCES`, else `scripts/citations.py`'s default, the cache *The evidence root*
+  reads), at `<cache>/<entry>/<path>`: the entry's checkout must be at the entry's pinned commit with the file tracked
+  and unchanged (what `scripts/update_sources.sh --verify --only <entry>` checks), and the gate fails otherwise, naming
+  the entry, as it fails without an evidence root. A test fixture holds its own files at
+  `<fixture>/sources/<entry>/<path>`, which need no checkout and no pin, each written for the fixture, never a copy of a
+  pinned file. No scheme file is copied into this repository (SUSE-Cafe's is GPL-2.0, its `sources.toml` entry's
+  note). CI's facts-gate jobs fetch, beside the evidence, every entry a KDE fact's `scheme_file` names into a source
+  cache the job names by `NATIVE_THEME_SOURCES` (each as `update_sources.sh --only <entry>` fetches it, the list read
+  from the facts, so a re-pin needs no workflow edit).
+  Rejected: the run skipped where the cache lacks a file (a run that compares nothing passes a wrong derivation,
+  R4); a copy among the tests (SUSE-Cafe's GPL-2.0 is not this repository's licence, and the pin would have two
+  homes); the whole source cache in CI (about 4.4 GB, `update_sources.sh`'s header, for a few files).
 
 **The accent run** (`material-3`, ADD-A134): neither run sets an accent, and the preset states Compose's baseline
 scheme (S9.1), so the accent-derivation layer's `m3_role` roles are checked by a run of their own. For each accent
