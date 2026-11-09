@@ -46,7 +46,7 @@
 //!   text-scaling factor is reported (`toolkit_scale_carries_text_scale`),
 //!   fixed for a session.
 
-mod helpers;
+pub(crate) mod helpers;
 pub(crate) mod portal;
 
 use ashpd::desktop::settings::{ColorScheme, Contrast as PortalContrast, ReducedMotion};
