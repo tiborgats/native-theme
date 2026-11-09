@@ -1601,16 +1601,6 @@ mod tests {
             ("uifm_scaled(4px, caption2)", Ty::Length, Func::UifmScaled),
             ("uifm_scaled(4px, @body)", Ty::Length, Func::UifmScaled),
             (
-                "kde_accent(header, foreground_link, inactive)",
-                Ty::Color,
-                Func::KdeAccent,
-            ),
-            (
-                "kde_accent_wm(active_background)",
-                Ty::Color,
-                Func::KdeAccentWm,
-            ),
-            (
                 "name_index(element.text, 8, adwaita)",
                 Ty::Number,
                 Func::NameIndex,
@@ -1622,6 +1612,13 @@ mod tests {
             ),
         ] {
             assert_eq!(refused(text, ty), TypeError::NotImplemented(func), "{text}");
+        }
+        // `kde_accent` and `kde_accent_wm` are implemented: a colour.
+        for text in [
+            "kde_accent(header, foreground_link, inactive)",
+            "kde_accent_wm(active_background)",
+        ] {
+            assert_eq!(typed(text, Ty::Color), Ty::Color, "{text}");
         }
     }
 
@@ -1872,6 +1869,10 @@ mod tests {
         fn font_dpi(&self) -> Option<f32> {
             None
         }
+
+        fn kde_lists(&self) -> &crate::resolve::KdeLists {
+            &crate::resolve::NO_KDE_LISTS
+        }
     }
 
     /// The KDE facts' calls of the seven KDE colour functions
@@ -2039,6 +2040,10 @@ mod tests {
 
             fn font_dpi(&self) -> Option<f32> {
                 self.0.font_dpi()
+            }
+
+            fn kde_lists(&self) -> &crate::resolve::KdeLists {
+                self.0.kde_lists()
             }
         }
 

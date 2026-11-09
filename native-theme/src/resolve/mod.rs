@@ -391,6 +391,15 @@ pub(crate) struct KdeLists {
     pub(crate) unset_keys: Vec<InputName>,
 }
 
+/// No layer's lists, for an [`Env`](crate::expr::Env) of the tests that
+/// reads none.
+#[cfg(test)]
+pub(crate) static NO_KDE_LISTS: KdeLists = KdeLists {
+    groups: Vec::new(),
+    inactive_groups: Vec::new(),
+    unset_keys: Vec::new(),
+};
+
 /// The reader's layer, or the stand-in an application without a reader
 /// sets (S8, R2.6).
 #[derive(Clone, Debug)]

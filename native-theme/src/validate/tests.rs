@@ -2339,27 +2339,34 @@ fn refusal_kde_accent_argument() {
             "colors.light.global.accent: `kde_accent` does not take `disabled`",
         ]
     );
-    // The near miss reaches typing, which refuses the call: `kde_accent`
-    // is not implemented yet (S2.2).
-    let decl = declare("surface_sets = [\"window\"]");
+    // The near miss types: `kde_accent` is implemented (S2.2).
     assert_eq!(
         found(
             &accent("= kde_accent(window, background_normal, inactive)"),
-            &decl
+            &kde_accent_decl()
         ),
-        [NOT_IMPLEMENTED]
+        NONE
     );
 }
 
-/// What typing says of a call of `kde_accent`, which no task has
-/// implemented yet (S2.2).
-const NOT_IMPLEMENTED: &str = "colors.light.global.accent: the expression does not type: the \
-                               platform function `kde_accent` is not implemented yet";
+/// The window set and the inputs `kde_accent(window, background_normal, …)`,
+/// `kde_accent(header, background_normal, …)` and
+/// `kde_accent_wm(active_background)` read themselves (S2.2).
+fn kde_accent_decl() -> Declarations {
+    declare(
+        "surface_sets = [\"window\"]\ninputs = [\"accent\", \
+         \"kde_scheme.window.background_normal\", \
+         \"kde_scheme.window.inactive.background_normal\", \
+         \"kde_scheme.header.background_normal\", \
+         \"kde_scheme.header.inactive.background_normal\", \
+         \"kde_scheme.view.background_normal\", \"kde_scheme.wm.active_background\"]",
+    )
+}
 
 #[test]
 fn kde_accent_set_is_declared() {
     // One of KDE's sets, declared by the preset (S2.2, S12).
-    let decl = declare("surface_sets = [\"window\"]");
+    let decl = kde_accent_decl();
     assert_eq!(
         found(
             &accent("= kde_accent(header, background_normal, inactive)"),
@@ -2372,7 +2379,44 @@ fn kde_accent_set_is_declared() {
             &accent("= kde_accent(window, background_normal, inactive)"),
             &decl
         ),
-        [NOT_IMPLEMENTED]
+        NONE
+    );
+}
+
+/// The inputs a KDE accent call reads itself are its operands, each
+/// declared (S2.2, S12), each reported once; KDE's three lists are S9.1's
+/// own, declared by none.
+#[test]
+fn kde_accent_reads_declared_inputs() {
+    let decl = declare("surface_sets = [\"window\"]");
+    let undeclared =
+        |name: &str| format!("colors.light.global.accent: `{name}` is not declared in `inputs`");
+    assert_eq!(
+        found(
+            &accent("= kde_accent(window, background_normal, inactive)"),
+            &decl
+        ),
+        [
+            undeclared("accent"),
+            undeclared("kde_scheme.window.background_normal"),
+            undeclared("kde_scheme.window.inactive.background_normal"),
+            undeclared("kde_scheme.view.background_normal"),
+        ]
+    );
+    assert_eq!(
+        found(&accent("= kde_accent_wm(active_background)"), &decl),
+        [
+            undeclared("accent"),
+            undeclared("kde_scheme.wm.active_background"),
+            undeclared("kde_scheme.window.background_normal"),
+        ]
+    );
+    assert_eq!(
+        found(
+            &accent("= kde_accent_wm(active_background)"),
+            &kde_accent_decl()
+        ),
+        NONE
     );
 }
 
