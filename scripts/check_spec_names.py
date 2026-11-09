@@ -132,6 +132,25 @@ def struct_fields(code: str, name: str) -> list[str]:
     return re.findall(r"pub (\w+):", body_of(code, "struct", name))
 
 
+def element_operands(text: str):
+    """The names S2.2's `"element." data` production lists, the expression grammar's element operands (ADD-A144):
+    its own list, from the production's colon to the next production (a line starting `|`, a `:=` line or the end
+    of the block), each parenthesised note left out, the list split at its commas and its `and`; never a word of its
+    prose or of the next production (`body_font_height`'s). None where the text has no such production."""
+    m = re.search(r'"element\." data(.*?)(?=\n\s*(?:\||[a-z]+\s*:=|```))', text, re.S)
+    if not m:
+        return None
+    body = m.group(1)
+    while True:
+        bare = re.sub(r"\([^()]*\)", " ", body)
+        if bare == body:
+            break
+        body = bare
+    _, _, listed = body.partition(":")
+    names = [piece.strip() for piece in re.split(r",|\band\b", listed)]
+    return {name for name in names if re.fullmatch(IDENT, name)}
+
+
 def core_vocab(text=None) -> dict:
     text = CORE.read_text() if text is None else text
     code = strip_comments(rust_blocks(text))
@@ -154,12 +173,10 @@ def core_vocab(text=None) -> dict:
     v["global_roles"] = set(struct_fields(code, "GlobalRoles"))
     v["tokens"] = set(struct_fields(code, "Tokens"))
     v["part_fields"] = set(struct_fields(code, "PartStyle"))
-    v["element_data"] = set(struct_fields(code, "ElementData"))
-    # the expression grammar's element operands (S2.2), font metrics included (char_width, font_x_height, …)
-    gm = re.search(r'"element\." data(.*?)\| "part\."', text, re.S)
-    if gm:
-        v["element_data"] |= set(re.findall(r"\b([a-z][a-z_]+)\b", gm.group(1))) - {"the", "s", "part", "font",
-                                                                               "measured", "through", "element", "data"}
+    # the expression grammar's element operands (S2.2), font metrics included (char_width, font_x_height, …): the
+    # names its `"element." data` production lists alone; ElementData's fields where the text has no grammar
+    grammar = element_operands(text)
+    v["element_data"] = grammar if grammar is not None else set(struct_fields(code, "ElementData"))
     v["text_roles"] = set(struct_fields(code, "TextRoles"))
     v["text_tokens"] = set(struct_fields(code, "TextTokens"))   # roles, keyed, fallbacks, rendering, scaling, font_dpi
     v["text_style"] = set(struct_fields(code, "TextStyle"))
@@ -903,6 +920,33 @@ pub enum RippleEffect { AndroidPatterned }
 ```
 """
 
+# S2.2's expression grammar around the `"element." data` production, as the specification writes it (ADD-A144):
+# the element operands are the names its own list gives, never a word of its prose or of the next production
+SELF_TEST_GRAMMAR = '''
+```text
+          | "font_size" | "line_height"   the part's, in logical px after the point conversion and
+                                          text scaling (S9.4, R10)
+          | "element." data               the element's data (S8): width, height, progress,
+                                          scroll_offset, item_index, text,
+                                          screen_width, window_height, move_distance,
+                                          caret_height (a caret part's own caret, S4.2),
+                                          and char_width (the average), max_char_width (the
+                                          widest glyph), font_x_height,
+                                          font_strikeout_thickness (the part's own font,
+                                          through `Element.metrics`, S8; a part without
+                                          text measures another part's font as
+                                          `widget.<part>.char_width`, `.font_size`,
+                                          `.line_height`)                              (R25.3)
+          | "body_font_height"            the `body` slot's font's height (ascent plus descent,
+                                          unrounded: Kirigami keeps a QFontMetricsF; ADD-A141):
+                                          Kirigami's label-sized icons follow it; part expressions only
+          | "part." path                  another resolved field of the same part      (R25.3)
+```
+'''
+SELF_TEST_ELEMENT_DATA = {"width", "height", "progress", "scroll_offset", "item_index", "text", "screen_width",
+                          "window_height", "move_distance", "caret_height", "char_width", "max_char_width",
+                          "font_x_height", "font_strikeout_thickness"}
+
 SELF_TEST_CATALOGUE = """
 ## Buttons and toggles
 
@@ -1098,6 +1142,10 @@ def self_test() -> int:
         got = sorted((p[2], p[3]) for p in ck.problems)
         if got != sorted(want):
             failures.append(f"{s!r}: got {got}, want {sorted(want)}")
+    got = core_vocab(SELF_TEST_CORE + SELF_TEST_GRAMMAR)["element_data"]
+    if got != SELF_TEST_ELEMENT_DATA:
+        failures.append(f"element data from S2.2's production: extra {sorted(got - SELF_TEST_ELEMENT_DATA)}, "
+                        f"missing {sorted(SELF_TEST_ELEMENT_DATA - got)}")
     ck.problems = []
     ck.check_catalogue()
     if ck.problems:
