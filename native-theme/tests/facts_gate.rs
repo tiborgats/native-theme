@@ -67,7 +67,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use native_theme::PresetId;
-use native_theme::gate::{Combination, Preset};
+use native_theme::gate::{Combination, Preset, Query};
 
 /// The platform directory each preset's facts are in (S17 *Generations*).
 const DIRECTORIES: [(&str, &str); 8] = [
@@ -757,6 +757,84 @@ fn gate_probes_alike_reads_the_steps() {
     let inputs = run::root_inputs();
     assert!(light.probes_alike(&resolve("light", &layer), &inputs));
     assert!(!light.probes_alike(&resolve("dark", &native_theme::Layer::default()), &inputs));
+}
+
+/// A session of shapes alone (`Query::Shapes`, which the gate's probes
+/// query) answers each part as a session of styles does and matches the
+/// same steps (S17: the probe reads each part's answer and the scope it
+/// passes on, never a value): on every fixture's preset, under each
+/// scheme, for each set of the button's flags, with no variant or one the
+/// preset declares, at the default size and each one it declares, the
+/// two sessions' signatures agree.
+#[test]
+fn gate_shapes_probe_as_styles() {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
+    let base = std::fs::read_to_string(fixtures.join("base.toml")).unwrap();
+    let mut cases: Vec<PathBuf> = std::fs::read_dir(&fixtures)
+        .unwrap()
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|case| case.join("preset.toml").is_file())
+        .collect();
+    cases.sort();
+    let flags = ["hover", "pressed", "disabled", "checked", "focus_visible"];
+    let root = run::root_inputs();
+    let metrics = run::StubMetrics;
+    let mut sessions = 0_usize;
+    for case in &cases {
+        let Ok(preset) = Preset::from_toml(&fixture_text(case, &base, "preset.toml")) else {
+            continue;
+        };
+        let Ok(declared) = preset.declared("button", None) else {
+            continue;
+        };
+        let variants: Vec<Vec<String>> = std::iter::once(Vec::new())
+            .chain(
+                declared
+                    .variants
+                    .iter()
+                    .map(|variant| vec![variant.clone()]),
+            )
+            .collect();
+        let sizes: Vec<Option<String>> = std::iter::once(None)
+            .chain(declared.sizes.iter().cloned().map(Some))
+            .collect();
+        for scheme in preset.schemes() {
+            let conditions = run::conditions(&[format!("scheme:{scheme}")], None).unwrap();
+            let resolved = preset
+                .resolve(&conditions, &native_theme::Layer::default())
+                .unwrap();
+            for set in 0..1_usize << flags.len() {
+                for variant in &variants {
+                    for size in &sizes {
+                        let mut combination = Combination::new("button");
+                        combination.states = flags
+                            .iter()
+                            .enumerate()
+                            .filter(|(at, _)| set & (1 << at) != 0)
+                            .map(|(_, flag)| (*flag).to_owned())
+                            .collect();
+                        combination.variants.clone_from(variant);
+                        combination.size.clone_from(size);
+                        let session = |query| {
+                            resolved
+                                .session_drawn(&combination, &root, &metrics, &[], query)
+                                .unwrap()
+                                .unwrap()
+                        };
+                        let (styles, shapes) = (session(Query::Styles), session(Query::Shapes));
+                        assert_eq!(
+                            (styles.unavailable(), styles.signature()),
+                            (shapes.unavailable(), shapes.signature()),
+                            "{case:?} {scheme} {combination:?}"
+                        );
+                        sessions += 1;
+                    }
+                }
+            }
+        }
+    }
+    assert!(sessions > 1000, "{sessions}");
 }
 
 /// A probe's failure is recorded under each pass's label, the perturbed

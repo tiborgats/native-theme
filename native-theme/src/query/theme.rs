@@ -363,6 +363,75 @@ impl ResolvedTheme {
         Styled::Style((style, scope))
     }
 
+    /// [`ResolvedTheme::style`]'s answer for `element`'s part where a
+    /// style resolves, and the scope its children receive as matching reads
+    /// it (S8): no field evaluated but the part's own bindings, the entry
+    /// holding its part, variants, kept flags, size, surface and roles, the
+    /// element's density, direction and size classes entered, the
+    /// container left the enclosing one's and the entry's `synthetic`
+    /// unread (S17's facts gate probes so, matching alone reading the
+    /// scope). A part whose style does not resolve, which validation rules
+    /// out, is answered as drawn; the gate's comparisons ask `style`.
+    #[must_use]
+    pub(crate) fn shape(&self, element: &Element<'_>) -> Styled<Scope> {
+        let matched = match Matched::new(self, element) {
+            Ok(matched) => matched,
+            Err(unavailable) => return Styled::NotAvailable(unavailable),
+        };
+        let applies = |selector: &Selector| matched.matches(selector);
+        let presence = self
+            .part_steps(matched.part)
+            .iter()
+            .rev()
+            .filter(|step| step.selector.as_ref().is_none_or(applies))
+            .find_map(|step| step.patch.presence.as_ref());
+        match presence {
+            Some(PartPresence::Absent) => return Styled::NotDrawn,
+            Some(PartPresence::DrawnAs { target, variants }) => {
+                return Styled::DrawnAs {
+                    target: target.clone(),
+                    variants: variants.clone(),
+                };
+            }
+            Some(PartPresence::Present) | None => {}
+        }
+        let bindings = self
+            .evaluate_bindings(matched.part, element, &applies)
+            .unwrap_or_default();
+        let mut entry = ScopeEntry {
+            part: element.part.clone(),
+            variants: matched.variants.clone(),
+            states: matched.states.clone(),
+            size: matched.size,
+            surface: None,
+            roles: Vec::new(),
+            synthetic: false,
+        };
+        for binding in &bindings {
+            match binding {
+                ResolvedBinding::Surface(set) => entry.surface = Some(*set),
+                ResolvedBinding::Role { role, value } => {
+                    entry.roles.retain(|(held, _)| held != role);
+                    entry.roles.push((role.clone(), *value));
+                }
+            }
+        }
+        let mut scope = element.scope.entered(entry);
+        if let Some(density) = &element.density {
+            scope.density = Some(density.clone());
+        }
+        if let Some(direction) = element.direction {
+            scope.direction = direction;
+        }
+        if let Some(size_classes) = element.size_classes {
+            scope.size_classes = size_classes;
+        }
+        if let Some(language) = &element.language {
+            scope.language = Some(language.clone());
+        }
+        Styled::Style(scope)
+    }
+
     /// The values of `element`'s widget (S8): `NotAvailable(Widget)` for
     /// another widget's element; their kept rules matched against it,
     /// mirrored for its direction. Values that cannot be resolved (a field

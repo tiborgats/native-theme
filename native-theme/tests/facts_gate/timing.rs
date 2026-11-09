@@ -35,10 +35,13 @@ pub enum Step {
     /// A perturbed pass one of whose distinct combinations probed unlike
     /// the normal pass's, its combinations probed.
     Differed,
+    /// A pass one of whose distinct combinations probed unlike with its
+    /// parts' styles queried, its combinations probed so.
+    Unshaped,
 }
 
 /// Every step, each at its own place, in the order the timing prints them.
-const STEPS: [Step; 9] = [
+const STEPS: [Step; 10] = [
     Step::Resolve,
     Step::Probe,
     Step::Session,
@@ -48,6 +51,7 @@ const STEPS: [Step; 9] = [
     Step::Replayed,
     Step::Unlike,
     Step::Differed,
+    Step::Unshaped,
 ];
 
 /// Each step's time in nanoseconds and how often it ran, by its place.

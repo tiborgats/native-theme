@@ -10,9 +10,9 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use native_theme::gate::{
-    Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole,
-    Tolerance, Unread, When, content_variants, context_held, is_listed_default, listed_key,
-    names_read, parse_key, parse_value, parse_when, parts, set_whole, widgets,
+    Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Query, Resolved,
+    SetWhole, Tolerance, Unread, When, content_variants, context_held, is_listed_default,
+    listed_key, names_read, parse_key, parse_value, parse_when, parts, set_whole, widgets,
 };
 use native_theme::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
@@ -2169,7 +2169,7 @@ fn check(
                             if pass == Pass::Perturbed {
                                 super::timing::note(Step::Unlike);
                             }
-                            let found = check_widgets(&run, &combinations, &mut report);
+                            let found = widgets_checked(&run, &combinations, &mut report);
                             if pass == Pass::Normal {
                                 probed = Some((found, holding));
                             }
@@ -2903,17 +2903,18 @@ fn parallel_on<T: Sync, R: Send>(
     done.into_iter().map(|(_, result)| result).collect()
 }
 
-/// Every widget key over a condition vector's combinations, which
-/// `combinations` gives in turn, each distinct signature compared once, at
-/// its first combination; a combination a `not_drawn` entry names, as the
-/// query matches it, is not queried (S17). The combinations are probed, and
-/// the distinct ones compared, on the vector's share of the threads
-/// ([`Threads`]), each step's findings recorded in the combinations' order;
-/// what it probed is returned, for the perturbed pass to replay
-/// ([`replay`]).
+/// A condition vector's combinations, which `combinations` gives in turn,
+/// probed, each one's parts queried as `query` says: the failures that end
+/// a probe and those its facts' order gives recorded in the combinations'
+/// order, and the distinct ones kept, the first of each signature, for
+/// [`compare_widgets`] to compare and the perturbed pass to replay
+/// ([`replay`]); a combination a `not_drawn` entry names, as the query
+/// matches it, is not queried (S17). The combinations are probed on the
+/// vector's share of the threads ([`Threads`]).
 fn check_widgets(
     run: &Run<'_, '_>,
     combinations: &Combinations<'_>,
+    query: Query,
     report: &mut Report,
 ) -> Probed {
     let (resolved, vector, pass) = (run.resolved, run.vector, run.pass);
@@ -2927,7 +2928,7 @@ fn check_widgets(
             .get(&combination.widget)
             .map_or(&[][..], Vec::as_slice);
         let session = match timed(Step::Session, || {
-            resolved.session_drawn(combination, run.root, &metrics, not_drawn)
+            resolved.session_drawn(combination, run.root, &metrics, not_drawn, query)
         }) {
             Ok(Some(session)) => session,
             Ok(None) => return Probe::NotDrawn,
@@ -2998,7 +2999,6 @@ fn check_widgets(
     probe_chunk(&mut chunk, report);
     report.combinations_skipped += left_out;
     probed.skipped += left_out;
-    compare_widgets(run, &probed, false, report);
     probed
 }
 
@@ -3067,7 +3067,33 @@ fn replay(
         report.merge(replayed);
     } else {
         super::timing::note(Step::Differed);
-        check_widgets(run, combinations, report);
+        widgets_checked(run, combinations, report);
+    }
+}
+
+/// [`check_widgets`] in `run`, each combination's parts queried for their
+/// shapes alone ([`Query::Shapes`]), which is all a probe reads, and each
+/// distinct combination first asked whether it probes with its parts'
+/// styles queried as it did so ([`compare_widgets`]): two combinations
+/// with the same signature resolve every key alike, so a style resolving
+/// for one resolves for the other. Where one does not probe so, the pass's
+/// findings are left out and its combinations probed with their parts'
+/// styles queried ([`Query::Styles`]).
+fn widgets_checked(
+    run: &Run<'_, '_>,
+    combinations: &Combinations<'_>,
+    report: &mut Report,
+) -> Probed {
+    let mut shaped = Report::default();
+    let probed = check_widgets(run, combinations, Query::Shapes, &mut shaped);
+    if compare_widgets(run, &probed, true, &mut shaped) {
+        report.merge(shaped);
+        probed
+    } else {
+        super::timing::note(Step::Unshaped);
+        let probed = check_widgets(run, combinations, Query::Styles, report);
+        compare_widgets(run, &probed, false, report);
+        probed
     }
 }
 

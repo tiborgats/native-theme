@@ -2209,21 +2209,22 @@ impl Resolved {
         metrics: &'r dyn FontMetrics,
     ) -> Result<Session<'r>, Unread> {
         let (mut session, scope, info) = self.element(combination, root, metrics)?;
-        session.query_parts(info, &scope);
+        session.query_parts(info, &scope, Query::Styles);
         Ok(session)
     }
 
-    /// [`Resolved::session`], but `None` where one of `not_drawn`, a state
-    /// model's `not_drawn` entries (S17), holds for the element of the
-    /// widget's root as [`Session::root_holds`] matches it: its parts are
-    /// then never queried, as the root's element and scope come before
-    /// them.
+    /// [`Resolved::session`], its parts queried as `query` says, but `None`
+    /// where one of `not_drawn`, a state model's `not_drawn` entries (S17),
+    /// holds for the element of the widget's root as
+    /// [`Session::root_holds`] matches it: its parts are then never queried,
+    /// as the root's element and scope come before them.
     pub fn session_drawn<'r>(
         &'r self,
         combination: &Combination,
         root: &RootInputs,
         metrics: &'r dyn FontMetrics,
         not_drawn: &[When],
+        query: Query,
     ) -> Result<Option<Session<'r>>, Unread> {
         let (mut session, scope, info) = self.element(combination, root, metrics)?;
         if !not_drawn.is_empty()
@@ -2244,7 +2245,7 @@ impl Resolved {
                 return Ok(None);
             }
         }
-        session.query_parts(info, &scope);
+        session.query_parts(info, &scope, query);
         Ok(Some(session))
     }
 
@@ -2273,6 +2274,7 @@ impl Resolved {
             parsed,
             widget,
             parts: Vec::new(),
+            shaped: false,
             values: OnceCell::new(),
             evaluated: RefCell::new(Vec::new()),
         };
@@ -2575,6 +2577,20 @@ fn in_scope(theme: &ResolvedTheme, scope: &Scope, tolerance: &Tolerance) -> Tole
     }
 }
 
+/// How a session queries its parts ([`Resolved::session_drawn`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Query {
+    /// Each part's style, as the query answers it (S8).
+    Styles,
+    /// Each part's shape alone: its answer where a style resolves and the
+    /// scope its children receive as matching reads it, no field evaluated
+    /// but its bindings, which is all a probe of the gate reads (S17); a
+    /// part whose style does not resolve, which validation rules out, is
+    /// answered as drawn. Its values are never read: such a session refuses
+    /// to compare a part's field or a widget value.
+    Shapes,
+}
+
 /// One combination's element, its parts queried (S17).
 pub struct Session<'r> {
     resolved: &'r Resolved,
@@ -2582,6 +2598,9 @@ pub struct Session<'r> {
     parsed: Parsed,
     widget: WidgetKind,
     parts: Vec<Queried>,
+    /// Whether its parts were queried for their shapes alone
+    /// ([`Query::Shapes`]), so no value of theirs is read.
+    shaped: bool,
     /// The theme's own resolved values, read once.
     values: OnceCell<Rc<Read>>,
     /// Each fact's body evaluated in its key's place, read once.
@@ -2589,9 +2608,11 @@ pub struct Session<'r> {
 }
 
 impl Session<'_> {
-    /// Each of `info`'s parts queried in turn, the root's in `scope`, each
-    /// other's in the scope the query of the part enclosing it returns (S8).
-    fn query_parts(&mut self, info: &registry::WidgetInfo, scope: &Scope) {
+    /// Each of `info`'s parts queried in turn as `query` says, the root's
+    /// in `scope`, each other's in the scope the query of the part
+    /// enclosing it returns (S8).
+    fn query_parts(&mut self, info: &registry::WidgetInfo, scope: &Scope, query: Query) {
+        self.shaped = query == Query::Shapes;
         let resolved = self.resolved;
         let theme = &resolved.theme;
         for part_info in info.parts {
@@ -2606,9 +2627,17 @@ impl Session<'_> {
                     .find(|held| held.part == parent)
                     .map_or_else(|| scope.clone(), Queried::children_scope),
             };
-            let answer = self.with_element(part, &queried_in, |element| theme.style(element));
+            let answer = self.with_element(part, &queried_in, |element| match query {
+                Query::Styles => match theme.style(element) {
+                    Styled::Style((_, returned)) => Styled::Style(returned),
+                    Styled::NotDrawn => Styled::NotDrawn,
+                    Styled::DrawnAs { target, variants } => Styled::DrawnAs { target, variants },
+                    Styled::NotAvailable(unavailable) => Styled::NotAvailable(unavailable),
+                },
+                Query::Shapes => theme.shape(element),
+            });
             let (answer, returned) = match answer {
-                Styled::Style((_, returned)) => (Answer::Drawn, Some(returned)),
+                Styled::Style(returned) => (Answer::Drawn, Some(returned)),
                 Styled::NotDrawn => (Answer::NotDrawn, None),
                 Styled::DrawnAs { target, variants } => {
                     (Answer::DrawnAs { target, variants }, None)
@@ -3072,6 +3101,11 @@ impl Session<'_> {
     /// key's path in it: the theme's own (read once), or with `body`'s step
     /// after every other; `None` where the key's part is not drawn.
     fn field_tree(&self, key: &FactKey, body: Option<&RuleBody>) -> Result<Option<Field>, Unread> {
+        if self.shaped {
+            return Err(Unread::Refused(
+                "a session of shapes alone reads no value".to_owned(),
+            ));
+        }
         let theme = &self.resolved.theme;
         let place: &[String] = match &key.place {
             Place::Part(_, path) | Place::Values(_, path) => path,
