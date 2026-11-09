@@ -3317,9 +3317,10 @@ fn compare_widget(
         }
         let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
         // A pending fact applying where the preset leaves its path to the
-        // synthetic value is a listed path found; where its part is not
-        // drawn too, as the preset's bases state the part's fields whole
-        // there (S17, ADD-A128, ADD-A130).
+        // synthetic value is a listed path found; a field of a part not
+        // drawn is none, as S12 judges a missing field only where its part
+        // is drawn (S17 *Where a listed path is found*, ADD-A128,
+        // ADD-A144).
         if pass == Pass::Normal
             && let Some(Prepared {
                 fact:
@@ -3329,13 +3330,13 @@ fn compare_widget(
                     },
                 ..
             }) = fact
-            && (!session.drawn(&key.key)
-                || listed_or_failed(
-                    asked.answer(Asked::Listed(index), || session.listed(&key.key)),
-                    &key.name,
-                    report,
-                    &describe,
-                ))
+            && session.drawn(&key.key)
+            && listed_or_failed(
+                asked.answer(Asked::Listed(index), || session.listed(&key.key)),
+                &key.name,
+                report,
+                &describe,
+            )
         {
             found_listed(report, run.preset, key, None, id);
         }
