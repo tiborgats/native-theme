@@ -220,6 +220,7 @@ keyed-list fact that leaves out an item of the base its rule merges over is one,
 import contextlib
 import hashlib
 import io
+import json
 import re
 import sys
 import tempfile
@@ -1895,6 +1896,56 @@ def minimal(when: dict, scheme: str, groups: list, recency: dict, model=None):
     return c if holds(when, c, groups, recency) else None
 
 
+def when_key(when) -> str:
+    """A `when` as an exact key: equal keys for equal `when`s (its tables' keys sorted, as holds() reads a table by
+    its keys; its lists in their order)."""
+    return json.dumps(when, sort_keys=True)
+
+
+class Combinations:
+    """The round trip's combinations, each computed once: a `when`'s minimal combination under a scheme for a widget
+    (minimal(), reduced by the state model model_of() gives), and whether a `when` holds in it (holds()), by what
+    each is computed from: the widget, the `when`s by when_key(), the scheme. A `when`'s key is found once per
+    object, which is kept, so its id is never another's."""
+
+    def __init__(self, models: dict):
+        self.models, self.keys, self.reductions, self.combinations, self.held = models, {}, {}, {}, {}
+
+    def key(self, when) -> str:
+        found = self.keys.get(id(when))
+        if found is None:
+            found = self.keys[id(when)] = (when, when_key(when))
+        return found[1]
+
+    def reduction(self, widget, when) -> tuple:
+        """(the model, its exclusive groups, its recency sets) a combination of `when` is reduced by."""
+        k = (widget, self.key(when))
+        if k not in self.reductions:
+            model = model_of(self.models, widget, when)
+            groups = [g for g in model.get("exclusive", []) if isinstance(g, list)] if model else []
+            self.reductions[k] = model, groups, check_facts.recency_of(model) if model else {}
+        return self.reductions[k][1:]
+
+    def combination(self, widget, when, scheme):
+        """minimal() of `when` under the scheme, reduced as reduction() gives."""
+        k = (widget, self.key(when), scheme)
+        if k not in self.combinations:
+            self.reduction(widget, when)
+            model, groups, recency = self.reductions[k[:2]]
+            c = minimal(when, scheme, groups, recency, model)
+            self.combinations[k] = c, (reduced(c["states"], groups) if c is not None else None)
+        return self.combinations[k][0]
+
+    def holds(self, widget, when, scheme, other) -> bool:
+        """holds() of the `when` `other` in combination() of `when` under the scheme (not None)."""
+        k = (widget, self.key(when), scheme, self.key(other))
+        if k not in self.held:
+            groups, recency = self.reduction(widget, when)
+            c, states = self.combinations[k[:3]]
+            self.held[k] = holds(other, c, groups, recency, states)
+        return self.held[k]
+
+
 def last_holding(fs: list, c: dict, groups, recency):
     states = reduced(c["states"], groups)
     return next((f for f in reversed(fs) if holds(f.when, c, groups, recency, states)), None)
@@ -2001,6 +2052,7 @@ def round_trip(draft: Draft, text: str) -> Trip:
         by_key.setdefault(f.ckey, []).append(f)
         whens.setdefault(group_of(f), {}).setdefault(check_facts.canonical_when(f.when), f.when)
     whens = {g: list(ws.values()) for g, ws in whens.items()}
+    at = Combinations(draft.models)
     for ckey, fs in by_key.items():
         got = back.get(ckey, {"base": {}, "rules": []})
         want_rules = [(f.rule_when, fact_value(f)) for f in fs if f.status == "rule"]
@@ -2012,24 +2064,23 @@ def round_trip(draft: Draft, text: str) -> Trip:
                 for s in f.base_slots:
                     if normal(got["base"].get(s if f.kind == "role" else None)) != normal(fact_value(f)):
                         trip.mismatches.append(f"{f.where}: {f.key}: the base reads back otherwise")
-        def reduced_by(when):
-            model = model_of(draft.models, fs[0].widget, when)
-            groups = [g for g in model.get("exclusive", []) if isinstance(g, list)] if model else []
-            return model, groups, check_facts.recency_of(model) if model else {}
-
+        widget = fs[0].widget
         for f in fs:
-            model, groups, recency = reduced_by(f.when)
-            if slots_of(f.when) and all(minimal(f.when, s, groups, recency, model) is None for s in SCHEMES):
+            if slots_of(f.when) and all(at.combination(widget, f.when, s) is None for s in SCHEMES):
                 trip.impossible += 1
         for when in whens[group_of(fs[0])]:
-            model, groups, recency = reduced_by(when)
             for s in SCHEMES:
-                c = minimal(when, s, groups, recency, model)
+                c = at.combination(widget, when, s)
                 if c is None:
                     continue
-                applies = last_holding(fs, c, groups, recency)
+                groups, recency = at.reduction(widget, when)
+
+                def holding(other, when=when, s=s):
+                    return at.holds(widget, when, s, other)
+
+                applies = next((f for f in reversed(fs) if holding(f.when)), None)
                 if applies is None:
-                    if preset_value(got, fs[0].kind, c, s, groups, recency, fs[0].typ) is not None:
+                    if preset_value(got, fs[0].kind, c, s, groups, recency, fs[0].typ, holding) is not None:
                         trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft states a value "
                                                f"where no fact holds")
                     continue
@@ -2044,7 +2095,7 @@ def round_trip(draft: Draft, text: str) -> Trip:
                     trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the shadowed fact "
                                            f"{applies.where} applies")
                     continue
-                value = preset_value(got, fs[0].kind, c, s, groups, recency, fs[0].typ)
+                value = preset_value(got, fs[0].kind, c, s, groups, recency, fs[0].typ, holding)
                 if normal(value) != normal(resolved_list(fact_value(applies), fs[0].typ)):
                     trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft gives {value!r}, "
                                            f"the fact that applies ({applies.where}) {applies.item.data['value']!r}")
@@ -2085,17 +2136,21 @@ def back_value(f: Fact, node):
     return unspell(f.rel[-1], node, f.typ)[1]
 
 
-def preset_value(got, kind, c, scheme, groups, recency, typ=None):
+def preset_value(got, kind, c, scheme, groups, recency, typ=None, holding=None):
     """The value the read-back bases and rules give a key in a combination (S8: the bases, then the rules in order,
     the last matching winning; an input's per-contrast base where its contrast holds, S9); a keyed list (S6.1) the
-    base merged with every matching rule's list in order, by its items' keys (keyed_merge())."""
+    base merged with every matching rule's list in order, by its items' keys (keyed_merge()). `holding(when)`, where
+    given, is holds() in the combination, `groups` and `recency` (Combinations.holds())."""
     if kind == "input":
         contrast = next((x for x, _ in CONTRASTS if x in c["conditions"]), None)
         return got["base"].get((scheme, contrast), got["base"].get((scheme, None)))
-    states = reduced(c["states"], groups)
+    if holding is None:
+        states = reduced(c["states"], groups)
+
+        def holding(when):
+            return holds(when, c, groups, recency, states)
     base = got["base"].get(scheme if kind == "role" else None)
-    matching = [v for when, v in got["rules"] if holds(when if isinstance(when, dict) else {}, c, groups, recency,
-                                                       states)]
+    matching = [v for when, v in got["rules"] if holding(when if isinstance(when, dict) else {})]
     item_key = KEYED_LISTS.get(check_facts.strip_type(typ)) if typ else None
     if item_key is None:
         return matching[-1] if matching else base
@@ -3673,6 +3728,27 @@ def self_test() -> int:
             [[], ["flat"], ["help"]], [["help"], ["help", "icon_only"]]]
     if got != want:
         failures.append(f"variant_options computed once: {got}, expected {want}")
+    # Combinations: equal `when`s share their results whatever their tables' key order, unequal ones do not, a
+    # `when` given anew (another object at a freed one's id) is keyed by its own content, and every result is
+    # minimal()'s and holds()' own
+    at, sizes = Combinations({("button", None): {"sizes": ["small", "regular"], "default_size": "regular"}}), []
+    for when in ({"states": ["hover"], "sizes": ["small"]}, {"sizes": ["small"], "states": ["hover"]},
+                 {"states": ["hover"]}, {}):
+        c = at.combination("button", when, "light")
+        sizes.append(sorted(c["sizes"]))
+        if c != minimal(when, "light", [], {}, {"sizes": ["small", "regular"], "default_size": "regular"}):
+            failures.append(f"Combinations.combination({when}): not minimal()'s")
+    if sizes != [["small"], ["small"], ["regular"], ["regular"]] or len(at.combinations) != 3:
+        failures.append(f"Combinations.combination: sizes {sizes}, {len(at.combinations)} computed, expected 3")
+    base = {"states": ["hover", "pressed"]}
+    at.combination("button", base, "dark")
+    for other, want in (({"states": ["hover"]}, True), ({"states": ["focus"]}, False), ({"not_states": ["hover"]},
+                                                                                         False), ({}, True)):
+        for _ in range(2):
+            if at.holds("button", base, "dark", dict(other)) != want:
+                failures.append(f"Combinations.holds({other}) in {base}: not {want}")
+    if at.combination("button", {"sizes": ["small", "regular"]}, "light") is not None:
+        failures.append("Combinations.combination of two sizes: an element holds it")
     # the model's fields a preset leaves unstated: none where it states each, the field where one line is gone; the
     # sources' tests, comments and attributes are no model
     with tempfile.TemporaryDirectory() as tmp:
