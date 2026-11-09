@@ -278,81 +278,68 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
 #[cfg(target_os = "windows")]
 static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-/// COM, initialized on the calling thread for one stock icon load, and
-/// uninitialized when dropped where this initialized it.
+/// Whether COM's multithreaded apartment is kept for the process, from the
+/// first stock icon load to the process's end: `CoIncrementMTAUsage`, once,
+/// its cookie never given back; the failure where it failed.
 ///
 /// SHGetStockIconInfo runs code of a COM server of the shell's
 /// (`thumbcache.dll`, loaded through COM's DLL cache), and COM must be
-/// initialized on each thread that uses it ("CoInitializeEx must be called
+/// initialized for each thread that uses it ("CoInitializeEx must be called
 /// at least once, and is usually called only once, for each thread that
 /// uses the COM library",
-/// <https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coinitializeex>);
-/// the shell's SHGetFileInfo asks for CoInitialize or OleInitialize, both
-/// a single-threaded apartment
-/// (<https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shgetfileinfow>).
-/// A thread without COM uses it as a member of the process's
-/// multithreaded apartment while another thread keeps one, so only other
-/// threads' COM keeps the server loaded: when the last of them
-/// uninitializes, COM unloads the process's servers (`ProcessUninitialize`,
-/// `CleanUpDllsForProcess`) while the load runs in one, an access violation
-/// (CI run 42554706381: the Windows watcher's thread uninitializing). The
-/// raw-pointer marker makes the guard `!Send`, so it drops on the thread it
-/// initialized.
+/// <https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coinitializeex>).
+/// A load runs on the caller's thread, which this crate does not own. A
+/// thread that has not initialized COM is a member of the MTA while
+/// another thread keeps one ("A thread has an implicit MTA apartment type
+/// if it does not initialize the COM apartment itself, and if another
+/// thread has already initialized the MTA in the process",
+/// <https://learn.microsoft.com/en-us/windows/win32/api/objidlbase/ne-objidlbase-apttypequalifier>),
+/// and when the last thread uninitializes COM in the process, COM unloads
+/// the servers it loaded (`ProcessUninitialize`, `CleanUpDllsForProcess`),
+/// one a load is running in among them: an access violation (CI run
+/// 42554706381, the Windows watcher's thread uninitializing). Initializing
+/// COM around each load would not do: its own uninitialization, the last in
+/// the process, then fails another thread's starting COM work ("the
+/// application is exiting", `CO_E_SERVER_STOPPING`; CI run 42556588847).
+/// `CoIncrementMTAUsage` is COM's call for an API that "requires COM to be
+/// initialized, but has no information about whether the current thread is
+/// already in an apartment, and does not need the current thread to go into
+/// a particular apartment"; it "ensures that the system doesn't free
+/// resources related to MTA support, even if the MTA thread count goes to
+/// 0"
+/// (<https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coincrementmtausage>).
+/// Kept for the process, COM is never uninitialized under a load.
 #[cfg(target_os = "windows")]
-struct ComForLoad {
-    /// Whether this initialized COM (`S_OK` or `S_FALSE`), and so owes the
-    /// thread its `CoUninitialize`.
-    initialized: bool,
-    _thread: std::marker::PhantomData<*const ()>,
-}
-
-#[cfg(target_os = "windows")]
-impl ComForLoad {
-    /// COM on this thread as a single-threaded apartment, or as the thread
-    /// already has it: `RPC_E_CHANGED_MODE` is a thread already in another
-    /// apartment, COM initialized there and left to its owner. `None`, the
-    /// failure noted, where COM cannot be initialized.
-    fn enter() -> Option<Self> {
-        use windows::Win32::Foundation::RPC_E_CHANGED_MODE;
-        use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx};
-
-        // SAFETY: CoInitializeEx takes a reserved null pointer and a flag by
-        // value and touches no memory of the caller's; a success is balanced
-        // by this guard's drop on the same thread.
-        let hr = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
-        if hr.is_err() && hr != RPC_E_CHANGED_MODE {
-            note_failure(format_args!("CoInitializeEx: {}", hr.message()));
-            return None;
-        }
-        Some(Self {
-            initialized: hr.is_ok(),
-            _thread: std::marker::PhantomData,
-        })
+fn mta_kept() -> bool {
+    static KEPT: std::sync::OnceLock<Result<(), String>> = std::sync::OnceLock::new();
+    let kept = KEPT.get_or_init(|| {
+        // SAFETY: CoIncrementMTAUsage writes its cookie into a value the
+        // binding owns and returns; it is not called during process
+        // shutdown or from DllMain, which its documentation rules out. The
+        // cookie is dropped without CoDecrementMTAUsage: the usage is kept
+        // for the process, on purpose.
+        unsafe { windows::Win32::System::Com::CoIncrementMTAUsage() }
+            .map(|_kept_for_the_process| ())
+            .map_err(|err| err.to_string())
+    });
+    if let Err(err) = kept {
+        note_failure(format_args!("CoIncrementMTAUsage: {err}"));
     }
-}
-
-#[cfg(target_os = "windows")]
-impl Drop for ComForLoad {
-    fn drop(&mut self) {
-        if self.initialized {
-            // SAFETY: balances this guard's successful CoInitializeEx, on the
-            // thread that made it (the guard is `!Send`), after the load's
-            // last COM use.
-            unsafe { windows::Win32::System::Com::CoUninitialize() };
-        }
-    }
+    kept.is_ok()
 }
 
 /// Load a stock system icon by its SIID_ name.
 ///
 /// Maps the name to a SHSTOCKICONID, calls SHGetStockIconInfo to get
 /// an HICON, extracts RGBA pixels, and cleans up the icon handle, one load
-/// at a time ([`STOCK_ICON_LOCK`]), with COM initialized on the thread
-/// ([`ComForLoad`]).
+/// at a time ([`STOCK_ICON_LOCK`]), with COM's MTA kept for the process
+/// ([`mta_kept`]).
 #[cfg(target_os = "windows")]
 fn load_stock_icon(name: &str) -> Option<IconData> {
     let siid = siid_from_name(name)?;
-    let _com = ComForLoad::enter()?;
+    if !mta_kept() {
+        return None;
+    }
     // The lock guards no data, so a load that panicked leaves nothing to
     // repair.
     let _one_at_a_time = STOCK_ICON_LOCK
