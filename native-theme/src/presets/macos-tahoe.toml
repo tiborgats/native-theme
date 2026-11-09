@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 99f597ec85f835126aeaa9582628fcbe1cab84229beefb0be545b35fe8440a48
+# generated lines: sha256 1ea50aacb616dd72d9997947c2621eade69970e225061f1e8a67b0a1e21ad5ee
 
 [preset]
 id = "macos-tahoe"
@@ -144,14 +144,6 @@ exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", 
 sizes_by_variant = [{ variant = "route", sizes = [] }]
 
 [pending]
-# docs/facts/macos/button.toml:1322
-"widgets.button.body.corners.top_left" = ["U97", "U96", "U91", "U92", "U93", "U323", "U693", "U695"]
-# docs/facts/macos/button.toml:4679
-"widgets.button.body.corners.top_right" = ["U97", "U96", "U91", "U92", "U93", "U323", "U693", "U695"]
-# docs/facts/macos/button.toml:8036
-"widgets.button.body.corners.bottom_right" = ["U97", "U96", "U91", "U92", "U93", "U323", "U693", "U695"]
-# docs/facts/macos/button.toml:11393
-"widgets.button.body.corners.bottom_left" = ["U97", "U96", "U91", "U92", "U93", "U323", "U693", "U695"]
 # docs/facts/macos/button.toml:125088
 "widgets.button.body.focus.corners.curve" = ["U100", "U323", "U695"]
 # docs/facts/macos/button.toml:125884
@@ -176,28 +168,36 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "widgets.button.body.margin.bottom_px" = ["U159", "U323"]
 # docs/facts/macos/button.toml:217953
 "widgets.button.body.margin.left_px" = ["U159", "U323"]
-# docs/facts/macos/button.toml:218785
-"widgets.button.body.padding.top_px" = ["U313", "U323", "U695"]
-# docs/facts/macos/button.toml:218791
-"widgets.button.body.padding.right_px" = ["U313", "U323", "U695"]
-# docs/facts/macos/button.toml:218797
-"widgets.button.body.padding.bottom_px" = ["U313", "U323", "U695"]
-# docs/facts/macos/button.toml:218803
-"widgets.button.body.padding.left_px" = ["U313", "U323", "U695"]
 # docs/facts/macos/button.toml:218812
 "widgets.button.icon.glyph" = ["U314", "U323"]
 # docs/facts/macos/button.toml:218851
 "widgets.button.menu_indicator" = "U315"
 # docs/facts/macos/button.toml:218857
 "widgets.button.values.menu_indicator_gap_px" = ["U315", "U333"]
+# docs/facts/macos/button.toml:218868
+"widgets.button.body.corners.bottom_left" = "U323"
+# docs/facts/macos/button.toml:218874
+"widgets.button.body.corners.bottom_right" = "U323"
+# docs/facts/macos/button.toml:218886
+"widgets.button.body.corners.top_left" = "U323"
+# docs/facts/macos/button.toml:218892
+"widgets.button.body.corners.top_right" = "U323"
 # docs/facts/macos/button.toml:219018
-"widgets.button.body.min_height_px" = ["U323", "U695"]
+"widgets.button.body.min_height_px" = "U323"
 # docs/facts/macos/button.toml:219024
 "widgets.button.body.min_width_px" = "U323"
+# docs/facts/macos/button.toml:219030
+"widgets.button.body.padding.bottom_px" = "U323"
+# docs/facts/macos/button.toml:219036
+"widgets.button.body.padding.left_px" = "U323"
+# docs/facts/macos/button.toml:219042
+"widgets.button.body.padding.right_px" = "U323"
+# docs/facts/macos/button.toml:219048
+"widgets.button.body.padding.top_px" = "U323"
 # docs/facts/macos/button.toml:219228
 "widgets.button.icon.icon.size_px" = "U323"
 # docs/facts/macos/button.toml:219276
-"widgets.button.label.text.font.size" = ["U323", "U695"]
+"widgets.button.label.text.font.size" = "U323"
 # docs/facts/macos/button.toml:219294
 "widgets.button.label.text.font.width" = "U323"
 # docs/facts/macos/button.toml:219306
