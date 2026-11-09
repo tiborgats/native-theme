@@ -375,8 +375,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-CB01 | `combo_box.arrow.{glyph,margin} @ variant editable` (NSComboBox's arrow button's glyph and its place in the button, drawn by the model, the `AppKitPopUp` rendering not covering it; the probe has not read it: register row U172, per control size; ADD-A127) | rule |
 | MAC-CB02 | `combo_box.arrow_area.fill` | field |
 | MAC-CB02 | `combo_box.arrow_area.fill @ cond window_inactive` | rule |
-| MAC-CB03 | `combo_box.arrow.glyph.fill @ {pressed} / {disabled}` | rule |
-| MAC-CB04 | `combo_box.{body,arrow} @ {open}` | rule |
+| MAC-CB03 | `combo_box.arrow.glyph.fill @ context combo_box.body {pressed} / {disabled}` (the pop-up's press, read by context: the arrow belongs to the arrow area's element, ADD-A146) | rule |
+| MAC-CB04 | `combo_box.body @ {open}; combo_box.arrow @ context combo_box.body {open}` | rule |
 | MAC-CB04 | `menu.body, menu.item.{min_height,fill} @ context combo_box variant editable (NSComboBox's list)` | rule |
 | MAC-CB04 | `menu.item.fill @ {focused} context combo_box variant editable / {hover} context combo_box variant editable` (the list's highlighted row: `focused` or `hover`, never `selected`, S7.2) | rule |
 | MAC-CB04 | `combo_box.values.popup_placement @ variant editable (its max_visible_items: numberOfVisibleItems)` | placement |
@@ -653,7 +653,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N28† | `split_button.secondary.fill, split_button.arrow.glyph @ {open}` | rule |
 | MAC-N28† | `split_button.* @ size mini / small / regular / large` | rule |
 | MAC-N29† | `button.body.*, button.menu_indicator @ variant menu {pressed} / variant menu {open}` (`NSComboButton` `.unified`) | rule |
-| MAC-N29† | `combo_box.{body,arrow} @ variant @pull_down {pressed} / variant @pull_down {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
+| MAC-N29† | `combo_box.body @ {pressed} variant @pull_down / {open} variant @pull_down; combo_box.arrow @ variant @pull_down context combo_box.body {pressed} / variant @pull_down context combo_box.body {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
 | MAC-N29† | `button.values.menu_indicator_gap` | field |
 | MAC-N29† | `button.values.menu_trigger @ variant menu / variants {menu,@menu_on_hold}` (`primary` where the unified NSComboButton has no action, `long_press` where it has one, `NSComboButton.h:18`; ADD-A135) | rule |
 | MAC-N29† | `button.* @ variant menu context toolbar.bar (NSMenuToolbarItem)` | rule |

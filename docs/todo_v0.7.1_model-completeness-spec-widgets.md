@@ -2663,11 +2663,17 @@ spaces:
     host: Kirigami's search dialog field, Q1.118; a GTK linked box's overlap, each entry's negative start or top
     margin, GN-1.42), `min_width`, `min_height`, `max_width`, `opacity` (today's
     `disabled_opacity`), `focus`, `cursor`, `bindings` (GNOME's error, warning and success classes rebind the accent
-    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†), `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
+    for the subtree: under `{invalid}`, `warning` and `success`), `transitions` (the editable label's title-to-field change, RL-2†), `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
   - `text` — the entered text: `text`, `transitions` (RL-2†).
-  - `placeholder` — the placeholder text: `text`, `transitions` (macOS's centred search placeholder moving to the
-    leading edge on focus, MAC-N02).
-  - `prefix`, `suffix` — Material's prefix and suffix text: `text`.
+  - `placeholder` — the placeholder text, queried while the field holds no text (content); where a platform hides
+    it by state besides, a rule states `shown`: `text`, `opacity`, `shown`, `transitions` (macOS's centred search
+    placeholder moving to the leading edge on focus, MAC-N02; Compose's fade, group `Opacity`, between the field's
+    focused, empty and filled phases, shown while focused and, with no label resting in the field, while unfocused
+    and empty, `internal/TextFieldImpl.kt:2048-2072`, MAT-I14, the rest value by the content variant `with_label`;
+    ADD-A146: an `Opacity` transition needs the `opacity` it runs between).
+  - `prefix`, `suffix` — Material's prefix and suffix text: `text`, `opacity`, `shown`, `transitions` (Compose's
+    fade, as the placeholder's, the affixes hidden only while unfocused and empty under a resting label,
+    `internal/TextFieldImpl.kt:2075-2086`; ADD-A146).
   - `floating_label` — Material's label: inside at rest, floated onto the outline when focused or populated: `text`,
     `padding` (the space below it, MAT-I3), `opacity` (its disabled opacity, MAT-I3), `transform`, `transitions`.
   - `header` — WinUI's header label above the field: `text`, `padding`.
@@ -2776,16 +2782,29 @@ spaces:
   other presets' keys from the facts, no row naming them); `strength_meter_segments: Value<u32>` (the meter's
   segment count, K-KA-11†);
   `strength_meter_gap_px: Value<Px>` (between the meter's segments, K-KA-11†).
-- **Variants:** typed `flat` (no frame: GNOME's flat entry, KDE frameless, macOS borderless, iOS `none`), `line` (a
-  plain line frame: iOS's line style, macOS bordered-not-bezeled), `secure` (password field, all six; GN-2.23, W2-16),
-  `warning` (GNOME's warning class, KDE's neutral highlight), `error`, `success` (GNOME's error and success classes;
-  the status severities), `editable_label` (view colours while editing: GNOME GN-2.45, iOS RL-2†); typed on the `icon`
-  element `leading`, `trailing`; on `preedit` `selected_clause`; on `selection_handle` the identities `start`, `end`,
-  `insertion` (GN-2.42). Keyed: `adwaita` on `preedit` `@whole`, `@selection`, `@prediction`, `@prefix`, `@suffix`,
-  `@spelling_error`, `@compose_error` (GTK's pre-edit hint classes, GN-1.281†); `windows-11` on `preedit` one key per
-  IME clause attribute (declared by the preset); `kde-breeze` `@border_top`, `@border_right`, `@border_bottom`,
-  `@border_left` (Breeze's per-side borders: only the named edges drawn, K1.42); `macos-*` `@square_bezel`,
-  `@rounded_bezel`; `ios-*` `@bezel`; `material-3` `@filled` (outlined is the base).
+- **Variants:**
+  - on the widget, typed: `flat` (no frame: GNOME's flat entry, KDE frameless, macOS borderless, iOS `none`), `line` (a
+    plain line frame: iOS's line style, macOS bordered-not-bezeled), `secure` (password field, all six; GN-2.23, W2-16),
+    `warning` (GNOME's warning class, KDE's neutral highlight), `success` (GNOME's success class), `editable_label`
+    (view colours while editing: GNOME GN-2.45, iOS RL-2†), and the content variant `with_label` (the field holds a
+    label: on `material-3` the placeholder and the affixes rest hidden while that label rests in the field,
+    `internal/TextFieldImpl.kt:143`, `:2048-2086`, MAT-I14; ADD-A146). A failed validation is no variant: it is the
+    flag `invalid` on every preset (Flags; ADD-A146), so `error` is not declared here, and `adwaita` states its
+    `.error` class's look under `{invalid}` (GN-1.45). Rejected: the typed `error` beside the flag, one meaning in
+    two mechanisms, under which a portable application had to know per preset which to set; and the variant alone,
+    where R3 lists `invalid` for exactly this and an error comes and goes with the content, as a state does.
+    `warning` and `success`, which no platform has as a state, stay variants.
+  - on the widget, keyed, `kde-breeze`: `@border_top`, `@border_right`, `@border_bottom`,
+    `@border_left` (Breeze's per-side borders: only the named edges drawn, K1.42).
+  - on the widget, keyed, `macos-*`: `@square_bezel`, `@rounded_bezel`.
+  - on the widget, keyed, `ios-*`: `@bezel`.
+  - on the widget, keyed, `material-3`: `@filled` (outlined is the base).
+  - on `icon`, typed (its identity): `leading`, `trailing`.
+  - on `preedit`, typed: `selected_clause`.
+  - on `preedit`, keyed, `adwaita`: `@whole`, `@selection`, `@prediction`, `@prefix`, `@suffix`,
+    `@spelling_error`, `@compose_error` (GTK's pre-edit hint classes, GN-1.281†).
+  - on `preedit`, keyed, `windows-11`: one key per IME clause attribute, declared by the preset.
+  - on `selection_handle`, typed (its identity): `start`, `end`, `insertion` (GN-2.42).
 - **Sizes and densities:** `macos-*`: the control sizes AppKit draws for a text field (of `mini` to `extra_large`,
   MAC-X17; which ones, per generation, from the probe). `ios-*`: none (the height follows Dynamic Type, I-10: `uifm_scaled` over the
   category `token.text.scaling` uses, S9.4, R25.15). `material-3`: its density steps (keyed). `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39). Others: none.
@@ -2795,8 +2814,9 @@ spaces:
   MAC-P3-11†, W-P3-9†; KDE keeps the caret, K3.43); keyed `kde-breeze` `@quality_bad`, `@quality_poor`,
   `@quality_weak`, `@quality_good`,
   `@quality_excellent` (the strength meter's quality, K-KA-11†), `@at_limit` (the counter at its limit, K-KA-9†);
-  state flags used: hover, pressed (on `icon`), focused, focus_within, focus_visible, disabled, read_only, invalid,
-  autofilled, drop_target.
+  state flags used: hover, pressed (on `icon`), focused, focus_within, focus_visible, disabled, read_only, invalid
+  (the entry failed validation, the one home of that meaning: Material's error state, MAT-I9, WinUI's, W1-033,
+  GTK's `.error` class, GN-1.45; ADD-A146), autofilled, drop_target.
 - **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` (TextBox CommonStates; its ButtonStates are the
   `clear_field` button's visibility value, not a group); others none (states combine; kirigami-addons sets one quality
   flag at
@@ -2813,7 +2833,9 @@ spaces:
     `writing_tools_affordance` (all but `macos-*`), `dictation_effect` (all but `macos-*`), `grammar_mark` (all but
     `macos-*`), `progress` (all but `adwaita`), `caret` (every preset, by rule where the platform draws none: outside
     the focused field, in an inactive window, `{overwrite}`; `{text_selected}` on all but `kde-breeze`: GN-3.73†,
-    MAT-P3-21†, P3-9†, MAC-P3-11†, W-P3-9†), `secondary_caret` (all but `adwaita`, `kde-breeze`), `block_caret` (all
+    MAT-P3-21†, P3-9†, MAC-P3-11†, W-P3-9†; a read-only field is no rule of the caret's: where
+    `token.caret.shown_in_read_only` is false the connector queries and draws no caret part of a `{read_only}`
+    widget, as it applies `mnemonic_when_disabled`, S4.2, ADD-A146), `secondary_caret` (all but `adwaita`, `kde-breeze`), `block_caret` (all
     but `adwaita`, `kde-breeze`; there absent by a rule `!{overwrite}`), `drop_caret` (all but `ios-*`, `adwaita`,
     `windows-11`, `macos-*`: the second caret at the drop position, P3-9†, GN-3.73†, W-P3-9†, MAC-P3-11†; on those by
     a rule `!{drop_target}`; a platform that only recolours its caret on a drop target states `caret.fill @
@@ -2909,10 +2931,16 @@ spaces:
 - **Available:** every preset.
 - **Parts:**
   - `body` — the frame and fill (the root): `fill`, `stroke`, `corners`, `padding` (the fixed frame inset), `shadow`,
-    `min_width`, `min_height`, `opacity`, `focus`, `cursor`, `bindings`.
+    `min_width`, `min_height`, `opacity`, `focus`, `cursor`, `bindings`, `transitions` (as on `input`: Material's
+    multi-line field is the same field, its container and stroke transitions MAT-I14's, `material-web@2.5.0
+    textfield/internal/text-field.ts:582`; Breeze animates a QTextEdit's frame as a line edit's, `breeze@6.8.2
+    kstyle/breezestyle.cpp:338`, `:3930-3945`, K1.44), `interaction` (the filled field's hover layer, as on
+    `input`, `field/internal/filled-field.ts:20`, MAT-I11, S2.12; ADD-A146: the two fields `input.body` has and
+    this widget's own platforms draw).
   - `text` — the entered text, as on `input` (each part below stated on this widget's own parts, R20): `text`.
-  - `placeholder` — as on `input`: `text`.
-  - `prefix`, `suffix` — as on `input` (Material's multi-line field, MAT-I16): `text`.
+  - `placeholder` — as on `input`: `text`, `opacity`, `shown`, `transitions`.
+  - `prefix`, `suffix` — as on `input` (Material's multi-line field, MAT-I16): `text`, `opacity`, `shown`,
+    `transitions`.
   - `floating_label` — as on `input` (Material's multi-line field, MAT-I3, MAT-I16): `text`, `padding`, `opacity`,
     `transform`, `transitions`.
   - `counter` — as on `input` (Material's multi-line field, MAT-I6): `text`.
@@ -2982,14 +3010,21 @@ spaces:
   Material's multi-line field has no minimum-rows or resize value: its minimum rows are the application's
   (`minLines`, a parameter of Compose's `TextField`), and the resize handle MAT-I16 measures is material-web's
   textarea, which Compose does not draw (R1.6).
-- **Variants:** typed `flat` (no frame: iOS `none`); typed on `invisible` `space`, `tab`, `line_break`,
-  `no_break_space`; typed on the `icon` element `leading`, `trailing` (as on `input`). Keyed: `material-3` `@filled`
-  (as on `input`); `adwaita` `@inline` (the inline text view, GN-1.54); `ios-*` `@rounded_rect` (iOS 17's rounded rect);
-  `ios-*` and `macos-*` on `highlight` one key per highlight style (declared by the preset; macOS's an open item,
-  MAC-X28). As on `input` (each stated on this widget, R20): typed on `preedit` `selected_clause`, on
-  `selection_handle` the identities `start`, `end`, `insertion` (GN-2.42); keyed `adwaita` on `preedit` `@whole`,
-  `@selection`, `@prediction`, `@prefix`, `@suffix`, `@spelling_error`, `@compose_error` (GN-1.281†); `windows-11` on
-  `preedit` one key per IME clause attribute.
+- **Variants:**
+  - on the widget, typed: `flat` (no frame: iOS `none`), and the content variant `with_label` (as on `input`,
+    ADD-A146). A failed validation is the flag `invalid`, as on `input`.
+  - on the widget, keyed, `material-3`: `@filled` (as on `input`).
+  - on the widget, keyed, `adwaita`: `@inline` (the inline text view, GN-1.54).
+  - on the widget, keyed, `ios-*`: `@rounded_rect` (iOS 17's rounded rect).
+  - on `icon`, typed (its identity, as on `input`): `leading`, `trailing`.
+  - on `invisible`, typed: `space`, `tab`, `line_break`, `no_break_space`.
+  - on `highlight`, keyed, `ios-*`: one key per highlight style, declared by the preset.
+  - on `highlight`, keyed, `macos-*`: one key per highlight style, declared by the preset (an open item, MAC-X28).
+  - on `preedit`, typed (as on `input`, each stated on this widget, R20): `selected_clause`.
+  - on `preedit`, keyed, `adwaita`: `@whole`,
+    `@selection`, `@prediction`, `@prefix`, `@suffix`, `@spelling_error`, `@compose_error` (GN-1.281†).
+  - on `preedit`, keyed, `windows-11`: one key per IME clause attribute.
+  - on `selection_handle`, typed (its identity): `start`, `end`, `insertion` (GN-2.42).
 - **Sizes and densities:** no sizes (`macos-*`: control sizes do not apply to NSTextView); `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39).
 - **Flags:** shared `empty` (as on input), `overwrite` (the overwrite caret: GNOME, KDE; ADD-A23), `composing` (GNOME
   GN-1.281†, KDE K3.48†), `text_selected` (as on input), `current` (on `find_match`, the current match: macOS, iOS);
@@ -3000,7 +3035,8 @@ spaces:
   position taken `:610-624`, the selection's end `:617-620`; so in the first
   paragraph it marks the word holding the caret, and in a later one the word whose paragraph offsets the caret's
   document position falls within; Q1.13, ADD-A130); state flags used:
-  hover, focused, focus_within, focus_visible, disabled, read_only, drop_target.
+  hover, focused, focus_within, focus_visible, disabled, read_only, invalid (a failed validation, as on `input`:
+  Material's multi-line field's error state, MAT-I9; ADD-A146), drop_target.
 - **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` (TextBox CommonStates: the multi-line box is a
   TextBox); others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `gutter` (all but `adwaita`), `find_dimming` (all but `macos-*`; `macos-*` by a rule
@@ -3008,7 +3044,8 @@ spaces:
   `supporting_text` (all but `material-3`, `windows-11`), `placeholder` (`adwaita`, `macos-*`, `ios-*`: GtkTextView,
   NSTextView and UITextView draw no placeholder, the value phase confirming from the facts; WinUI's multi-line
   TextBox draws one, W1-036), `grammar_mark` (all but `macos-*`), `caret` (every preset by rules as on `input`:
-  outside the focused view, `{overwrite}`, `{text_selected}` on all but `kde-breeze`, GN-3.73†), `secondary_caret`
+  outside the focused view, `{overwrite}`, `{text_selected}` on all but `kde-breeze`, GN-3.73†; a read-only view by
+  `token.caret.shown_in_read_only`, no rule, as on `input`), `secondary_caret`
   (all but `adwaita`, `kde-breeze`), `floating_caret` (all but `ios-*`), `caret_accessory` (all but `ios-*`),
   `dictation_effect` (all but `macos-*`), `caps_lock_indicator` (all but `macos-*`: the insertion indicator's,
   MAC-X14), `invisible` (all but `macos-*`, `ios-*`), `writing_tools_glow` (all but
@@ -3065,8 +3102,8 @@ spaces:
   stated on `text_area`'s own
   parts (no model inheritance, R20).
 - **Notes:** links in running text are `link @ variant inline context text_area` (the former link part goes); the
-  enclosing NSScrollView's border is `scroll_view.frame`, selected by `scroll_view`'s own variants (`flat`, `line`,
-  `@bezel`, `@groove`, MAC-I08) where the text view is in one, `text_area` declaring none of them;
+  enclosing NSScrollView's border is `scroll_view.frame`, selected by `scroll_view`'s own variants (`line`,
+  `@bezel`, `@groove`, MAC-I08; the borderless view is its base) where the text view is in one, `text_area` declaring none of them;
   the current find match is `text_area.find_match @ {current}` (MAC-X15). Provenance: the glow is group 3's (rename
   row 12);
   group 8 proposed `drop_caret` (P3-9†); group 1 the overwrite caret's flag (ADD-A23) and the
@@ -3087,7 +3124,9 @@ spaces:
   - `label` — the current value's text: `text`, `padding` (inside it: GTK's cell renderer's 2 × 2, GN-1.238;
     Breeze's text pixel, K1.240; ADD-A127).
   - `placeholder` — the placeholder text in the label's place while no value is chosen (WinUI's; QComboBox's
-    `placeholderText`, K1.240; Compose's text field placeholder, MAT-CB1; ADD-A127): `text`.
+    `placeholderText`, K1.240; Compose's text field placeholder, MAT-CB1; ADD-A127): `text`, `opacity`, `shown`,
+    `transitions` (as `input.placeholder`: Compose's fade by the field's phase, its rest value by the content
+    variant `with_label`; ADD-A146).
   - `icon` — the leading icon (Material's), or the current item's icon (Qt's `CE_ComboBoxLabel`, Q1.122; AppKit's
     `NSPopUpButton`): `icon`, `opacity` (its disabled opacity, as on input: MAT-CB1, MAT-I7), `margin` (a margin in
     the content row: Breeze's `iconSize + 4` rect with the pixmap centred and Qt's `iconSize + 2` height, K1.240;
@@ -3102,13 +3141,19 @@ spaces:
     system control `AppKitPopUp`: `GlyphSource::SystemControl { control: AppKitPopUp, replaces: [body, arrow_area,
     arrow] }`, as S15's image is the whole button, so the connector draws none of those parts' own fills, strokes or
     shadows under it and passes the `body`'s laid-out width as `render_system_control`'s `width`; the arrow area is
-    the image's `ControlImage.arrow`), a mark that takes the combo box's states (Nested controls: it is queried with the
-    combo box's element, so `{hover}` is the combo's; nested in `arrow_area`, `context combo_box.arrow_area {hover}`
-    selects the arrow area's own hover, and where no arrow area is drawn it is queried in the root's scope, Nesting;
-    the nesting is its query's, its place the content row's, below):
+    the image's `ControlImage.arrow`), the arrow area's mark (the nesting is its query's, its place the content
+    row's, below):
     `glyph` (its fill per state), `transform` (its rotation while `open`), `transitions` (WinUI's animated chevron,
     W1-132), `margin` (a margin in the content row: Breeze's glyph centred in its arrow square, K1.240; WinUI's
-    chevron's end inset, W1-132; Compose's minimum interactive box, MAT-CB1; ADD-A127).
+    chevron's end inset, W1-132; Compose's minimum interactive box, MAT-CB1; ADD-A127). Nested in `arrow_area`, it
+    belongs to that element (Entry format; ADD-A146): its own `{hover}` and `{pressed}` are the arrow area's
+    (Breeze's editable combo recolours the arrow only while the pointer is over the sub-control, K1.240), and the
+    combo box's states reach it by `context combo_box.body {…}` (`{open}`, `{hover}`, `{pressed}`, `{focused}`,
+    `{invalid}`; `disabled` holds on it as on every element of a disabled widget, *Flags*). Where no arrow area is
+    drawn the connector still queries `arrow_area`, which answers `NotDrawn` and holds no state of its own, and the
+    arrow with that element in the root's scope (Nesting). Rejected: the arrow queried with the combo box's element
+    while nested in the arrow area, S2.11's former second relation, which the catalogue's reader and the model did
+    not hold; and the arrow outside the arrow area, which could not read the area's hover.
   - `header` — WinUI's header text: `text`, `padding`.
   - `floating_label` — Material's select field label (as on input, MAT-CB1): `text`, `padding`, `opacity`,
     `transform`, `transitions`.
@@ -3214,24 +3259,32 @@ spaces:
     its written `38` restated as an unwritten 1; the cross axis on the content box with WinUI's chevron given
     margins 1 and −1 (the same pixels, values WinUI does not write); one size basis for all (the platforms differ
     visibly); a combo rule of its own (the icon unplaced, written values moved into the padding).
-- **Variants:** typed `editable` (KDE, macOS's NSComboBox, WinUI, Material's editable menu, GTK's combo with entry),
-  `flat` (GNOME's flat drop-down, KDE frameless, macOS borderless), `warning` (KDE's neutral highlight; input's `warning`), `tinted`, `primary` (iOS's
-  tinted and prominent trigger configurations, `button`'s meanings, CB-2), `glass`, `clear` (iOS 26's glass trigger
-  styles, `button`'s meanings, CB-2). Keyed: `adwaita` `@gtk_combo_box`
-  (GN-1.238), `@raised` (the drop-down kept raised in a toolbar, GN-1.151); `macos-*` `@pull_down` (AppKit's
-  pull-down `NSPopUpButton`, a pop-up button control with a pull-down menu, MAC-CB01, MAC-N29†: one platform, so keyed;
-  iOS's pull-down button is `button` `menu`, B-18†); `kde-breeze` `@dialog_mode`, `@page_mode`
-  (the form combo row's display modes, K-KA-12†); `material-3` `@filled`; `ios-*` `@gray`
-  (the trigger's `UIButton.Configuration` styles of B-1, as `button` declares them, with its `exclusive_variants`
-  groups, CB-2). The content variant `with_icon` (the current item's or the leading icon drawn, as on `button`; the
-  connector sets it from the content, ADD-A61; Kirigami's the control's own style-hint icon, not an item's,
-  Q1.124), declared on `kde-breeze`, `material-3` and `macos-*`, ignored
-  elsewhere (S8; ADD-A127).
+- **Variants:**
+  - on the widget, typed: `editable` (KDE, macOS's NSComboBox, WinUI, Material's editable menu, GTK's combo with entry),
+    `flat` (GNOME's flat drop-down, KDE frameless, macOS borderless), `warning` (KDE's neutral highlight; input's `warning`), `tinted`, `primary` (iOS's
+    tinted and prominent trigger configurations, `button`'s meanings, CB-2), `glass`, `clear` (iOS 26's glass trigger
+    styles, `button`'s meanings, CB-2), and the content variants `with_icon` (the current item's or the leading icon drawn, as on `button`; the
+    connector sets it from the content, ADD-A61; Kirigami's the control's own style-hint icon, not an item's,
+    Q1.124; declared on `kde-breeze`, `material-3` and `macos-*`, ignored
+    elsewhere, S8, ADD-A127) and `with_label` (as on `input`, declared on `material-3`; ADD-A146). A failed
+    validation is the flag `invalid`, as on `input`.
+  - on the widget, keyed, `adwaita`: `@gtk_combo_box`
+    (GN-1.238), `@raised` (the drop-down kept raised in a toolbar, GN-1.151).
+  - on the widget, keyed, `macos-*`: `@pull_down` (AppKit's
+    pull-down `NSPopUpButton`, a pop-up button control with a pull-down menu, MAC-CB01, MAC-N29†: one platform, so keyed;
+    iOS's pull-down button is `button` `menu`, B-18†).
+  - on the widget, keyed, `kde-breeze`: `@dialog_mode`, `@page_mode`
+    (the form combo row's display modes, K-KA-12†).
+  - on the widget, keyed, `material-3`: `@filled`.
+  - on the widget, keyed, `ios-*`: `@gray`
+    (the trigger's `UIButton.Configuration` styles of B-1, as `button` declares them, with its `exclusive_variants`
+    groups, CB-2).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. `material-3`: density (keyed). `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39).
   Others: none.
 - **Flags:** shared `empty` (Material's select with no value chosen: its label rests inside the field, MAT-CB1); state
-  flags used: hover, pressed, focused, focus_visible, disabled, open (the popup shown); hover and pressed on the
-  `arrow_area` element too (K1.240, NSComboBox's arrow button).
+  flags used: hover, pressed, focused, focus_visible, disabled, invalid (a failed validation, as on `input`:
+  Material's select's error state, MAT-CB2; ADD-A146), open (the popup shown, on the combo box's own element);
+  hover and pressed on the `arrow_area` element too (K1.240, NSComboBox's arrow button), which its `arrow` takes.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (ComboBox CommonStates; ComboBoxItem's are
   `menu`'s in context), `[focus_visible, focused]`
   (FocusStates); its DropDownStates are the flag `open`, its InputModeStates the conditions `cond input:touch` and
@@ -3290,7 +3343,10 @@ spaces:
 - **Parts:**
   - `body` — the widget box: `padding` (round the track; WinUI's pre- and post-content margins, W1-072), `fill`
     (container fill per state, WinUI, W1-074), `opacity` (GTK's disabled filter; today's `disabled_opacity`),
-    `min_width`, `min_height` (WinUI's control height, W1-072; across the axis under `vertical`).
+    `min_width`, `min_height` (WinUI's control height, W1-072; across the axis under `vertical`), `focus` (WinUI's
+    focus rectangle on the control, the system focus visual on the template's `FocusBorder`, `microsoft-ui-xaml@2.5.1
+    src/controls/dev/CommonStyles/Slider_themeresources.xaml:183-184`, `:397-398`; on the thumb only under
+    `{@focus_engaged}`, `:368-392`; ADD-A146).
   - `track` — the inactive track (trough): `fill`, `stroke` (GTK's high-contrast inset border, GN-1.108), `corners`
     (SL-4, K1.104, MAC-SL03, MAT-S3, W1-069), `min_height`, `max_height`, `min_width`, `max_width` (its thickness
     across the axis, today's `track_height_px`: the height when horizontal, the width under `vertical`), `shadow`
@@ -3304,10 +3360,9 @@ spaces:
     shape by corners and size: MAT-S1, SL-2, MAC-SL01), `transform` (GNOME's teardrop rotation, iOS 26's growing
     lens), `shadow` (a rim ring as a spread layer; K3.4), `stroke` (GN-1.96, K1.100, MAT-S10), `focus` (GN-1.104,
     K1.106), `transitions` (Geometry: the animated value change, SL-9; KDE's hover and focus fades, K1.106).
-    `thumb_inner`, `state_layer` belong to `thumb` and are queried with it.
-  - `thumb_inner` — WinUI's inner accent dot: `fill` (per state), `corners`, `min_width`, `min_height` (W1-067),
+  - `thumb_inner`, in `thumb` — WinUI's inner accent dot: `fill` (per state), `corners`, `min_width`, `min_height` (W1-067),
     `transform`, `transitions` (its scale per state and that scale's animation, W1-068).
-  - `state_layer` — Material's halo round the handle (MAT-S7), named as `switch`'s, `checkbox`'s and `radio`'s: `fill`,
+  - `state_layer`, in `thumb` — Material's halo round the handle (MAT-S7), named as `switch`'s, `checkbox`'s and `radio`'s: `fill`,
     `corners` (its shape), `opacity` (per state, MAT-S7), `min_width`, `min_height`. Unlike theirs it is no ripple: at
     the pin Compose's slider draws no indication on the handle under the default ripple theme
     (`OpacityFocusThemeConfiguration`, `Ripple.kt:360`), and only an inset focus ring, with the press, hover and drag
@@ -3341,12 +3396,14 @@ spaces:
   EndAbove, ActiveAbove }` (which thumb is drawn above the other where they overlap, W1-153†);
   `thumb_tooltip_placement: Value<Placement>` (where WinUI's thumb tooltip goes, the host's value, W1-073). The
   value bubble's showing and hiding are its `transitions`, not an event (Entry format).
-- **Variants:** typed `vertical` (GNOME, Material, WinUI, macOS), `range` (KDE Quick RangeSlider, Material, WinUI via
-  the Community Toolkit), `centered` (fill from a neutral value: Material's centred slider, macOS's neutral value),
-  `ticks_before`, `ticks_after` (marks on one side, both for both sides: GNOME's marks, macOS's tick mark position,
-  KDE, WinUI's tick placement), `hue`, `alpha`, `value` (the colour editors' sliders, `@ context color_picker`: GNOME
-  GN-2.53†, Windows W2-05), `warning` (KDE's neutral highlight, K1.100, K1.105; input's `warning`). Keyed:
-  `windows-11` `@ticks_inline`; `ios-*` `@thumbless`.
+- **Variants:**
+  - on the widget, typed: `vertical` (GNOME, Material, WinUI, macOS), `range` (KDE Quick RangeSlider, Material, WinUI via
+    the Community Toolkit), `centered` (fill from a neutral value: Material's centred slider, macOS's neutral value),
+    `ticks_before`, `ticks_after` (marks on one side, both for both sides: GNOME's marks, macOS's tick mark position,
+    KDE, WinUI's tick placement), `hue`, `alpha`, `value` (the colour editors' sliders, `@ context color_picker`: GNOME
+    GN-2.53†, Windows W2-05), `warning` (KDE's neutral highlight, K1.100, K1.105; input's `warning`).
+  - on the widget, keyed, `windows-11`: `@ticks_inline`.
+  - on the widget, keyed, `ios-*`: `@thumbless`.
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. `material-3` flavour `expressive`:
   `extra_small`, `small`, `regular`, `large`, `extra_large` (Expressive's five sizes, xsmall to xlarge, S7.3). Others:
   none.
@@ -3367,7 +3424,7 @@ spaces:
   `material-3`), `value_indicator` (all but `material-3`; `material-3` by a rule outside the states it shows in);
   `thumb` (`ios-*` by a rule under `@thumbless`, SL-8); `tick` (`kde-breeze`, by a rule `!cond
   system_setting:slider_tick_marks`; `ios-13`, whose UISlider has no tick marks before iOS 26, SL-6); fields:
-  `track.stroke` (all but `adwaita`; `adwaita` by a rule outside `cond contrast_high`, GN-1.108), `track.shadow`
+  `body.focus` (all but `windows-11`: the others ring the thumb, GN-1.104, K1.106), `track.stroke` (all but `adwaita`; `adwaita` by a rule outside `cond contrast_high`, GN-1.108), `track.shadow`
   (all but `material-3`), `thumb.stroke` (`macos-*`: AppKit's knob rim is a shadow layer, MAC-SL02; `material-3`
   by a rule outside `{@overlapping}`, MAT-S10), `thumb.shadow` (`windows-11`: WinUI's thumb has a stroke and an
   inner dot and no shadow in its rows, W1-067–W1-069); values: `value_label_gap_px` (all but `adwaita`),
@@ -3394,7 +3451,10 @@ spaces:
   `thumb.fill @ context any slider {hover}` where the whole slider's hover drives it, GTK); `disabled_fill_color`,
   `disabled_track_color`, `disabled_thumb_color` → `value_fill.fill`, `track.fill`, `thumb.fill @ {disabled}`.
 - **Notes:** WinUI's thumb tooltip is `tooltip @ context slider` (W1-073: the tooltip's style reused, its placement
-  the slider's `thumb_tooltip_placement`; Nested controls). Provenance: group 6 wrote the colour sliders as keyed
+  the slider's `thumb_tooltip_placement`; Nested controls). A wheel step on Qt's slider is
+  `token.behavior.scroll.wheel_step_lines` times the slider's own step (S4.2's *Wheel steps*, K3.72), read by the
+  connector from the token: no value of this entry holds it and no slider fact names it, so the fields unit reads
+  nothing staged and the token enters with `scroll_view`'s unit, as the plan stages it (ADD-A146). Provenance: group 6 wrote the colour sliders as keyed
   variants in the colour picker (GN-2.53†, W2-05);
   group 8 the thumb's shadow (K3.4) and the trough repeat (K3.76†, K-P3-17†, MAC-X12), one name with the repeat
   values; group 1 the trough click (GN-P4-5†, R17); the value change is the thumb's and `value_fill`'s transitions

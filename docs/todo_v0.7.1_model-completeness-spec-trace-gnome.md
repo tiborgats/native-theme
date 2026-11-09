@@ -154,10 +154,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.44 | `input.icon.opacity` | field |
 | GN-1.44 | `input.icon.opacity @ {hover} / {pressed}` | rule |
 | GN-1.44 | `input.icon.opacity @ cond contrast_high / {pressed} cond contrast_high` | rule |
-| GN-1.45 | `input.body.bindings (role accent bound to the error role) @ variant error (GNOME's .error)` | rule |
+| GN-1.45 | `input.body.bindings (role accent bound to the error role) @ {invalid} (GNOME's .error: a failed validation is the flag on every preset, ADD-A146)` | rule |
 | GN-1.45 | `input.body.bindings (role accent bound to the warning role) @ variant warning` | rule |
 | GN-1.45 | `input.body.bindings (role accent bound to the success role) @ variant success` | rule |
-| GN-1.45 | `input.text.text.fill @ variant error / variant warning / variant success (= role.global.accent_standalone, rebound)` | rule |
+| GN-1.45 | `input.text.text.fill @ {invalid} / variant warning / variant success (= role.global.accent_standalone, rebound)` | rule |
 | GN-1.46 | `input.body.shadow (inset ring layer) @ {drop_target}` | rule |
 | GN-1.47 | `input.body.{fill,corners,padding,min_height} @ variant flat` | rule |
 | GN-1.48 | `input.progress.{fill,min_height,margin}` (its bottom margin, ADD-A79) | field |
@@ -888,7 +888,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.11 | `declare.widget.*.variants (S10, stacked style classes)` | field |
 | GN-3.11 | `Selector.variants SetMatch (S7)` | rule |
 | GN-3.12 | `role.global.status.* (fill, foreground, standalone)` | role |
-| GN-3.12 | `input.body.bindings @ variant error / variant warning / variant success; form.row.bindings @ variant error / variant warning / variant success` (`Binding::Role` entries rebinding `accent`, `accent_foreground` and `accent_standalone` to that status's `role.global.status.<s>` roles for the subtree, `_labels.scss:21-29`, `_lists.scss:284-292`; standalone labels and icons take the status roles directly, the line above) | rule |
+| GN-3.12 | `input.body.bindings @ {invalid} / variant warning / variant success; form.row.bindings @ {invalid} / variant warning / variant success` (`Binding::Role` entries rebinding `accent`, `accent_foreground` and `accent_standalone` to that status's `role.global.status.<s>` roles for the subtree, `_labels.scss:21-29`, `_lists.scss:284-292`; standalone labels and icons take the status roles directly, the line above) | rule |
 | GN-3.13 | `role.global.accent_standalone` | role |
 | GN-3.14 | `role.global.accent` | role |
 | GN-3.14 | `role.global.accent_foreground` | role |
