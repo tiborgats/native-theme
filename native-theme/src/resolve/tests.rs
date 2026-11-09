@@ -689,15 +689,15 @@ fn accent_derivation_layer_places() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Colours resolved, each by its path.
+type Resolved = Vec<(String, Option<Color>)>;
+
 /// What `stack` resolves to at `scheme` at a window's root (the scheme
 /// picked, the accent-derivation layer derived for it): every key's role of
 /// every declared set and each declared `[WM]` keyed role (S9.1's list as
 /// under a tinting scheme), then every inactive input role, each by its
 /// path.
-fn derived_values(
-    stack: &Stack,
-    scheme: Scheme,
-) -> Result<Vec<(String, Option<Color>)>, Box<dyn std::error::Error>> {
+fn derived_values(stack: &Stack, scheme: Scheme) -> Result<Resolved, Box<dyn std::error::Error>> {
     use crate::blocks::part_style::RoleRef;
     use crate::units::{Px, Size};
     use crate::validate::AccentRole;

@@ -1044,7 +1044,7 @@ impl Stack {
                             })
                     })
                     .map(|(place, _)| place)
-                    .last()?;
+                    .next_back()?;
                 Some((scheme, giver))
             })
             .collect()
