@@ -1,0 +1,50 @@
+name: win-com2 diagnostics
+
+# Temporary, on the win-com2 branch only.
+on:
+  push:
+    branches: [win-com2]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  diag:
+    name: Diag ${{ matrix.name }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "watch vs MTA", features: "windows,watch", rounds: 5, args: "watch::tests::windows_subscribe_and_drop_returns_while_another_thread_leaves_the_mta --exact" }
+          - { name: "icons vs MTA", features: "system-icons", rounds: 5, args: "winicons::tests::stock_icons_load_while_another_thread_leaves_the_mta --exact" }
+          - { name: "winicons x30", features: "windows,watch,system-icons", rounds: 30, args: "winicons::" }
+          - { name: "full suite x3", features: "windows,watch,system-icons", rounds: 3, args: "--skip facts_gate --exact" }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/evidence
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the lib tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          exe=$(cargo test -p native-theme --features ${{ matrix.features }} --lib --no-run --message-format=json \
+            | jq -r 'select(.reason == "compiler-artifact" and .profile.test == true and .executable != null) | .executable' | tail -n1)
+          echo "TEST_EXE=$exe" >> "$GITHUB_ENV"
+      - name: Run
+        shell: bash
+        run: |
+          set +e
+          fails=0
+          for i in $(seq 1 ${{ matrix.rounds }}); do
+            "$TEST_EXE" ${{ matrix.args }} > out.txt 2>&1
+            st=$?
+            if [ "$st" != 0 ]; then
+              fails=$((fails + 1))
+              grep -E "panicked|failed:|FAILED|test result" out.txt | head -20
+            fi
+            echo "=== round $i status $st ==="
+          done
+          echo "=== failed rounds: $fails ==="
+          [ "$fails" = 0 ]
