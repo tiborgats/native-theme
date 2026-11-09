@@ -956,7 +956,7 @@ placement unit, spec ADD-A120); S7; S8 without
    through `from_preset`. Until a preset's table is empty, a connector's tests reach it
    through the hidden `native_theme::gate`, which gains one function returning the synthetic `Theme` of a bundled
    preset, as S19.1's build test makes it (`from_preset_synthetic` over the preset's synthetic layers); the
-   connectors' dev-tests call it, and no connector's public API names it. A connector test over every preset
+   connectors' dev-tests and slice examples (task 1) call it, and no connector's public API names it. A connector test over every preset
    iterates `PresetId::all()` and takes the plain route where it succeeds. Rejected: tasks 4 and 5 before task 1
    (it gives up the reason the connectors come first, and still no preset would build a theme).
 1. **The four connectors on the slice,** preceded by two tasks of their own. First, **the connectors' design**
@@ -970,12 +970,12 @@ placement unit, spec ADD-A120); S7; S8 without
      carries;
    - the contract table's format, with its `pending` and stand-in entries, and where a stand-in entry first appears
      (*Widgets 0.7.0 styles through stand-ins*);
-   - one linked example per toolkit, `slice-<toolkit>` (egui-widgets' widgets in egui's), which draws the slice's
-     button in its states and which each unit's connector task extends with the unit's widgets, kept until M5 links
-     the showcases again; its
-     screenshots are compared at M2.1, and at each unit's connector task, with the platform host's captures of the
-     same preset, scheme and state where the evidence repository holds them. The showcases are unlinked from M2.1 to
-     M5, and the contract tests alone do not show what a connector draws.
+   - one linked example per toolkit, `slice-<toolkit>`, an `[[example]]` of its connector crate (egui-widgets'
+     widgets in egui's), which draws the slice's button in its states and which each unit's connector task extends
+     with the unit's widgets, kept until M5 links the showcases again; its screenshots are compared at M2.1, and at
+     each unit's connector task, with the platform host's captures of the same preset, scheme and state where the
+     evidence repository holds them. The showcases are unlinked from M2.1 to M5, and the contract tests alone do
+     not show what a connector draws.
 
    Rejected: the connectors written from S21.3's contract table alone (the specification states the table, not what
    an application calls; the three toolkit crates hold some hundreds of `pub fn` lines with no stated fate, and two
@@ -1061,8 +1061,9 @@ values stay deferred until its commit; M3b's other units keep this order:
   failures on them wait until M4, since spec batches can still move an entry between units until then. The task
   also (ADD-A146) names each staged path's unit as M3 names it (the slice's `"token.behavior.scroll" =
   "scroll_view"` becomes `containers`, there being no `scroll_view` unit), and brings the per-unit gate's two new
-  checks (below): the register's kind and round, which `check_ledger.py --unit <unit>` reads, and
-  `docs/facts/verified.toml`, which `verify_facts.py` reads in place of its built-in baseline. Gate:
+  checks (below): each register row's kind and round and each lane's last closed round, which the ledger records
+  and `check_ledger.py --unit <unit>` reads, and `docs/facts/verified.toml`, which `verify_facts.py` reads in place
+  of its built-in baseline. Gate:
   `generate_widgets.py --check` and `--self-test`, `check_facts_trace.py --self-test`, `check_ledger.py --self-test`,
   `verify_facts.py --self-test`, `cargo test -p native-theme`.
 

@@ -381,8 +381,8 @@ input's base for it. The inputs:
   the accent-following values of `macos-*` are measured under a second accent; until the host pass under the
   second tint is run, the facts hold the default tint's measured literals and their derivations are pending (the
   unmeasured register's U706). Rejected: the tint-dependent values as declared inputs, as this bullet had it (they
-  are per style and state: 555 facts of the slice's button alone state a default tint, values every application
-  setting a tint would have to supply); the default tint's literals kept and the accent refused on `ios-*` (it
+  are per style and state: 555 facts of the slice's button alone hold a measured default tint as a literal, values
+  every application setting a tint would have to supply); the default tint's literals kept and the accent refused on `ios-*` (it
   removes the application's tint on the platform where every application chooses one). On
   `kde-breeze` the accent alone: Plasma derives the accent-dependent roles when the accent or scheme is
   applied and writes them into kdeglobals, so the reader reads them as stated values; the preset states Breeze's scheme
@@ -1307,16 +1307,16 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   derivation applies over the port's scheme (R2.6; the specification's S14 recorded the choice; ADD-A146); the
   platform's condition rules (KDE's inactive effects) apply over it;
 - is suspended while either contrast condition holds, unless its project states colours for it (R2.4);
-- applies only under the schemes it has (ADD-A146). Under a scheme it lacks that the application follows from the
-  system, the API accepts it and suspends it: it reports that the palette does not apply, the theme is the preset
-  with the reader's values, and the palette applies when the scheme returns, whichever came first, the palette or
-  the scheme (it stays chosen, so the application need not watch the scheme to apply it or to re-apply it). The
-  API refuses it only under a scheme it lacks that the application itself picked (R2.3), two choices of the
-  application's that contradict each other, as it refuses that pick under the palette; an application that wants a
-  dark-only palette in a light system sets the colour scheme itself. Rejected: refusing it under a followed scheme
-  too, the earlier rule, under which the same state (a dark-only palette chosen, the system light) was an error or
-  a suspension by which came first, and an application restoring its saved palette at start-up in a light session
-  had to watch the scheme to apply it later;
+- applies only under the schemes it has (ADD-A146). Where the application follows the system's scheme and that
+  scheme is one the palette lacks, the API accepts the palette and suspends it: it reports that the palette does
+  not apply, the theme is the preset with the reader's values, and the palette applies when the scheme returns,
+  whichever came first, the palette or the scheme (it stays chosen, so the application need not watch the scheme to
+  apply it or to re-apply it). The API refuses the palette only where the application itself picked a scheme the
+  palette lacks (R2.3), two choices of the application's that contradict each other, as it refuses that pick under
+  the palette; an application that wants a dark-only palette in a light system sets the colour scheme itself.
+  Rejected: refusing it under a followed scheme too, the earlier rule, under which the same state (a dark-only
+  palette chosen, the system light) was an error or a suspension by which came first, and an application restoring
+  its saved palette at start-up in a light session had to watch the scheme to apply it later;
 - carries no icon set (today's `icon_set = "lucide"` goes, as no project's colours state one);
 - on `windows-11` and `macos-*`, whose accent-dependent colours follow derivations their makers do not
   publish (R2.6), states those derived inputs too, mapped to the project's colours in a per-preset section and
