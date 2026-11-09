@@ -7,7 +7,7 @@
 [preset]
 id = "material-3"
 # hand-written: begin preset
-# docs/facts/sources.toml:829
+# docs/facts/sources.toml:831 (androidx@e4d933c9)
 generation = "compose-material3-1.5"
 # hand-written: end preset
 
@@ -67,8 +67,8 @@ color_roles = [
     "tertiary_fixed",  # docs/facts/material/roles.toml:926
     "tertiary_fixed_dim",  # docs/facts/material/roles.toml:946
     "surface_tint",  # docs/facts/material/roles.toml:966
-    "popup_menu_background",  # docs/facts/material/roles.toml:2544
-    "popup_menu_text",  # docs/facts/material/roles.toml:2549
+    "popup_menu_background",  # docs/facts/material/roles.toml:2546
+    "popup_menu_text",  # docs/facts/material/roles.toml:2551
 ]
 text_styles = [
     "body_large",  # docs/facts/material/tokens.toml:1894
@@ -148,14 +148,14 @@ durations = [
     "short4",  # docs/facts/material/tokens.toml:302
 ]
 flavors = [
-    "baseline",  # docs/facts/material/state-models.toml:39
-    "expressive",  # docs/facts/material/state-models.toml:237
+    "baseline",  # docs/facts/material/state-models.toml:46
+    "expressive",  # docs/facts/material/state-models.toml:272
 ]
 spec_versions = [
-    "spec_2021",  # docs/facts/material/roles.toml:2479
+    "spec_2021",  # docs/facts/material/roles.toml:2480
 ]
 inputs = [
-    "accent",  # docs/facts/material/roles.toml:2533
+    "accent",  # docs/facts/material/roles.toml:2535
 ]
 # S9.1: every declared input but on kde-breeze
 accent_inputs = ["accent"]

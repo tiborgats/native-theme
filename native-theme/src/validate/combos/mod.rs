@@ -3880,6 +3880,76 @@ pub(super) fn on_kde_breeze(preset: Option<PresetId>) -> bool {
     })
 }
 
+/// One of `kde-breeze`'s accent-dependent roles (S9.1): a scheme key of a
+/// declared set, or a `[WM]` keyed role.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum AccentRole {
+    /// The role of `key` in the set.
+    Surface(SurfaceSet, crate::inputs::KdeSchemeKey),
+    /// The keyed role `wm_<key>`.
+    Wm(crate::inputs::KdeWmKey),
+}
+
+impl AccentRole {
+    /// The role's path in a scheme's colour roles.
+    pub(crate) fn path(self) -> String {
+        match self {
+            AccentRole::Surface(set, key) => {
+                format!("surfaces.{}.{}", set.name(), key.role().path())
+            }
+            AccentRole::Wm(key) => format!("keyed.wm_{}", key.name()),
+        }
+    }
+}
+
+/// S9.1's accent-dependent roles over `decl`, each once, in order: in every
+/// declared set `foreground_active`, `foreground_link`, `decoration_focus`
+/// and `decoration_hover`, `Selection`'s `background_normal`,
+/// `background_alternate`, `foreground_normal` and `foreground_inactive`,
+/// `Button`'s `background_alternate`, `Header`'s `background_normal` and
+/// `foreground_normal`, and every key of every declared set where `tints`
+/// (`token.kde.tint_factor` can be `Some`); then each `[WM]` keyed role
+/// `decl` declares. The one list the accent-derivation layer states and
+/// S12 checks a mapping palette against (S9.2, S14).
+pub(crate) fn accent_dependent_roles(decl: &Declarations, tints: bool) -> Vec<AccentRole> {
+    use crate::inputs::{KdeSchemeKey as K, KdeWmKey};
+    use crate::roles::SurfaceSet as S;
+    let mut roles: Vec<AccentRole> = Vec::new();
+    for set in &decl.surface_sets {
+        let mut keys: Vec<K> = vec![
+            K::ForegroundActive,
+            K::ForegroundLink,
+            K::DecorationFocus,
+            K::DecorationHover,
+        ];
+        match set {
+            _ if tints => keys = K::ALL.to_vec(),
+            S::Selection => keys.extend([
+                K::BackgroundNormal,
+                K::BackgroundAlternate,
+                K::ForegroundNormal,
+                K::ForegroundInactive,
+            ]),
+            S::Button => keys.push(K::BackgroundAlternate),
+            S::Header => keys.extend([K::BackgroundNormal, K::ForegroundNormal]),
+            _ => {}
+        }
+        for key in keys {
+            let role = AccentRole::Surface(*set, key);
+            if !roles.contains(&role) {
+                roles.push(role);
+            }
+        }
+    }
+    for key in KdeWmKey::ALL {
+        let name = format!("wm_{}", key.name());
+        if decl.color_roles.iter().any(|held| held.as_str() == name) {
+            roles.push(AccentRole::Wm(key));
+        }
+    }
+    roles
+}
+
 /// On `kde-breeze`, a mapping palette (one stating no `kde_scheme` input:
 /// a port converts to them, S14) at `palette` in the stack leaving an
 /// accent-dependent role (S9.1's list) or an inactive input role to a layer
@@ -3922,41 +3992,10 @@ pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem>
                 .iter()
                 .any(|found| !matches!(found.got, Got::Absent | Got::Stated(Fact::Nothing)))
         });
-    let mut roles: Vec<String> = Vec::new();
-    for set in &decl.surface_sets {
-        use crate::inputs::KdeSchemeKey as K;
-        use crate::roles::SurfaceSet as S;
-        let mut keys: Vec<K> = vec![
-            K::ForegroundActive,
-            K::ForegroundLink,
-            K::DecorationFocus,
-            K::DecorationHover,
-        ];
-        match set {
-            _ if tints => keys = K::ALL.to_vec(),
-            S::Selection => keys.extend([
-                K::BackgroundNormal,
-                K::BackgroundAlternate,
-                K::ForegroundNormal,
-                K::ForegroundInactive,
-            ]),
-            S::Button => keys.push(K::BackgroundAlternate),
-            S::Header => keys.extend([K::BackgroundNormal, K::ForegroundNormal]),
-            _ => {}
-        }
-        for key in keys {
-            let role = format!("surfaces.{}.{}", set.name(), key.role().path());
-            if !roles.contains(&role) {
-                roles.push(role);
-            }
-        }
-    }
-    for key in crate::inputs::KdeWmKey::ALL {
-        let name = format!("wm_{}", key.name());
-        if decl.color_roles.iter().any(|held| held.as_str() == name) {
-            roles.push(format!("keyed.{name}"));
-        }
-    }
+    let roles: Vec<String> = accent_dependent_roles(decl, tints)
+        .into_iter()
+        .map(AccentRole::path)
+        .collect();
     for scheme in Scheme::ALL {
         let states = current
             .iter()
