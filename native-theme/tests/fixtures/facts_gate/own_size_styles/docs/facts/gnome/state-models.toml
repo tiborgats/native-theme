@@ -1,0 +1,18 @@
+# A synthetic state model (S17): a button with two styles, which alone take the small size
+# (`sizes_by_variant`), the primary style not drawn at it.
+[[model]]
+widget = "button"
+available = true
+variants = ["flat", "primary"]
+sizes = ["regular"]
+default_size = "regular"
+sizes_by_variant = [
+  { variant = "flat", sizes = ["small", "regular"], default_size = "regular" },
+  { variant = "primary", sizes = ["small", "regular"], default_size = "regular" },
+]
+densities = []
+axes = { states = ["hover"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+exclusive_variants = [["flat", "primary"]]
+not_drawn = [{ variants = ["primary"], sizes = ["small"] }]
+rows = []

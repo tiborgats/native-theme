@@ -1698,6 +1698,75 @@ fn each_recording_site_records_a_synthetic_read() {
     assert!(!part(&[BASE, "", reading], &scope, BODY, "fill"));
 }
 
+/// A synthetic layer's step holding a map merged by key reaches the map's
+/// place and the entries it states, and no other (S6.1, S17 *Where a
+/// listed path is found*, ADD-A144): stating a duration and a surface
+/// set's role beside the preset's, it reaches neither the preset's
+/// duration nor the preset's other set, decides the entry it states, and
+/// decides neither map, which the preset's steps hold too. A synthetic
+/// layer is the stack's third place: the preset, the stand-in, then it.
+#[test]
+fn a_synthetic_step_holding_a_map_reaches_only_what_it_states() {
+    use crate::resolve::evaluate::Resolve;
+    use crate::roles::ColorRoles;
+    use crate::tokens::Tokens;
+    let field = |path: &str| -> Vec<String> { path.split('.').map(str::to_owned).collect() };
+    let synthetic = "[tokens.motion]\ndurations.long_ms = 300\n\
+                     [colors.light.surfaces.window]\nneutral = \"#010203\"\n";
+    let mut theme = resolved(&[BASE, synthetic], 1.0);
+    theme.synthetic = vec![2];
+    let scope = scope();
+    let tokens = theme.evaluate_in(&scope, None, &|_| true, Target::Tokens, None, |cx| {
+        let folds = cx.roots(Target::Tokens);
+        Tokens::resolve(&folds, cx);
+        cx.reached().to_vec()
+    });
+    let roles = theme.evaluate_in(&scope, None, &|_| true, Target::Roles, None, |cx| {
+        let folds = cx.roots(Target::Roles);
+        ColorRoles::resolve(&folds, cx);
+        cx.reached().to_vec()
+    });
+    let reaches = |reached: &[Reached], target, path: &str| {
+        reached.iter().any(|held| held.meets(target, &field(path)))
+    };
+    let decides = |reached: &[Reached], target, path: &str| {
+        let path = field(path);
+        reached
+            .iter()
+            .any(|held| held.meets(target, &path) && held.decides(&path))
+    };
+    assert!(
+        !reaches(&tokens, Target::Tokens, "motion.durations.short"),
+        "{tokens:?}"
+    );
+    assert!(
+        decides(&tokens, Target::Tokens, "motion.durations.long"),
+        "{tokens:?}"
+    );
+    assert!(
+        reaches(&tokens, Target::Tokens, "motion.durations"),
+        "{tokens:?}"
+    );
+    assert!(
+        !decides(&tokens, Target::Tokens, "motion.durations"),
+        "{tokens:?}"
+    );
+    assert!(
+        !reaches(&roles, Target::Roles, "surfaces.button.foreground"),
+        "{roles:?}"
+    );
+    assert!(
+        !reaches(&roles, Target::Roles, "surfaces.window.foreground"),
+        "{roles:?}"
+    );
+    assert!(
+        decides(&roles, Target::Roles, "surfaces.window.neutral"),
+        "{roles:?}"
+    );
+    assert!(reaches(&roles, Target::Roles, "surfaces"), "{roles:?}");
+    assert!(!decides(&roles, Target::Roles, "surfaces"), "{roles:?}");
+}
+
 /// The label's text style, resolved over `layers` (the first the preset's).
 fn label_text(layers: &[&str]) -> crate::blocks::text::ResolvedTextStyle {
     label_text_by(layers, ReaderState::new(Scheme::Light, 1.0))

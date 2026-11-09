@@ -1,0 +1,49 @@
+# Synthetic role facts (S17, ADD-A144): the view set's foreground, which the preset states beside the
+# window set's listed `neutral`, compared at each scheme; the window's `neutral` pending.
+
+[[fact]]
+key = "role.global.accent"
+value = "#3366cc"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.global.accent_standalone"
+value = "= role.global.accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.foreground"
+when = { conditions = ["scheme:light"] }
+value = "#101010"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.foreground"
+when = { conditions = ["scheme:dark"] }
+value = "#fafafa"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.window.neutral"
+pending = "U30"
+rows = []

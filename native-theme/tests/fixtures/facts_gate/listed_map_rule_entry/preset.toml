@@ -1,0 +1,23 @@
+# A synthetic preset (S17, ADD-A144): a whole map listed, its synthetic value stated whole, and a
+# preset rule creating an entry of it at the dark scheme, where the preset states the map.
+# base without: per_language = {}
+[pending]
+"tokens.text.fallbacks.per_language" = "U150"
+
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { conditions = ["scheme:dark"] }
+target = "tokens"
+set = { text.fallbacks.per_language = { ja = ["Probe JP"] } }

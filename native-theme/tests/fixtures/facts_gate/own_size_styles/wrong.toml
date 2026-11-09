@@ -1,0 +1,20 @@
+# A synthetic preset (S17): `preset.toml`'s twin, its small size's value wrong.
+[declare.widget.button]
+variants = ["flat", "primary"]
+sizes = ["regular"]
+default_size = "regular"
+exclusive_variants = [["flat", "primary"]]
+sizes_by_variant = [
+  { variant = "flat", sizes = ["small", "regular"], default_size = "regular" },
+  { variant = "primary", sizes = ["small", "regular"], default_size = "regular" },
+]
+
+[[rules]]
+when = { sizes = ["small"] }
+target = "button.body"
+set = { min_width_px = 42 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }

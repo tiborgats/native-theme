@@ -1950,7 +1950,7 @@ impl Reach {
         let (mut reaches, mut decides) = (false, false);
         for held in meets {
             reaches = true;
-            decides |= held.direct;
+            decides |= held.decides(path);
         }
         Reach { reaches, decides }
     }

@@ -478,13 +478,32 @@ pub(crate) struct Reached {
     pub(crate) path: Vec<String>,
     /// The step decided the place itself, no reference followed.
     pub(crate) direct: bool,
+    /// The step reaches the places below the place too; a step holding a
+    /// map merged by key reaches the map's place alone, each entry being
+    /// reached by the steps that state it (S6.1, S17 *Where a listed path
+    /// is found*, ADD-A144).
+    pub(crate) below: bool,
+    /// The fewest segments a place deciding by this record has: a step
+    /// deciding an entry of a map that a step of another layer holds too
+    /// decides no place above the entry, the map being stated by that
+    /// layer (ADD-A144).
+    pub(crate) decides_from: usize,
 }
 
 impl Reached {
-    /// Whether the place lies at `path` of `target`, above it or below it.
+    /// Whether the place lies at `path` of `target`, above it or below it
+    /// (below it only where the step reaches the places below its own).
     pub(crate) fn meets(&self, target: Target, path: &[String]) -> bool {
         let shared = self.path.len().min(path.len());
-        self.target == target && self.path.get(..shared) == path.get(..shared)
+        self.target == target
+            && self.path.get(..shared) == path.get(..shared)
+            && (self.below || path.len() <= self.path.len())
+    }
+
+    /// Whether the step decides the place at `path`, one it meets
+    /// ([`Reached::meets`]).
+    pub(crate) fn decides(&self, path: &[String]) -> bool {
+        self.direct && path.len() >= self.decides_from
     }
 }
 
@@ -977,6 +996,8 @@ impl<'t> Cx<'t> {
             target,
             path,
             direct: direct && self.visiting.len() == depth,
+            below: true,
+            decides_from: 0,
         });
     }
 
@@ -984,6 +1005,42 @@ impl<'t> Cx<'t> {
     fn touch(&mut self, pos: Pos) {
         if self.theme.synthetic.contains(&pos.layer) {
             self.record(true);
+        }
+    }
+
+    /// Records the steps at `held`, those holding the map merged by key
+    /// being evaluated, read at the map's place (S6.1, S17 *Where a listed
+    /// path is found*, ADD-A144): where a synthetic layer's step holds it,
+    /// the map's place reached, not the entries below it, which the steps
+    /// stating them reach, and decided only where every step holding it is
+    /// a synthetic layer's. Whether a step of another layer holds it.
+    fn held_map(&mut self, held: &[Pos]) -> bool {
+        let synthetic = |pos: &Pos| self.theme.synthetic.contains(&pos.layer);
+        let all = held.iter().all(synthetic);
+        if held.iter().any(synthetic) {
+            self.record(all);
+            let (target, path) = (self.target, &self.path);
+            if let Some(last) = self.reached.last_mut()
+                && last.target == target
+                && last.path == *path
+            {
+                last.below = false;
+            }
+        }
+        !all
+    }
+
+    /// Leaves the places recorded from `mark` below the map being
+    /// evaluated, its entries' and their fields', deciding no place above
+    /// an entry: a step of another layer holds the map, so that layer
+    /// states it (S6.1, S17 *Where a listed path is found*, ADD-A144).
+    fn entries_from(&mut self, mark: usize) {
+        let depth = self.path.len().saturating_add(1);
+        let (target, path) = (self.target, &self.path);
+        for held in self.reached.iter_mut().skip(mark) {
+            if held.target == target && held.path.len() >= depth && held.path.starts_with(path) {
+                held.decides_from = held.decides_from.max(depth);
+            }
         }
     }
 
@@ -2768,22 +2825,33 @@ impl<'t> Cx<'t> {
         't: 'f,
         B: ResolveWhole + KeyedItem + Clone + Any,
     {
+        let mark = self.reached.len();
         let mut merged: Vec<B> = Vec::new();
         let mut pos = None;
+        let mut others = false;
         for fold in items {
             if let Some(list) = fold.found.get::<Vec<B>>() {
                 B::merge_keyed(&mut merged, list.clone());
                 pos = Some(fold.pos);
+                others |= !self.theme.synthetic.contains(&fold.pos.layer);
                 self.touch(fold.pos);
             }
         }
         let Some(pos) = pos else {
             return Some(Vec::new());
         };
-        merged
+        let out = merged
             .iter()
             .map(|item| item.resolve_whole(pos, self))
-            .collect()
+            .collect();
+        // A synthetic layer's list with another layer's merged into it is
+        // that layer's too: decided by a synthetic layer only where every
+        // step merged into it is one (S6.1, S17 *Where a listed path is
+        // found*, ADD-A144).
+        if others {
+            self.merged_from(mark);
+        }
+        out
     }
 
     /// An `Option` of a block, set whole.
@@ -2808,7 +2876,8 @@ impl<'t> Cx<'t> {
     /// A map merged by key (S6.1): its keys in the order first stated, each
     /// entry resolved by `entry` from the steps that state it; a whole map's
     /// entries located by `whole`, a patch's by `patch`. Every step holding
-    /// the map is read, an empty one too.
+    /// the map is read, an empty one too, at the map's place alone
+    /// ([`Cx::held_map`]).
     pub(crate) fn map<'f, K, V, P, Out>(
         &mut self,
         items: &[Fold<'f>],
@@ -2840,6 +2909,7 @@ impl<'t> Cx<'t> {
                 keys.push((key.clone(), name));
             }
         };
+        let mut held = Vec::new();
         for fold in items {
             if let Some(map) = fold.found.get::<Vec<(K, V)>>() {
                 map.iter().for_each(|(key, _)| add(key));
@@ -2848,8 +2918,10 @@ impl<'t> Cx<'t> {
             } else {
                 continue;
             }
-            self.touch(fold.pos);
+            held.push(fold.pos);
         }
+        let mark = self.reached.len();
+        let others = self.held_map(&held);
         let mut out = Vec::new();
         for (key, name) in keys {
             let named = |held: &K| held.key_name() == name;
@@ -2873,10 +2945,13 @@ impl<'t> Cx<'t> {
                     Some(Fold { found, ..*fold })
                 })
                 .collect();
-            let value = self.at(&name, |cx| entry(cx, &folds))?;
-            out.push((key, value));
+            let value = self.at(&name, |cx| entry(cx, &folds));
+            out.push(value.map(|value| (key, value)));
         }
-        Some(out)
+        if others {
+            self.entries_from(mark);
+        }
+        out.into_iter().collect()
     }
 
     /// A `Value` of a map's resolved value (`Font.axes`, S6.1): the last step
@@ -2969,7 +3044,7 @@ impl<'t> Cx<'t> {
 
     /// A map of a struct block per surface set (S3), each set's entry
     /// resolved as a block. Every step holding the map is read, an empty
-    /// one too.
+    /// one too, at the map's place alone ([`Cx::held_map`]).
     pub(crate) fn surfaces<'f, B>(&mut self, items: &[Fold<'f>]) -> Option<SurfaceMap<B::Resolved>>
     where
         't: 'f,
@@ -2977,6 +3052,7 @@ impl<'t> Cx<'t> {
         B::Patch: Locate,
     {
         let mut sets: Vec<SurfaceSet> = Vec::new();
+        let mut held = Vec::new();
         for fold in items {
             if let Some(map) = fold.found.get::<SurfaceMap<B>>() {
                 sets.extend(map.iter().map(|(set, _)| set));
@@ -2985,8 +3061,10 @@ impl<'t> Cx<'t> {
             } else {
                 continue;
             }
-            self.touch(fold.pos);
+            held.push(fold.pos);
         }
+        let mark = self.reached.len();
+        let others = self.held_map(&held);
         let mut out = SurfaceMap::default();
         for set in sets {
             if out.get(set).is_some() {
@@ -2997,6 +3075,9 @@ impl<'t> Cx<'t> {
             if let Some(resolved) = self.at(name, |cx| cx.block::<B>(&folds)) {
                 out.insert(set, resolved);
             }
+        }
+        if others {
+            self.entries_from(mark);
         }
         Some(out)
     }

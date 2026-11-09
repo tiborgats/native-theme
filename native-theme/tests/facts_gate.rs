@@ -1784,6 +1784,32 @@ fn gate_fixture_not_drawn_unavailable() {
     );
 }
 
+/// A fact naming a size and no style, where only the styles take the size
+/// (`sizes_by_variant`), is completed once with each style whose sizes hold
+/// it (S17, ADD-A141): checked on the flat style, the primary style's
+/// completion, which `not_drawn` names, no failure, and none failed as not
+/// available. The wrong twin's value fails on the flat style alone.
+#[test]
+fn gate_fixture_own_size_completed_by_styles() -> Result<(), String> {
+    let report = fixture_report("own_size_styles");
+    if report.queried == 0 || !report.failures.is_empty() {
+        return Err(format!("{report:?}"));
+    }
+    let wrong = fixture_report_with("own_size_styles", "wrong.toml");
+    let failures = failing(&wrong, "button.body.min_width");
+    if failures.is_empty()
+        || wrong.failures.len() != failures.len()
+        || !failures.iter().all(|failure| {
+            failure.contains("size: Some(\"small\")")
+                && failure.contains("\"flat\"")
+                && !failure.contains("\"primary\"")
+        })
+    {
+        return Err(format!("{:?}", wrong.failures));
+    }
+    Ok(())
+}
+
 /// A `not_drawn` entry with a key the count does not evaluate, and an
 /// entry with more flags than the gate enumerates, are refused, never
 /// evaluated without it (S17).
@@ -2487,6 +2513,118 @@ fn gate_fixture_pending_table_both_ways() {
     );
 }
 
+/// `Ok` where `holds`, else the report as the error.
+fn expected(holds: bool, report: &run::Report) -> Result<(), String> {
+    if holds {
+        Ok(())
+    } else {
+        Err(format!("{report:?}"))
+    }
+}
+
+/// The register ids the report found the listed path `key` of the probe
+/// preset with; an error naming what it found where it found none.
+fn listed_ids<'r>(report: &'r run::Report, key: &str) -> Result<Vec<&'r str>, String> {
+    report
+        .listed
+        .get(&format!("probe {key}"))
+        .map(|(ids, _)| ids_of(ids))
+        .ok_or_else(|| format!("no listed `{key}` in {:?}", report.listed))
+}
+
+/// A whole map listed where a preset rule creates an entry of it (S17
+/// *Where a listed path is found*, ADD-A144): the preset states the map
+/// there, so the dark scheme's pending fact, U151, leaves no listed path,
+/// and the light scheme's, U150, is the path's alone.
+#[test]
+fn gate_fixture_listed_map_rule_entry() -> Result<(), String> {
+    let report = fixture_report("listed_map_rule_entry");
+    let ids = listed_ids(&report, "token.text.fallbacks.per_language")?;
+    expected(report.failures.is_empty() && ids == ["U150"], &report)
+}
+
+/// A keyed text style the preset states beside a keyed style's listed
+/// field (S17 *Where a listed path is found*, ADD-A144): the synthetic
+/// step holding the keyed map reaches only the caption's fill it states,
+/// so the body style's fact is compared, neither listed nor skipped, and
+/// the fill is the one listed path.
+#[test]
+fn gate_fixture_listed_keyed_text_beside_stated() -> Result<(), String> {
+    let report = fixture_report("listed_keyed_text");
+    let ids = listed_ids(&report, "token.text.keyed.caption.fill")?;
+    expected(
+        report.failures.is_empty()
+            && report.synthetic.is_empty()
+            && report.listed.len() == 1
+            && ids == ["U20"],
+        &report,
+    )
+}
+
+/// A surface set's role the preset states beside another set's listed
+/// role (S17 *Where a listed path is found*, ADD-A144): the view's
+/// foreground compared at each scheme, neither listed nor skipped; the
+/// window's `neutral` the one listed path, at each scheme.
+#[test]
+fn gate_fixture_listed_surface_role_beside_stated() -> Result<(), String> {
+    let report = fixture_report("listed_surface_role");
+    let ids = listed_ids(&report, "role.window.neutral")?;
+    expected(
+        report.failures.is_empty()
+            && report.synthetic.is_empty()
+            && report.listed.len() == 1
+            && ids == ["U30"],
+        &report,
+    )
+}
+
+/// A keyed list listed where a preset rule merges over the synthetic list
+/// (S17 *Where a listed path is found*, ADD-A144): the preset states the
+/// list there, so the hover fact, U41, leaves no listed path, and U40 is
+/// the path's alone.
+#[test]
+fn gate_fixture_listed_keyed_list_merged_over() -> Result<(), String> {
+    let report = fixture_report("listed_keyed_list");
+    let ids = listed_ids(&report, "button.body.bindings")?;
+    expected(report.failures.is_empty() && ids == ["U40"], &report)
+}
+
+/// A preset rule's `Append` over a listed paint (S17 *Where a listed path
+/// is found*, ADD-A144): an `Append` states no paint, so the hover fact,
+/// U51, still leaves the path listed beside U50, the synthetic `Set`
+/// deciding the paint there.
+#[test]
+fn gate_fixture_listed_append_over_paint() -> Result<(), String> {
+    let report = fixture_report("listed_append");
+    let ids = listed_ids(&report, "button.body.fill")?;
+    expected(report.failures.is_empty() && ids == ["U50", "U51"], &report)
+}
+
+/// A pending field fact holding only where a preset rule makes its part
+/// absent (S17 *Where a listed path is found*, ADD-A144): no field is
+/// listed where its part does not resolve drawn, so the hover fact, U60,
+/// leaves no listed path, and U61 is the path's alone.
+#[test]
+fn gate_fixture_listed_part_absent() -> Result<(), String> {
+    let report = fixture_report("listed_part_absent");
+    let ids = listed_ids(&report, "button.subtitle.text.fill")?;
+    expected(report.failures.is_empty() && ids == ["U61"], &report)
+}
+
+/// A pending fact two later pending facts shadow between them (S17 *Where
+/// a listed path is found*, ADD-A144): each holds in some of its
+/// combinations, so the hover fact, U70, applies nowhere and its id is on
+/// no path; the path is listed under the three others.
+#[test]
+fn gate_fixture_listed_shadowed_between() -> Result<(), String> {
+    let report = fixture_report("listed_shadowed_between");
+    let ids = listed_ids(&report, "button.body.opacity")?;
+    expected(
+        report.failures.is_empty() && ids == ["U71", "U72", "U73"],
+        &report,
+    )
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the
@@ -2550,18 +2688,68 @@ fn own_combination_completed_by_the_filters() {
     let completed = |variants: &[&str], when: &toml::Value| {
         let mut combination = Combination::new("button");
         combination.variants = variants.iter().map(|v| (*v).to_owned()).collect();
-        run::complete(combination, when, entry).map(|c| c.variants)
+        run::complete(combination, when, entry)
+            .into_iter()
+            .map(|c| c.variants)
+            .collect::<Vec<_>>()
     };
     let plain = when("");
-    assert_eq!(completed(&[], &plain), Some(vec!["flat".to_owned()]));
+    assert_eq!(completed(&[], &plain), vec![vec!["flat".to_owned()]]);
     let not_flat = when("not_variants = [\"flat\"]");
-    assert_eq!(completed(&[], &not_flat), Some(vec!["primary".to_owned()]));
+    assert_eq!(completed(&[], &not_flat), vec![vec!["primary".to_owned()]]);
     assert_eq!(
         completed(&["@x"], &plain),
-        Some(vec!["@x".to_owned(), "primary".to_owned()])
+        vec![vec!["@x".to_owned(), "primary".to_owned()]]
     );
     let neither = when("not_variants = [\"primary\"]");
-    assert_eq!(completed(&["@x"], &neither), None);
+    assert!(completed(&["@x"], &neither).is_empty());
+}
+
+/// A fact naming a size its variants do not take is completed once with
+/// each `sizes_by_variant` entry's variant whose sizes hold it, less those
+/// its `when` excludes or an exclusive group rules out (S17, ADD-A141); a
+/// size no entry holds leaves the completion with the size alone.
+#[test]
+fn own_combination_completed_by_the_styles_taking_its_size() -> Result<(), String> {
+    let models = model::Model::read(
+        "probe",
+        "[[model]]\nwidget = \"button\"\navailable = true\n\
+         variants = [\"flat\", \"primary\", \"tinted\", \"toggle\"]\nsizes = [\"regular\"]\n\
+         densities = []\nexclusive = []\nexclusive_variants = [[\"flat\", \"primary\", \"tinted\"]]\n\
+         sizes_by_variant = [{ variant = \"flat\", sizes = [\"small\", \"regular\"] }, \
+         { variant = \"primary\", sizes = [\"small\", \"regular\"] }, \
+         { variant = \"tinted\", sizes = [\"regular\"] }]\nrows = []\n",
+    )?;
+    let entry = models.first().ok_or("no model read")?;
+    let completed =
+        |variants: &[&str], size: &str, when: &str| -> Result<Vec<Vec<String>>, String> {
+            let when: toml::Value = toml::from_str(when).map_err(|error| error.to_string())?;
+            let mut combination = Combination::new("button");
+            combination.variants = variants.iter().map(|v| (*v).to_owned()).collect();
+            combination.size = Some(size.to_owned());
+            Ok(run::complete(combination, &when, entry)
+                .into_iter()
+                .map(|c| c.variants)
+                .collect())
+        };
+    let names = |lists: &[&[&str]]| -> Vec<Vec<String>> {
+        lists
+            .iter()
+            .map(|list| list.iter().map(|v| (*v).to_owned()).collect())
+            .collect()
+    };
+    assert_eq!(
+        completed(&[], "small", "")?,
+        names(&[&["flat"], &["primary"]])
+    );
+    assert_eq!(
+        completed(&["toggle"], "small", "not_variants = [\"flat\"]")?,
+        names(&[&["toggle", "primary"]])
+    );
+    assert_eq!(completed(&["flat"], "small", "")?, names(&[&["flat"]]));
+    assert_eq!(completed(&["tinted"], "small", "")?, names(&[&["tinted"]]));
+    assert_eq!(completed(&[], "large", "")?, names(&[&[]]));
+    Ok(())
 }
 
 /// The perturbed run's colours are one-to-one over many operands (S17): no
