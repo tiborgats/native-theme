@@ -159,7 +159,7 @@ pub(crate) fn sets_stated_whole(stacked: &Stacked<'_>, preset: Option<PresetId>)
     );
     for (bases, prefix) in parts {
         for scheme in left_out.schemes() {
-            if let Some(roles) = bases.colors.get(*scheme) {
+            if let Some(roles) = bases.colors.get(scheme) {
                 let at = format!("{prefix}colors.{}.", scheme.name());
                 whole(roles, &at, &mut problems);
             }

@@ -79,9 +79,8 @@ fn problems(result: Result<(), LayerError>) -> Vec<String> {
 /// S12): a preset change, a stand-in (its state or its layer, or while a
 /// reader exists), a flavour, a layer added, replaced or removed, an
 /// accent; the stand-in's removal in
-/// `stand_in_removal_refused_where_a_layer_needs_it`. `pick` and
-/// `set_contrast` change nothing validation reads until palettes (S14), so
-/// neither is refused yet.
+/// `stand_in_removal_refused_where_a_layer_needs_it`; a palette's, and
+/// `pick` of a scheme it lacks, in `a_palette_s_refusals` (S14).
 #[test]
 fn mutation_refused_whole() {
     let mut stack = declared();

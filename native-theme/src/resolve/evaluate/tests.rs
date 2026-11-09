@@ -101,6 +101,8 @@ fn resolved_by(layers: &[&str], state: ReaderState) -> ResolvedTheme {
         layers: layers
             .map(|layer| (crate::layer::LayerId::next(), layer))
             .collect(),
+        palette: None,
+        port_left_out: None,
         accent: None,
         accent_layer: Arc::default(),
         picked: None,
@@ -977,6 +979,30 @@ fn input_cycle_refused() {
     let theme = resolved(&[BASE, cycle], 1.0);
     let scope = scope();
     let found = theme.evaluate_role(&scope, &reference("role.global.accent"));
+    assert_eq!(found.value, None);
+    assert!(
+        matches!(found.refusals.as_slice(), [Refusal::Cycle { .. }]),
+        "{:?}",
+        found.refusals
+    );
+}
+
+/// An input reading a role's active value, read by that role's own rule,
+/// is no cycle (S12, ADD-A144: a port's inactive input under the inactive
+/// rule): `active(…)` reads the role's bases alone, which do not read the
+/// rule. One the role's bases read back is.
+#[test]
+fn an_input_reading_its_roles_active_value_under_its_rule() {
+    let input = "[inputs.accent]\nlight = \"= active(role.global.accent)\"\n";
+    let rule = "[[rules]]\nwhen = { conditions = [\"scheme:light\"] }\ntarget = \"colors\"\n\
+                set = { global.accent = \"= mix(input.accent, #000000, 0.5)\" }";
+    let theme = resolved(&[BASE, &format!("{input}{rule}")], 1.0);
+    let found = theme.evaluate_role(&scope(), &reference("role.global.accent"));
+    assert_eq!(found.refusals, []);
+    assert!(found.value.is_some(), "{:?}", found.value);
+    let read_back = format!("{input}[colors.light.global]\naccent = \"= input.accent\"");
+    let theme = resolved(&[BASE, &read_back], 1.0);
+    let found = theme.evaluate_role(&scope(), &reference("role.global.accent"));
     assert_eq!(found.value, None);
     assert!(
         matches!(found.refusals.as_slice(), [Refusal::Cycle { .. }]),

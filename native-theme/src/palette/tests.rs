@@ -294,8 +294,9 @@ fn source_cache() -> std::path::PathBuf {
 
 /// `breeze@6.8.2 colors/<name>`, the file the KDE facts' scheme inputs
 /// cite at its scheme (`docs/facts/kde/inputs.toml:1-4`), from the source
-/// cache.
-fn breeze_file(name: &str) -> Vec<u8> {
+/// cache; a missing entry fails the test, naming the command that fetches
+/// it.
+pub(crate) fn breeze_file(name: &str) -> Vec<u8> {
     let path = source_cache().join("breeze@6.8.2/colors").join(name);
     std::fs::read(&path).unwrap_or_else(|error| {
         panic!(

@@ -5,7 +5,10 @@
 //! base where that contrast holds and it states one, as resolution merges
 //! them (S8, S9.3); each role's from the last base stating it and every
 //! colour rule that can hold under that scheme and contrast
-//! (conservatively, the other conditions not decided). A layer's input or
+//! (conservatively, the other conditions not decided), a role read through
+//! `active(…)` from its bases alone, the value S2.2 gives it (ADD-A144: an
+//! input reading a role's active value that the role's rule reads is no
+//! cycle, one the role's bases read back is). A layer's input or
 //! role S8 leaves out at that scheme is not in force (S9.2).
 
 use super::super::LayerKind;
@@ -91,11 +94,13 @@ fn role_path(reference: &Ref) -> Option<Vec<String>> {
     })
 }
 
-/// A node of the search: an input, or a colour role's place.
+/// A node of the search: an input, or a colour role's place, read through
+/// `active(…)` (`true`: its bases alone, the value S2.2 gives it) or as a
+/// plain reference.
 #[derive(Clone, PartialEq)]
 enum Node {
     Input(InputName),
-    Role(Vec<String>),
+    Role(Vec<String>, bool),
 }
 
 /// The values in force under one scheme and contrast.
@@ -136,9 +141,10 @@ impl<'a> InForce<'a> {
         out
     }
 
-    /// The expressions a role's place can take: the last base's, and each
+    /// The expressions a role's place can take: the last base's, and,
+    /// unless `bases_only` (read through `active(…)`, S2.2, S12), each
     /// colour rule's that can hold.
-    fn role(&self, path: &[String]) -> Vec<&'a Expr> {
+    fn role(&self, path: &[String], bases_only: bool) -> Vec<&'a Expr> {
         let segments: Vec<&str> = path.iter().map(String::as_str).collect();
         let joined = segments.join(".");
         let mut base: Option<&'a Expr> = None;
@@ -159,7 +165,12 @@ impl<'a> InForce<'a> {
                     }
                 }
             }
-            for rule in &stacked.layer.rules {
+            let rules = if bases_only {
+                &[][..]
+            } else {
+                stacked.layer.rules.as_slice()
+            };
+            for rule in rules {
                 if let RuleBody::Colors(patch) = &rule.body
                     && !excluded(rule, self.preset)
                     && can_hold(&rule.selector.conditions, self.scheme, self.contrast)
@@ -180,7 +191,9 @@ impl<'a> InForce<'a> {
                 Some((_, Value::Expr(expr))) => vec![expr],
                 _ => Vec::new(),
             },
-            Node::Role(path) => self.role(path).into_iter().cloned().collect(),
+            Node::Role(path, bases_only) => {
+                self.role(path, *bases_only).into_iter().cloned().collect()
+            }
         }
     }
 }
@@ -196,7 +209,10 @@ fn reads(expr: &Expr, inputs: &[InputName]) -> Vec<Node> {
                 .find(|name| name.segments() == path.as_slice())
                 .cloned()
                 .map(Node::Input),
-            other => role_path(other).map(Node::Role),
+            other => {
+                let active = matches!(other, Ref::Active(_));
+                role_path(other).map(|path| Node::Role(path, active))
+            }
         })
         .collect()
 }

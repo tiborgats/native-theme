@@ -1929,6 +1929,52 @@ fn combination_input_cycle() {
     );
 }
 
+/// An input read through `active(…)` (S12, ADD-A144): its cycle check
+/// follows the role to its bases alone, so a port's inactive input
+/// `= active(role.<set>.<role>)` that the role's inactive rule reads is no
+/// cycle, while one the role's bases read back is. The input is validated
+/// as a colour role's expression: one naming an undeclared role is
+/// refused.
+#[test]
+fn combination_input_cycle_through_active() {
+    let decl = declare("surface_sets = [\"view\"]\ninputs = [\"inactive.view.foreground_link\"]");
+    // The cycles found; the view set's other roles, which these layers
+    // leave unstated, are no concern here.
+    let cycles = |top: &str| -> Vec<String> {
+        alone(top, &decl)
+            .into_iter()
+            .filter(|problem| problem.contains("reads itself"))
+            .collect()
+    };
+    let input = "[inputs.inactive.view.foreground_link]\nlight = \"= active(role.view.link)\"\n";
+    let rule = "[[rules]]\nwhen = { conditions = [\"window_inactive\"] }\ntarget = \"colors\"\n\
+                [rules.set]\nsurfaces.view.link = \"= input.inactive.view.foreground_link\"\n";
+    assert_eq!(
+        cycles(&format!(
+            "{input}[colors.light.surfaces.view]\nlink = \"#102030\"\n{rule}"
+        )),
+        NONE
+    );
+    assert_eq!(
+        cycles(&format!(
+            "{input}[colors.light.surfaces.view]\n\
+             link = \"= input.inactive.view.foreground_link\"\n"
+        )),
+        ["inputs.inactive.view.foreground_link: the expression reads itself"]
+    );
+    // A role of an undeclared set, refused as in a colour role.
+    let found = alone(
+        "[inputs.inactive.view.foreground_link]\nlight = \"= active(role.window.link)\"\n",
+        &decl,
+    );
+    assert!(
+        found
+            .iter()
+            .any(|problem| problem.starts_with("inputs.inactive.view.foreground_link")),
+        "{found:?}"
+    );
+}
+
 /// Task 11e's review: where the reader's common accent is left out (S8,
 /// S9.5), the reader layer's `accent` is not in force, so the preset's two
 /// inputs that read each other are a cycle, as evaluation finds it.
