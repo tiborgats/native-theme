@@ -2556,6 +2556,17 @@ fn gate_fixture_listed_keyed_list_merged_over() -> Result<(), String> {
     expected(report.failures.is_empty() && ids == ["U40"], &report)
 }
 
+/// A preset rule's `Append` over a listed paint (S17 *Where a listed path
+/// is found*, ADD-A144): an `Append` states no paint, so the hover fact,
+/// U51, still leaves the path listed beside U50, the synthetic `Set`
+/// deciding the paint there.
+#[test]
+fn gate_fixture_listed_append_over_paint() -> Result<(), String> {
+    let report = fixture_report("listed_append");
+    let ids = listed_ids(&report, "button.body.fill")?;
+    expected(report.failures.is_empty() && ids == ["U50", "U51"], &report)
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the
