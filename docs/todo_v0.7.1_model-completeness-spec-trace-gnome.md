@@ -746,7 +746,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.27 | `color_button.swatch_ring.stroke (paint = gtk_contrast_pick(element.color, alpha(role.view.foreground, <fraction>), alpha(role.view.foreground, 0)): the light-swatch ring, GTK's own lightness test, ADD-A94; data = { swatch_ring = ["color"] })` | field |
 | GN-2.27 | `color_picker.swatch.corners @ pos first / pos last (the per-edge radii)` | rule |
 | GN-2.27 | `color_picker.swatch.focus @ {focus_visible}` | rule |
-| GN-2.27 | `color_picker.swatch_ring.stroke @ context color_picker.swatch {drop_target} / cond contrast_high` | rule |
+| GN-2.27 | `color_picker.swatch_ring.stroke @ {drop_target} / cond contrast_high` (the ring a plain part of the `swatch` element, selected by the swatch's own state) | rule |
 | GN-2.27 | `color_picker.preview.corners (the editor's sample)` | field |
 | GN-2.28 | `font_button.body.{fill,stroke,corners,padding,focus}, font_button.label.text, font_button.size_label.text (the label of the font's size, in its own text style, `_buttons.scss:309`), font_button.values.gap` (GtkFontDialogButton's hidden separator is drawn by no part) | field |
 | GN-2.29 | `split_button.primary.{corners,padding}, split_button.secondary.{corners,padding}, split_button.values.part_gap (negative overlap), split_button.divider.{stroke,margin} (the separator's insets its margin)` | field |

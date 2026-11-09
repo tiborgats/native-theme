@@ -743,7 +743,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K2.1 | `role.header.background @ cond window_inactive (the inactive Header group, K1.150)` | role |
 | K2.3 | `stepper.increment.min_width, stepper.decrement.min_width (the arrow column)` | field |
 | K2.3 | `stepper.increment_glyph.glyph, stepper.decrement_glyph.glyph (fill = arrowColor)` | field |
-| K2.3 | `stepper.increment_glyph.glyph.fill @ context stepper.increment {hover} / context stepper.increment {disabled}; stepper.decrement_glyph.glyph.fill @ context stepper.decrement {hover} / context stepper.decrement {disabled}` | rule |
+| K2.3 | `stepper.increment_glyph.glyph.fill @ {hover} / {disabled}; stepper.decrement_glyph.glyph.fill @ {hover} / {disabled}` (each glyph a plain part of its half, selected by that half's own states, the per-arrow hover) | rule |
 | K2.3 | `stepper.increment_glyph.transitions, stepper.decrement_glyph.transitions (Glyph: the hover fade)` | field |
 | K2.3 | `stepper.values.button_layout` | field |
 | K2.3 | `stepper.body.stroke (Absent) @ variant flat; input @ context stepper (the line-edit frame)` | rule |
