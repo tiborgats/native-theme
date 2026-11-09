@@ -384,11 +384,12 @@ pub struct TextStyle {
     /// references its style's.
     pub scaling_role: Value<Option<TextRole>>,
     /// The letter spacing, in points or pixels, converted and scaled as a
-    /// line height, or an expression on `font_size`; may be negative.
-    #[parts(signed, may_be_absent)]
+    /// line height, or an expression on `font_size`; may be negative. Never
+    /// `Absent`: a platform that adds none states `0px` (S6.3).
+    #[parts(signed)]
     pub letter_spacing: Value<FontSize>,
     /// The word spacing, as the letter spacing.
-    #[parts(signed, may_be_absent)]
+    #[parts(signed)]
     pub word_spacing: Value<FontSize>,
     /// The line height, in points or pixels (converted and scaled as a font
     /// size, S9.4), an expression on `font_size`, or `Auto`: the font's own

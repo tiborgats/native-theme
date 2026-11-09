@@ -386,7 +386,7 @@ fn append_over_a_reference_follows_it() {
     let decl = declare("text_styles = [\"body\"]");
     let keyed = "[tokens.text.keyed.body]\nfont = { family = \"Probe Sans\", size_px = 12, weight = \
                  400, style = \"normal\", width = \"absent\", axes = {}, features = {} }\n\
-                 scaling_role = \"none\"\nletter_spacing = \"absent\"\nword_spacing = \"absent\"\n\
+                 scaling_role = \"none\"\nletter_spacing_px = 0\nword_spacing_px = 0\n\
                  line_height = \"auto\"\ndecoration = \"absent\"\nmnemonic_decoration = \"absent\"\n\
                  case = \"mixed\"\nelision = \"end\"\nwrap = \"word\"\nmax_lines = \"none\"\n\
                  fill = \"absent\"\n[widgets.button.label]\ntext = \"= token.text.keyed.body\"\n";

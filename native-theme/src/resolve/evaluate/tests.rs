@@ -155,8 +155,8 @@ scaling = "linear"
 [tokens.text.roles.body.replace]
 font = { family = "Synthetic", size_pt = 9, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }
 scaling_role = "none"
-letter_spacing = "absent"
-word_spacing = "absent"
+letter_spacing_px = 0
+word_spacing_px = 0
 line_height = "auto"
 decoration = "absent"
 mnemonic_decoration = "absent"
@@ -646,7 +646,7 @@ fn text_style(table: &str) -> String {
     format!(
         "[{table}.replace]\nfont = {{ family = \"Synthetic\", size_px = 10, weight = 400, \
          style = \"normal\", width = \"absent\", axes = {{}}, features = {{}} }}\n\
-         scaling_role = \"none\"\nletter_spacing = \"absent\"\nword_spacing = \"absent\"\n\
+         scaling_role = \"none\"\nletter_spacing_px = 0\nword_spacing_px = 0\n\
          line_height = \"auto\"\ndecoration = \"absent\"\nmnemonic_decoration = \"absent\"\n\
          case = \"mixed\"\nelision = \"end\"\nwrap = \"word\"\nmax_lines = \"none\"\n\
          fill = \"absent\"\n"
@@ -875,7 +875,7 @@ presentations = []
     assert_eq!(text.font.size, Some(Px(18.0)));
     assert_eq!(text.font.weight, Some(700));
     assert_eq!(text.line_height, Some(Length::Auto));
-    assert_eq!(text.letter_spacing, None);
+    assert_eq!(text.letter_spacing, Some(Px(0.0)));
     assert_eq!(text.fill, None);
     // `div(font_size, 2)`: the scaled size, 18 / 2.
     let one = Some(Px(1.0));
