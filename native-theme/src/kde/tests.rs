@@ -2,6 +2,7 @@
 //! fixture files, and the reading over the presets.
 
 use super::*;
+use crate::roles::SurfaceRolesPatch;
 
 #[test]
 fn create_kde_parser_is_case_sensitive() {
@@ -1662,4 +1663,228 @@ fn the_font_dpi_is_xft_dpi_on_x11() {
     }
     assert_eq!(read_font_dpi(Some("wayland")), None);
     assert_eq!(read_font_dpi(None), None);
+}
+
+// === The kdeglobals fixtures ===
+//
+// `tests/fixtures/kde/*.ini`, whole kdeglobals files (0.7.0's
+// `tests/reader_kde.rs`, restored at M1b with the reader): Breeze's own
+// colours in the Breeze fixtures, synthetic ones elsewhere. The tests check
+// where the reader puts what each file holds.
+
+/// The reading of the kdeglobals `text` under `kde-breeze`: no scheme file,
+/// no font DPI; where kdeglobals has no `[Colors:View]` group, the palette's
+/// colours an empty file's, as `palette_colors` gives where no colours file
+/// is found.
+fn fixture_reading(text: &str) -> Reading {
+    let mut data = data(text, SchemeFile::Unnamed);
+    if !has_group(&data.kdeglobals, "Colors:View") {
+        data.colors = Some(PaletteColors {
+            colors: create_kde_parser(),
+            unreadable: None,
+        });
+    }
+    reading(&data)
+}
+
+/// The surface set `set`'s roles the own part of `reading` states at
+/// `scheme`.
+fn fixture_set(
+    reading: &Reading,
+    scheme: Scheme,
+    set: SurfaceSet,
+) -> Result<SurfaceRolesPatch, String> {
+    let (_, bases) = reading.layer.for_preset.first().ok_or("no own part")?;
+    let surfaces = bases
+        .colors
+        .get(scheme)
+        .and_then(|roles| roles.surfaces.as_ref())
+        .ok_or(format!("no surfaces at {scheme:?}"))?;
+    match surfaces.get(set) {
+        Some(BlockPatch::Fields(patch)) => Ok(patch.clone()),
+        other => Err(format!("{set:?}: {other:?}")),
+    }
+}
+
+/// `r,g,b` as the reader states it.
+fn stated(r: u8, g: u8, b: u8) -> Option<Value<Color>> {
+    Some(Value::Stated(rgb(r, g, b)))
+}
+
+/// KColorScheme's default for `set`'s `key`, as the reader states it.
+fn default_of(defaults: &defaults::SetDefaults, key: KdeSchemeKey) -> Option<Value<Color>> {
+    Some(Value::Stated(defaults.color(key)))
+}
+
+/// Breeze Dark's kdeglobals: the dark scheme, each group's keys as its
+/// set's roles, the accent the `Selection` background, the motion off, the
+/// fonts; `forceFontDPI` in kdeglobals is no font DPI (Plasma keeps it in
+/// kcmfonts).
+#[test]
+fn the_breeze_dark_fixture() -> Result<(), String> {
+    let reading = fixture_reading(include_str!("../../tests/fixtures/kde/breeze-dark.ini"));
+    assert_eq!(reading.state.scheme, Scheme::Dark);
+    assert!(reading.state.reduced_motion && reading.state.animations_off);
+    assert_eq!(reading.state.font_dpi, None);
+    assert!(fixture_set(&reading, Scheme::Light, SurfaceSet::View).is_err());
+    let view = fixture_set(&reading, Scheme::Dark, SurfaceSet::View)?;
+    assert_eq!(view.background, stated(35, 38, 41));
+    assert_eq!(view.foreground, stated(252, 252, 252));
+    assert_eq!(view.decoration_focus, stated(61, 174, 233));
+    let window = fixture_set(&reading, Scheme::Dark, SurfaceSet::Window)?;
+    assert_eq!(window.background, stated(49, 54, 59));
+    assert_eq!(window.foreground, stated(239, 240, 241));
+    let selection = fixture_set(&reading, Scheme::Dark, SurfaceSet::Selection)?;
+    assert_eq!(selection.background, stated(61, 174, 233));
+    let header = fixture_set(&reading, Scheme::Dark, SurfaceSet::Header)?;
+    assert_eq!(header.background, stated(35, 38, 41));
+    let tooltip = fixture_set(&reading, Scheme::Dark, SurfaceSet::Tooltip)?;
+    assert_eq!(tooltip.foreground, stated(252, 252, 252));
+    assert_eq!(
+        input_color(&reading.layer.bases, "accent", Scheme::Dark),
+        Some(rgb(61, 174, 233))
+    );
+    let text = reading.layer.bases.tokens.text.as_ref().ok_or("no text")?;
+    let roles = text.roles.as_ref().ok_or("no text roles")?;
+    let family = |patch: &Option<BlockPatch<crate::blocks::text::TextStyle>>| match patch {
+        Some(BlockPatch::Fields(style)) => style.font.as_ref().and_then(|font| font.family.clone()),
+        _ => None,
+    };
+    assert_eq!(
+        family(&roles.body),
+        Some(Value::Stated("Noto Sans".to_string()))
+    );
+    assert_eq!(
+        family(&roles.monospace),
+        Some(Value::Stated("Hack".to_string()))
+    );
+    Ok(())
+}
+
+/// Breeze Light's kdeglobals: the light scheme, its own colours, the
+/// motion on.
+#[test]
+fn the_breeze_light_fixture() -> Result<(), String> {
+    let reading = fixture_reading(include_str!("../../tests/fixtures/kde/breeze-light.ini"));
+    assert_eq!(reading.state.scheme, Scheme::Light);
+    assert!(!reading.state.reduced_motion && !reading.state.animations_off);
+    let window = fixture_set(&reading, Scheme::Light, SurfaceSet::Window)?;
+    assert_eq!(window.background, stated(239, 240, 241));
+    assert_eq!(window.foreground, stated(35, 38, 41));
+    let view = fixture_set(&reading, Scheme::Light, SurfaceSet::View)?;
+    assert_eq!(view.background, stated(255, 255, 255));
+    assert_eq!(
+        input_color(&reading.layer.bases, "accent", Scheme::Light),
+        Some(rgb(61, 174, 233))
+    );
+    Ok(())
+}
+
+/// A scheme with an orange selection and no `AccentColor`: the accent is
+/// the `Selection` background (S9.3), the window unchanged from Breeze Dark.
+#[test]
+fn the_custom_accent_fixture() -> Result<(), String> {
+    let reading = fixture_reading(include_str!("../../tests/fixtures/kde/custom-accent.ini"));
+    assert_eq!(
+        input_color(&reading.layer.bases, "accent", Scheme::Dark),
+        Some(rgb(246, 116, 0))
+    );
+    let view = fixture_set(&reading, Scheme::Dark, SurfaceSet::View)?;
+    assert_eq!(view.decoration_focus, stated(246, 116, 0));
+    let window = fixture_set(&reading, Scheme::Dark, SurfaceSet::Window)?;
+    assert_eq!(window.background, stated(49, 54, 59));
+    Ok(())
+}
+
+/// `forceFontDPI=192` in kdeglobals is no font DPI and no text scale: the
+/// reader takes its DPI from kcmfonts or `Xft.dpi` (`font_dpi`).
+#[test]
+fn the_high_dpi_fixture() {
+    let reading = fixture_reading(include_str!("../../tests/fixtures/kde/high-dpi.ini"));
+    assert_eq!(reading.state.font_dpi, None);
+    assert_eq!(reading.state.text_scaling_factor, UNSCALED);
+    assert!(!reading.state.reduced_motion);
+}
+
+/// Only `[Colors:Window]`, no `[Colors:View]`: the palette is built from
+/// the colours file, not kdeglobals (S9.3, `palette_colors`), so with none
+/// found the scheme is KColorScheme's default window's, light, and every
+/// set's keys its defaults, kdeglobals' dark window group unread (0.7.0's
+/// reader read it, and called this fixture dark); no fonts, no motion
+/// setting.
+#[test]
+fn the_minimal_fixture() -> Result<(), String> {
+    let reading = fixture_reading(include_str!("../../tests/fixtures/kde/minimal.ini"));
+    assert_eq!(reading.state.scheme, Scheme::Light);
+    assert!(!reading.state.reduced_motion);
+    let window = fixture_set(&reading, Scheme::Light, SurfaceSet::Window)?;
+    assert_eq!(
+        window.background,
+        default_of(&defaults::WINDOW, KdeSchemeKey::BackgroundNormal)
+    );
+    assert_ne!(window.background, stated(49, 54, 59));
+    let view = fixture_set(&reading, Scheme::Light, SurfaceSet::View)?;
+    assert_eq!(
+        view.background,
+        default_of(&defaults::VIEW, KdeSchemeKey::BackgroundNormal)
+    );
+    assert!(reading.layer.bases.tokens.text.is_none());
+    Ok(())
+}
+
+/// `Window`, `View` and `Button` alone: theirs read, `Selection` and
+/// `Tooltip` KColorScheme's defaults, `Header` the window group's.
+#[test]
+fn the_missing_groups_fixture() -> Result<(), String> {
+    let reading = fixture_reading(include_str!("../../tests/fixtures/kde/missing-groups.ini"));
+    let view = fixture_set(&reading, Scheme::Dark, SurfaceSet::View)?;
+    assert_eq!(view.background, stated(35, 38, 41));
+    let button = fixture_set(&reading, Scheme::Dark, SurfaceSet::Button)?;
+    assert_eq!(button.background, stated(49, 54, 59));
+    let selection = fixture_set(&reading, Scheme::Dark, SurfaceSet::Selection)?;
+    assert_eq!(
+        selection.background,
+        default_of(&defaults::SELECTION, KdeSchemeKey::BackgroundNormal)
+    );
+    let tooltip = fixture_set(&reading, Scheme::Dark, SurfaceSet::Tooltip)?;
+    assert_eq!(
+        tooltip.background,
+        default_of(&defaults::TOOLTIP, KdeSchemeKey::BackgroundNormal)
+    );
+    let header = fixture_set(&reading, Scheme::Dark, SurfaceSet::Header)?;
+    assert_eq!(header.background, stated(49, 54, 59));
+    Ok(())
+}
+
+/// Malformed colours read as unset, so KColorScheme's defaults: three
+/// words, two channels, an empty value and a channel above 255; the valid
+/// ones beside them read.
+#[test]
+fn the_malformed_values_fixture() -> Result<(), String> {
+    let reading = fixture_reading(include_str!(
+        "../../tests/fixtures/kde/malformed-values.ini"
+    ));
+    let window = fixture_set(&reading, Scheme::Dark, SurfaceSet::Window)?;
+    assert_eq!(window.background, stated(49, 54, 59));
+    assert_eq!(
+        window.foreground,
+        default_of(&defaults::WINDOW, KdeSchemeKey::ForegroundNormal)
+    );
+    let view = fixture_set(&reading, Scheme::Dark, SurfaceSet::View)?;
+    assert_eq!(view.background, stated(35, 38, 41));
+    assert_eq!(
+        view.foreground,
+        default_of(&defaults::VIEW, KdeSchemeKey::ForegroundNormal)
+    );
+    let button = fixture_set(&reading, Scheme::Dark, SurfaceSet::Button)?;
+    assert_eq!(
+        button.background,
+        default_of(&defaults::BUTTON, KdeSchemeKey::BackgroundNormal)
+    );
+    assert_eq!(
+        button.foreground,
+        default_of(&defaults::BUTTON, KdeSchemeKey::ForegroundNormal)
+    );
+    assert_eq!(reading.state.font_dpi, None);
+    Ok(())
 }

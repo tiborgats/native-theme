@@ -34,6 +34,19 @@ fn every_bundled_preset_validates() {
     }
 }
 
+/// Every bundled preset has a display name of its own: a picker listing
+/// `PresetId::all` names each once (S16).
+#[test]
+fn every_bundled_preset_has_its_own_display_name() {
+    let mut seen = std::collections::BTreeSet::new();
+    for &id in PresetId::all() {
+        let name = id.display_name();
+        assert!(!name.is_empty(), "{}", id.key());
+        assert!(seen.insert(name), "{}: {name} named twice", id.key());
+    }
+    assert_eq!(PresetId::KdeBreeze.display_name(), "KDE Breeze");
+}
+
 /// The build test's route for the preset `text` states, as `Theme` reads
 /// the bundled preset `id`: the plain one (`from_preset`'s) where its
 /// `[pending]` table is empty, else the synthetic one

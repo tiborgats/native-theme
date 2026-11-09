@@ -73,7 +73,7 @@ use objc2_app_kit::{
     NSAppearance, NSApplication, NSColor, NSColorSpace, NSScroller, NSScrollerStyle, NSWorkspace,
 };
 #[cfg(all(target_os = "macos", feature = "macos"))]
-use objc2_foundation::{NSProcessInfo, NSString, NSUserDefaults};
+use objc2_foundation::{NSString, NSUserDefaults};
 
 use crate::blocks::BlockPatch;
 use crate::color::Color;
@@ -546,9 +546,10 @@ pub(crate) fn read(own: PresetId) -> Result<Reading, ReaderFailure> {
 /// a version of 0.0.0 gets `macos-monterey` with `VersionMatch::PresetNewer`.
 /// Early macOS 26 betas reported 16 here to a binary built against the macOS
 /// 15 SDK; `pipeline::MACOS_GENERATIONS` gives the sources and the mapping.
-#[cfg(all(target_os = "macos", feature = "macos"))]
+/// The SF Symbols loader reads it too (`sficons::has_symbol_images`).
+#[cfg(all(target_os = "macos", any(feature = "macos", feature = "system-icons")))]
 pub(crate) fn os_version() -> crate::pipeline::OsVersion {
-    let v = NSProcessInfo::processInfo().operatingSystemVersion();
+    let v = objc2_foundation::NSProcessInfo::processInfo().operatingSystemVersion();
     let part = |n: isize| u32::try_from(n).unwrap_or_default();
     crate::pipeline::OsVersion::new(
         part(v.majorVersion),
