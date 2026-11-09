@@ -14,8 +14,11 @@
 # button (`tool`) sets its own, stated after these. The padding is ButtonPadding plus the border's width on each
 # side (S2.11's box, ADD-A125): the stroke takes no layout space in the model, while WinUI adds BorderThickness to
 # Padding to measure the content and deflates by both to arrange it (Border.cpp's helpers, which ContentPresenter and
-# Grid call). The padding is stated for every button here, its base, which the accent, app-bar and dialog default
-# buttons' facts below replace.
+# Grid call). These four facts hold on every combination no later fact replaces: the accent (`primary`) and app-bar
+# (`tool`) buttons' facts below replace them wherever those are drawn, and the `default` state is drawn only in
+# `dialog.action_area` (state-models.toml's not_drawn), where the dialog default button's facts replace them; so
+# they decide no drawn combination beyond the plain Button style's (generate_preset.py's round trip and the
+# win-r2 lane's check of the combinations with `default`, `primary` and `tool`).
 
 [[fact]]
 key = "button.body.padding.top"

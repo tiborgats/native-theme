@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 b4f8832ac12f3251c4a81c451207e5cf10cbf791b202a711ce15c512d99d8bec
+# generated lines: sha256 4cf4067443a34a4049af02fbb3d5d75750c200d26e238bcec405ad0d9ce2118f
 
 [preset]
 id = "windows-11"
@@ -218,75 +218,75 @@ sizes = []
 densities = []
 exclusive = [["disabled", "pressed", "hover"], ["indeterminate", "checked"]]
 exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"], ["primary", "flat", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]]
-# docs/facts/windows/button.toml:852
+# docs/facts/windows/button.toml:855
 data = { body = ["widget.label.line_height"] }
 
 [pending]
-# docs/facts/windows/button.toml:18994
+# docs/facts/windows/button.toml:18997
 "widgets.button.label.text.wrap" = "U518"
-# docs/facts/windows/button.toml:19021
+# docs/facts/windows/button.toml:19024
 "widgets.button.label.text.decoration" = "U518"
-# docs/facts/windows/button.toml:19026
+# docs/facts/windows/button.toml:19029
 "widgets.button.label.text.mnemonic_decoration" = "U518"
-# docs/facts/windows/button.toml:19031
+# docs/facts/windows/button.toml:19034
 "widgets.button.label.text.font.width" = "U518"
-# docs/facts/windows/button.toml:19036
+# docs/facts/windows/button.toml:19039
 "widgets.button.label.text.font.axes" = "U518"
-# docs/facts/windows/button.toml:19041
+# docs/facts/windows/button.toml:19044
 "widgets.button.label.text.font.features" = "U518"
-# docs/facts/windows/button.toml:19063
+# docs/facts/windows/button.toml:19066
 "widgets.button.label.text.scaling_role" = "U518"
-# docs/facts/windows/button.toml:19071
+# docs/facts/windows/button.toml:19074
 "widgets.button.icon.icon.size_px" = "U517"
-# docs/facts/windows/button.toml:19076
+# docs/facts/windows/button.toml:19079
 "widgets.button.icon.icon.rendering_mode" = "U517"
-# docs/facts/windows/button.toml:19081
+# docs/facts/windows/button.toml:19084
 "widgets.button.icon.icon.weight" = "U517"
-# docs/facts/windows/button.toml:19086
+# docs/facts/windows/button.toml:19089
 "widgets.button.icon.icon.scale" = "U517"
-# docs/facts/windows/button.toml:19091
+# docs/facts/windows/button.toml:19094
 "widgets.button.icon.icon.axes" = "U517"
-# docs/facts/windows/button.toml:19096
+# docs/facts/windows/button.toml:19099
 "widgets.button.icon.icon.state_effect" = "U517"
-# docs/facts/windows/button.toml:19101
+# docs/facts/windows/button.toml:19104
 "widgets.button.icon.icon.symbol_variants" = "U517"
-# docs/facts/windows/button.toml:19106
+# docs/facts/windows/button.toml:19109
 "widgets.button.icon.icon.symbolic_colors" = "U517"
-# docs/facts/windows/button.toml:19111
+# docs/facts/windows/button.toml:19114
 "widgets.button.icon.icon.animation" = "U517"
-# docs/facts/windows/button.toml:19116
+# docs/facts/windows/button.toml:19119
 "widgets.button.icon.transitions" = "U517"
-# docs/facts/windows/button.toml:19121
+# docs/facts/windows/button.toml:19124
 "widgets.button.values.icon_placement" = "U517"
-# docs/facts/windows/button.toml:19126
+# docs/facts/windows/button.toml:19129
 "widgets.button.values.icon_text_gap_px" = "U517"
-# docs/facts/windows/button.toml:19131
+# docs/facts/windows/button.toml:19134
 "widgets.button.values.label_position" = "U517"
-# docs/facts/windows/button.toml:19137
+# docs/facts/windows/button.toml:19140
 "widgets.button.body.interaction" = "U517"
-# docs/facts/windows/button.toml:19149
+# docs/facts/windows/button.toml:19152
 "widgets.button.menu_indicator.glyph.source" = "U519"
-# docs/facts/windows/button.toml:19155
+# docs/facts/windows/button.toml:19158
 "widgets.button.menu_indicator.glyph.stroke" = "U519"
-# docs/facts/windows/button.toml:19161
+# docs/facts/windows/button.toml:19164
 "widgets.button.menu_indicator.glyph.draw_extent" = "U519"
-# docs/facts/windows/button.toml:19167
+# docs/facts/windows/button.toml:19170
 "widgets.button.menu_indicator.glyph.draw_start" = "U519"
-# docs/facts/windows/button.toml:19173
+# docs/facts/windows/button.toml:19176
 "widgets.button.menu_indicator.glyph.axes" = "U519"
-# docs/facts/windows/button.toml:19179
+# docs/facts/windows/button.toml:19182
 "widgets.button.menu_indicator.glyph.mirroring" = "U519"
-# docs/facts/windows/button.toml:19229
+# docs/facts/windows/button.toml:19232
 "widgets.button.menu_indicator.min_height_px" = "U519"
-# docs/facts/windows/button.toml:19235
+# docs/facts/windows/button.toml:19238
 "widgets.button.menu_indicator.transform" = "U519"
-# docs/facts/windows/button.toml:19271
+# docs/facts/windows/button.toml:19274
 "widgets.button.menu_indicator.margin" = "U519"
-# docs/facts/windows/button.toml:19283
+# docs/facts/windows/button.toml:19286
 "widgets.button.menu_indicator.min_width_px" = "U519"
-# docs/facts/windows/button.toml:19289
+# docs/facts/windows/button.toml:19292
 "widgets.button.values.menu_indicator_anchor" = "U519"
-# docs/facts/windows/button.toml:19295
+# docs/facts/windows/button.toml:19298
 "widgets.button.values.menu_indicator_gap_px" = "U519"
 # docs/facts/windows/roles.toml:7471
 "colors.light.global.drop_highlight" = "U513"
@@ -1962,179 +1962,179 @@ kde = "absent"
 material = "absent"
 
 [widgets.button.body]
-# docs/facts/windows/button.toml:20
+# docs/facts/windows/button.toml:23
 padding.top_px = "= add(5px, part.stroke.top.width)"
-# docs/facts/windows/button.toml:75
+# docs/facts/windows/button.toml:78
 padding.right_px = "= add(11px, part.stroke.right.width)"
-# docs/facts/windows/button.toml:130
+# docs/facts/windows/button.toml:133
 padding.bottom_px = "= add(6px, part.stroke.bottom.width)"
-# docs/facts/windows/button.toml:185
+# docs/facts/windows/button.toml:188
 padding.left_px = "= add(11px, part.stroke.left.width)"
-# docs/facts/windows/button.toml:240
+# docs/facts/windows/button.toml:243
 stroke.top.width_px = 1
-# docs/facts/windows/button.toml:305
+# docs/facts/windows/button.toml:308
 stroke.right.width_px = 1
-# docs/facts/windows/button.toml:370
+# docs/facts/windows/button.toml:373
 stroke.bottom.width_px = 1
-# docs/facts/windows/button.toml:435
+# docs/facts/windows/button.toml:438
 stroke.left.width_px = 1
-# docs/facts/windows/button.toml:500
+# docs/facts/windows/button.toml:503
 stroke.top.dash = "solid"
-# docs/facts/windows/button.toml:510
+# docs/facts/windows/button.toml:513
 stroke.right.dash = "solid"
-# docs/facts/windows/button.toml:520
+# docs/facts/windows/button.toml:523
 stroke.bottom.dash = "solid"
-# docs/facts/windows/button.toml:530
+# docs/facts/windows/button.toml:533
 stroke.left.dash = "solid"
-# docs/facts/windows/button.toml:540
+# docs/facts/windows/button.toml:543
 stroke.outset_px = "absent"
-# docs/facts/windows/button.toml:553
+# docs/facts/windows/button.toml:556
 stroke.position = "inside"
-# docs/facts/windows/button.toml:576
+# docs/facts/windows/button.toml:579
 stroke.top.snap = "to_device_pixel"
-# docs/facts/windows/button.toml:606
+# docs/facts/windows/button.toml:609
 stroke.right.snap = "to_device_pixel"
-# docs/facts/windows/button.toml:636
+# docs/facts/windows/button.toml:639
 stroke.bottom.snap = "to_device_pixel"
-# docs/facts/windows/button.toml:666
+# docs/facts/windows/button.toml:669
 stroke.left.snap = "to_device_pixel"
-# docs/facts/windows/button.toml:1426
+# docs/facts/windows/button.toml:1429
 stroke.fill_clip = "inner_edge"
-# docs/facts/windows/button.toml:1593
+# docs/facts/windows/button.toml:1596
 corners.top_left_px = "= token.params.shape.control_corner_radius"
-# docs/facts/windows/button.toml:1638
+# docs/facts/windows/button.toml:1641
 corners.top_right_px = "= token.params.shape.control_corner_radius"
-# docs/facts/windows/button.toml:1683
+# docs/facts/windows/button.toml:1686
 corners.bottom_right_px = "= token.params.shape.control_corner_radius"
-# docs/facts/windows/button.toml:1728
+# docs/facts/windows/button.toml:1731
 corners.bottom_left_px = "= token.params.shape.control_corner_radius"
-# docs/facts/windows/button.toml:1773
+# docs/facts/windows/button.toml:1776
 corners.curve = "circular"
-# docs/facts/windows/button.toml:1795
+# docs/facts/windows/button.toml:1798
 transitions = [{ properties = ["fill"], kind = "interpolate", duration_ms = 83, delay_ms = 0, timing = "linear", engine = "win_ui" }]
-# docs/facts/windows/button.toml:1916
+# docs/facts/windows/button.toml:1919
 margin.top_px = 0
-# docs/facts/windows/button.toml:1926
+# docs/facts/windows/button.toml:1929
 margin.right_px = 0
-# docs/facts/windows/button.toml:1936
+# docs/facts/windows/button.toml:1939
 margin.bottom_px = 0
-# docs/facts/windows/button.toml:1946
+# docs/facts/windows/button.toml:1949
 margin.left_px = 0
-# docs/facts/windows/button.toml:1956
+# docs/facts/windows/button.toml:1959
 min_width_px = 0
-# docs/facts/windows/button.toml:1966
+# docs/facts/windows/button.toml:1969
 min_height_px = 0
-# docs/facts/windows/button.toml:1976
+# docs/facts/windows/button.toml:1979
 max_width_px = "auto"
-# docs/facts/windows/button.toml:2343
+# docs/facts/windows/button.toml:2346
 opacity = 1
-# docs/facts/windows/button.toml:2358
+# docs/facts/windows/button.toml:2361
 shadow = "absent"
-# docs/facts/windows/button.toml:2400
+# docs/facts/windows/button.toml:2403
 touch_target_px = "absent"
-# docs/facts/windows/button.toml:2411
+# docs/facts/windows/button.toml:2414
 cursor = "absent"
-# docs/facts/windows/button.toml:2457
+# docs/facts/windows/button.toml:2460
 bindings = []
-# docs/facts/windows/button.toml:2492
+# docs/facts/windows/button.toml:2495
 transform.scale_x = 1
-# docs/facts/windows/button.toml:2512
+# docs/facts/windows/button.toml:2515
 transform.scale_y = 1
-# docs/facts/windows/button.toml:2532
+# docs/facts/windows/button.toml:2535
 transform.rotate_deg = 0
-# docs/facts/windows/button.toml:2590
+# docs/facts/windows/button.toml:2593
 transform.translate_x_px = 0
-# docs/facts/windows/button.toml:2648
+# docs/facts/windows/button.toml:2651
 transform.translate_y_px = 0
-# docs/facts/windows/button.toml:2706
+# docs/facts/windows/button.toml:2709
 transform.origin = [0, 0]
-# docs/facts/windows/button.toml:2721
+# docs/facts/windows/button.toml:2724
 focus = "= token.focus"
-# docs/facts/windows/button.toml:3374
+# docs/facts/windows/button.toml:3377
 fill = "= role.@control_fill_default"
-# docs/facts/windows/button.toml:3743
+# docs/facts/windows/button.toml:3746
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3769
+# docs/facts/windows/button.toml:3772
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3795
+# docs/facts/windows/button.toml:3798
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3821
+# docs/facts/windows/button.toml:3824
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [widgets.button.label]
-# docs/facts/windows/button.toml:3084
+# docs/facts/windows/button.toml:3087
 text.font.family = "Segoe UI Variable"
-# docs/facts/windows/button.toml:3119
+# docs/facts/windows/button.toml:3122
 text.font.size_px = 14
-# docs/facts/windows/button.toml:3164
+# docs/facts/windows/button.toml:3167
 text.font.weight = 400
-# docs/facts/windows/button.toml:3291
+# docs/facts/windows/button.toml:3294
 padding.top_px = 0
-# docs/facts/windows/button.toml:3311
+# docs/facts/windows/button.toml:3314
 padding.right_px = 0
-# docs/facts/windows/button.toml:3331
+# docs/facts/windows/button.toml:3334
 padding.bottom_px = 0
-# docs/facts/windows/button.toml:3351
+# docs/facts/windows/button.toml:3354
 padding.left_px = 0
-# docs/facts/windows/button.toml:3463
+# docs/facts/windows/button.toml:3466
 text.fill = "= role.@text_fill_primary"
-# docs/facts/windows/button.toml:19004
+# docs/facts/windows/button.toml:19007
 text.case = "mixed"
-# docs/facts/windows/button.toml:19046
+# docs/facts/windows/button.toml:19049
 text.word_spacing_px = 0
-# docs/facts/windows/button.toml:3209
+# docs/facts/windows/button.toml:3212
 text.font.style = "normal"
-# docs/facts/windows/button.toml:3220
+# docs/facts/windows/button.toml:3223
 text.letter_spacing_px = 0
-# docs/facts/windows/button.toml:3231
+# docs/facts/windows/button.toml:3234
 text.line_height = "auto"
-# docs/facts/windows/button.toml:3256
+# docs/facts/windows/button.toml:3259
 text.elision = "none"
-# docs/facts/windows/button.toml:3279
+# docs/facts/windows/button.toml:3282
 text.max_lines = "none"
 
 [widgets.button.icon]
-# docs/facts/windows/button.toml:3488
+# docs/facts/windows/button.toml:3491
 icon.fill = "= role.@text_fill_primary"
-# docs/facts/windows/button.toml:17628
+# docs/facts/windows/button.toml:17631
 glyph = "absent"
 
 [widgets.button.menu_indicator]
-# docs/facts/windows/button.toml:10238
+# docs/facts/windows/button.toml:10241
 glyph.fill = "= role.@text_fill_secondary"
-# docs/facts/windows/button.toml:16529
+# docs/facts/windows/button.toml:16532
 glyph.size_px = 12
-# docs/facts/windows/button.toml:16577
+# docs/facts/windows/button.toml:16580
 transitions = []
 
 [widgets.button.subtitle]
-# docs/facts/windows/button.toml:17372
+# docs/facts/windows/button.toml:17375
 absent = true
 
 [widgets.button.values]
-# docs/facts/windows/button.toml:17498
+# docs/facts/windows/button.toml:17501
 subtitle_gap_px = "absent"
-# docs/facts/windows/button.toml:17509
+# docs/facts/windows/button.toml:17512
 menu_trigger = "absent"
-# docs/facts/windows/button.toml:17520
+# docs/facts/windows/button.toml:17523
 shows_icon = "absent"
-# docs/facts/windows/button.toml:17531
+# docs/facts/windows/button.toml:17534
 back_display_mode = "absent"
-# docs/facts/windows/button.toml:17542
+# docs/facts/windows/button.toml:17545
 display_mode = "absent"
-# docs/facts/windows/button.toml:17564
+# docs/facts/windows/button.toml:17567
 hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
-# docs/facts/windows/button.toml:17575
+# docs/facts/windows/button.toml:17578
 back_title_fallback = false
-# docs/facts/windows/button.toml:17586
+# docs/facts/windows/button.toml:17589
 help_tooltip_on_click = false
-# docs/facts/windows/button.toml:17597
+# docs/facts/windows/button.toml:17600
 presentations = []
-# docs/facts/windows/button.toml:17608
+# docs/facts/windows/button.toml:17611
 focus_visible_when = "= token.behavior.focus_visible_when"
-# docs/facts/windows/button.toml:17392
+# docs/facts/windows/button.toml:17395
 repeat_delay_ms = "absent"
-# docs/facts/windows/button.toml:17434
+# docs/facts/windows/button.toml:17437
 repeat_interval_ms = "absent"
 
 [[rules]]
@@ -2142,13 +2142,13 @@ when = { variants = ["primary"], not_states = ["default"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:710
+# docs/facts/windows/button.toml:713
 padding.top_px = 6
-# docs/facts/windows/button.toml:778
+# docs/facts/windows/button.toml:781
 padding.right_px = 12
-# docs/facts/windows/button.toml:841
+# docs/facts/windows/button.toml:844
 padding.bottom_px = 7
-# docs/facts/windows/button.toml:949
+# docs/facts/windows/button.toml:952
 padding.left_px = 12
 
 [[rules]]
@@ -2156,27 +2156,27 @@ when = { variants = ["tool"], not_states = ["default"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:721
+# docs/facts/windows/button.toml:724
 padding.top_px = "= sub(16px, 6px)"
-# docs/facts/windows/button.toml:789
+# docs/facts/windows/button.toml:792
 padding.right_px = "= sub(2px, 2px)"
-# docs/facts/windows/button.toml:852
+# docs/facts/windows/button.toml:855
 padding.bottom_px = "= sub(sub(64px, add(6px, 6px)), add(sub(16px, 6px), add(add(16px, add(2px, 0px)), widget.label.line_height)))"
-# docs/facts/windows/button.toml:960
+# docs/facts/windows/button.toml:963
 padding.left_px = "= sub(2px, 2px)"
-# docs/facts/windows/button.toml:1990
+# docs/facts/windows/button.toml:1993
 margin.top_px = 6
-# docs/facts/windows/button.toml:2011
+# docs/facts/windows/button.toml:2014
 margin.right_px = 2
-# docs/facts/windows/button.toml:2032
+# docs/facts/windows/button.toml:2035
 margin.bottom_px = 6
-# docs/facts/windows/button.toml:2053
+# docs/facts/windows/button.toml:2056
 margin.left_px = 2
-# docs/facts/windows/button.toml:2074
+# docs/facts/windows/button.toml:2077
 min_width_px = "= sub(68px, add(2px, 2px))"
-# docs/facts/windows/button.toml:2105
+# docs/facts/windows/button.toml:2108
 max_width_px = "= sub(68px, add(2px, 2px))"
-# docs/facts/windows/button.toml:2136
+# docs/facts/windows/button.toml:2139
 min_height_px = "= sub(64px, add(6px, 6px))"
 
 [[rules]]
@@ -2184,13 +2184,13 @@ when = { variants = ["tool"], not_variants = ["toggle"], not_states = ["default"
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:1236
+# docs/facts/windows/button.toml:1239
 stroke.top.width_px = 0
-# docs/facts/windows/button.toml:1283
+# docs/facts/windows/button.toml:1286
 stroke.right.width_px = 0
-# docs/facts/windows/button.toml:1330
+# docs/facts/windows/button.toml:1333
 stroke.bottom.width_px = 0
-# docs/facts/windows/button.toml:1377
+# docs/facts/windows/button.toml:1380
 stroke.left.width_px = 0
 
 [[rules]]
@@ -2198,13 +2198,13 @@ when = { variants = ["tool", "toggle"], not_states = ["default"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:1262
+# docs/facts/windows/button.toml:1265
 stroke.top.width_px = 1
-# docs/facts/windows/button.toml:1309
+# docs/facts/windows/button.toml:1312
 stroke.right.width_px = 1
-# docs/facts/windows/button.toml:1356
+# docs/facts/windows/button.toml:1359
 stroke.bottom.width_px = 1
-# docs/facts/windows/button.toml:1403
+# docs/facts/windows/button.toml:1406
 stroke.left.width_px = 1
 
 [[rules]]
@@ -2212,7 +2212,7 @@ when = { variants = ["primary"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:1471
+# docs/facts/windows/button.toml:1474
 stroke.fill_clip = "box"
 
 [[rules]]
@@ -2220,7 +2220,7 @@ when = { variants = ["toggle"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:1487
+# docs/facts/windows/button.toml:1490
 stroke.fill_clip = "box"
 
 [[rules]]
@@ -2228,7 +2228,7 @@ when = { variants = ["toggle"], states = ["checked", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:1524
+# docs/facts/windows/button.toml:1527
 stroke.fill_clip = "inner_edge"
 
 [[rules]]
@@ -2236,7 +2236,7 @@ when = { variants = ["tool", "toggle"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:1541
+# docs/facts/windows/button.toml:1544
 stroke.fill_clip = "box"
 
 [[rules]]
@@ -2244,13 +2244,13 @@ when = { not_variants = ["primary"], not_states = ["default"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:2759
+# docs/facts/windows/button.toml:2762
 focus.offset.top_px = "= sub(3px, part.focus.width)"
-# docs/facts/windows/button.toml:2817
+# docs/facts/windows/button.toml:2820
 focus.offset.right_px = "= sub(3px, part.focus.width)"
-# docs/facts/windows/button.toml:2875
+# docs/facts/windows/button.toml:2878
 focus.offset.bottom_px = "= sub(3px, part.focus.width)"
-# docs/facts/windows/button.toml:2933
+# docs/facts/windows/button.toml:2936
 focus.offset.left_px = "= sub(3px, part.focus.width)"
 
 [[rules]]
@@ -2258,13 +2258,13 @@ when = { variants = ["primary"], not_states = ["default"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:2993
+# docs/facts/windows/button.toml:2996
 focus.offset.top_px = 1
-# docs/facts/windows/button.toml:3004
+# docs/facts/windows/button.toml:3007
 focus.offset.right_px = 1
-# docs/facts/windows/button.toml:3015
+# docs/facts/windows/button.toml:3018
 focus.offset.bottom_px = 1
-# docs/facts/windows/button.toml:3026
+# docs/facts/windows/button.toml:3029
 focus.offset.left_px = 1
 
 [[rules]]
@@ -2272,17 +2272,17 @@ when = { not_variants = ["tool"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:3209
+# docs/facts/windows/button.toml:3212
 text.font.style = "normal"
-# docs/facts/windows/button.toml:3220
+# docs/facts/windows/button.toml:3223
 text.letter_spacing_px = 0
-# docs/facts/windows/button.toml:3231
+# docs/facts/windows/button.toml:3234
 text.line_height = "auto"
-# docs/facts/windows/button.toml:3242
+# docs/facts/windows/button.toml:3245
 text.wrap = "none"
-# docs/facts/windows/button.toml:3256
+# docs/facts/windows/button.toml:3259
 text.elision = "none"
-# docs/facts/windows/button.toml:3279
+# docs/facts/windows/button.toml:3282
 text.max_lines = "none"
 
 [[rules]]
@@ -2290,7 +2290,7 @@ when = { not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:3374
+# docs/facts/windows/button.toml:3377
 fill = "= role.@control_fill_default"
 
 [[rules]]
@@ -2298,7 +2298,7 @@ when = { states = ["hover"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:3400
+# docs/facts/windows/button.toml:3403
 fill = "= role.@control_fill_secondary"
 
 [[rules]]
@@ -2306,7 +2306,7 @@ when = { states = ["pressed"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:3421
+# docs/facts/windows/button.toml:3424
 fill = "= role.@control_fill_tertiary"
 
 [[rules]]
@@ -2314,7 +2314,7 @@ when = { states = ["disabled"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:3442
+# docs/facts/windows/button.toml:3445
 fill = "= role.@control_fill_disabled"
 
 [[rules]]
@@ -2322,7 +2322,7 @@ when = { states = ["hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:3513
+# docs/facts/windows/button.toml:3516
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2330,7 +2330,7 @@ when = { states = ["hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:3534
+# docs/facts/windows/button.toml:3537
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2338,7 +2338,7 @@ when = { states = ["pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:3555
+# docs/facts/windows/button.toml:3558
 text.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -2346,7 +2346,7 @@ when = { states = ["pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:3576
+# docs/facts/windows/button.toml:3579
 icon.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -2354,7 +2354,7 @@ when = { states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:3597
+# docs/facts/windows/button.toml:3600
 text.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -2362,7 +2362,7 @@ when = { states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:3618
+# docs/facts/windows/button.toml:3621
 icon.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -2370,13 +2370,13 @@ when = { conditions = ["scheme:dark"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:3639
+# docs/facts/windows/button.toml:3642
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3665
+# docs/facts/windows/button.toml:3668
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3691
+# docs/facts/windows/button.toml:3694
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3717
+# docs/facts/windows/button.toml:3720
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -2384,13 +2384,13 @@ when = { conditions = ["scheme:light"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:3743
+# docs/facts/windows/button.toml:3746
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3769
+# docs/facts/windows/button.toml:3772
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3795
+# docs/facts/windows/button.toml:3798
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3821
+# docs/facts/windows/button.toml:3824
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -2398,13 +2398,13 @@ when = { conditions = ["scheme:dark"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:3847
+# docs/facts/windows/button.toml:3850
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3873
+# docs/facts/windows/button.toml:3876
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3899
+# docs/facts/windows/button.toml:3902
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3925
+# docs/facts/windows/button.toml:3928
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -2412,13 +2412,13 @@ when = { conditions = ["scheme:light"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:3951
+# docs/facts/windows/button.toml:3954
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:3977
+# docs/facts/windows/button.toml:3980
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:4003
+# docs/facts/windows/button.toml:4006
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:4029
+# docs/facts/windows/button.toml:4032
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -2426,13 +2426,13 @@ when = { states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4055
+# docs/facts/windows/button.toml:4058
 stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:4076
+# docs/facts/windows/button.toml:4079
 stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:4097
+# docs/facts/windows/button.toml:4100
 stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:4118
+# docs/facts/windows/button.toml:4121
 stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
@@ -2440,13 +2440,13 @@ when = { states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4139
+# docs/facts/windows/button.toml:4142
 stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:4160
+# docs/facts/windows/button.toml:4163
 stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:4181
+# docs/facts/windows/button.toml:4184
 stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:4202
+# docs/facts/windows/button.toml:4205
 stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
@@ -2454,15 +2454,15 @@ when = { variants = ["primary"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4223
+# docs/facts/windows/button.toml:4226
 fill = "= role.@accent_fill_default"
-# docs/facts/windows/button.toml:4490
+# docs/facts/windows/button.toml:4493
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:4521
+# docs/facts/windows/button.toml:4524
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:4552
+# docs/facts/windows/button.toml:4555
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:4583
+# docs/facts/windows/button.toml:4586
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -2470,15 +2470,15 @@ when = { variants = ["primary"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4249
+# docs/facts/windows/button.toml:4252
 fill = "= role.@accent_fill_secondary"
-# docs/facts/windows/button.toml:4614
+# docs/facts/windows/button.toml:4617
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:4645
+# docs/facts/windows/button.toml:4648
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:4676
+# docs/facts/windows/button.toml:4679
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:4707
+# docs/facts/windows/button.toml:4710
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -2486,15 +2486,15 @@ when = { variants = ["primary"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4270
+# docs/facts/windows/button.toml:4273
 fill = "= role.@accent_fill_tertiary"
-# docs/facts/windows/button.toml:4738
+# docs/facts/windows/button.toml:4741
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:4759
+# docs/facts/windows/button.toml:4762
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:4780
+# docs/facts/windows/button.toml:4783
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:4801
+# docs/facts/windows/button.toml:4804
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -2502,15 +2502,15 @@ when = { variants = ["primary"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4291
+# docs/facts/windows/button.toml:4294
 fill = "= role.@accent_fill_disabled"
-# docs/facts/windows/button.toml:4822
+# docs/facts/windows/button.toml:4825
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:4843
+# docs/facts/windows/button.toml:4846
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:4864
+# docs/facts/windows/button.toml:4867
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:4885
+# docs/facts/windows/button.toml:4888
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -2518,7 +2518,7 @@ when = { variants = ["primary"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:4312
+# docs/facts/windows/button.toml:4315
 text.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -2526,7 +2526,7 @@ when = { variants = ["primary"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:4338
+# docs/facts/windows/button.toml:4341
 icon.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -2534,7 +2534,7 @@ when = { variants = ["primary"], states = ["hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:4364
+# docs/facts/windows/button.toml:4367
 text.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -2542,7 +2542,7 @@ when = { variants = ["primary"], states = ["hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:4385
+# docs/facts/windows/button.toml:4388
 icon.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -2550,7 +2550,7 @@ when = { variants = ["primary"], states = ["pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:4406
+# docs/facts/windows/button.toml:4409
 text.fill = "= role.@text_on_accent_fill_secondary"
 
 [[rules]]
@@ -2558,7 +2558,7 @@ when = { variants = ["primary"], states = ["pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:4427
+# docs/facts/windows/button.toml:4430
 icon.fill = "= role.@text_on_accent_fill_secondary"
 
 [[rules]]
@@ -2566,7 +2566,7 @@ when = { variants = ["primary"], states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:4448
+# docs/facts/windows/button.toml:4451
 text.fill = "= role.@text_on_accent_fill_disabled"
 
 [[rules]]
@@ -2574,7 +2574,7 @@ when = { variants = ["primary"], states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:4469
+# docs/facts/windows/button.toml:4472
 icon.fill = "= role.@text_on_accent_fill_disabled"
 
 [[rules]]
@@ -2582,15 +2582,15 @@ when = { variants = ["flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4906
+# docs/facts/windows/button.toml:4909
 fill = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5173
+# docs/facts/windows/button.toml:5176
 stroke.top.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5199
+# docs/facts/windows/button.toml:5202
 stroke.right.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5225
+# docs/facts/windows/button.toml:5228
 stroke.bottom.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5251
+# docs/facts/windows/button.toml:5254
 stroke.left.paint = "= role.@subtle_fill_transparent"
 
 [[rules]]
@@ -2598,15 +2598,15 @@ when = { variants = ["flat"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4932
+# docs/facts/windows/button.toml:4935
 fill = "= role.@subtle_fill_secondary"
-# docs/facts/windows/button.toml:5277
+# docs/facts/windows/button.toml:5280
 stroke.top.paint = "= role.@subtle_fill_secondary"
-# docs/facts/windows/button.toml:5298
+# docs/facts/windows/button.toml:5301
 stroke.right.paint = "= role.@subtle_fill_secondary"
-# docs/facts/windows/button.toml:5319
+# docs/facts/windows/button.toml:5322
 stroke.bottom.paint = "= role.@subtle_fill_secondary"
-# docs/facts/windows/button.toml:5340
+# docs/facts/windows/button.toml:5343
 stroke.left.paint = "= role.@subtle_fill_secondary"
 
 [[rules]]
@@ -2614,15 +2614,15 @@ when = { variants = ["flat"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4953
+# docs/facts/windows/button.toml:4956
 fill = "= role.@subtle_fill_tertiary"
-# docs/facts/windows/button.toml:5361
+# docs/facts/windows/button.toml:5364
 stroke.top.paint = "= role.@subtle_fill_tertiary"
-# docs/facts/windows/button.toml:5382
+# docs/facts/windows/button.toml:5385
 stroke.right.paint = "= role.@subtle_fill_tertiary"
-# docs/facts/windows/button.toml:5403
+# docs/facts/windows/button.toml:5406
 stroke.bottom.paint = "= role.@subtle_fill_tertiary"
-# docs/facts/windows/button.toml:5424
+# docs/facts/windows/button.toml:5427
 stroke.left.paint = "= role.@subtle_fill_tertiary"
 
 [[rules]]
@@ -2630,15 +2630,15 @@ when = { variants = ["flat"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:4974
+# docs/facts/windows/button.toml:4977
 fill = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5445
+# docs/facts/windows/button.toml:5448
 stroke.top.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5466
+# docs/facts/windows/button.toml:5469
 stroke.right.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5487
+# docs/facts/windows/button.toml:5490
 stroke.bottom.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5508
+# docs/facts/windows/button.toml:5511
 stroke.left.paint = "= role.@subtle_fill_transparent"
 
 [[rules]]
@@ -2646,7 +2646,7 @@ when = { variants = ["flat"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:4995
+# docs/facts/windows/button.toml:4998
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2654,7 +2654,7 @@ when = { variants = ["flat"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5021
+# docs/facts/windows/button.toml:5024
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2662,7 +2662,7 @@ when = { variants = ["flat"], states = ["hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:5047
+# docs/facts/windows/button.toml:5050
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2670,7 +2670,7 @@ when = { variants = ["flat"], states = ["hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5068
+# docs/facts/windows/button.toml:5071
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2678,7 +2678,7 @@ when = { variants = ["flat"], states = ["pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:5089
+# docs/facts/windows/button.toml:5092
 text.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -2686,7 +2686,7 @@ when = { variants = ["flat"], states = ["pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5110
+# docs/facts/windows/button.toml:5113
 icon.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -2694,7 +2694,7 @@ when = { variants = ["flat"], states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:5131
+# docs/facts/windows/button.toml:5134
 text.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -2702,7 +2702,7 @@ when = { variants = ["flat"], states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5152
+# docs/facts/windows/button.toml:5155
 icon.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -2710,7 +2710,7 @@ when = { variants = ["toggle"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5529
+# docs/facts/windows/button.toml:5532
 fill = "= role.@control_fill_default"
 
 [[rules]]
@@ -2718,7 +2718,7 @@ when = { variants = ["toggle"], states = ["hover"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5555
+# docs/facts/windows/button.toml:5558
 fill = "= role.@control_fill_secondary"
 
 [[rules]]
@@ -2726,7 +2726,7 @@ when = { variants = ["toggle"], states = ["pressed"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5576
+# docs/facts/windows/button.toml:5579
 fill = "= role.@control_fill_tertiary"
 
 [[rules]]
@@ -2734,7 +2734,7 @@ when = { variants = ["toggle"], states = ["disabled"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5597
+# docs/facts/windows/button.toml:5600
 fill = "= role.@control_fill_disabled"
 
 [[rules]]
@@ -2742,7 +2742,7 @@ when = { variants = ["toggle"], states = ["checked"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5618
+# docs/facts/windows/button.toml:5621
 fill = "= role.@accent_fill_default"
 
 [[rules]]
@@ -2750,7 +2750,7 @@ when = { variants = ["toggle"], states = ["checked", "hover"], not_variants = ["
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5639
+# docs/facts/windows/button.toml:5642
 fill = "= role.@accent_fill_secondary"
 
 [[rules]]
@@ -2758,7 +2758,7 @@ when = { variants = ["toggle"], states = ["checked", "pressed"], not_variants = 
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5660
+# docs/facts/windows/button.toml:5663
 fill = "= role.@accent_fill_tertiary"
 
 [[rules]]
@@ -2766,7 +2766,7 @@ when = { variants = ["toggle"], states = ["checked", "disabled"], not_variants =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5681
+# docs/facts/windows/button.toml:5684
 fill = "= role.@accent_fill_disabled"
 
 [[rules]]
@@ -2774,7 +2774,7 @@ when = { variants = ["toggle"], states = ["indeterminate"], not_variants = ["too
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5702
+# docs/facts/windows/button.toml:5705
 fill = "= role.@control_fill_default"
 
 [[rules]]
@@ -2782,7 +2782,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "hover"], not_variant
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5723
+# docs/facts/windows/button.toml:5726
 fill = "= role.@control_fill_secondary"
 
 [[rules]]
@@ -2790,7 +2790,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "pressed"], not_varia
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5744
+# docs/facts/windows/button.toml:5747
 fill = "= role.@control_fill_tertiary"
 
 [[rules]]
@@ -2798,7 +2798,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "disabled"], not_vari
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:5765
+# docs/facts/windows/button.toml:5768
 fill = "= role.@control_fill_disabled"
 
 [[rules]]
@@ -2806,7 +2806,7 @@ when = { variants = ["toggle"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:5786
+# docs/facts/windows/button.toml:5789
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2814,7 +2814,7 @@ when = { variants = ["toggle"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5812
+# docs/facts/windows/button.toml:5815
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2822,7 +2822,7 @@ when = { variants = ["toggle"], states = ["hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:5838
+# docs/facts/windows/button.toml:5841
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2830,7 +2830,7 @@ when = { variants = ["toggle"], states = ["hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5859
+# docs/facts/windows/button.toml:5862
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2838,7 +2838,7 @@ when = { variants = ["toggle"], states = ["pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:5880
+# docs/facts/windows/button.toml:5883
 text.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -2846,7 +2846,7 @@ when = { variants = ["toggle"], states = ["pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5901
+# docs/facts/windows/button.toml:5904
 icon.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -2854,7 +2854,7 @@ when = { variants = ["toggle"], states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:5922
+# docs/facts/windows/button.toml:5925
 text.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -2862,7 +2862,7 @@ when = { variants = ["toggle"], states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5943
+# docs/facts/windows/button.toml:5946
 icon.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -2870,7 +2870,7 @@ when = { variants = ["toggle"], states = ["checked"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:5964
+# docs/facts/windows/button.toml:5967
 text.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -2878,7 +2878,7 @@ when = { variants = ["toggle"], states = ["checked"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:5985
+# docs/facts/windows/button.toml:5988
 icon.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -2886,7 +2886,7 @@ when = { variants = ["toggle"], states = ["checked", "hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:6006
+# docs/facts/windows/button.toml:6009
 text.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -2894,7 +2894,7 @@ when = { variants = ["toggle"], states = ["checked", "hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:6027
+# docs/facts/windows/button.toml:6030
 icon.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -2902,7 +2902,7 @@ when = { variants = ["toggle"], states = ["checked", "pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:6048
+# docs/facts/windows/button.toml:6051
 text.fill = "= role.@text_on_accent_fill_secondary"
 
 [[rules]]
@@ -2910,7 +2910,7 @@ when = { variants = ["toggle"], states = ["checked", "pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:6069
+# docs/facts/windows/button.toml:6072
 icon.fill = "= role.@text_on_accent_fill_secondary"
 
 [[rules]]
@@ -2918,7 +2918,7 @@ when = { variants = ["toggle"], states = ["checked", "disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:6090
+# docs/facts/windows/button.toml:6093
 text.fill = "= role.@text_on_accent_fill_disabled"
 
 [[rules]]
@@ -2926,7 +2926,7 @@ when = { variants = ["toggle"], states = ["checked", "disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:6111
+# docs/facts/windows/button.toml:6114
 icon.fill = "= role.@text_on_accent_fill_disabled"
 
 [[rules]]
@@ -2934,7 +2934,7 @@ when = { variants = ["toggle"], states = ["indeterminate"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:6132
+# docs/facts/windows/button.toml:6135
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2942,7 +2942,7 @@ when = { variants = ["toggle"], states = ["indeterminate"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:6153
+# docs/facts/windows/button.toml:6156
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2950,7 +2950,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:6174
+# docs/facts/windows/button.toml:6177
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2958,7 +2958,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:6195
+# docs/facts/windows/button.toml:6198
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -2966,7 +2966,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:6216
+# docs/facts/windows/button.toml:6219
 text.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -2974,7 +2974,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:6237
+# docs/facts/windows/button.toml:6240
 icon.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -2982,7 +2982,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:6258
+# docs/facts/windows/button.toml:6261
 text.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -2990,7 +2990,7 @@ when = { variants = ["toggle"], states = ["indeterminate", "disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:6279
+# docs/facts/windows/button.toml:6282
 icon.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -2998,13 +2998,13 @@ when = { conditions = ["scheme:dark"], variants = ["toggle"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:6300
+# docs/facts/windows/button.toml:6303
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6321
+# docs/facts/windows/button.toml:6324
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6342
+# docs/facts/windows/button.toml:6345
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6363
+# docs/facts/windows/button.toml:6366
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3012,13 +3012,13 @@ when = { conditions = ["scheme:light"], variants = ["toggle"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:6384
+# docs/facts/windows/button.toml:6387
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6405
+# docs/facts/windows/button.toml:6408
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6426
+# docs/facts/windows/button.toml:6429
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6447
+# docs/facts/windows/button.toml:6450
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3026,13 +3026,13 @@ when = { conditions = ["scheme:dark"], variants = ["toggle"], states = ["hover"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:6468
+# docs/facts/windows/button.toml:6471
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6489
+# docs/facts/windows/button.toml:6492
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6510
+# docs/facts/windows/button.toml:6513
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6531
+# docs/facts/windows/button.toml:6534
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3040,13 +3040,13 @@ when = { conditions = ["scheme:light"], variants = ["toggle"], states = ["hover"
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:6552
+# docs/facts/windows/button.toml:6555
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6573
+# docs/facts/windows/button.toml:6576
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6594
+# docs/facts/windows/button.toml:6597
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6615
+# docs/facts/windows/button.toml:6618
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3054,13 +3054,13 @@ when = { variants = ["toggle"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:6636
+# docs/facts/windows/button.toml:6639
 stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:6657
+# docs/facts/windows/button.toml:6660
 stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:6678
+# docs/facts/windows/button.toml:6681
 stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:6699
+# docs/facts/windows/button.toml:6702
 stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
@@ -3068,13 +3068,13 @@ when = { variants = ["toggle"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:6720
+# docs/facts/windows/button.toml:6723
 stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:6741
+# docs/facts/windows/button.toml:6744
 stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:6762
+# docs/facts/windows/button.toml:6765
 stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:6783
+# docs/facts/windows/button.toml:6786
 stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
@@ -3082,13 +3082,13 @@ when = { variants = ["toggle"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:6804
+# docs/facts/windows/button.toml:6807
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6835
+# docs/facts/windows/button.toml:6838
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6866
+# docs/facts/windows/button.toml:6869
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6897
+# docs/facts/windows/button.toml:6900
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3096,13 +3096,13 @@ when = { variants = ["toggle"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:6928
+# docs/facts/windows/button.toml:6931
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6959
+# docs/facts/windows/button.toml:6962
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:6990
+# docs/facts/windows/button.toml:6993
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7021
+# docs/facts/windows/button.toml:7024
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3110,13 +3110,13 @@ when = { variants = ["toggle"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7052
+# docs/facts/windows/button.toml:7055
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:7073
+# docs/facts/windows/button.toml:7076
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:7094
+# docs/facts/windows/button.toml:7097
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:7115
+# docs/facts/windows/button.toml:7118
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3124,13 +3124,13 @@ when = { variants = ["toggle"], states = ["checked", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7136
+# docs/facts/windows/button.toml:7139
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:7157
+# docs/facts/windows/button.toml:7160
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:7178
+# docs/facts/windows/button.toml:7181
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:7199
+# docs/facts/windows/button.toml:7202
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3138,13 +3138,13 @@ when = { conditions = ["scheme:dark"], variants = ["toggle"], states = ["indeter
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7220
+# docs/facts/windows/button.toml:7223
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7241
+# docs/facts/windows/button.toml:7244
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7262
+# docs/facts/windows/button.toml:7265
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7283
+# docs/facts/windows/button.toml:7286
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3152,13 +3152,13 @@ when = { conditions = ["scheme:light"], variants = ["toggle"], states = ["indete
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7304
+# docs/facts/windows/button.toml:7307
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7325
+# docs/facts/windows/button.toml:7328
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7346
+# docs/facts/windows/button.toml:7349
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7367
+# docs/facts/windows/button.toml:7370
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3166,13 +3166,13 @@ when = { conditions = ["scheme:dark"], variants = ["toggle"], states = ["indeter
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7388
+# docs/facts/windows/button.toml:7391
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7409
+# docs/facts/windows/button.toml:7412
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7430
+# docs/facts/windows/button.toml:7433
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7451
+# docs/facts/windows/button.toml:7454
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3180,13 +3180,13 @@ when = { conditions = ["scheme:light"], variants = ["toggle"], states = ["indete
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7472
+# docs/facts/windows/button.toml:7475
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7493
+# docs/facts/windows/button.toml:7496
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7514
+# docs/facts/windows/button.toml:7517
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7535
+# docs/facts/windows/button.toml:7538
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3194,13 +3194,13 @@ when = { variants = ["toggle"], states = ["indeterminate", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7556
+# docs/facts/windows/button.toml:7559
 stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7577
+# docs/facts/windows/button.toml:7580
 stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7598
+# docs/facts/windows/button.toml:7601
 stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7619
+# docs/facts/windows/button.toml:7622
 stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
@@ -3208,13 +3208,13 @@ when = { variants = ["toggle"], states = ["indeterminate", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7640
+# docs/facts/windows/button.toml:7643
 stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7661
+# docs/facts/windows/button.toml:7664
 stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7682
+# docs/facts/windows/button.toml:7685
 stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7703
+# docs/facts/windows/button.toml:7706
 stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
@@ -3222,7 +3222,7 @@ when = { variants = ["@repeat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7724
+# docs/facts/windows/button.toml:7727
 fill = "= role.@control_fill_default"
 
 [[rules]]
@@ -3230,7 +3230,7 @@ when = { variants = ["@repeat"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7750
+# docs/facts/windows/button.toml:7753
 fill = "= role.@control_fill_secondary"
 
 [[rules]]
@@ -3238,7 +3238,7 @@ when = { variants = ["@repeat"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7771
+# docs/facts/windows/button.toml:7774
 fill = "= role.@control_fill_tertiary"
 
 [[rules]]
@@ -3246,7 +3246,7 @@ when = { variants = ["@repeat"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7792
+# docs/facts/windows/button.toml:7795
 fill = "= role.@control_fill_disabled"
 
 [[rules]]
@@ -3254,7 +3254,7 @@ when = { variants = ["@repeat"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:7813
+# docs/facts/windows/button.toml:7816
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3262,7 +3262,7 @@ when = { variants = ["@repeat"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:7839
+# docs/facts/windows/button.toml:7842
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3270,7 +3270,7 @@ when = { variants = ["@repeat"], states = ["hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:7865
+# docs/facts/windows/button.toml:7868
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3278,7 +3278,7 @@ when = { variants = ["@repeat"], states = ["hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:7886
+# docs/facts/windows/button.toml:7889
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3286,7 +3286,7 @@ when = { variants = ["@repeat"], states = ["pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:7907
+# docs/facts/windows/button.toml:7910
 text.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -3294,7 +3294,7 @@ when = { variants = ["@repeat"], states = ["pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:7928
+# docs/facts/windows/button.toml:7931
 icon.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -3302,7 +3302,7 @@ when = { variants = ["@repeat"], states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:7949
+# docs/facts/windows/button.toml:7952
 text.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -3310,7 +3310,7 @@ when = { variants = ["@repeat"], states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:7970
+# docs/facts/windows/button.toml:7973
 icon.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -3318,13 +3318,13 @@ when = { conditions = ["scheme:dark"], variants = ["@repeat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:7991
+# docs/facts/windows/button.toml:7994
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8012
+# docs/facts/windows/button.toml:8015
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8033
+# docs/facts/windows/button.toml:8036
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8054
+# docs/facts/windows/button.toml:8057
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3332,13 +3332,13 @@ when = { conditions = ["scheme:light"], variants = ["@repeat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8075
+# docs/facts/windows/button.toml:8078
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8096
+# docs/facts/windows/button.toml:8099
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8117
+# docs/facts/windows/button.toml:8120
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8138
+# docs/facts/windows/button.toml:8141
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3346,13 +3346,13 @@ when = { conditions = ["scheme:dark"], variants = ["@repeat"], states = ["hover"
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8159
+# docs/facts/windows/button.toml:8162
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8180
+# docs/facts/windows/button.toml:8183
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8201
+# docs/facts/windows/button.toml:8204
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8222
+# docs/facts/windows/button.toml:8225
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3360,13 +3360,13 @@ when = { conditions = ["scheme:light"], variants = ["@repeat"], states = ["hover
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8243
+# docs/facts/windows/button.toml:8246
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8264
+# docs/facts/windows/button.toml:8267
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8285
+# docs/facts/windows/button.toml:8288
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8306
+# docs/facts/windows/button.toml:8309
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3374,13 +3374,13 @@ when = { variants = ["@repeat"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8327
+# docs/facts/windows/button.toml:8330
 stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8348
+# docs/facts/windows/button.toml:8351
 stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8369
+# docs/facts/windows/button.toml:8372
 stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8390
+# docs/facts/windows/button.toml:8393
 stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
@@ -3388,13 +3388,13 @@ when = { variants = ["@repeat"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8411
+# docs/facts/windows/button.toml:8414
 stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8432
+# docs/facts/windows/button.toml:8435
 stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8453
+# docs/facts/windows/button.toml:8456
 stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8474
+# docs/facts/windows/button.toml:8477
 stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
@@ -3402,7 +3402,7 @@ when = { variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8495
+# docs/facts/windows/button.toml:8498
 fill = "= role.@subtle_fill_transparent"
 
 [[rules]]
@@ -3410,7 +3410,7 @@ when = { variants = ["tool"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8521
+# docs/facts/windows/button.toml:8524
 fill = "= role.@subtle_fill_secondary"
 
 [[rules]]
@@ -3418,7 +3418,7 @@ when = { variants = ["tool"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8542
+# docs/facts/windows/button.toml:8545
 fill = "= role.@subtle_fill_tertiary"
 
 [[rules]]
@@ -3426,7 +3426,7 @@ when = { variants = ["tool"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8563
+# docs/facts/windows/button.toml:8566
 fill = "= role.@subtle_fill_disabled"
 
 [[rules]]
@@ -3434,23 +3434,23 @@ when = { variants = ["tool"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:8584
+# docs/facts/windows/button.toml:8587
 text.fill = "= role.@text_fill_primary"
-# docs/facts/windows/button.toml:18864
+# docs/facts/windows/button.toml:18867
 text.font.family = "Segoe UI Variable"
-# docs/facts/windows/button.toml:18900
+# docs/facts/windows/button.toml:18903
 text.font.size_px = 12
-# docs/facts/windows/button.toml:18916
+# docs/facts/windows/button.toml:18919
 text.font.weight = 400
-# docs/facts/windows/button.toml:18937
+# docs/facts/windows/button.toml:18940
 text.font.style = "normal"
-# docs/facts/windows/button.toml:18948
+# docs/facts/windows/button.toml:18951
 text.letter_spacing_px = 0
-# docs/facts/windows/button.toml:18959
+# docs/facts/windows/button.toml:18962
 text.line_height = "auto"
-# docs/facts/windows/button.toml:18970
+# docs/facts/windows/button.toml:18973
 text.elision = "none"
-# docs/facts/windows/button.toml:18981
+# docs/facts/windows/button.toml:18984
 text.max_lines = "none"
 
 [[rules]]
@@ -3458,7 +3458,7 @@ when = { variants = ["tool"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:8610
+# docs/facts/windows/button.toml:8613
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3466,7 +3466,7 @@ when = { variants = ["tool"], states = ["hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:8636
+# docs/facts/windows/button.toml:8639
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3474,7 +3474,7 @@ when = { variants = ["tool"], states = ["hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:8657
+# docs/facts/windows/button.toml:8660
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3482,7 +3482,7 @@ when = { variants = ["tool"], states = ["pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:8678
+# docs/facts/windows/button.toml:8681
 text.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -3490,7 +3490,7 @@ when = { variants = ["tool"], states = ["pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:8699
+# docs/facts/windows/button.toml:8702
 icon.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -3498,7 +3498,7 @@ when = { variants = ["tool"], states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:8720
+# docs/facts/windows/button.toml:8723
 text.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -3506,7 +3506,7 @@ when = { variants = ["tool"], states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:8741
+# docs/facts/windows/button.toml:8744
 icon.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -3514,13 +3514,13 @@ when = { variants = ["tool"], not_states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8762
+# docs/facts/windows/button.toml:8765
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:8788
+# docs/facts/windows/button.toml:8791
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:8814
+# docs/facts/windows/button.toml:8817
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:8840
+# docs/facts/windows/button.toml:8843
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3528,13 +3528,13 @@ when = { variants = ["tool"], states = ["hover"], not_states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8866
+# docs/facts/windows/button.toml:8869
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:8887
+# docs/facts/windows/button.toml:8890
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:8908
+# docs/facts/windows/button.toml:8911
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:8929
+# docs/facts/windows/button.toml:8932
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3542,13 +3542,13 @@ when = { variants = ["tool"], states = ["pressed"], not_states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:8950
+# docs/facts/windows/button.toml:8953
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:8971
+# docs/facts/windows/button.toml:8974
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:8992
+# docs/facts/windows/button.toml:8995
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9013
+# docs/facts/windows/button.toml:9016
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3556,13 +3556,13 @@ when = { variants = ["tool"], states = ["disabled"], not_states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:9034
+# docs/facts/windows/button.toml:9037
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9055
+# docs/facts/windows/button.toml:9058
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9076
+# docs/facts/windows/button.toml:9079
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9097
+# docs/facts/windows/button.toml:9100
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3570,7 +3570,7 @@ when = { variants = ["tool", "toggle"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:9118
+# docs/facts/windows/button.toml:9121
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3578,7 +3578,7 @@ when = { variants = ["tool", "toggle"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:9144
+# docs/facts/windows/button.toml:9147
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3586,7 +3586,7 @@ when = { variants = ["tool", "toggle"], states = ["hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:9170
+# docs/facts/windows/button.toml:9173
 text.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3594,7 +3594,7 @@ when = { variants = ["tool", "toggle"], states = ["hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:9191
+# docs/facts/windows/button.toml:9194
 icon.fill = "= role.@text_fill_primary"
 
 [[rules]]
@@ -3602,7 +3602,7 @@ when = { variants = ["tool", "toggle"], states = ["pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:9212
+# docs/facts/windows/button.toml:9215
 text.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -3610,7 +3610,7 @@ when = { variants = ["tool", "toggle"], states = ["pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:9233
+# docs/facts/windows/button.toml:9236
 icon.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -3618,7 +3618,7 @@ when = { variants = ["tool", "toggle"], states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:9254
+# docs/facts/windows/button.toml:9257
 text.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -3626,7 +3626,7 @@ when = { variants = ["tool", "toggle"], states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:9275
+# docs/facts/windows/button.toml:9278
 icon.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -3634,7 +3634,7 @@ when = { variants = ["tool", "toggle"], states = ["checked"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:9296
+# docs/facts/windows/button.toml:9299
 text.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -3642,7 +3642,7 @@ when = { variants = ["tool", "toggle"], states = ["checked"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:9317
+# docs/facts/windows/button.toml:9320
 icon.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -3650,7 +3650,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:9338
+# docs/facts/windows/button.toml:9341
 text.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -3658,7 +3658,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:9359
+# docs/facts/windows/button.toml:9362
 icon.fill = "= role.@text_on_accent_fill_primary"
 
 [[rules]]
@@ -3666,7 +3666,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:9380
+# docs/facts/windows/button.toml:9383
 text.fill = "= role.@text_on_accent_fill_secondary"
 
 [[rules]]
@@ -3674,7 +3674,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:9401
+# docs/facts/windows/button.toml:9404
 icon.fill = "= role.@text_on_accent_fill_secondary"
 
 [[rules]]
@@ -3682,7 +3682,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:9422
+# docs/facts/windows/button.toml:9425
 text.fill = "= role.@text_on_accent_fill_disabled"
 
 [[rules]]
@@ -3690,7 +3690,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:9443
+# docs/facts/windows/button.toml:9446
 icon.fill = "= role.@text_on_accent_fill_disabled"
 
 [[rules]]
@@ -3698,13 +3698,13 @@ when = { variants = ["tool", "toggle"], not_states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:9464
+# docs/facts/windows/button.toml:9467
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9490
+# docs/facts/windows/button.toml:9493
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9516
+# docs/facts/windows/button.toml:9519
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9542
+# docs/facts/windows/button.toml:9545
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3712,13 +3712,13 @@ when = { variants = ["tool", "toggle"], states = ["hover"], not_states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:9568
+# docs/facts/windows/button.toml:9571
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9589
+# docs/facts/windows/button.toml:9592
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9610
+# docs/facts/windows/button.toml:9613
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9631
+# docs/facts/windows/button.toml:9634
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3726,13 +3726,13 @@ when = { variants = ["tool", "toggle"], states = ["pressed"], not_states = ["che
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:9652
+# docs/facts/windows/button.toml:9655
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9673
+# docs/facts/windows/button.toml:9676
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9694
+# docs/facts/windows/button.toml:9697
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9715
+# docs/facts/windows/button.toml:9718
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3740,13 +3740,13 @@ when = { variants = ["tool", "toggle"], states = ["disabled"], not_states = ["ch
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:9736
+# docs/facts/windows/button.toml:9739
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9757
+# docs/facts/windows/button.toml:9760
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9778
+# docs/facts/windows/button.toml:9781
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:9799
+# docs/facts/windows/button.toml:9802
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3754,13 +3754,13 @@ when = { variants = ["tool", "toggle"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:9820
+# docs/facts/windows/button.toml:9823
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:9851
+# docs/facts/windows/button.toml:9854
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:9882
+# docs/facts/windows/button.toml:9885
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:9913
+# docs/facts/windows/button.toml:9916
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3768,13 +3768,13 @@ when = { variants = ["tool", "toggle"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:9944
+# docs/facts/windows/button.toml:9947
 stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:9975
+# docs/facts/windows/button.toml:9978
 stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:10006
+# docs/facts/windows/button.toml:10009
 stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:10037
+# docs/facts/windows/button.toml:10040
 stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_on_accent_secondary" }, { position = 1.0, color = "= role.@control_stroke_on_accent_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
 
 [[rules]]
@@ -3782,13 +3782,13 @@ when = { variants = ["tool", "toggle"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:10068
+# docs/facts/windows/button.toml:10071
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:10089
+# docs/facts/windows/button.toml:10092
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:10110
+# docs/facts/windows/button.toml:10113
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:10131
+# docs/facts/windows/button.toml:10134
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3796,13 +3796,13 @@ when = { variants = ["tool", "toggle"], states = ["checked", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:10152
+# docs/facts/windows/button.toml:10155
 stroke.top.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:10173
+# docs/facts/windows/button.toml:10176
 stroke.right.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:10194
+# docs/facts/windows/button.toml:10197
 stroke.bottom.paint = "= role.@control_fill_transparent"
-# docs/facts/windows/button.toml:10215
+# docs/facts/windows/button.toml:10218
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
@@ -3810,7 +3810,7 @@ when = { variants = ["menu"], states = ["hover"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:10258
+# docs/facts/windows/button.toml:10261
 glyph.fill = "= role.@text_fill_tertiary"
 
 [[rules]]
@@ -3818,7 +3818,7 @@ when = { variants = ["menu"], states = ["pressed"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:10279
+# docs/facts/windows/button.toml:10282
 glyph.fill = "= role.@text_fill_tertiary"
 
 [[rules]]
@@ -3826,7 +3826,7 @@ when = { variants = ["menu"], states = ["disabled"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:10300
+# docs/facts/windows/button.toml:10303
 glyph.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -3834,23 +3834,23 @@ when = { variants = ["menu", "tool"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:10322
+# docs/facts/windows/button.toml:10325
 glyph.fill = "= role.@text_fill_secondary"
-# docs/facts/windows/button.toml:16681
+# docs/facts/windows/button.toml:16684
 glyph.size_px = 8
-# docs/facts/windows/button.toml:16707
+# docs/facts/windows/button.toml:16710
 glyph.mirroring = "always"
-# docs/facts/windows/button.toml:17230
+# docs/facts/windows/button.toml:17233
 transform.scale_x = 1
-# docs/facts/windows/button.toml:17257
+# docs/facts/windows/button.toml:17260
 transform.scale_y = 1
-# docs/facts/windows/button.toml:17284
+# docs/facts/windows/button.toml:17287
 transform.rotate_deg = 0
-# docs/facts/windows/button.toml:17301
+# docs/facts/windows/button.toml:17304
 transform.translate_x_px = 0
-# docs/facts/windows/button.toml:17318
+# docs/facts/windows/button.toml:17321
 transform.translate_y_px = 0
-# docs/facts/windows/button.toml:17335
+# docs/facts/windows/button.toml:17338
 transform.origin = [0, 0]
 
 [[rules]]
@@ -3858,7 +3858,7 @@ when = { variants = ["menu", "tool"], states = ["hover"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:10348
+# docs/facts/windows/button.toml:10351
 glyph.fill = "= role.@text_fill_secondary"
 
 [[rules]]
@@ -3866,7 +3866,7 @@ when = { variants = ["menu", "tool"], states = ["pressed"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:10374
+# docs/facts/windows/button.toml:10377
 glyph.fill = "= role.@text_fill_tertiary"
 
 [[rules]]
@@ -3874,7 +3874,7 @@ when = { variants = ["menu", "tool"], states = ["disabled"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:10400
+# docs/facts/windows/button.toml:10403
 glyph.fill = "= role.@text_fill_disabled"
 
 [[rules]]
@@ -3882,7 +3882,7 @@ when = { conditions = ["contrast_high"], not_variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:11539
+# docs/facts/windows/button.toml:11542
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -3890,7 +3890,7 @@ when = { conditions = ["contrast_high"], states = ["hover"], not_variants = ["to
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:11555
+# docs/facts/windows/button.toml:11558
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -3898,7 +3898,7 @@ when = { conditions = ["contrast_high"], states = ["pressed"], not_variants = ["
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:11576
+# docs/facts/windows/button.toml:11579
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -3906,7 +3906,7 @@ when = { conditions = ["contrast_high"], states = ["disabled"], not_variants = [
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:11597
+# docs/facts/windows/button.toml:11600
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -3914,7 +3914,7 @@ when = { conditions = ["contrast_high"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:11613
+# docs/facts/windows/button.toml:11616
 text.fill = "= role.@system_button_text"
 
 [[rules]]
@@ -3922,7 +3922,7 @@ when = { conditions = ["contrast_high"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:11634
+# docs/facts/windows/button.toml:11637
 icon.fill = "= role.@system_button_text"
 
 [[rules]]
@@ -3930,7 +3930,7 @@ when = { conditions = ["contrast_high"], states = ["hover"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:11655
+# docs/facts/windows/button.toml:11658
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -3938,7 +3938,7 @@ when = { conditions = ["contrast_high"], states = ["hover"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:11671
+# docs/facts/windows/button.toml:11674
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -3946,7 +3946,7 @@ when = { conditions = ["contrast_high"], states = ["pressed"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:11687
+# docs/facts/windows/button.toml:11690
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -3954,7 +3954,7 @@ when = { conditions = ["contrast_high"], states = ["pressed"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:11703
+# docs/facts/windows/button.toml:11706
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -3962,7 +3962,7 @@ when = { conditions = ["contrast_high"], states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:11719
+# docs/facts/windows/button.toml:11722
 text.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -3970,7 +3970,7 @@ when = { conditions = ["contrast_high"], states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:11735
+# docs/facts/windows/button.toml:11738
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -3978,13 +3978,13 @@ when = { conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:11751
+# docs/facts/windows/button.toml:11754
 stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:11767
+# docs/facts/windows/button.toml:11770
 stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:11783
+# docs/facts/windows/button.toml:11786
 stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:11799
+# docs/facts/windows/button.toml:11802
 stroke.left.paint = "= role.@system_control_foreground_transparent"
 
 [[rules]]
@@ -3992,13 +3992,13 @@ when = { conditions = ["contrast_high"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:11815
+# docs/facts/windows/button.toml:11818
 stroke.top.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:11836
+# docs/facts/windows/button.toml:11839
 stroke.right.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:11857
+# docs/facts/windows/button.toml:11860
 stroke.bottom.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:11878
+# docs/facts/windows/button.toml:11881
 stroke.left.paint = "= role.@system_highlight"
 
 [[rules]]
@@ -4006,13 +4006,13 @@ when = { conditions = ["contrast_high"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:11899
+# docs/facts/windows/button.toml:11902
 stroke.top.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:11920
+# docs/facts/windows/button.toml:11923
 stroke.right.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:11941
+# docs/facts/windows/button.toml:11944
 stroke.bottom.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:11962
+# docs/facts/windows/button.toml:11965
 stroke.left.paint = "= role.@system_highlight_text"
 
 [[rules]]
@@ -4020,13 +4020,13 @@ when = { conditions = ["contrast_high"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:11983
+# docs/facts/windows/button.toml:11986
 stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:11999
+# docs/facts/windows/button.toml:12002
 stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12015
+# docs/facts/windows/button.toml:12018
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12031
+# docs/facts/windows/button.toml:12034
 stroke.left.paint = "= role.@system_control_disabled_transparent"
 
 [[rules]]
@@ -4034,15 +4034,15 @@ when = { conditions = ["contrast_high"], variants = ["primary"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:12047
+# docs/facts/windows/button.toml:12050
 fill = "= role.@system_control_highlight_accent"
-# docs/facts/windows/button.toml:12239
+# docs/facts/windows/button.toml:12242
 stroke.top.paint = "= role.@system_control_highlight_accent"
-# docs/facts/windows/button.toml:12255
+# docs/facts/windows/button.toml:12258
 stroke.right.paint = "= role.@system_control_highlight_accent"
-# docs/facts/windows/button.toml:12271
+# docs/facts/windows/button.toml:12274
 stroke.bottom.paint = "= role.@system_control_highlight_accent"
-# docs/facts/windows/button.toml:12287
+# docs/facts/windows/button.toml:12290
 stroke.left.paint = "= role.@system_control_highlight_accent"
 
 [[rules]]
@@ -4050,15 +4050,15 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["hove
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:12063
+# docs/facts/windows/button.toml:12066
 fill = "= role.@system_control_foreground_accent"
-# docs/facts/windows/button.toml:12303
+# docs/facts/windows/button.toml:12306
 stroke.top.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:12319
+# docs/facts/windows/button.toml:12322
 stroke.right.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:12335
+# docs/facts/windows/button.toml:12338
 stroke.bottom.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:12351
+# docs/facts/windows/button.toml:12354
 stroke.left.paint = "= role.@system_control_highlight_base_medium_low"
 
 [[rules]]
@@ -4066,15 +4066,15 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["pres
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:12079
+# docs/facts/windows/button.toml:12082
 fill = "= role.@system_control_background_base_medium_low"
-# docs/facts/windows/button.toml:12367
+# docs/facts/windows/button.toml:12370
 stroke.top.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:12383
+# docs/facts/windows/button.toml:12386
 stroke.right.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:12399
+# docs/facts/windows/button.toml:12402
 stroke.bottom.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:12415
+# docs/facts/windows/button.toml:12418
 stroke.left.paint = "= role.@system_control_highlight_transparent"
 
 [[rules]]
@@ -4082,15 +4082,15 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["disa
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:12095
+# docs/facts/windows/button.toml:12098
 fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:12431
+# docs/facts/windows/button.toml:12434
 stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12447
+# docs/facts/windows/button.toml:12450
 stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12463
+# docs/facts/windows/button.toml:12466
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12479
+# docs/facts/windows/button.toml:12482
 stroke.left.paint = "= role.@system_control_disabled_transparent"
 
 [[rules]]
@@ -4098,7 +4098,7 @@ when = { conditions = ["contrast_high"], variants = ["primary"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:12111
+# docs/facts/windows/button.toml:12114
 text.fill = "= role.@system_control_highlight_alt_accent"
 
 [[rules]]
@@ -4106,7 +4106,7 @@ when = { conditions = ["contrast_high"], variants = ["primary"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:12127
+# docs/facts/windows/button.toml:12130
 icon.fill = "= role.@system_control_highlight_alt_accent"
 
 [[rules]]
@@ -4114,7 +4114,7 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["hove
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:12143
+# docs/facts/windows/button.toml:12146
 text.fill = "= role.@system_control_background_chrome_white"
 
 [[rules]]
@@ -4122,7 +4122,7 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["hove
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:12159
+# docs/facts/windows/button.toml:12162
 icon.fill = "= role.@system_control_background_chrome_white"
 
 [[rules]]
@@ -4130,7 +4130,7 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["pres
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:12175
+# docs/facts/windows/button.toml:12178
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4138,7 +4138,7 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:12191
+# docs/facts/windows/button.toml:12194
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4146,7 +4146,7 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["disa
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:12207
+# docs/facts/windows/button.toml:12210
 text.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4154,7 +4154,7 @@ when = { conditions = ["contrast_high"], variants = ["primary"], states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:12223
+# docs/facts/windows/button.toml:12226
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4162,15 +4162,15 @@ when = { conditions = ["contrast_high"], variants = ["flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:12495
+# docs/facts/windows/button.toml:12498
 fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:12707
+# docs/facts/windows/button.toml:12710
 stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:12723
+# docs/facts/windows/button.toml:12726
 stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:12739
+# docs/facts/windows/button.toml:12742
 stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:12755
+# docs/facts/windows/button.toml:12758
 stroke.left.paint = "= role.@system_control_foreground_transparent"
 
 [[rules]]
@@ -4178,15 +4178,15 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:12511
+# docs/facts/windows/button.toml:12514
 fill = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12771
+# docs/facts/windows/button.toml:12774
 stroke.top.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:12792
+# docs/facts/windows/button.toml:12795
 stroke.right.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:12813
+# docs/facts/windows/button.toml:12816
 stroke.bottom.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:12834
+# docs/facts/windows/button.toml:12837
 stroke.left.paint = "= role.@system_highlight"
 
 [[rules]]
@@ -4194,15 +4194,15 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:12532
+# docs/facts/windows/button.toml:12535
 fill = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12855
+# docs/facts/windows/button.toml:12858
 stroke.top.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12876
+# docs/facts/windows/button.toml:12879
 stroke.right.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12897
+# docs/facts/windows/button.toml:12900
 stroke.bottom.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12918
+# docs/facts/windows/button.toml:12921
 stroke.left.paint = "= role.@system_highlight_text"
 
 [[rules]]
@@ -4210,15 +4210,15 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["disable
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:12553
+# docs/facts/windows/button.toml:12556
 fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:12939
+# docs/facts/windows/button.toml:12942
 stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12955
+# docs/facts/windows/button.toml:12958
 stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12971
+# docs/facts/windows/button.toml:12974
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12987
+# docs/facts/windows/button.toml:12990
 stroke.left.paint = "= role.@system_control_disabled_transparent"
 
 [[rules]]
@@ -4226,7 +4226,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:12569
+# docs/facts/windows/button.toml:12572
 text.fill = "= role.@system_button_text"
 
 [[rules]]
@@ -4234,7 +4234,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:12590
+# docs/facts/windows/button.toml:12593
 icon.fill = "= role.@system_button_text"
 
 [[rules]]
@@ -4242,7 +4242,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"]
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:12611
+# docs/facts/windows/button.toml:12614
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4250,7 +4250,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"]
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:12627
+# docs/facts/windows/button.toml:12630
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4258,7 +4258,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:12643
+# docs/facts/windows/button.toml:12646
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4266,7 +4266,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:12659
+# docs/facts/windows/button.toml:12662
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4274,7 +4274,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["disable
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:12675
+# docs/facts/windows/button.toml:12678
 text.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4282,7 +4282,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["disable
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:12691
+# docs/facts/windows/button.toml:12694
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4290,7 +4290,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], not_variants = [
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13003
+# docs/facts/windows/button.toml:13006
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -4298,7 +4298,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["hover
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13019
+# docs/facts/windows/button.toml:13022
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -4306,7 +4306,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["press
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13040
+# docs/facts/windows/button.toml:13043
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -4314,7 +4314,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["disab
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13061
+# docs/facts/windows/button.toml:13064
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -4322,7 +4322,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13077
+# docs/facts/windows/button.toml:13080
 fill = "= role.@system_control_highlight_accent"
 
 [[rules]]
@@ -4330,7 +4330,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13093
+# docs/facts/windows/button.toml:13096
 fill = "= role.@system_button_text"
 
 [[rules]]
@@ -4338,7 +4338,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13114
+# docs/facts/windows/button.toml:13117
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -4346,7 +4346,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13135
+# docs/facts/windows/button.toml:13138
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -4354,7 +4354,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13151
+# docs/facts/windows/button.toml:13154
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -4362,7 +4362,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13167
+# docs/facts/windows/button.toml:13170
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -4370,7 +4370,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13183
+# docs/facts/windows/button.toml:13186
 fill = "= role.@system_control_background_base_medium_low"
 
 [[rules]]
@@ -4378,7 +4378,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13199
+# docs/facts/windows/button.toml:13202
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -4386,7 +4386,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13215
+# docs/facts/windows/button.toml:13218
 text.fill = "= role.@system_control_foreground_base_high"
 
 [[rules]]
@@ -4394,7 +4394,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13231
+# docs/facts/windows/button.toml:13234
 icon.fill = "= role.@system_control_foreground_base_high"
 
 [[rules]]
@@ -4402,7 +4402,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["hover
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13247
+# docs/facts/windows/button.toml:13250
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4410,7 +4410,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["hover
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13263
+# docs/facts/windows/button.toml:13266
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4418,7 +4418,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["press
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13279
+# docs/facts/windows/button.toml:13282
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4426,7 +4426,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["press
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13295
+# docs/facts/windows/button.toml:13298
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4434,7 +4434,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["disab
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13311
+# docs/facts/windows/button.toml:13314
 text.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4442,7 +4442,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["disab
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13327
+# docs/facts/windows/button.toml:13330
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4450,7 +4450,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13343
+# docs/facts/windows/button.toml:13346
 text.fill = "= role.@system_control_highlight_alt_chrome_white"
 
 [[rules]]
@@ -4458,7 +4458,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13359
+# docs/facts/windows/button.toml:13362
 icon.fill = "= role.@system_control_highlight_alt_chrome_white"
 
 [[rules]]
@@ -4466,7 +4466,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13375
+# docs/facts/windows/button.toml:13378
 text.fill = "= role.@system_button_face"
 
 [[rules]]
@@ -4474,7 +4474,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13396
+# docs/facts/windows/button.toml:13399
 icon.fill = "= role.@system_button_face"
 
 [[rules]]
@@ -4482,7 +4482,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13417
+# docs/facts/windows/button.toml:13420
 text.fill = "= role.@system_highlight"
 
 [[rules]]
@@ -4490,7 +4490,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13438
+# docs/facts/windows/button.toml:13441
 icon.fill = "= role.@system_highlight"
 
 [[rules]]
@@ -4498,7 +4498,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13459
+# docs/facts/windows/button.toml:13462
 text.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4506,7 +4506,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13475
+# docs/facts/windows/button.toml:13478
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4514,7 +4514,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13491
+# docs/facts/windows/button.toml:13494
 text.fill = "= role.@system_control_foreground_base_high"
 
 [[rules]]
@@ -4522,7 +4522,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13507
+# docs/facts/windows/button.toml:13510
 icon.fill = "= role.@system_control_foreground_base_high"
 
 [[rules]]
@@ -4530,7 +4530,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13523
+# docs/facts/windows/button.toml:13526
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4538,7 +4538,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13539
+# docs/facts/windows/button.toml:13542
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4546,7 +4546,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13555
+# docs/facts/windows/button.toml:13558
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4554,7 +4554,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13571
+# docs/facts/windows/button.toml:13574
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4562,7 +4562,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:13587
+# docs/facts/windows/button.toml:13590
 text.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4570,7 +4570,7 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:13603
+# docs/facts/windows/button.toml:13606
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4578,13 +4578,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13619
+# docs/facts/windows/button.toml:13622
 stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:13635
+# docs/facts/windows/button.toml:13638
 stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:13651
+# docs/facts/windows/button.toml:13654
 stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:13667
+# docs/facts/windows/button.toml:13670
 stroke.left.paint = "= role.@system_control_foreground_transparent"
 
 [[rules]]
@@ -4592,13 +4592,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["hover
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13683
+# docs/facts/windows/button.toml:13686
 stroke.top.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:13699
+# docs/facts/windows/button.toml:13702
 stroke.right.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:13715
+# docs/facts/windows/button.toml:13718
 stroke.bottom.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:13731
+# docs/facts/windows/button.toml:13734
 stroke.left.paint = "= role.@system_control_highlight_base_medium_low"
 
 [[rules]]
@@ -4606,13 +4606,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["press
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13747
+# docs/facts/windows/button.toml:13750
 stroke.top.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:13768
+# docs/facts/windows/button.toml:13771
 stroke.right.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:13789
+# docs/facts/windows/button.toml:13792
 stroke.bottom.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:13810
+# docs/facts/windows/button.toml:13813
 stroke.left.paint = "= role.@system_highlight_text"
 
 [[rules]]
@@ -4620,13 +4620,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["disab
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13831
+# docs/facts/windows/button.toml:13834
 stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:13847
+# docs/facts/windows/button.toml:13850
 stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:13863
+# docs/facts/windows/button.toml:13866
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:13879
+# docs/facts/windows/button.toml:13882
 stroke.left.paint = "= role.@system_control_disabled_transparent"
 
 [[rules]]
@@ -4634,13 +4634,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13895
+# docs/facts/windows/button.toml:13898
 stroke.top.paint = "= role.@system_control_highlight_alt_transparent"
-# docs/facts/windows/button.toml:13911
+# docs/facts/windows/button.toml:13914
 stroke.right.paint = "= role.@system_control_highlight_alt_transparent"
-# docs/facts/windows/button.toml:13927
+# docs/facts/windows/button.toml:13930
 stroke.bottom.paint = "= role.@system_control_highlight_alt_transparent"
-# docs/facts/windows/button.toml:13943
+# docs/facts/windows/button.toml:13946
 stroke.left.paint = "= role.@system_control_highlight_alt_transparent"
 
 [[rules]]
@@ -4648,13 +4648,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:13959
+# docs/facts/windows/button.toml:13962
 stroke.top.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:13980
+# docs/facts/windows/button.toml:13983
 stroke.right.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:14001
+# docs/facts/windows/button.toml:14004
 stroke.bottom.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:14022
+# docs/facts/windows/button.toml:14025
 stroke.left.paint = "= role.@system_button_text"
 
 [[rules]]
@@ -4662,13 +4662,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14043
+# docs/facts/windows/button.toml:14046
 stroke.top.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:14064
+# docs/facts/windows/button.toml:14067
 stroke.right.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:14085
+# docs/facts/windows/button.toml:14088
 stroke.bottom.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:14106
+# docs/facts/windows/button.toml:14109
 stroke.left.paint = "= role.@system_highlight_text"
 
 [[rules]]
@@ -4676,13 +4676,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14127
+# docs/facts/windows/button.toml:14130
 stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14143
+# docs/facts/windows/button.toml:14146
 stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14159
+# docs/facts/windows/button.toml:14162
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14175
+# docs/facts/windows/button.toml:14178
 stroke.left.paint = "= role.@system_control_disabled_transparent"
 
 [[rules]]
@@ -4690,13 +4690,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14191
+# docs/facts/windows/button.toml:14194
 stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14207
+# docs/facts/windows/button.toml:14210
 stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14223
+# docs/facts/windows/button.toml:14226
 stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14239
+# docs/facts/windows/button.toml:14242
 stroke.left.paint = "= role.@system_control_foreground_transparent"
 
 [[rules]]
@@ -4704,13 +4704,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14255
+# docs/facts/windows/button.toml:14258
 stroke.top.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14271
+# docs/facts/windows/button.toml:14274
 stroke.right.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14287
+# docs/facts/windows/button.toml:14290
 stroke.bottom.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14303
+# docs/facts/windows/button.toml:14306
 stroke.left.paint = "= role.@system_control_highlight_base_medium_low"
 
 [[rules]]
@@ -4718,13 +4718,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14319
+# docs/facts/windows/button.toml:14322
 stroke.top.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14335
+# docs/facts/windows/button.toml:14338
 stroke.right.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14351
+# docs/facts/windows/button.toml:14354
 stroke.bottom.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14367
+# docs/facts/windows/button.toml:14370
 stroke.left.paint = "= role.@system_control_highlight_transparent"
 
 [[rules]]
@@ -4732,13 +4732,13 @@ when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indet
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14383
+# docs/facts/windows/button.toml:14386
 stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14399
+# docs/facts/windows/button.toml:14402
 stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14415
+# docs/facts/windows/button.toml:14418
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14431
+# docs/facts/windows/button.toml:14434
 stroke.left.paint = "= role.@system_control_disabled_transparent"
 
 [[rules]]
@@ -4746,15 +4746,15 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14447
+# docs/facts/windows/button.toml:14450
 fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:14639
+# docs/facts/windows/button.toml:14642
 stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14655
+# docs/facts/windows/button.toml:14658
 stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14671
+# docs/facts/windows/button.toml:14674
 stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14687
+# docs/facts/windows/button.toml:14690
 stroke.left.paint = "= role.@system_control_foreground_transparent"
 
 [[rules]]
@@ -4762,15 +4762,15 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["hove
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14463
+# docs/facts/windows/button.toml:14466
 fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:14703
+# docs/facts/windows/button.toml:14706
 stroke.top.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14719
+# docs/facts/windows/button.toml:14722
 stroke.right.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14735
+# docs/facts/windows/button.toml:14738
 stroke.bottom.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14751
+# docs/facts/windows/button.toml:14754
 stroke.left.paint = "= role.@system_control_highlight_base_medium_low"
 
 [[rules]]
@@ -4778,15 +4778,15 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["pres
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14479
+# docs/facts/windows/button.toml:14482
 fill = "= role.@system_control_background_base_medium_low"
-# docs/facts/windows/button.toml:14767
+# docs/facts/windows/button.toml:14770
 stroke.top.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14783
+# docs/facts/windows/button.toml:14786
 stroke.right.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14799
+# docs/facts/windows/button.toml:14802
 stroke.bottom.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14815
+# docs/facts/windows/button.toml:14818
 stroke.left.paint = "= role.@system_control_highlight_transparent"
 
 [[rules]]
@@ -4794,15 +4794,15 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["disa
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14495
+# docs/facts/windows/button.toml:14498
 fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:14831
+# docs/facts/windows/button.toml:14834
 stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14847
+# docs/facts/windows/button.toml:14850
 stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14863
+# docs/facts/windows/button.toml:14866
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14879
+# docs/facts/windows/button.toml:14882
 stroke.left.paint = "= role.@system_control_disabled_transparent"
 
 [[rules]]
@@ -4810,7 +4810,7 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:14511
+# docs/facts/windows/button.toml:14514
 text.fill = "= role.@system_control_foreground_base_high"
 
 [[rules]]
@@ -4818,7 +4818,7 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:14527
+# docs/facts/windows/button.toml:14530
 icon.fill = "= role.@system_control_foreground_base_high"
 
 [[rules]]
@@ -4826,7 +4826,7 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["hove
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:14543
+# docs/facts/windows/button.toml:14546
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4834,7 +4834,7 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["hove
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:14559
+# docs/facts/windows/button.toml:14562
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4842,7 +4842,7 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["pres
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:14575
+# docs/facts/windows/button.toml:14578
 text.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4850,7 +4850,7 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["pres
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:14591
+# docs/facts/windows/button.toml:14594
 icon.fill = "= role.@system_control_highlight_base_high"
 
 [[rules]]
@@ -4858,7 +4858,7 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["disa
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:14607
+# docs/facts/windows/button.toml:14610
 text.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4866,7 +4866,7 @@ when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["disa
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:14623
+# docs/facts/windows/button.toml:14626
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4874,7 +4874,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14895
+# docs/facts/windows/button.toml:14898
 fill = "= role.@system_control_transparent"
 
 [[rules]]
@@ -4882,7 +4882,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["hover"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14911
+# docs/facts/windows/button.toml:14914
 fill = "= role.@system_control_highlight_list_low"
 
 [[rules]]
@@ -4890,7 +4890,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["pressed
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14927
+# docs/facts/windows/button.toml:14930
 fill = "= role.@system_control_highlight_list_medium"
 
 [[rules]]
@@ -4898,7 +4898,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["disable
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:14943
+# docs/facts/windows/button.toml:14946
 fill = "= role.@system_control_transparent"
 
 [[rules]]
@@ -4906,7 +4906,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:14959
+# docs/facts/windows/button.toml:14962
 text.fill = "= role.@system_control_foreground_base_high"
 
 [[rules]]
@@ -4914,7 +4914,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:14975
+# docs/facts/windows/button.toml:14978
 icon.fill = "= role.@system_control_foreground_base_high"
 
 [[rules]]
@@ -4922,7 +4922,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["hover"]
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:14991
+# docs/facts/windows/button.toml:14994
 text.fill = "= role.@system_control_highlight_alt_base_high"
 
 [[rules]]
@@ -4930,7 +4930,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["hover"]
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15007
+# docs/facts/windows/button.toml:15010
 icon.fill = "= role.@system_control_highlight_alt_base_high"
 
 [[rules]]
@@ -4938,7 +4938,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["pressed
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15023
+# docs/facts/windows/button.toml:15026
 text.fill = "= role.@system_control_highlight_alt_base_high"
 
 [[rules]]
@@ -4946,7 +4946,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["pressed
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15039
+# docs/facts/windows/button.toml:15042
 icon.fill = "= role.@system_control_highlight_alt_base_high"
 
 [[rules]]
@@ -4954,7 +4954,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["disable
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15055
+# docs/facts/windows/button.toml:15058
 text.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4962,7 +4962,7 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["disable
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15071
+# docs/facts/windows/button.toml:15074
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -4970,13 +4970,13 @@ when = { conditions = ["contrast_high"], variants = ["tool"], not_states = ["che
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:15087
+# docs/facts/windows/button.toml:15090
 stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:15103
+# docs/facts/windows/button.toml:15106
 stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:15119
+# docs/facts/windows/button.toml:15122
 stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:15135
+# docs/facts/windows/button.toml:15138
 stroke.left.paint = "= role.@system_control_foreground_transparent"
 
 [[rules]]
@@ -4984,13 +4984,13 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["hover"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:15151
+# docs/facts/windows/button.toml:15154
 stroke.top.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:15167
+# docs/facts/windows/button.toml:15170
 stroke.right.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:15183
+# docs/facts/windows/button.toml:15186
 stroke.bottom.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:15199
+# docs/facts/windows/button.toml:15202
 stroke.left.paint = "= role.@system_control_highlight_transparent"
 
 [[rules]]
@@ -4998,13 +4998,13 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["pressed
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:15215
+# docs/facts/windows/button.toml:15218
 stroke.top.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:15231
+# docs/facts/windows/button.toml:15234
 stroke.right.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:15247
+# docs/facts/windows/button.toml:15250
 stroke.bottom.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:15263
+# docs/facts/windows/button.toml:15266
 stroke.left.paint = "= role.@system_control_highlight_transparent"
 
 [[rules]]
@@ -5012,13 +5012,13 @@ when = { conditions = ["contrast_high"], variants = ["tool"], states = ["disable
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:15279
+# docs/facts/windows/button.toml:15282
 stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:15295
+# docs/facts/windows/button.toml:15298
 stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:15311
+# docs/facts/windows/button.toml:15314
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:15327
+# docs/facts/windows/button.toml:15330
 stroke.left.paint = "= role.@system_control_disabled_transparent"
 
 [[rules]]
@@ -5026,7 +5026,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15343
+# docs/facts/windows/button.toml:15346
 text.fill = "= role.@system_button_text"
 
 [[rules]]
@@ -5034,7 +5034,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15364
+# docs/facts/windows/button.toml:15367
 icon.fill = "= role.@system_button_text"
 
 [[rules]]
@@ -5042,7 +5042,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15385
+# docs/facts/windows/button.toml:15388
 text.fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5050,7 +5050,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15406
+# docs/facts/windows/button.toml:15409
 icon.fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5058,7 +5058,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15427
+# docs/facts/windows/button.toml:15430
 text.fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5066,7 +5066,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15448
+# docs/facts/windows/button.toml:15451
 icon.fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5074,7 +5074,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15469
+# docs/facts/windows/button.toml:15472
 text.fill = "= role.@system_gray_text"
 
 [[rules]]
@@ -5082,7 +5082,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15490
+# docs/facts/windows/button.toml:15493
 icon.fill = "= role.@system_gray_text"
 
 [[rules]]
@@ -5090,7 +5090,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15511
+# docs/facts/windows/button.toml:15514
 text.fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5098,7 +5098,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15532
+# docs/facts/windows/button.toml:15535
 icon.fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5106,7 +5106,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15553
+# docs/facts/windows/button.toml:15556
 text.fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5114,7 +5114,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15574
+# docs/facts/windows/button.toml:15577
 icon.fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5122,7 +5122,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15595
+# docs/facts/windows/button.toml:15598
 text.fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5130,7 +5130,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15616
+# docs/facts/windows/button.toml:15619
 icon.fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5138,7 +5138,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.label"
 
 [rules.set]
-# docs/facts/windows/button.toml:15637
+# docs/facts/windows/button.toml:15640
 text.fill = "= role.@system_window"
 
 [[rules]]
@@ -5146,7 +5146,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.icon"
 
 [rules.set]
-# docs/facts/windows/button.toml:15658
+# docs/facts/windows/button.toml:15661
 icon.fill = "= role.@system_window"
 
 [[rules]]
@@ -5154,13 +5154,13 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], not_stat
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:15679
+# docs/facts/windows/button.toml:15682
 stroke.top.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15700
+# docs/facts/windows/button.toml:15703
 stroke.right.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15721
+# docs/facts/windows/button.toml:15724
 stroke.bottom.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15742
+# docs/facts/windows/button.toml:15745
 stroke.left.paint = "= role.@system_button_text"
 
 [[rules]]
@@ -5168,13 +5168,13 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:15763
+# docs/facts/windows/button.toml:15766
 stroke.top.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15784
+# docs/facts/windows/button.toml:15787
 stroke.right.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15805
+# docs/facts/windows/button.toml:15808
 stroke.bottom.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15826
+# docs/facts/windows/button.toml:15829
 stroke.left.paint = "= role.@system_button_text"
 
 [[rules]]
@@ -5182,13 +5182,13 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:15847
+# docs/facts/windows/button.toml:15850
 stroke.top.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15868
+# docs/facts/windows/button.toml:15871
 stroke.right.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15889
+# docs/facts/windows/button.toml:15892
 stroke.bottom.paint = "= role.@system_button_text"
-# docs/facts/windows/button.toml:15910
+# docs/facts/windows/button.toml:15913
 stroke.left.paint = "= role.@system_button_text"
 
 [[rules]]
@@ -5196,13 +5196,13 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:15931
+# docs/facts/windows/button.toml:15934
 stroke.top.paint = "= role.@system_gray_text"
-# docs/facts/windows/button.toml:15952
+# docs/facts/windows/button.toml:15955
 stroke.right.paint = "= role.@system_gray_text"
-# docs/facts/windows/button.toml:15973
+# docs/facts/windows/button.toml:15976
 stroke.bottom.paint = "= role.@system_gray_text"
-# docs/facts/windows/button.toml:15994
+# docs/facts/windows/button.toml:15997
 stroke.left.paint = "= role.@system_gray_text"
 
 [[rules]]
@@ -5210,13 +5210,13 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:16015
+# docs/facts/windows/button.toml:16018
 stroke.top.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16036
+# docs/facts/windows/button.toml:16039
 stroke.right.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16057
+# docs/facts/windows/button.toml:16060
 stroke.bottom.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16078
+# docs/facts/windows/button.toml:16081
 stroke.left.paint = "= role.@system_highlight"
 
 [[rules]]
@@ -5224,13 +5224,13 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:16099
+# docs/facts/windows/button.toml:16102
 stroke.top.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16120
+# docs/facts/windows/button.toml:16123
 stroke.right.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16141
+# docs/facts/windows/button.toml:16144
 stroke.bottom.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16162
+# docs/facts/windows/button.toml:16165
 stroke.left.paint = "= role.@system_highlight"
 
 [[rules]]
@@ -5238,13 +5238,13 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:16183
+# docs/facts/windows/button.toml:16186
 stroke.top.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16204
+# docs/facts/windows/button.toml:16207
 stroke.right.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16225
+# docs/facts/windows/button.toml:16228
 stroke.bottom.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:16246
+# docs/facts/windows/button.toml:16249
 stroke.left.paint = "= role.@system_highlight"
 
 [[rules]]
@@ -5252,13 +5252,13 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:16267
+# docs/facts/windows/button.toml:16270
 stroke.top.paint = "= role.@system_gray_text"
-# docs/facts/windows/button.toml:16288
+# docs/facts/windows/button.toml:16291
 stroke.right.paint = "= role.@system_gray_text"
-# docs/facts/windows/button.toml:16309
+# docs/facts/windows/button.toml:16312
 stroke.bottom.paint = "= role.@system_gray_text"
-# docs/facts/windows/button.toml:16330
+# docs/facts/windows/button.toml:16333
 stroke.left.paint = "= role.@system_gray_text"
 
 [[rules]]
@@ -5266,7 +5266,7 @@ when = { conditions = ["contrast_high"], variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16351
+# docs/facts/windows/button.toml:16354
 glyph.fill = "= role.@system_button_text"
 
 [[rules]]
@@ -5274,7 +5274,7 @@ when = { conditions = ["contrast_high"], variants = ["menu"], states = ["hover"]
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16372
+# docs/facts/windows/button.toml:16375
 glyph.fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5282,7 +5282,7 @@ when = { conditions = ["contrast_high"], variants = ["menu"], states = ["pressed
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16393
+# docs/facts/windows/button.toml:16396
 glyph.fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5290,7 +5290,7 @@ when = { conditions = ["contrast_high"], variants = ["menu"], states = ["disable
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16414
+# docs/facts/windows/button.toml:16417
 glyph.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -5298,7 +5298,7 @@ when = { conditions = ["contrast_high"], variants = ["menu", "tool"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16430
+# docs/facts/windows/button.toml:16433
 glyph.fill = "= role.@system_control_foreground_base_medium_high"
 
 [[rules]]
@@ -5306,7 +5306,7 @@ when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = [
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16451
+# docs/facts/windows/button.toml:16454
 glyph.fill = "= role.@system_control_highlight_alt_base_high"
 
 [[rules]]
@@ -5314,7 +5314,7 @@ when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = [
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16472
+# docs/facts/windows/button.toml:16475
 glyph.fill = "= role.@system_control_highlight_alt_base_high"
 
 [[rules]]
@@ -5322,7 +5322,7 @@ when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = [
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16493
+# docs/facts/windows/button.toml:16496
 glyph.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
@@ -5330,9 +5330,9 @@ when = { variants = ["menu"], not_variants = ["tool"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16518
+# docs/facts/windows/button.toml:16521
 min_width_px = 12
-# docs/facts/windows/button.toml:16588
+# docs/facts/windows/button.toml:16591
 transitions = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 
 [[rules]]
@@ -5340,9 +5340,9 @@ when = { variants = ["menu"], not_variants = ["tool"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/windows/button.toml:16541
+# docs/facts/windows/button.toml:16544
 menu_indicator_gap_px = 0
-# docs/facts/windows/button.toml:16553
+# docs/facts/windows/button.toml:16556
 menu_indicator_anchor = "inline"
 
 [[rules]]
@@ -5350,7 +5350,7 @@ when = { variants = ["menu"], not_variants = ["tool"], states = ["hover"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16605
+# docs/facts/windows/button.toml:16608
 transitions = [{ properties = ["glyph"], kind = { keyed = { key = "pointer_over", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 
 [[rules]]
@@ -5358,7 +5358,7 @@ when = { variants = ["menu"], not_variants = ["tool"], states = ["pressed"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16627
+# docs/facts/windows/button.toml:16630
 transitions = [{ properties = ["glyph"], kind = { keyed = { key = "pressed", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 
 [[rules]]
@@ -5366,7 +5366,7 @@ when = { variants = ["menu"], not_variants = ["tool"], states = ["disabled"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:16649
+# docs/facts/windows/button.toml:16652
 transitions = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 
 [[rules]]
@@ -5374,7 +5374,7 @@ when = { not_variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:17359
+# docs/facts/windows/button.toml:17362
 absent = true
 
 [[rules]]
@@ -5382,9 +5382,9 @@ when = { not_variants = ["@repeat"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/windows/button.toml:17392
+# docs/facts/windows/button.toml:17395
 repeat_delay_ms = "absent"
-# docs/facts/windows/button.toml:17434
+# docs/facts/windows/button.toml:17437
 repeat_interval_ms = "absent"
 
 [[rules]]
@@ -5392,9 +5392,9 @@ when = { variants = ["@repeat"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/windows/button.toml:17476
+# docs/facts/windows/button.toml:17479
 repeat_delay_ms = 500
-# docs/facts/windows/button.toml:17487
+# docs/facts/windows/button.toml:17490
 repeat_interval_ms = 33
 
 [[rules]]
@@ -5402,7 +5402,7 @@ when = { variants = ["tool", "toggle"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18522
+# docs/facts/windows/button.toml:18525
 fill = "= role.@subtle_fill_transparent"
 
 [[rules]]
@@ -5410,7 +5410,7 @@ when = { variants = ["tool", "toggle"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18543
+# docs/facts/windows/button.toml:18546
 fill = "= role.@subtle_fill_secondary"
 
 [[rules]]
@@ -5418,7 +5418,7 @@ when = { variants = ["tool", "toggle"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18564
+# docs/facts/windows/button.toml:18567
 fill = "= role.@subtle_fill_tertiary"
 
 [[rules]]
@@ -5426,7 +5426,7 @@ when = { variants = ["tool", "toggle"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18585
+# docs/facts/windows/button.toml:18588
 fill = "= role.@subtle_fill_disabled"
 
 [[rules]]
@@ -5434,7 +5434,7 @@ when = { variants = ["tool", "toggle"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18606
+# docs/facts/windows/button.toml:18609
 fill = "= role.@accent_fill_default"
 
 [[rules]]
@@ -5442,7 +5442,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18627
+# docs/facts/windows/button.toml:18630
 fill = "= role.@accent_fill_secondary"
 
 [[rules]]
@@ -5450,7 +5450,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18648
+# docs/facts/windows/button.toml:18651
 fill = "= role.@accent_fill_tertiary"
 
 [[rules]]
@@ -5458,7 +5458,7 @@ when = { variants = ["tool", "toggle"], states = ["checked", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18669
+# docs/facts/windows/button.toml:18672
 fill = "= role.@accent_fill_disabled"
 
 [[rules]]
@@ -5466,7 +5466,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18691
+# docs/facts/windows/button.toml:18694
 fill = "= role.@system_button_face"
 
 [[rules]]
@@ -5474,7 +5474,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18712
+# docs/facts/windows/button.toml:18715
 fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5482,7 +5482,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18733
+# docs/facts/windows/button.toml:18736
 fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5490,7 +5490,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18754
+# docs/facts/windows/button.toml:18757
 fill = "= role.@system_window"
 
 [[rules]]
@@ -5498,7 +5498,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18775
+# docs/facts/windows/button.toml:18778
 fill = "= role.@system_highlight"
 
 [[rules]]
@@ -5506,7 +5506,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18796
+# docs/facts/windows/button.toml:18799
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5514,7 +5514,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18817
+# docs/facts/windows/button.toml:18820
 fill = "= role.@system_highlight_text"
 
 [[rules]]
@@ -5522,7 +5522,7 @@ when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/windows/button.toml:18838
+# docs/facts/windows/button.toml:18841
 fill = "= role.@system_gray_text"
 
 [[rules]]
@@ -5530,13 +5530,13 @@ when = { variants = ["menu"], not_variants = ["tool"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/windows/button.toml:19185
+# docs/facts/windows/button.toml:19188
 margin.top_px = 0
-# docs/facts/windows/button.toml:19196
+# docs/facts/windows/button.toml:19199
 margin.right_px = 0
-# docs/facts/windows/button.toml:19207
+# docs/facts/windows/button.toml:19210
 margin.bottom_px = 0
-# docs/facts/windows/button.toml:19218
+# docs/facts/windows/button.toml:19221
 margin.left_px = 8
 
 [[rules]]
@@ -5544,9 +5544,9 @@ when = { not_variants = ["menu"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/windows/button.toml:19303
+# docs/facts/windows/button.toml:19306
 menu_indicator_anchor = "inline"
-# docs/facts/windows/button.toml:19319
+# docs/facts/windows/button.toml:19322
 menu_indicator_gap_px = 0
 
 [[rules]]

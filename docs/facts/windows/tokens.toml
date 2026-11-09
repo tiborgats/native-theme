@@ -153,7 +153,7 @@ rows = ["W-P3-16†"]
 # premultiplied and Oklab off by 16 to 51 levels (read_host.py's [color_space]), which names the model's
 # `straight_srgb8`. ADD-A141 (S2.7) names `straight_srgb` instead, the refit with and without the 8-bit truncation
 # showing the compositor does not truncate; the fact keeps the committed analysis's member until read_host.py's next
-# revision commits that refit and states its method (the t grid, the error measure, the composite rounded to whole
+# revision (U701) commits that refit and states its method (the t grid, the error measure, the composite rounded to whole
 # levels or not), as S2.7 requires before the fact names the member.
 [[fact]]
 key = "token.motion.color_space"
@@ -2998,7 +2998,7 @@ rows = []
 # the contrast is DirectWrite's greyscale enhanced contrast, which the host read as 1 (`grayscale_enhanced_contrast`),
 # not ClearType's 0.5, and the subpixel order and the LCD filter are absent, which no committed analysis states yet:
 # the subpixel order, ClearType's RGB until now, is pending with the filter (U508) until read_host.py's next revision
-# writes the drawn rendering's absent fields.
+# (U701) writes the drawn rendering's absent fields.
 [[fact]]
 key = "token.text.scaling"
 value = "win_ui"
