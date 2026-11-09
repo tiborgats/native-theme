@@ -239,7 +239,7 @@ are required, and `default_size`, `flags`, `requires_variants`, `sizes_by_varian
 `exclusive_variants`, `variant_sets`, `variant_products` and `recency` optional (S10's declarations, S17; absent
 meaning none; `default_size_by_variant`, ADD-A121's, is removed, REMOVED_DECLARATIONS, ADD-A131); names are checked
 against the catalogue's entry and the core (variants, flags, sizes, densities, states, conditions, context selectors
-as `when`'s, each `not_drawn` a `when`), every `exclusive` state is in `axes.states` and in one group only,
+as `when`'s, each `not_drawn` a `when`), every `exclusive` state is in `axes.states`, named once in a group (a state may be in several, ADD-A141),
 `requires_variants`' variants are among `variants`. ADD-A131's sizes and default sizes (size_declaration_problems,
 whose docstring states them in full): `default_size` a size of `sizes` or `{ pending = "U<n>" }`, stated wherever
 `sizes` is not empty; `sizes_by_variant` entries `{ variant, sizes[, default_size] }`, one per variant, a variant's
@@ -2197,13 +2197,16 @@ def model_problems(ctx, item: Item) -> list:
             if not (isinstance(ex, list) and all(str_list(g) for g in ex)):
                 out.append((item.ln("exclusive"), "exclusive is not a list of lists of states"))
             else:
-                seen = set()
+                # A flag may be in several groups (S10 *A flag the platform clears*,
+                # ADD-A141): the groups apply in their declared order; one group
+                # names a flag at most once.
                 for g in ex:
+                    seen = set()
                     for s in g:
                         if "axes" in d and s not in states:
                             out.append((item.ln("exclusive"), f"exclusive: {s!r} is not in axes.states"))
                         if s in seen:
-                            out.append((item.ln("exclusive"), f"exclusive: {s!r} is in two groups"))
+                            out.append((item.ln("exclusive"), f"exclusive: {s!r} is in one group twice"))
                         seen.add(s)
         if "not_drawn" in d:
             nd = d["not_drawn"]
@@ -4390,6 +4393,10 @@ SELF_TEST_CASES = [
      ["missing `axes`"]),
     ("model: an exclusive state outside the axes", "docs/facts/macos/state-models.toml",
      '[["disabled", "pressed", "hover"]]', '[["disabled", "pressed", "checked"]]', ["'checked' is not in axes.states"]),
+    ("model: an exclusive state twice in one group", "docs/facts/macos/state-models.toml",
+     '[["disabled", "pressed", "hover"]]', '[["disabled", "pressed", "disabled"]]', ["'disabled' is in one group twice"]),
+    ("model: an exclusive state in two groups (S10, ADD-A141)", "docs/facts/macos/state-models.toml",
+     '[["disabled", "pressed", "hover"]]', '[["disabled", "pressed"], ["disabled", "hover"]]', []),
     ("model: a default size not among sizes", "docs/facts/macos/state-models.toml", 'default_size = "regular"',
      'default_size = "mini"', ["default_size 'mini' is not among sizes"]),
     ("model: a context part of another widget", "docs/facts/macos/state-models.toml",
