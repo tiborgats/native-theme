@@ -315605,3 +315605,867 @@ key = "button.values.subtitle_gap"
 when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["close", "with_icon"] }
 pending = "U704"
 rows = []
+
+# The gate's combinations no fact stated (the facts lane's round 7: CI run 42587540405 at 2e8d6020, and the sets
+# listed since): the base UIButton(type: .system) with an image and `toggle` selected (`checked`, with or without
+# `pressed` and `disabled`) and with an image and a menu (`menu`, `@menu_on_hold`), on ios-26 also its menu shown on
+# a long press with no image; `@info`, `@contact_add` and `close` with `toggle`, selected and disabled; each with its
+# pointer styles. No reading holds them: run 42267206298's `forms.<scheme>.system__image_star.selected` and
+# `.selected_highlighted` (and `system__image_star__title_none`'s) record the bezel in the accent and the title's
+# and the glyph view's tint in the same colour, which the analysis confirms for neither (no `icon_fill`, no
+# `label_check` for the forms), and no corner radius; no pass drew the base with an image and a menu, or a system
+# type selected and disabled. Pending pair by pair: U255 for the base (U114 on the iPad and U116 for a fill under
+# Increase Contrast, as the base's own facts), U704 for the system types, U703 where only a pointer style's set
+# lacks the fact (the base's own iPad and Increase Contrast facts refuse the pointer styles). Each `when` holds
+# only where no fact of its key holds.
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@contact_add", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@contact_add", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@info", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@info", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["close", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["close", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "button_shapes"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "button_shapes"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "bold_text"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "bold_text"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased", "button_shapes"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased", "bold_text"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_highlight", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_lift", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_highlight", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_lift", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_highlight", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_lift", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_hover", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_hover", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_hover", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_lift", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_lift", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_lift", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "button_shapes"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "bold_text"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@pointer_highlight", "icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_lift", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@pointer_hover", "icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@pointer_lift", "icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "button_shapes"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "button_shapes"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "bold_text"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "bold_text"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased", "button_shapes"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased", "bold_text"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_highlight", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_lift", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_highlight", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_lift", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_highlight", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_lift", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_hover", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_hover", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_hover", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_lift", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_lift", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["@pointer_lift", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "button_shapes"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad", "bold_text"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@pointer_highlight", "toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_lift", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@pointer_hover", "toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@pointer_lift", "toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased"], not_conditions = ["idiom:pad", "bold_text", "button_shapes", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "contrast_increased"], not_conditions = ["idiom:pad", "bold_text", "button_shapes", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], not_states = ["hover", "focus_visible"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@contact_add", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@contact_add", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@info", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["@info", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["hover", "focus_visible", "drop_target", "open"], variants = ["@menu_on_hold", "menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["close", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["disabled", "checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["close", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["icon_only", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["disabled", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], not_states = ["pressed", "hover", "focus_visible", "drop_target", "open"], variants = ["menu", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "bold_text", "button_shapes", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["icon_only", "toggle"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"] }
+pending = "U114"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "contrast_increased"], not_conditions = ["idiom:pad", "bold_text", "button_shapes", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U116"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive"] }
+pending = "U255"
+rows = ["B-12"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["disabled", "hover", "focus_visible", "drop_target"], variants = ["toggle", "with_icon"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"] }
+pending = "U114"
+rows = ["B-12"]
