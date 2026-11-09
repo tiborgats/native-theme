@@ -1850,7 +1850,10 @@ spaces:
   `[disabled, hover]`, `[disabled, pressed]`, `[disabled, focused]`, `[disabled, focus_visible]` and `[disabled,
   drop_target]`, GTK never holding those flags on an insensitive widget, and `material-3`: `[disabled, hover]`,
   `[disabled, pressed]` and `[disabled, focus_visible]`, each pair a group of its own as the other flags combine
-  (S10's *A flag the platform clears*; ADD-A141, in place of the state models' `not_drawn` pairs); others none (states
+  (S10's *A flag the platform clears*; ADD-A141, in place of the state models' `not_drawn` pairs); `macos-*`:
+  `[indeterminate, checked]`, as on `windows-11`: an NSButton's state is one `NSControlStateValue`, the mixed state a
+  value of its own beside on and off (`NSCell.h:71-74`), so a connector reporting both is answered with the mixed
+  state, the one the value holds in place of on (ADD-A141, in place of the state models' `not_drawn` pair); others none (states
   combine: libadwaita's CSS and Breeze's branches combine flags; K1.29's "pressed wins" is a rule order, not a group;
   `material-3`'s other precedences are recency sets, below); precedence: state models (S17). Recency sets: `material-3`:
   `state_layer = [focus_visible, hover]` (Material's recency sets, above: Compose's ripple, `Button.kt:156-157`,
@@ -9435,9 +9438,9 @@ sets it (WinUI's trimming and wrapping, `TextBlock_themeresources.xaml:10-51`), 
 
 **GNOME.** libadwaita's classes: `title_1`, `title_2`, `title_3`, `title_4`, `heading`, `body`, `caption_heading`,
 `caption`, `document`, `monospace`, `numeric` [GN-1.189]. `document` takes its family and size from
-`document-font-name` [GN-1.191]; `numeric` carries the `tnum` feature [GN-1.192]; `font.axes` and `font.features`
-receive
-the Pango `@axis=` and `#feature=` segments of the font settings [GN-1.193]; `line_height` of `body`, `caption` and
+`document-font-name` [GN-1.191]; `numeric` carries the `tnum` feature [GN-1.192]; the Pango `@axis=` and
+`#feature=` segments of the font settings reach no `font.axes` or `font.features`, as GTK 4 takes only the family and
+the size from `gtk-font-name` and the GNOME reader patches those alone (S9.3, ADD-A141) [GN-1.193]; `line_height` of `body`, `caption` and
 `document` is a multiple of the font size [GN-1.190]. The relative label sizes the stylesheet states are keyed styles
 whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subtitles, progress text),
 `narrow_switcher_label`,
@@ -9937,7 +9940,10 @@ holds.
 
 - `UISettings.GetColorValue` for `AccentDark1`–`3`, `AccentLight1`–`3`: W3-12.
 - `SPI_GETKEYBOARDCUES`: W3-21, W3-48†.
-- `SPI_GETCLEARTYPE`, `SPI_GETFONTSMOOTHING`, `SPI_GETFONTSMOOTHINGTYPE`, `SPI_GETFONTSMOOTHINGCONTRAST`: W3-22.
+- `SPI_GETCLEARTYPE`, `SPI_GETFONTSMOOTHING`, `SPI_GETFONTSMOOTHINGTYPE`, `SPI_GETFONTSMOOTHINGCONTRAST`: W3-22,
+  ClearType's settings, which WinUI's greyscale text does not take, so the Windows reader states from them nothing
+  `token.text.rendering` holds for `windows-11`, its rendering parameters being those WinUI draws with, DirectWrite's
+  greyscale enhanced contrast and gamma (S4's *The rendering drawn*, ADD-A141).
 - `SPI_GETCARETWIDTH`, `GetCaretBlinkTime`, `UISettings.CaretWidth`, `UISettings.CaretBlinkRate`,
   `SPI_GETCARETTIMEOUT` (to verify): W3-24.
 - `UISettings.CursorSize`, `SM_CXCURSOR`: W3-29.
