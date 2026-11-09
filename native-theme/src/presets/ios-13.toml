@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 919e3882716be10eb6dd680bb0d932b5b46b8f12c1c117f4ffaec48a493fe64d
+# generated lines: sha256 175bd85cdc2eaa09820e0079b10f335a435274a0f8df703bda6b49b2ac3ac670
 
 [preset]
 id = "ios-13"
@@ -136,7 +136,7 @@ keys = [
 ]
 # hand-written: end declare
 
-# docs/facts/ios/state-models.toml:75
+# docs/facts/ios/state-models.toml:86
 [declare.widget.button]
 available = true
 variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
@@ -152,7 +152,7 @@ sizes_by_variant = [{ variant = "flat", sizes = ["mini", "small", "regular", "la
 # docs/facts/ios/button.toml:14970
 "widgets.button.body.fill" = ["U115", "U118", "U114", "U116", "U122", "U113", "U112", "U475", "U685", "U686"]
 # docs/facts/ios/button.toml:64041
-"widgets.button.label.text.fill" = ["U255", "U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686"]
+"widgets.button.label.text.fill" = ["U255", "U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686", "U703"]
 # docs/facts/ios/button.toml:84082
 "widgets.button.icon.icon.fill" = ["U115", "U114", "U116", "U120", "U122", "U113", "U112", "U475", "U685", "U686"]
 # docs/facts/ios/button.toml:89868
