@@ -11,7 +11,9 @@
 //! derivation of the accent-dependent roles and inactive input roles
 //! through `kde_accent` and `kde_accent_wm`, at the schemes where a layer
 //! above the preset gives the accent in force), with S8's leave-out beneath
-//! it of the reader's or stand-in's stated roles ([`LeftOut`]).
+//! it of the reader's or stand-in's stated roles and a KDE port's
+//! ([`LeftOut`]); and S14's palette among the application layers, beneath
+//! which the reader's or stand-in's colours are left out.
 #![cfg_attr(
     not(test),
     expect(
@@ -587,7 +589,7 @@ fn is_wm(held: &Key, key: KdeWmKey) -> bool {
 }
 
 /// The stack (S8): the preset's declarations and layer, the reader or its
-/// stand-in, the application's layers, the accent the application set, and
+/// stand-in, the application's layers and palette, the accent the application set, and
 /// the application's conditions. Every change validates the whole stack
 /// and is refused whole (S8, S12). The layers are shared: a copy of the
 /// stack, a change's or a window's record, copies no layer.
