@@ -28519,7 +28519,7 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
 
 [[fact]]
 key = "button.body.opacity"
-when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["close"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["close"], not_variants = ["with_icon", "icon_only"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U123"
 rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
 
@@ -88781,7 +88781,7 @@ rows = ["B-12", "B-9", "TB-4"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["close"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["close"], not_variants = ["with_icon", "icon_only"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U123"
 rows = ["B-12", "B-9", "TB-4"]
 
@@ -310527,7 +310527,9 @@ rows = []
 
 # U704 (ADD-A145), the sets the state models list beside the pointer ones (ADD-A141's every drawn set listed): `@info`,
 # `@contact_add` and `close` with `toggle` (`changesSelectionAsPrimaryAction`, UIButton.h:110-113) or with a menu,
-# `menu` and `@menu_on_hold` (UIButton.h:104-105), UIButton's own API on every button type; and `@role_primary`
+# `menu` and `@menu_on_hold` (UIButton.h:104-105), or with an image, `with_icon` and `icon_only` (UIButton.h:122;
+# whether a system button draws an assigned image is U704's measurement, UIButton.h:147 calling its title and image
+# views nil), UIButton's own API on every button type; and `@role_primary`
 # (`role`, UIButton.h:91) on each configuration style's sets, with its corner styles, image, toggle and menu. No pass
 # drew these pairs but the system types' toggle, whose keys a fact naming both states above. For each other pair
 # and key both variants state their own facts of, one pending fact naming the two, after both (S17's *Sets not yet
@@ -313567,5 +313569,2039 @@ rows = []
 [[fact]]
 key = "button.values.subtitle_gap"
 when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@role_primary", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.corners.curve"
+when = { conditions = ["preset:ios-26"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13"], not_states = ["checked"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_height"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_width"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-13"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "drop_target"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { conditions = ["preset:ios-13"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:ios-13"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:ios-13"], not_conditions = ["button_shapes"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text", "button_shapes"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13"], not_states = ["drop_target", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["checked", "drop_target", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-13"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-13"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.case"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.decoration"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.elision"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "disabled", "drop_target", "focus_visible", "hover", "open", "route_active"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.axes"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.features"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.style"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.weight"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.line_height"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.max_lines"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.wrap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@info", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_height"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_width"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { sizes = ["regular"], not_states = ["@loading", "drop_target"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { not_conditions = ["bold_text", "button_shapes"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"], not_states = ["drop_target", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["checked", "drop_target", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.case"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.decoration"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.elision"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "disabled", "drop_target", "focus_visible", "hover", "open", "route_active"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.axes"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.features"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.style"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.weight"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.line_height"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.max_lines"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.wrap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@info", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.corners.curve"
+when = { conditions = ["preset:ios-26"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13"], not_states = ["checked"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_height"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_width"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-13"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "drop_target"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { conditions = ["preset:ios-13"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:ios-13"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:ios-13"], not_conditions = ["button_shapes"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text", "button_shapes"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13"], not_states = ["drop_target", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["checked", "drop_target", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-13"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-13"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.case"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.decoration"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.elision"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "disabled", "drop_target", "focus_visible", "hover", "open", "route_active"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.axes"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.features"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.style"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.weight"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.line_height"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.max_lines"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.wrap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@contact_add", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_height"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_width"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { sizes = ["regular"], not_states = ["@loading", "drop_target"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { not_conditions = ["bold_text", "button_shapes"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"], not_states = ["drop_target", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["checked", "drop_target", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.case"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.decoration"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.elision"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "disabled", "drop_target", "focus_visible", "hover", "open", "route_active"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.axes"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.features"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.style"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.weight"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.line_height"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.max_lines"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.wrap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["@contact_add", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.corners.curve"
+when = { conditions = ["preset:ios-26"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13"], not_states = ["checked"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_height"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_width"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-13"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "drop_target"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { conditions = ["preset:ios-13"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:ios-13"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:ios-13"], not_conditions = ["button_shapes"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text", "button_shapes"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13"], not_states = ["drop_target", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["checked", "drop_target", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-13"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-13"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { conditions = ["preset:ios-13"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.case"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.decoration"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.elision"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "disabled", "drop_target", "focus_visible", "hover", "open", "route_active"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.axes"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.features"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.style"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.weight"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.line_height"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.max_lines"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.wrap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["close", "icon_only"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_height"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.min_width"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { sizes = ["regular"], not_states = ["@loading", "drop_target"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { sizes = ["regular"], not_states = ["@loading"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.shadow"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "drop_target", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { conditions = ["preset:ios-26"], not_conditions = ["bold_text", "button_shapes", "contrast_increased", "idiom:pad", "scheme:dark"], not_states = ["@loading", "checked", "disabled", "drop_target", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { not_conditions = ["bold_text", "button_shapes"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.elision"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"], not_states = ["drop_target", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"], not_states = ["checked", "drop_target", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["@loading"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { not_conditions = ["bold_text"], sizes = ["regular"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.case"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.decoration"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.elision"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.fill"
+when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased", "tint_dimmed"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "disabled", "drop_target", "focus_visible", "hover", "open", "route_active"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.axes"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.features"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.style"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.font.weight"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.line_height"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.max_lines"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.subtitle.text.wrap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text"], sizes = ["regular"], states = ["checked"], not_states = ["@loading", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { sizes = ["regular"], not_states = ["@loading", "checked", "focus_visible", "hover"], variants = ["close", "with_icon"] }
+pending = "U704"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], not_conditions = ["bold_text", "button_shapes", "contrast_increased"], sizes = ["regular"], states = ["focus_visible"], not_states = ["@loading", "drop_target"], variants = ["close", "with_icon"] }
 pending = "U704"
 rows = []

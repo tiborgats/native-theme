@@ -50,9 +50,11 @@
 #   fact's own `when` named them, the iOS facts lane's round 5, c8610c67; no toggle with a menu, as for the styles).
 #   The button types `@info`, `@contact_add` and `close` take the same menu and toggle, UIButton's own on every type
 #   (the host drew each type selected, analysis.toml `forms.<scheme>.<type>.selected`), so each draws with `toggle`,
-#   with `menu` and with `menu` and `@menu_on_hold`; not with an image: the type draws its own glyph (UIButtonType),
-#   and a system button has no title or image view (UIButton.h:147), so `with_icon` and `icon_only` would be the type
-#   under another name, each pair in `not_drawn` (U704, ADD-A145; the cleanup lane).
+#   with `menu` and with `menu` and `@menu_on_hold`, and with an image, `with_icon` and `icon_only`
+#   (`setImage:forState:`, UIButton.h:122, on every type): whether a system button draws an assigned image in place
+#   of its glyph no pass shows (UIButton.h:147 says its title and image views are nil, while run 42269041636's view
+#   tree holds the type's glyph in an image view, measure1/index.toml `image_views`), so the sets are listed and
+#   their pairs pending (U704, ADD-A145; the cleanup lane).
 #   The pointer style (the iOS facts lane's round 6, U703; ADD-A141, ADD-A144): `pointerInteractionEnabled` and
 #   `pointerStyleProvider` are UIButton's own, as `role` is, so every UIButton form takes one: the base with each of
 #   its sets, each configuration style with its sets and with `@role_primary`, and the button types `@info`,
@@ -116,8 +118,8 @@ variant_products = [
   [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["@info", "@contact_add", "close"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["@info", "@contact_add", "close"] }, { one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
 ]
 not_drawn = [
   { states = ["checked"], not_variants = ["toggle"] },
@@ -232,12 +234,6 @@ not_drawn = [
   { variants = ["@contact_add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
   { variants = ["@paste_control"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
   { variants = ["route"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
-  { variants = ["@info", "with_icon"] },
-  { variants = ["@info", "icon_only"] },
-  { variants = ["@contact_add", "with_icon"] },
-  { variants = ["@contact_add", "icon_only"] },
-  { variants = ["close", "with_icon"] },
-  { variants = ["close", "icon_only"] },
 ]
 rows = ["B-1", "B-3", "B-4", "B-7", "B-10", "B-11", "B-12", "B-17", "B-18†", "P3-11†"]
 
@@ -448,8 +444,8 @@ kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:122"
 quote = "- (void)setImage:(nullable UIImage *)image forState:(UIControlState)state;"
 
-# not on the button types `@info`, `@contact_add` and `close`: a system button, which draws its type's glyph, has no
-# title or image view, so it takes no `with_icon` or `icon_only` set (the cleanup lane)
+# the button types `@info`, `@contact_add` and `close` with an image: listed, their pairs pending (U704), as the
+# header says a system button's title and image views are nil and no pass assigned one an image (the cleanup lane)
 [[model.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:147"
@@ -934,8 +930,8 @@ variant_products = [
   [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["@info", "@contact_add", "close"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["@info", "@contact_add", "close"] }, { one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
@@ -1089,12 +1085,6 @@ not_drawn = [
   { variants = ["@role_primary"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
   { variants = ["@indicator_popup"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
   { states = ["@loading"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
-  { variants = ["@info", "with_icon"] },
-  { variants = ["@info", "icon_only"] },
-  { variants = ["@contact_add", "with_icon"] },
-  { variants = ["@contact_add", "icon_only"] },
-  { variants = ["close", "with_icon"] },
-  { variants = ["close", "icon_only"] },
 ]
 rows = ["B-1", "B-2", "B-3", "B-4", "B-7", "B-10", "B-11", "B-12", "B-17", "B-18†", "P3-11†"]
 
@@ -1369,8 +1359,8 @@ kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:122"
 quote = "- (void)setImage:(nullable UIImage *)image forState:(UIControlState)state;"
 
-# not on the button types `@info`, `@contact_add` and `close`: a system button, which draws its type's glyph, has no
-# title or image view, so it takes no `with_icon` or `icon_only` set (the cleanup lane)
+# the button types `@info`, `@contact_add` and `close` with an image: listed, their pairs pending (U704), as the
+# header says a system button's title and image views are nil and no pass assigned one an image (the cleanup lane)
 [[model.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:147"

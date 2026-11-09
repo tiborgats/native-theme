@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 429811af1a3baa5bb46a693d4a7dc8848cf5d4a921038b10823cd112dccd274f
+# generated lines: sha256 ee48b504481e58b8e4ec742e4eb9507ad120f7d160f9ad9360c5ade3c5d188e6
 
 [preset]
 id = "ios-13"
@@ -136,7 +136,7 @@ keys = [
 ]
 # hand-written: end declare
 
-# docs/facts/ios/state-models.toml:93
+# docs/facts/ios/state-models.toml:95
 [declare.widget.button]
 available = true
 variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
@@ -192,13 +192,13 @@ sizes_by_variant = [{ variant = "flat", sizes = ["mini", "small", "regular", "la
 # docs/facts/ios/button.toml:108922
 "widgets.button.menu_indicator.transitions" = ["U122", "U114", "U113", "U112", "U125"]
 # docs/facts/ios/button.toml:109471
-"widgets.button.icon.icon.size_px" = "U126"
+"widgets.button.icon.icon.size_px" = ["U126", "U704"]
 # docs/facts/ios/button.toml:110098
-"widgets.button.icon.icon.rendering_mode" = "U126"
+"widgets.button.icon.icon.rendering_mode" = ["U126", "U704"]
 # docs/facts/ios/button.toml:110714
-"widgets.button.icon.icon.weight" = "U126"
+"widgets.button.icon.icon.weight" = ["U126", "U704"]
 # docs/facts/ios/button.toml:111341
-"widgets.button.icon.icon.scale" = "U126"
+"widgets.button.icon.icon.scale" = ["U126", "U704"]
 # docs/facts/ios/button.toml:111925
 "widgets.button.icon.glyph" = "U126"
 # docs/facts/ios/button.toml:112105
@@ -258,11 +258,11 @@ sizes_by_variant = [{ variant = "flat", sizes = ["mini", "small", "regular", "la
 # docs/facts/ios/button.toml:299746
 "widgets.button.label.padding" = "U482"
 # docs/facts/ios/button.toml:300199
-"widgets.button.icon.icon.axes" = "U483"
+"widgets.button.icon.icon.axes" = ["U483", "U704"]
 # docs/facts/ios/button.toml:301674
 "widgets.button.icon.icon.symbol_variants" = "U483"
 # docs/facts/ios/button.toml:303149
-"widgets.button.icon.icon.symbolic_colors" = "U483"
+"widgets.button.icon.icon.symbolic_colors" = ["U483", "U704"]
 # docs/facts/ios/button.toml:304220
 "widgets.button.icon.icon.state_effect" = "U483"
 # docs/facts/ios/button.toml:304225
