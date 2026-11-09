@@ -14,11 +14,14 @@
 # button (`tool`) sets its own, stated after these. The padding is ButtonPadding plus the border's width on each
 # side (S2.11's box, ADD-A125): the stroke takes no layout space in the model, while WinUI adds BorderThickness to
 # Padding to measure the content and deflates by both to arrange it (Border.cpp's helpers, which ContentPresenter and
-# Grid call).
+# Grid call). These four facts hold on every combination no later fact replaces: the accent (`primary`) and app-bar
+# (`tool`) buttons' facts below replace them wherever those are drawn, and the `default` state is drawn only in
+# `dialog.action_area` (state-models.toml's not_drawn), where the dialog default button's facts replace them; so
+# they decide no drawn combination beyond the plain Button style's (generate_preset.py's round trip and the
+# win-r2 lane's check of the combinations with `default`, `primary` and `tool`).
 
 [[fact]]
 key = "button.body.padding.top"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "= add(5px, part.stroke.top.width)"
 rows = []
 
@@ -74,7 +77,6 @@ quote = "const XSIZEF combinedThickness = CBorder::HelperGetCombinedThickness(th
 
 [[fact]]
 key = "button.body.padding.right"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "= add(11px, part.stroke.right.width)"
 rows = []
 
@@ -130,7 +132,6 @@ quote = "const XSIZEF combinedThickness = CBorder::HelperGetCombinedThickness(th
 
 [[fact]]
 key = "button.body.padding.bottom"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "= add(6px, part.stroke.bottom.width)"
 rows = []
 
@@ -186,7 +187,6 @@ quote = "const XSIZEF combinedThickness = CBorder::HelperGetCombinedThickness(th
 
 [[fact]]
 key = "button.body.padding.left"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "= add(11px, part.stroke.left.width)"
 rows = []
 
@@ -702,8 +702,14 @@ quote = "The default is **true**."
 # state as the shared facts do, the padding plus the border's width (read_host.py's [button.*]). The app-bar styles
 # are their types' own (TargetType AppBarButton, AppBarToggleButton): the AppBarButton's BorderThickness is the
 # framework's default 0 and the AppBarToggleButton's 1; neither template binds Padding (the content sits by its own
-# margins: the host read Padding 0 and the parts' margins), so how `tool`'s content margins are stated as a padding
-# stays U1's question.
+# margins: the host read Padding 0 and the parts' margins). `tool`'s padding is S2.11's *A template laid out by
+# margins* (ADD-A141, U1), in the FullSize view state (the label below): across, the content stretched and centred,
+# the label's margin 2 less the inner border's 2 on each side; down, the auto rows stacked from the top, the icon's
+# top margin 16 less the inner border's 6, and at the bottom what the icon (16), the facing margins (2 and 0) and the
+# label's line leave of the 52 px box (ContentRoot's MinHeight 64 less the margins 6 and 6). Checked against the
+# WinUI host's `standalone` pass (frames.toml [[part]]): the inner border 2,6,64,52, the icon 26,16 and the label's
+# top 34 reproduced, the label's line 15.96 px; the label's text centred (TextAlignment Center), where the host's
+# TextLabel bounds give the TextBlock's slot start, 2, and its text width, while the capture's ink is centred.
 [[fact]]
 key = "button.body.padding.top"
 when = { variants = ["primary"], not_states = ["default"] }
@@ -718,8 +724,48 @@ tolerance = 0
 [[fact]]
 key = "button.body.padding.top"
 when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
+value = "= sub(16px, 6px)"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:112"
+quote = "<Thickness x:Key=\"AppBarButtonContentViewboxCollapsedMargin\">0,16,0,2</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:366"
+quote = "<Viewbox x:Name=\"ContentViewbox\" Height=\"{ThemeResource AppBarButtonContentHeight}\" Margin=\"{ThemeResource AppBarButtonContentViewboxCollapsedMargin}\" HorizontalAlignment=\"Stretch\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:484"
+quote = "<Viewbox x:Name=\"ContentViewbox\" Height=\"{ThemeResource AppBarButtonContentHeight}\" Margin=\"{ThemeResource AppBarButtonContentViewboxCollapsedMargin}\" HorizontalAlignment=\"Stretch\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:362-365"
+quote = "<Grid.RowDefinitions> <RowDefinition Height=\"Auto\" /> <RowDefinition Height=\"Auto\" /> </Grid.RowDefinitions>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:479-482"
+quote = "<Grid.RowDefinitions> <RowDefinition Height=\"Auto\" /> <RowDefinition Height=\"Auto\" /> </Grid.RowDefinitions>"
 
 [[fact]]
 key = "button.body.padding.top"
@@ -746,8 +792,43 @@ tolerance = 0
 [[fact]]
 key = "button.body.padding.right"
 when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
+value = "= sub(2px, 2px)"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:115"
+quote = "<Thickness x:Key=\"AppBarButtonTextLabelMargin\">2,0,2,8</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:369"
+quote = "TextAlignment=\"Center\" TextWrapping=\"Wrap\" Margin=\"{ThemeResource AppBarButtonTextLabelMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:204"
+quote = "<Thickness x:Key=\"AppBarToggleButtonTextLabelMargin\">2,0,2,8</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:487"
+quote = "TextAlignment=\"Center\" TextWrapping=\"Wrap\" Margin=\"{ThemeResource AppBarToggleButtonTextLabelMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
 
 [[fact]]
 key = "button.body.padding.right"
@@ -774,8 +855,88 @@ tolerance = 0
 [[fact]]
 key = "button.body.padding.bottom"
 when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
+value = "= sub(sub(64px, add(6px, 6px)), add(sub(16px, 6px), add(add(16px, add(2px, 0px)), widget.label.line_height)))"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CommandBar_themeresources.xaml:71"
+quote = "<x:Double x:Key=\"AppBarThemeMinHeight\">64</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:356"
+quote = "<Grid x:Name=\"ContentRoot\" MinHeight=\"{ThemeResource AppBarThemeMinHeight}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:474"
+quote = "<Grid x:Name=\"ContentRoot\" MinHeight=\"{ThemeResource AppBarThemeMinHeight}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:112"
+quote = "<Thickness x:Key=\"AppBarButtonContentViewboxCollapsedMargin\">0,16,0,2</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:366"
+quote = "<Viewbox x:Name=\"ContentViewbox\" Height=\"{ThemeResource AppBarButtonContentHeight}\" Margin=\"{ThemeResource AppBarButtonContentViewboxCollapsedMargin}\" HorizontalAlignment=\"Stretch\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:484"
+quote = "<Viewbox x:Name=\"ContentViewbox\" Height=\"{ThemeResource AppBarButtonContentHeight}\" Margin=\"{ThemeResource AppBarButtonContentViewboxCollapsedMargin}\" HorizontalAlignment=\"Stretch\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:19462"
+quote = "<x:Double x:Key=\"AppBarButtonContentHeight\">16</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:115"
+quote = "<Thickness x:Key=\"AppBarButtonTextLabelMargin\">2,0,2,8</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:369"
+quote = "TextAlignment=\"Center\" TextWrapping=\"Wrap\" Margin=\"{ThemeResource AppBarButtonTextLabelMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:204"
+quote = "<Thickness x:Key=\"AppBarToggleButtonTextLabelMargin\">2,0,2,8</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:487"
+quote = "TextAlignment=\"Center\" TextWrapping=\"Wrap\" Margin=\"{ThemeResource AppBarToggleButtonTextLabelMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:362-365"
+quote = "<Grid.RowDefinitions> <RowDefinition Height=\"Auto\" /> <RowDefinition Height=\"Auto\" /> </Grid.RowDefinitions>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:479-482"
+quote = "<Grid.RowDefinitions> <RowDefinition Height=\"Auto\" /> <RowDefinition Height=\"Auto\" /> </Grid.RowDefinitions>"
 
 [[fact]]
 key = "button.body.padding.bottom"
@@ -802,8 +963,43 @@ tolerance = 0
 [[fact]]
 key = "button.body.padding.left"
 when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
+value = "= sub(2px, 2px)"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:115"
+quote = "<Thickness x:Key=\"AppBarButtonTextLabelMargin\">2,0,2,8</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:369"
+quote = "TextAlignment=\"Center\" TextWrapping=\"Wrap\" Margin=\"{ThemeResource AppBarButtonTextLabelMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:204"
+quote = "<Thickness x:Key=\"AppBarToggleButtonTextLabelMargin\">2,0,2,8</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:487"
+quote = "TextAlignment=\"Center\" TextWrapping=\"Wrap\" Margin=\"{ThemeResource AppBarToggleButtonTextLabelMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
 
 [[fact]]
 key = "button.body.padding.left"
@@ -815,6 +1011,230 @@ rows = []
 kind = "measured"
 evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.padding_left_px"
 tolerance = 0
+
+# The app-bar buttons in a command bar (`context toolbar.bar`): a closed CommandBar draws them in the Compact view
+# state (AppBarButtonInnerBorderCompactMargin 2,6,2,22, the label collapsed; the WinUI host's `command_bar` pass), an
+# open one in FullSize (the label below), which the context does not tell apart, and whether the label shows there is
+# `label_position`'s (U517): the bar's padding, bottom margin and minimum height stay U1's until the model states which
+# view state `context toolbar.bar` draws (Compact by S2.11: 10 above and below, across the Viewbox's margin 0 less the
+# inner border's 2, a negative result being zero, S1). The tabbed command bar's items set
+# DefaultLabelPosition Right (TabbedCommandBarItem.xaml:69), so its app-bar buttons take LabelOnRight: the icon and the
+# label in row 0 (columns 0 and 1), from the start edge, the control's Width NaN (its width storyboard), ContentRoot's
+# MinHeight 48; S2.11: the near sides the margin differences, the end the label's end margin less the inner
+# border's, the bottom what the content leaves of the 36 px box (the WinUI host's `command_bar_right` pass, its
+# CommandBar's DefaultLabelPosition Right).
+[[fact]]
+key = "button.body.padding.top"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = "= sub(16px, 6px)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:110"
+quote = "<Thickness x:Key=\"AppBarButtonContentViewboxMargin\">12,16,0,10</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:159-160"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentViewbox\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarButtonContentViewboxMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:247-248"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentViewbox\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarButtonContentViewboxMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.padding.right"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = "= sub(12px, 2px)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:116"
+quote = "<Thickness x:Key=\"AppBarButtonTextLabelOnRightMargin\">8,16,12,10</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:174-175"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"TextLabel\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{StaticResource AppBarButtonTextLabelOnRightMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:205"
+quote = "<Thickness x:Key=\"AppBarToggleButtonTextLabelOnRightMargin\">8,16,12,10</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:262-263"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"TextLabel\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarToggleButtonTextLabelOnRightMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = "= sub(sub(48px, add(6px, 6px)), add(sub(16px, 6px), max(16px, widget.label.line_height)))"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CommandBar_themeresources.xaml:72"
+quote = "<x:Double x:Key=\"AppBarThemeCompactHeight\">48</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:162-163"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentRoot\" Storyboard.TargetProperty=\"MinHeight\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarThemeCompactHeight}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:250-251"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentRoot\" Storyboard.TargetProperty=\"MinHeight\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarThemeCompactHeight}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:110"
+quote = "<Thickness x:Key=\"AppBarButtonContentViewboxMargin\">12,16,0,10</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:159-160"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentViewbox\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarButtonContentViewboxMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:247-248"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentViewbox\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarButtonContentViewboxMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:19462"
+quote = "<x:Double x:Key=\"AppBarButtonContentHeight\">16</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:116"
+quote = "<Thickness x:Key=\"AppBarButtonTextLabelOnRightMargin\">8,16,12,10</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:174-175"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"TextLabel\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{StaticResource AppBarButtonTextLabelOnRightMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:205"
+quote = "<Thickness x:Key=\"AppBarToggleButtonTextLabelOnRightMargin\">8,16,12,10</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:262-263"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"TextLabel\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarToggleButtonTextLabelOnRightMargin}\" />"
+
+[[fact]]
+key = "button.body.padding.left"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = "= sub(12px, 2px)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:110"
+quote = "<Thickness x:Key=\"AppBarButtonContentViewboxMargin\">12,16,0,10</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:159-160"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentViewbox\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarButtonContentViewboxMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:247-248"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentViewbox\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarButtonContentViewboxMargin}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
 
 [[fact]]
 key = "button.body.stroke.top.width"
@@ -1565,6 +1985,363 @@ rows = []
 kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_maxwidth.md:25"
 quote = "The maximum width of the object, in pixels. The default is [PositiveInfinity](/dotnet/api/system.double.positiveinfinity). This value can be any value equal to or greater than 0. [PositiveInfinity](/dotnet/api/system.double.positiveinfinity) is also valid."
+
+# The app-bar buttons (`tool`; AppBarButton and AppBarToggleButton, whose templates lay out alike): body is the
+# AppBarButtonInnerBorder that draws the fill and stroke, its template margin body's margin, and its size limits the
+# control's own less that margin (S2.11's *A template laid out by margins*, ADD-A141, U1): the Width 68 and
+# ContentRoot's MinHeight 64 in the FullSize view state; the command bar's and the tabbed command bar's after them.
+[[fact]]
+key = "button.body.margin.top"
+when = { variants = ["tool"], not_states = ["default"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.margin.right"
+when = { variants = ["tool"], not_states = ["default"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { variants = ["tool"], not_states = ["default"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.margin.left"
+when = { variants = ["tool"], not_states = ["default"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.min_width"
+when = { variants = ["tool"], not_states = ["default"] }
+value = "= sub(68px, add(2px, 2px))"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:133"
+quote = "<Setter Property=\"Width\" Value=\"68\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:221"
+quote = "<Setter Property=\"Width\" Value=\"68\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.max_width"
+when = { variants = ["tool"], not_states = ["default"] }
+value = "= sub(68px, add(2px, 2px))"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:133"
+quote = "<Setter Property=\"Width\" Value=\"68\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:221"
+quote = "<Setter Property=\"Width\" Value=\"68\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.min_height"
+when = { variants = ["tool"], not_states = ["default"] }
+value = "= sub(64px, add(6px, 6px))"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CommandBar_themeresources.xaml:71"
+quote = "<x:Double x:Key=\"AppBarThemeMinHeight\">64</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:356"
+quote = "<Grid x:Name=\"ContentRoot\" MinHeight=\"{ThemeResource AppBarThemeMinHeight}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:474"
+quote = "<Grid x:Name=\"ContentRoot\" MinHeight=\"{ThemeResource AppBarThemeMinHeight}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.min_height"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
+
+[[fact]]
+key = "button.body.min_width"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarButton_Partial.cpp:476"
+quote = "const bool shouldHaveLabelOnRightStyleSet = effectiveLabelPosition == xaml_controls::CommandBarDefaultLabelPosition_Right && !useOverflowStyle;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarButton_Partial.cpp:523"
+quote = "HStringReference(L\"Width\")"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarButton_Partial.cpp:535"
+quote = "IFC_RETURN(IValueBoxer::BoxValue(&value, DoubleUtil::NaN));"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarToggleButton_Partial.cpp:319"
+quote = "const bool shouldHaveLabelOnRightStyleSet = effectiveLabelPosition == xaml_controls::CommandBarDefaultLabelPosition_Right && !useOverflowStyle;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarToggleButton_Partial.cpp:366"
+quote = "HStringReference(L\"Width\")"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarToggleButton_Partial.cpp:378"
+quote = "IFC_RETURN(IValueBoxer::BoxValue(&value, DoubleUtil::NaN));"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:143"
+quote = "<Grid x:Name=\"Root\" Background=\"Transparent\" MinWidth=\"{TemplateBinding MinWidth}\" MaxWidth=\"{TemplateBinding MaxWidth}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:231"
+quote = "<Grid x:Name=\"Root\" Background=\"Transparent\" MinWidth=\"{TemplateBinding MinWidth}\" MaxWidth=\"{TemplateBinding MaxWidth}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_minwidth.md:24"
+quote = "The minimum width of the object, in pixels. The default is `0`."
+
+[[fact]]
+key = "button.body.max_width"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarButton_Partial.cpp:476"
+quote = "const bool shouldHaveLabelOnRightStyleSet = effectiveLabelPosition == xaml_controls::CommandBarDefaultLabelPosition_Right && !useOverflowStyle;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarButton_Partial.cpp:523"
+quote = "HStringReference(L\"Width\")"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarButton_Partial.cpp:535"
+quote = "IFC_RETURN(IValueBoxer::BoxValue(&value, DoubleUtil::NaN));"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarToggleButton_Partial.cpp:319"
+quote = "const bool shouldHaveLabelOnRightStyleSet = effectiveLabelPosition == xaml_controls::CommandBarDefaultLabelPosition_Right && !useOverflowStyle;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarToggleButton_Partial.cpp:366"
+quote = "HStringReference(L\"Width\")"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarToggleButton_Partial.cpp:378"
+quote = "IFC_RETURN(IValueBoxer::BoxValue(&value, DoubleUtil::NaN));"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:143"
+quote = "<Grid x:Name=\"Root\" Background=\"Transparent\" MinWidth=\"{TemplateBinding MinWidth}\" MaxWidth=\"{TemplateBinding MaxWidth}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:231"
+quote = "<Grid x:Name=\"Root\" Background=\"Transparent\" MinWidth=\"{TemplateBinding MinWidth}\" MaxWidth=\"{TemplateBinding MaxWidth}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_maxwidth.md:25"
+quote = "The maximum width of the object, in pixels. The default is [PositiveInfinity](/dotnet/api/system.double.positiveinfinity)."
+
+[[fact]]
+key = "button.body.min_height"
+when = { variants = ["tool"], not_states = ["default"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = "= sub(48px, add(6px, 6px))"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CommandBar_themeresources.xaml:72"
+quote = "<x:Double x:Key=\"AppBarThemeCompactHeight\">48</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:162-163"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentRoot\" Storyboard.TargetProperty=\"MinHeight\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarThemeCompactHeight}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:250-251"
+quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentRoot\" Storyboard.TargetProperty=\"MinHeight\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarThemeCompactHeight}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:469"
+quote = "<Border x:Name=\"AppBarToggleButtonInnerBorder\" Margin=\"{StaticResource AppBarButtonInnerBorderMargin}\""
 
 [[fact]]
 key = "button.body.opacity"
