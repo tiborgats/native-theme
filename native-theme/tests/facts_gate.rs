@@ -2510,6 +2510,24 @@ fn gate_fixture_listed_map_rule_entry() -> Result<(), String> {
     expected(report.failures.is_empty() && ids == ["U150"], &report)
 }
 
+/// A keyed text style the preset states beside a keyed style's listed
+/// field (S17 *Where a listed path is found*, ADD-A144): the synthetic
+/// step holding the keyed map reaches only the caption's fill it states,
+/// so the body style's fact is compared, neither listed nor skipped, and
+/// the fill is the one listed path.
+#[test]
+fn gate_fixture_listed_keyed_text_beside_stated() -> Result<(), String> {
+    let report = fixture_report("listed_keyed_text");
+    let ids = listed_ids(&report, "token.text.keyed.caption.fill")?;
+    expected(
+        report.failures.is_empty()
+            && report.synthetic.is_empty()
+            && report.listed.len() == 1
+            && ids == ["U20"],
+        &report,
+    )
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the

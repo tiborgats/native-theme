@@ -1,0 +1,39 @@
+# A synthetic preset (S17, ADD-A144): a second keyed text style, its fill listed, beside the body
+# style the preset states whole.
+# base without: [declare]
+# base without: text_styles = ["body"]
+# base without: inputs = ["accent"]
+# base without: surface_sets = ["window"]
+[pending]
+"tokens.text.keyed.caption.fill" = "U20"
+
+[declare]
+text_styles = ["body", "caption"]
+inputs = ["accent"]
+surface_sets = ["window"]
+
+[declare.widget.button]
+variants = ["flat"]
+
+[tokens.text.keyed.caption]
+font = { family = "Probe Sans", size_px = 10, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }
+scaling_role = "none"
+letter_spacing_px = 0
+word_spacing_px = 0
+line_height = "auto"
+decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+mnemonic_decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+case = "mixed"
+elision = "end"
+wrap = "word"
+max_lines = "none"
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }

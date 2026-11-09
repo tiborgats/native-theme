@@ -1,0 +1,27 @@
+# Synthetic token facts (S17, ADD-A144): the body style's letter spacing, which the preset states
+# beside the caption style's listed fill, compared; the fill pending.
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.text.keyed.body.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.text.keyed.caption.fill"
+pending = "U20"
+rows = []
