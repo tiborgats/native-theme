@@ -26,7 +26,7 @@ use super::resolve::ReaderState;
 use super::selector::{Scheme, WidgetRef};
 use super::toml::read::Named;
 pub(crate) use checks::{TypeTarget, type_env};
-pub(crate) use combos::Reused;
+pub(crate) use combos::{AccentRole, Reused, accent_dependent_roles};
 pub(crate) use stack::Stacked;
 
 /// What a layer is to the stack (S8, S9, S14): which checks apply to it.
@@ -80,17 +80,19 @@ pub(crate) struct Context<'a> {
 /// layers `Stack::synthetic` refuses unless they state constant values at
 /// disjoint places ([`synthetic_shape`]; S17, ADD-A131). The checks take
 /// from `reused` what the check of the layers below found that the layers
-/// leave as it was.
-pub(crate) fn check(added: &[&Layer], cx: &Context<'_>, reused: &Reused) -> Result<(), LayerError> {
+/// leave as it was. Each of `added` is as the stack holds it, with what S8
+/// leaves out of it (S8, S9.2).
+pub(crate) fn check_stacked(
+    added: &[Stacked<'_>],
+    cx: &Context<'_>,
+    reused: &Reused,
+) -> Result<(), LayerError> {
     let mut layers = cx.below.to_vec();
     let first = layers.len();
-    layers.extend(added.iter().map(|layer| Stacked {
-        layer,
-        kind: cx.kind,
-    }));
+    layers.extend(added.iter().copied());
     let found = combinations(&layers, *cx, reused);
     let mut problems: Vec<Problem> = Vec::new();
-    for (offset, layer) in added.iter().enumerate() {
+    for (offset, Stacked { layer, .. }) in added.iter().enumerate() {
         let at = first.saturating_add(offset);
         let mut own = checks::layer(layer, cx);
         add(
@@ -112,6 +114,20 @@ pub(crate) fn check(added: &[&Layer], cx: &Context<'_>, reused: &Reused) -> Resu
     } else {
         Err(LayerError::Invalid(problems))
     }
+}
+
+/// [`check_stacked`] over the layers `added`, nothing of them left out.
+#[cfg(test)]
+pub(crate) fn check(added: &[&Layer], cx: &Context<'_>, reused: &Reused) -> Result<(), LayerError> {
+    let added: Vec<Stacked<'_>> = added
+        .iter()
+        .map(|layer| Stacked {
+            layer,
+            kind: cx.kind,
+            left_out: None,
+        })
+        .collect();
+    check_stacked(&added, cx, reused)
 }
 
 /// Every problem the checks over combinations find in `layers`, the last
@@ -190,6 +206,7 @@ pub(crate) fn check_preset(
     let layers = [Stacked {
         layer,
         kind: LayerKind::Preset,
+        left_out: None,
     }];
     // A listed path a redrawn part leaves unstated is the layers' over it
     // too (S6.3, S17).
@@ -233,6 +250,7 @@ pub(crate) fn synthetic_shape(
         .map(|layer| Stacked {
             layer,
             kind: LayerKind::Application,
+            left_out: None,
         })
         .collect();
     let cx = Context {
@@ -397,7 +415,8 @@ pub(crate) fn listed_unstated(
 /// whose inputs apply there gives it a value, its contrast base for that
 /// contrast at that scheme or its per-scheme value at that scheme (a
 /// layer's common bases and its part for `preset`; the reader's `accent`
-/// not counting where `reader_accent_left_out`, S8, S9.5). Its problem is
+/// not counting where `reader_accent_left_out`, S8, S9.5, nor a layer's
+/// input S8 leaves out at that scheme, S9.2). Its problem is
 /// S12's missing field, one per scheme at which it is missing with no
 /// contrast, at `inputs.<name>.<scheme>`, and, at a scheme where it has a
 /// value with no contrast, one per contrast under which it is missing, at
@@ -411,15 +430,18 @@ pub(crate) fn inputs_missing(
 ) -> Vec<Problem> {
     let mut problems = Vec::new();
     for name in &declarations.inputs {
-        let left_out = |stacked: &Stacked<'_>| {
-            reader_accent_left_out
+        let left_out = |stacked: &Stacked<'_>, scheme: Scheme| {
+            (reader_accent_left_out
                 && stacked.kind == LayerKind::Reader
-                && crate::resolve::is_accent(name)
+                && crate::resolve::is_accent(name))
+                || stacked
+                    .left_out
+                    .is_some_and(|left| left.input(scheme, name))
         };
         let given = |scheme: Scheme, contrast: Option<Contrast>| {
             layers
                 .iter()
-                .filter(|stacked| !left_out(stacked))
+                .filter(|stacked| !left_out(stacked, scheme))
                 .flat_map(|stacked| applying_bases(stacked.layer, preset))
                 .flat_map(|bases| &bases.inputs.entries)
                 .any(|(held, value)| {

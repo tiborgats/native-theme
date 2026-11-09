@@ -93,6 +93,7 @@ fn resolved_by(layers: &[&str], state: ReaderState) -> ResolvedTheme {
         declarations: Declarations::default(),
         preset_layer: preset,
         derivation: None,
+        reader_left_out: None,
         reader: Some(super::super::Reader::StandIn {
             state,
             layer: Arc::default(),

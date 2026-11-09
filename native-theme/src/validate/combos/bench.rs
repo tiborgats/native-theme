@@ -311,6 +311,7 @@ fn opacity_worlds(layer: &Layer, decl: &Declarations) -> (usize, Duration) {
     let below = [Stacked {
         layer,
         kind: LayerKind::Application,
+        left_out: None,
     }];
     let cx = Context {
         declarations: decl,

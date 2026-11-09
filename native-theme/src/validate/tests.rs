@@ -74,6 +74,7 @@ fn found_over(layer: &Layer, decl: &Declarations, below: &Layer) -> Vec<String> 
     let below = [super::Stacked {
         layer: below,
         kind: LayerKind::Preset,
+        left_out: None,
     }];
     let cx = Context {
         declarations: decl,
@@ -4822,6 +4823,7 @@ fn layer_error_every_variant_triggers() {
             .map(|layer| super::Stacked {
                 layer,
                 kind: LayerKind::Preset,
+                left_out: None,
             })
             .collect();
         let cx = Context {
@@ -4990,6 +4992,7 @@ fn layer_error_every_variant_triggers() {
         let layers = [super::Stacked {
             layer: &layer,
             kind: LayerKind::Application,
+            left_out: None,
         }];
         let cx = Context {
             declarations: &none,
@@ -5011,10 +5014,12 @@ fn layer_error_every_variant_triggers() {
             super::Stacked {
                 layer: &preset,
                 kind: LayerKind::Preset,
+                left_out: None,
             },
             super::Stacked {
                 layer: &palette,
                 kind: LayerKind::Palette,
+                left_out: None,
             },
         ];
         let cx = Context {

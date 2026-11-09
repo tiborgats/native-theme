@@ -5,7 +5,8 @@
 //! base where that contrast holds and it states one, as resolution merges
 //! them (S8, S9.3); each role's from the last base stating it and every
 //! colour rule that can hold under that scheme and contrast
-//! (conservatively, the other conditions not decided).
+//! (conservatively, the other conditions not decided). A layer's input or
+//! role S8 leaves out at that scheme is not in force (S9.2).
 
 use super::super::LayerKind;
 use super::super::stack::{Stacked, excluded};
@@ -116,6 +117,12 @@ impl<'a> InForce<'a> {
             if self.reader_accent_left_out && stacked.kind == LayerKind::Reader && is_accent(name) {
                 continue;
             }
+            if stacked
+                .left_out
+                .is_some_and(|left| left.input(self.scheme, name))
+            {
+                continue;
+            }
             for bases in bases_of(stacked.layer, self.preset) {
                 for (held, value) in &bases.inputs.entries {
                     if held == name
@@ -133,9 +140,16 @@ impl<'a> InForce<'a> {
     /// colour rule's that can hold.
     fn role(&self, path: &[String]) -> Vec<&'a Expr> {
         let segments: Vec<&str> = path.iter().map(String::as_str).collect();
+        let joined = segments.join(".");
         let mut base: Option<&'a Expr> = None;
         let mut out = Vec::new();
         for stacked in self.layers {
+            if stacked
+                .left_out
+                .is_some_and(|left| left.role(self.scheme, &joined))
+            {
+                continue;
+            }
             for bases in bases_of(stacked.layer, self.preset) {
                 if let Some(patch) = bases.colors.get(self.scheme) {
                     if let Some(expr) = role_expr(patch, &segments) {
