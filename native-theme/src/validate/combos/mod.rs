@@ -26,8 +26,8 @@ use std::rc::Rc;
 use super::LayerKind;
 use super::outcomes::{Item, Space, scheme_and_flavors};
 use super::stack::{
-    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Target, Val, Visual, below, is_above,
-    part_info, tail, widget_of,
+    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Stacked, Target, Val, Visual, below,
+    is_above, part_info, tail, widget_of,
 };
 use crate::blocks::part_style::RoleRef;
 use crate::declare::{DataName, DataOwner, Declarations};
@@ -3964,9 +3964,11 @@ pub(crate) fn accent_dependent_roles(decl: &Declarations, tints: bool) -> Vec<Ac
 /// a port converts to them, S14) at `palette` in the stack leaving an
 /// accent-dependent role (S9.1's list) or an inactive input role to a layer
 /// below it, under some combination, for a scheme it states (S9.2, S12,
-/// S14): wherever `token.kde.tint_factor` can be `Some` (conservatively, a
-/// value other than `none` under some combination), every key of every
-/// declared set (S9.1's tinting entries).
+/// S14): wherever the preset's `token.kde.tint_factor` can be `Some`
+/// (conservatively, a value other than `none` under some combination of
+/// the preset's own sources, the reader's or stand-in's `token.kde` kept
+/// beneath the palette read by no check, S8), every key of every declared
+/// set (S9.1's tinting entries).
 pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem> {
     let mut problems = Vec::new();
     let Some(layer) = stack.layers.get(palette).map(|stacked| stacked.layer) else {
@@ -3993,11 +3995,18 @@ pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem>
         return problems;
     }
     let tint = "kde.tint_factor";
-    let tints = stack
+    let presets: Vec<Stacked<'_>> = stack
+        .layers
+        .iter()
+        .filter(|stacked| stacked.kind == LayerKind::Preset)
+        .copied()
+        .collect();
+    let preset = Stack::new(&presets, stack.cx);
+    let tints = preset
         .worlds(vec![Seed::Field(Target::Tokens, tint.to_owned(), false)])
         .iter()
         .any(|world| {
-            stack
+            preset
                 .value_at(world, Target::Tokens, tint, Bound::ALL, 0)
                 .iter()
                 .any(|found| !matches!(found.got, Got::Absent | Got::Stated(Fact::Nothing)))
