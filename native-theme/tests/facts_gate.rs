@@ -36,11 +36,13 @@
 //! number above zero fails. The count sets the speed and the memory: as many
 //! condition vectors are checked at once as there are threads, each one's
 //! combinations enumerated as they are checked, a chunk at a time, never all
-//! held, so each thread adds about 120 MB and the six presets peak near
-//! 4 GB on 16 threads, 6 GB on 32 (`run::thread_count`).
+//! held, so each thread adds one vector's check, which `run::thread_count`
+//! measures for each preset.
 //! `NT_FACTS_GATE_TIMING=1` prints, after each preset's and flavour's
 //! widget checks, the time their steps took over every thread
-//! (`timing::Step`); the report holds none of it.
+//! (`timing::Step`), and after each condition vector's passes what their
+//! probes, memo and report held, with the resident memory
+//! (`timing::sizes`); the report holds none of it.
 //!
 //! The citations' evidence is read under the evidence root (S17 *The
 //! evidence root*, `facts::evidence_root`): the evidence repository checked
