@@ -148,7 +148,7 @@ impl KdeAccentScheme<'_> {
 fn entered(c: Color) -> [f32; 4] {
     [c.r, c.g, c.b, c.a].map(|x| {
         if x.is_finite() {
-            x.max(0.0).min(1.0)
+            x.clamp(0.0, 1.0)
         } else {
             0.0
         }
