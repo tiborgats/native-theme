@@ -15,6 +15,17 @@ plasma-integration platform theme's `QStyleHints::colorScheme()`), and `reader.q
 plugin forces from the X resources (the system's Qt 6.12.0 on an Xvfb server whose root window's `RESOURCE_MANAGER`
 holds them, read through `QXcbScreen::forcedDpi()`; each input also read back through `xrdb -query`).
 
+By the `compiled_source` route through `accent.cpp`, the accent derivation's two tables, `kde_accent.tsv` and
+`kde_accent_wm.tsv`: Plasma's colour scheme applier, `plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp` and
+`.h`, compiled unchanged and linked with the system's Qt 6.12.0, KConfig, KGuiAddons and KColorScheme 6.31, applied to
+generated scheme files (Breeze 6.8.2's three and variants of them: tinting, the accent-coloured title bar, a `Header`
+group or none, `[Inactive]` groups, missing groups and keys, translucent colours) and accents (Breeze's
+`#00000000` among them), each case in a fresh kdeglobals that KColorScheme then reads back as the KDE reader reads
+kdeglobals. Before writing them it re-runs the nine (scheme file, accent) pairs of `docs/facts/kde/accent.toml`
+(SUSE-Cafe's file read from the cache, GPL-2.0, never written into a table) and stops on any fact that differs; it
+also prints the constants of the two colour transforms the tint uses, as the system's Qt computed them
+(`accent.cpp constants`), which the behavioural description quotes. Two runs write the same bytes.
+
 `generate.py` reads each upstream file from the source cache (`scripts/update_sources.sh`) as the commit
 `docs/facts/sources.toml` pins holds it, through git's objects (`tools/pinned.py`): Qt's `qcolor.cpp`, Kirigami's
 `colorutils.cpp`, KColorScheme's `kcolorscheme.cpp`, KGuiAddons' `kcolorutils.cpp` and `kcolorspaces.cpp`, with the
@@ -32,7 +43,8 @@ them.
 Requires g++, bubblewrap, `pkg-config`, Qt 6.12.0's development headers (private ones included) and `moc`, and the KF6
 Config 6.31 headers and libraries; it refuses another Qt or KConfig. The readers' two tables also need the KF6
 ColorScheme 6.31 headers and library (it refuses another), the plasma-integration platform theme, Qt's xcb plugin,
-Xvfb and xrdb. Run from the repository root, the source cache's folder optional (`--only-readers`: those two tables
-alone):
+Xvfb and xrdb. The accent's two tables need the KF6 GuiAddons 6.31 and ColorScheme 6.31 headers and libraries and
+QtDBus's headers (it refuses another KGuiAddons or KColorScheme). Run from the repository root, the source cache's
+folder optional (`--only-readers`: the readers' two tables alone; `--only-accent`: the accent's two alone):
 
-    python3 -I tools/kde-vectors/generate.py [--only-readers] [source cache]
+    python3 -I tools/kde-vectors/generate.py [--only-readers | --only-accent] [source cache]
