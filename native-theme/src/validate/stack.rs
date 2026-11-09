@@ -22,6 +22,7 @@ use crate::key::Key;
 use crate::layer::{Bases, Layer, Spelled};
 use crate::presets::PresetId;
 use crate::registry::{self, FieldInfo, PartInfo};
+use crate::resolve::LeftOut;
 use crate::roles::{ColorRolesPatch, SurfaceSet};
 use crate::selector::{
     Condition, PartRef, Rule, RuleBody, Scheme, Selector, StateFlag, ValuesPatch,
@@ -37,6 +38,9 @@ pub(crate) struct Stacked<'a> {
     pub(crate) layer: &'a Layer,
     /// What it is.
     pub(crate) kind: LayerKind,
+    /// What S8 leaves out of it beneath the accent-derivation layer's
+    /// statements, where anything is.
+    pub(crate) left_out: Option<&'a LeftOut>,
 }
 
 /// What a source states values of: the colour roles of a scheme, the
@@ -854,8 +858,18 @@ impl<'a> Stack<'a> {
     ) {
         let number = self.sources.len();
         let declared = &self.cx.declarations.surface_sets;
+        let left_out = match target {
+            Target::Roles(scheme) => self
+                .layers
+                .get(layer)
+                .and_then(|stacked| stacked.left_out)
+                .filter(|left| left.at(scheme))
+                .map(|left| (left, scheme)),
+            Target::Tokens | Target::Part(_) | Target::Values(_) => None,
+        };
         // A surface set the preset does not declare is refused (S10) or, a
-        // palette's, skipped (S14): either way no value of it is read.
+        // palette's, skipped (S14): either way no value of it is read. A
+        // role S8 leaves out is not in force (S9.2).
         let flat = flatten(roles, root, toml, number, None);
         let ops = flat
             .ops
@@ -866,6 +880,7 @@ impl<'a> Stack<'a> {
                     .and_then(|rest| rest.split(['.', '[']).next())
                     .and_then(crate::roles::SurfaceSet::from_name)
                     .is_none_or(|set| declared.contains(&set))
+                    && left_out.is_none_or(|(left, scheme)| !left.role(scheme, &op.path))
             })
             .collect();
         self.push(target, pos, layer, rule, Flat { ops, ..flat });

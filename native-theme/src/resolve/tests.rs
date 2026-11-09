@@ -33,6 +33,7 @@ pub(super) fn stack(
         declarations: Declarations::default(),
         preset_layer: Arc::new(preset),
         derivation: None,
+        reader_left_out: None,
         reader: reader.map(|(state, layer)| super::Reader::StandIn {
             state,
             layer: Arc::new(layer),
@@ -685,5 +686,264 @@ fn accent_derivation_layer_places() -> Result<(), Box<dyn std::error::Error>> {
         &[K::Preset, K::Reader, K::Application, K::Accent],
         &[],
     );
+    Ok(())
+}
+
+/// Colours resolved, each by its path.
+type Resolved = Vec<(String, Option<Color>)>;
+
+/// What `stack` resolves to at `scheme` at a window's root (the scheme
+/// picked, the accent-derivation layer derived for it): every key's role of
+/// every declared set and each declared `[WM]` keyed role (S9.1's list as
+/// under a tinting scheme), then every inactive input role, each by its
+/// path.
+fn derived_values(stack: &Stack, scheme: Scheme) -> Result<Resolved, Box<dyn std::error::Error>> {
+    use crate::blocks::part_style::RoleRef;
+    use crate::units::{Px, Size};
+    use crate::validate::AccentRole;
+    let mut stack = stack.clone();
+    stack.picked = Some(scheme);
+    stack.derive_derivation();
+    let resolved = stack.resolved(&window());
+    let size = Size {
+        width: Px(800.0),
+        height: Px(600.0),
+    };
+    let root = crate::query::RootInputs::new(size, size, crate::selector::Direction::Ltr);
+    let scope = resolved.root_scope(&root);
+    let mut out = Vec::new();
+    for role in crate::validate::accent_dependent_roles(stack.declarations(), true) {
+        let reference = match role {
+            AccentRole::Surface(set, key) => RoleRef::Set(set, key.role()),
+            AccentRole::Wm(key) => RoleRef::Keyed(Key::new(&format!("wm_{}", key.name()))?),
+        };
+        out.push((role.path(), resolved.role(&scope, reference)));
+    }
+    for (name, _, _) in super::inactive_inputs(stack.declarations()) {
+        let input = crate::expr::Ref::Input(name.segments().to_vec());
+        let value = resolved.evaluate_role(&scope, &input).value;
+        out.push((format!("inputs.{name}"), value));
+    }
+    Ok(out)
+}
+
+/// The paths at which two lists of [`derived_values`] differ, in order.
+fn differ(a: &[(String, Option<Color>)], b: &[(String, Option<Color>)]) -> Vec<String> {
+    assert_eq!(a.len(), b.len());
+    a.iter()
+        .zip(b)
+        .filter(|(a, b)| a != b)
+        .map(|((path, _), _)| path.clone())
+        .collect()
+}
+
+/// `kde-breeze`'s accent-derivation layer (S8, S9.2; ADD-A132): with no
+/// stated accent it states nothing; under `set_accent` the `Accent`'s
+/// derivation shows at both schemes; an accent for one scheme leaves the
+/// other as without it; a stand-in's accent equals `set_accent` of it but
+/// for the roles the stand-in states; a reader-shaped stand-in (its accent
+/// common, its results in its part for the preset at its scheme) shows its
+/// results at its scheme and the derivation at the other; under
+/// `set_accent` a stand-in's own accent-dependent roles and inactive input
+/// roles are left out at both schemes, its other roles kept; and
+/// validation reads that leave-out (S12): a stand-in whose left-out link
+/// and input read themselves is refused alone and kept under the
+/// `Accent`, which then cannot be cleared. Every colour but the accent,
+/// the accent run's `#e5a50a`, is synthetic.
+#[test]
+fn accent_derivation_layer() -> Result<(), Box<dyn std::error::Error>> {
+    use Scheme::{Dark, Light};
+    let file = read_preset(PresetId::KdeBreeze.source())?;
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    let plain = Stack::synthetic(
+        Some(PresetId::KdeBreeze),
+        file.declarations,
+        file.layer,
+        Light,
+        file.pending,
+        layers,
+    )?;
+    let accent = |schemes: &[Scheme], hex: &str| -> Result<Accent, Box<dyn std::error::Error>> {
+        let mut per_scheme = SchemeMap::default();
+        for scheme in schemes {
+            *per_scheme.slot(*scheme) =
+                Some(Value::Stated(Color::parse(hex).ok_or("not a colour")?));
+        }
+        Ok(Accent::new(InputValue::new(per_scheme)))
+    };
+    let at_light = || ReaderState::new(Light, 1.0);
+    let both = [Light, Dark];
+    let x = "#e5a50a";
+
+    assert_eq!(plain.derivation.as_deref(), Some(&Layer::default()));
+    assert_eq!(plain.reader_left_out, None);
+    let mut quiet = plain.clone();
+    quiet.set_reader_stand_in(
+        at_light(),
+        Layer::from_toml("[colors.light.surfaces.view]\nlink = \"#102030\"\n")?,
+    )?;
+    assert_eq!(quiet.derivation.as_deref(), Some(&Layer::default()));
+    assert_eq!(quiet.reader_left_out, None);
+
+    let plain_light = derived_values(&plain, Light)?;
+    let plain_dark = derived_values(&plain, Dark)?;
+    let mut set = plain.clone();
+    set.set_accent(Some(accent(&both, x)?))?;
+    let set_light = derived_values(&set, Light)?;
+    let set_dark = derived_values(&set, Dark)?;
+    let link = "surfaces.view.link".to_owned();
+    assert!(differ(&set_light, &plain_light).contains(&link));
+    assert!(differ(&set_dark, &plain_dark).contains(&link));
+
+    let mut one = plain.clone();
+    one.set_accent(Some(accent(&[Light], x)?))?;
+    assert_eq!(derived_values(&one, Light)?, set_light);
+    assert_eq!(derived_values(&one, Dark)?, plain_dark);
+
+    let mut stood = plain.clone();
+    stood.set_reader_stand_in(
+        at_light(),
+        Layer::from_toml(&format!(
+            "[inputs.accent]\nlight = \"{x}\"\ndark = \"{x}\"\n\
+             [colors.light.surfaces.view]\nlink = \"#102030\"\n\
+             [colors.dark.keyed]\nwm_active_background = \"#203040\"\n"
+        ))?,
+    )?;
+    assert_eq!(stood.reader_left_out, None);
+    assert_eq!(differ(&derived_values(&stood, Light)?, &set_light), [link]);
+    assert_eq!(
+        differ(&derived_values(&stood, Dark)?, &set_dark),
+        ["keyed.wm_active_background"]
+    );
+
+    let mut shaped = plain.clone();
+    shaped.set_reader_stand_in(
+        at_light(),
+        Layer::from_toml(&format!(
+            "[inputs.accent]\nlight = \"{x}\"\ndark = \"{x}\"\n\
+             [for_preset.kde-breeze.colors.light.surfaces.selection]\n\
+             background = \"#304050\"\n\
+             [for_preset.kde-breeze.inputs.inactive.view.foreground_link]\n\
+             light = \"#405060\"\n"
+        ))?,
+    )?;
+    assert_eq!(
+        differ(&derived_values(&shaped, Light)?, &set_light),
+        [
+            "surfaces.selection.background",
+            "inputs.inactive.view.foreground_link"
+        ]
+    );
+    assert_eq!(derived_values(&shaped, Dark)?, set_dark);
+
+    let mut over = plain.clone();
+    over.set_reader_stand_in(
+        at_light(),
+        Layer::from_toml(
+            "[inputs.accent]\nlight = \"#1d99f3\"\ndark = \"#1d99f3\"\n\
+             [colors.light.surfaces.view]\nlink = \"#102030\"\nbackground = \"#506070\"\n\
+             [colors.dark.keyed]\nwm_active_background = \"#203040\"\n\
+             [inputs.inactive.view.foreground_link]\n\
+             light = \"#405060\"\ndark = \"#405060\"\n",
+        )?,
+    )?;
+    assert_eq!(over.reader_left_out, None);
+    over.set_accent(Some(accent(&both, x)?))?;
+    assert!(over.reader_left_out.is_some());
+    assert_eq!(
+        differ(&derived_values(&over, Light)?, &set_light),
+        ["surfaces.view.background"]
+    );
+    assert_eq!(derived_values(&over, Dark)?, set_dark);
+
+    let cycle = Layer::from_toml(
+        "[colors.light.surfaces.view]\n\
+         link = \"= role.view.link_visited\"\nlink_visited = \"= role.view.link\"\n\
+         [inputs.inactive.view.foreground_link]\n\
+         light = \"= input.inactive.view.foreground_link\"\n",
+    )?;
+    let mut alone = plain.clone();
+    assert!(
+        alone
+            .set_reader_stand_in(at_light(), cycle.clone())
+            .is_err()
+    );
+    let mut kept = set.clone();
+    kept.set_reader_stand_in(at_light(), cycle)?;
+    assert!(kept.set_accent(None).is_err());
+    Ok(())
+}
+
+/// A stand-in stating a surface set whole on `kde-breeze`, a block and not
+/// field by field (here the preset's own `view` block at light), which S8's
+/// per-role leave-out cannot reach (S8, S9.2, S12): kept while no layer
+/// above it gives the accent, refused under an `Accent`, so `set_accent`
+/// is refused over it and the stand-in under it, each leaving the stack as
+/// it was.
+#[test]
+fn a_set_stated_whole_beneath_the_derivation() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::blocks::BlockPatch;
+    use crate::roles::{ColorRolesPatch, SurfaceSet};
+    let file = read_preset(PresetId::KdeBreeze.source())?;
+    let view = file
+        .layer
+        .bases
+        .colors
+        .light
+        .as_ref()
+        .and_then(|roles| roles.surfaces.as_ref())
+        .and_then(|surfaces| surfaces.get(SurfaceSet::View))
+        .cloned()
+        .ok_or("the preset states its view set")?;
+    assert!(matches!(view, BlockPatch::Set(Value::Stated(_))));
+    let mut surfaces = crate::value::SurfaceMap::default();
+    surfaces.insert(SurfaceSet::View, view);
+    let mut whole = Layer::default();
+    whole.bases.colors.light = Some(ColorRolesPatch {
+        surfaces: Some(surfaces),
+        ..ColorRolesPatch::default()
+    });
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    let plain = Stack::synthetic(
+        Some(PresetId::KdeBreeze),
+        file.declarations,
+        file.layer,
+        Scheme::Light,
+        file.pending,
+        layers,
+    )?;
+    let accent = Color::parse("#e5a50a").ok_or("not a colour")?;
+    let accent = Accent::new(InputValue::new(SchemeMap::new(
+        Value::Stated(accent),
+        Value::Stated(accent),
+    )));
+    let named = |error: LayerError| match error {
+        LayerError::Invalid(problems) => problems.iter().map(ToString::to_string).collect(),
+        other => vec![other.to_string()],
+    };
+    let refusal = [
+        "colors.light.surfaces.view: the surface set `view` stated whole where its \
+         accent-dependent roles are left out; state its roles one by one",
+    ];
+
+    let mut stood = plain.clone();
+    stood.set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), whole.clone())?;
+    let before = stood.clone();
+    let refused = stood
+        .set_accent(Some(accent.clone()))
+        .err()
+        .ok_or("set_accent kept")?;
+    assert_eq!(named(refused), refusal);
+    assert_eq!(stood, before);
+
+    let mut accented = plain;
+    accented.set_accent(Some(accent))?;
+    let before = accented.clone();
+    let refused = accented
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), whole)
+        .err()
+        .ok_or("the stand-in kept")?;
+    assert_eq!(named(refused), refusal);
+    assert_eq!(accented, before);
     Ok(())
 }

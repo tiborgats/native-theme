@@ -7,8 +7,11 @@
 //! whose conditions hold, kept in order for the query (S8); their
 //! evaluation for an element ([`evaluate`]), a `Fields` patch over a
 //! reference composed lazily ([`compose`], S2.2). Also S9.2's accent layer
-//! (its inputs; `kde-breeze`'s accent-derivation layer enters with that
-//! preset and `kde_accent`, M1b).
+//! (its inputs) and `kde-breeze`'s accent-derivation layer (Plasma's
+//! derivation of the accent-dependent roles and inactive input roles
+//! through `kde_accent` and `kde_accent_wm`, at the schemes where a layer
+//! above the preset gives the accent in force), with S8's leave-out beneath
+//! it of the reader's or stand-in's stated roles ([`LeftOut`]).
 #![cfg_attr(
     not(test),
     expect(
@@ -22,21 +25,23 @@ use std::sync::Arc;
 pub(crate) mod compose;
 pub(crate) mod evaluate;
 
+use super::blocks::BlockPatch;
 use super::color::Color;
 use super::declare::Declarations;
 use super::error::{LayerError, Problem, ProblemKind};
-use super::inputs::{Accent, Contrast, InputBases, InputName, InputValue};
+use super::expr::{Expr, Func, Literal, Name};
+use super::inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
 use super::key::Key;
 use super::layer::{Bases, Layer, LayerId};
 use super::presets::PresetId;
-use super::roles::{ColorRolesPatch, SurfaceSet};
+use super::roles::{ColorRolesPatch, SurfaceRoles, SurfaceRolesPatch, SurfaceSet};
 use super::selector::{
     Condition, Idiom, InputKind, PartRef, Posture, RuleBody, Scheme, Selector, TiledEdges,
     ValuesPatch, WidgetRef,
 };
 use super::tokens::TokensPatch;
 use super::validate::{self, Context, LayerKind, Stacked};
-use super::value::Value;
+use super::value::{SchemeMap, SurfaceMap, Value};
 use super::widgets::{PartPatch, Shown, TypedPart, WidgetKind, WidgetValuesPatch, WidgetsPatch};
 
 /// The system conditions a reader reports (S8, R2.3, S7.1), and its text
@@ -419,6 +424,126 @@ enum Reader {
     },
 }
 
+/// S8's leave-out of one layer beneath the accent-derivation layer's
+/// statements (S8, S9.2; ADD-A132): at the schemes `schemes`, the slots of
+/// the scheme in force, the layer's stated accent-dependent roles (S9.1's
+/// list, the `[WM]` keyed roles among them) and inactive input roles, in its
+/// bases and rules, are not in force, so the accent-derivation layer's roles
+/// over the accent in force show there. Resolution and validation read it
+/// alike, through the layer's [`Stacked`]. The reader's or stand-in's holds
+/// where a layer above it gives the accent in force; a KDE port's (S14) is
+/// the same leave-out at every scheme where the accent-derivation layer
+/// states its roles ([`Stack::accent_givers`]).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct LeftOut {
+    /// The schemes at which the layer's roles and inputs are left out.
+    schemes: Vec<Scheme>,
+    /// The accent-dependent roles left out.
+    roles: Vec<validate::AccentRole>,
+    /// Their paths in a scheme's colour roles (`surfaces.view.link`).
+    paths: Vec<String>,
+    /// The inactive input roles left out.
+    inputs: Vec<InputName>,
+}
+
+impl LeftOut {
+    /// The leave-out of `roles` and the inactive input roles `inputs` at
+    /// `schemes`.
+    pub(crate) fn new(
+        schemes: Vec<Scheme>,
+        roles: &[validate::AccentRole],
+        inputs: Vec<InputName>,
+    ) -> LeftOut {
+        LeftOut {
+            schemes,
+            roles: roles.to_vec(),
+            paths: roles.iter().map(|role| role.path()).collect(),
+            inputs,
+        }
+    }
+
+    /// Whether the layer's roles and inputs are left out at `scheme`.
+    pub(crate) fn at(&self, scheme: Scheme) -> bool {
+        self.schemes.contains(&scheme)
+    }
+
+    /// Whether the role at `path` of a scheme's colour roles is left out
+    /// at `scheme`.
+    pub(crate) fn role(&self, scheme: Scheme, path: &str) -> bool {
+        self.at(scheme) && self.paths.iter().any(|held| held == path)
+    }
+
+    /// The schemes at which the layer's roles and inputs are left out.
+    pub(crate) fn schemes(&self) -> &[Scheme] {
+        &self.schemes
+    }
+
+    /// Whether an accent-dependent role of the surface set `set` is left
+    /// out.
+    pub(crate) fn holds_set(&self, set: SurfaceSet) -> bool {
+        self.roles
+            .iter()
+            .any(|role| matches!(role, validate::AccentRole::Surface(held, _) if *held == set))
+    }
+
+    /// Whether the input `name` is left out at `scheme`.
+    pub(crate) fn input(&self, scheme: Scheme, name: &InputName) -> bool {
+        self.at(scheme) && self.inputs.contains(name)
+    }
+
+    /// `roles` without the roles left out: each stated as a field of its
+    /// set's patch or as a keyed entry taken out. A set stated whole is
+    /// left as it is: validation refuses one where its roles are left out
+    /// ([`validate::sets_stated_whole`]), and no reader or stand-in states
+    /// one, each stating its roles field by field.
+    fn strip(&self, roles: &mut ColorRolesPatch) {
+        for role in &self.roles {
+            match role {
+                validate::AccentRole::Surface(set, key) => {
+                    if let Some(BlockPatch::Fields(patch)) = roles
+                        .surfaces
+                        .as_mut()
+                        .and_then(|surfaces| surfaces.get_mut(*set))
+                    {
+                        *key_slot(patch, *key) = None;
+                    }
+                }
+                validate::AccentRole::Wm(key) => {
+                    if let Some(keyed) = roles.keyed.as_mut() {
+                        keyed.retain(|(held, _)| !is_wm(held, *key));
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The field of a surface set's roles patch that the scheme key `key` names
+/// (the catalogue's key table, [`KdeSchemeKey::role`]).
+fn key_slot(patch: &mut SurfaceRolesPatch, key: KdeSchemeKey) -> &mut Option<Value<Color>> {
+    match key {
+        KdeSchemeKey::BackgroundNormal => &mut patch.background,
+        KdeSchemeKey::BackgroundAlternate => &mut patch.background_alternate,
+        KdeSchemeKey::ForegroundNormal => &mut patch.foreground,
+        KdeSchemeKey::ForegroundInactive => &mut patch.foreground_inactive,
+        KdeSchemeKey::ForegroundActive => &mut patch.foreground_active,
+        KdeSchemeKey::ForegroundLink => &mut patch.link,
+        KdeSchemeKey::ForegroundVisited => &mut patch.link_visited,
+        KdeSchemeKey::ForegroundNegative => &mut patch.negative,
+        KdeSchemeKey::ForegroundNeutral => &mut patch.neutral,
+        KdeSchemeKey::ForegroundPositive => &mut patch.positive,
+        KdeSchemeKey::DecorationFocus => &mut patch.decoration_focus,
+        KdeSchemeKey::DecorationHover => &mut patch.decoration_hover,
+    }
+}
+
+/// Whether `held` is the key of the keyed role `wm_<key>`.
+fn is_wm(held: &Key, key: KdeWmKey) -> bool {
+    held.as_str()
+        .strip_prefix("wm_")
+        .is_some_and(|rest| rest == key.name())
+}
+
 /// The stack (S8): the preset's declarations and layer, the reader or its
 /// stand-in, the application's layers, the accent the application set, and
 /// the application's conditions. Every change validates the whole stack
@@ -436,6 +561,10 @@ pub(crate) struct Stack {
     /// other preset.
     derivation: Option<Arc<Layer>>,
     reader: Option<Reader>,
+    /// S8's leave-out of the reader's or stand-in's roles beneath the
+    /// accent-derivation layer, derived with it; `None` where nothing of
+    /// it is left out.
+    reader_left_out: Option<LeftOut>,
     /// The application's layers, each with the id it was added under.
     layers: Vec<(LayerId, Arc<Layer>)>,
     accent: Option<Accent>,
@@ -492,6 +621,7 @@ impl Stack {
             declarations,
             preset_layer: Arc::new(layer),
             derivation: None,
+            reader_left_out: None,
             reader: None,
             layers: Vec::new(),
             accent: None,
@@ -503,7 +633,7 @@ impl Stack {
             pending,
             synthetic: None,
         };
-        stack.derivation = stack.derived_derivation();
+        stack.derive_derivation();
         add_problems(&mut problems, stack.validate_reusing(&reused))?;
         if problems.is_empty() {
             Ok(stack)
@@ -561,6 +691,7 @@ impl Stack {
             declarations,
             preset_layer: Arc::new(layer),
             derivation: None,
+            reader_left_out: None,
             reader: None,
             synthetic: Some(Synthetic {
                 layers: layers.iter().map(|(id, _)| *id).collect(),
@@ -576,7 +707,7 @@ impl Stack {
             flavor: None,
             pending,
         };
-        stack.derivation = stack.derived_derivation();
+        stack.derive_derivation();
         add_problems(&mut problems, stack.validate_reusing(&reused))?;
         if problems.is_empty() {
             Ok(stack)
@@ -601,6 +732,7 @@ impl Stack {
             declarations,
             preset_layer,
             derivation: None,
+            reader_left_out: None,
             reader: Some(Reader::StandIn {
                 state: ReaderState::new(Scheme::Light, 1.0),
                 layer: Arc::default(),
@@ -632,8 +764,8 @@ impl Stack {
     ) -> Result<(), LayerError> {
         let mut changed = Box::new(self.clone());
         change(&mut changed);
-        changed.derivation = changed.derived_derivation();
         changed.accent_layer = changed.derived_accent();
+        changed.derive_derivation();
         add_problems(&mut problems, changed.validate())?;
         if !problems.is_empty() {
             return Err(LayerError::Invalid(problems));
@@ -835,7 +967,7 @@ impl Stack {
     /// preset's `accent_inputs` names, an accent carrying more for another
     /// preset (S9.5). On `kde-breeze` that is the `accent` alone; Plasma's
     /// derivation from it is the accent-derivation layer's (S8, S9.2;
-    /// [`Stack::derived_derivation`]).
+    /// [`Stack::derive_derivation`]).
     fn derived_accent(&self) -> Arc<Layer> {
         let mut layer = Layer::default();
         if let Some(accent) = &self.accent {
@@ -855,18 +987,104 @@ impl Stack {
         Arc::new(layer)
     }
 
-    /// The accent-derivation layer for the current preset (S8, S9.2;
-    /// ADD-A132): on a preset that derives its accent-dependent roles
+    /// Derives the accent-derivation layer for the current preset and the
+    /// slot in force, and S8's leave-out beneath it (S8, S9.2; ADD-A132):
+    /// on a preset that derives its accent-dependent roles
     /// ([`derives_accent`]), a layer directly above the preset, beneath the
     /// reader or stand-in; `None` on every other preset. On such a preset
     /// the layer holds its place whatever the accent: where no layer above
     /// the preset gives the accent in force it states nothing, which is
     /// ADD-A132's "no stated accent, no layer", so no place in the stack
-    /// moves with `set_accent`. It states nothing yet: its roles over the
-    /// accent in force, at the slots where a layer above the preset gives
-    /// that accent, enter with `kde_accent` (M1b).
-    fn derived_derivation(&self) -> Option<Arc<Layer>> {
-        derives_accent(self.preset).then(Arc::default)
+    /// moves with `set_accent`. At each scheme where a layer above the
+    /// preset gives the accent in force under the contrast in force
+    /// ([`Stack::accent_givers`]), and at no other, it states each
+    /// accent-dependent role (S9.1's list, conservatively: every key of
+    /// every declared set wherever `token.kde.tint_factor` can be `Some`) as
+    /// `= kde_accent(<set>, <key>, active)`, each `[WM]` keyed role as
+    /// `= kde_accent_wm(<key>)` and each inactive input role as
+    /// `= kde_accent(<set>, <key>, inactive)`, nothing else: each function
+    /// gives the untinted value where the scheme does not tint (S2.2). So
+    /// the layer states both schemes' slots under the contrast in force,
+    /// which validation checks it at (S12), the slot in force among them.
+    /// The reader's or stand-in's stated roles and inputs among those are
+    /// left out at each scheme where a layer above it gives the accent in
+    /// force ([`LeftOut`]).
+    fn derive_derivation(&mut self) {
+        self.reader_left_out = None;
+        self.derivation = derives_accent(self.preset).then(Arc::default);
+        if self.derivation.is_none() {
+            return;
+        }
+        let givers = self.accent_givers(self.contrast());
+        if givers.is_empty() {
+            return;
+        }
+        let roles = validate::accent_dependent_roles(&self.declarations, self.may_tint());
+        let inputs = inactive_inputs(&self.declarations);
+        let schemes: Vec<Scheme> = givers.iter().map(|(scheme, _)| *scheme).collect();
+        self.derivation = Some(Arc::new(derivation_layer(&schemes, &roles, &inputs)));
+        if self.reader.is_some() {
+            let reader = self.reader_place();
+            let above: Vec<Scheme> = givers
+                .iter()
+                .filter(|(_, giver)| *giver > reader)
+                .map(|(scheme, _)| *scheme)
+                .collect();
+            if !above.is_empty() {
+                let names = inputs.into_iter().map(|(name, _, _)| name).collect();
+                self.reader_left_out = Some(LeftOut::new(above, &roles, names));
+            }
+        }
+    }
+
+    /// Each scheme at which a layer above the preset gives the `input.accent`
+    /// in force under `contrast` (S8, S9), with that layer's place in the
+    /// stack's order: the last whose bases give it a value there, its
+    /// per-contrast base or its per-scheme value, the reader's `accent` not
+    /// counting where it is left out (S9.5). The accent-derivation layer
+    /// states its roles at these schemes.
+    fn accent_givers(&self, contrast: Option<Contrast>) -> Vec<(Scheme, usize)> {
+        let left_out = self.reader_accent_left_out();
+        let stacked = self.stacked();
+        Scheme::ALL
+            .into_iter()
+            .filter_map(|scheme| {
+                let giver = stacked
+                    .iter()
+                    .enumerate()
+                    .skip(1)
+                    .filter(|(_, stacked)| !(stacked.kind == LayerKind::Reader && left_out))
+                    .filter(|(_, stacked)| {
+                        validate::applying_bases(stacked.layer, self.preset)
+                            .flat_map(|bases| &bases.inputs.entries)
+                            .any(|(name, value)| {
+                                is_accent(name) && input_value(value, scheme, contrast).is_some()
+                            })
+                    })
+                    .map(|(place, _)| place)
+                    .next_back()?;
+                Some((scheme, giver))
+            })
+            .collect()
+    }
+
+    /// Whether `token.kde.tint_factor` can be `Some` (S9.1, conservatively,
+    /// S12): a layer's bases or one of its `Tokens` rules state it other than
+    /// `none`, or state the KDE tokens whole by reference.
+    fn may_tint(&self) -> bool {
+        let tints = |tokens: &TokensPatch| match &tokens.kde {
+            None | Some(BlockPatch::Set(Value::Absent | Value::Auto)) => false,
+            Some(BlockPatch::Fields(kde)) => matches!(kde.tint_factor, Some(Some(_))),
+            Some(BlockPatch::Set(Value::Stated(kde))) => kde.tint_factor.is_some(),
+            Some(BlockPatch::Set(Value::Expr(_))) => true,
+        };
+        self.stacked().iter().any(|stacked| {
+            validate::applying_bases(stacked.layer, self.preset).any(|bases| tints(&bases.tokens))
+                || stacked.layer.rules.iter().any(|rule| match &rule.body {
+                    RuleBody::Tokens(tokens) => tints(tokens),
+                    RuleBody::Colors(_) | RuleBody::Part(..) | RuleBody::Values(_) => false,
+                })
+        })
     }
 
     /// The place in the stack's order of the reader or stand-in, while
@@ -888,26 +1106,31 @@ impl Stack {
         let mut out = vec![Stacked {
             layer: &self.preset_layer,
             kind: LayerKind::Preset,
+            left_out: None,
         }];
         if let Some(layer) = &self.derivation {
             out.push(Stacked {
                 layer,
                 kind: LayerKind::AccentDerivation,
+                left_out: None,
             });
         }
         if let Some(Reader::Read { layer, .. } | Reader::StandIn { layer, .. }) = &self.reader {
             out.push(Stacked {
                 layer,
                 kind: LayerKind::Reader,
+                left_out: self.reader_left_out.as_ref(),
             });
         }
         out.extend(self.layers.iter().map(|(_, layer)| Stacked {
             layer,
             kind: LayerKind::Application,
+            left_out: None,
         }));
         out.push(Stacked {
             layer: &self.accent_layer,
             kind: LayerKind::Accent,
+            left_out: None,
         });
         out
     }
@@ -1028,12 +1251,7 @@ impl Stack {
                     end = end.saturating_add(1);
                 }
             }
-            let added: Vec<&Layer> = stacked
-                .get(index..end)
-                .unwrap_or_default()
-                .iter()
-                .map(|stacked| stacked.layer)
-                .collect();
+            let added = stacked.get(index..end).unwrap_or_default();
             let cx = Context {
                 declarations: &self.declarations,
                 preset: self.preset,
@@ -1041,7 +1259,7 @@ impl Stack {
                 reader_accent_left_out: self.reader_accent_left_out(),
                 below: stacked.get(..index).unwrap_or_default(),
             };
-            add_problems(&mut problems, validate::check(&added, &cx, reused))?;
+            add_problems(&mut problems, validate::check_stacked(added, &cx, reused))?;
             index = end;
         }
         let listed = validate::listed_unstated(
@@ -1214,7 +1432,7 @@ impl Stack {
         // Step 1: every layer's bases, in order, a preset's own part after
         // the common bases while that preset is current.
         for (index, layer) in stacked.iter().enumerate() {
-            let drop_accent = layer.kind == LayerKind::Reader && left_out;
+            let omit = Omit::of(layer, scheme, left_out);
             let mut parts: Vec<(&Bases, usize)> = vec![(&layer.layer.bases, 0)];
             for (preset, bases) in &layer.layer.for_preset {
                 if Some(*preset) == self.preset {
@@ -1227,13 +1445,14 @@ impl Stack {
                     layer: index,
                     index: minor,
                 };
-                out.base(bases, pos, scheme, contrast, drop_accent);
+                out.base(bases, pos, scheme, contrast, omit);
             }
         }
         out.synthetic_inputs = self.synthetic_inputs(scheme, contrast, &out.input_layers);
         // Steps 2 and 3: every layer's rules whose conditions hold, in
         // order; a part's or widget's kept with its selector for the query.
         for (index, layer) in stacked.iter().enumerate() {
+            let omit = Omit::of(layer, scheme, left_out);
             for (number, rule) in layer.layer.rules.iter().enumerate() {
                 if !holding.conditions_hold(&rule.selector) {
                     continue;
@@ -1243,7 +1462,7 @@ impl Stack {
                     layer: index,
                     index: number,
                 };
-                out.rule(&rule.body, &rule.selector, pos);
+                out.rule(&rule.body, &rule.selector, pos, omit);
             }
         }
         out
@@ -1445,6 +1664,87 @@ fn derives_accent(preset: Option<PresetId>) -> bool {
     })
 }
 
+/// The inactive input roles `decl` declares (S9.1), every declared set's
+/// and key's `inactive.<set>.<key>`, each with its set and key.
+fn inactive_inputs(decl: &Declarations) -> Vec<(InputName, SurfaceSet, KdeSchemeKey)> {
+    let mut out = Vec::new();
+    for set in &decl.surface_sets {
+        for key in KdeSchemeKey::ALL {
+            let name = InputName::new(&format!("inactive.{}.{}", set.name(), key.name()));
+            if let Ok(name) = name
+                && decl.inputs.contains(&name)
+            {
+                out.push((name, *set, key));
+            }
+        }
+    }
+    out
+}
+
+/// The accent-derivation layer's bases at `schemes` (S9.2; ADD-A132): each
+/// of `roles` as `= kde_accent(<set>, <key>, active)` or, a `[WM]` keyed
+/// role, `= kde_accent_wm(<key>)`, and each of the inactive input roles
+/// `inputs` as `= kde_accent(<set>, <key>, inactive)`.
+fn derivation_layer(
+    schemes: &[Scheme],
+    roles: &[validate::AccentRole],
+    inputs: &[(InputName, SurfaceSet, KdeSchemeKey)],
+) -> Layer {
+    let name = |text: &'static str| {
+        Key::from_static(text).map(|key| Expr::Lit(Literal::Name(Name::Variant(key))))
+    };
+    let accent = |set: SurfaceSet, key: KdeSchemeKey, group: &'static str| {
+        let args = [name(set.name()), name(key.name()), name(group)];
+        let args: Option<Vec<Expr>> = args.into_iter().collect();
+        args.map(|args| Value::Expr(Expr::Call(Func::KdeAccent, args)))
+    };
+    let mut surfaces: SurfaceMap<BlockPatch<SurfaceRoles>> = SurfaceMap::default();
+    let mut keyed: Vec<(Key, Value<Color>)> = Vec::new();
+    for role in roles {
+        match *role {
+            validate::AccentRole::Surface(set, key) => {
+                let Some(value) = accent(set, key, "active") else {
+                    continue;
+                };
+                if surfaces.get(set).is_none() {
+                    surfaces.insert(set, BlockPatch::Fields(SurfaceRolesPatch::default()));
+                }
+                if let Some(BlockPatch::Fields(patch)) = surfaces.get_mut(set) {
+                    *key_slot(patch, key) = Some(value);
+                }
+            }
+            validate::AccentRole::Wm(key) => {
+                let held = Key::new(&format!("wm_{}", key.name()));
+                if let (Ok(held), Some(arg)) = (held, name(key.name())) {
+                    let call = Expr::Call(Func::KdeAccentWm, vec![arg]);
+                    keyed.push((held, Value::Expr(call)));
+                }
+            }
+        }
+    }
+    let colors = ColorRolesPatch {
+        surfaces: Some(surfaces),
+        keyed: Some(keyed),
+        ..ColorRolesPatch::default()
+    };
+    let mut layer = Layer::default();
+    for scheme in schemes {
+        *layer.bases.colors.slot(*scheme) = Some(colors.clone());
+    }
+    for (input, set, key) in inputs {
+        let Some(value) = accent(*set, *key, "inactive") else {
+            continue;
+        };
+        let mut per_scheme = SchemeMap::default();
+        for scheme in schemes {
+            *per_scheme.slot(*scheme) = Some(value.clone());
+        }
+        let entries = &mut layer.bases.inputs.entries;
+        entries.push((input.clone(), InputValue::new(per_scheme)));
+    }
+    layer
+}
+
 /// Whether `name` is the `accent` input.
 pub(crate) fn is_accent(name: &InputName) -> bool {
     matches!(name.segments(), [only] if only.as_str() == "accent")
@@ -1488,22 +1788,22 @@ fn classify(last: &Recorded, now: &Recorded) -> Change {
 
 impl ResolvedTheme {
     /// Step 1 for one layer's bases at `pos`: its colours under `scheme`,
-    /// its inputs (each replaced at the slot in force alone, S9; the accent
-    /// left out where `drop_accent`), KDE's lists, its tokens and its
-    /// widgets' patches. A layer's part for the current preset comes after
-    /// its common bases, so it replaces them slot by slot too.
+    /// its inputs (each replaced at the slot in force alone, S9), KDE's
+    /// lists, its tokens and its widgets' patches, what `omit` names left
+    /// out. A layer's part for the current preset comes after its common
+    /// bases, so it replaces them slot by slot too.
     fn base(
         &mut self,
         bases: &Bases,
         pos: Pos,
         scheme: Scheme,
         contrast: Option<Contrast>,
-        drop_accent: bool,
+        omit: Omit<'_>,
     ) {
         if let Some(colors) = bases.colors.get(scheme) {
-            self.colors.push(step(pos, None, colors.clone()));
+            self.colors.push(step(pos, None, omit.roles(colors)));
         }
-        self.inputs(&bases.inputs, pos.layer, scheme, contrast, drop_accent);
+        self.inputs(&bases.inputs, pos.layer, scheme, contrast, omit);
         if *bases.tokens != TokensPatch::default() {
             self.tokens.push(step(pos, None, bases.tokens.clone()));
         }
@@ -1522,10 +1822,10 @@ impl ResolvedTheme {
         layer: usize,
         scheme: Scheme,
         contrast: Option<Contrast>,
-        drop_accent: bool,
+        omit: Omit<'_>,
     ) {
         for (name, value) in &inputs.entries {
-            if drop_accent && is_accent(name) {
+            if omit.input(name) {
                 continue;
             }
             // A layer giving no value at the slot in force leaves the
@@ -1549,10 +1849,11 @@ impl ResolvedTheme {
         }
     }
 
-    /// Steps 2 and 3 for one rule whose conditions hold.
-    fn rule(&mut self, body: &RuleBody, selector: &Selector, pos: Pos) {
+    /// Steps 2 and 3 for one rule whose conditions hold, the roles `omit`
+    /// names left out of a `Colors` rule.
+    fn rule(&mut self, body: &RuleBody, selector: &Selector, pos: Pos, omit: Omit<'_>) {
         match body {
-            RuleBody::Colors(roles) => self.colors.push(step(pos, None, (**roles).clone())),
+            RuleBody::Colors(roles) => self.colors.push(step(pos, None, omit.roles(roles))),
             RuleBody::Tokens(tokens) => self.tokens.push(step(pos, None, tokens.clone())),
             RuleBody::Part(PartRef::Typed(part), patch) => {
                 self.part(*part, step(pos, Some(selector.clone()), patch.clone()));
@@ -1636,6 +1937,41 @@ impl ResolvedTheme {
             .find(|(layer, _)| !self.synthetic.contains(layer))
             .map_or(Shown::Drawn, |(_, presence)| Shown::from(presence));
         Shown::from(last) != below
+    }
+}
+
+/// What resolution leaves out of one layer at the slot in force (S8): its
+/// `accent` input where `accent` (S9.5), and the roles and inputs
+/// `left_out` names, there held at the scheme in force.
+#[derive(Clone, Copy)]
+struct Omit<'a> {
+    accent: bool,
+    left_out: Option<&'a LeftOut>,
+}
+
+impl<'a> Omit<'a> {
+    /// What is left out of `layer` at `scheme`, its `accent` where it is
+    /// the reader's and `reader_accent` holds.
+    fn of(layer: &Stacked<'a>, scheme: Scheme, reader_accent: bool) -> Omit<'a> {
+        Omit {
+            accent: layer.kind == LayerKind::Reader && reader_accent,
+            left_out: layer.left_out.filter(|left| left.at(scheme)),
+        }
+    }
+
+    /// Whether the layer's input `name` is left out.
+    fn input(self, name: &InputName) -> bool {
+        (self.accent && is_accent(name))
+            || self.left_out.is_some_and(|left| left.inputs.contains(name))
+    }
+
+    /// `roles` without the roles left out.
+    fn roles(self, roles: &ColorRolesPatch) -> ColorRolesPatch {
+        let mut roles = roles.clone();
+        if let Some(left) = self.left_out {
+            left.strip(&mut roles);
+        }
+        roles
     }
 }
 
