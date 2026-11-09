@@ -289,8 +289,10 @@ ref      := "role." set "." path        typed colour role of a surface set, a pa
                                           src/platform/units.cpp:35`, `:53`, `:275`, as the KDE
                                           facts' round 6 cites it; ADD-A141):
                                           Kirigami's label-sized icons follow it, truncated to
-                                          an integer and rounded down to an icon step (Q1.1,
-                                          `units.cpp:297-356`); part expressions only
+                                          an integer and, from 16 to below 64, rounded down to an
+                                          icon step (16, 22, 32, 48), below 16 and from 64 the
+                                          truncated height itself (Q1.1, `units.cpp:297-356`;
+                                          `kirigami_label_icon_size`'s table); part expressions only
           | "part." path                  another resolved field of the same part      (R25.3)
           | "widget." part "." path       a resolved field of another part of the same widget (a band
                                           following the frame's shadow, GN-1.282†; a label following its
