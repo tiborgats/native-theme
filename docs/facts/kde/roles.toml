@@ -7042,6 +7042,12 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Dialog.qml:34-36"
 quote = "QQC2.Overlay.modal: Rectangle { color: Qt.rgba(0, 0, 0, 0.3)"
 
+# The four [WM] keyed roles with no accent (ADD-A142's note, S9.1, S14): applyScheme() writes each [WM] key through
+# KConfig's colour writer, its 8-bit components (kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:137-145), so a role over
+# an unrounded default would state that rounding of input.kde_scheme.wm.<key>. Checked (round 7): no fact is
+# affected. Breeze's two files state every [WM] key as 8-bit integers (the eight input.kde_scheme.wm.* facts in
+# inputs.toml, each quoting its colors/ line), on which the rounding is exact, so these references stand; the 40
+# [WM] facts of the accent run (accent.toml, ten pairs) are measured kdeglobals values.
 [[fact]]
 key = "role.@wm_active_background"
 value = "= input.kde_scheme.wm.active_background"

@@ -637,11 +637,12 @@ quote = "static qreal easeOutExpo(qreal t) { return (t==1.0) ? 1.0 : 1.001 * (-:
 # branch: the ring's inner edge on the widget's box (offset 0), its inner corners Frame_FrameRadius whatever the
 # widget's radius and its outer corners that plus the margin. Every Breeze focus target has a branch of its own
 # (push and tool buttons, fields and combo boxes 1 px inside the widget; check boxes, radio buttons, sliders, dials,
-# group boxes by their indicator), so each part restates its offset (and the round ones their corners).
+# group boxes by their indicator), so each part restates its offset (and the round ones their corners). The band
+# filled between the two outlines is a `ring` (S2.10's *One ring*, ADD-A141: `FilledRing` withdrawn).
 
 [[fact]]
 key = "token.focus.kind"
-value = "filled_ring"
+value = "ring"
 rows = ["K3.20"]
 
 [[fact.cite]]
@@ -915,6 +916,10 @@ absent = []
 # height rounded up to even, at least 2, kdecoration@6.8.2 src/decorationsettings.cpp:18-31: the comments' 2 holds
 # while that height is at most 10 px, a reading for the KDE host to confirm); a popup's the style's frame radius,
 # 5 (breezeshadowhelper.cpp:205-208, breezehelper.h:345-348, breezemetrics.h:31, :42).
+# The layers are listed bottom first (S2.5, ADD-A141): BoxShadowRenderer::render() paints its shadows in addShadow()'s
+# order, each drawn onto the canvas with the painter's default SourceOver (breezeboxshadowrenderer.cpp:322-325, :283;
+# its own SourceIn, :275, tints the shadow's image alone), so shadow1, added first (breezedecoration.cpp:833,
+# breezeshadowhelper.cpp:211), lies beneath shadow2: checked on all twelve two-layer entries (round 7).
 # ShadowNone draws no shadow: the empty entry.
 
 [[fact]]
