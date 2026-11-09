@@ -2528,6 +2528,23 @@ fn gate_fixture_listed_keyed_text_beside_stated() -> Result<(), String> {
     )
 }
 
+/// A surface set's role the preset states beside another set's listed
+/// role (S17 *Where a listed path is found*, ADD-A144): the view's
+/// foreground compared at each scheme, neither listed nor skipped; the
+/// window's `neutral` the one listed path, at each scheme.
+#[test]
+fn gate_fixture_listed_surface_role_beside_stated() -> Result<(), String> {
+    let report = fixture_report("listed_surface_role");
+    let ids = listed_ids(&report, "role.window.neutral")?;
+    expected(
+        report.failures.is_empty()
+            && report.synthetic.is_empty()
+            && report.listed.len() == 1
+            && ids == ["U30"],
+        &report,
+    )
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the
