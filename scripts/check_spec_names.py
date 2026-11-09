@@ -938,7 +938,8 @@ SELF_TEST_GRAMMAR = '''
                                           `widget.<part>.char_width`, `.font_size`,
                                           `.line_height`)                              (R25.3)
           | "body_font_height"            the `body` slot's font's height (ascent plus descent,
-                                          unrounded: Kirigami keeps a QFontMetricsF; ADD-A141):
+                                          unrounded: Kirigami keeps a QFontMetricsF, `kirigami@6.31.0
+                                          src/platform/units.cpp:35`; ADD-A141):
                                           Kirigami's label-sized icons follow it; part expressions only
           | "part." path                  another resolved field of the same part      (R25.3)
 ```

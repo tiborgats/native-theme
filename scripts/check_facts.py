@@ -71,8 +71,10 @@ A `[[fact]]` (S17 *Fields*):
   `"<n>deg"`, a font size `"<n>pt"` or `"<n>px"`, a name (an enum variant in snake_case, or `@<key>`), an expression
   `"= …"` (S2.2's grammar: literals, references, calls of the core's function table with the arity its signature
   gives, `alpha(c, a)` and `with_alpha(c, a)` two arguments, `pick(index, c0, c1, …)` three or more (core_functions;
-  ADD-A123), `active(<ref>)`, `srgb` and `display_p3` as literal forms; role, token, `surface.` and `element.`
-  references are checked by name), a list, or a table (a block, or a one-key table for a variant with data) whose
+  ADD-A123), `active(<ref>)`, `srgb` and `display_p3` as literal forms; each reference read by its own production
+  (ref_problem(), ADD-A144): a reserved operand bare, `role.<set>.<role>`, `role.global.…`, `role.@<key>` alone,
+  `surface.`, `token.` and `input.` paths checked by name, `element.` one of the names the `"element." data`
+  production lists, `values.<name>`, `widget.<part>.<path>`, each segment `[a-z0-9][a-z0-9_]*`), a list, or a table (a block, or a one-key table for a variant with data) whose
   keys are snake_case and whose suffixed keys (`_px`, `_ms`, `_deg`, `_pt`) take a plain number or an expression,
   `"auto"`, `"absent"` or `"none"`. A number written as a string is a finding. Where the core's sketches type the key (PartStyle and its blocks, the widget
   value's type, Tokens, the colour roles), the value must be of that dimension (KEY_DIMS). Where they type it, or a
@@ -1279,14 +1281,36 @@ def expression_problems(ctx, expr: str) -> list:
 
 
 def ref_problem(ctx, path):
+    """A name's or a reference's problem by S2.2's grammar, production by production (ADD-A144), or None: a reserved
+    operand (`base`, `scheme`, `font_size`, `line_height`, `body_font_height`, `text_scale`, `true`, `false`) bare;
+    a name (an enum variant, `@<key>`, `active` with no `(`), never a literal form (`srgb`, `display_p3`);
+    `role.<set>.<role>` or `role.<set>.disabled.<role>`, `role.global.<path>`, `role.@<key>` (S3); `surface.<role>`
+    or `surface.disabled.<role>` (S3.3); `token.<path>` (S4); `input.<path>` (S9.1, input_problem()); `element.<data>`,
+    a name the `"element." data` production lists (check_spec_names.element_operands()); `part.<path>`;
+    `widget.<part>.<path>`; `values.<name>`. Each segment after the head is S2.2's `[a-z0-9][a-z0-9_]*`, a key (`@`)
+    only in `role.@<key>`."""
     segs = path.split(".")
     head = segs[0]
     ck = ctx.ck
     if head in RESERVED:
         return None if len(segs) == 1 else f"`{path}`: `{head}` takes no path"
     if len(segs) == 1:
+        if head in LITERAL_FORMS:
+            return f"`{path}` is a colour literal's form (`{head}(…)`), not a name (S2.2)"
         return None if NAME.match(head) else f"`{path}` is not a name"
+    keyed = [s for s in segs[1:] if s.startswith("@")]
+    if keyed and not (head == "role" and keyed == [segs[1]]):
+        return f"`{path}`: a key (`@…`) is a name or `role.@<key>` alone (S2.2)"
+    bad = next((s for s in segs[1:] if not SEG.match(s)), None)
+    if bad is not None:
+        return f"`{path}`: `{bad}` is not a segment (S2.2: `[a-z0-9][a-z0-9_]*`)"
     if head == "role":
+        if segs[1].startswith("@"):
+            return None if len(segs) == 2 else f"`{path}`: a keyed role is `role.@<key>`, with no path (S2.2)"
+        if segs[1] in ck.v["surface_sets"]:
+            role = segs[3:] if segs[2:3] == ["disabled"] else segs[2:]
+            if len(role) != 1:
+                return f"`{path}` is not `role.<set>.<role>` or `role.<set>.disabled.<role>` (S2.2, S3)"
         if segs[1:3] == ["global", "accent_ramp"] and len(segs) > 4:
             return f"`{path}`: an accent ramp role is `role.global.accent_ramp.<key>` (S3; ADD-A122)"
         return None if ck.role_ok(".".join(segs[1:])) else f"`{path}` names no colour role (S3)"
@@ -1297,7 +1321,12 @@ def ref_problem(ctx, path):
         return None if len(role) == 1 and role[0] in ck.v["surface_roles"] else f"`{path}` names no surface role"
     if head == "element":
         return None if len(segs) == 2 and segs[1] in ck.v["element_data"] else f"`{path}` names no element data"
-    if head in ("input", "part", "values"):
+    if head == "input":
+        problem = input_problem(ctx, segs[1:])
+        return None if problem is None else f"`{path}`: {problem}"
+    if head == "values":
+        return None if len(segs) == 2 else f"`{path}` is not `values.<name>` (S2.2)"
+    if head == "part":
         return None
     if head == "widget":
         return None if len(segs) >= 3 else f"`{path}` is not `widget.<part>.<field>`"
@@ -4185,8 +4214,10 @@ def write_fixture(root: Path, files: dict):
 
 
 def fixture_context(root: Path):
-    return Context(root, core_text=SELF_TEST_CORE, cat_text=SELF_TEST_CATALOGUE, sources_text=SELF_TEST_SOURCES,
-                   rows=SELF_TEST_ROWS, evidence=root)
+    """The fixture's context: the fixture core with S2.2's grammar around the `"element." data` production, whose
+    own list gives the element operands (check_spec_names.element_operands())."""
+    return Context(root, core_text=SELF_TEST_CORE + check_spec_names.SELF_TEST_GRAMMAR, cat_text=SELF_TEST_CATALOGUE,
+                   sources_text=SELF_TEST_SOURCES, rows=SELF_TEST_ROWS, evidence=root)
 
 
 _SBV = 'sizes_by_variant = [{ variant = "@pill", sizes = ["regular"] }]'
@@ -5344,7 +5375,40 @@ def self_test() -> int:
                            ("= alpha(role.view.background)", ["`alpha` takes 2 arguments"]),
                            ("= round(token.kde.frame_width, 2)", ["`round` takes 1 argument (S2.2's table), not 2"]),
                            ("= pick(1, #ffffff, #000000, #ff0000)", []),
-                           ("= pick(1, #ffffff)", ["`pick` takes 3 or more arguments"])):
+                           ("= pick(1, #ffffff)", ["`pick` takes 3 or more arguments"]),
+                           # S2.2's grammar, production by production (ADD-A144): each literal, reference and call
+                           # form read, and what each refuses
+                           ("= #ffffff", []), ("= 0.5", []), ("= -1px", []), ("= 200ms", []), ("= 90deg", []),
+                           ("= 12pt", []), ("= flat", []), ("= @raised", []), ("= active", []), ("= true", []),
+                           ("= display_p3(1, 0, 0, 0.5)", []),
+                           ("= role.view.background", []), ("= role.view.disabled.foreground", []),
+                           ("= role.global.accent", []), ("= role.@kde_link", []), ("= surface.foreground", []),
+                           ("= active(surface.background)", []), ("= token.kde.frame_width", []),
+                           ("= input.accent", []), ("= input.kde_scheme.view.inactive.background_normal", []),
+                           ("= base", []), ("= scheme", []), ("= font_size", []), ("= line_height", []),
+                           ("= text_scale", []), ("= body_font_height", []), ("= element.caret_height", []),
+                           ("= element.font_strikeout_thickness", []), ("= part.min_width", []),
+                           ("= widget.label.text.font.size", []), ("= values.icon_text_gap", []),
+                           ("= mix(role.view.background, element.char_width, 0.5)", []),
+                           # `element.` takes the names its own production lists, never a reserved operand or a
+                           # word of its prose
+                           ("= element.body_font_height", ["names no element data"]),
+                           ("= element.font_size", ["names no element data"]),
+                           ("= element.kirigami", ["names no element data"]),
+                           ("= element.caret_height.x", ["names no element data"]),
+                           ("= base.fill", ["`base` takes no path"]),
+                           ("= srgb", ["`srgb` is a colour literal's form"]),
+                           ("= role.view", ["is not `role.<set>.<role>`"]),
+                           ("= role.view.disabled", ["is not `role.<set>.<role>`"]),
+                           ("= role.view.background.x", ["is not `role.<set>.<role>`"]),
+                           ("= role.@kde_link.fill", ["a keyed role is `role.@<key>`"]),
+                           ("= part.@x", ["a key (`@…`) is a name or `role.@<key>`"]),
+                           ("= part._x", ["is not a segment"]),
+                           ("= input.kde_scheme.nope.background_normal", ["not `input.kde_scheme"]),
+                           ("= values.repeat.delay", ["is not `values.<name>`"]),
+                           ("= widget.label", ["is not `widget.<part>.<field>`"]),
+                           ("= nope.x", ["is not a reference"]),
+                           ("= mix()", ["expected a literal, a reference or a call"])):
             got = value_problems(ctx, expr, None)
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"expression {expr!r}: got {got}, want {want}")
