@@ -829,7 +829,9 @@ placement unit, spec ADD-A120); S7; S8 without
 2. The model's remaining arithmetic (S2.2), with unit tests. The platform functions come only with the facts that use
    them (M1b, M3), each with its vector table.
 3. S12 complete.
-4. S14 complete: one palette per variant each of the seven projects publishes (S19.1), as mappings with their labelled
+4. S14 complete, with what M1b's accent run left of it (task T6b built `apply_palette` for a port alone; ADD-A145): the
+   mapping source (`Palette::from_toml`), `Palette::with_port` and `ResolvedTheme::palette_status()`; then one palette
+   per variant each of the seven projects publishes (S19.1), as mappings with their labelled
    picks (the guide's own example value where it gives one, else the middle of the stated range; the picks listed in
    the ledger for the maintainer's veto); the KDE ports, with their measured facts added to the accent run; the
    projects' published colours as facts (a palette lane and its verifier); the gate's palette run (each pick skipped).
