@@ -1025,6 +1025,79 @@ fn combination_mapping_palette() {
     assert_eq!(problems(&stated, &tinting), NONE);
 }
 
+/// S9.1's accent-dependent roles (S9.2, S14): the one list gives, item for
+/// item, the role paths `mapping_palette` built in place before it was
+/// shared, over every bundled preset's declarations and over every surface
+/// set with every `[WM]` keyed role declared, the scheme tinting or not.
+#[test]
+fn accent_dependent_roles_as_mapping_palette_listed_them() {
+    use super::combos::{AccentRole, accent_dependent_roles};
+    use crate::inputs::{KdeSchemeKey as K, KdeWmKey};
+    use crate::roles::SurfaceSet as S;
+    let listed_before = |decl: &Declarations, tints: bool| {
+        let mut roles: Vec<String> = Vec::new();
+        for set in &decl.surface_sets {
+            let mut keys: Vec<K> = vec![
+                K::ForegroundActive,
+                K::ForegroundLink,
+                K::DecorationFocus,
+                K::DecorationHover,
+            ];
+            match set {
+                _ if tints => keys = K::ALL.to_vec(),
+                S::Selection => keys.extend([
+                    K::BackgroundNormal,
+                    K::BackgroundAlternate,
+                    K::ForegroundNormal,
+                    K::ForegroundInactive,
+                ]),
+                S::Button => keys.push(K::BackgroundAlternate),
+                S::Header => keys.extend([K::BackgroundNormal, K::ForegroundNormal]),
+                _ => {}
+            }
+            for key in keys {
+                let role = format!("surfaces.{}.{}", set.name(), key.role().path());
+                if !roles.contains(&role) {
+                    roles.push(role);
+                }
+            }
+        }
+        for key in KdeWmKey::ALL {
+            let name = format!("wm_{}", key.name());
+            if decl.color_roles.iter().any(|held| held.as_str() == name) {
+                roles.push(format!("keyed.{name}"));
+            }
+        }
+        roles
+    };
+    let mut every = Declarations::default();
+    every.surface_sets = S::ALL.to_vec();
+    every.color_roles = KdeWmKey::ALL
+        .iter()
+        .map(|key| crate::key::Key::new(&format!("wm_{}", key.name())).unwrap())
+        .collect();
+    let mut decls: Vec<Declarations> = crate::presets::PresetId::all()
+        .iter()
+        .map(|id| read_preset(id.source()).unwrap().declarations)
+        .collect();
+    decls.push(every);
+    for decl in &decls {
+        for tints in [false, true] {
+            let shared: Vec<String> = accent_dependent_roles(decl, tints)
+                .into_iter()
+                .map(AccentRole::path)
+                .collect();
+            assert_eq!(shared, listed_before(decl, tints));
+        }
+    }
+    let breeze = read_preset(crate::presets::PresetId::KdeBreeze.source())
+        .unwrap()
+        .declarations;
+    let roles = accent_dependent_roles(&breeze, false);
+    assert!(roles.contains(&AccentRole::Surface(S::Header, K::BackgroundNormal)));
+    assert!(roles.contains(&AccentRole::Wm(KdeWmKey::ALL[0])));
+}
+
 /// `kde_effects` and `kde_selection_inactive` read `token.kde` themselves,
 /// and the checks treat those tokens as their operands (S2.2, S12): under a
 /// preset whose `token.kde` is absent each call is refused for each token
