@@ -2871,7 +2871,7 @@ pub enum SubpixelOrder { None, Rgb, Bgr, Vrgb, Vbgr }
 
 `TextRendering` is `token.text.rendering`. The readers read the text-rendering settings the toolkit draws with
 (fontconfig's and GNOME's `font-antialiasing`, `font-hinting`, `font-rgba-order`, macOS's font smoothing; on Windows
-DirectWrite's greyscale parameters, not ClearType's, below); a toolkit applies what it can (R23).
+none, below); a toolkit applies what it can (R23).
 
 **The rendering drawn** (ADD-A141; the hosts facts round, U508). Each field states what the toolkit's own text drawing
 uses, which is the antialiasing it draws with, not every parameter the system holds: `contrast` is the enhanced
@@ -2880,9 +2880,28 @@ contrast of that antialiasing, and `subpixel_order` and `lcd_filter`, which only
 whatever ClearType's settings (the WinUI host's TextBlocks draw no coloured pixel, run 42308526155, `read_host.py`'s
 `[text_rendering]`), so `windows-11` states `contrast` as DirectWrite's greyscale enhanced contrast, which the host
 read as 1 (`grayscale_enhanced_contrast`), not ClearType's 0.5, and its subpixel order and LCD filter `Absent`; a
-reader on such a platform states the parameters the toolkit draws with (on Windows DirectWrite's greyscale enhanced
-contrast), not ClearType's settings. Rejected: ClearType's parameters, the system's (a contrast and an
-order the toolkit's text never takes); a contrast field per antialiasing (two fields of which the toolkit uses one).
+reader on such a platform states the parameters the toolkit draws with, never ClearType's settings, and only those a
+source or a fact shows the toolkit's drawing takes from the system. Rejected: ClearType's parameters, the system's (a
+contrast and an order the toolkit's text never takes); a contrast field per antialiasing (two fields of which the
+toolkit uses one).
+
+**No Windows rendering read** (ADD-A144; U701). The Windows reader reads no `token.text.rendering` field, and
+`windows-11` states them alone from its facts. WinUI's text sets no rendering parameter in its pinned source: it draws
+each glyph run with Direct2D's `DrawGlyphRun` on its device context (`microsoft-ui-xaml@2.5.1
+src/dxaml/xcp/core/native/text/Common/D2DTextDrawingContext.cpp:2411-2417`), the render target's own text-antialias
+and rendering-parameter methods are stubs that assert
+(`src/dxaml/xcp/core/native/text/Controls/HWRenderTarget.cpp:831-857`), and `PALText`'s `DefaultGamma` and
+`DefaultEnhancedContrast` (`src/dxaml/xcp/pal/inc/paltext.h:61-64`) are read nowhere in `src/` (by search); so it
+draws with the context's defaults, which no pinned source sets, and whether a user's changed DirectWrite rendering
+setting reaches WinUI's text no source and no run shows. A reader value would state a setting whose effect on the
+drawing is unknown, through new COM `unsafe` in `windows.rs` (which D4 allows), where the facts already state the
+values the host measured (DirectWrite's defaults, run 42308526155). Rejected: reading DirectWrite's monitor rendering
+parameters (`IDWriteRenderingParams1::GetGrayscaleEnhancedContrast`, `GetGamma`: a monitor's value, where the token
+has no monitor, whose reach no source shows); reading DirectWrite's rendering settings from the registry (no pinned
+source documents where they are stored or how DirectWrite combines them, so the reader would invent the effective
+value). Open: a WinUI host pass that changes the DirectWrite rendering settings and compares the drawn glyphs (U701):
+where WinUI's text changes, the reader reads those parameters, inside `windows.rs`'s `unsafe` exception, by a spec
+row; where it does not, the facts stand and U701 retires.
 
 ### S4.1 Motion
 
@@ -4780,6 +4799,9 @@ system font to the other presets as if the user had chosen it); the face's `wght
   Rejected: 0.7.0's reads restored at the slice (they would state Win32's values over the facts' WinUI values, the
   reader's layer differing from its own preset's facts on the OS they were measured on, as ADD-A138 rejects for the
   macOS reader).
+- no text-rendering setting (`token.text.rendering`, W3-22): WinUI's text draws with Direct2D's default parameters,
+  which its pinned source neither sets nor reads, so `windows-11` states them from its facts (S4's *No Windows
+  rendering read*, ADD-A144; whether a changed DirectWrite setting reaches WinUI's text is open, U701).
 
 **S9.4 Points, then text scaling.** A font size, line height, letter spacing or word spacing stated in points becomes logical pixels first, as
 `pt × dpi / 72`, where `dpi` is `ReaderState.font_dpi` where the reader reports one (the platform's setting: on KDE
