@@ -297,4 +297,4 @@ fn channels(c: Color) -> [f32; 4] {
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-mod tests;
+pub(crate) mod tests;

@@ -970,3 +970,368 @@ fn a_set_stated_whole_beneath_the_derivation() -> Result<(), Box<dyn std::error:
     assert_eq!(accented, before);
     Ok(())
 }
+
+// === Palettes (S8, S14) ===
+
+/// Colours resolved, each by its path, as 8-bit sRGB.
+type Colours = Vec<(String, Option<[u8; 4]>)>;
+
+/// What `stack` resolves to at a window's root, the window `inactive` or
+/// not: every role of every declared set, every global role, every
+/// declared keyed role, then every declared input, each by its path, as
+/// 8-bit sRGB (a port's file values and the preset's TOML hex are one
+/// 8-bit colour each, computed ones compared at that precision).
+fn every_colour(stack: &Stack, inactive: bool) -> Result<Colours, Box<dyn std::error::Error>> {
+    use crate::blocks::part_style::RoleRef;
+    use crate::roles::{GlobalRole, SurfaceRole};
+    use crate::units::{Px, Size};
+    let mut conditions = window();
+    conditions.inactive = inactive;
+    let resolved = stack.resolved(&conditions);
+    let size = Size {
+        width: Px(800.0),
+        height: Px(600.0),
+    };
+    let root = crate::query::RootInputs::new(size, size, crate::selector::Direction::Ltr);
+    let scope = resolved.root_scope(&root);
+    let decl = stack.declarations();
+    let mut roles: Vec<(String, RoleRef)> = Vec::new();
+    for set in &decl.surface_sets {
+        for role in SurfaceRole::ALL {
+            let path = format!("surfaces.{}.{}", set.name(), role.path());
+            roles.push((path, RoleRef::Set(*set, *role)));
+        }
+    }
+    for role in GlobalRole::ALL {
+        roles.push((
+            format!("global.{}", role.path()),
+            RoleRef::Global(role.clone()),
+        ));
+    }
+    for key in &decl.color_roles {
+        roles.push((format!("keyed.{key}"), RoleRef::Keyed(key.clone())));
+    }
+    let mut out: Colours = roles
+        .into_iter()
+        .map(|(path, role)| {
+            let color = resolved.role(&scope, role);
+            (path, color.map(Color::to_srgb8_clamped))
+        })
+        .collect();
+    for name in &decl.inputs {
+        let input = crate::expr::Ref::Input(name.segments().to_vec());
+        let color = resolved.evaluate_role(&scope, &input).value;
+        out.push((format!("inputs.{name}"), color.map(Color::to_srgb8_clamped)));
+    }
+    Ok(out)
+}
+
+/// The paths at which two lists of [`every_colour`] differ, in order, each
+/// with both colours.
+fn colours_differ(a: &Colours, b: &Colours) -> Vec<String> {
+    assert_eq!(a.len(), b.len());
+    a.iter()
+        .zip(b)
+        .filter(|(a, b)| a != b)
+        .map(|((path, a), (_, b))| format!("{path}: {a:?} / {b:?}"))
+        .collect()
+}
+
+/// The paths alone of [`colours_differ`].
+fn paths_differ(a: &Colours, b: &Colours) -> Vec<String> {
+    assert_eq!(a.len(), b.len());
+    a.iter()
+        .zip(b)
+        .filter(|(a, b)| a != b)
+        .map(|((path, _), _)| path.clone())
+        .collect()
+}
+
+/// `kde-breeze` on the synthetic route at `scheme`, with no reader.
+fn breeze_at(scheme: Scheme) -> Result<Stack, Box<dyn std::error::Error>> {
+    let file = read_preset(PresetId::KdeBreeze.source())?;
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    Ok(Stack::synthetic(
+        Some(PresetId::KdeBreeze),
+        file.declarations,
+        file.layer,
+        scheme,
+        file.pending,
+        layers,
+    )?)
+}
+
+/// `from_port` of Breeze's file `name` at `scheme`, from the source cache
+/// (`palette::tests::breeze_file`, which fails naming the entry where the
+/// cache lacks it).
+fn breeze_port(name: &str, scheme: Scheme) -> Result<crate::Palette, Box<dyn std::error::Error>> {
+    let file = crate::palette::tests::breeze_file(name);
+    Ok(crate::Palette::from_port(&file, scheme)?)
+}
+
+/// The place in the stack's order of the layer the input `path` in force
+/// is taken from at the scheme in force (S8 step 1).
+fn input_place(stack: &Stack, path: &str) -> Result<Option<usize>, Box<dyn std::error::Error>> {
+    let name = InputName::new(path)?;
+    let resolved = stack.resolved(&window());
+    Ok(resolved
+        .input_layers
+        .iter()
+        .find(|(held, _)| *held == name)
+        .map(|(_, layer)| *layer))
+}
+
+/// The place of the palette's entry in the stack's order.
+fn palette_place(stack: &Stack) -> Option<usize> {
+    stack
+        .stacked()
+        .iter()
+        .position(|stacked| stacked.kind == crate::validate::LayerKind::Palette)
+}
+
+/// `kde-breeze` with `from_port` of Breeze's own file at its scheme applied
+/// (S14) resolves as the preset there: every colour role and input, in an
+/// active and an inactive window, the port's values in force (its scheme
+/// inputs, lists and inactive input roles, its `= active(…)` ones accepted
+/// by the cycle check, ADD-A144), so the conversion with no accent is
+/// Plasma's look of the file.
+#[test]
+fn a_breeze_port_resolves_as_kde_breeze() -> Result<(), Box<dyn std::error::Error>> {
+    for (name, scheme) in [
+        ("BreezeLight.colors", Scheme::Light),
+        ("BreezeDark.colors", Scheme::Dark),
+    ] {
+        let plain = breeze_at(scheme)?;
+        let mut ported = plain.clone();
+        ported.apply_palette(Some(breeze_port(name, scheme)?))?;
+        let place = palette_place(&ported).ok_or("no palette entry")?;
+        assert_eq!(
+            input_place(&ported, "kde_scheme.view.background_normal")?,
+            Some(place),
+            "{name}"
+        );
+        assert_eq!(
+            input_place(&ported, "inactive.view.foreground_link")?,
+            Some(place),
+            "{name}"
+        );
+        for inactive in [false, true] {
+            let differ = colours_differ(
+                &every_colour(&plain, inactive)?,
+                &every_colour(&ported, inactive)?,
+            );
+            assert_eq!(differ, Vec::<String>::new(), "{name}, inactive: {inactive}");
+        }
+    }
+    Ok(())
+}
+
+/// The palette sits among the application layers where it was first
+/// added (S8): a layer added after it goes above it, a palette replacing it
+/// keeps its place, `apply_palette(None)` removes it and is a no-op
+/// without one.
+#[test]
+fn a_palette_keeps_the_place_it_was_first_added_at() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::validate::LayerKind as K;
+    let kinds = |stack: &Stack| stack.stacked().iter().map(|s| s.kind).collect::<Vec<_>>();
+    let mut stack = breeze_at(Scheme::Light)?;
+    let below = kinds(&stack);
+    stack.add_layer(Layer::default())?;
+    stack.apply_palette(Some(breeze_port("BreezeLight.colors", Scheme::Light)?))?;
+    stack.add_layer(Layer::default())?;
+    let place = palette_place(&stack).ok_or("no palette entry")?;
+    let mut expected = below.clone();
+    let accent = expected.pop();
+    expected.extend([K::Application, K::Palette, K::Application]);
+    expected.extend(accent);
+    assert_eq!(kinds(&stack), expected);
+    stack.apply_palette(Some(breeze_port("BreezeLight.colors", Scheme::Light)?))?;
+    assert_eq!(palette_place(&stack), Some(place));
+    stack.apply_palette(None)?;
+    assert_eq!(palette_place(&stack), None);
+    assert_eq!(kinds(&stack).len(), expected.len() - 1);
+    let before = stack.clone();
+    stack.apply_palette(None)?;
+    assert_eq!(stack, before);
+    Ok(())
+}
+
+/// S14's refusals, each leaving the stack as it was: a palette under a
+/// scheme it lacks and `pick(Some(s))` of one (`SchemeNotInPalette`); a
+/// palette with no source for the preset, and `set_preset` to one under it
+/// (`PaletteNotForPreset`). `pick(None)` is no refusal: following a scheme
+/// the palette lacks suspends it.
+#[test]
+fn a_palette_s_refusals() -> Result<(), Box<dyn std::error::Error>> {
+    let light = || breeze_port("BreezeLight.colors", Scheme::Light);
+    let mut dark = breeze_at(Scheme::Dark)?;
+    let before = dark.clone();
+    assert_eq!(
+        dark.apply_palette(Some(light()?)),
+        Err(LayerError::SchemeNotInPalette(Scheme::Dark))
+    );
+    assert_eq!(dark, before);
+
+    let mut ported = breeze_at(Scheme::Light)?;
+    ported.apply_palette(Some(light()?))?;
+    let before = ported.clone();
+    assert_eq!(
+        ported.pick(Some(Scheme::Dark)),
+        Err(LayerError::SchemeNotInPalette(Scheme::Dark))
+    );
+    assert_eq!(ported, before);
+    ported.pick(Some(Scheme::Light))?;
+    ported.pick(None)?;
+
+    let adwaita = read_preset(PresetId::Adwaita.source())?;
+    let before = ported.clone();
+    assert_eq!(
+        ported.set_preset(
+            Some(PresetId::Adwaita),
+            adwaita.declarations,
+            adwaita.layer,
+            adwaita.pending
+        ),
+        Err(LayerError::PaletteNotForPreset(PresetId::Adwaita))
+    );
+    assert_eq!(ported, before);
+
+    let file = read_preset(PresetId::Adwaita.source())?;
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    let mut on_adwaita = Stack::synthetic(
+        Some(PresetId::Adwaita),
+        file.declarations,
+        file.layer,
+        Scheme::Light,
+        file.pending,
+        layers,
+    )?;
+    let before = on_adwaita.clone();
+    assert_eq!(
+        on_adwaita.apply_palette(Some(light()?)),
+        Err(LayerError::PaletteNotForPreset(PresetId::Adwaita))
+    );
+    assert_eq!(on_adwaita, before);
+    Ok(())
+}
+
+/// S8's leave-out beneath a KDE port, and the user's accent under it
+/// (S8, S14, R2.6; ADD-A142), with a reader-shaped stand-in (its accent
+/// common, its scheme inputs, a list, roles and `token.kde` in its part for
+/// the preset): at the port's scheme its colours, colour inputs, lists and
+/// `token.kde` are left out, its accent kept in force (A7's palette case:
+/// a port states no accent, so the reader's or stand-in's is not left
+/// out), and the accent-derivation layer's roles over it show in the
+/// port's place, so the stack resolves as `set_accent` of that accent over
+/// the port; the port's own accent-dependent roles are left out, and
+/// differ from the port's no-accent look. With no accent the stand-in's
+/// colours are left out whole, the port's look shown. At a scheme the
+/// palette lacks it is suspended, and under a contrast it states no
+/// colours for it is skipped: the stand-in's colours apply as without it.
+/// Every colour but the accent, the accent run's `#e5a50a`, is synthetic.
+#[test]
+fn a_port_leaves_the_stand_in_out_but_its_accent() -> Result<(), Box<dyn std::error::Error>> {
+    use Scheme::{Dark, Light};
+    let x = "#e5a50a";
+    let light = || breeze_port("BreezeLight.colors", Light);
+    let shaped = |accent: bool| -> Result<Layer, Box<dyn std::error::Error>> {
+        let accent = if accent {
+            format!("[inputs.accent]\nlight = \"{x}\"\ndark = \"{x}\"\n")
+        } else {
+            String::new()
+        };
+        Ok(Layer::from_toml(&format!(
+            "{accent}\
+             [for_preset.kde-breeze.inputs.kde_scheme.view.background_normal]\n\
+             light = \"#102030\"\ndark = \"#102030\"\n\
+             [for_preset.kde-breeze.inputs.kde_scheme.groups]\n\
+             light = [\"view\"]\ndark = [\"view\"]\n\
+             [for_preset.kde-breeze.inputs.inactive.view.foreground_link]\n\
+             light = \"#203040\"\ndark = \"#203040\"\n\
+             [for_preset.kde-breeze.colors.light.surfaces.view]\n\
+             background = \"#304050\"\nlink = \"#405060\"\n\
+             [for_preset.kde-breeze.colors.dark.surfaces.view]\n\
+             background = \"#304050\"\nlink = \"#405060\"\n\
+             [for_preset.kde-breeze.tokens.kde]\n\
+             inactive_enabled = true\n"
+        ))?)
+    };
+    let accent = Color::parse(x).ok_or("not a colour")?;
+    let accent = Accent::new(InputValue::new(SchemeMap::new(
+        Value::Stated(accent),
+        Value::Stated(accent),
+    )));
+
+    let mut port = breeze_at(Light)?;
+    port.apply_palette(Some(light()?))?;
+    let mut set = port.clone();
+    set.set_accent(Some(accent))?;
+    let mut stood = breeze_at(Light)?;
+    stood.set_reader_stand_in(ReaderState::new(Light, 1.0), shaped(true)?)?;
+    let alone = stood.clone();
+    stood.apply_palette(Some(light()?))?;
+    assert_eq!(
+        input_place(&stood, "accent")?,
+        Some(stood.reader_place()),
+        "the stand-in's accent in force"
+    );
+    assert!(stood.port_left_out.is_some());
+    for inactive in [false, true] {
+        let stood = every_colour(&stood, inactive)?;
+        assert_eq!(
+            colours_differ(&stood, &every_colour(&set, inactive)?),
+            Vec::<String>::new(),
+            "inactive: {inactive}"
+        );
+        let differ = paths_differ(&stood, &every_colour(&port, inactive)?);
+        assert!(
+            differ.contains(&"surfaces.view.link".to_owned()),
+            "{differ:?}"
+        );
+        assert!(differ.contains(&"inputs.accent".to_owned()), "{differ:?}");
+    }
+
+    let mut quiet = breeze_at(Light)?;
+    quiet.set_reader_stand_in(ReaderState::new(Light, 1.0), shaped(false)?)?;
+    let quiet_alone = quiet.clone();
+    quiet.apply_palette(Some(light()?))?;
+    assert_eq!(quiet.port_left_out, None);
+    for inactive in [false, true] {
+        assert_eq!(
+            colours_differ(
+                &every_colour(&quiet, inactive)?,
+                &every_colour(&port, inactive)?
+            ),
+            Vec::<String>::new(),
+            "inactive: {inactive}"
+        );
+    }
+
+    let mut suspended = stood.clone();
+    suspended.set_reader_stand_in(ReaderState::new(Dark, 1.0), shaped(true)?)?;
+    let mut unported = alone.clone();
+    unported.set_reader_stand_in(ReaderState::new(Dark, 1.0), shaped(true)?)?;
+    assert_eq!(
+        colours_differ(
+            &every_colour(&suspended, false)?,
+            &every_colour(&unported, false)?
+        ),
+        Vec::<String>::new()
+    );
+
+    for contrast in [Contrast::Increased, Contrast::High] {
+        let mut skipped = quiet.clone();
+        skipped.set_contrast(Some(contrast))?;
+        let mut unported = quiet_alone.clone();
+        unported.set_contrast(Some(contrast))?;
+        assert_eq!(
+            colours_differ(
+                &every_colour(&skipped, false)?,
+                &every_colour(&unported, false)?
+            ),
+            Vec::<String>::new(),
+            "{contrast:?}"
+        );
+    }
+    Ok(())
+}
