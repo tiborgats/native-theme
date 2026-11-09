@@ -1,0 +1,55 @@
+# Synthetic facts (S17 *The accent run*): a file that is not the preset's own (sources/probe@1/colors/Port.colors),
+# applied under scheme:light through from_port. With a synthetic accent its decoration focus is the accent; with no
+# accent (the no-accent pair, ADD-A142) its roles are the file's own colours, which no kde-breeze scheme holds.
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#123456"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#123456"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.background"
+when = { conditions = ["scheme:light"] }
+value = "#010203"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#00000000"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.foreground"
+when = { conditions = ["scheme:light"] }
+value = "#040506"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#00000000"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#070809"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#00000000"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"

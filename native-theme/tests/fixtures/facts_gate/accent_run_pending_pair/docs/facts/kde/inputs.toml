@@ -1,0 +1,40 @@
+# Synthetic facts (S17 *The accent run*): the preset's own scheme files, as the scheme-input facts whose `when` names a
+# scheme cite them (ADD-A142), and the accent the preset states for no accent, which the run sets on each own file.
+# The scheme inputs' values are synthetic and never compared by the accent run.
+
+[[fact]]
+key = "input.accent"
+value = "#00000000"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.kcfg:1"
+quote = "synthetic"
+
+[[fact]]
+key = "input.kde_scheme.view.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#000001"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 colors/OwnLight.colors:1"
+quote = "synthetic"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "input.kde_scheme.view.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#000002"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 colors/OwnDark.colors:1"
+quote = "synthetic"

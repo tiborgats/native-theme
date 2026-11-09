@@ -323,6 +323,22 @@ jobs:
           fi
           echo "NT_FACTS_GATE_SHARD=$SHARD/$TOTAL" >>"$GITHUB_ENV"
           echo "NT_FACTS_GATE_LISTED=$RUNNER_TEMP/listed" >>"$GITHUB_ENV"
+      # The accent run (S17 *The accent run*) is split by no condition
+      # vector: the first shard runs it whole, so it alone fetches the
+      # source cache's entries its scheme files are read from (*The scheme
+      # files read*), every entry a KDE fact's `scheme_file` names, the list
+      # read from the facts, so a re-pin needs no workflow edit.
+      - name: The accent run's scheme-file entries
+        id: scheme-files
+        if: matrix.shard == 1
+        run: |
+          ids=$(sed -n 's/^scheme_file = "\([^ "]*\) [^"]*"\r\{0,1\}$/\1/p' docs/facts/kde/*.toml | sort -u | tr '\n' ' ')
+          echo "the accent run's entries: ${ids:-none}"
+          echo "ids=$ids" >>"$GITHUB_OUTPUT"
+      - uses: ./.github/actions/sources
+        if: matrix.shard == 1
+        with:
+          ids: ${{ steps.scheme-files.outputs.ids }}
       - run: cargo test -p native-theme --test facts_gate -- --exact facts_gate
       # Written before the gate's verdict, so a failing shard's too.
       - uses: actions/upload-artifact@v7

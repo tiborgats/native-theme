@@ -1,0 +1,16 @@
+# Synthetic facts (S17 *The accent run*): a file that is not the preset's own (sources/probe@1/colors/Port.colors)
+# with a synthetic accent's pair and no no-accent pair, stated or pending (ADD-A142): its role fails as a key with no
+# fact (R4).
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#123456"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#123456"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"

@@ -1,0 +1,28 @@
+# Synthetic facts (S17 *The accent run*): one pair on the preset's own light file with a synthetic accent. The
+# accent's decoration focus is the accent itself; the link's value is wrong, so the run fails at that role.
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#123456"
+rows = []
+scheme_file = "probe@1 colors/OwnLight.colors"
+accent = "#123456"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.link"
+when = { conditions = ["scheme:light"] }
+value = "#000003"
+rows = []
+scheme_file = "probe@1 colors/OwnLight.colors"
+accent = "#123456"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
