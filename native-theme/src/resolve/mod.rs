@@ -1,6 +1,7 @@
 //! S8's stack and its resolution for a window: the layers in their order
-//! (the preset, the reader or its stand-in, the application's layers, the
-//! accent layer), the conditions in force, and the resolution's three
+//! (the preset, the accent-derivation layer on a preset that derives its
+//! accent-dependent roles, the reader or its stand-in, the application's
+//! layers, the accent layer), the conditions in force, and the resolution's three
 //! steps: the bases merged in order, then the `Colors` and `Tokens` rules
 //! whose conditions hold, then each part's and widget's base and its rules
 //! whose conditions hold, kept in order for the query (S8); their
@@ -429,6 +430,11 @@ pub(crate) struct Stack {
     preset: Option<PresetId>,
     declarations: Declarations,
     preset_layer: Arc<Layer>,
+    /// The accent-derivation layer, directly above the preset on a preset
+    /// that derives its accent-dependent roles (S8, S9.2; ADD-A132),
+    /// derived on every change of the stack and slot; `None` on every
+    /// other preset.
+    derivation: Option<Arc<Layer>>,
     reader: Option<Reader>,
     /// The application's layers, each with the id it was added under.
     layers: Vec<(LayerId, Arc<Layer>)>,
@@ -481,10 +487,11 @@ impl Stack {
     ) -> Result<Stack, LayerError> {
         let reused = validate::Reused::default();
         let mut problems = preset_problems(&declarations, &layer, preset, &pending, None, &reused)?;
-        let stack = Stack {
+        let mut stack = Stack {
             preset,
             declarations,
             preset_layer: Arc::new(layer),
+            derivation: None,
             reader: None,
             layers: Vec::new(),
             accent: None,
@@ -496,6 +503,7 @@ impl Stack {
             pending,
             synthetic: None,
         };
+        stack.derivation = stack.derived_derivation();
         add_problems(&mut problems, stack.validate_reusing(&reused))?;
         if problems.is_empty() {
             Ok(stack)
@@ -548,10 +556,11 @@ impl Stack {
             .into_iter()
             .map(|layer| (LayerId::next(), Arc::new(layer)))
             .collect();
-        let stack = Stack {
+        let mut stack = Stack {
             preset,
             declarations,
             preset_layer: Arc::new(layer),
+            derivation: None,
             reader: None,
             synthetic: Some(Synthetic {
                 layers: layers.iter().map(|(id, _)| *id).collect(),
@@ -567,6 +576,7 @@ impl Stack {
             flavor: None,
             pending,
         };
+        stack.derivation = stack.derived_derivation();
         add_problems(&mut problems, stack.validate_reusing(&reused))?;
         if problems.is_empty() {
             Ok(stack)
@@ -590,6 +600,7 @@ impl Stack {
             preset: None,
             declarations,
             preset_layer,
+            derivation: None,
             reader: Some(Reader::StandIn {
                 state: ReaderState::new(Scheme::Light, 1.0),
                 layer: Arc::default(),
@@ -621,6 +632,7 @@ impl Stack {
     ) -> Result<(), LayerError> {
         let mut changed = Box::new(self.clone());
         change(&mut changed);
+        changed.derivation = changed.derived_derivation();
         changed.accent_layer = changed.derived_accent();
         add_problems(&mut problems, changed.validate())?;
         if !problems.is_empty() {
@@ -822,8 +834,8 @@ impl Stack {
     /// them: the `accent`, and of the accent's derived inputs those the
     /// preset's `accent_inputs` names, an accent carrying more for another
     /// preset (S9.5). On `kde-breeze` that is the `accent` alone; Plasma's
-    /// derivation from it is the accent-derivation layer's (S8, S9.2),
-    /// which enters with that preset and `kde_accent` (M1b).
+    /// derivation from it is the accent-derivation layer's (S8, S9.2;
+    /// [`Stack::derived_derivation`]).
     fn derived_accent(&self) -> Arc<Layer> {
         let mut layer = Layer::default();
         if let Some(accent) = &self.accent {
@@ -843,12 +855,42 @@ impl Stack {
         Arc::new(layer)
     }
 
+    /// The accent-derivation layer for the current preset (S8, S9.2;
+    /// ADD-A132): on a preset that derives its accent-dependent roles
+    /// ([`derives_accent`]), a layer directly above the preset, beneath the
+    /// reader or stand-in; `None` on every other preset. It states nothing
+    /// yet: its roles over the accent in force, at the slots where a layer
+    /// above the preset gives that accent, enter with `kde_accent` (M1b).
+    fn derived_derivation(&self) -> Option<Arc<Layer>> {
+        derives_accent(self.preset).then(Arc::default)
+    }
+
+    /// The place in the stack's order of the reader or stand-in, while
+    /// one is set: directly above the preset and the accent-derivation
+    /// layer (S8).
+    fn reader_place(&self) -> usize {
+        if self.derivation.is_some() { 2 } else { 1 }
+    }
+
+    /// The place in the stack's order of the first application layer
+    /// (S8).
+    fn first_application_place(&self) -> usize {
+        self.reader_place()
+            .saturating_add(usize::from(self.reader.is_some()))
+    }
+
     /// The layers in the stack's order, each with what it is to the stack.
     fn stacked(&self) -> Vec<Stacked<'_>> {
         let mut out = vec![Stacked {
             layer: &self.preset_layer,
             kind: LayerKind::Preset,
         }];
+        if let Some(layer) = &self.derivation {
+            out.push(Stacked {
+                layer,
+                kind: LayerKind::AccentDerivation,
+            });
+        }
         if let Some(Reader::Read { layer, .. } | Reader::StandIn { layer, .. }) = &self.reader {
             out.push(Stacked {
                 layer,
@@ -871,7 +913,7 @@ impl Stack {
         let Some(synthetic) = &self.synthetic else {
             return Vec::new();
         };
-        let first = if self.reader.is_some() { 2_usize } else { 1 };
+        let first = self.first_application_place();
         self.layers
             .iter()
             .enumerate()
@@ -905,7 +947,7 @@ impl Stack {
             return Vec::new();
         };
         let stand_in = match self.reader {
-            Some(Reader::StandIn { .. }) => Some(1_usize),
+            Some(Reader::StandIn { .. }) => Some(self.reader_place()),
             Some(Reader::Read { .. }) | None => None,
         };
         synthetic
@@ -940,6 +982,7 @@ impl Stack {
     /// The layers in the stack's order, shared.
     fn shared_layers(&self) -> Vec<Arc<Layer>> {
         let mut out = vec![Arc::clone(&self.preset_layer)];
+        out.extend(self.derivation.iter().map(Arc::clone));
         if let Some(Reader::Read { layer, .. } | Reader::StandIn { layer, .. }) = &self.reader {
             out.push(Arc::clone(layer));
         }
@@ -1379,6 +1422,23 @@ fn fold_inputs(
         folded.push((name, scheme));
     }
     folded
+}
+
+/// Whether `Theme` derives an accent-derivation layer on `preset` (S8,
+/// S9.2): on `kde-breeze`, Plasma's derivation (ADD-A132). `material-3`'s
+/// layer enters with its `m3_role` statements (ADD-A134, ADD-A142: the
+/// 0.8.0 plan's M2.4); no other preset derives its accent-dependent roles.
+fn derives_accent(preset: Option<PresetId>) -> bool {
+    preset.is_some_and(|preset| match preset {
+        PresetId::KdeBreeze => true,
+        PresetId::Adwaita
+        | PresetId::MacosTahoe
+        | PresetId::MacosMonterey
+        | PresetId::Material3
+        | PresetId::Ios26
+        | PresetId::Ios13
+        | PresetId::Windows11 => false,
+    })
 }
 
 /// Whether `name` is the `accent` input.
