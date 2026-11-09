@@ -162,7 +162,6 @@ timings = [
     "fast_out_slow_in",  # docs/facts/windows/tokens.toml:74
     "slow_out_fast_in",  # docs/facts/windows/tokens.toml:84
     "connected_service",  # docs/facts/windows/tokens.toml:111
-    "scroll_into_view",  # docs/facts/windows/tokens.toml:140
 ]
 durations = [
     "control_normal",  # docs/facts/windows/tokens.toml:9

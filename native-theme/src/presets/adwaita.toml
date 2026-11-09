@@ -85,7 +85,7 @@ durations = [
     "places_view",  # docs/facts/gnome/tokens.toml:117
     "expander_row",  # docs/facts/gnome/tokens.toml:128
     "tab_bar",  # docs/facts/gnome/tokens.toml:139
-    "tab_thumbnail",  # docs/facts/gnome/tokens.toml:157
+    "tab_thumbnail_box_shadow",  # docs/facts/gnome/tokens.toml:159
     "toggle_group",  # docs/facts/gnome/tokens.toml:168
     "revealer",  # docs/facts/gnome/tokens.toml:370
     "stack",  # docs/facts/gnome/tokens.toml:380
