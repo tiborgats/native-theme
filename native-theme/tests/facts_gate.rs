@@ -336,12 +336,14 @@ fn ids_of(ids: &BTreeSet<String>) -> Vec<&str> {
     ids.iter().map(String::as_str).collect()
 }
 
-/// The report's failures that mention `needle`.
+/// The report's failures that mention `needle`. A failure naming a file
+/// holds the operating system's path, so on Windows its separators are
+/// read as `/` before the match.
 fn failing<'r>(report: &'r run::Report, needle: &str) -> Vec<&'r String> {
     report
         .failures
         .iter()
-        .filter(|failure| failure.contains(needle))
+        .filter(|failure| failure.replace('\\', "/").contains(needle))
         .collect()
 }
 
