@@ -24304,6 +24304,66 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.body.fill` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "@share", "add", "@paste_control", "route", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], variants = ["clear"] }` |  |  |  |  |  | `"None"` |  |  |
 | `button.body.fill` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_states = ["drop_target"], states = ["focus_visible"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.fill` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_states = ["focus_visible", "drop_target"], states = ["hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.fill` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
 | `button.body.fill` | `{ conditions = ["not_main", "contrast_increased"], not_conditions = ["scheme:dark", "window_inactive"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }], not_states = ["default", "disabled", "pressed"], variants = ["glass"] }` |  |  |  | `"None"` |  |  |  |  |
 | `button.body.fill` | `{ conditions = ["not_main", "contrast_increased"], not_conditions = ["scheme:dark", "window_inactive"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }], not_states = ["default", "disabled"], states = ["pressed"], variants = ["glass"] }` |  |  |  | `"None"` |  |  |  |  |
 | `button.body.fill` | `{ conditions = ["not_main", "contrast_increased"], not_conditions = ["scheme:dark", "window_inactive"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }], not_states = ["default", "disabled"], states = ["pressed"], variants = ["toggle"] }` |  |  |  | `"None"` |  |  |  |  |
@@ -30266,6 +30326,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.body.opacity` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "@loading", "drop_target"], not_variants = ["toggle"], sizes = ["regular"], states = ["focus_visible"], variants = ["@corner_fixed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.opacity` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "@loading", "drop_target"], sizes = ["regular"], states = ["focus_visible"], variants = ["toggle"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.opacity` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "drop_target"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.opacity` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.opacity` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.opacity` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.opacity` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -30945,6 +31071,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.bottom` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.bottom` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.bottom` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.bottom` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -31642,6 +31834,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.body.padding.left` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.left` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.left` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.left` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.left` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.left` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.left` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -32320,6 +32578,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.body.padding.right` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.right` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.right` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.right` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.right` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.right` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.right` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -32981,6 +33305,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.body.padding.top` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.top` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.top` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.body.padding.top` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.top` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.top` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.body.padding.top` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -45359,6 +45749,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.label.text.fill` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "@share", "add", "@paste_control", "route", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], variants = ["clear"] }` |  |  |  |  |  | `"None"` |  |  |
 | `button.label.text.fill` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_states = ["drop_target"], states = ["focus_visible"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.fill` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_states = ["focus_visible", "drop_target"], states = ["hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.fill` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.fill` | `{ conditions = ["not_main", "contrast_increased"], not_conditions = ["scheme:dark", "window_inactive"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }], not_states = ["default", "disabled", "pressed"], variants = ["glass"] }` |  |  |  | `"None"` |  |  |  |  |
 | `button.label.text.fill` | `{ conditions = ["not_main", "contrast_increased"], not_conditions = ["scheme:dark", "window_inactive"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }], not_states = ["default", "disabled"], states = ["pressed"], variants = ["glass"] }` |  |  |  | `"None"` |  |  |  |  |
 | `button.label.text.fill` | `{ conditions = ["not_main", "contrast_increased"], not_conditions = ["scheme:dark", "window_inactive"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }], not_states = ["default", "pressed"], states = ["disabled"], variants = ["glass"] }` |  |  |  | `"None"` |  |  |  |  |
@@ -49046,6 +49502,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.label.text.font.family` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.family` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.family` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.family` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.family` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.family` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.family` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -50464,6 +50986,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.label.text.font.size` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.size` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.size` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.label.text.font.size` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.size` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.size` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.label.text.font.size` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -59132,6 +59720,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.values.icon_placement` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_placement` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_placement` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_placement` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_placement` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_placement` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_placement` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -59715,6 +60369,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.icon_text_gap` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_text_gap` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_text_gap` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.icon_text_gap` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
@@ -60728,6 +61448,72 @@ Every value the platforms' verified facts state (`docs/facts/<platform>/*.toml`,
 | `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], sizes = ["regular"], states = ["focus_visible", "@loading", "pressed"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover", "@loading"], sizes = ["regular"], states = ["focus_visible", "drop_target"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], not_states = ["pressed", "disabled", "checked", "hover"], sizes = ["regular"], states = ["focus_visible", "@loading"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["clear", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_highlight"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_hover"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["glass", "@pointer_lift"] }` |  |  |  |  |  | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
+| `button.values.subtitle_gap` | `{ conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.subtitle_gap` | `{ context = [{ part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.subtitle_gap` | `{ context = [{ part = "action_area", scope = "any", variants = ["alert"], widget = "dialog" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", variants = ["@action_sheet"], widget = "dialog" }, { scope = "any", widget = "toolbar_editor" }, { part = "bar", scope = "any", widget = "bottom_tab_bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { part = "header", scope = "any", widget = "calendar" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { part = "bar", scope = "any", widget = "media_controls" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { part = "action_area", scope = "any", widget = "status_page" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |
 | `button.values.subtitle_gap` | `{ context = [{ part = "action_area", scope = "any", widget = "status_page" }], not_conditions = ["idiom:pad"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }, { part = "action_area", scope = "any", widget = "teaching_tip" }], not_states = ["focus_visible", "hover"] }` |  |  |  |  | `"None"` | `"None"` |  |  |

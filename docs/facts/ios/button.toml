@@ -306916,3 +306916,4727 @@ key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes", "tint_dimmed"], sizes = ["regular"], states = ["disabled"], not_states = ["pressed", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["with_icon", "menu"], not_variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "icon_only", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U114"
 rows = ["B-12"]
+
+# U703 (the iOS facts lane's round 6; ADD-A141, ADD-A144): the button's sets holding a pointer style, which every
+# UIButton form takes (the state models' products: the base's sets, the configuration styles' with `@role_primary`
+# too, `@info`, `@contact_add`, `close`). No pass drew a pointer style beside another variant: for each pointer
+# style and each other variant of a drawn set, each key both state their own facts of on the iPad (the pointer
+# facts hold under `idiom:pad`, but for the dimmed tint's six beside `flat` and `primary`, U685; on the iPhone, where
+# nothing hovers, a set takes its other variants' facts), one pending fact naming the two, after both (S17's *Sets
+# not yet measured*), until an iPad host pass draws the pairs under the pointer or a decision per pair and key
+# records that their looks compose.
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["flat", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@gray", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["tinted", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["toggle", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["glass", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_fixed", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["clear", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_small", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_medium", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@corner_large", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["pill", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["with_icon", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["icon_only", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["menu", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@corner_dynamic", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@indicator_popup", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@menu_on_hold", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@info", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@contact_add", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["close", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_highlight"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_lift"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["idiom:pad"], variants = ["@role_primary", "@pointer_hover"] }
+pending = "U703"
+rows = []

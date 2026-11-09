@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 0f71fbb65e838f42e7a02b0939886be2f422e076a7ec28ff98d7a54e690d3ded
+# generated lines: sha256 1164db1308eff0664f568d599cb440ad968d50cc947f2f6b9fb53a6c689f652f
 
 [preset]
 id = "ios-26"
@@ -135,7 +135,7 @@ keys = [
 ]
 # hand-written: end declare
 
-# docs/facts/ios/state-models.toml:786
+# docs/facts/ios/state-models.toml:870
 [declare.widget.button]
 available = true
 variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
@@ -150,7 +150,7 @@ sizes_by_context = []
 
 [pending]
 # docs/facts/ios/button.toml:160191
-"widgets.button.body.fill" = ["U110", "U118", "U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686"]
+"widgets.button.body.fill" = ["U110", "U118", "U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686", "U703"]
 # docs/facts/ios/button.toml:196872
 "widgets.button.body.corners.top_left" = ["U682", "U114", "U255", "U115", "U120", "U122", "U113", "U112"]
 # docs/facts/ios/button.toml:198685
@@ -162,7 +162,7 @@ sizes_by_context = []
 # docs/facts/ios/button.toml:204124
 "widgets.button.body.corners.curve" = ["U682", "U255", "U114", "U115", "U122", "U113", "U112"]
 # docs/facts/ios/button.toml:213601
-"widgets.button.label.text.fill" = ["U255", "U114", "U116", "U111", "U115", "U122", "U113", "U112", "U475", "U685", "U686"]
+"widgets.button.label.text.fill" = ["U255", "U114", "U116", "U111", "U115", "U122", "U113", "U112", "U475", "U685", "U686", "U703"]
 # docs/facts/ios/button.toml:240198
 "widgets.button.icon.icon.fill" = ["U115", "U114", "U116", "U122", "U120", "U111", "U113", "U112", "U475", "U685", "U686"]
 # docs/facts/ios/button.toml:245173

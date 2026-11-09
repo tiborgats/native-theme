@@ -46,6 +46,15 @@
 #   with `@menu_on_hold` its long press, and the selection toggle, `changesSelectionAsPrimaryAction`, UIButton's own
 #   API, so it draws an image with a toggle, a menu with an image and a menu on hold, which the gate met only where a
 #   fact's own `when` named them, the iOS facts lane's round 5, c8610c67; no toggle with a menu, as for the styles).
+#   The pointer style (the iOS facts lane's round 6, U703; ADD-A141, ADD-A144): `pointerInteractionEnabled` and
+#   `pointerStyleProvider` are UIButton's own, as `role` is, so every UIButton form takes one: the base with each of
+#   its sets, each configuration style with its sets and with `@role_primary`, and the button types `@info`,
+#   `@contact_add` and `close`; no other form holds one (a bar item; UIKit's own items in the calendar header, the
+#   edit menu, the find bar and the media controls; an alert's action). The style draws only under the
+#   system pointer, iPadOS's (UIHoverGestureRecognizer.h): the pointer facts hold under `idiom:pad` (but the dimmed
+#   tint's six beside `flat` and `primary`, U685), and on the iPhone a set holding a pointer style takes its other
+#   variants' facts. No pass drew a pointer style (U114 alone, U703 beside another variant: button.toml's last
+#   facts, per S17's *Sets not yet measured*).
 # - Sizes (S10; ADD-A131): an element with no configuration style takes one size, `regular` (no `buttonSize`), so
 #   `sizes = ["regular"]` and its default `regular`; each configuration style takes the four `buttonSize`s in its
 #   `sizes_by_variant` entry, its default `regular` (U129 settled: run 42269041636 read a new configuration's
@@ -65,7 +74,9 @@
 #   sheet's actions every variant a UIAlertAction cannot hold (an image, a menu, a toggle, a pointer style, a button
 #   type); in `toolbar.bar` the forms that are no bar item (`@info`, `@contact_add`, `@paste_control`, `route`), and
 #   on 26 the configuration's corner styles, role, indicator and activity indicator beside the prominent item (the
-#   tie-break of IO-C1, from the verifier's model).
+#   tie-break of IO-C1, from the verifier's model); a pointer style in `toolbar.bar` (UIBarButtonItem and UIBarItem
+#   hold none) and in the hosts whose buttons are UIKit's own items, as the configuration styles there (the iOS
+#   facts lane's round 6).
 # - Not declared (the lane's report): the states the host rows name beside the button's (`default` in an alert, DL-5
 #   and DL-7; `selected` on a bar item, P3-3†, which the facts state as `checked` with `toggle`, the run's toggle;
 #   `dragged`, P4-10†): their rows' facts are the host units'.
@@ -96,9 +107,10 @@ variant_products = [
   [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }],
-  [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }],
-  [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }],
+  [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { one = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
 ]
 not_drawn = [
   { states = ["checked"], not_variants = ["toggle"] },
@@ -194,6 +206,21 @@ not_drawn = [
   { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
   { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
   { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
   { variants = ["@info"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
   { variants = ["@contact_add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
   { variants = ["@paste_control"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
@@ -344,6 +371,63 @@ quote = "@property (nonatomic, assign, readonly, getter = isHovered) BOOL hovere
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:93-94"
 quote = "/// Enables this button's built-in pointer interaction. @property (nonatomic, readwrite, assign, getter = isPointerInteractionEnabled) BOOL pointerInteractionEnabled API_AVAILABLE(ios(13.4)) API_UNAVAILABLE(watchos, tvos);"
+
+# the pointer style an application sets on its UIButton, of any type and with or without a configuration (UIButton's
+# own properties beside `role`): the base, each configuration style, `@info`, `@contact_add` and `close` take one,
+# with each image, menu, toggle, corner style and role their sets hold (ADD-A141, U703)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:96-102"
+quote = "Setting this property automatically enables the button's pointer interaction and sets @c pointerInteractionEnabled to true. */ @property (nonatomic, readwrite, copy, nullable) UIButtonPointerStyleProvider pointerStyleProvider"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:91"
+quote = "@property (nonatomic) UIButtonRole role API_AVAILABLE(ios(14.0)) API_UNAVAILABLE(watchos);"
+
+# the effects the three variants name, each a UIPointerEffect subclass the style provider returns
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIPointerStyle.h:79-104"
+quote = "@interface UIPointerHighlightEffect : UIPointerEffect"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIPointerStyle.h:79-104"
+quote = "@interface UIPointerLiftEffect : UIPointerEffect"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIPointerStyle.h:79-104"
+quote = "@interface UIPointerHoverEffect : UIPointerEffect"
+
+# the system pointer is iPadOS's: on the iPhone nothing hovers, so a pointer style draws nothing there and a set
+# holding one takes its other variants' facts (no pointer fact names `idiom:phone`)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIHoverGestureRecognizer.h:13-21"
+quote = "// On macOS or iPadOS, this gesture recognizer will begin recognition when the cursor"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIHoverGestureRecognizer.h:13-21"
+quote = "// On iOS, this gesture recognizer doesn't recognize anything and is effectively // a no-op."
+
+# a bar's items (`toolbar.bar`, the prominent one on 26 too) are UIBarButtonItems, which hold no pointer style: no
+# pointer variant there; nor in the hosts whose buttons are UIKit's own items, where no configuration style is
+# drawn either (the calendar header, the edit menu, the find bar, the media controls; the text field, the search
+# field, the bottom tab bar, the ink toolbar and the toolbar editor draw only their own forms already)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:60-190"
+quote = "@interface UIBarButtonItem : UIBarItem <NSCoding>"
+absent = ["pointerInteractionEnabled", "pointerStyleProvider", "UIPointerStyle", "UIPointerEffect"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarItem.h:20-43"
+quote = "@interface UIBarItem : NSObject <NSCoding, UIAppearance>"
+absent = ["pointerInteractionEnabled", "pointerStyleProvider", "UIPointerStyle", "UIPointerEffect"]
 
 # `with_icon`, `icon_only`: UIButton's own image, on the system type as on a configured button (the base's sets)
 [[model.cite]]
@@ -812,15 +896,16 @@ variant_products = [
   [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }],
-  [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }],
-  [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }],
+  [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@info", "@contact_add", "close"] }, { one = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
-  [{ one = ["glass", "clear"] }, { any = ["@role_primary"] }],
-  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@role_primary"] }],
+  [{ one = ["glass", "clear"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@role_primary"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
 ]
 not_drawn = [
   { states = ["checked"], not_variants = ["toggle"] },
@@ -942,6 +1027,21 @@ not_drawn = [
   { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
   { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
   { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
   { variants = ["@info"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
   { variants = ["@contact_add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
   { variants = ["@paste_control"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
@@ -1165,6 +1265,63 @@ quote = "@property (nonatomic, assign, readonly, getter = isHovered) BOOL hovere
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:93-94"
 quote = "/// Enables this button's built-in pointer interaction. @property (nonatomic, readwrite, assign, getter = isPointerInteractionEnabled) BOOL pointerInteractionEnabled API_AVAILABLE(ios(13.4)) API_UNAVAILABLE(watchos, tvos);"
+
+# the pointer style an application sets on its UIButton, of any type and with or without a configuration (UIButton's
+# own properties beside `role`): the base, each configuration style, `@info`, `@contact_add` and `close` take one,
+# with each image, menu, toggle, corner style and role their sets hold (ADD-A141, U703)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:96-102"
+quote = "Setting this property automatically enables the button's pointer interaction and sets @c pointerInteractionEnabled to true. */ @property (nonatomic, readwrite, copy, nullable) UIButtonPointerStyleProvider pointerStyleProvider"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:91"
+quote = "@property (nonatomic) UIButtonRole role API_AVAILABLE(ios(14.0)) API_UNAVAILABLE(watchos);"
+
+# the effects the three variants name, each a UIPointerEffect subclass the style provider returns
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIPointerStyle.h:79-104"
+quote = "@interface UIPointerHighlightEffect : UIPointerEffect"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIPointerStyle.h:79-104"
+quote = "@interface UIPointerLiftEffect : UIPointerEffect"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIPointerStyle.h:79-104"
+quote = "@interface UIPointerHoverEffect : UIPointerEffect"
+
+# the system pointer is iPadOS's: on the iPhone nothing hovers, so a pointer style draws nothing there and a set
+# holding one takes its other variants' facts (no pointer fact names `idiom:phone`)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIHoverGestureRecognizer.h:13-21"
+quote = "// On macOS or iPadOS, this gesture recognizer will begin recognition when the cursor"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIHoverGestureRecognizer.h:13-21"
+quote = "// On iOS, this gesture recognizer doesn't recognize anything and is effectively // a no-op."
+
+# a bar's items (`toolbar.bar`, the prominent one on 26 too) are UIBarButtonItems, which hold no pointer style: no
+# pointer variant there; nor in the hosts whose buttons are UIKit's own items, where no configuration style is
+# drawn either (the calendar header, the edit menu, the find bar, the media controls; the text field, the search
+# field, the bottom tab bar, the ink toolbar and the toolbar editor draw only their own forms already)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:69-240"
+quote = "@interface UIBarButtonItem : UIBarItem <NSCoding>"
+absent = ["pointerInteractionEnabled", "pointerStyleProvider", "UIPointerStyle", "UIPointerEffect"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarItem.h:20-43"
+quote = "@interface UIBarItem : NSObject <NSCoding, UIAppearance>"
+absent = ["pointerInteractionEnabled", "pointerStyleProvider", "UIPointerStyle", "UIPointerEffect"]
 
 # `with_icon`, `icon_only`: UIButton's own image, on the system type as on a configured button (the base's sets)
 [[model.cite]]
