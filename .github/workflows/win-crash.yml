@@ -16,12 +16,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: "cdb parallel", mode: cdb, args: "--skip facts_gate --exact" }
-          - { name: "parallel", mode: plain, args: "--skip facts_gate --exact" }
-          - { name: "serial", mode: plain, args: "--skip facts_gate --exact --test-threads=1 --nocapture" }
-          - { name: "watch drop alone", mode: plain, args: "watch::tests::windows_subscribe_and_drop_returns --exact --nocapture" }
-          - { name: "winicons alone", mode: plain, args: "winicons:: --nocapture" }
-          - { name: "watch drop and winicons", mode: cdb, args: "--skip facts_gate --skip theme:: --skip resolve:: --skip presets:: --skip widgets:: --skip icons:: --nocapture" }
+          - { name: "drop+winicons cdb", mode: cdb, args: "watch::tests::windows_subscribe_and_drop_returns winicons::" }
+          - { name: "drop+winicons", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::" }
+          - { name: "drop+stock", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::tests::stock winicons::tests::load_by_name_stock_icon winicons::tests::rgba_dimensions_correct" }
+          - { name: "drop+glyph", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::tests::glyph winicons::tests::load_by_name_glyph winicons::tests::load_by_name_named winicons::tests::load_by_name_hex" }
+          - { name: "drop+idi", mode: plain5, args: "watch::tests::windows_subscribe_and_drop_returns winicons::tests::idi_question" }
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/evidence
@@ -40,6 +39,19 @@ jobs:
         shell: bash
         run: |
           "$TEST_EXE" ${{ matrix.args }}
+      - name: Run (plain, five times)
+        if: matrix.mode == 'plain5'
+        shell: bash
+        run: |
+          fails=0
+          for i in 1 2 3 4 5; do
+            "$TEST_EXE" ${{ matrix.args }} --nocapture
+            st=$?
+            echo "=== round $i status $st ==="
+            [ "$st" = 0 ] || fails=$((fails + 1))
+          done
+          echo "=== failed rounds: $fails ==="
+          [ "$fails" = 0 ]
       - name: Run (under cdb)
         if: matrix.mode == 'cdb'
         shell: bash
@@ -51,7 +63,7 @@ jobs:
           ls -la "$cdb"
           for i in 1 2 3; do
             echo "=== round $i ==="
-            "$cdb" -lines -c 'sxd -c2 ".echo SECONDCHANCE_AV; .lastevent; r; kn 80; ~*kn 60; q" av; sxd -c2 ".echo SECONDCHANCE_SO; .lastevent; kn 80; q" sov; g' "$(cygpath -w "$TEST_EXE")" ${{ matrix.args }} 2>&1 | grep -v '^ModLoad' | tail -n 4000
+            "$cdb" -G -lines -c 'sxd -c2 ".echo SECONDCHANCE_AV; .lastevent; r; kn 80; ~*kn 60; q" av; sxd -c2 ".echo SECONDCHANCE_SO; .lastevent; kn 80; q" sov; g' "$(cygpath -w "$TEST_EXE")" ${{ matrix.args }} </dev/null 2>&1 | grep -v '^ModLoad' | tail -n 4000
             st=${PIPESTATUS[0]}
             echo "=== round $i status $st ==="
           done
