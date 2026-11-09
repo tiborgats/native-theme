@@ -268,8 +268,8 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
   may stand before the colon. The sub-bullet's first sentence lists the variants, each with its note in parentheses;
   what follows it is prose and lists none. A content variant (below) is listed with its element, a typed one in the
   typed sub-bullet and a keyed one in its preset's, and is marked "the content variant". A sub-bullet that does
-  not start with `on ` is a note (the flavour that declares a variant, the variants of a nested widget) and lists
-  nothing. The generator reads the typed sub-bullets. Rejected: the forms the entries had (an inline list, `typed …;
+  not start with the word `on` is a note (the flavour that declares a variant, the variants of a nested widget) and
+  lists nothing. The generator reads the typed sub-bullets. Rejected: the forms the entries had (an inline list, `typed …;
   keyed …`, `on the <widget>, typed: …`, `typed on <part> …`), four spellings no reader could take alike.
   A variant is typed when two or more platforms share its meaning anywhere in the catalogue (R15; the
   typed variants are one `Variant` enum, and a widget declares the ones it has), keyed (`@name`) otherwise. A typed
@@ -1431,11 +1431,11 @@ spaces:
     Expressive's icon-only menus), `circular` (GNOME's circular iconic items).
   - on `item`, keyed, `windows-11`: `@split` (WinUI's split menu item, W1-051).
   - on `scroll_arrow`, typed (its identity, one per scroll area; ADD-A146): `top`, `bottom`.
-  - On `material-3` the Expressive menus' variants, `horizontal`, `@vibrant` and the item's `icon_only` (MAT-M10), are
+  - Under `material-3` the Expressive menus' variants, `horizontal`, `@vibrant` and the item's `icon_only` (MAT-M10), are
     flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.menu]` only: under `flavor:baseline` the
     query answers `NotAvailable` for `horizontal` and `@vibrant`, variants the application asks for, and ignores the
     content variant `icon_only` (S8, R2.7, R15).
-  - On `kde-breeze` the menu's `@ka_bottom_drawer` and `@ka_dialog` are flavour `kirigami`'s, declared under
+  - Under `kde-breeze` the menu's `@ka_bottom_drawer` and `@ka_dialog` are flavour `kirigami`'s, declared under
     `[declare.flavor.kirigami.widget.menu]` only: the widgets they substitute (`sheet`, `form`) are flavour
     `kirigami` only, so under `flavor:widgets` the query answers `NotAvailable` for a menu asking for them (S8, R2.7).
     Both are declared with the unit that holds `sheet` and `form`, not with the overlays unit: a fact whose
@@ -4431,8 +4431,8 @@ spaces:
   Its rows are `list` rows with variant `sidebar`.
 - **Available:** every preset.
 - **Parts:**
-  - `split` — the root: the split view or drawer layer the pane is part of, which draws nothing; it holds `pane` and,
-    beside it, `content`, `scrim`, `edge_shadow` and `handle`, and `separator`, `header` and `footer` nest in `pane`:
+  - `split` — the root: the split view or drawer layer the pane is part of, which draws nothing and holds the pane
+    and what lies beside it:
     `bindings` (empty on every preset: the pane binds its surface set, so the content beside it keeps its own). It
     lists no `corners`, so the floating pane's `Concentric` corners (SD-6, MAC-SB06) follow the window's (S2.4: the
     container is the nearest enclosing part or element whose entry lists `corners`, decided by the catalogue, so a
@@ -4495,19 +4495,23 @@ spaces:
   occasion with `bottom_tab_bar`'s), `@submenu_push`, `@submenu_pop` (Q1.64), `@settle` (a dragged surface released
   coming to rest, as `sheet`'s: a drawer released part-way returning, its duration over `element.progress`, which the values declare, `data = { values =
   ["progress"] }`, Q1.58).
-- **Variants:** typed `overlay` (modal or overlaying: Kirigami's modal drawers, Material's modal drawer, WinUI's
-  overlay pane, iOS's overlay behaviour, GNOME's collapsed overlay split view; GN-2.19, W2-30), `compact` (the
-  collapsed rail: Kirigami's collapsed global drawer, WinUI's LeftCompact, Material's navigation rail MAT-N13),
-  `floating` (macOS 26, iOS 26 inset glass sidebars, declared by `macos-tahoe` and `ios-26` only: 26 only, SD-6,
-  MAC-SB06), `end` (trailing side: GNOME's end sidebar, Kirigami's right
-  drawers, WinUI's right pane, the trailing inspector column of macOS MAC-N19 and iOS C-41†). Keyed: `adwaita`
-  `@secondary` (middle pane, GN-1.137); `kde-breeze` `@global`, `@context`, `@places` (KIO), `@side_panel` (Qt's side
-  panel view), `@edge_top`, `@edge_bottom` (drawers on the top or bottom edge, Q1.60); `windows-11` `@left_minimal`;
-  `ios-*` `@displace`; `macos-*` `@collapsed` (the sidebar the split view collapses when it narrows past its collapse
-  rule, set by the `breakpoints` value, MAC-SB09†: the pane not drawn, by a rule, its look with the rule to verify);
-  `material-3` `@expanded`, `@modal` (the rail's expanded and modal forms, MAT-N13; flavour `expressive`'s,
-  declared under `[declare.flavor.expressive.widget.sidebar]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15)). Typed
-  `bottom_sheet` (MAT-SB7's bottom-sheet drawer; the meaning `dialog`'s `bottom_sheet` shares on GNOME).
+- **Variants:**
+  - on the widget, typed: `overlay` (modal or overlaying: Kirigami's modal drawers, Material's modal drawer, WinUI's
+    overlay pane, iOS's overlay behaviour, GNOME's collapsed overlay split view; GN-2.19, W2-30), `compact` (the
+    collapsed rail: Kirigami's collapsed global drawer, WinUI's LeftCompact, Material's navigation rail MAT-N13),
+    `floating` (macOS 26, iOS 26 inset glass sidebars, declared by `macos-tahoe` and `ios-26` only: 26 only, SD-6,
+    MAC-SB06), `end` (trailing side: GNOME's end sidebar, Kirigami's right
+    drawers, WinUI's right pane, the trailing inspector column of macOS MAC-N19 and iOS C-41†),
+    `bottom_sheet` (MAT-SB7's bottom-sheet drawer; the meaning `dialog`'s `bottom_sheet` shares on GNOME).
+  - on the widget, keyed, `adwaita`: `@secondary` (middle pane, GN-1.137).
+  - on the widget, keyed, `kde-breeze`: `@global`, `@context`, `@places` (KIO), `@side_panel` (Qt's side
+    panel view), `@edge_top`, `@edge_bottom` (drawers on the top or bottom edge, Q1.60).
+  - on the widget, keyed, `windows-11`: `@left_minimal`.
+  - on the widget, keyed, `ios-*`: `@displace`.
+  - on the widget, keyed, `macos-*`: `@collapsed` (the sidebar the split view collapses when it narrows past its collapse
+    rule, set by the `breakpoints` value, MAC-SB09†: the pane not drawn, by a rule, its look with the rule to verify).
+  - on the widget, keyed, `material-3`: `@expanded`, `@modal` (the rail's expanded and modal forms, MAT-N13; flavour `expressive`'s,
+    declared under `[declare.flavor.expressive.widget.sidebar]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15)).
 - **Sizes and densities:** `macos-*`: the sidebar size is the condition `cond container_size:sidebar:small` (and
   `medium`, `large`) (R2.3), the sizes declared in `container_sizes` with the platform's default first (S10), the
   default from the facts (MAC-SB01 states none), selecting `list` rules (MAC-SB01); others none.
@@ -4633,23 +4637,32 @@ spaces:
   transition is the `back` button's own `@title_change`). The on-scroll change of the bar
   (MAT-TA1) is its `transitions` under `{scrolled}`; Kirigami's global header resizing and its separator fading
   (Q1.74) are the bar's `transitions`. The search item's expansion is `search_field`'s event `@expand` (MAC-TL07).
-- **Variants:** typed `top`, `bottom` (header or footer position: KDE's ToolBar, GNOME's top bar and its bottom bar,
-  GtkActionBar and AdwToolbarView's bottom bar, GN-1.157, GN-2.20; iOS's toolbars against navigation bars; Material's
-  top and bottom app bars; Q1.68), `floating` (Material's floating toolbar, MAT-P4-7†, MAT-N25; KDE's FloatingToolBar,
-  K-KA-28†), `vertical` (Material's vertical floating toolbar, MAT-N25, R25.14). Keyed: `adwaita` `@raised`
-  (GN-1.153), `@osd`, `@border`, `@collapse_spacing`, `@inline`, `@shrunk` (the bottom bar's inline and shrunk forms,
-  GN-2.20); `kde-breeze` `@main` (the main toolbar against other toolbars, K1.153, K1.158), `@global`, `@page_header`;
-  `macos-*` `@tracking` (on the `separator` element: the tracking separator aligned with the split view's divider,
-  MAC-TL08); the window's toolbar style is the window's keyed variant, one window property with one name: the
-  toolbar's look under each style is a rule `@ context window variant @toolbar_unified / @toolbar_unified_compact /
-  @toolbar_expanded / @toolbar_preference` (MAC-TL01); `ios-*` `@large_title` (C-1), `@navigator`, `@browser`, `@editor` (the navigation item's styles,
-  C-43†); the content variants `with_search`, `with_prompt` (the navigation bar holding a search bar or a prompt,
-  set by the connector from its content, C-1; iOS's compact bar is `@ v_size_class compact`, as UIKit picks it by
-  the size class, TB-3); `material-3`
-  `@center_aligned`, `@medium`, `@large`, `@medium_flexible`, `@large_flexible` (MAT-TA3), `@docked`, `@vibrant`
-  (MAT-N25), `@collapsed` (MAT-P4-7†); `windows-11` `@compact`, `@minimal`, `@hidden` (the closed display modes,
-  W1-103). On `material-3` the Expressive toolbars' variants, typed `floating`, `vertical` and keyed `@docked`,
-  `@vibrant`, `@collapsed` (MAT-N25, MAT-P4-7†), are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.toolbar]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
+- **Variants:**
+  - on the widget, typed: `top`, `bottom` (header or footer position: KDE's ToolBar, GNOME's top bar and its bottom bar,
+    GtkActionBar and AdwToolbarView's bottom bar, GN-1.157, GN-2.20; iOS's toolbars against navigation bars; Material's
+    top and bottom app bars; Q1.68), `floating` (Material's floating toolbar, MAT-P4-7†, MAT-N25; KDE's FloatingToolBar,
+    K-KA-28†), `vertical` (Material's vertical floating toolbar, MAT-N25, R25.14), and
+    the content variants `with_search`, `with_prompt` (the navigation bar holding a search bar or a prompt,
+    set by the connector from its content, C-1; iOS's compact bar is `@ v_size_class compact`, as UIKit picks it by
+    the size class, TB-3).
+  - on the widget, keyed, `adwaita`: `@raised`
+    (GN-1.153), `@osd`, `@border`, `@collapse_spacing`, `@inline`, `@shrunk` (the bottom bar's inline and shrunk forms,
+    GN-2.20).
+  - on the widget, keyed, `kde-breeze`: `@main` (the main toolbar against other toolbars, K1.153, K1.158), `@global`, `@page_header`.
+  - on the widget, keyed, `ios-*`: `@large_title` (C-1), `@navigator`, `@browser`, `@editor` (the navigation item's styles,
+    C-43†).
+  - on the widget, keyed, `material-3`:
+    `@center_aligned`, `@medium`, `@large`, `@medium_flexible`, `@large_flexible` (MAT-TA3), `@docked`, `@vibrant`
+    (MAT-N25), `@collapsed` (MAT-P4-7†).
+  - on the widget, keyed, `windows-11`: `@compact`, `@minimal`, `@hidden` (the closed display modes,
+    W1-103).
+  - on `separator`, keyed, `macos-*`: `@tracking` (the tracking separator aligned with the split view's divider,
+    MAC-TL08).
+  - Under `macos-*` the window's toolbar style is the window's keyed variant, one window property with one name: the
+    toolbar's look under each style is a rule `@ context window variant @toolbar_unified / @toolbar_unified_compact /
+    @toolbar_expanded / @toolbar_preference` (MAC-TL01).
+  - Under `material-3` the Expressive toolbars' variants, typed `floating`, `vertical` and keyed `@docked`,
+    `@vibrant`, `@collapsed` (MAT-N25, MAT-P4-7†), are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.toolbar]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
 - **Sizes and densities:** `ios-*`: the compact height `@ v_size_class compact` (TB-3, ADD-A20); others by variant.
 - **Flags:** none of its own; state flags used: scrolled (on the toolbar: content beneath it is scrolled away from
   its edge, set by the connector; TB-1, MAT-TA1, C-1; the scroll view's own edge effects carry theirs, `scroll_view`),
@@ -4725,7 +4738,8 @@ spaces:
   - `item` — an item: `text` (`= widget.bar.text` where the platform draws its items in the bar's style, so the style
     has one home; the value phase states another only from the facts), `padding`.
 - **Widget values:** none (KDE's and macOS's rows state no value beyond the parts).
-- **Variants:** keyed `kde-breeze` `@main_window` (the top line is drawn only for a QMainWindow's status bar, K1.160).
+- **Variants:**
+  - on the widget, keyed, `kde-breeze`: `@main_window` (the top line is drawn only for a QMainWindow's status bar, K1.160).
 - **Sizes and densities:** none.
 - **Flags:** none; the window's inactive look is the condition `cond window_inactive` (MAC-ST01).
 - **Exclusive groups:** none (states combine); precedence: state models (S17).
@@ -4759,21 +4773,25 @@ spaces:
     `transitions` (the block's fades, MAT-X9).
   - `collapser` *(element)*, in `divider` — KDE's collapser button over the divider (KSplitterCollapserButton,
     K2.17), hovered and pressed on its own, its side a keyed variant: `fill`, `padding`, `opacity` (its fade, K2.17).
-    `collapser_arrow` belongs to it.
   - `collapser_arrow`, in `collapser` — its arrow, direction by the side: `glyph`.
 - **Widget values:** `hit_extension: Sides<Value<Px>>` (the hit area beyond the drawn divider, per side, as
   `button`'s: Q1.92, Q1.93; a rule `@ {hover}`); `presentations: Vec<PresentationTransition>` (queried with the
   collapser): events `Appear`, `Disappear`, kind `Fade` (the collapser shown and hidden, its `QTimeLine` duration,
   K2.17).
-- **Variants:** typed `wide` (GNOME's wide handle, macOS's thick and pane splitter), `sidebar` (the split beside a
-  floating sidebar: no divider on macOS 26 and iOS 26, MAC-SP04, SP-1), `vertical` (the panes stacked, the divider
-  running across: GTK's row-resize cursor against the side-by-side column-resize one, GN-3.67†; the orientation many
-  widgets share). Keyed: `macos-*` `@thin`, `@pane_splitter` (with `wide`: the pane splitter's look beyond the thick
-  divider, MAC-SP01, MAC-SP02); `kde-breeze` `@dock`, `@column_view`, and on `collapser` `@left`, `@right`, `@top`,
-  `@bottom` (the side it collapses toward, K2.17); `material-3` the content variant `@clickable` (the drag handle given a
-  click action by its caller, which adds a press ripple; the connector sets it from the caller's semantics, as it sets
-  `with_label`, ADD-A61; MAT-SP2; rejected: the ripple as the connector's limit, R23, which records a model's gap as
-  the toolkit's, and a press ripple always on, which the default semantics do not draw).
+- **Variants:**
+  - on the widget, typed: `wide` (GNOME's wide handle, macOS's thick and pane splitter), `sidebar` (the split beside a
+    floating sidebar: no divider on macOS 26 and iOS 26, MAC-SP04, SP-1), `vertical` (the panes stacked, the divider
+    running across: GTK's row-resize cursor against the side-by-side column-resize one, GN-3.67†; the orientation many
+    widgets share).
+  - on the widget, keyed, `macos-*`: `@thin`, `@pane_splitter` (with `wide`: the pane splitter's look beyond the thick
+    divider, MAC-SP01, MAC-SP02).
+  - on the widget, keyed, `kde-breeze`: `@dock`, `@column_view`.
+  - on the widget, keyed, `material-3`: `@clickable` (the content variant: the drag handle given a
+    click action by its caller, which adds a press ripple; the connector sets it from the caller's semantics, as it sets
+    `with_label`, ADD-A61; MAT-SP2; rejected: the ripple as the connector's limit, R23, which records a model's gap as
+    the toolkit's, and a press ripple always on, which the default semantics do not draw).
+  - on `collapser`, keyed, `kde-breeze`: `@left`, `@right`, `@top`,
+    `@bottom` (the side it collapses toward, K2.17).
 - **Sizes and densities:** none.
 - **Flags:** none of its own; state flags used: hover, pressed, dragged (MAC-SP03), focus_visible on Material's handle
   (MAT-SP2), disabled (W1-157†).
@@ -4812,9 +4830,13 @@ spaces:
   `menu.separator` on every preset, its insets `menu.separator.margin` (GNOME's menu margins, GN-1.187; W1-119); a
   toolbar's is `toolbar.separator`, its insets `toolbar.separator.margin`: a line's insets are its part's `margin`
   on every widget, as a stroke lies on its box's edge and padding does not shorten it (S2.4).
-- **Variants:** typed `vertical` (the line running down; horizontal is the base, the orientation many widgets share,
-  R25.14). Keyed: `adwaita` `@spacer` (no line, GN-1.188); `kde-breeze` `@light`
-  (Q1.95); `ios-*` `@opaque` (SE-2); `material-3` `@inset`, `@inset_start`, `@inset_end` (MAT-D1).
+- **Variants:**
+  - on the widget, typed: `vertical` (the line running down; horizontal is the base, the orientation many widgets share,
+    R25.14).
+  - on the widget, keyed, `adwaita`: `@spacer` (no line, GN-1.188).
+  - on the widget, keyed, `kde-breeze`: `@light` (Q1.95).
+  - on the widget, keyed, `ios-*`: `@opaque` (SE-2).
+  - on the widget, keyed, `material-3`: `@inset`, `@inset_start`, `@inset_end` (MAT-D1).
 - **Sizes and densities:** none.
 - **Flags:** none (no states).
 - **Exclusive groups:** none (no states); precedence: state models (S17).
@@ -4850,10 +4872,15 @@ spaces:
   - `banner_title` — the banner's title (Q1.131): `text`, `icon`.
 - **Widget values:** `section_gap_px: Value<Px>` (between header, content and footer, Q1.130);
   `banner_band_height_factor: Value<f32>` (Q1.131).
-- **Variants:** typed `activatable` (GNOME's activatable card, Kirigami's clickable cards, Material's interactive
-  cards). Keyed: `adwaita` `@osd`; `kde-breeze` `@banner`; `material-3` `@elevated`, `@outlined` (two of MAT-CA1's
-  three container styles; the third, the filled card, is the base, so no variant names it); `windows-11` `@secondary`, `@tertiary` (the card fills, W1-139; the default card is
-  outlined-like).
+- **Variants:**
+  - on the widget, typed: `activatable` (GNOME's activatable card, Kirigami's clickable cards, Material's interactive
+    cards).
+  - on the widget, keyed, `adwaita`: `@osd`.
+  - on the widget, keyed, `kde-breeze`: `@banner`.
+  - on the widget, keyed, `material-3`: `@elevated`, `@outlined` (two of MAT-CA1's
+    three container styles; the third, the filled card, is the base, so no variant names it).
+  - on the widget, keyed, `windows-11`: `@secondary`, `@tertiary` (the card fills, W1-139; the default card is
+    outlined-like).
 - **Sizes and densities:** none.
 - **Flags:** none of its own; state flags used: hover, pressed, checked (Q1.126), focus_visible, dragged, disabled
   (MAT-CA2).
@@ -4900,7 +4927,9 @@ spaces:
     `focus`, `shadow`.
   - `arrow` *(element)*, in `header` — the disclosure arrow, an element of its own (macOS's disclosure button has its
     own states), nested in the header so that a rule selects the header's hover and press for it, as GNOME, KDE and
-    WinUI draw it (`expander.arrow.opacity @ context expander.header {hover}`, GN-1.261, K1.250, W1-140): `glyph` (source per platform; on macOS the system control rendering of
+    WinUI draw it (`expander.arrow.opacity @ context expander.header {hover}`, GN-1.261, K1.250, W1-140), and reading
+    the expander's `open`, which only the expander's own element holds, by `context expander.body {open}` (Entry
+    format's *Flags*, ADD-A146): `glyph` (source per platform; on macOS the system control rendering of
     the disclosure bezel, S15, MAC-B01), `fill`, `stroke` (WinUI's chevron button border per state, W1-140), `corners`
     (WinUI's chevron button), `opacity`, `transform` (rotation per state), `min_width`, `min_height` (its size per
     control size, MAC-EX05†), `transitions` (X-MO-6).
@@ -4910,12 +4939,16 @@ spaces:
   (today); `drag_hover_delay_ms: Value<Ms>` (a drag hovering the header expands it, GN-1.262);
   `presentations: Vec<PresentationTransition>`: events `@expand`, `@collapse` (the content's reveal: GN-1.259, K1.251,
   W1-142, K3.37).
-- **Variants:** keyed: `macos-*` `@push_disclosure`
-  (MAC-EX01, MAC-B01); `windows-11` `@expand_up` (the content opens above the
-  header, with its own border thickness and corners, W1-141; a variant because the look changes with it, which a
-  widget value cannot select).
+- **Variants:**
+  - on the widget, keyed, `macos-*`: `@push_disclosure` (MAC-EX01, MAC-B01).
+  - on the widget, keyed, `windows-11`: `@expand_up` (the content opens above the
+    header, with its own border thickness and corners, W1-141; a variant because the look changes with it, which a
+    widget value cannot select).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large` (MAC-EX05†); others none.
-- **Flags:** none of its own; state flags used: open (expanded), hover, pressed, focus_visible, disabled.
+- **Flags:** none of its own; state flags used: open (on the expander's own element: expanded; `header` and `arrow`
+  read it by `context expander.body {open}`, ADD-A146), hover, pressed (on `header`, and on `arrow` its own, macOS's
+  disclosure button, MAC-EX03), the header's focus_visible, disabled (the expander's, held by every element of
+  it).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (Expander CommonStates; its ExpandStates are
   `open`, its ExpandDirectionStates the variant `@expand_up`); others none (states combine); precedence: state models
   (S17).
@@ -4943,7 +4976,8 @@ spaces:
 
 *From group 4's catalogue.*
 
-- **Kind:** typed widget with values only (no parts drawn): a layout container's default spacing, queried per
+- **Kind:** typed widget of values, its root drawing nothing and its one drawn part the scrim behind a levitated
+  pane (MAT-SF04†): a layout container's default spacing, queried per
   container element so that size-class rules apply (R16); today's top-level `layout` table. Every platform. The flow
   layout absorbs GNOME's wrap box (GN-2.46) and Material's chip set (MAT-RL01†).
 - **Available:** every preset.
@@ -4975,15 +5009,18 @@ spaces:
   CardsLayout, Q1.133; kirigami-addons' settings window, K-KA-41†); `max_columns: Option<Value<u32>>` (Q1.133; `None`: no limit);
   `presentations: Vec<PresentationTransition>`: events `@column_scroll` (Q1.94). Lengths that scale with text are
   expressions (ADD-A55).
-- **Variants:** typed `flow` (GNOME's wrap box GN-2.46, iOS RL-3†, macOS MAC-RL01†, Windows W-P4-9†),
-  `clamp` (content clamped to a readable width: AdwClamp, GN-1.195; iOS's readable content guide, LY-2), `pane` (an
-  adaptive layout's pane: Material's levitated pane, MAT-SF04†; WinUI's TwoPaneView, W-P4-19†), `vertical` (a
-  vertical box: GTK's vertical linked box, GN-1.42; the orientation many widgets share). Keyed: `adwaita`
-  `@preferences_page`, `@linked` (GTK's linked box, GN-1.42); `kde-breeze` `@cards`, `@cards_list`, `@column_view`,
-  `@qqc2_pane` (qqc2's Pane, a padded container control, Q1.98; named apart from the typed `pane`, the adaptive
-  layout's), `@page` (qqc2's Page, Q1.98), `@kirigami_page` (with
-  `@page`: Kirigami's Page, whose padding differs from qqc2's, Q1.98); `windows-11` `@two_pane_wide`, `@two_pane_tall` (W-P4-19†). Material's chip set is the typed `flow`
-  (MAT-RL01†): it adds nothing a flow layout lacks.
+- **Variants:**
+  - on the widget, typed: `flow` (GNOME's wrap box GN-2.46, iOS RL-3†, macOS MAC-RL01†, Windows W-P4-9†),
+    `clamp` (content clamped to a readable width: AdwClamp, GN-1.195; iOS's readable content guide, LY-2), `pane` (an
+    adaptive layout's pane: Material's levitated pane, MAT-SF04†; WinUI's TwoPaneView, W-P4-19†), `vertical` (a
+    vertical box: GTK's vertical linked box, GN-1.42; the orientation many widgets share). Material's chip set is the
+    typed `flow` (MAT-RL01†): it adds nothing a flow layout lacks.
+  - on the widget, keyed, `adwaita`: `@preferences_page`, `@linked` (GTK's linked box, GN-1.42).
+  - on the widget, keyed, `kde-breeze`: `@cards`, `@cards_list`, `@column_view`,
+    `@qqc2_pane` (qqc2's Pane, a padded container control, Q1.98; named apart from the typed `pane`, the adaptive
+    layout's), `@page` (qqc2's Page, Q1.98), `@kirigami_page` (with
+    `@page`: Kirigami's Page, whose padding differs from qqc2's, Q1.98).
+  - on the widget, keyed, `windows-11`: `@two_pane_wide`, `@two_pane_tall` (W-P4-19†).
 - **Sizes and densities:** `macos-*` control sizes on `label_gap` and `button_gap` (MAC-LY01), selected by the
   layout element's own control size (`size s`, S7.3), which the connector sets to the size of the controls the layout
   holds; size classes:
