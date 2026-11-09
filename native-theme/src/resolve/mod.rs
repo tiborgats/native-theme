@@ -33,6 +33,7 @@ use super::expr::{Expr, Func, Literal, Name};
 use super::inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
 use super::key::Key;
 use super::layer::{Bases, Layer, LayerId};
+use super::palette::{Palette, Port};
 use super::presets::PresetId;
 use super::roles::{ColorRolesPatch, SurfaceRoles, SurfaceRolesPatch, SurfaceSet};
 use super::selector::{
@@ -434,9 +435,19 @@ enum Reader {
 /// where a layer above it gives the accent in force; a KDE port's (S14) is
 /// the same leave-out at every scheme where the accent-derivation layer
 /// states its roles ([`Stack::accent_givers`]).
-#[derive(Clone, Debug, PartialEq)]
+///
+/// The reader's or stand-in's holds S8's palette leave-out too: at the
+/// schemes where a palette above it applies (`palette`), its colour bases,
+/// colour rules, colour inputs but those `kept` (a KDE port's: the accent
+/// inputs, R2.6; ADD-A142), KDE's three lists and `token.kde` are not in
+/// force. Validation reads the colours and inputs of it; its `token.kde`
+/// it keeps, conservatively, as it reads the tokens under every scheme at
+/// once, and a port's `Tokens` rule states every field of `token.kde`
+/// over it at the port's scheme.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct LeftOut {
-    /// The schemes at which the layer's roles and inputs are left out.
+    /// The schemes at which the layer's accent-dependent roles and inactive
+    /// input roles are left out.
     schemes: Vec<Scheme>,
     /// The accent-dependent roles left out.
     roles: Vec<validate::AccentRole>,
@@ -444,6 +455,10 @@ pub(crate) struct LeftOut {
     paths: Vec<String>,
     /// The inactive input roles left out.
     inputs: Vec<InputName>,
+    /// The schemes at which a palette above the layer applies (S8, S14).
+    palette: Vec<Scheme>,
+    /// The inputs kept beneath the palette.
+    kept: Vec<InputName>,
 }
 
 impl LeftOut {
@@ -459,23 +474,47 @@ impl LeftOut {
             roles: roles.to_vec(),
             paths: roles.iter().map(|role| role.path()).collect(),
             inputs,
+            palette: Vec::new(),
+            kept: Vec::new(),
         }
     }
 
-    /// Whether the layer's roles and inputs are left out at `scheme`.
+    /// The leave-out, and S8's beneath a palette applying at `schemes`,
+    /// the inputs `kept` in force there.
+    pub(crate) fn beneath_palette(self, schemes: Vec<Scheme>, kept: Vec<InputName>) -> LeftOut {
+        LeftOut {
+            palette: schemes,
+            kept,
+            ..self
+        }
+    }
+
+    /// Whether anything of the layer is left out at `scheme`.
     pub(crate) fn at(&self, scheme: Scheme) -> bool {
-        self.schemes.contains(&scheme)
+        self.schemes.contains(&scheme) || self.palette.contains(&scheme)
+    }
+
+    /// Whether a palette above the layer applies at `scheme`, leaving its
+    /// colours, colour inputs but the kept ones, lists and `token.kde` out.
+    pub(crate) fn under_palette(&self, scheme: Scheme) -> bool {
+        self.palette.contains(&scheme)
     }
 
     /// Whether the role at `path` of a scheme's colour roles is left out
-    /// at `scheme`.
+    /// at `scheme`: every role beneath a palette.
     pub(crate) fn role(&self, scheme: Scheme, path: &str) -> bool {
-        self.at(scheme) && self.paths.iter().any(|held| held == path)
+        self.under_palette(scheme)
+            || (self.schemes.contains(&scheme) && self.paths.iter().any(|held| held == path))
     }
 
-    /// The schemes at which the layer's roles and inputs are left out.
-    pub(crate) fn schemes(&self) -> &[Scheme] {
-        &self.schemes
+    /// The schemes at which the layer's accent-dependent roles are left
+    /// out and no palette above it leaves its colours out whole.
+    pub(crate) fn schemes(&self) -> Vec<Scheme> {
+        self.schemes
+            .iter()
+            .copied()
+            .filter(|scheme| !self.under_palette(*scheme))
+            .collect()
     }
 
     /// Whether an accent-dependent role of the surface set `set` is left
@@ -486,9 +525,12 @@ impl LeftOut {
             .any(|role| matches!(role, validate::AccentRole::Surface(held, _) if *held == set))
     }
 
-    /// Whether the input `name` is left out at `scheme`.
+    /// Whether the input `name` is left out at `scheme`: an inactive input
+    /// role beneath the accent-derivation layer, any input but the kept
+    /// ones beneath a palette.
     pub(crate) fn input(&self, scheme: Scheme, name: &InputName) -> bool {
-        self.at(scheme) && self.inputs.contains(name)
+        (self.under_palette(scheme) && !self.kept.contains(name))
+            || (self.schemes.contains(&scheme) && self.inputs.contains(name))
     }
 
     /// `roles` without the roles left out: each stated as a field of its
@@ -562,11 +604,21 @@ pub(crate) struct Stack {
     derivation: Option<Arc<Layer>>,
     reader: Option<Reader>,
     /// S8's leave-out of the reader's or stand-in's roles beneath the
+    /// accent-derivation layer, and of its colours beneath a palette,
+    /// derived with it; `None` where nothing of it is left out.
+    reader_left_out: Option<LeftOut>,
+    /// The application's layers, each with the id it was added under, the
+    /// palette's entry among them.
+    layers: Vec<(LayerId, Arc<Layer>)>,
+    /// The palette `apply_palette` added (S8, S14), with the id of its
+    /// entry among `layers`, where it was first added; `None` without one.
+    /// The entry holds the palette's source for the current preset where
+    /// it applies under the contrast in force ([`Stack::derive_palette`]).
+    palette: Option<(LayerId, Arc<Palette>)>,
+    /// S8's leave-out of the palette's KDE port's roles beneath the
     /// accent-derivation layer, derived with it; `None` where nothing of
     /// it is left out.
-    reader_left_out: Option<LeftOut>,
-    /// The application's layers, each with the id it was added under.
-    layers: Vec<(LayerId, Arc<Layer>)>,
+    port_left_out: Option<LeftOut>,
     accent: Option<Accent>,
     /// The accent layer, derived from `accent` (S9.2).
     accent_layer: Arc<Layer>,
@@ -624,6 +676,8 @@ impl Stack {
             reader_left_out: None,
             reader: None,
             layers: Vec::new(),
+            palette: None,
+            port_left_out: None,
             accent: None,
             accent_layer: Arc::default(),
             picked: None,
@@ -699,6 +753,8 @@ impl Stack {
                 carried: Vec::new(),
             }),
             layers,
+            palette: None,
+            port_left_out: None,
             accent: None,
             accent_layer: Arc::default(),
             picked: None,
@@ -738,6 +794,8 @@ impl Stack {
                 layer: Arc::default(),
             }),
             layers: layers.map(|layer| (LayerId::next(), layer)).collect(),
+            palette: None,
+            port_left_out: None,
             accent: None,
             accent_layer: Arc::default(),
             picked: None,
@@ -764,6 +822,7 @@ impl Stack {
     ) -> Result<(), LayerError> {
         let mut changed = Box::new(self.clone());
         change(&mut changed);
+        changed.derive_palette();
         changed.accent_layer = changed.derived_accent();
         changed.derive_derivation();
         add_problems(&mut problems, changed.validate())?;
@@ -838,9 +897,10 @@ impl Stack {
     /// `pending` (S16): refused where the preset fails validation, or the
     /// accent set or the stand-in (its common inputs with its part for the
     /// new preset) does not state the new preset's accent inputs as one
-    /// group (S9.2, S9.5), or a listed path no layer states is left (S17),
+    /// group (S9.2, S9.5), or the applied palette has no source for the new
+    /// preset (S14), or a listed path no layer states is left (S17),
     /// or a declared input is left with no value at a slot (S12); the
-    /// accent layer is derived again
+    /// accent layer is derived again and the palette's source chosen again
     /// (S8). On a synthetic theme it ends the synthetic route, removing the
     /// layers it added and the values it folded, the same preset's included
     /// (S17, ADD-A131).
@@ -852,6 +912,9 @@ impl Stack {
         pending: Vec<Listed>,
     ) -> Result<(), LayerError> {
         accent_inputs_held(&declarations, preset, self.accent.as_ref(), self.stand_in())?;
+        if let Some((_, palette)) = &self.palette {
+            palette_serves(palette, preset)?;
+        }
         let problems = preset_problems(
             &declarations,
             &layer,
@@ -936,9 +999,88 @@ impl Stack {
         self.change(|stack| stack.accent = accent)
     }
 
-    /// Picks the scheme, or follows the reader's (`None`).
+    /// Picks the scheme, or follows the reader's (`None`); under a palette
+    /// a scheme it lacks is refused (S14), while following the reader's
+    /// suspends the palette at such a scheme.
     pub(crate) fn pick(&mut self, scheme: Option<Scheme>) -> Result<(), LayerError> {
+        if let (Some(scheme), Some((_, palette))) = (scheme, &self.palette)
+            && !palette.schemes().contains(&scheme)
+        {
+            return Err(LayerError::SchemeNotInPalette(scheme));
+        }
         self.change(|stack| stack.picked = scheme)
+    }
+
+    /// Applies a palette, or removes the applied one (`None`; a no-op
+    /// without one) (S8, S14): an application layer at the place the first
+    /// palette applied took, the last application layer's then, which a
+    /// palette replacing it keeps. Refused where it has no source for the
+    /// current preset (`Err(PaletteNotForPreset)`) or lacks the scheme in
+    /// force (`Err(SchemeNotInPalette)`), and where the stack fails
+    /// validation over it.
+    pub(crate) fn apply_palette(&mut self, palette: Option<Palette>) -> Result<(), LayerError> {
+        let Some(palette) = palette else {
+            let Some((id, _)) = self.palette else {
+                return Ok(());
+            };
+            return self.change(|stack| {
+                stack.palette = None;
+                stack.layers.retain(|(held, _)| *held != id);
+            });
+        };
+        palette_serves(&palette, self.preset)?;
+        let scheme = self.scheme();
+        if !palette.schemes().contains(&scheme) {
+            return Err(LayerError::SchemeNotInPalette(scheme));
+        }
+        let palette = Arc::new(palette);
+        self.change(|stack| match &mut stack.palette {
+            Some((_, held)) => *held = palette,
+            None => {
+                let id = LayerId::next();
+                stack.layers.push((id, Arc::default()));
+                stack.palette = Some((id, palette));
+            }
+        })
+    }
+
+    /// Sets the palette's entry among the application layers to its source
+    /// for the current preset, a KDE port (S14), where the palette applies
+    /// under the contrast in force; else to a layer stating nothing: the
+    /// palette is skipped under a contrast it states no colours for (S8,
+    /// R19). A port states its colours under its scheme alone, so at the
+    /// palette's other schemes it is suspended by itself.
+    fn derive_palette(&mut self) {
+        let layer = self
+            .palette_port()
+            .map_or_else(Arc::default, |port| Arc::clone(&port.layer));
+        let Some((id, _)) = self.palette else {
+            return;
+        };
+        if let Some((_, held)) = self.layers.iter_mut().find(|(held, _)| *held == id) {
+            *held = layer;
+        }
+    }
+
+    /// The palette's source for the current preset where the palette
+    /// applies under the contrast in force (S8, S14): its port for the
+    /// preset; `None` without a palette or one, or where the contrast in
+    /// force is one the port states no colours for.
+    fn palette_port(&self) -> Option<&Port> {
+        let (_, palette) = self.palette.as_ref()?;
+        let port = palette.port(self.preset?)?;
+        let contrast = self.contrast();
+        contrast
+            .is_none_or(|contrast| states_colors_for(&port.layer, contrast))
+            .then_some(port)
+    }
+
+    /// The schemes at which the palette applies (S8, S14): its port's
+    /// scheme, where [`Stack::palette_port`] gives one.
+    fn palette_schemes(&self) -> Vec<Scheme> {
+        self.palette_port()
+            .map(|port| vec![port.scheme])
+            .unwrap_or_default()
     }
 
     /// Sets the contrast, or follows the reader's (`None`).
@@ -1008,9 +1150,26 @@ impl Stack {
     /// which validation checks it at (S12), the slot in force among them.
     /// The reader's or stand-in's stated roles and inputs among those are
     /// left out at each scheme where a layer above it gives the accent in
-    /// force ([`LeftOut`]).
+    /// force, and a KDE port's at each scheme where the layer states them
+    /// ([`LeftOut`]). Beneath a palette applying at a scheme
+    /// ([`Stack::palette_schemes`]), the reader's or stand-in's colours,
+    /// colour inputs, lists and `token.kde` are left out there, a KDE
+    /// port's accent inputs kept (S8, R2.6; ADD-A142).
     fn derive_derivation(&mut self) {
         self.reader_left_out = None;
+        self.port_left_out = None;
+        let palette = self.palette_schemes();
+        let beneath = |left: LeftOut, kept: &[InputName]| {
+            if palette.is_empty() {
+                left
+            } else {
+                left.beneath_palette(palette.clone(), kept.to_vec())
+            }
+        };
+        let kept = self.declarations.accent_inputs.clone();
+        if self.reader.is_some() && !palette.is_empty() {
+            self.reader_left_out = Some(beneath(LeftOut::default(), &kept));
+        }
         self.derivation = derives_accent(self.preset).then(Arc::default);
         if self.derivation.is_none() {
             return;
@@ -1023,6 +1182,7 @@ impl Stack {
         let inputs = inactive_inputs(&self.declarations);
         let schemes: Vec<Scheme> = givers.iter().map(|(scheme, _)| *scheme).collect();
         self.derivation = Some(Arc::new(derivation_layer(&schemes, &roles, &inputs)));
+        let names: Vec<InputName> = inputs.into_iter().map(|(name, _, _)| name).collect();
         if self.reader.is_some() {
             let reader = self.reader_place();
             let above: Vec<Scheme> = givers
@@ -1031,9 +1191,12 @@ impl Stack {
                 .map(|(scheme, _)| *scheme)
                 .collect();
             if !above.is_empty() {
-                let names = inputs.into_iter().map(|(name, _, _)| name).collect();
-                self.reader_left_out = Some(LeftOut::new(above, &roles, names));
+                let left = LeftOut::new(above, &roles, names.clone());
+                self.reader_left_out = Some(beneath(left, &kept));
             }
+        }
+        if !palette.is_empty() {
+            self.port_left_out = Some(LeftOut::new(schemes, &roles, names));
         }
     }
 
@@ -1122,10 +1285,21 @@ impl Stack {
                 left_out: self.reader_left_out.as_ref(),
             });
         }
-        out.extend(self.layers.iter().map(|(_, layer)| Stacked {
-            layer,
-            kind: LayerKind::Application,
-            left_out: None,
+        let palette = self.palette.as_ref().map(|(id, _)| *id);
+        out.extend(self.layers.iter().map(|(id, layer)| {
+            if Some(*id) == palette {
+                Stacked {
+                    layer,
+                    kind: LayerKind::Palette,
+                    left_out: self.port_left_out.as_ref(),
+                }
+            } else {
+                Stacked {
+                    layer,
+                    kind: LayerKind::Application,
+                    left_out: None,
+                }
+            }
         }));
         out.push(Stacked {
             layer: &self.accent_layer,
@@ -1647,6 +1821,39 @@ fn fold_inputs(
     folded
 }
 
+/// Refused where `palette` has neither a mapping nor a port for `preset`
+/// (`Err(PaletteNotForPreset)`, S14): a KDE port alone, on `adwaita`. A
+/// stack with no bundled preset (`None`, the tests') has no source to
+/// choose, and the palette states nothing there.
+fn palette_serves(palette: &Palette, preset: Option<PresetId>) -> Result<(), LayerError> {
+    match preset {
+        Some(preset) if palette.port(preset).is_none() => {
+            Err(LayerError::PaletteNotForPreset(preset))
+        }
+        Some(_) | None => Ok(()),
+    }
+}
+
+/// Whether `layer` states colours for `contrast` (S8, R19): a colour rule
+/// whose conditions name it, or a per-contrast input base for it, in its
+/// common bases or a preset's part. A palette that states none is skipped
+/// while that contrast holds.
+fn states_colors_for(layer: &Layer, contrast: Contrast) -> bool {
+    let condition = match contrast {
+        Contrast::Increased => Condition::ContrastIncreased,
+        Contrast::High => Condition::ContrastHigh,
+    };
+    let rules = layer.rules.iter().any(|rule| {
+        matches!(rule.body, RuleBody::Colors(_))
+            && rule.selector.conditions.all_of.contains(&condition)
+    });
+    let inputs = std::iter::once(&layer.bases)
+        .chain(layer.for_preset.iter().map(|(_, bases)| bases))
+        .flat_map(|bases| &bases.inputs.entries)
+        .any(|(_, value)| value.per_contrast.iter().any(|(held, _)| *held == contrast));
+    rules || inputs
+}
+
 /// Whether `Theme` derives an accent-derivation layer on `preset` (S8,
 /// S9.2): on `kde-breeze`, Plasma's derivation (ADD-A132). `material-3`'s
 /// layer enters with its `m3_role` statements (ADD-A134, ADD-A142: the
@@ -1800,12 +2007,13 @@ impl ResolvedTheme {
         contrast: Option<Contrast>,
         omit: Omit<'_>,
     ) {
-        if let Some(colors) = bases.colors.get(scheme) {
-            self.colors.push(step(pos, None, omit.roles(colors)));
+        if let Some(colors) = bases.colors.get(scheme).and_then(|c| omit.roles(c)) {
+            self.colors.push(step(pos, None, colors));
         }
         self.inputs(&bases.inputs, pos.layer, scheme, contrast, omit);
-        if *bases.tokens != TokensPatch::default() {
-            self.tokens.push(step(pos, None, bases.tokens.clone()));
+        let tokens = omit.tokens(&bases.tokens);
+        if *tokens != TokensPatch::default() {
+            self.tokens.push(step(pos, None, tokens));
         }
         let (parts, values) = widget_patches(&bases.widgets);
         for (part, patch) in parts {
@@ -1837,6 +2045,9 @@ impl ResolvedTheme {
                 self.input_layers.push((name.clone(), layer));
             }
         }
+        if omit.under_palette() {
+            return;
+        }
         let lists = &mut self.kde_lists;
         if let Some(groups) = inputs.kde_groups.get(scheme) {
             lists.groups.clone_from(groups);
@@ -1849,12 +2060,16 @@ impl ResolvedTheme {
         }
     }
 
-    /// Steps 2 and 3 for one rule whose conditions hold, the roles `omit`
-    /// names left out of a `Colors` rule.
+    /// Steps 2 and 3 for one rule whose conditions hold, what `omit` names
+    /// left out of a `Colors` or `Tokens` rule.
     fn rule(&mut self, body: &RuleBody, selector: &Selector, pos: Pos, omit: Omit<'_>) {
         match body {
-            RuleBody::Colors(roles) => self.colors.push(step(pos, None, omit.roles(roles))),
-            RuleBody::Tokens(tokens) => self.tokens.push(step(pos, None, tokens.clone())),
+            RuleBody::Colors(roles) => {
+                if let Some(roles) = omit.roles(roles) {
+                    self.colors.push(step(pos, None, roles));
+                }
+            }
+            RuleBody::Tokens(tokens) => self.tokens.push(step(pos, None, omit.tokens(tokens))),
             RuleBody::Part(PartRef::Typed(part), patch) => {
                 self.part(*part, step(pos, Some(selector.clone()), patch.clone()));
             }
@@ -1941,12 +2156,13 @@ impl ResolvedTheme {
 }
 
 /// What resolution leaves out of one layer at the slot in force (S8): its
-/// `accent` input where `accent` (S9.5), and the roles and inputs
-/// `left_out` names, there held at the scheme in force.
+/// `accent` input where `accent` (S9.5), and what `left_out` names at the
+/// scheme in force `scheme`.
 #[derive(Clone, Copy)]
 struct Omit<'a> {
     accent: bool,
     left_out: Option<&'a LeftOut>,
+    scheme: Scheme,
 }
 
 impl<'a> Omit<'a> {
@@ -1956,22 +2172,44 @@ impl<'a> Omit<'a> {
         Omit {
             accent: layer.kind == LayerKind::Reader && reader_accent,
             left_out: layer.left_out.filter(|left| left.at(scheme)),
+            scheme,
         }
     }
 
     /// Whether the layer's input `name` is left out.
     fn input(self, name: &InputName) -> bool {
         (self.accent && is_accent(name))
-            || self.left_out.is_some_and(|left| left.inputs.contains(name))
+            || self
+                .left_out
+                .is_some_and(|left| left.input(self.scheme, name))
     }
 
-    /// `roles` without the roles left out.
-    fn roles(self, roles: &ColorRolesPatch) -> ColorRolesPatch {
+    /// Whether a palette above the layer leaves its colours, lists and
+    /// `token.kde` out.
+    fn under_palette(self) -> bool {
+        self.left_out
+            .is_some_and(|left| left.under_palette(self.scheme))
+    }
+
+    /// `roles` without the roles left out; `None` beneath a palette.
+    fn roles(self, roles: &ColorRolesPatch) -> Option<ColorRolesPatch> {
+        if self.under_palette() {
+            return None;
+        }
         let mut roles = roles.clone();
         if let Some(left) = self.left_out {
             left.strip(&mut roles);
         }
-        roles
+        Some(roles)
+    }
+
+    /// `tokens` without `token.kde` beneath a palette.
+    fn tokens(self, tokens: &TokensPatch) -> Box<TokensPatch> {
+        let mut tokens = Box::new(tokens.clone());
+        if self.under_palette() {
+            tokens.kde = None;
+        }
+        tokens
     }
 }
 

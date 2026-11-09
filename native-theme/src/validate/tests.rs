@@ -5604,7 +5604,7 @@ fn every_layer_error() {
     );
     let mut errors = crate::resolve::refusals();
     errors.extend(invalid.err());
-    let mut seen = [false; 4];
+    let mut seen = [false; 6];
     for error in &errors {
         let index = match error {
             LayerError::Invalid(found) => {
@@ -5617,10 +5617,12 @@ fn every_layer_error() {
                 2
             }
             LayerError::UnknownLayer(_) => 3,
+            LayerError::SchemeNotInPalette(_) => 4,
+            LayerError::PaletteNotForPreset(_) => 5,
         };
         seen[index] = true;
     }
-    assert_eq!(seen, [true; 4], "{errors:?}");
+    assert_eq!(seen, [true; 6], "{errors:?}");
 }
 
 /// A layer with one structural problem: an opacity outside `0..=1`.

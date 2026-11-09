@@ -11,6 +11,8 @@
 //! `#00000000` (S2.2, the 0.8.0 plan's D10), through their adapter
 //! ([`KdeAccentScheme`]), so no second derivation exists beside them.
 
+use std::sync::Arc;
+
 use configparser::ini::Ini;
 
 use crate::blocks::BlockPatch;
@@ -33,25 +35,18 @@ use crate::tokens::{KdeGroup, KdeRoleKind, TokensPatch};
 use crate::value::{SchemeMap, Value};
 
 /// A palette (S14): the ports it has, each for one preset and one scheme.
-/// [`Palette::from_port`] makes one from a KDE colour scheme file.
+/// [`Palette::from_port`] makes one from a KDE colour scheme file;
+/// [`Theme::apply_palette`](crate::Theme::apply_palette) applies it.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Palette {
     /// The ports, one per preset.
-    #[allow(
-        dead_code,
-        reason = "read by `Theme::apply_palette` (S14), the accent run's next task"
-    )]
     ports: Vec<Port>,
 }
 
 /// A palette's port (S14): the layer a `.colors` file converts to, for the
 /// preset it carries and the one scheme its caller named.
 #[derive(Clone, Debug, PartialEq)]
-#[allow(
-    dead_code,
-    reason = "read by `Theme::apply_palette` (S14), the accent run's next task"
-)]
 pub(crate) struct Port {
     /// The preset the port is for: a `.colors` file's is `kde-breeze`.
     pub(crate) preset: PresetId,
@@ -60,8 +55,8 @@ pub(crate) struct Port {
     /// The conversion: under [`Port::scheme`], in the preset's own part,
     /// the scheme inputs and their lists, the colour roles and the inactive
     /// input roles; and `token.kde` as a `Tokens` rule under the scheme
-    /// and the preset.
-    pub(crate) layer: Layer,
+    /// and the preset. Shared with the stack the palette is applied to.
+    pub(crate) layer: Arc<Layer>,
 }
 
 impl Palette {
@@ -104,9 +99,25 @@ impl Palette {
             ports: vec![Port {
                 preset: PresetId::KdeBreeze,
                 scheme,
-                layer: port_layer(&ini, scheme),
+                layer: Arc::new(port_layer(&ini, scheme)),
             }],
         })
+    }
+
+    /// The port the palette has for `preset`; `None` where it has none.
+    pub(crate) fn port(&self, preset: PresetId) -> Option<&Port> {
+        self.ports.iter().find(|port| port.preset == preset)
+    }
+
+    /// The palette's schemes (S14), its sources': each port's one scheme.
+    pub(crate) fn schemes(&self) -> Vec<Scheme> {
+        let mut schemes = Vec::new();
+        for port in &self.ports {
+            if !schemes.contains(&port.scheme) {
+                schemes.push(port.scheme);
+            }
+        }
+        schemes
     }
 }
 

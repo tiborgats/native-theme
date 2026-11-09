@@ -42,6 +42,8 @@ pub(super) fn stack(
             .into_iter()
             .map(|layer| (LayerId::next(), Arc::new(layer)))
             .collect(),
+        palette: None,
+        port_left_out: None,
         accent: None,
         accent_layer: Arc::default(),
         picked: None,
@@ -422,8 +424,29 @@ fn an_input_is_replaced_slot_by_slot() {
 
 /// The stack's refusals, for `layer_error_every_variant_triggers`: a
 /// stand-in while a reader exists, an accent lacking an accent input, an
-/// id the stack does not hold.
+/// id the stack does not hold, a palette under a scheme it lacks and one
+/// with no source for the preset (S14). A palette that does not convert
+/// gives no refusal, which that test then reports as missing.
 pub(super) fn refusals() -> Vec<LayerError> {
+    let mut refused = stack_refusals();
+    // A port of a synthetic file, for the dark scheme alone.
+    let port =
+        || crate::Palette::from_port(b"[Colors:Window]\nBackgroundNormal=1,2,3\n", Scheme::Dark);
+    let mut light = stack(Layer::default(), None, Vec::new());
+    refused.extend(port().ok().and_then(|p| light.apply_palette(Some(p)).err()));
+    let mut adwaita = stack(Layer::default(), None, Vec::new());
+    adwaita.preset = Some(PresetId::Adwaita);
+    adwaita.picked = Some(Scheme::Dark);
+    refused.extend(
+        port()
+            .ok()
+            .and_then(|p| adwaita.apply_palette(Some(p)).err()),
+    );
+    refused
+}
+
+/// [`refusals`]' first three.
+fn stack_refusals() -> Vec<LayerError> {
     let mut read = stack(Layer::default(), None, Vec::new());
     read.set_reader(ReaderState::new(Scheme::Light, 1.0), Layer::default(), None)
         .unwrap();

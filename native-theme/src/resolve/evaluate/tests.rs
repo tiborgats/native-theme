@@ -101,6 +101,8 @@ fn resolved_by(layers: &[&str], state: ReaderState) -> ResolvedTheme {
         layers: layers
             .map(|layer| (crate::layer::LayerId::next(), layer))
             .collect(),
+        palette: None,
+        port_left_out: None,
         accent: None,
         accent_layer: Arc::default(),
         picked: None,

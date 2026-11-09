@@ -6,6 +6,7 @@ use super::expr::ParseError;
 use super::inputs::InputName;
 use super::layer::LayerId;
 use super::presets::PresetId;
+use super::selector::Scheme;
 
 /// [`Key::new`](crate::Key::new)'s error: the text, and the first
 /// character outside the key grammar `[a-z0-9][a-z0-9_]*`.
@@ -49,6 +50,13 @@ pub enum LayerError {
     /// states any of them, those lacking their per-scheme value there, each
     /// named once whatever the schemes.
     AccentInputsMissing(Vec<InputName>),
+    /// A palette applied, or a scheme picked under one, at a scheme the
+    /// palette lacks (S14): the scheme.
+    SchemeNotInPalette(Scheme),
+    /// A palette applied, or a preset switched to under one, with neither a
+    /// mapping nor a port for the preset (S14): the preset. The application
+    /// removes the palette first to switch.
+    PaletteNotForPreset(PresetId),
     /// `replace_layer` or `remove_layer` given an id this theme does not
     /// hold: already removed, or another theme's (S16).
     UnknownLayer(LayerId),
@@ -69,6 +77,12 @@ impl fmt::Display for LayerError {
             LayerError::AccentInputsMissing(names) => {
                 f.write_str("the preset's accent inputs are not stated as one group, lacking")?;
                 names.iter().try_for_each(|name| write!(f, " `{name}`"))
+            }
+            LayerError::SchemeNotInPalette(scheme) => {
+                write!(f, "the palette has no `{}` scheme", scheme.name())
+            }
+            LayerError::PaletteNotForPreset(id) => {
+                write!(f, "the palette has no source for `{}`", id.key())
             }
             LayerError::UnknownLayer(id) => write!(f, "the theme holds no {id}"),
         }

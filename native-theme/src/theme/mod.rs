@@ -6,6 +6,7 @@ use super::error::{LayerError, ReaderFailure, ReaderStatus, ThemeError};
 use super::inputs::{Accent, Contrast};
 use super::key::Key;
 use super::layer::{Layer, LayerId};
+use super::palette::Palette;
 use super::presets::PresetId;
 use super::reader::{Reading, SystemReader};
 use super::resolve::{ReaderState, Resolution, Stack, WindowConditions, WindowState};
@@ -113,7 +114,9 @@ impl Theme {
     /// new preset declares it, else the new preset's default is in force.
     /// Refused where the accent set or the stand-in (its common inputs with
     /// its part for the new preset) does not state the new preset's accent
-    /// inputs as one group (`Err(AccentInputsMissing)`, S9.2, S9.5), where a
+    /// inputs as one group (`Err(AccentInputsMissing)`, S9.2, S9.5), where
+    /// the applied palette has no source for it (`Err(PaletteNotForPreset)`,
+    /// S14; the application removes the palette first), where a
     /// path its `[pending]` table lists is left that no layer states (S17),
     /// or where the stack fails validation over it.
     /// On a theme [`Theme::from_preset_synthetic`] built, it ends the
@@ -220,9 +223,33 @@ impl Theme {
     }
 
     /// Picks the scheme; `None`: follow the reader's or stand-in's, else
-    /// the one [`Theme::from_preset`] was given.
+    /// the one [`Theme::from_preset`] was given. Under a palette (S14),
+    /// `Some` of a scheme the palette lacks is refused
+    /// (`Err(SchemeNotInPalette)`), while `None` suspends the palette while
+    /// the scheme followed is one it lacks.
     pub fn pick(&mut self, scheme: Option<Scheme>) -> Result<(), LayerError> {
         self.stack.pick(scheme)
+    }
+
+    /// Applies `palette` (S8, S14), or removes the applied one (`None`; a
+    /// no-op without one): an application layer, at the place the first
+    /// palette applied took among the application's layers (the last
+    /// then), which a palette replacing it keeps. It applies its source for
+    /// the current preset, a KDE port on `kde-breeze`, under the palette's
+    /// schemes, chosen again on every change of the stack: while it
+    /// applies, the reader's or stand-in's colours, colour inputs (but a
+    /// KDE port's accent inputs, which stay in force: the user's accent is
+    /// derived over the port's scheme inputs, R2.6), KDE's scheme lists and
+    /// `token.kde` are left out. At a scheme the palette lacks it is
+    /// suspended, and under a contrast condition it states no colours for
+    /// it is skipped; the reader's or stand-in's colours apply then.
+    ///
+    /// Refused where the palette has no source for the current preset
+    /// (`Err(PaletteNotForPreset)`: a KDE port alone, on `adwaita`), where
+    /// it lacks the scheme in force (`Err(SchemeNotInPalette)`), and where
+    /// the stack fails validation over it; the theme stays as it was.
+    pub fn apply_palette(&mut self, palette: Option<Palette>) -> Result<(), LayerError> {
+        self.stack.apply_palette(palette)
     }
 
     /// Sets the flavour (R1.6); refused where the preset does not declare
