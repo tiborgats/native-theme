@@ -81,11 +81,19 @@ subjects:
   state model naming no flavour);
 - a `read` fact's value in a `bases <table>` or `rule <key> <when>` block, its citation the comment line straight
   above `<key> = …`: the `read` fact read_tables() places at that table and key;
-- `[preset] generation`, `# docs/facts/sources.toml:<line> (<source id>, …)`: that `[[source]]` entry's header.
+- `[preset] generation`, `# docs/facts/sources.toml:<line> (<source id>, …)`: that `[[source]]` entry's header;
+- a citation in a comment's prose, any other comment line's (Citations.prose(), ADD-A144), `docs/facts/<file>:<line>`
+  and each `:<line>` after it in that file: where the line after the comment states a `[declare]` keyed namespace
+  inline (`transition_kinds = { normal = {}, … }`, whose entries no per-entry comment can follow), one citation per
+  entry in their order, each the entry's as a list entry's; a citation straight after a conversion's name
+  (`(percent_to_fraction, <citation>)`), a fact of the preset one of whose citations states that conversion; any
+  other names no subject, and is kept where it names a header of the preset's facts or state models. A refreshed one
+  is written as `:<line>` where the text before it names its fact's file, else with its file.
 A stale citation whose fact none is found for (no fact names the entry, a namespace NAMED_BY has no rule for, a
-generation comment naming no source id) is never guessed: it is listed (`citation: …`) and the run exits 1, `--write`
-writing the rest. `--check` lists each stale citation (`stale citation: …`) and fails, as `--write` would change the
-file. Other citations in the blocks (in a comment's prose) are not judged.
+generation comment naming no source id, a prose citation of no subject naming no header, an inline namespace with
+another number of citations than entries) is never guessed: it is listed (`citation: …`) and the run exits 1,
+`--write` writing the rest. `--check` lists each stale citation (`stale citation: …`) and fails, as `--write` would
+change the file.
 
 Which facts (S17 *Generations*)
 -------------------------------
@@ -1848,13 +1856,20 @@ SOURCES = "docs/facts/sources.toml"
 SOURCE_CITE = re.compile(rf"^# (?P<file>{re.escape(SOURCES)}):(?P<line>\d+)(?P<rest>.*)$")
 SOURCE_ID = re.compile(r"^ \((?P<id>[^,)\s]+)[,)]")
 LIST_OPEN = re.compile(r"^(\w+) = \[$")
+COMMENT = re.compile(r"^\s*#")
+# a fact citation in a comment's prose, and a `:<line>` after one, in its file (Citations.prose())
+PROSE_CITE = re.compile(r"(?P<file>docs/facts/[\w./-]+\.toml):(?P<line>\d+)|(?<=[\s,]):(?P<more>\d+)\b")
+INLINE_NAMESPACE = re.compile(r"^(\w+) = [\[{].*[\]}]$")
+CONVERSION_BEFORE = re.compile(r"([a-z_][a-z0-9_]*),\s*$")
 PARAMS_TABLE = re.compile(r"^\[declare\.params\.(\w+)\]$")
 # how a fact names an entry of a `[declare]` keyed namespace (S10), by the model field the namespace keys:
 # ("key", segments) its key starts with the segments, `{}` the entry's own (one or more, `inactive.view.…`) and `@{}`
 # its keyed segment; ("value", field) its key's last segment is the field (S10: `symbol_scales`, IconStyle.scale) and
 # its value the entry; ("map", field) likewise, the entry a key of its value's table; ("flavor", None) its `when`
 # names `flavor:<entry>` in its conditions, and the default flavour (the list's first, S10) is also named by a state
-# model naming none. A `[declare.params.<group>]` table's `keys`: ("key", ("token", "params", <group>, "{}")).
+# model naming none; ("transition", None) its value holds a transition whose kind is the entry's
+# (`kind = { keyed = { key = "<entry>", … } }`, S2.7's `TransitionKind::Keyed`). A `[declare.params.<group>]` table's
+# `keys`: ("key", ("token", "params", <group>, "{}")).
 NAMED_BY = {
     "color_roles": (("key", ("role", "@{}")),),
     "surface_sets": (("key", ("role", "{}")),),
@@ -1872,6 +1887,7 @@ NAMED_BY = {
     "lcd_filters": (("value", "lcd_filter"),),
     "spec_versions": (("value", "spec_version"),),
     "flavors": (("flavor", None),),
+    "transition_kinds": (("transition", None),),
 }
 
 
@@ -1888,6 +1904,13 @@ def naming_index(items: list, rule) -> dict:
             names = [c[7:] for c in conds if isinstance(c, str) and c.startswith("flavor:")]
             if not names and it.table == "model":
                 names = [None]
+        elif it.table == "fact" and kind == "transition":
+            v = d.get("value")
+            for t in v if isinstance(v, list) else [v]:
+                k = t.get("kind") if isinstance(t, dict) else None
+                keyed = k.get("keyed") if isinstance(k, dict) else None
+                if isinstance(keyed, dict) and isinstance(keyed.get("key"), str):
+                    names.append(keyed["key"])
         elif it.table == "fact" and isinstance(d.get("key"), str):
             parsed = check_facts.key_segments(d["key"])
             segs = parsed[0] if isinstance(parsed, tuple) else []
@@ -1952,6 +1975,7 @@ class Citations:
         self.preset = draft.preset
         self.own = [it for it in draft.items if it.platform == draft.platform and holds_for(it, draft.preset)]
         self.position = {id(it): n for n, it in enumerate(self.own)}
+        self.headers = {(it.file, it.line) for it in self.own}
         self.reads = read_places(draft.facts)
         self.sources = source_lines(sources_text)
         self.index, self.refreshed, self.findings = {}, [], []
@@ -1987,8 +2011,9 @@ class Citations:
         return pick.file, pick.line
 
     def refreshed_part(self, part: str, lines: list) -> list:
-        """A hand-written part's lines, each citation of a subject judged()."""
-        out, ns, group, count = list(lines), None, None, 0
+        """A hand-written part's lines, each citation of a subject judged(), then each in a comment's prose
+        (prose())."""
+        out, ns, group, count, judged = list(lines), None, None, 0, set()
         for i, line in enumerate(lines):
             if part == "declare":
                 opened, params = LIST_OPEN.match(line), PARAMS_TABLE.match(line)
@@ -2003,6 +2028,7 @@ class Citations:
                     ns = None
                 m = ENTRY_CITE.match(line)
                 if m and ns is not None:
+                    judged.add(i)
                     count += 1
                     cited = (m.group("file"), int(m.group("line")))
                     found = self.named(ns, m.group("name"), count == 1)
@@ -2018,6 +2044,7 @@ class Citations:
                 m = SOURCE_CITE.match(line)
                 if not m:
                     continue
+                judged.add(i)
                 named = SOURCE_ID.match(m.group("rest"))
                 cited, sid = (m.group("file"), int(m.group("line"))), named.group("id") if named else None
                 if sid is None or sid not in self.sources:
@@ -2032,12 +2059,95 @@ class Citations:
                 m = ABOVE_CITE.match(line)
                 if not m:
                     continue
+                judged.add(i)
                 key = lines[i + 1].split("=", 1)[0].strip() if i + 1 < len(lines) and "=" in lines[i + 1] else ""
                 got = self.judged(part, repr(key), (m.group("file"), int(m.group("line"))),
                                   self.reads.get((part, key), []))
                 if got is not None:
                     out[i] = f"# {got[0]}:{got[1]}"
+        run = []
+        for i, line in enumerate(out + [""]):
+            if i < len(out) and i not in judged and COMMENT.match(line):
+                run.append(i)
+                continue
+            if run:
+                self.prose(part, out, run)
+            run = []
         return out
+
+    def prose(self, part: str, lines: list, run: list):
+        """The citations in the prose of the comment lines `run` (consecutive indices of `lines`) judged in place:
+        each `docs/facts/<file>.toml:<line>`, and each `:<line>` after it in the same file. Their subjects: where the
+        first line after the run states a keyed namespace inline (`<ns> = { <name> = …, … }`, `<ns> = ["<name>", …]`,
+        a `[declare.params.<group>]` table's `keys`), one citation per entry, each its entry's fact as a list entry's
+        (NAMED_BY); else a citation straight after a conversion's name (`percent_to_fraction, <citation>`,
+        check_fact_citations' table) a fact of the preset a citation of which states it; else, its subject unknown, it
+        is kept where it names a header of the preset's facts or state models (sources.toml's: of a `[[source]]`), and
+        is a finding where it names none. Each refreshed one written as its fact's, `:<line>` where the text before it
+        names that fact's file."""
+        cites, current = [], None
+        for i in run:
+            for m in PROSE_CITE.finditer(lines[i]):
+                if m.group("file"):
+                    current = m.group("file")
+                    cites.append((i, m.span(), current, int(m.group("line")), False))
+                elif current is not None:
+                    cites.append((i, m.span(), current, int(m.group("more")), True))
+        if not cites:
+            return
+        nxt = run[-1] + 1
+        entries, ns = None, None
+        stated = INLINE_NAMESPACE.match(lines[nxt]) if nxt < len(lines) else None
+        if part == "declare" and stated:
+            try:
+                value = tomllib.loads(lines[nxt])[stated.group(1)]
+            except (tomllib.TOMLDecodeError, KeyError):
+                value = None
+            table = next((x for x in reversed(lines[:nxt]) if x.startswith("[")), "")
+            group = PARAMS_TABLE.match(table) if stated.group(1) == "keys" else None
+            group = group.group(1) if group else None
+            ns = f"params.{group}" if group else stated.group(1)
+            entries = list(value) if isinstance(value, dict) else [x for x in value if isinstance(x, str)] \
+                if isinstance(value, list) else None
+        picks = []
+        if entries is not None:
+            where = f"{ns} {entries}"
+            if len(entries) != len(cites):
+                self.findings.append(f"{self.preset}: `{part}` {where}: {len(cites)} citations in its comment for "
+                                     f"{len(entries)} entries")
+                return
+            for n, ((_, _, file, line, _), name) in enumerate(zip(cites, entries)):
+                found = self.named(ns, name, n == 0)
+                if found is None:
+                    self.findings.append(f"{self.preset}: `{part}` {ns} {name!r}: no rule finds the fact naming an "
+                                         f"entry of `{ns}` (NAMED_BY)")
+                    return
+                picks.append(self.judged(part, f"{ns} {name!r}", (file, line), found))
+        else:
+            for i, (start, _), file, line, _ in cites:
+                conv = CONVERSION_BEFORE.search(lines[i][:start])
+                if conv and conv.group(1) in check_facts.conversions():
+                    found = [it for it in self.own if it.table == "fact" and any(
+                        conv.group(1) in (c.data.get("conversion") or []) for c in it.cites)]
+                    picks.append(self.judged(part, f"conversion {conv.group(1)}", (file, line), found))
+                elif (file, line) in self.headers or file == SOURCES and line in self.sources.values():
+                    picks.append((file, line))
+                else:
+                    self.findings.append(f"{self.preset}: `{part}` {file}:{line}: names no fact, state model or "
+                                         f"source of the preset's")
+                    picks.append(None)
+        written = None
+        edits = []
+        for (i, span, file, line, more), got in zip(cites, picks):
+            got = got or (file, line)
+            if more and got[0] == written:
+                text = f":{got[1]}"
+            else:
+                text = f"{got[0]}:{got[1]}"
+                written = got[0]
+            edits.append((i, span, text))
+        for i, (start, end), text in reversed(edits):
+            lines[i] = lines[i][:start] + text + lines[i][end:]
 
 
 # ------------------------------------------------------------------------------------------- combinations
@@ -3737,6 +3847,74 @@ def naming_cases() -> list:
     return failures
 
 
+def _cited(file, line, data, conversion):
+    return check_facts.Item(f"docs/facts/kde/{file}.toml", line, "fact", "kde", data,
+                            [check_facts.Cite(line + 1, {"kind": "published", "conversion": [conversion]})])
+
+
+# a citation in a comment's prose (ADD-A144): the facts it may name, beside NAMING_ITEMS
+PROSE_ITEMS = NAMING_ITEMS + [
+    _item("button", 29, {"key": "button.menu_indicator.transitions",
+                         "value": [{"properties": ["glyph"], "kind": {"keyed": {"key": "normal", "params": {}}}}]}),
+    _item("button", 31, {"key": "button.menu_indicator.transitions",
+                         "value": [{"properties": ["glyph"], "kind": {"keyed": {"key": "pointer_over", "params": {}}}}]}),
+    _item("button", 33, {"key": "button.menu_indicator.transitions", "when": {"states": ["pressed"]},
+                         "value": [{"properties": ["glyph"], "kind": {"keyed": {"key": "pressed", "params": {}}}}]}),
+    _cited("tokens", 35, {"key": "token.params.opacity.border", "value": 0.15}, "percent_to_fraction"),
+]
+# (the comment lines and the line they state, the comment lines --write gives, "finding" where it keeps them and
+# lists a finding)
+PROSE_CASES = [
+    # one citation per entry of a keyed namespace stated inline, each its entry's fact (NAMED_BY), in their order
+    (["# docs/facts/kde/button.toml:1, :2, :3 (AnimatedIcon states)",
+      "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     ["# docs/facts/kde/button.toml:29, :31, :33 (AnimatedIcon states)"]),
+    (["# docs/facts/kde/button.toml:29, :31, :33 (AnimatedIcon states)",
+      "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     ["# docs/facts/kde/button.toml:29, :31, :33 (AnimatedIcon states)"]),
+    # a list running over two comment lines, each `:<line>` in the file before it; a fact found in another file
+    # written with its file, and a later `:<line>` then read in that one
+    (["# the states, docs/facts/kde/tokens.toml:7, :8 and", "# :1",
+      "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     ["# the states, docs/facts/kde/button.toml:29, :31 and", "# :33"]),
+    (["# the states, docs/facts/kde/button.toml:29, :2 and", "# docs/facts/kde/tokens.toml:7",
+      "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     ["# the states, docs/facts/kde/button.toml:29, :31 and", "# docs/facts/kde/button.toml:33"]),
+    (["# docs/facts/kde/roles.toml:1", 'color_roles = ["hover_tint"]'], ["# docs/facts/kde/roles.toml:5"]),
+    # a citation count that is not the entries' is none of them, and a namespace NAMED_BY has no rule for
+    (["# docs/facts/kde/button.toml:29, :31", "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     "finding"),
+    (["# docs/facts/kde/tokens.toml:1", 'blend_modes = ["multiply"]'], "finding"),
+    # a citation after a conversion's name: a fact a citation of which states that conversion
+    (["# fractions (percent_to_fraction, docs/facts/kde/tokens.toml:1)", 'unit = "fraction"'],
+     ["# fractions (percent_to_fraction, docs/facts/kde/tokens.toml:35)"]),
+    (["# fractions (percent_to_fraction, docs/facts/kde/tokens.toml:35)", 'unit = "fraction"'],
+     ["# fractions (percent_to_fraction, docs/facts/kde/tokens.toml:35)"]),
+    (["# fractions (not_a_conversion, docs/facts/kde/tokens.toml:36)", 'unit = "fraction"'], "finding"),
+    # any other: kept where it names a fact's header, else a finding, never a guess
+    (["# as docs/facts/kde/tokens.toml:7 states", 'unit = "fraction"'],
+     ["# as docs/facts/kde/tokens.toml:7 states"]),
+    (["# as docs/facts/kde/tokens.toml:8 states", 'unit = "fraction"'], "finding"),
+]
+
+
+def prose_cases() -> list:
+    """Citations in a comment's prose over PROSE_ITEMS on kde-breeze: each PROSE_CASES entry in a `declare` block,
+    refreshed, kept, or kept and listed ("finding")."""
+    failures = []
+    draft = Draft("kde-breeze", "kde", [], [], [], [], [], {}, [], 0, items=PROSE_ITEMS)
+    for lines, want in PROSE_CASES:
+        cites = Citations(draft, "")
+        got = cites.refresh({"declare": lines})["declare"]
+        comments = len(lines) - 1
+        expected = lines if want == "finding" else want + lines[comments:]
+        if got != expected or bool(cites.findings) != (want == "finding") or bool(cites.refreshed) != (
+                want != "finding" and want != lines[:comments]):
+            failures.append(f"prose citations {lines}: {got}, refreshed {cites.refreshed}, findings "
+                            f"{cites.findings}")
+    return failures
+
+
 def citation_cases(root: Path) -> list:
     """The hand-written citations (the docstring's *The hand-written citations*): --check fails on a stale one and
     lists it, --write points each stale one at its fact and changes nothing else, keeps and lists one whose fact none
@@ -4561,6 +4739,7 @@ def self_test() -> int:
                             f"written {written.read_text(encoding='utf-8') != stale}")
         failures += citation_cases(Path(tmp) / "cites")
         failures += naming_cases()
+        failures += prose_cases()
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
