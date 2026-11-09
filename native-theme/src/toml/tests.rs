@@ -479,6 +479,25 @@ fn decoration_line_underline_low_reads() {
     );
 }
 
+/// `filled_ring` names no `FocusKind` (S2.10's *One ring*, ADD-A141):
+/// Breeze's filled frame is a `ring`.
+#[test]
+fn a_filled_ring_is_no_focus_kind() {
+    assert_eq!(
+        problems("[widgets.button.body]\nfocus.kind = \"filled_ring\""),
+        ["widgets.button.body.focus.kind: unknown name \"filled_ring\""]
+    );
+    assert_eq!(
+        body_of("focus.kind = \"ring\"")
+            .focus
+            .and_then(|focus| match focus {
+                BlockPatch::Fields(focus) => focus.kind,
+                _ => None,
+            }),
+        Some(crate::blocks::focus::FocusKind::Ring)
+    );
+}
+
 #[test]
 fn spelling_enum_variant() {
     let style = body_of("corners.curve = \"continuous\"\nshadow = { elevation = \"2\" }");
