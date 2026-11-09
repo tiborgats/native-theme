@@ -85,6 +85,19 @@ fn post_theme_changed(thread_id: u32) {
 /// object is released before `CoUninitialize` unloads the thread's DLLs.
 /// The raw-pointer marker makes it `!Send`, so it stays on the thread that
 /// initialized COM.
+///
+/// The MTA the process keeps ([`crate::windows::mta_kept`]) does not stand
+/// in for it. The watcher's thread is its own and uses COM, and
+/// "CoInitializeEx must be called at least once [...] for each thread that
+/// uses the COM library", each successful call "balanced by a corresponding
+/// call to CoUninitialize"
+/// (<https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coinitializeex>);
+/// `CoIncrementMTAUsage` is for an API with "no information about whether
+/// the current thread is already in an apartment"
+/// (<https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coincrementmtausage>),
+/// which the watcher has. With the MTA kept, the thread's `CoUninitialize`
+/// is never the process's last, so it shuts no COM down under other
+/// threads.
 struct ComGuard(PhantomData<*const ()>);
 
 impl Drop for ComGuard {
@@ -122,12 +135,22 @@ impl Drop for ComGuard {
 /// `SystemEvents` creates a top-level window of its own for it (the same spec,
 /// "Why does this API require a WindowId?" and "Similar APIs").
 ///
+/// Keeps COM's MTA for the process first ([`crate::windows::mta_kept`]).
 /// Returns once the thread has its message queue and the subscriptions are
 /// in place, or with `Error::ReaderFailed` when COM, `UISettings`,
 /// `ColorValuesChanged` or `TextScaleFactorChanged` failed to set up.
 pub(crate) fn watch_windows(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<super::ThemeSubscription> {
+    // The MTA kept for the process, so that neither another thread's last
+    // uninitialization of COM fails this start (0x8000000E, "the application
+    // is exiting"; CI run 42556588847) nor this watcher's ends COM under
+    // other threads.
+    crate::windows::mta_kept().map_err(|err| crate::Error::ReaderFailed {
+        reader: crate::error::reader_names::WINDOWS_WATCHER,
+        source: format!("CoIncrementMTAUsage failed: {err}").into(),
+    })?;
+
     let (shutdown_tx, _shutdown_rx) = mpsc::channel::<()>();
 
     // Channel for the background thread to send back its OS thread ID, or
@@ -140,8 +163,8 @@ pub(crate) fn watch_windows(
             source: format!("{step} failed: {err}").into(),
         };
 
-        // Initialize COM as Single-Threaded Apartment (required for WinRT
-        // UISettings on a background thread).
+        // Initialize COM on this thread, a single-threaded apartment
+        // ([`ComGuard`]).
         // SAFETY: CoInitializeEx is safe to call once per thread. We pass
         // COINIT_APARTMENTTHREADED for STA mode.
         let com_result = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };

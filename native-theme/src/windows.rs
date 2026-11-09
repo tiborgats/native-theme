@@ -134,7 +134,10 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
 /// thread count goes to 0"
 /// (<https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coincrementmtausage>).
 /// Kept for the process, no thread's uninitialization is the last.
-#[cfg(all(target_os = "windows", feature = "system-icons"))]
+#[cfg(all(
+    target_os = "windows",
+    any(feature = "system-icons", all(feature = "windows", feature = "watch"))
+))]
 pub(crate) fn mta_kept() -> Result<(), &'static str> {
     static KEPT: std::sync::OnceLock<Result<(), String>> = std::sync::OnceLock::new();
     KEPT.get_or_init(|| {

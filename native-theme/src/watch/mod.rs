@@ -388,7 +388,8 @@ impl Debounce {
 /// (it does not exist, or the inotify limits are reached); GNOME, Budgie and
 /// the portal-only desktops, the watcher thread could not connect to the
 /// session bus or subscribe to the portal's `SettingChanged` signal;
-/// Windows, the watcher thread did not start or could not subscribe to
+/// Windows, COM's multithreaded apartment could not be kept for the process,
+/// or the watcher thread did not start or could not subscribe to
 /// `UISettings::ColorValuesChanged` or `TextScaleFactorChanged`. The KDE
 /// backend sets up its watch on the calling thread, and the GNOME and
 /// Windows backends return only once their thread is subscribed.
