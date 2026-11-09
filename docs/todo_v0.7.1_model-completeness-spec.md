@@ -6774,7 +6774,7 @@ and `kde_accent_wm`'s no-accent branch, which a stated `#00000000` reaches (S9.2
   "#00000000"`): S14's conversion, its tinting inactive roles from `kde_accent`'s `#00000000` colours included. Every
   non-preset file has such a pair, stated or pending: a pair not measured yet is pending facts under its register row
   (*A pending measurement*), which the run lists with their ids and skips, as it skips any pending fact (BreezeClassic's,
-  U698, until spike K's script measures it as it measured SUSE-Cafe's); only a non-preset file with neither stated nor
+  U698, was such a pair until KDE facts round 7 stated it from run 41158393408's `classic-none` kdeglobals); only a non-preset file with neither stated nor
   pending no-accent facts fails, as a key with no fact (R4).
 - **The scheme files read** (ADD-A142). A file that is not the preset's own is read in place from the source cache
   (the 0.8.0 plan's D1; `NATIVE_THEME_SOURCES`, else `scripts/citations.py`'s default, the cache *The evidence root*

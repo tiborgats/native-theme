@@ -799,7 +799,8 @@ placement unit, spec ADD-A120); S7; S8 without
   `.colors` conversion it shares with the KDE reader in every build, with no feature, ADD-A142); the KDE schemes and
   accents chosen and pinned (at least one that tints, one with the accent-coloured title bar and a `Header` group, one
   with it and no `Header` group, one lacking a colour group, S17), measured by spike K's script, BreezeClassic also
-  with no `AccentColor` as SUSE-Cafe was (U698, the no-accent pair S17's *A port's own roles* compares); the run's non-preset
+  with no `AccentColor` as SUSE-Cafe was (run 41158393408's `classic-none` pair, stated by KDE facts round 7, U698
+  retired; the no-accent pair S17's *A port's own roles* compares); the run's non-preset
   scheme files read from the source cache, which the facts-gate jobs fetch (S17, ADD-A142).
 - **For D6:** the cost, the evidence size and the gate's run time measured and extrapolated.
 - **Gate:** as M1a's, over all eight presets, with the KDE accent run; the pull request's CI green on macOS and Windows.
