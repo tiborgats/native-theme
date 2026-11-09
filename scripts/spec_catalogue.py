@@ -34,7 +34,8 @@ The **Widget values** item declares each value as a backticked `name: Type`, or 
 typed one (`rows`, `columns: Value<u32>`: both `Value<u32>`), or a bare `name` with a note (`focus_visible_when`
 (S2.11's …), whose type the entry format gives). A declaration is such a list opening a clause; parse_values states
 the rule. Variants, sizes and flags are prose (typed and keyed names per preset, with notes): their items' text and
-backticked names are exposed as they stand, not interpreted.
+backticked names are exposed as they stand, not interpreted, but for the heads of the **Variants** item's sub-bullets
+(`on the widget, typed: …`, `` on `<part>`, keyed, `<preset>`: … ``; variant_bullets reads them).
 
 The **Exclusive groups** item names the widget's recency sets after `Recency sets` (S10's `recency`, S7.2; ADD-A124):
 each a backticked `<name> = [<flag>, …]`, its flags in the set's stated order (`state_layer = [focus_visible,
@@ -58,6 +59,7 @@ API (run from the repository root, or pass a path):
     depth0_tokens(text)                   the backtick spans and parenthesis groups outside parentheses
     absence_sections(text)                a may_be_absent item's `parts:`, `fields:`, `values:` sections
     shared_types(text) -> dict            the *Shared value types* table: per type name, (line, its second cell)
+    variant_bullets(item) -> list         a **Variants** item's `on …` sub-bullets read: [VariantBullet]
     recency_sets(entry) -> list           the entry's recency sets: (name, [flags in the stated order], line)
     state_groups(entry) -> dict           per platform the item names: {"exclusive": [[flags]], "recency": {name:
                                           [flags]}, "line": the item's line}
@@ -72,6 +74,8 @@ API (run from the repository root, or pass a path):
            fields, line, lines (as written, the first without its `  - `); text (lines joined by newlines)
     Value: name (as written, unit suffix included: `icon_text_gap_px`), type (its own or its list's, None where
            neither states one), line
+    VariantBullet: line, text (its lines joined), form (its head is the Entry format's), part (None: the widget's
+           own element), keyed, preset (a keyed one's), names (its first sentence's after the head's colon)
 """
 import re
 import sys
@@ -487,6 +491,54 @@ def content_variants(text: str) -> dict:
     return out
 
 
+VARIANT_HEAD = re.compile(r"on (?:the widget|`([a-z_][a-z0-9_]*)`), (?:typed|keyed, `([^`]+)`)")
+
+
+@dataclass
+class VariantBullet:
+    line: int
+    text: str
+    form: bool
+    part: str | None
+    keyed: bool
+    preset: str | None
+    names: list[str]
+
+
+def variant_bullets(item) -> list[VariantBullet]:
+    """The **Variants** item's sub-bullets that start with the word `on` (Entry format; ADD-A146), each with its head
+    read: the text up to its first colon outside parentheses, `on the widget, typed`, `` on `<part>`, typed ``, or
+    the same with `` keyed, `<preset>` ``, a note in parentheses allowed before the colon. `form` is whether the head
+    is so written; `part` is None for the widget's own element; `names` are the backticked names outside parentheses
+    of the first sentence after the colon. A sub-bullet not starting with `on` is a note and is left out."""
+    bullets, cur = [], None
+    for k, raw in enumerate(item.lines[1:], 1):
+        if raw.startswith("  - "):
+            cur = (item.line + k, [raw[4:]])
+            bullets.append(cur)
+        elif cur is not None and raw.startswith("    "):
+            cur[1].append(raw)
+        else:
+            cur = None
+    out = []
+    for line, lines in bullets:
+        text = " ".join(x.strip() for x in lines)
+        if not re.match(r"on\b", text):
+            continue
+        colon = depth0_find(text, lambda t, i: t[i] == ":")
+        head = text[:colon].rstrip() if colon >= 0 else text
+        groups = depth0_tokens(head)[1]
+        if groups and groups[-1][1] == len(head) and head[:groups[-1][0]].endswith(" "):
+            head = head[:groups[-1][0]].rstrip()
+        m = VARIANT_HEAD.fullmatch(head) if colon >= 0 else None
+        rest = text[colon + 1:] if colon >= 0 else ""
+        end = depth0_find(rest, lambda t, i: t[i] == "." and (i + 1 == len(t) or t[i + 1] == " "))
+        names = [name for _, _, name in depth0_tokens(rest if end < 0 else rest[:end])[0]]
+        out.append(VariantBullet(line, text, m is not None, m.group(1) if m else None,
+                                 bool(m and m.group(2) is not None), m.group(2) if m else None, names))
+    return out
+
+
 def recency_sets(entry) -> list:
     """(name, [flags in the stated order], line) of every recency set the entry's **Exclusive groups** item names: each
     backticked `<name> = [<flag>, …]` after the words `Recency sets` (S10's `recency`; ADD-A124)."""
@@ -704,6 +756,17 @@ def self_test() -> int:
            {"button": ["icon_only", "@custom_child"], "checkbox": ["with_label"], "radio": ["with_label"],
             "form.row": ["bitmap_icon"]})
     expect("no content variants", content_variants("no list"), {})
+    variants = Item("Variants", 10, ["", "  - on the widget, typed (a note: `x`): `flat` (a note, `no`), `pill`. Then",
+                                     "    `prose`.", "  - on the widget, keyed, `adwaita`: `@osd`.",
+                                     "  - on `label`, typed:", "    `bold`.", "  - Under `material-3`: `note`.",
+                                     "  - on the label, typed: `bad`.", "  - on `label` typed: `bad`.",
+                                     "  - on `label`, typed `bad`."], True)
+    expect("variant bullets", [(v.line, v.form, v.part, v.keyed, v.preset, v.names)
+                               for v in variant_bullets(variants)], [
+        (11, True, None, False, None, ["flat", "pill"]), (13, True, None, True, "adwaita", ["@osd"]),
+        (14, True, "label", False, None, ["bold"]), (17, False, None, False, None, ["bad"]),
+        (18, False, None, False, None, ["bad"]), (19, False, None, False, None, []),
+    ])
     expect("recency sets", recency_sets(led), [("glow", ["hover", "focus_visible"], 57),
                                                ("ring", ["pressed", "hover"], 58)])
     expect("state groups", state_groups(led), {

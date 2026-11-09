@@ -4,7 +4,11 @@ not listed as a may-be-absent part, not marked *(element)*; every part bullet na
 Every may_be_absent item (typed entries and keyed components) gives each name it lists its own preset list (review 10:
 one parenthesis covering several names granted absence where the platform draws the name), states no reason of the
 form "the preset states none", and the role-record and token tables grant absence per name with presets or a
-criterion. The entries, their items and parts are read by spec_catalogue.py.
+criterion. In a typed entry (ADD-A146): no part bullet says another part of the entry belongs to, nests in or is
+queried with an element (a part's nesting is its own bullet's parent, *Nesting*); every Variants sub-bullet starting
+with `on` has the Entry format's head; every name a may_be_absent section's first sentence lists, as the generator
+reads it, is a part (`parts:`), a `part.field` of that part's field list or a member of it (`fields:`) or a value of
+the entry, never a dotted member (`values:`). The entries, their items and parts are read by spec_catalogue.py.
 
     python3 scripts/check_spec_entries.py [catalogue.md]
     python3 scripts/check_spec_entries.py --self-test
@@ -13,7 +17,8 @@ import re
 import sys
 from pathlib import Path
 
-from spec_catalogue import CATALOGUE, ENTRY_ITEMS, absence_sections, depth0_tokens, entries
+from spec_catalogue import (CATALOGUE, ENTRY_ITEMS, absence_sections, depth0_find, depth0_tokens, entries,
+                            variant_bullets)
 
 FIELDS = {"fill", "stroke", "corners", "shape", "shadow", "opacity", "transform", "text", "icon", "glyph", "focus",
           "padding", "margin", "min_width", "min_height", "max_width", "max_height", "cursor", "touch_target", "bindings",
@@ -27,6 +32,10 @@ LIST_HINT = re.compile(r"\(|`(?:adwaita|kde-breeze|macos-[^`]*|windows-11|ios-[^
 NOT_LISTED_BEFORE = re.compile(r"(?:\bunder|\bon|\boutside|\bin|\bby|\bof|\bas|\bthan|\bfor|\bwith|\bat|\bto|"
                                r"\bnot|\bnamed?|\bvariant|\bcontext|\bcond|\bflag|\bstate|\bthe|=)\s*$")
 BAD_REASON = re.compile(r"presets? that draws? none|preset states? none|\bstates none\b", re.I)
+# a part bullet naming other parts as belonging to, nesting in or queried with an element: nesting is read from each
+# part's own bullet only (Entry format, *Nesting*; ADD-A146)
+OTHER_PARTS = re.compile(r"`([a-z_][a-z0-9_]*)`((?:,? (?:and )?`[a-z_][a-z0-9_]*`)*)\s+"
+                         r"(belongs? to|nests? in|(?:is|are) queried with)\b")
 
 
 def absence_problems(name, text):
@@ -57,6 +66,60 @@ def absence_problems(name, text):
                 else:
                     out.append(f"{name}: {lab} `{nm}` names no presets")
     return out
+
+
+def first_sentence(text):
+    end = depth0_find(text, lambda t, i: t[i] == "." and (i + 1 == len(t) or t[i + 1] == " "))
+    return text if end < 0 else text[:end]
+
+
+def absence_name_problems(e, text):
+    """A typed entry's may_be_absent names, as the generator reads them (each section's first sentence, its names
+    outside parentheses): `parts:` a part, `fields:` a `part.field` of the part's field list (or a member of that
+    block, `mark.glyph.fill`, as S6.3's `Glyph.stroke`), `values:` a value of the entry, never a dotted member (a
+    compound is listed once, by its own name; Entry format, ADD-A146)."""
+    out = []
+    parts = {n: p for p in e.parts for n in p.names}
+    values = {v.name for v in e.values} | {re.sub(r"_(?:px|ms|deg)$", "", v.name) for v in e.values}
+    for lab, a, b in absence_sections(text):
+        for _, _, nm in depth0_tokens(first_sentence(text[a:b].strip(" -")))[0]:
+            if lab == "parts":
+                bad = None if nm in parts else "is no part of the entry"
+            elif lab == "fields":
+                pname, _, fname = nm.partition(".")
+                fname = fname.partition(".")[0]
+                bad = None if pname in parts and fname in parts[pname].fields else "is no `part.field` of the entry"
+            else:
+                bad = "is a dotted member" if "." in nm else None if nm in values else "is no value of the entry"
+            if bad:
+                out.append(f"{e.name}: may_be_absent {lab} `{nm}` {bad}"
+                           + (": list the compound once, its members' presets in its parentheses"
+                              if bad == "is a dotted member" else ""))
+    return out
+
+
+def part_nesting_problems(e):
+    """A part bullet that names other parts of the entry as belonging to, nesting in or queried with an element."""
+    out = []
+    names = {n for p in e.parts for n in p.names}
+    for part in e.parts:
+        flat = " ".join(x.strip() for x in part.lines)
+        for m in OTHER_PARTS.finditer(flat):
+            subjects = [m.group(1)] + re.findall(r"`([a-z_][a-z0-9_]*)`", m.group(2))
+            others = [s for s in subjects if s in names and s not in part.names]
+            if others:
+                out.append(f"{e.name}: part `{'/'.join(part.names)}` (line {part.line}) says "
+                           f"{', '.join(f'`{s}`' for s in others)} {m.group(3)}: a part's nesting is its own "
+                           "bullet's parent (Entry format, *Nesting*)")
+    return out
+
+
+def variant_problems(e):
+    """The Variants item's sub-bullets starting with `on` whose head is not the Entry format's."""
+    item = bullet_item(e, "Variants")
+    return [f"{e.name}: Variants sub-bullet at line {b.line} starts with `on` but its head is not `on the widget, "
+            f"typed`, `` on `<part>`, typed `` or the same with `keyed, `<preset>``: {b.text[:60]!r}"
+            for b in (variant_bullets(item) if item else []) if not b.form]
 
 
 def bullet_item(e, label):
@@ -94,6 +157,8 @@ def entry_problems(e):
     for part in e.parts:
         if not set(re.findall(r"`([^`]+)`", part.text)) & FIELDS:
             problems.append(f"{name}: part bullet names no field: {part.text.strip()[:80]!r}")
+    problems += part_nesting_problems(e)
+    problems += variant_problems(e)
     absent = bullet_item(e, "may_be_absent")
     if absent:
         # the parts list: from 'parts:' to 'fields:' / 'values:' / end
@@ -101,6 +166,7 @@ def entry_problems(e):
         if pm and re.search(r"`" + re.escape(root) + r"`", pm.group(1)):
             problems.append(f"{name}: root `{root}` listed as a may-be-absent part")
         problems += absence_problems(name, absent.text)
+        problems += absence_name_problems(e, absent.text)
     return problems
 
 
@@ -230,10 +296,12 @@ def self_test() -> int:
            ["good: root `body` marked *(element)*"])
     expect("root several parts", edit(good, "`body` — the root", "`body`, `frame` — the root"),
            ["good: the root bullet names several parts"])
+    no_text = "good: may_be_absent fields `label.text` is no `part.field` of the entry"
     expect("part without a field", edit(good, "the text: `text`.", "the text."),
-           ["good: part bullet names no field: '`label` *(element)* — the text.'"])
-    expect("part naming `shown` alone", edit(good, "the text: `text`.", "the text: `shown`."), [])
-    expect("part naming `interaction` alone", edit(good, "the text: `text`.", "the text: `interaction`."), [])
+           ["good: part bullet names no field: '`label` *(element)* — the text.'", no_text])
+    expect("part naming `shown` alone", edit(good, "the text: `text`.", "the text: `shown`."), [no_text])
+    expect("part naming `interaction` alone", edit(good, "the text: `text`.", "the text: `interaction`."),
+           [no_text])
     expect("root absent", edit(good, "parts: `label` (", "parts: `body` ("),
            ["good: root `body` listed as a may-be-absent part"])
     expect("preset's statement as the reason", edit(good, "(`adwaita`), `label.text`",
@@ -241,7 +309,39 @@ def self_test() -> int:
            ["good: may_be_absent gives a preset's statement as the reason ('preset states none'); "
             "name the platforms that have no such thing"])
     expect("several names, one list", edit(good, "`body.stroke` (`adwaita`)", "`body.{fill,stroke}` (`adwaita`)"),
-           ["good: fields `body.{fill,stroke}` covers several names with one preset list"])
+           ["good: fields `body.{fill,stroke}` covers several names with one preset list",
+            "good: may_be_absent fields `body.{fill,stroke}` is no `part.field` of the entry"])
+    expect("another part said to belong", edit(good, "the root: `fill`, `stroke`.",
+                                               "the root: `fill`, `stroke`. `label` belongs to it."),
+           ["good: part `body` (line 8) says `label` belongs to: a part's nesting is its own bullet's parent "
+            "(Entry format, *Nesting*)"])
+    expect("others said to nest and be queried", edit(good, "the root: `fill`, `stroke`.",
+                                                      "the root: `fill`, `stroke`. `label` and `icon` nest in it; "
+                                                      "`label` is queried with it."),
+           ["good: part `body` (line 8) says `label` nest in: a part's nesting is its own bullet's parent "
+            "(Entry format, *Nesting*)",
+            "good: part `body` (line 8) says `label` is queried with: a part's nesting is its own bullet's parent "
+            "(Entry format, *Nesting*)"])
+    expect("its own element named", edit(good, "the text: `text`.",
+                                         "the text: `text`. `label` belongs to the widget's element."), [])
+    variants = ("- **Variants:**\n  - on the widget, typed (a note): `flat`.\n  - on `label`, keyed, `adwaita`: "
+                "`@dim`.\n  - Under `adwaita` a note.\n")
+    expect("Variants sub-bullets", edit(good, "- **Variants:** none.\n", variants), [])
+    expect("a Variants head of another form", edit(good, "- **Variants:** none.\n",
+                                                   variants.replace("on `label`, keyed", "on `label` keyed")),
+           ["good: Variants sub-bullet at line 13 starts with `on` but its head is not `on the widget, typed`, "
+            "`` on `<part>`, typed `` or the same with `keyed, `<preset>``: 'on `label` keyed, `adwaita`: `@dim`.'"])
+    expect("absent no part", edit(good, "parts: `label` (", "parts: `lable` ("),
+           ["good: may_be_absent parts `lable` is no part of the entry"])
+    expect("absent block member", edit(good, "`body.stroke` (`adwaita`)", "`body.stroke.width` (`adwaita`)"), [])
+    expect("absent no field", edit(good, "`body.stroke` (`adwaita`)", "`body.text` (`adwaita`)"),
+           ["good: may_be_absent fields `body.text` is no `part.field` of the entry"])
+    expect("absent dotted member", edit(good, "`gap_px` (all", "`gap_px.top` (all"),
+           ["good: may_be_absent values `gap_px.top` is a dotted member: list the compound once, its members' "
+            "presets in its parentheses"])
+    expect("absent unsuffixed value", edit(good, "`gap_px` (all", "`gap` (all"), [])
+    expect("absent no value", edit(good, "`gap_px` (all", "`gaps` (all"),
+           ["good: may_be_absent values `gaps` is no value of the entry"])
     expect("shared preset list", edit(good, "`body.stroke` (`adwaita`), `label.text`", "`body.stroke`, `label.text`"),
            ["good: fields `body.stroke` shares `label.text`'s preset list (one list per name)"])
     expect("no presets", edit(good, "`gap_px` (all but `windows-11`)", "`gap_px`"),
