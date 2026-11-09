@@ -8,10 +8,11 @@
 //! freedesktop theme's name, is its own preset's (`for_preset.<own>`). The
 //! accent is a setting GNOME defines independently of the scheme, so it is
 //! stated under both schemes (S9.3): the accent libadwaita shows, the
-//! portal's colour classified by the clean room's [`adw_accent_nearest`]
+//! portal's colour classified by the clean room's
+//! [`adw_accent_nearest`](crate::gnome::helpers::adw_accent_nearest())
 //! (the 0.8.0 plan's D10). The fonts patch the text-role slots `body` and
 //! `monospace`, parsed by the clean room's
-//! [`helpers::pango_font_description`].
+//! [`helpers::pango_font_description`](crate::gnome::helpers::pango_font_description()).
 //!
 //! # Sources
 //!
@@ -45,7 +46,7 @@
 //!   text-scaling factor is reported (`toolkit_scale_carries_text_scale`),
 //!   fixed for a session.
 
-mod helpers;
+pub(crate) mod helpers;
 pub(crate) mod portal;
 
 use ashpd::desktop::settings::{ColorScheme, Contrast as PortalContrast, ReducedMotion};

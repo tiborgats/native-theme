@@ -14,6 +14,13 @@
 //! The accent, the conditions and the fonts are the layer's portable part,
 //! which any preset takes (S9.5).
 //!
+//! The results, the scheme and the accent's `Selection` background come
+//! from the colours plasma-integration builds the palette from: kdeglobals
+//! where it has a `[Colors:View]` group, else the look-and-feel package's
+//! colours, else the scheme file, else Breeze Light's
+//! ([`palette_colors`](crate::kde::palette_colors),
+//! S9.3).
+//!
 //! Every key the reader reads that its file leaves unset is read as KDE
 //! reads it there, never left to the layers beneath: a colour key and a
 //! colour effect as KColorScheme reads it, an icon size as KIconTheme does,
@@ -58,6 +65,9 @@
 //! - `color-schemes/<ColorScheme>.colors` in the data directories: the
 //!   scheme file kdeglobals names, which a scheme's package writes; Plasma
 //!   applies a scheme by writing kdeglobals, which is watched.
+//! - `plasma/look-and-feel/<LookAndFeelPackage>/contents/colors` in the
+//!   data directories: the look-and-feel package's colours, which its
+//!   package writes, read where kdeglobals has no `[Colors:View]` group.
 //! - `Xft.dpi` (`xrdb -query`): the font DPI on X11, read from the X
 //!   server, not from a settings file.
 //! - The icon theme's `index.theme`: its sizes, which the icon theme's
@@ -97,7 +107,7 @@ use crate::error::ReaderFailure;
 use crate::expr::Expr;
 use crate::inputs::{InputName, InputValue, KdeSchemeKey, KdeWmKey};
 use crate::kde_config::{
-    COLOR_GROUPS, TRANSPARENT, active_value, color, create_kde_parser, defaults, expr,
+    COLOR_GROUPS, TRANSPARENT, active_value, color, create_kde_parser, defaults, expr, has_group,
     inactive_value, input, kconfig_wm_key, kde_tokens, number, read_kconfig, read_kconfig_bytes,
     scheme_inputs, scheme_options, surfaces,
 };
@@ -134,6 +144,18 @@ const DEFAULT_CONTRAST: f32 = 7.0;
 /// src/kcolorscheme.cpp:529-539`, `docs/facts/kde/tokens.toml:11362`).
 const DEFAULT_FRAME_CONTRAST: f32 = 0.2;
 
+/// `[KDE] LookAndFeelPackage` where kdeglobals names none:
+/// plasma-integration's default package (`plasma-integration@6.8.2
+/// qt6/src/platformtheme/khintssettings.cpp:45`, S9.3's *The KDE reader's
+/// readings*).
+const DEFAULT_LOOK_AND_FEEL: &str = "org.kde.breeze.desktop";
+
+/// The scheme plasma-integration takes the palette's colours from where the
+/// scheme kdeglobals names is not found: Breeze Light's (S9.3's *The KDE
+/// reader's readings*), the colours KCM's default scheme
+/// (`plasma-workspace@6.8.2 kcms/colors/colorssettings.kcfg:6-11`).
+const FALLBACK_COLOR_SCHEME: &str = "BreezeLight";
+
 /// The scheme file `[General] ColorScheme` names, as the reader found it.
 pub(crate) enum SchemeFile {
     /// kdeglobals names no scheme: Plasma's default, Breeze Light
@@ -151,6 +173,10 @@ pub(crate) enum SchemeFile {
 pub(crate) struct KdeData {
     /// kdeglobals as KConfig cascades it.
     pub(crate) kdeglobals: Ini,
+    /// The colours the palette is built from where kdeglobals has no
+    /// `[Colors:View]` group ([`palette_colors`]); `None` where it has one,
+    /// kdeglobals' own colours being the palette's.
+    pub(crate) colors: Option<Ini>,
     /// The scheme file kdeglobals names.
     pub(crate) scheme_file: SchemeFile,
     /// The font DPI: `Xft.dpi`, on an X11 session
@@ -179,11 +205,17 @@ pub(crate) struct KdeData {
 ///   effects and contrast kdeglobals holds, the scheme file's tint and
 ///   title-bar options (S4.8).
 ///
+/// The scheme, the results, the inactive results and the accent's
+/// `Selection` background come from the colours the palette is built from,
+/// `data.colors` where kdeglobals has no `[Colors:View]` group, else
+/// kdeglobals (S9.3); the rest from kdeglobals.
+///
 /// The status's fallback names the scheme file where it could not be read
 /// and kdeglobals stood in for it (S9.3).
 pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
     let ini = &data.kdeglobals;
-    let scheme = scheme::scheme(ini);
+    let colors = data.colors.as_ref().unwrap_or(ini);
+    let scheme = scheme::scheme(colors);
     let mut state = ReaderState::new(scheme, UNSCALED);
     let factor = animation_duration_factor(ini);
     state.animations_off = factor == Some(0.0);
@@ -193,7 +225,7 @@ pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
     let mut layer = Layer::default();
     let mut own_bases = Bases::default();
 
-    let (common_accent, own_accent) = accent(ini, scheme);
+    let (common_accent, own_accent) = accent(ini, colors, scheme);
     if let Some(value) = common_accent {
         layer
             .bases
@@ -225,11 +257,11 @@ pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
         }));
     }
 
-    *own_bases.colors.slot(scheme) = Some(results(ini));
+    *own_bases.colors.slot(scheme) = Some(results(colors));
     own_bases
         .inputs
         .entries
-        .extend(inactive_results(ini, scheme));
+        .extend(inactive_results(colors, scheme));
 
     let fallback = match &data.scheme_file {
         SchemeFile::Unnamed => None,
@@ -308,14 +340,15 @@ fn animation_duration_factor(ini: &Ini) -> Option<f32> {
 /// The reader's `input.accent` (S9.3): its common value, and its value in
 /// the `for_preset.kde-breeze` part.
 ///
-/// - `[General] AccentColor` set and not Qt's `transparent`: that colour, in
-///   the common bases at both schemes, the accent the user chose.
+/// - kdeglobals' `[General] AccentColor` set and not Qt's `transparent`:
+///   that colour, in the common bases at both schemes, the accent the user
+///   chose.
 /// - Absent or `transparent`, Plasma's default "Accent color from color
 ///   scheme": in the common bases the scheme's own accent as KDE publishes
-///   it, the `Selection` set's `BackgroundNormal` (KColorScheme's default
-///   where kdeglobals leaves it unset), under the scheme read only; in the
-///   own part `#00000000` at that scheme.
-fn accent(ini: &Ini, scheme: Scheme) -> (Option<InputValue>, Option<InputValue>) {
+///   it, the `Selection` set's `BackgroundNormal` of the palette's
+///   `colors` (KColorScheme's default where they leave it unset), under the
+///   scheme read only; in the own part `#00000000` at that scheme.
+fn accent(ini: &Ini, colors: &Ini, scheme: Scheme) -> (Option<InputValue>, Option<InputValue>) {
     let chosen = color(ini, "General", "AccentColor").filter(|color| *color != TRANSPARENT);
     match chosen {
         Some(accent) => {
@@ -327,7 +360,7 @@ fn accent(ini: &Ini, scheme: Scheme) -> (Option<InputValue>, Option<InputValue>)
         }
         None => {
             let selection = active_value(
-                ini,
+                colors,
                 SurfaceSet::Selection,
                 "Selection",
                 &defaults::SELECTION,
@@ -463,7 +496,8 @@ fn icon_sizes(index: &Ini) -> IconSizeTokensPatch {
 
 /// Reads the KDE settings, its own preset's part under `own`: kdeglobals
 /// as KConfig cascades it ([`read_kconfig_files`] of [`kdeglobals_files`]),
-/// the scheme file it names
+/// the colours the palette is built from where it has no `[Colors:View]`
+/// group ([`palette_colors`]), the scheme file it names
 /// ([`read_scheme_file`]), the font DPI ([`font_dpi::read_font_dpi`]) and
 /// the icon theme's `index.theme`.
 ///
@@ -492,6 +526,7 @@ pub(crate) fn read(own: PresetId) -> Result<Reading, ReaderFailure> {
     });
     let data = KdeData {
         font_dpi: font_dpi::read_font_dpi(crate::detect::session_type().as_deref()),
+        colors: palette_colors(&kdeglobals, &data_dirs),
         kdeglobals,
         scheme_file,
         icon_index,
@@ -521,6 +556,61 @@ fn data_dirs() -> Vec<std::path::PathBuf> {
 /// (`2796b26e:native-theme/src/kde/mod.rs:208-234`).
 fn icon_base_dirs(data_dirs: &[std::path::PathBuf]) -> Vec<std::path::PathBuf> {
     data_dirs.iter().map(|dir| dir.join("icons")).collect()
+}
+
+/// The colours plasma-integration builds the palette from where kdeglobals
+/// has no `[Colors:View]` group (`plasma-integration@6.8.2
+/// qt6/src/platformtheme/khintssettings.cpp:445-466`, S9.3's *The KDE
+/// reader's readings*), the first of these found ([`locate`]):
+///
+/// - the colours of the look-and-feel package kdeglobals' `[KDE]
+///   LookAndFeelPackage` names, else [`DEFAULT_LOOK_AND_FEEL`]:
+///   `plasma/look-and-feel/<package>/contents/colors`;
+/// - the scheme file `[General] ColorScheme` names,
+///   `color-schemes/<name>.colors`;
+/// - Breeze Light's, `color-schemes/BreezeLight.colors`
+///   ([`FALLBACK_COLOR_SCHEME`]).
+///
+/// A name that is not one plain path component names no file. The file is
+/// read as kdeglobals is ([`read_kconfig_files`]): one that cannot be read,
+/// and no file found, are an empty file, every colour KColorScheme's
+/// default. `None` where kdeglobals has a `[Colors:View]` group, from which
+/// plasma-integration builds the palette itself (`:445-446`).
+pub(crate) fn palette_colors(kdeglobals: &Ini, data_dirs: &[std::path::PathBuf]) -> Option<Ini> {
+    if has_group(kdeglobals, "Colors:View") {
+        return None;
+    }
+    let package = kdeglobals
+        .get("KDE", "LookAndFeelPackage")
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| DEFAULT_LOOK_AND_FEEL.to_string());
+    let scheme = kdeglobals.get("General", "ColorScheme");
+    let candidates = [
+        Some(package)
+            .filter(|name| crate::icons::is_theme_name(name))
+            .map(|package| format!("plasma/look-and-feel/{package}/contents/colors")),
+        scheme
+            .filter(|name| crate::icons::is_theme_name(name))
+            .map(|name| format!("color-schemes/{name}.colors")),
+        Some(format!("color-schemes/{FALLBACK_COLOR_SCHEME}.colors")),
+    ];
+    let file = candidates
+        .into_iter()
+        .flatten()
+        .find_map(|path| locate(data_dirs, &path));
+    Some(
+        file.and_then(|file| read_kconfig_files(&[file]))
+            .unwrap_or_else(create_kde_parser),
+    )
+}
+
+/// The file `relative` in the first of `data_dirs` where it is a file, as
+/// Qt's `QStandardPaths::locate` finds it (S9.3).
+fn locate(data_dirs: &[std::path::PathBuf], relative: &str) -> Option<std::path::PathBuf> {
+    data_dirs
+        .iter()
+        .map(|dir| dir.join(relative))
+        .find(|file| file.is_file())
 }
 
 /// The scheme file kdeglobals' `[General] ColorScheme` names:
