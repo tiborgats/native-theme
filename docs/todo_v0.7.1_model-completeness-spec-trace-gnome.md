@@ -478,7 +478,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.194 | `token.text.keyed.tab_counter` | token |
 | GN-1.195 | `layout.values.max_content_width, layout.values.tightening_threshold @ variant clamp` | rule |
 | GN-1.196 | `layout.values.container_margin, layout.values.section_gap @ variant @preferences_page` | rule |
-| GN-1.197 | `window.values.breakpoints` (the header bar's mobile threshold: measured Window, height Below it, setting `@mobile`; libadwaita 1.10 defines `MOBILE_WINDOW_HEIGHT` without reading it, so the value phase confirms the use first, else the list is empty) | field |
+| GN-1.197 | `window.values.breakpoints` (empty: the header bar's mobile thresholds are defined and never read, `libadwaita@1.10.0 src/adw-header-bar.c:155-156`, the two names occurring nowhere else in `src/`, so no breakpoint is stated; ADD-A146) | field |
 | GN-1.197 | `dialog.values.breakpoints @ variant paged` (the preferences dialog's thresholds, measured `Measured::Part(dialog.content)`, its breakpoint bin, width AtMost, setting `@bar_layout`; the first over `element.item_count`, the page count) | field |
 | GN-1.198 | `switch.track.fill @ {pressed} !{checked}` | rule |
 | GN-1.199 | `switch.track.fill @ {checked,pressed} (appended layer)` | rule |
@@ -527,9 +527,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.223 | `dialog.message.{corners,padding} @ variant alert {overflowing} (ADD-A13)` | rule |
 | GN-1.223 | `scrollbar.body.padding @ context dialog.message variant alert` | rule |
 | GN-1.224 | `window.title_bar.{min_height,fill,shadow} @ variant dialog (GtkMessageDialog's window)` | rule |
-| GN-1.224 | `dialog.action_area.padding, dialog.values.action_layout.column_gap_px @ variant @message_dialog` | rule |
+| GN-1.224 | `dialog.action_area.padding, dialog.values.action_layout.gap @ variant @message_dialog` (the gap between the responses in the row, the action area's `border-spacing`, `_message-dialog.scss:34-38`; ADD-A146) | rule |
 | GN-1.224 | `button.body.{min_height,padding,corners} @ context dialog.action_area variant @message_dialog` | rule |
-| GN-1.284† | `dialog.values.action_layout.{row_order,stacked_order,equal_widths,row_gap_px,column_gap_px}` (`row_order` empty: the responses keep the application's order) | field |
+| GN-1.284† | `dialog.values.action_layout.{row_order,stacked_order,equal_widths,gap,stacked_gap}` (`row_order` empty: the responses keep the application's order) | field |
 | GN-1.284† | `dialog.values.action_layout @ dir rtl` | rule |
 | GN-1.226 | `spinner.track.fill` | field |
 | GN-1.227 | `spinner.values.stroke_width = mul(element.width, <fraction>), scaled by values.stroke_weight within the source's bounds (the track's width; data declared under values: data = { values = ["width", "height"] }; R25.3)` | field |
@@ -851,14 +851,14 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.56† | `autocomplete.values.filter_delay, autocomplete.values.hover_selects` | field |
 | GN-2.56† | `autocomplete.values.placement (GtkPopover; width AnchorWidth, max_visible_items, no arrow)` | placement |
 | GN-2.57† | - (GTK's print, page setup and app chooser dialogs when the request goes through the Print or AppChooser portal: xdg-desktop-portal-gnome draws them in its own process, GN-P4-3†; where the application builds them itself or GtkPrintDialog finds no Print portal, `gtkprintdialog.c:1502-1508`, GTK draws them in the application's process, which the lines below carry) | out (R1.1) |
-| GN-2.57† | `dialog.values.action_layout.row_gap, dialog.action_area.padding (GtkDialog's action area, `.dialog-action-area`, `_dialogs.scss:1-4`)` | field |
+| GN-2.57† | `dialog.values.action_layout.gap, dialog.action_area.padding (GtkDialog's action area, `.dialog-action-area`, `_dialogs.scss:1-4`)` | field |
 | GN-2.57† | `page_preview.{body.padding,body.min_width,body.min_height,page.fill,page.stroke,filler_text.text}` (GtkPrintUnixDialog's preview, libadwaita's `.print` window's `drawing` and `paper` nodes, `_dialogs.scss:10-23`: the drawing area without fill or border, its padding zero; the page the `paper` node's fill inside its border, the border on every edge; the text GTK draws on the page in the paper's colour; the minimums the drawing area's requested ones, `auto` where `gtkprintunixdialog.c` sets none) | field |
 | GN-2.57† | `page_preview.page_shadow (absent = true), page_preview.margins (absent = true), page_preview.values.{filler_gap_fraction,shadow_lines} (Absent)` (the paper has a border and no shadow lines, and no margin rectangle is styled, `_dialogs.scss:17-22`; the value phase confirms both from `gtkprintunixdialog.c`) | field |
 | GN-2.57† | `window.title_bar.{fill,shadow,bindings} @ variant print / page_setup / app_chooser` (content variants the connector sets for GTK's own dialogs, ADD-A61; the flat header bar of the `.print`, `.pagesetup` and `.appchooser` windows, `_dialogs.scss:25-27`, `:38-42`, `_deprecated.scss:11-13`, `%headerbar-flat`, `_header-bar.scss:112-130`: no fill, no shade, `color: inherit`, the bar bound to the `Window` set) | rule |
 | GN-2.57† | `window.title_bar.min_height, window.title_bar_content.padding @ variant app_chooser / variants {app_chooser,@default_decoration}` (the shrunk header bar, `%headerbar-shrunk`, `_header-bar.scss:149-165`; the window handle's top padding added to the box's, `_deprecated.scss:16-18`) | rule |
 | GN-2.57† | `window.title.{margin,min_height} @ variant app_chooser` (the title box after the start box, `box.start + box`: negative vertical margins and a minimum height, `_deprecated.scss:20-24`) | rule |
 | GN-2.57† | `dialog.action_area.{fill,bindings} @ context window variant print` (the print dialog's action box in the `View` set: `.dialog-action-box` extends `.view`, `_dialogs.scss:29-31`, `_views.scss:1-4`) | rule |
-| GN-2.57† | `dialog.message.padding, dialog.action_area.padding @ context window variant app_chooser` (the app chooser's content margins, `.dialog-vbox > box > box:not(.dialog-action-area)`, `_deprecated.scss:37-39`; its action area's top margin zero, `:41-43`) | rule |
+| GN-2.57† | `dialog.content.padding, dialog.action_area.padding @ context window variant app_chooser` (the app chooser's content margins, `.dialog-vbox > box > box:not(.dialog-action-area)`, `_deprecated.scss:37-39`; its action area's top margin zero, `:41-43`) | rule |
 | GN-2.57† | `search_field.bar.{fill,stroke,padding} @ context window variant app_chooser / cond window_inactive context window variant app_chooser` (the app chooser's flat search bar, `%searchbar-flat` with `background: none`, `_deprecated.scss:27-31`, `_toolbars.scss:169-174`; its selector outranks the bar's backdrop rule, `_toolbars.scss:134-136`) | rule |
 | GN-2.57† | `search_field.bar.padding @ !cond not_composited context window variant app_chooser !variant @ssd` (the `.appchooser` window under `.csd`: the shrunk search bar, `%searchbar-shrunk`, `_deprecated.scss:33-35`, `_toolbars.scss:190-193`; `.csd` is GTK's own decoration on a composited display, `gtkwindow.c:3122-3136`, GN-1.07, GN-1.08) | rule |
 | GN-2.58† | `input.values.mask_character @ variant secure (a preference list: the first the font covers)` | rule |
@@ -1078,7 +1078,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-3† | `window.values.title_bar_click_actions` | field |
 | GN-P3-3† | `reader:gnome:org.gnome.desktop.wm.preferences action-right-click-titlebar` | reader |
 | GN-P3-3† | - (the window menu GNOME Shell draws) | out (R1.1) |
-| GN-P3-4† | `window.values.caption_button_capabilities` | field |
+| GN-P3-4† | `window.values.caption_item_requirements` (the icon needs `Sovereign`, the `maximize` button `Resizable` and `Sovereign`, `gtk@4.24.1 gtk/gtkwindowcontrols.c:327-328`, `:366-368`; WhenMissing Hide; ADD-A146) | field |
 | GN-P3-4† | `window.caption_button_glyph.glyph @ variant restore` | rule |
 | GN-P3-5† | `window.title_bar @ cond full_screen (absent)` | rule |
 | GN-P3-5† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} (absent = true) @ cond full_screen` (the parts nested in the title bar, each by its own rule: Nesting) | rule |

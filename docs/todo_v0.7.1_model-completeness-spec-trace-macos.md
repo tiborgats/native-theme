@@ -37,7 +37,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W02 | `window.caption_button_glyph.fill, window.caption_button_glyph.glyph.fill @ {pressed}` | rule |
 | MAC-W02 | `window.caption_button_glyph.fill @ cond window_inactive` | rule |
 | MAC-W02 | `window.caption_button_glyph.fill @ {disabled}` | rule |
-| MAC-W02 | `window.values.caption_button_capabilities (WhenMissing::Disable: the zoom button of a window that cannot zoom)` | field |
+| MAC-W02 | `window.values.caption_item_requirements (WhenMissing::Disable: the zoom button of a window that cannot zoom)` | field |
 | MAC-W02 | `window.caption_button_glyph.glyph @ variant close context window.frame {@document_edited}` | rule |
 | MAC-W02 | `window flags @document_edited` | flag |
 | MAC-W02 | `reader:macos:standardWindowButton frames per toolbar style` | reader |

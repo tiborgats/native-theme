@@ -427,7 +427,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-DG7 | `dialog.subtitle.text` | field |
 | MAT-DG8 | `dialog.values.window_margin` | field |
 | MAT-DG9 | `dialog.{title,message}.text.{letter_spacing,line_height}` | field |
-| MAT-DG10† | `dialog.values.action_layout (alignment, stack_rule WhenOverflowing, stacked_order, row_gap_px, column_gap_px)` | field |
+| MAT-DG10† | `dialog.values.action_layout (alignment, stack_rule WhenOverflowing, stacked_order, gap, stacked_gap)` | field |
 | MAT-SN1 | `spinner.track.fill` | field |
 | MAT-SN1 | `spinner.values.{stroke_width,indicator_track_gap}; spinner.indicator.glyph` (the track's thickness; the indicator's, its glyph's stroke) | field |
 | MAT-SN2 | `spinner.values.{wave_amplitude,wavelength} @ variant @wavy` | rule |

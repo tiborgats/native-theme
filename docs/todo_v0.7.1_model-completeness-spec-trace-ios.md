@@ -515,7 +515,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | DL-5 | `button.body.{fill,corners,min_width} @ context dialog.action_area variant alert` (full-width cells; 26's capsules) | rule |
 | DL-5 | `button.body.fill @ {pressed} context dialog.action_area variant alert` | rule |
 | DL-5 | `button.body.fill @ {default} context dialog.action_area variant alert` (26's prominent default, to verify) | rule |
-| DL-5 | `dialog.values.action_layout.row_gap_px` | field |
+| DL-5 | `dialog.values.action_layout.gap` | field |
 | DL-6 | `dialog.values.action_layout.stack_rule (ByCount, long titles)` | field |
 | DL-6 | `dialog.values.action_layout.stacked_order` | field |
 | DL-7 | `button.label.text @ context dialog.action_area` (the other actions: regular, in tint) | rule |

@@ -75,7 +75,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-016 | `reader:windows:SM_CXFRAME, SM_CXPADDEDBORDER, DWMWA_EXTENDED_FRAME_BOUNDS` | reader |
 | W1-017 | `cond animations_off (read from SPI_GETCLIENTAREAANIMATION)` | condition |
 | W1-017 | - (the DWM's open, close, minimize, maximize and restore animations) | out (R1.1) |
-| W1-148† | `window.values.caption_button_capabilities (the maximize button greyed on a window that cannot be resized: WhenMissing::Disable)` | field |
+| W1-148† | `window.values.caption_item_requirements (the maximize button greyed on a window that cannot be resized: WhenMissing::Disable)` | field |
 | W1-148† | `window.{caption_button.fill,caption_button_glyph.glyph.fill} @ {disabled}` | rule |
 | W1-148† | `window.values.caption_button_layout @ variant dialog (the close-only caption)` | rule |
 | W1-148† | - (the context-help "?" caption button, WS_EX_CONTEXTHELP: Win32 only) | preset (R1.3) |
@@ -356,7 +356,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-126 | `dialog.action_area.{fill,stroke}` | field |
 | W1-127 | `dialog.values.title_message_gap` | field |
 | W1-127 | `button.body.{min_width,max_width,min_height} @ context dialog.action_area` | rule |
-| W1-127 | `dialog.values.action_layout.{equal_widths,row_gap}` | field |
+| W1-127 | `dialog.values.action_layout.{equal_widths,gap}` | field |
 | W1-128 | `dialog.values.presentations (events Appear, Disappear: Scale with Fade, their durations and timings, ADD-B10)` | field |
 | W1-129 | `dialog.body.shadow (Shadow::Elevation, the dialog entry of the ramp)` | field |
 | W1-130 | `spinner.{indicator,track}.* @ !{indeterminate}` (the determinate ring: the value arc's glyph, its draw_extent = element.progress) | rule |
@@ -821,10 +821,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-FM02† | - (GDI's SystemLink font-linking chains: Win32 controls) | preset (R1.3) |
 | W-P3-1† | `window.frame.corners @ cond tiled:left / cond tiled:right / cond tiled:top / cond tiled:bottom` | rule |
 | W-P3-1† | - (the snap overlay, the Snap bar, the shared edge of snapped windows, the snapped windows' gaps to the screen edge and to each other, and the settings that switch snapping: the shell's) | out (R1.1) |
-| W-P3-2† | `window.title_bar (absent) @ cond full_screen` | rule |
-| W-P3-2† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} (absent = true) @ cond full_screen` (the parts nested in the title bar, each by its own rule: Nesting) | rule |
+| W-P3-2† | `window.title_bar @ cond full_screen` (the revealed bar's style, the row's measurement; not absent: the connector draws the bar only while revealed, by `full_screen_title_bar_reveal`, ADD-A146) | rule |
+| W-P3-2† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} @ cond full_screen` (the parts nested in the revealed bar, where the measurement finds them unlike a window's outside full screen) | rule |
 | W-P3-2† | `window.values.full_screen_title_bar_reveal (SwipeFromTop)` | field |
-| W-P3-2† | `window.values.presentations (event @title_bar_show)` (the reveal presents a title bar `Absent` under `full_screen`: ADD-A129 (queue #118)) | field |
+| W-P3-2† | `window.values.presentations (event @title_bar_show)` (the reveal's motion and how long the bar stays: ADD-A129 (queue #118), the bar appearing and leaving at once meanwhile, S2.7) | field |
 | W-P3-2† | `window.{frame.corners,title_bar.min_height,values.default_size} @ variant @compact_overlay` | rule |
 | W-P3-2† | `window.caption_button.{min_width,min_height} @ context window.frame variant @compact_overlay` | rule |
 | W-P3-2† | - (entering and leaving each presenter: the system's window animation) | out (R1.1) |

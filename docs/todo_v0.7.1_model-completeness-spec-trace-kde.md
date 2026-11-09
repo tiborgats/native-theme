@@ -373,7 +373,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.222 | `dialog.header.stroke @ !{@has_toolbar} (top separator)` | rule |
 | K1.223 | - | out (R1.1) |
 | K1.224† | `dialog.icon.glyph (ThemeIcon), dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size) @ variants {alert,warning} / variants {alert,info} / variants {alert,error} / variants {alert,@question}` | rule |
-| K1.224† | `dialog.message.text; dialog.values.details_min_lines` | field |
+| K1.224† | `dialog.message.text; dialog.values.message_wrap.details_min_lines` | field |
 | K1.224† | `checkbox @ context dialog (the "don't ask again" check box)` | rule |
 | K1.230 | `spinner.icon.glyph (ThemeIcon view-refresh)` (`kwidgetsaddons@6.31.0 src/kbusyindicatorwidget.cpp:34`; under `flavor:kirigami` qqc2-desktop-style's BusyIndicator rotates `process-working-symbolic`, Q1.119's rule; ADD-A125) | field |
 | K1.230 | `spinner.values.loop (rotation and its period)` | field |
@@ -676,7 +676,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q1.110 | `dialog.values.button_icons @ cond flavor:kirigami` | rule |
 | Q1.111 | `dialog.values.presentations (Appear, Disappear: Fade, and a Translate of mul(token.params.layout.grid_unit, 2) downward at zero opacity, rising in and sinking out with it; = token.motion.durations.long, = token.motion.timings.in_out_quad, `kirigami@6.31.0 src/dialogs/Dialog.qml:307`, `:310`, as Q1.105's; ADD-B10, ADD-A25) @ cond flavor:kirigami !variant @ka_dialog !variant @search_dialog` (Kirigami's own `Dialog`: its `y` bound to its opacity, `kirigami@6.31.0 src/dialogs/Dialog.qml:303`, the opacity animated in and out, `:306-311`; `SearchDialog.qml:64`, `:168`, a centred `QQC2.Dialog`, and kirigami-addons' `@ka_dialog` dialogs fade with no rise by Q1.105: `DatePopup.qml:16`, `TimePopup.qml:18` and `FormCardDialog.qml:51` are `QQC2.Dialog`s, centred, `qqc2-desktop-style@6.31.0 org.kde.desktop/Dialog.qml:19`, `:48-65`, and `MessageDialog.qml:412-430` states the same fade, `kirigami-addons@1.15.0 src/`) | rule |
 | Q1.112 | `dialog.scrim.fill, dialog.body.shadow, dialog.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)), dialog.body.bindings (Surface(View)) @ cond flavor:kirigami` (the stroke: qqc2's `Dialog.qml:85`, Kirigami's `Dialog.qml:341`) | rule |
-| Q1.112 | `dialog.scrim.transitions (Opacity; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
+| Q1.112 | `dialog.values.presentations (Appear, Disappear: a Fade step on scrim; = token.motion.durations.long, its timing) @ cond flavor:kirigami` (the scrim's fade is a presentation step, the scrim coming and going with the dialog; ADD-A146) | rule |
 | Q1.113 | `dialog.body.max_width, dialog.body.max_height (= sub(element.window_width, <margins>), sub(element.window_height, <margins>), ADD-A78) @ cond flavor:kirigami` | rule |
 | Q1.113 | `dialog.values.window_margin @ cond flavor:kirigami` | rule |
 | Q1.114 | `dialog.header.padding @ cond flavor:kirigami` | rule |
@@ -1185,7 +1185,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q3.21 | `PartStyle.shadow Elevation(key) per surface part: menu.body.shadow, popover.body.shadow, tooltip.body.shadow, dialog.body.shadow, menu.body.shadow @ context autocomplete, card.body.shadow (with its lift layer, Q1.128), toast.body.shadow, button.body.shadow @ variant circular, slider.thumb.shadow @ variant range, sidebar.edge_shadow.fill, list.swipe_area.shadow` | field |
 | Q3.22 | `role.global.scrim` | role |
 | Q3.22 | `dialog.scrim.fill @ cond flavor:kirigami; sidebar.scrim.fill @ variant overlay; sheet.scrim.fill @ variant @overlay` | rule |
-| Q3.22 | `dialog.scrim.transitions, sidebar.scrim.transitions, sheet.scrim.transitions (Opacity; = token.motion.durations.long, its timing)` | field |
+| Q3.22 | `dialog.values.presentations (Appear, Disappear: a Fade step on scrim; ADD-A146), sidebar.scrim.transitions, sheet.scrim.transitions (Opacity; = token.motion.durations.long, its timing)` | field |
 | Q3.23 | `token.motion.durations.very_short, token.motion.durations.short, token.motion.durations.long, token.motion.durations.very_long` | token |
 | Q3.24 | `token.motion.durations.long (= max(round(mul(<the read longDuration>, token.motion.speed_factor)), <floor>): `qRound`, then `qMax`, `qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:45`, `:49`; ADD-A56, ADD-A122)` | token |
 | Q3.24 | `token.motion.durations.very_short, token.motion.durations.short (= floor(div(token.motion.durations.long, <divisor>)): C++'s integer division, `plasmadesktopunits.cpp:51-52`; ADD-A122), token.motion.durations.very_long (= mul(token.motion.durations.long, <factor>), `:54`)` | token |
@@ -1300,7 +1300,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-P3-1† | `window.values.resize_band (the sides and the bottom) @ cond system_setting:no_borders / (the sides only) @ cond system_setting:no_side_borders` | rule |
 | K-P3-1† | `window.values.resize_band (Absent on a maximised axis) @ cond maximized / cond tiled:top / cond tiled:bottom / cond tiled:left / cond tiled:right` | rule |
 | K-P3-1† | `window.resize_zone.cursor @ variant top / variant right / variant bottom / variant left / variant top_left / variant top_right / variant bottom_right / variant bottom_left (the theme's resize shapes, K3.64)` | rule |
-| K-P3-2† | `window.values.caption_button_capabilities (Closable, Maximizable, Minimizable, Shadeable, ProvidesHelp; WhenMissing Hide)` | field |
+| K-P3-2† | `window.values.caption_item_requirements (Closable, Maximizable, Minimizable, Shadeable, ProvidesHelp, each on its button; WhenMissing Hide)` | field |
 | K-P3-3† | - | out (R1.1) |
 | K-P3-4† | `tab.label.text.elision (None)` | field |
 | K-P3-4† | `tab.values.overflow, tab.values.scroll_to_selected, tab.values.scroll_margin` | field |
@@ -1311,8 +1311,8 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-P3-5† | `combo_box.values.popup_placement (below the control) @ cond flavor:kirigami` | rule |
 | K-P3-5† | `menu.body.corners @ {placed_below} / {placed_above} (the joined edge, K1.64)` | rule |
 | K-P3-6† | `tooltip.values.placement (QtTooltip)` | placement |
-| K-P3-7† | `dialog.values.message_wrap.{wrap_above_px,min_width_px,elide_above_px,scroll_above_px} @ variant alert (expressions on element.screen_width, element.screen_height and widget.message.char_width, the message part's font: a widget value has none, S2.2; ADD-B17)` | field |
-| K-P3-7† | `dialog.values.message_wrap.item_list_max_width_px (= mul(element.screen_width, <fraction>)), dialog.values.message_wrap.details_min_lines @ variant alert` | field |
+| K-P3-7† | `dialog.values.message_wrap.{wrap_above,min_width,elide_above,scroll_above} @ variant alert (expressions on element.screen_width, element.screen_height and widget.message.char_width, the message part's font: a widget value has none, S2.2; ADD-B17)` | field |
+| K-P3-7† | `dialog.values.message_wrap.item_list_max_width (= mul(element.screen_width, <fraction>)), dialog.values.message_wrap.details_min_lines @ variant alert` | field |
 | K-P3-8† | `about_dialog.icon.icon.size, about_dialog.name.text, about_dialog.version.text @ cond flavor:widgets` | rule |
 | K-P3-8† | `tab @ context about_dialog` | rule |
 | K-P3-8† | `tab.scroll_arrow (absent = true) @ context about_dialog` | rule |
@@ -1495,16 +1495,16 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-KA-17† | `dialog.values.natural_size (= sub(element.window_width, <margins>)) @ variant @ka_form_card_dialog / (= min(sub(element.window_width, <margins>), max(<n> grid units, the header's width))) @ variants {@ka_form_card_dialog,@wide}; dialog.values.breakpoints (measured Window, width Above the row's threshold, setting @wide), dialog.values.window_margin @ variant @ka_form_card_dialog` | rule |
 | K-KA-17† | `dialog.title.text (a heading), dialog.header.padding (none below) @ variant @ka_form_card_dialog` | rule |
 | K-KA-17† | `button.icon.glyph (ThemeIcon) @ variant close context dialog.header variant @ka_form_card_dialog / {hover} variant close context dialog.header variant @ka_form_card_dialog (the other icon)` (the connector draws the close button only while the dialog has a Cancel button, the dialog's `{@has_cancel}`: content, no absence rule) | rule |
-| K-KA-17† | `dialog.action_area.padding, dialog.values.action_layout (row_gap) @ variant @ka_form_card_dialog` | rule |
+| K-KA-17† | `dialog.action_area.padding, dialog.values.action_layout (gap) @ variant @ka_form_card_dialog` | rule |
 | K-KA-18† | `dialog.body.corners, dialog.body.bindings (surface View), dialog.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), DialogRoundedBackground.qml:25), dialog.body.shadow @ variant @ka_dialog cond flavor:kirigami` | rule |
 | K-KA-18† | `popover.body.corners, popover.body.bindings, popover.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), DialogRoundedBackground.qml:25), popover.body.shadow @ variant @ka_dialog cond flavor:kirigami` | rule |
 | K-KA-19† | `dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size), dialog.icon.glyph (ThemeIcon: the default type's here, each other type's by the same rule selecting that type too: info, warning, error, success), dialog.body.padding, dialog.values.natural_size, dialog.body.max_height, dialog.values.window_margin @ variants {alert,@ka_message_dialog}` (`natural_size`'s two width formulas by `@wide`, as K-KA-17†'s) | rule |
-| K-KA-19† | `dialog.icon.padding, dialog.values.title_alignment (centred above), dialog.values.action_layout (stacked, full width, its side margins) @ variants {@ka_message_dialog,narrow}; dialog.values.breakpoints (measured Window, width Below the narrow width plus the dialog's side margins, setting narrow: MessageDialog.qml's own-width test restated exactly, R16), dialog.values.narrow_when_actions_overflow (true: also narrow while the buttons do not fit) @ variant @ka_message_dialog` | rule |
-| K-KA-19† | `checkbox @ context dialog.action_area variant @ka_message_dialog; dialog.values.action_layout (row_gap), dialog.action_area.padding, dialog.values.standard_button_icons @ variant @ka_message_dialog` | rule |
+| K-KA-19† | `dialog.icon.padding, dialog.values.icon_position (Above, where the base's is Start: the grid's one column, MessageDialog.qml:246, the icon centred, :256; ADD-A146), dialog.values.action_layout (stacked, full width, its side margins) @ variants {@ka_message_dialog,narrow}; dialog.values.breakpoints (measured Window, width Below the narrow width plus the dialog's side margins, setting narrow: MessageDialog.qml's own-width test restated exactly, R16), dialog.values.narrow_when_actions_overflow (true: also narrow while the buttons do not fit) @ variant @ka_message_dialog` | rule |
+| K-KA-19† | `checkbox @ context dialog.action_area variant @ka_message_dialog; dialog.values.action_layout (gap), dialog.action_area.padding, dialog.values.standard_button_icons @ variant @ka_message_dialog` | rule |
 | K-KA-19† | `dialog.values.presentations (Appear, Disappear: Fade; = token.motion.durations.long, its timing), dialog.scrim.fill @ variant @ka_message_dialog` | rule |
 | K-KA-20† | `date_picker.popup @ variant with_popup cond flavor:kirigami` (`drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }`: the dialog draws the one box; under `kirigami` every `with_popup` picker is kirigami-addons') | rule |
 | K-KA-20† | `dialog.body.{fill,corners,shadow,min_width,max_width,min_height,padding} @ variant @ka_dialog context date_picker.body[with_popup] cond flavor:kirigami` (the popup is a `dialog` element, the K-KA-18† surface; narrower on small windows: `max_width` an expression over `element.window_width`) | rule |
-| K-KA-20† | `dialog.scrim.fill, dialog.scrim.transitions (Opacity; = token.motion.durations.long) @ variant @ka_dialog context date_picker` | rule |
+| K-KA-20† | `dialog.scrim.fill, dialog.values.presentations (Appear, Disappear: a Fade step on scrim; = token.motion.durations.long; ADD-A146) @ variant @ka_dialog context date_picker` | rule |
 | K-KA-20† | `segmented_control @ variant @ka_segmented_button context dialog.body context date_picker (day, month, year: the view switch)` | rule |
 | K-KA-20† | `segmented_control @ variant @ka_segmented_button context dialog.body context date_picker (previous, today, next: icon only; the glyph's rtl form @ dir rtl)` | rule |
 | K-KA-20† | `calendar.values.presentations (@view_switch); calendar.values.scroll_physics (deceleration, snap) @ variant @ka_date_popup` | rule |
