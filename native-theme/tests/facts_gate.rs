@@ -2567,6 +2567,17 @@ fn gate_fixture_listed_append_over_paint() -> Result<(), String> {
     expected(report.failures.is_empty() && ids == ["U50", "U51"], &report)
 }
 
+/// A pending field fact holding only where a preset rule makes its part
+/// absent (S17 *Where a listed path is found*, ADD-A144): no field is
+/// listed where its part does not resolve drawn, so the hover fact, U60,
+/// leaves no listed path, and U61 is the path's alone.
+#[test]
+fn gate_fixture_listed_part_absent() -> Result<(), String> {
+    let report = fixture_report("listed_part_absent");
+    let ids = listed_ids(&report, "button.subtitle.text.fill")?;
+    expected(report.failures.is_empty() && ids == ["U61"], &report)
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the
