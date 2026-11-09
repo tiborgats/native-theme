@@ -3776,11 +3776,16 @@ fn threads() -> usize {
 /// the machine's parallelism where it is `None`; a value that is no number
 /// above zero is an error, never a silently different run. The count sets
 /// the speed and the memory: as many condition vectors are checked at once
-/// as there are threads ([`check`]), each holding its two resolutions
-/// (about 11 MB apiece), a chunk of its combinations, and the distinct ones
-/// it compares with their signatures. So the default, every thread the
-/// machine has, is safe: about 120 MB a thread, the six presets near 4 GB
-/// on 16 threads, 6 GB on 32.
+/// as there are threads ([`check`]), each holding its two resolutions, a
+/// chunk of its combinations, the distinct ones it compares with their
+/// signatures ([`Probed`]) and the answers its memo shares ([`Memo`]); and
+/// a resolution takes the most while it is built. On 16 threads
+/// (2026-11-09) adwaita, kde-breeze, windows-11, material-3 and
+/// macos-monterey peak at 1.1 to 2.3 GB; macos-tahoe's first 16 vectors,
+/// resolving at once, pass 12 GB within seconds (about 0.9 GB a
+/// resolution being built): the default, every thread the machine has,
+/// holds macos-tahoe under 12 GB only where it is 8 or fewer (7 to 8.5 GB
+/// on 8).
 pub fn thread_count(value: Option<&str>) -> Result<usize, String> {
     match value {
         None => Ok(std::thread::available_parallelism().map_or(1, std::num::NonZero::get)),
