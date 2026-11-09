@@ -1860,6 +1860,27 @@ fn gate_fixture_pending_ids() {
     );
 }
 
+/// A `Value` of a map listed as pending (`Font.axes`) where the preset's
+/// rule patches it on hover (S6.1: a stated map in a patch over nothing is
+/// the map): the later pending fact on the flat button's hover has that
+/// rule beneath it, an earlier fact of its key the preset states (S17 *A
+/// pending fact with nothing beneath it*), so only the fact with nothing
+/// beneath leaves the path listed, though the rule's patch merges over the
+/// synthetic value on the synthetic route.
+#[test]
+fn gate_fixture_pending_map_patched() {
+    let report = fixture_report("pending_map_patch");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        ["probe button.label.text.font.axes"]
+    );
+    assert_eq!(
+        report.listed.values().next().map(|(ids, _)| ids_of(ids)),
+        Some(vec!["U3"])
+    );
+}
+
 /// An input listed as pending is found per scheme (S17: "a scheme at which
 /// its per-scheme value has only pending facts and nothing beneath them is
 /// listed"; S11 writes it `inputs.<name>.<scheme>`, ADD-A132); listed

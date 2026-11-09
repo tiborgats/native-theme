@@ -971,6 +971,16 @@ impl<'t> Cx<'t> {
         }
     }
 
+    /// Leaves the places recorded from `mark` on undecided by a synthetic
+    /// layer's step, still reached: a step of another layer merged into
+    /// the place, so that layer states it too (S6.1, S17's synthetic route,
+    /// ADD-A128).
+    fn merged_from(&mut self, mark: usize) {
+        for held in self.reached.iter_mut().skip(mark) {
+            held.direct = false;
+        }
+    }
+
     /// Records a value read whose evaluation read a synthetic layer's step,
     /// where `reached`.
     fn reach(&mut self, reached: bool) {
@@ -2858,10 +2868,14 @@ impl<'t> Cx<'t> {
                 })
             })
             .collect();
+        let mark = self.reached.len();
         let set = self.decider(
             steps.iter().map(|(index, step)| (*index, step.sets())),
             items,
         );
+        let mut others = set
+            .and_then(|at| items.get(at))
+            .is_some_and(|fold| !self.theme.synthetic.contains(&fold.pos.layer));
         let (mut map, from) = match set {
             None => (None, 0),
             Some(at) => {
@@ -2905,9 +2919,17 @@ impl<'t> Cx<'t> {
                 continue;
             }
             if let MapStep::Patch(Value::Stated(entries)) = step {
-                self.touch(items.get(*at)?.pos);
+                let fold = items.get(*at)?;
+                others |= !self.theme.synthetic.contains(&fold.pos.layer);
+                self.touch(fold.pos);
                 merge_by_key(map.get_or_insert_with(Vec::new), entries.clone());
             }
+        }
+        // A synthetic layer's map with another layer's merged into it is
+        // that layer's too: the place is stated beside the synthetic value,
+        // no listed path there (S6.1, S17, ADD-A128).
+        if others {
+            self.merged_from(mark);
         }
         map
     }
