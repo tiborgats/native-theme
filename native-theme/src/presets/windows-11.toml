@@ -179,7 +179,7 @@ accent_ramp = [
     "light2",  # docs/facts/windows/roles.toml:5065
     "light3",  # docs/facts/windows/roles.toml:5085
 ]
-# docs/facts/windows/button.toml:15797, :15813, :15835 (WinUI AnimatedIcon states, no parameters)
+# docs/facts/windows/button.toml:16591, :16608, :16630 (WinUI AnimatedIcon states, no parameters)
 transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }
 inputs = [
     "accent",  # docs/facts/windows/roles.toml:7479

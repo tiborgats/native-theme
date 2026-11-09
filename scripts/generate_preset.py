@@ -81,11 +81,19 @@ subjects:
   state model naming no flavour);
 - a `read` fact's value in a `bases <table>` or `rule <key> <when>` block, its citation the comment line straight
   above `<key> = …`: the `read` fact read_tables() places at that table and key;
-- `[preset] generation`, `# docs/facts/sources.toml:<line> (<source id>, …)`: that `[[source]]` entry's header.
+- `[preset] generation`, `# docs/facts/sources.toml:<line> (<source id>, …)`: that `[[source]]` entry's header;
+- a citation in a comment's prose, any other comment line's (Citations.prose(), ADD-A144), `docs/facts/<file>:<line>`
+  and each `:<line>` after it in that file: where the line after the comment states a `[declare]` keyed namespace
+  inline (`transition_kinds = { normal = {}, … }`, whose entries no per-entry comment can follow), one citation per
+  entry in their order, each the entry's as a list entry's; a citation straight after a conversion's name
+  (`(percent_to_fraction, <citation>)`), a fact of the preset one of whose citations states that conversion; any
+  other names no subject, and is kept where it names a header of the preset's facts or state models. A refreshed one
+  is written as `:<line>` where the text before it names its fact's file, else with its file.
 A stale citation whose fact none is found for (no fact names the entry, a namespace NAMED_BY has no rule for, a
-generation comment naming no source id) is never guessed: it is listed (`citation: …`) and the run exits 1, `--write`
-writing the rest. `--check` lists each stale citation (`stale citation: …`) and fails, as `--write` would change the
-file. Other citations in the blocks (in a comment's prose) are not judged.
+generation comment naming no source id, a prose citation of no subject naming no header, an inline namespace with
+another number of citations than entries) is never guessed: it is listed (`citation: …`) and the run exits 1,
+`--write` writing the rest. `--check` lists each stale citation (`stale citation: …`) and fails, as `--write` would
+change the file.
 
 Which facts (S17 *Generations*)
 -------------------------------
@@ -930,7 +938,7 @@ def based_paths(bases) -> list:
 
 
 def by_ckey(facts) -> dict:
-    """{a key: its facts, in their order}: what alive() and ruled_beneath() read of `facts`, each key's list
+    """{a key: its facts, in their order}: what alive() and listed_in() read of `facts`, each key's list
     found once."""
     out = {}
     for f in facts:
@@ -947,19 +955,77 @@ def alive(f: Fact, facts) -> tuple:
     return tuple(s for s in slots_of(f.when) if not any(covers(g.when, f.when, s) for g in later))
 
 
-def ruled_beneath(f: Fact, facts, scheme, models=(), off=()) -> bool:
-    """Whether earlier rules of the fact's key hold wherever the fact holds under the scheme, so the preset's own
-    layer states the key beneath it there (S17: a listed path has "no fact or base beneath" it "in some combination"):
-    one rule covering the fact's `when` (covers()), or, for a widget's fact, one at each element and size it holds
-    for under each state model of `models` (elements_beneath(), the variants `off` left out), as a key stated per
-    size alone is beneath every fact of a sized element and a rule refusing variants is beneath one of a variant
-    exclusive with them."""
-    same = [g for g in facts if g.ckey == f.ckey]
-    at = next((i for i, g in enumerate(same) if g is f), len(same))
-    earlier = [g for g in same[:at] if g.status == "rule"]
-    if any(covers(g.rule_when or {}, f.when, scheme) for g in earlier):
+def appends(f: Fact) -> bool:
+    """Whether a fact's value is a paint's `Append` (`{ append = [ … ] }` at a `Value<Paint>`, S2.2), which states
+    no paint where nothing lies beneath it (S6.1, S12), so it is beneath no pending fact of its key (S17 *Where a
+    listed path is found*)."""
+    value = f.item.data.get("value") if f.item is not None else f.value
+    return check_facts.strip_type(f.typ or "") == "Paint" and isinstance(value, dict) and "append" in value
+
+
+def hides(f: Fact) -> bool:
+    """Whether a part's presence fact makes its part not drawn (`"absent"`, `{ drawn_as = … }`, S6.3); a pending
+    presence states nothing, the part drawn on the synthetic route (S17, ADD-A131)."""
+    value = f.item.data.get("value") if f.item is not None else None
+    return f.status != PENDING and (value == "absent" or isinstance(value, dict) and "drawn_as" in value)
+
+
+def drawn_at(at: dict, scheme: str, presences: list) -> bool:
+    """Whether the part resolves drawn wherever `at` holds under the scheme (S6.3, S17 *Which fact applies*): not where
+    the last presence fact `presences` gives covering `at` hides it and no later one that may hold there draws it
+    again (check_facts.whens_overlap()); drawn where none covers it, as a part no patch makes absent is."""
+    last = next((i for i in range(len(presences) - 1, -1, -1) if covers(presences[i].when, at, scheme)), None)
+    if last is None or not hides(presences[last]):
         return True
-    return bool(models) and all(elements_beneath(f, earlier, scheme, model, off) for model in models)
+    there = with_scheme(at, scheme)
+    return any(not hides(g) and check_facts.whens_overlap(g.when, there, None) for g in presences[last + 1:])
+
+
+def holds_leaf(g: Fact, rest: tuple) -> bool:
+    """Whether a fact of a block holds its leaf `rest` below it: a pending one, one stating the block by a value that
+    is no table (`"absent"`, a reference), or a table stating the leaf; a table leaving it out states none of it."""
+    if g.status == PENDING:
+        return True
+    value = g.item.data.get("value") if g.item is not None else g.value
+    for seg in rest:
+        if not isinstance(value, dict):
+            return True
+        if seg not in value:
+            return False
+        value = value[seg]
+    return True
+
+
+def listed_in(f: Fact, same: list, scheme, models=(), off=(), later_blocks=(), presences=()) -> bool:
+    """Whether the pending fact `f` leaves its path listed under the scheme (S17 *Where a listed path is found*): at
+    some element it holds for, no later fact of its key (`same`, its key's facts in order) or of a block holding it
+    (`later_blocks`) holds, no earlier rule of its key holds, the preset's own layer stating the key beneath it there
+    (S17: a listed path has "no fact or base beneath" it "in some combination"; an `Append` beneath none, appends()),
+    and its part resolves drawn (drawn_at() over the part's presence facts `presences`; S12 judges a missing field
+    only where its part is drawn). The elements are the gate's for a widget's fact, each element and size it holds
+    for under each state model of `models` (elements(), the variants `off` left out), so a key stated per size alone
+    is beneath every fact of a sized element, a rule refusing variants is beneath one of a variant exclusive with
+    them, and later facts each holding at some elements shadow it between them; else the fact's own `when`."""
+    at = next((i for i, g in enumerate(same) if g is f), len(same))
+    later = same[at + 1:] + list(later_blocks)
+    earlier = [g for g in same[:at] if g.status == "rule" and not appends(g)]
+    if any(covers(g.when, f.when, scheme) for g in later):
+        return False
+    later = [g for g in later if check_facts.whens_overlap(g.when, f.when, None)]
+    if any(covers(g.rule_when or {}, f.when, scheme) for g in earlier):
+        return False
+    ats = []
+    for model in models if f.kind == "widget" else ():
+        ats += elements(f, model, off) or [f.when]
+    for when in ats or [f.when]:
+        if any(covers(g.when, when, scheme) for g in later):
+            continue
+        if any(covers(g.rule_when or {}, when, scheme) for g in earlier):
+            continue
+        if presences and not drawn_at(when, scheme, presences):
+            continue
+        return True
+    return False
 
 
 VARIANT_FIELDS = ("variants", "exclusive_variants", "variant_sets", "variant_products", "requires_variants",
@@ -1009,25 +1075,24 @@ def computed_variant_options(model, off=()) -> list:
     return out
 
 
-def elements_beneath(f: Fact, earlier: list, scheme: str, model, off=()) -> bool:
-    """Whether at every element the widget's fact `f` holds for, and at each size it takes, an earlier rule of
-    `earlier` holds wherever `f` does (covers(), the element's variants and size stated, the others refused). The
-    elements are the gate's (S17 *State models*): each variant set variant_options() gives that `f`'s `variants` and
-    `not_variants` admit, at the sizes its variant's `sizes_by_variant` entry takes, else the widget's (S10), those
-    `f` names or does not refuse; one taking none (an unsized variant's) holds no size, so no size's rule is
-    beneath it. False for a model with a `sizes_by_context` entry taking no size, which this does not follow, and
-    where no element holds the fact."""
+def elements(f: Fact, model, off=()) -> list:
+    """The elements the widget's fact `f` holds for under a state model, each as a `when` (`f`'s, the element's
+    variants and size stated, the others refused), the gate's (S17 *State models*): each variant set
+    variant_options() gives that `f`'s `variants` and `not_variants` admit, at each size its variant's
+    `sizes_by_variant` entry takes, else the widget's (S10), those `f` names or does not refuse; one taking none (an
+    unsized variant's) holds no size, so no size's rule holds there. None for a model with a `sizes_by_context` entry
+    taking no size, which this does not follow; [] where no element holds the fact."""
     if f.kind != "widget" or not isinstance(model, dict):
-        return False
+        return None
     if any(isinstance(e, dict) and not e.get("sizes") for e in model.get("sizes_by_context", [])):
-        return False
+        return None
     variants = [v for v in model.get("variants", []) if isinstance(v, str) and v not in off]
     wanted, refused = set(f.when.get("variants", [])), set(f.when.get("not_variants", []))
     named, refused_sizes = f.when.get("sizes"), set(f.when.get("not_sizes", []))
     entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict) and isinstance(e.get("sizes"), list)]
     widget_sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
     all_sizes = list(dict.fromkeys(widget_sizes + [z for e in entries for z in e["sizes"] if isinstance(z, str)]))
-    held = False
+    out = []
     for held_set in variant_options(model, off):
         if not wanted <= set(held_set) or refused & set(held_set):
             continue
@@ -1036,27 +1101,25 @@ def elements_beneath(f: Fact, earlier: list, scheme: str, model, off=()) -> bool
         sizes = [z for z in taken if z not in refused_sizes and (named is None or z in named)]
         if taken and not sizes or not taken and named:
             continue
-        held = True
         others = sorted(set(variants) - set(held_set))
-        for z in sizes or [None]:
-            at = {**f.when, "variants": held_set, "not_variants": others,
-                  "sizes": [z] if z else [], "not_sizes": [y for y in all_sizes if y != z]}
-            if not any(covers(g.rule_when or {}, at, scheme) for g in earlier):
-                return False
-    return held
+        out += [{**f.when, "variants": held_set, "not_variants": others,
+                 "sizes": [z] if z else [], "not_sizes": [y for y in all_sizes if y != z]} for z in sizes or [None]]
+    return out
 
 
 def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> list:
     """The preset's `[pending]` table (S11, S17 *A pending fact with nothing beneath it*, ADD-A128): each path a
-    pending fact of the preset states where it applies (no later fact covering it everywhere) and the draft writes no
-    base at it, above it (a block stated whole, a whole part) or below it, so the preset's own layer leaves it unstated
-    where that fact applies; a colour role's per scheme the fact applies in; a pending leaf of a set-whole block lists
-    the block, which its bases cannot state without it. Each with its pending facts' register id, or the list of
-    their distinct ids in fact order where they differ (S11: `"tokens.behavior.key_repeat" = ["<id>", "<id>"]`, the
-    leaves of a field set whole pending under different ids), and the first such fact: [(path, id or ids, fact)],
-    the path spelled as S11 writes its key, unit suffix included. Earlier rules of the key holding wherever the
-    pending fact does are beneath it too (ruled_beneath(), the state models `models` giving the elements and the
-    sizes each takes, the variants `off` names per widget left out with their units), in that scheme. The list of
+    pending fact of the preset states where it applies and the draft writes no base at it, above it (a block stated
+    whole, a whole part) or below it, so the preset's own layer leaves it unstated where that fact applies; a colour
+    role's per scheme the fact applies in; a pending leaf of a set-whole block lists the block, which its bases cannot
+    state without it. Each with its pending facts' register id, or the list of their distinct ids in fact order where
+    they differ (S11: `"tokens.behavior.key_repeat" = ["<id>", "<id>"]`, the leaves of a field set whole pending under
+    different ids), and the first such fact: [(path, id or ids, fact)], the path spelled as S11 writes its key, unit
+    suffix included. Where it applies is judged per element, in each scheme (listed_in(), S17 *Where a listed path is
+    found*, ADD-A144; the state models `models` giving the elements and the sizes each takes, the variants `off` names
+    per widget left out with their units): an element no later fact of its key, or of a block holding it
+    (holds_leaf()), holds at, no earlier rule of its key is beneath, and its part is drawn at (a field's: the part's
+    presence facts, drawn_at()). A paint's `Append`, a base's or a rule's, is beneath none (appends()). The list of
     ids is broader than S11's letter ("a list of ids where a field S6.1 sets whole has leaves pending under different ids"): every path whose
     pending facts carry several ids takes one, as a plain field pending under different ids per combination has no
     other encoding (iOS's and macOS's drafts; S11, ADD-A131: one id is the string, a list of one never written). A
@@ -1068,8 +1131,9 @@ def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> li
     none (S6.3, S17, ADD-A131). A component's (`components.<key>.<part>`) is refused (InputError) until components
     are typed, as the reader refuses that key."""
     block_of = block_of or set_whole_block
-    based = based_paths(bases)
+    based = based_paths([b for b in bases if not appends(b[5])])
     same = by_ckey(facts)
+    order = {id(f): i for i, f in enumerate(facts)}
     out, seen = [], {}
     for f in facts:
         if f.status != PENDING:
@@ -1090,8 +1154,13 @@ def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> li
                                  f"are typed (S11, S17; ledger #150)")
             held = models_holding(models or {}, f.widget, f.when)
             left_out = (off or {}).get(f.widget, ())
-            slots = tuple(s for s in alive(f, same[f.ckey])
-                          if not ruled_beneath(f, same[f.ckey], s, held, left_out))
+            part = tuple(f.target.split(".")) if f.kind == "widget" else f.ckey[:1]
+            blocks = [g for n in range(len(part) + 1, len(f.ckey)) for g in same.get(f.ckey[:n], ())
+                      if order[id(g)] > order[id(f)] and holds_leaf(g, f.ckey[n:])]
+            presences = [g for g in same.get(part, ()) if g.status != LEFT_OUT] if f.kind == "widget" and f.dotted \
+                else []
+            slots = tuple(s for s in slots_of(f.when)
+                          if listed_in(f, same[f.ckey], s, held, left_out, blocks, presences))
             below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
             schemes = slots if f.kind == "role" else (None,)
             paths = [(f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
@@ -1787,13 +1856,20 @@ SOURCES = "docs/facts/sources.toml"
 SOURCE_CITE = re.compile(rf"^# (?P<file>{re.escape(SOURCES)}):(?P<line>\d+)(?P<rest>.*)$")
 SOURCE_ID = re.compile(r"^ \((?P<id>[^,)\s]+)[,)]")
 LIST_OPEN = re.compile(r"^(\w+) = \[$")
+COMMENT = re.compile(r"^\s*#")
+# a fact citation in a comment's prose, and a `:<line>` after one, in its file (Citations.prose())
+PROSE_CITE = re.compile(r"(?P<file>docs/facts/[\w./-]+\.toml):(?P<line>\d+)|(?<=[\s,]):(?P<more>\d+)\b")
+INLINE_NAMESPACE = re.compile(r"^(\w+) = [\[{].*[\]}]$")
+CONVERSION_BEFORE = re.compile(r"([a-z_][a-z0-9_]*),\s*$")
 PARAMS_TABLE = re.compile(r"^\[declare\.params\.(\w+)\]$")
 # how a fact names an entry of a `[declare]` keyed namespace (S10), by the model field the namespace keys:
 # ("key", segments) its key starts with the segments, `{}` the entry's own (one or more, `inactive.view.…`) and `@{}`
 # its keyed segment; ("value", field) its key's last segment is the field (S10: `symbol_scales`, IconStyle.scale) and
 # its value the entry; ("map", field) likewise, the entry a key of its value's table; ("flavor", None) its `when`
 # names `flavor:<entry>` in its conditions, and the default flavour (the list's first, S10) is also named by a state
-# model naming none. A `[declare.params.<group>]` table's `keys`: ("key", ("token", "params", <group>, "{}")).
+# model naming none; ("transition", None) its value holds a transition whose kind is the entry's
+# (`kind = { keyed = { key = "<entry>", … } }`, S2.7's `TransitionKind::Keyed`). A `[declare.params.<group>]` table's
+# `keys`: ("key", ("token", "params", <group>, "{}")).
 NAMED_BY = {
     "color_roles": (("key", ("role", "@{}")),),
     "surface_sets": (("key", ("role", "{}")),),
@@ -1811,6 +1887,7 @@ NAMED_BY = {
     "lcd_filters": (("value", "lcd_filter"),),
     "spec_versions": (("value", "spec_version"),),
     "flavors": (("flavor", None),),
+    "transition_kinds": (("transition", None),),
 }
 
 
@@ -1827,6 +1904,13 @@ def naming_index(items: list, rule) -> dict:
             names = [c[7:] for c in conds if isinstance(c, str) and c.startswith("flavor:")]
             if not names and it.table == "model":
                 names = [None]
+        elif it.table == "fact" and kind == "transition":
+            v = d.get("value")
+            for t in v if isinstance(v, list) else [v]:
+                k = t.get("kind") if isinstance(t, dict) else None
+                keyed = k.get("keyed") if isinstance(k, dict) else None
+                if isinstance(keyed, dict) and isinstance(keyed.get("key"), str):
+                    names.append(keyed["key"])
         elif it.table == "fact" and isinstance(d.get("key"), str):
             parsed = check_facts.key_segments(d["key"])
             segs = parsed[0] if isinstance(parsed, tuple) else []
@@ -1891,6 +1975,7 @@ class Citations:
         self.preset = draft.preset
         self.own = [it for it in draft.items if it.platform == draft.platform and holds_for(it, draft.preset)]
         self.position = {id(it): n for n, it in enumerate(self.own)}
+        self.headers = {(it.file, it.line) for it in self.own}
         self.reads = read_places(draft.facts)
         self.sources = source_lines(sources_text)
         self.index, self.refreshed, self.findings = {}, [], []
@@ -1926,8 +2011,9 @@ class Citations:
         return pick.file, pick.line
 
     def refreshed_part(self, part: str, lines: list) -> list:
-        """A hand-written part's lines, each citation of a subject judged()."""
-        out, ns, group, count = list(lines), None, None, 0
+        """A hand-written part's lines, each citation of a subject judged(), then each in a comment's prose
+        (prose())."""
+        out, ns, group, count, judged = list(lines), None, None, 0, set()
         for i, line in enumerate(lines):
             if part == "declare":
                 opened, params = LIST_OPEN.match(line), PARAMS_TABLE.match(line)
@@ -1942,6 +2028,7 @@ class Citations:
                     ns = None
                 m = ENTRY_CITE.match(line)
                 if m and ns is not None:
+                    judged.add(i)
                     count += 1
                     cited = (m.group("file"), int(m.group("line")))
                     found = self.named(ns, m.group("name"), count == 1)
@@ -1957,6 +2044,7 @@ class Citations:
                 m = SOURCE_CITE.match(line)
                 if not m:
                     continue
+                judged.add(i)
                 named = SOURCE_ID.match(m.group("rest"))
                 cited, sid = (m.group("file"), int(m.group("line"))), named.group("id") if named else None
                 if sid is None or sid not in self.sources:
@@ -1971,12 +2059,95 @@ class Citations:
                 m = ABOVE_CITE.match(line)
                 if not m:
                     continue
+                judged.add(i)
                 key = lines[i + 1].split("=", 1)[0].strip() if i + 1 < len(lines) and "=" in lines[i + 1] else ""
                 got = self.judged(part, repr(key), (m.group("file"), int(m.group("line"))),
                                   self.reads.get((part, key), []))
                 if got is not None:
                     out[i] = f"# {got[0]}:{got[1]}"
+        run = []
+        for i, line in enumerate(out + [""]):
+            if i < len(out) and i not in judged and COMMENT.match(line):
+                run.append(i)
+                continue
+            if run:
+                self.prose(part, out, run)
+            run = []
         return out
+
+    def prose(self, part: str, lines: list, run: list):
+        """The citations in the prose of the comment lines `run` (consecutive indices of `lines`) judged in place:
+        each `docs/facts/<file>.toml:<line>`, and each `:<line>` after it in the same file. Their subjects: where the
+        first line after the run states a keyed namespace inline (`<ns> = { <name> = …, … }`, `<ns> = ["<name>", …]`,
+        a `[declare.params.<group>]` table's `keys`), one citation per entry, each its entry's fact as a list entry's
+        (NAMED_BY); else a citation straight after a conversion's name (`percent_to_fraction, <citation>`,
+        check_fact_citations' table) a fact of the preset a citation of which states it; else, its subject unknown, it
+        is kept where it names a header of the preset's facts or state models (sources.toml's: of a `[[source]]`), and
+        is a finding where it names none. Each refreshed one written as its fact's, `:<line>` where the text before it
+        names that fact's file."""
+        cites, current = [], None
+        for i in run:
+            for m in PROSE_CITE.finditer(lines[i]):
+                if m.group("file"):
+                    current = m.group("file")
+                    cites.append((i, m.span(), current, int(m.group("line")), False))
+                elif current is not None:
+                    cites.append((i, m.span(), current, int(m.group("more")), True))
+        if not cites:
+            return
+        nxt = run[-1] + 1
+        entries, ns = None, None
+        stated = INLINE_NAMESPACE.match(lines[nxt]) if nxt < len(lines) else None
+        if part == "declare" and stated:
+            try:
+                value = tomllib.loads(lines[nxt])[stated.group(1)]
+            except (tomllib.TOMLDecodeError, KeyError):
+                value = None
+            table = next((x for x in reversed(lines[:nxt]) if x.startswith("[")), "")
+            group = PARAMS_TABLE.match(table) if stated.group(1) == "keys" else None
+            group = group.group(1) if group else None
+            ns = f"params.{group}" if group else stated.group(1)
+            entries = list(value) if isinstance(value, dict) else [x for x in value if isinstance(x, str)] \
+                if isinstance(value, list) else None
+        picks = []
+        if entries is not None:
+            where = f"{ns} {entries}"
+            if len(entries) != len(cites):
+                self.findings.append(f"{self.preset}: `{part}` {where}: {len(cites)} citations in its comment for "
+                                     f"{len(entries)} entries")
+                return
+            for n, ((_, _, file, line, _), name) in enumerate(zip(cites, entries)):
+                found = self.named(ns, name, n == 0)
+                if found is None:
+                    self.findings.append(f"{self.preset}: `{part}` {ns} {name!r}: no rule finds the fact naming an "
+                                         f"entry of `{ns}` (NAMED_BY)")
+                    return
+                picks.append(self.judged(part, f"{ns} {name!r}", (file, line), found))
+        else:
+            for i, (start, _), file, line, _ in cites:
+                conv = CONVERSION_BEFORE.search(lines[i][:start])
+                if conv and conv.group(1) in check_facts.conversions():
+                    found = [it for it in self.own if it.table == "fact" and any(
+                        conv.group(1) in (c.data.get("conversion") or []) for c in it.cites)]
+                    picks.append(self.judged(part, f"conversion {conv.group(1)}", (file, line), found))
+                elif (file, line) in self.headers or file == SOURCES and line in self.sources.values():
+                    picks.append((file, line))
+                else:
+                    self.findings.append(f"{self.preset}: `{part}` {file}:{line}: names no fact, state model or "
+                                         f"source of the preset's")
+                    picks.append(None)
+        written = None
+        edits = []
+        for (i, span, file, line, more), got in zip(cites, picks):
+            got = got or (file, line)
+            if more and got[0] == written:
+                text = f":{got[1]}"
+            else:
+                text = f"{got[0]}:{got[1]}"
+                written = got[0]
+            edits.append((i, span, text))
+        for i, (start, end), text in reversed(edits):
+            lines[i] = lines[i][:start] + text + lines[i][end:]
 
 
 # ------------------------------------------------------------------------------------------- combinations
@@ -3676,6 +3847,74 @@ def naming_cases() -> list:
     return failures
 
 
+def _cited(file, line, data, conversion):
+    return check_facts.Item(f"docs/facts/kde/{file}.toml", line, "fact", "kde", data,
+                            [check_facts.Cite(line + 1, {"kind": "published", "conversion": [conversion]})])
+
+
+# a citation in a comment's prose (ADD-A144): the facts it may name, beside NAMING_ITEMS
+PROSE_ITEMS = NAMING_ITEMS + [
+    _item("button", 29, {"key": "button.menu_indicator.transitions",
+                         "value": [{"properties": ["glyph"], "kind": {"keyed": {"key": "normal", "params": {}}}}]}),
+    _item("button", 31, {"key": "button.menu_indicator.transitions",
+                         "value": [{"properties": ["glyph"], "kind": {"keyed": {"key": "pointer_over", "params": {}}}}]}),
+    _item("button", 33, {"key": "button.menu_indicator.transitions", "when": {"states": ["pressed"]},
+                         "value": [{"properties": ["glyph"], "kind": {"keyed": {"key": "pressed", "params": {}}}}]}),
+    _cited("tokens", 35, {"key": "token.params.opacity.border", "value": 0.15}, "percent_to_fraction"),
+]
+# (the comment lines and the line they state, the comment lines --write gives, "finding" where it keeps them and
+# lists a finding)
+PROSE_CASES = [
+    # one citation per entry of a keyed namespace stated inline, each its entry's fact (NAMED_BY), in their order
+    (["# docs/facts/kde/button.toml:1, :2, :3 (AnimatedIcon states)",
+      "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     ["# docs/facts/kde/button.toml:29, :31, :33 (AnimatedIcon states)"]),
+    (["# docs/facts/kde/button.toml:29, :31, :33 (AnimatedIcon states)",
+      "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     ["# docs/facts/kde/button.toml:29, :31, :33 (AnimatedIcon states)"]),
+    # a list running over two comment lines, each `:<line>` in the file before it; a fact found in another file
+    # written with its file, and a later `:<line>` then read in that one
+    (["# the states, docs/facts/kde/tokens.toml:7, :8 and", "# :1",
+      "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     ["# the states, docs/facts/kde/button.toml:29, :31 and", "# :33"]),
+    (["# the states, docs/facts/kde/button.toml:29, :2 and", "# docs/facts/kde/tokens.toml:7",
+      "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     ["# the states, docs/facts/kde/button.toml:29, :31 and", "# docs/facts/kde/button.toml:33"]),
+    (["# docs/facts/kde/roles.toml:1", 'color_roles = ["hover_tint"]'], ["# docs/facts/kde/roles.toml:5"]),
+    # a citation count that is not the entries' is none of them, and a namespace NAMED_BY has no rule for
+    (["# docs/facts/kde/button.toml:29, :31", "transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }"],
+     "finding"),
+    (["# docs/facts/kde/tokens.toml:1", 'blend_modes = ["multiply"]'], "finding"),
+    # a citation after a conversion's name: a fact a citation of which states that conversion
+    (["# fractions (percent_to_fraction, docs/facts/kde/tokens.toml:1)", 'unit = "fraction"'],
+     ["# fractions (percent_to_fraction, docs/facts/kde/tokens.toml:35)"]),
+    (["# fractions (percent_to_fraction, docs/facts/kde/tokens.toml:35)", 'unit = "fraction"'],
+     ["# fractions (percent_to_fraction, docs/facts/kde/tokens.toml:35)"]),
+    (["# fractions (not_a_conversion, docs/facts/kde/tokens.toml:36)", 'unit = "fraction"'], "finding"),
+    # any other: kept where it names a fact's header, else a finding, never a guess
+    (["# as docs/facts/kde/tokens.toml:7 states", 'unit = "fraction"'],
+     ["# as docs/facts/kde/tokens.toml:7 states"]),
+    (["# as docs/facts/kde/tokens.toml:8 states", 'unit = "fraction"'], "finding"),
+]
+
+
+def prose_cases() -> list:
+    """Citations in a comment's prose over PROSE_ITEMS on kde-breeze: each PROSE_CASES entry in a `declare` block,
+    refreshed, kept, or kept and listed ("finding")."""
+    failures = []
+    draft = Draft("kde-breeze", "kde", [], [], [], [], [], {}, [], 0, items=PROSE_ITEMS)
+    for lines, want in PROSE_CASES:
+        cites = Citations(draft, "")
+        got = cites.refresh({"declare": lines})["declare"]
+        comments = len(lines) - 1
+        expected = lines if want == "finding" else want + lines[comments:]
+        if got != expected or bool(cites.findings) != (want == "finding") or bool(cites.refreshed) != (
+                want != "finding" and want != lines[:comments]):
+            failures.append(f"prose citations {lines}: {got}, refreshed {cites.refreshed}, findings "
+                            f"{cites.findings}")
+    return failures
+
+
 def citation_cases(root: Path) -> list:
     """The hand-written citations (the docstring's *The hand-written citations*): --check fails on a stale one and
     lists it, --write points each stale one at its fact and changes nothing else, keeps and lists one whose fact none
@@ -3961,10 +4200,11 @@ def self_test() -> int:
     icon_only, route_fact = sized({"variants": ["icon_only"]}, "U18"), sized({"variants": ["route"]}, "U19")
     route_model = {"variants": ["icon_only", "route"], "sizes": ["small", "regular"], "default_size": "regular",
                    "sizes_by_variant": [{"variant": "route", "sizes": []}]}
+    # (the icon-only fact last: at an element holding both variants the last fact holding applies, S17)
     for model, want in ((route_model, [("widgets.button.body.min_width", "U19")]),
                         ({**route_model, "variant_sets": [["icon_only", "route"]]},
-                         [("widgets.button.body.min_width", ["U18", "U19"])])):
-        got = [(path, uid) for path, uid, _ in pending_table(None, per_size + [icon_only, route_fact], [],
+                         [("widgets.button.body.min_width", ["U19", "U18"])])):
+        got = [(path, uid) for path, uid, _ in pending_table(None, per_size + [route_fact, icon_only], [],
                                                              repeat_block, {("button", None): model})]
         if got != want:
             failures.append(f"pending_table over per-size rules ({model.get('variant_sets')}): {got}, expected "
@@ -3990,6 +4230,76 @@ def self_test() -> int:
     if got != [("widgets.button.body.min_width", "U21")]:
         failures.append(f"pending_table under a rule refusing the variants exclusive with its own: {got}, expected "
                         f"the help variant's U21 alone")
+    # S17 *Where a listed path is found* (ADD-A144): a pending fact that later facts of its key shadow between them,
+    # each at some of the elements the state model draws, applies nowhere and lists nothing; the later pending facts
+    # list the path with their own ids alone
+    flat_model = {("button", None): {"variants": ["flat", "primary"]}}
+    shadowed_pending = sized({}, "U30")
+    for later_status, want in (("rule", []), (PENDING, [("widgets.button.body.min_width", ["U31", "U32"])])):
+        between = [sized({"variants": ["flat"]}, "U31", later_status), sized({"not_variants": ["flat"]}, "U32",
+                                                                            later_status)]
+        got = [(path, uid) for path, uid, _ in pending_table(None, [shadowed_pending] + between, [], repeat_block,
+                                                             flat_model)]
+        if got != want:
+            failures.append(f"pending_table under two later {later_status} facts shadowing it between them: {got}, "
+                            f"expected {want}")
+    # a later fact of a block holding the key shadows it too, beside a later fact of its own key; a block whose table
+    # leaves the key out holds none of it
+    def mnemonic(key, uid, when, status=PENDING, value=None):
+        f = any_fact(key, uid, "widget", when, widget="button", status=status)
+        if value is not None:
+            f.item.data = {"value": value}
+        f.rule_when = f.when
+        return f
+
+    thickness = "button.label.text.mnemonic_decoration.thickness"
+    for block_value, want in (("absent", []), ({"offset": "1px"}, [(f"widgets.{thickness}", "U33")])):
+        case_facts = [mnemonic(thickness, "U33", {}), mnemonic(thickness, "", {"variants": ["flat"]}, "rule", "1px"),
+                      mnemonic("button.label.text.mnemonic_decoration", "", {"not_variants": ["flat"]}, "rule",
+                               block_value)]
+        got = [(path, uid) for path, uid, _ in pending_table(None, case_facts, [], repeat_block, flat_model)]
+        if got != want:
+            failures.append(f"pending_table under a later fact of its key and of its block ({block_value!r}): {got}, "
+                            f"expected {want}")
+    # a part not drawn lists none of its fields (S12 judges a missing field only where its part resolves drawn): a
+    # pending field holding only where a rule makes its part absent, or draws it as another, lists nothing; a later
+    # fact drawing the part in some of those combinations leaves it listed
+    rendering = "button.icon.icon.rendering_mode"
+    hidden = [("absent", None, []), ({"drawn_as": "label"}, None, []),
+              ("absent", ("present", {"states": ["hover"]}), [(f"widgets.{rendering}", "U34")]),
+              ("absent", (None, {"states": ["hover"]}), [(f"widgets.{rendering}", "U34")]),
+              ("absent", ("absent", {"states": ["hover"]}), [])]
+    for models in ({}, flat_model):
+        for hiding, later, want in hidden:
+            case_facts = [mnemonic(rendering, "U34", {"variants": ["flat"]}),
+                          mnemonic("button.icon", "", {"variants": ["flat"]}, "rule", hiding)]
+            if later:
+                case_facts.append(mnemonic("button.icon", "U35", later[1], PENDING if later[0] is None else "rule",
+                                           later[0]))
+            got = [(path, uid) for path, uid, _ in pending_table(None, case_facts, [], repeat_block, models)
+                   if path.startswith(f"widgets.{rendering}")]
+            if got != want:
+                failures.append(f"pending_table under a part {hiding!r}, then {later} ({bool(models)} model): {got}, "
+                                f"expected {want}")
+    # a paint's `Append` states no paint where nothing lies beneath it (S6.1, S12): an earlier rule or a base
+    # appending over the key is beneath no pending fact of it, which stays listed
+    def paint(uid, when, status=PENDING, value=None):
+        f = mnemonic("button.body.fill", uid, when, status, value)
+        f.typ = "Value<Paint>"
+        return f
+
+    appended = {"append": ["#ffffff"]}
+    pending_fill = paint("U36", {"variants": ["flat"]})
+    for case_facts, case_bases, want in (
+            ([paint("", {}, "rule", appended), pending_fill], [], [("widgets.button.body.fill", "U36")]),
+            ([paint("", {}, "rule", "#ffffff"), pending_fill], [], []),
+            ([pending_fill], [("widgets", None, ("button", "body"), ("fill",), appended, paint("", {}, "base",
+                                                                                              appended))],
+             [("widgets.button.body.fill", "U36")])):
+        got = [(path, uid) for path, uid, _ in pending_table(None, case_facts, case_bases, repeat_block)]
+        if got != want:
+            failures.append(f"pending_table over a paint {[f.item.data for f in case_facts[:-1]]}, bases "
+                            f"{[b[4] for b in case_bases]}: {got}, expected {want}")
     # a component's pending presence is refused, as the reader refuses its key until components are typed
     try:
         pending_table(None, [any_fact("component.rail.item", "U17", "widget")], [])
@@ -4078,11 +4388,11 @@ def self_test() -> int:
     pending_width = rule_fact("button.body.min_width", {}, None)
     pending_width.status = PENDING
     wide = {("button", None): {"sizes": ["small", "regular"]}, ("button", "wide"): {"sizes": ["small", "large"]}}
-    beneath = [ruled_beneath(f, by_size + [f], "light", models_holding(wide, "button", f.when)) for f in (
+    listed = [listed_in(f, by_size + [f], "light", models_holding(wide, "button", f.when)) for f in (
         pending_width, replace(pending_width, when={"not_conditions": ["flavor:wide"]}),
         replace(pending_width, when={"conditions": ["flavor:wide"]}))]
-    if beneath != [False, True, False]:
-        failures.append(f"ruled_beneath over each flavour's state model: {beneath}, expected [False, True, False]")
+    if listed != [True, False, True]:
+        failures.append(f"listed_in over each flavour's state model: {listed}, expected [True, False, True]")
     # macOS's route button: a variant whose entry takes no size draws its elements with none, so the sizes' rules
     # cover them only beside a stated fact under that variant alone; a pending one covers nothing (the field listed,
     # no gap), and none at all is a gap
@@ -4429,6 +4739,7 @@ def self_test() -> int:
                             f"written {written.read_text(encoding='utf-8') != stale}")
         failures += citation_cases(Path(tmp) / "cites")
         failures += naming_cases()
+        failures += prose_cases()
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
