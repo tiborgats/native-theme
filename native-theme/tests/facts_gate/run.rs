@@ -6,18 +6,20 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use native_theme::gate::{
-    Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole,
-    Tolerance, Unread, When, content_variants, context_held, is_listed_default, listed_key,
-    names_read, parse_key, parse_value, parse_when, parts, set_whole, widgets,
+    Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Query, Resolved,
+    SetWhole, Tolerance, Unread, When, content_variants, context_held, is_listed_default,
+    listed_key, names_read, parse_key, parse_value, parse_when, parts, set_whole, widgets,
 };
 use native_theme::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
 
 use super::facts::{self, Fact, Stated};
 use super::model::{self, Block, Mentioned, Model, Point, Space, strings};
+use super::timing::{Step, timed};
 use super::units::Units;
 
 /// The gate's font measurement (S17 *The gate*, the design's "fixed,
@@ -1954,6 +1956,7 @@ fn check(
     split: &mut Split,
     report: &mut Report,
 ) {
+    let started = Instant::now();
     let mut elsewhere = Report::default();
     let shared = split.shard.shared(report, &mut elsewhere);
     let schemes = preset.schemes();
@@ -2112,10 +2115,16 @@ fn check(
         let mut report = Report::default();
         threads.checking.fetch_add(1, Ordering::Relaxed);
         if let Some(vector) = vectors.get(*at) {
-            let resolved = resolve_vector(preset, keys, vector, flavor, &count, &mut report);
+            let resolved = timed(Step::Resolve, || {
+                resolve_vector(preset, keys, vector, flavor, &count, &mut report)
+            });
             if let Some((normal, perturbed)) = resolved {
-                let passes = std::iter::once((Pass::Normal, Some(normal)))
-                    .chain(std::iter::once((Pass::Perturbed, perturbed)));
+                let passes = std::iter::once((Pass::Normal, Some(&normal)))
+                    .chain(std::iter::once((Pass::Perturbed, perturbed.as_ref())));
+                // The normal pass's probes and the facts that hold in its
+                // resolution, which the perturbed pass replays where it
+                // reads alike ([`replays`]).
+                let mut probed: Option<(Probed, HashMap<&str, Holding<'_>>)> = None;
                 for (pass, resolved) in passes {
                     let Some(resolved) = resolved else {
                         continue;
@@ -2123,7 +2132,7 @@ fn check(
                     if global_vectors.contains(vector) {
                         check_globals(
                             preset.id(),
-                            &resolved,
+                            resolved,
                             keys,
                             vector,
                             (pass, drawing),
@@ -2131,15 +2140,15 @@ fn check(
                             &mut report,
                         );
                         if pass == Pass::Normal {
-                            definitions(preset.id(), &resolved, &root, &mut report, &|| {
+                            definitions(preset.id(), resolved, &root, &mut report, &|| {
                                 format!("{vector:?}")
                             });
                         }
                     }
-                    let holding = holding(&widgets, &resolved);
+                    let holding = holding(&widgets, resolved);
                     let run = Run {
                         preset: preset.id(),
-                        resolved: &resolved,
+                        resolved,
                         vector,
                         not_drawn: &not_drawn,
                         pass,
@@ -2149,7 +2158,23 @@ fn check(
                         widgets: &widgets,
                         holding: &holding,
                     };
-                    check_widgets(&run, &|each| plan(vector, each), &mut report);
+                    let combinations = |each: &mut dyn FnMut(Combination)| plan(vector, each);
+                    match &probed {
+                        Some((normal_probed, normal_holding))
+                            if replays(&normal, resolved, &root, normal_holding, &holding) =>
+                        {
+                            replay(&run, normal_probed, &combinations, &mut report);
+                        }
+                        _ => {
+                            if pass == Pass::Perturbed {
+                                super::timing::note(Step::Unlike);
+                            }
+                            let found = widgets_checked(&run, &combinations, &mut report);
+                            if pass == Pass::Normal {
+                                probed = Some((found, holding));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2160,6 +2185,10 @@ fn check(
     for (_, found) in found {
         report.merge(found);
     }
+    super::timing::print(
+        &format!("{} {flavor:?}, {} vectors", preset.id(), order.len()),
+        started.elapsed(),
+    );
 }
 
 /// A condition vector resolved for the normal run and the perturbed run,
@@ -2316,6 +2345,38 @@ impl<'a, 'f> Run<'a, 'f> {
         let keys = self.widgets.get(widget).unwrap_or(&NO_KEYS);
         let holding = self.holding.get(widget).unwrap_or(&NO_WHENS);
         applying_in(keys, holding, session, report, describe)
+    }
+
+    /// [`Run::applying`] and the session's step signature
+    /// ([`Session::signature`]) at once, each part's element matched once
+    /// ([`Session::probed`]): what a probe of shapes alone asks.
+    ///
+    /// [`Session::signature`]: native_theme::gate::Session::signature
+    /// [`Session::probed`]: native_theme::gate::Session::probed
+    fn probed(
+        &self,
+        widget: &str,
+        session: &native_theme::gate::Session<'_>,
+        report: &mut Report,
+        describe: &dyn Fn() -> String,
+    ) -> (Applying<'_, 'f>, Vec<u32>) {
+        static NO_KEYS: WidgetKeys<'static, 'static> = WidgetKeys {
+            keys: Vec::new(),
+            whens: Vec::new(),
+            starts: Vec::new(),
+            classes: Vec::new(),
+        };
+        static NO_WHENS: Holding<'static> = Holding {
+            whens: Vec::new(),
+            at: Vec::new(),
+        };
+        let keys = self.widgets.get(widget).unwrap_or(&NO_KEYS);
+        let holding = self.holding.get(widget).unwrap_or(&NO_WHENS);
+        let (holds, steps) = session.probed(&holding.whens);
+        (
+            applying_from(keys, holding, &holds, report, describe),
+            steps,
+        )
     }
 }
 
@@ -2480,16 +2541,57 @@ fn found_listed(
 }
 
 /// What the probe of one combination found: skipped (a context or a
-/// condition the gate cannot set), a failure that ends it, named by
-/// `not_drawn`, or its signature with the failures its facts' order gives.
+/// condition the gate cannot set), a failure that ends it (without its
+/// pass's label), named by `not_drawn`, or its signature with the failures
+/// its facts' order gives.
 enum Probe {
     Skipped,
     Failed(String),
     NotDrawn,
     Queried {
         failures: Vec<String>,
-        signature: (String, Vec<u32>, Vec<u32>),
+        signature: Signature,
     },
+}
+
+/// A combination's element, which of its widget's steps apply with each
+/// part's answer, and each key's applying fact ([`signature`]): two
+/// combinations with the same signature resolve every key alike, so the
+/// gate compares one of them (S17: "reusing what the set's rules share").
+type Signature = (String, Vec<u32>, Vec<u32>);
+
+/// One pass's probes of a condition vector's combinations
+/// ([`check_widgets`]), what the perturbed pass replays ([`replay`]).
+#[derive(Default)]
+struct Probed {
+    /// The failures that ended a probe, without the pass's label, each
+    /// once, in the order first found.
+    failures: Vec<String>,
+    /// Each of `failures` by a hash of its text ([`text_hash`]).
+    seen: HashMap<u64, Vec<usize>>,
+    /// The combinations skipped, those the enumeration left out among
+    /// them.
+    skipped: u64,
+    /// The distinct combinations, the first of each signature, in order.
+    queried: Vec<Combination>,
+    /// Each distinct signature, by its combination's place in `queried`.
+    signatures: HashMap<Signature, usize>,
+}
+
+impl Probed {
+    /// `failure` found, held where it is not already.
+    fn failed(&mut self, failure: String) {
+        let hash = text_hash(&failure);
+        let places = self.seen.entry(hash).or_default();
+        if places
+            .iter()
+            .any(|at| self.failures.get(*at) == Some(&failure))
+        {
+            return;
+        }
+        places.push(self.failures.len());
+        self.failures.push(failure);
+    }
 }
 
 /// How many combinations [`check_widgets`] probes, or compares, at once
@@ -2629,7 +2731,24 @@ fn applying_in<'w, 'f>(
     report: &mut Report,
     describe: &dyn Fn() -> String,
 ) -> Applying<'w, 'f> {
-    let holds = session.holds_each(&holding.whens);
+    applying_from(
+        widget,
+        holding,
+        &session.holds_each(&holding.whens),
+        report,
+        describe,
+    )
+}
+
+/// [`applying_in`], whether each of `holding`'s `when`s holds given in
+/// `holds`.
+fn applying_from<'w, 'f>(
+    widget: &'w WidgetKeys<'w, 'f>,
+    holding: &Holding<'_>,
+    holds: &[bool],
+    report: &mut Report,
+    describe: &dyn Fn() -> String,
+) -> Applying<'w, 'f> {
     let mut held = vec![false; widget.whens.len()];
     for (at, place) in &holding.at {
         if let (Some(slot), Some(holds)) = (held.get_mut(*at), holds.get(*place)) {
@@ -2833,67 +2952,84 @@ fn parallel_on<T: Sync, R: Send>(
     done.into_iter().map(|(_, result)| result).collect()
 }
 
-/// Every widget key over a condition vector's combinations, which
-/// `combinations` gives in turn, each distinct signature compared once, at
-/// its first combination; a combination a `not_drawn` entry names, as the
-/// query matches it, is not queried (S17). The combinations are probed, and
-/// the distinct ones compared, on the vector's share of the threads
-/// ([`Threads`]), each step's findings recorded in the combinations' order.
-fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mut Report) {
+/// A condition vector's combinations, which `combinations` gives in turn,
+/// probed, each one's parts queried as `query` says: the failures that end
+/// a probe and those its facts' order gives recorded in the combinations'
+/// order, and the distinct ones kept, the first of each signature, for
+/// [`compare_widgets`] to compare and the perturbed pass to replay
+/// ([`replay`]); a combination a `not_drawn` entry names, as the query
+/// matches it, is not queried (S17). The combinations are probed on the
+/// vector's share of the threads ([`Threads`]).
+fn check_widgets(
+    run: &Run<'_, '_>,
+    combinations: &Combinations<'_>,
+    query: Query,
+    report: &mut Report,
+) -> Probed {
     let (resolved, vector, pass) = (run.resolved, run.vector, run.pass);
     let metrics = StubMetrics;
     let probe = |combination: &Combination| {
         let describe = || format!("{vector:?} {combination:?}");
-        let session = match resolved.session(combination, run.root, &metrics) {
-            Ok(session) => session,
-            Err(Unread::NotHeld(_)) => return Probe::Skipped,
-            Err(Unread::Refused(why)) => {
-                return Probe::Failed(format!("{pass:?}: {why} under {}", describe()));
-            }
-        };
-        if run
+        // A combination a `not_drawn` entry names is not the state
+        // model's (S17), its parts never queried.
+        let not_drawn = run
             .not_drawn
             .get(&combination.widget)
-            .is_some_and(|whens| whens.iter().any(|when| session.root_holds(when)))
-        {
-            return Probe::NotDrawn;
-        }
+            .map_or(&[][..], Vec::as_slice);
+        let session = match timed(Step::Session, || {
+            resolved.session_drawn(combination, run.root, &metrics, not_drawn, query)
+        }) {
+            Ok(Some(session)) => session,
+            Ok(None) => return Probe::NotDrawn,
+            Err(Unread::NotHeld(_)) => return Probe::Skipped,
+            Err(Unread::Refused(why)) => {
+                return Probe::Failed(format!("{why} under {}", describe()));
+            }
+        };
         if let Some(why) = session.unavailable() {
-            return Probe::Failed(format!(
-                "{pass:?}: not available ({why}) under {}",
-                describe()
-            ));
+            return Probe::Failed(format!("not available ({why}) under {}", describe()));
         }
         let mut probe = Report::default();
-        let applying = run.applying(&combination.widget, &session, &mut probe, &describe);
-        // Each key's applying fact by its place among the key's facts, the
-        // widget's keys always in one order.
-        let facts: Vec<u32> = applying
-            .at
-            .iter()
-            .map(|at| at.and_then(|at| u32::try_from(at).ok()).unwrap_or(u32::MAX))
-            .collect();
-        let element = format!(
-            "{} {:?} {:?}",
-            combination.widget, combination.context, combination.direction
-        );
+        let signature = match query {
+            Query::Styles => {
+                let applying = timed(Step::Applying, || {
+                    run.applying(&combination.widget, &session, &mut probe, &describe)
+                });
+                timed(Step::Signature, || {
+                    signature(combination, &session, &applying)
+                })
+            }
+            Query::Shapes => {
+                let (applying, steps) = timed(Step::Applying, || {
+                    run.probed(&combination.widget, &session, &mut probe, &describe)
+                });
+                signature_of(combination, steps, &applying)
+            }
+        };
         Probe::Queried {
             failures: probe.failures,
-            signature: (element, session.signature(), facts),
+            signature,
         }
     };
     // Probed in chunks as they are given, each chunk's findings recorded in
     // order before the next is probed, so only a chunk's combinations and
     // probes are held at once, and the distinct ones kept (the signatures
     // span every chunk).
-    let mut signatures: HashSet<(String, Vec<u32>, Vec<u32>)> = HashSet::new();
-    let mut queried: Vec<Combination> = Vec::new();
+    let mut probed = Probed::default();
     let mut probe_chunk = |chunk: &mut Vec<Combination>, report: &mut Report| {
-        let probes = parallel_on(run.threads.each(), chunk, probe);
+        let probes = parallel_on(run.threads.each(), chunk, |combination| {
+            timed(Step::Probe, || probe(combination))
+        });
         for (combination, probe) in chunk.drain(..).zip(probes) {
             match probe {
-                Probe::Skipped => report.combinations_skipped += 1,
-                Probe::Failed(failure) => report.fail(failure),
+                Probe::Skipped => {
+                    report.combinations_skipped += 1;
+                    probed.skipped += 1;
+                }
+                Probe::Failed(failure) => {
+                    report.fail(format!("{pass:?}: {failure}"));
+                    probed.failed(failure);
+                }
                 Probe::NotDrawn => {}
                 Probe::Queried {
                     failures,
@@ -2902,8 +3038,12 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
                     for failure in failures {
                         report.fail(failure);
                     }
-                    if signatures.insert(signature) {
-                        queried.push(combination);
+                    let next = probed.queried.len();
+                    if let std::collections::hash_map::Entry::Vacant(vacant) =
+                        probed.signatures.entry(signature)
+                    {
+                        vacant.insert(next);
+                        probed.queried.push(combination);
                     }
                 }
             }
@@ -2918,33 +3058,189 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
     });
     probe_chunk(&mut chunk, report);
     report.combinations_skipped += left_out;
-    // The distinct ones compared in chunks too, each chunk's findings
-    // merged in order before the next is compared.
+    probed.skipped += left_out;
+    probed
+}
+
+/// The distinct combinations `probed` holds compared in `run`, in chunks,
+/// each chunk's findings merged into `report` in order before the next is
+/// compared; where `alike`, each first asked whether it probes in `run`
+/// as `probed` holds it ([`compare_widget`]). `false` where one does not,
+/// its chunk's findings and those after it left out.
+fn compare_widgets(run: &Run<'_, '_>, probed: &Probed, alike: bool, report: &mut Report) -> bool {
     let threads = run.threads.each();
-    for chunk in queried.chunks(PROBED_BY_THREAD.saturating_mul(threads)) {
-        let found = parallel_on(threads, chunk, |combination| {
+    let size = PROBED_BY_THREAD.saturating_mul(threads);
+    let memo = Memo::default();
+    for (chunk_at, chunk) in probed.queried.chunks(size).enumerate() {
+        let items: Vec<(usize, &Combination)> = chunk
+            .iter()
+            .enumerate()
+            .map(|(at, combination)| {
+                (
+                    chunk_at.saturating_mul(size).saturating_add(at),
+                    combination,
+                )
+            })
+            .collect();
+        let found = parallel_on(threads, &items, |(at, combination)| {
             let mut report = Report::default();
-            compare_widget(run, combination, &mut report);
-            report
+            let expected = alike.then_some((probed, *at));
+            let compared = timed(Step::Compare, || {
+                compare_widget(run, combination, expected, &memo, &mut report)
+            });
+            (compared, report)
         });
-        for found in found {
+        if found.iter().any(|(compared, _)| !compared) {
+            return false;
+        }
+        for (_, found) in found {
             report.merge(found);
         }
     }
+    true
+}
+
+/// The perturbed pass's widget checks in `run` from the normal pass's
+/// probes `probed` (S17: "reusing what the set's rules share"): its
+/// failures recorded again under the pass's label, its skipped
+/// combinations counted again, its distinct combinations compared in
+/// `run`'s resolution. The probes read the same in both resolutions
+/// ([`replays`]), so the perturbed pass's own probes find the same
+/// failures, skipped combinations and distinct ones in the same order; the
+/// failures a pass's label does not name are the normal pass's own, held
+/// in `report` already. Where a distinct combination does not probe in
+/// `run` as `probed` holds it, `run`'s combinations are probed and
+/// compared as the normal pass's are ([`check_widgets`]).
+fn replay(
+    run: &Run<'_, '_>,
+    probed: &Probed,
+    combinations: &Combinations<'_>,
+    report: &mut Report,
+) {
+    let mut replayed = Report::default();
+    for failure in &probed.failures {
+        replayed.fail(format!("{:?}: {failure}", run.pass));
+    }
+    replayed.combinations_skipped += probed.skipped;
+    if compare_widgets(run, probed, true, &mut replayed) {
+        super::timing::note(Step::Replayed);
+        report.merge(replayed);
+    } else {
+        super::timing::note(Step::Differed);
+        widgets_checked(run, combinations, report);
+    }
+}
+
+/// [`check_widgets`] in `run`, each combination's parts queried for their
+/// shapes alone ([`Query::Shapes`]), which is all a probe reads, and each
+/// distinct combination first asked whether it probes with its parts'
+/// styles queried as it did so ([`compare_widgets`]): two combinations
+/// with the same signature resolve every key alike, so a style resolving
+/// for one resolves for the other. Where one does not probe so, the pass's
+/// findings are left out and its combinations probed with their parts'
+/// styles queried ([`Query::Styles`]).
+fn widgets_checked(
+    run: &Run<'_, '_>,
+    combinations: &Combinations<'_>,
+    report: &mut Report,
+) -> Probed {
+    let mut shaped = Report::default();
+    let probed = check_widgets(run, combinations, Query::Shapes, &mut shaped);
+    if compare_widgets(run, &probed, true, &mut shaped) {
+        report.merge(shaped);
+        probed
+    } else {
+        super::timing::note(Step::Unshaped);
+        let probed = check_widgets(run, combinations, Query::Styles, report);
+        compare_widgets(run, &probed, false, report);
+        probed
+    }
+}
+
+/// Whether the perturbed pass's widget checks in `perturbed` replay the
+/// normal pass's in `normal` ([`replay`]): every combination's probe reads
+/// the two alike ([`Resolved::probes_alike`]), and the facts that hold in
+/// each, `normal_holding` and `holding`, are the same.
+fn replays(
+    normal: &Resolved,
+    perturbed: &Resolved,
+    root: &RootInputs,
+    normal_holding: &HashMap<&str, Holding<'_>>,
+    holding: &HashMap<&str, Holding<'_>>,
+) -> bool {
+    normal_holding.len() == holding.len()
+        && normal_holding.iter().all(|(widget, normal)| {
+            holding
+                .get(widget)
+                .is_some_and(|holding| holding.at == normal.at)
+        })
+        && normal.probes_alike(perturbed, root)
+}
+
+/// A combination's signature ([`Probe::Queried`]): its element, which of
+/// its widget's steps apply to it with each part's answer
+/// ([`Session::signature`]), and each key's applying fact by its place
+/// among the key's facts, the widget's keys always in one order.
+///
+/// [`Session::signature`]: native_theme::gate::Session::signature
+fn signature(
+    combination: &Combination,
+    session: &native_theme::gate::Session<'_>,
+    applying: &Applying<'_, '_>,
+) -> Signature {
+    signature_of(combination, session.signature(), applying)
+}
+
+/// [`signature`], the steps that apply with each part's answer given in
+/// `steps`.
+fn signature_of(
+    combination: &Combination,
+    steps: Vec<u32>,
+    applying: &Applying<'_, '_>,
+) -> Signature {
+    let facts: Vec<u32> = applying
+        .at
+        .iter()
+        .map(|at| at.and_then(|at| u32::try_from(at).ok()).unwrap_or(u32::MAX))
+        .collect();
+    let element = format!(
+        "{} {:?} {:?}",
+        combination.widget, combination.context, combination.direction
+    );
+    (element, steps, facts)
 }
 
 /// Every widget key of `combination`, queried, compared with the fact that
-/// applies.
-fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Report) {
+/// applies, what its session's queries answer read from `memo` where an
+/// earlier distinct combination's session asked them; where `expected`
+/// names it, `probed`'s distinct combination at its place, only once it
+/// probes in `run` with the signature `probed` holds for it. `false` where
+/// it does not, nothing compared.
+fn compare_widget(
+    run: &Run<'_, '_>,
+    combination: &Combination,
+    expected: Option<(&Probed, usize)>,
+    memo: &Memo,
+    report: &mut Report,
+) -> bool {
     let (resolved, vector, pass) = (run.resolved, run.vector, run.pass);
     let metrics = StubMetrics;
     let describe = || format!("{vector:?} {combination:?}");
     let Ok(session) = resolved.session(combination, run.root, &metrics) else {
-        return;
+        return expected.is_none();
     };
     let mut probe = Report::default();
     let applying = run.applying(&combination.widget, &session, &mut probe, &describe);
+    if let Some((probed, at)) = expected
+        && probed
+            .signatures
+            .get(&signature(combination, &session, &applying))
+            != Some(&at)
+    {
+        return false;
+    }
     report.queried += 1;
+    let asked = memo.of(combination, &session);
     let widget_keys = &applying.widget.keys;
     let facts = &applying.facts();
     for (index, (key, fact)) in widget_keys.iter().zip(facts.iter().copied()).enumerate() {
@@ -2974,7 +3270,12 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
                 ..
             }) = fact
             && (!session.drawn(&key.key)
-                || listed_or_failed(session.listed(&key.key), &key.name, report, &describe))
+                || listed_or_failed(
+                    asked.answer(Asked::Listed(index), || session.listed(&key.key)),
+                    &key.name,
+                    report,
+                    &describe,
+                ))
         {
             found_listed(report, run.preset, key, None, id);
         }
@@ -3018,11 +3319,29 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
         ) {
             Verdict::Compare(value, tolerance) => {
                 let except = stated_below(widget_keys, facts, index, fact);
-                match session.synthetic(&key.key, Some(value), &except) {
+                // A fact's own value is the same wherever it applies; a
+                // value composed from leaves is read anew.
+                let own = fact
+                    .and_then(|fact| fact.value.as_ref())
+                    .is_some_and(|own| std::ptr::eq(own, value));
+                let at = std::ptr::from_ref(value).addr();
+                let synthetic = || session.synthetic(&key.key, Some(value), &except);
+                let synthetic = if own {
+                    asked.answer(Asked::Synthetic(index, at, except.clone()), synthetic)
+                } else {
+                    synthetic()
+                };
+                match synthetic {
                     Ok(true) => synthetic_skip(report, &place, &key.name, pass),
                     Ok(false) => {
                         let tolerance = tolerance.drawn_by(run.drawing);
-                        let outcome = session.compare_except(&key.key, value, &tolerance, &except);
+                        let compare =
+                            || session.compare_except(&key.key, value, &tolerance, &except);
+                        let outcome = if own {
+                            asked.answer(Asked::Compared(index, at, except.clone()), compare)
+                        } else {
+                            compare()
+                        };
                         record(outcome, &key.name, &place, report, &describe, pass);
                     }
                     Err(unread) => {
@@ -3031,7 +3350,9 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
                 }
             }
             Verdict::Drawn if pass == Pass::Normal => {
-                let outcome = session.compare(&key.key, None, &Tolerance::quote());
+                let outcome = asked.answer(Asked::Drawn(index), || {
+                    session.compare(&key.key, None, &Tolerance::quote())
+                });
                 record(
                     outcome,
                     &key.name,
@@ -3043,6 +3364,91 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
             }
             Verdict::Drawn | Verdict::Done => {}
         }
+    }
+    true
+}
+
+/// What the sessions of a condition vector's distinct combinations
+/// answered in one pass ([`compare_widgets`]), by their element and the
+/// steps that apply to it with each part's answer
+/// ([`Session::signature`]): two such sessions resolve every key alike
+/// (S17: "reusing what the set's rules share"), so each question is asked
+/// once for each, whichever facts apply to the other keys.
+///
+/// [`Session::signature`]: native_theme::gate::Session::signature
+#[derive(Default)]
+struct Memo {
+    sessions: Mutex<HashMap<Alike, Arc<Answers>>>,
+}
+
+/// A session's element and the steps that apply to it with each part's
+/// answer ([`Memo`]).
+type Alike = (String, Vec<u32>);
+
+impl Memo {
+    /// The answers of the sessions alike with `session`, `combination`'s.
+    fn of(
+        &self,
+        combination: &Combination,
+        session: &native_theme::gate::Session<'_>,
+    ) -> Arc<Answers> {
+        let element = format!(
+            "{} {:?} {:?}",
+            combination.widget, combination.context, combination.direction
+        );
+        let mut sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
+        Arc::clone(sessions.entry((element, session.signature())).or_default())
+    }
+}
+
+/// A question [`compare_widget`] asks a session about the key at its
+/// index among its widget's keys: whether it is a listed path; whether a
+/// fact's own value (by its address) reaches a synthetic value there, and
+/// its comparison, each but at the places below the key a later fact
+/// states; the whole part's comparison with none.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum Asked {
+    Listed(usize),
+    Synthetic(usize, usize, Vec<Vec<String>>),
+    Compared(usize, usize, Vec<Vec<String>>),
+    Drawn(usize),
+}
+
+/// What one session answered ([`Memo`]).
+#[derive(Default)]
+struct Answers {
+    listed: Mutex<HashMap<Asked, Result<bool, Unread>>>,
+    compared: Mutex<HashMap<Asked, Result<Outcome, Unread>>>,
+}
+
+/// An answer [`Answers`] holds, of its kind.
+trait Answer: Clone {
+    fn held(answers: &Answers) -> &Mutex<HashMap<Asked, Self>>;
+}
+
+impl Answer for Result<bool, Unread> {
+    fn held(answers: &Answers) -> &Mutex<HashMap<Asked, Self>> {
+        &answers.listed
+    }
+}
+
+impl Answer for Result<Outcome, Unread> {
+    fn held(answers: &Answers) -> &Mutex<HashMap<Asked, Self>> {
+        &answers.compared
+    }
+}
+
+impl Answers {
+    /// The answer to `asked`, `ask`ed where none is held yet; asked
+    /// outside the lock, so two threads may ask it at once, alike.
+    fn answer<A: Answer>(&self, asked: Asked, ask: impl FnOnce() -> A) -> A {
+        let lock = || A::held(self).lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(held) = lock().get(&asked) {
+            return held.clone();
+        }
+        let answer = ask();
+        lock().insert(asked, answer.clone());
+        answer
     }
 }
 

@@ -38,6 +38,9 @@
 //! combinations enumerated as they are checked, a chunk at a time, never all
 //! held, so each thread adds about 120 MB and the six presets peak near
 //! 4 GB on 16 threads, 6 GB on 32 (`run::thread_count`).
+//! `NT_FACTS_GATE_TIMING=1` prints, after each preset's and flavour's
+//! widget checks, the time their steps took over every thread
+//! (`timing::Step`); the report holds none of it.
 //!
 //! The citations' evidence is read under the evidence root (S17 *The
 //! evidence root*, `facts::evidence_root`): the evidence repository checked
@@ -55,6 +58,8 @@ mod facts;
 mod model;
 #[path = "facts_gate/run.rs"]
 mod run;
+#[path = "facts_gate/timing.rs"]
+mod timing;
 #[path = "facts_gate/units.rs"]
 mod units;
 
@@ -62,7 +67,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use native_theme::PresetId;
-use native_theme::gate::{Combination, Preset};
+use native_theme::gate::{Combination, Preset, Query};
 
 /// The platform directory each preset's facts are in (S17 *Generations*).
 const DIRECTORIES: [(&str, &str); 8] = [
@@ -725,6 +730,170 @@ fn gate_fixture_derived_input_perturbed() {
     let report = run::run(&root, fixture_evidence(&root), &presets);
     assert_eq!(report.failures, Vec::<String>::new());
     assert!(report.compared > 0, "{report:?}");
+}
+
+/// The perturbed pass replays the normal pass's probes where its
+/// resolution reads alike (S17: "reusing what the set's rules share"): the
+/// normal and the perturbed resolution of a scheme are alike, as the
+/// stand-in states colours and inputs alone; two schemes whose rules
+/// differ are not, where the perturbed pass would probe its own
+/// combinations.
+#[test]
+fn gate_probes_alike_reads_the_steps() -> Result<(), String> {
+    let (root, presets) = fixture("surface_operand", "preset.toml");
+    let mut report = run::Report::default();
+    let units = units::Units::repository().map_err(failed)?;
+    let platform = run::Platform::read(&root.join("gnome"), &units, &mut report);
+    let preset = &presets.first().ok_or("the fixture has no preset")?.1;
+    let evidence = facts::Evidence::new(fixture_evidence(&root));
+    let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
+    let resolve = |scheme: &str, layer: &native_theme::Layer| {
+        let conditions = run::conditions(&[format!("scheme:{scheme}")], None).map_err(failed)?;
+        preset.resolve(&conditions, layer)
+    };
+    let light = resolve("light", &native_theme::Layer::default())?;
+    let layer = run::stand_in(preset, &keys, &light)?;
+    assert!(!layer.bases.inputs.entries.is_empty());
+    let inputs = run::root_inputs();
+    assert!(light.probes_alike(&resolve("light", &layer)?, &inputs));
+    assert!(!light.probes_alike(&resolve("dark", &native_theme::Layer::default())?, &inputs));
+    Ok(())
+}
+
+/// A test's error, written as its value's debug form.
+fn failed(error: impl std::fmt::Debug) -> String {
+    format!("{error:?}")
+}
+
+/// A session of shapes alone (`Query::Shapes`, which the gate's probes
+/// query) answers each part as a session of styles does and matches the
+/// same steps (S17: the probe reads each part's answer and the scope it
+/// passes on, never a value): on every fixture's preset, under each
+/// scheme, for each set of the button's flags, with no variant or one the
+/// preset declares, at the default size and each one it declares, the
+/// two sessions' signatures agree, and the shapes' `probed` gives what
+/// the styles' `holds_each` and `signature` give.
+#[test]
+fn gate_shapes_probe_as_styles() -> Result<(), String> {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
+    let base = std::fs::read_to_string(fixtures.join("base.toml")).map_err(failed)?;
+    let mut cases: Vec<PathBuf> = std::fs::read_dir(&fixtures)
+        .map_err(failed)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|case| case.join("preset.toml").is_file())
+        .collect();
+    cases.sort();
+    let flags = ["hover", "pressed", "disabled", "checked", "focus_visible"];
+    // `when`s with no conditions, so each holds in every resolution, on a
+    // part's field, a whole part and a token (`Session::probed`).
+    let read = |(when, key): (&str, &str)| {
+        let when = toml::from_str::<toml::Value>(when).map_err(failed)?;
+        Ok::<_, String>((
+            native_theme::gate::parse_when(&when).map_err(failed)?,
+            native_theme::gate::parse_key(key).map_err(failed)?,
+        ))
+    };
+    let parsed: Vec<(native_theme::gate::When, native_theme::gate::FactKey)> = [
+        ("states = [\"hover\"]", "button.body.fill"),
+        (
+            "states = [\"pressed\"]\nnot_states = [\"disabled\"]",
+            "button.body.min_width",
+        ),
+        ("variants = [\"flat\"]", "button.body.fill"),
+        ("sizes = [\"small\"]", "button.label"),
+        ("context = [{ widget = \"button\" }]", "button.body.fill"),
+        ("states = [\"focus_visible\"]", "button.icon"),
+        ("states = [\"checked\"]", "token.focus.width"),
+    ]
+    .into_iter()
+    .map(read)
+    .collect::<Result<_, _>>()?;
+    let whens: Vec<(&native_theme::gate::When, &native_theme::gate::FactKey)> =
+        parsed.iter().map(|(when, key)| (when, key)).collect();
+    let root = run::root_inputs();
+    let metrics = run::StubMetrics;
+    let mut sessions = 0_usize;
+    for case in &cases {
+        let Ok(preset) = Preset::from_toml(&fixture_text(case, &base, "preset.toml")) else {
+            continue;
+        };
+        let Ok(declared) = preset.declared("button", None) else {
+            continue;
+        };
+        let variants: Vec<Vec<String>> = std::iter::once(Vec::new())
+            .chain(
+                declared
+                    .variants
+                    .iter()
+                    .map(|variant| vec![variant.clone()]),
+            )
+            .collect();
+        let sizes: Vec<Option<String>> = std::iter::once(None)
+            .chain(declared.sizes.iter().cloned().map(Some))
+            .collect();
+        for scheme in preset.schemes() {
+            let conditions =
+                run::conditions(&[format!("scheme:{scheme}")], None).map_err(failed)?;
+            let resolved = preset.resolve(&conditions, &native_theme::Layer::default())?;
+            for set in 0..1_usize << flags.len() {
+                for variant in &variants {
+                    for size in &sizes {
+                        let mut combination = Combination::new("button");
+                        combination.states = flags
+                            .iter()
+                            .enumerate()
+                            .filter(|(at, _)| set & (1 << at) != 0)
+                            .map(|(_, flag)| (*flag).to_owned())
+                            .collect();
+                        combination.variants.clone_from(variant);
+                        combination.size.clone_from(size);
+                        let session = |query| {
+                            resolved
+                                .session_drawn(&combination, &root, &metrics, &[], query)
+                                .map_err(failed)?
+                                .ok_or_else(|| format!("{combination:?} is named not drawn"))
+                        };
+                        let (styles, shapes) = (session(Query::Styles)?, session(Query::Shapes)?);
+                        assert_eq!(
+                            (styles.unavailable(), styles.signature()),
+                            (shapes.unavailable(), shapes.signature()),
+                            "{case:?} {scheme} {combination:?}"
+                        );
+                        assert_eq!(
+                            shapes.probed(&whens),
+                            (styles.holds_each(&whens), styles.signature()),
+                            "{case:?} {scheme} {combination:?}"
+                        );
+                        sessions += 1;
+                    }
+                }
+            }
+        }
+    }
+    assert!(sessions > 1000, "{sessions}");
+    Ok(())
+}
+
+/// A probe's failure is recorded under each pass's label, the perturbed
+/// pass's in the normal pass's order, where it replays the normal pass's
+/// probes as where it probes its own: the small size, which the preset
+/// does not declare, is not available in either.
+#[test]
+fn gate_fixture_perturbed_probe_failures_replayed() {
+    let report = fixture_report("not_drawn_unavailable");
+    let unavailable = |label: &str| -> Vec<String> {
+        report
+            .failures
+            .iter()
+            .filter_map(|failure| failure.strip_prefix(label))
+            .filter(|failure| failure.starts_with("not available"))
+            .map(str::to_owned)
+            .collect()
+    };
+    let normal = unavailable("Normal: ");
+    assert!(!normal.is_empty(), "{:?}", report.failures);
+    assert_eq!(unavailable("Perturbed: "), normal);
 }
 
 /// On `kde-breeze` the perturbed stand-in states no `accent` (S9.2, S17,
@@ -1570,6 +1739,25 @@ fn gate_fixture_not_drawn_sizes() {
             "not_drawn = [{ states = [\"pressed\"], not_densities = [\"compact\"] }]\n"
         )),
         4
+    );
+}
+
+/// A `not_drawn` entry naming a combination that is not available leaves
+/// it failed as not available (S8, S17): the entry is matched against the
+/// root's element as the query reads it, which a size the preset does not
+/// declare never is, so asking the entries before the parts are queried
+/// changes no verdict.
+#[test]
+fn gate_fixture_not_drawn_unavailable() {
+    let report = fixture_report("not_drawn_unavailable");
+    assert!(report.queried > 0, "{report:?}");
+    let unavailable = failing(&report, "not available (Size)");
+    assert!(!unavailable.is_empty(), "{:?}", report.failures);
+    assert!(
+        unavailable
+            .iter()
+            .all(|failure| failure.contains("size: Some(\"small\")")),
+        "{unavailable:?}"
     );
 }
 

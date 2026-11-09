@@ -2179,6 +2179,26 @@ impl Resolved {
         differs(measured.as_ref(), derived.as_ref(), &path, &tolerance)
     }
 
+    /// Whether every combination's probe reads this resolution as it reads
+    /// `other` (S17, the perturbed pass replaying the normal pass's probes):
+    /// the same window, declarations and flavour, every part's and widget
+    /// values' steps the same (their selectors, presences, bindings and
+    /// patches), and the same root scope under `root`. Their colours,
+    /// inputs and tokens may differ: a session's parsing, its scopes'
+    /// entries as matching reads them (S8), its parts' presences and its
+    /// matches read none of them. Whether a part's style resolves, which
+    /// validation decides (S12), is not read here.
+    #[must_use]
+    pub fn probes_alike(&self, other: &Resolved, root: &RootInputs) -> bool {
+        let (theme, other_theme) = (&self.theme, &other.theme);
+        self.window == other.window
+            && theme.declarations == other_theme.declarations
+            && theme.flavor == other_theme.flavor
+            && theme.parts == other_theme.parts
+            && theme.values == other_theme.values
+            && self.root(root) == other.root(root)
+    }
+
     /// The combination's element queried top-down, each part in the scope
     /// the query of the part enclosing it returns (S8), measured by
     /// `metrics`.
@@ -2188,6 +2208,56 @@ impl Resolved {
         root: &RootInputs,
         metrics: &'r dyn FontMetrics,
     ) -> Result<Session<'r>, Unread> {
+        let (mut session, scope, info) = self.element(combination, root, metrics)?;
+        session.query_parts(info, &scope, Query::Styles);
+        Ok(session)
+    }
+
+    /// [`Resolved::session`], its parts queried as `query` says, but `None`
+    /// where one of `not_drawn`, a state model's `not_drawn` entries (S17),
+    /// holds for the element of the widget's root as
+    /// [`Session::root_holds`] matches it: its parts are then never queried,
+    /// as the root's element and scope come before them.
+    pub fn session_drawn<'r>(
+        &'r self,
+        combination: &Combination,
+        root: &RootInputs,
+        metrics: &'r dyn FontMetrics,
+        not_drawn: &[When],
+        query: Query,
+    ) -> Result<Option<Session<'r>>, Unread> {
+        let (mut session, scope, info) = self.element(combination, root, metrics)?;
+        if !not_drawn.is_empty()
+            && let Some(part) = info
+                .parts
+                .iter()
+                .find_map(|part| TypedPart::from_names(session.widget, part.name))
+        {
+            let theme = &self.theme;
+            let named = session.with_element(part, &scope, |element| {
+                Matched::new(theme, element).is_ok_and(|matched| {
+                    not_drawn
+                        .iter()
+                        .any(|when| self.conditions_hold(when) && matched.matches(&when.0))
+                })
+            });
+            if named {
+                return Ok(None);
+            }
+        }
+        session.query_parts(info, &scope, query);
+        Ok(Some(session))
+    }
+
+    /// The combination's element read, its parts not yet queried: the
+    /// session, the scope its context gives its root, and its widget's
+    /// registry entry.
+    fn element<'r>(
+        &'r self,
+        combination: &Combination,
+        root: &RootInputs,
+        metrics: &'r dyn FontMetrics,
+    ) -> Result<(Session<'r>, Scope, &'static registry::WidgetInfo), Unread> {
         let widget = widget_kind(&combination.widget)?;
         let parsed = Parsed::of(combination)?;
         let ancestors = match &combination.context {
@@ -2198,12 +2268,13 @@ impl Resolved {
         for ancestor in &ancestors {
             scope = self.context_scope(ancestor, scope, metrics)?;
         }
-        let mut session = Session {
+        let session = Session {
             resolved: self,
             metrics,
             parsed,
             widget,
             parts: Vec::new(),
+            shaped: false,
             values: OnceCell::new(),
             evaluated: RefCell::new(Vec::new()),
         };
@@ -2213,37 +2284,7 @@ impl Resolved {
             .ok_or_else(|| {
                 Unread::NotHeld(format!("the model holds no `{}` yet", combination.widget))
             })?;
-        for part_info in info.parts {
-            let Some(part) = TypedPart::from_names(widget, part_info.name) else {
-                continue;
-            };
-            let queried_in = match part.parent() {
-                None => scope.clone(),
-                Some(parent) => session
-                    .parts
-                    .iter()
-                    .find(|held| held.part == parent)
-                    .map_or_else(|| scope.clone(), Queried::children_scope),
-            };
-            let answer =
-                session.with_element(part, &queried_in, |element| self.theme.style(element));
-            let (answer, returned) = match answer {
-                Styled::Style((_, returned)) => (Answer::Drawn, Some(returned)),
-                Styled::NotDrawn => (Answer::NotDrawn, None),
-                Styled::DrawnAs { target, variants } => {
-                    (Answer::DrawnAs { target, variants }, None)
-                }
-                Styled::NotAvailable(unavailable) => (Answer::NotAvailable(unavailable), None),
-            };
-            session.parts.push(Queried {
-                part,
-                scope: queried_in,
-                returned,
-                answer,
-                actual: OnceCell::new(),
-            });
-        }
-        Ok(session)
+        Ok((session, scope, info))
     }
 
     /// [`context_chain`] of `context`, read once for every combination in
@@ -2536,6 +2577,20 @@ fn in_scope(theme: &ResolvedTheme, scope: &Scope, tolerance: &Tolerance) -> Tole
     }
 }
 
+/// How a session queries its parts ([`Resolved::session_drawn`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Query {
+    /// Each part's style, as the query answers it (S8).
+    Styles,
+    /// Each part's shape alone: its answer where a style resolves and the
+    /// scope its children receive as matching reads it, no field evaluated
+    /// but its bindings, which is all a probe of the gate reads (S17); a
+    /// part whose style does not resolve, which validation rules out, is
+    /// answered as drawn. Its values are never read: such a session refuses
+    /// to compare a part's field or a widget value.
+    Shapes,
+}
+
 /// One combination's element, its parts queried (S17).
 pub struct Session<'r> {
     resolved: &'r Resolved,
@@ -2543,6 +2598,9 @@ pub struct Session<'r> {
     parsed: Parsed,
     widget: WidgetKind,
     parts: Vec<Queried>,
+    /// Whether its parts were queried for their shapes alone
+    /// ([`Query::Shapes`]), so no value of theirs is read.
+    shaped: bool,
     /// The theme's own resolved values, read once.
     values: OnceCell<Rc<Read>>,
     /// Each fact's body evaluated in its key's place, read once.
@@ -2550,6 +2608,52 @@ pub struct Session<'r> {
 }
 
 impl Session<'_> {
+    /// Each of `info`'s parts queried in turn as `query` says, the root's
+    /// in `scope`, each other's in the scope the query of the part
+    /// enclosing it returns (S8).
+    fn query_parts(&mut self, info: &registry::WidgetInfo, scope: &Scope, query: Query) {
+        self.shaped = query == Query::Shapes;
+        let resolved = self.resolved;
+        let theme = &resolved.theme;
+        for part_info in info.parts {
+            let Some(part) = TypedPart::from_names(self.widget, part_info.name) else {
+                continue;
+            };
+            let queried_in = match part.parent() {
+                None => scope.clone(),
+                Some(parent) => self
+                    .parts
+                    .iter()
+                    .find(|held| held.part == parent)
+                    .map_or_else(|| scope.clone(), Queried::children_scope),
+            };
+            let answer = self.with_element(part, &queried_in, |element| match query {
+                Query::Styles => match theme.style(element) {
+                    Styled::Style((_, returned)) => Styled::Style(returned),
+                    Styled::NotDrawn => Styled::NotDrawn,
+                    Styled::DrawnAs { target, variants } => Styled::DrawnAs { target, variants },
+                    Styled::NotAvailable(unavailable) => Styled::NotAvailable(unavailable),
+                },
+                Query::Shapes => theme.shape(element),
+            });
+            let (answer, returned) = match answer {
+                Styled::Style(returned) => (Answer::Drawn, Some(returned)),
+                Styled::NotDrawn => (Answer::NotDrawn, None),
+                Styled::DrawnAs { target, variants } => {
+                    (Answer::DrawnAs { target, variants }, None)
+                }
+                Styled::NotAvailable(unavailable) => (Answer::NotAvailable(unavailable), None),
+            };
+            self.parts.push(Queried {
+                part,
+                scope: queried_in,
+                returned,
+                answer,
+                actual: OnceCell::new(),
+            });
+        }
+    }
+
     /// `f` over the element of `part` in `scope`, holding the combination.
     fn with_element<R>(
         &self,
@@ -2705,6 +2809,80 @@ impl Session<'_> {
             });
         }
         out
+    }
+
+    /// [`Session::holds_each`] of `whens` and [`Session::signature`] at once,
+    /// each part's element matched once for both (S17's probe), where each
+    /// of `whens` is one whose conditions hold in the session's resolution
+    /// ([`Resolved::conditions_hold`]), as the caller found them: those are
+    /// not asked again.
+    #[must_use]
+    pub fn probed(&self, whens: &[(&When, &FactKey)]) -> (Vec<bool>, Vec<u32>) {
+        let theme = &self.resolved.theme;
+        let root = self.root().map(|root| root.part);
+        let index = |at: usize| u32::try_from(at).unwrap_or(u32::MAX);
+        let mut holds: Vec<bool> = whens
+            .iter()
+            .map(|(_, key)| match &key.place {
+                Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => true,
+                Place::WholePart(_) | Place::Part(..) | Place::Values(..) => false,
+            })
+            .collect();
+        let mut signature = Vec::new();
+        let mut values = Vec::new();
+        for queried in &self.parts {
+            signature.push(u32::MAX);
+            signature.push(match &queried.answer {
+                Answer::Drawn => 0,
+                Answer::NotDrawn => 1,
+                Answer::DrawnAs { .. } => 2,
+                Answer::NotAvailable(_) => 3,
+            });
+            let of_part = |key: &FactKey| match &key.place {
+                Place::WholePart(part) | Place::Part(part, _) => *part == queried.part,
+                Place::Values(..) => root == Some(queried.part),
+                Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => false,
+            };
+            let steps = theme.part_steps(queried.part);
+            self.with_element(queried.part, &queried.scope, |element| {
+                let matched = Matched::new(theme, element).ok();
+                for (slot, (when, key)) in holds.iter_mut().zip(whens) {
+                    if of_part(key) {
+                        *slot = matched
+                            .as_ref()
+                            .is_some_and(|matched| matched.matches(&when.0));
+                    }
+                }
+                let Some(matched) = matched else {
+                    return;
+                };
+                let applies = |selector: &Option<Selector>| {
+                    selector
+                        .as_ref()
+                        .is_none_or(|selector| matched.matches(selector))
+                };
+                for (at, step) in steps.iter().enumerate() {
+                    if applies(&step.selector) {
+                        signature.push(index(at));
+                    }
+                }
+                if root == Some(queried.part) {
+                    let steps = theme
+                        .values
+                        .iter()
+                        .filter(|(held, _)| *held == self.widget)
+                        .flat_map(|(_, steps)| steps);
+                    for (at, step) in steps.enumerate() {
+                        if applies(&step.selector) {
+                            values.push(index(at));
+                        }
+                    }
+                }
+            });
+        }
+        signature.push(u32::MAX);
+        signature.extend(values);
+        (holds, signature)
     }
 
     /// The key's value for the element compared with the fact's `value`
@@ -2997,6 +3175,11 @@ impl Session<'_> {
     /// key's path in it: the theme's own (read once), or with `body`'s step
     /// after every other; `None` where the key's part is not drawn.
     fn field_tree(&self, key: &FactKey, body: Option<&RuleBody>) -> Result<Option<Field>, Unread> {
+        if self.shaped {
+            return Err(Unread::Refused(
+                "a session of shapes alone reads no value".to_owned(),
+            ));
+        }
         let theme = &self.resolved.theme;
         let place: &[String] = match &key.place {
             Place::Part(_, path) | Place::Values(_, path) => path,

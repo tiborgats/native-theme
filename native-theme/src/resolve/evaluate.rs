@@ -3120,6 +3120,24 @@ impl<'t> Cx<'t> {
             .push(Bindings::of(part, bindings.unwrap_or_default(), reached));
         PartStyle::resolve(&folds, self)
     }
+
+    /// The element's part's own bindings, as [`Cx::part`] evaluates them
+    /// first, in the scope outside it; `None` where it is not drawn as
+    /// itself.
+    fn part_bindings(&mut self, part: TypedPart) -> Option<Vec<ResolvedBinding>> {
+        if !self.drawn(part) {
+            return None;
+        }
+        let folds = self.roots(Target::Part(part));
+        self.target = Target::Part(part);
+        self.chain_part = Some(part);
+        Some(
+            self.at("bindings", |cx| {
+                cx.keyed::<Binding>(&compose::children(&folds, "bindings"))
+            })
+            .unwrap_or_default(),
+        )
+    }
 }
 
 /// One `Color` layer drawn normally: a colour stated on a paint (S2.2).
@@ -3202,6 +3220,26 @@ impl ResolvedTheme {
             refusals: cx.refusals,
             reached: cx.reached,
         }
+    }
+
+    /// The own bindings of `element`'s part `part` (S3.3), its kept rules
+    /// those `applies` accepts, as [`ResolvedTheme::evaluate_part`]
+    /// evaluates them before its fields; `None` where the part is not
+    /// drawn as itself.
+    pub(crate) fn evaluate_bindings<'t>(
+        &'t self,
+        part: TypedPart,
+        element: &'t Element<'t>,
+        applies: &'t dyn Fn(&Selector) -> bool,
+    ) -> Option<Vec<ResolvedBinding>> {
+        let mut cx = Cx::new(
+            self,
+            element.scope,
+            Some(element),
+            applies,
+            Target::Part(part),
+        );
+        cx.part_bindings(part)
     }
 
     /// The colour `reference` names in `scope` (S3.3); `None`: not drawn.
