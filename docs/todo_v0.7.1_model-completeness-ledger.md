@@ -692,7 +692,10 @@ a showcase item that touches theme data, Widget Info, the element lists, the par
 M5, other showcase behaviour after the plan's releases; a connector convenience helper for a value the toolkit takes
 only through a builder is after the plan's releases, the contract table listing the value (S21.3); an item with parts for several destinations
 keeps one row naming its main destination and, in its reason, the others; a reader item goes to M1b where the
-slice's `ReaderState` needs it, else to the readers unit; items that appeared done were verified and closed in M0 (three, 2026-10-29: the CI legs, the egui widgets crate, the Widget Info audit; their rows removed).
+slice's `ReaderState` needs it, else to the readers unit; items that appeared done were verified and closed in M0 (three, 2026-10-29: the CI legs, the egui widgets crate, the Widget Info audit; their rows removed). Closed at M1b
+with their rows removed: *KDE: the live reader's disabled text colour* (2026-11-09, ADD-A145: fixed by `kde_effects`,
+the KDE disabled-role facts and the ported reader; its switch outlines moved to *KDE: the switch's hover and disabled
+thumb outlines*).
 
 **Identity** (what `scripts/check_ledger.py` matches): Source; Heading as written, hashes included; Item, the
 opening words between `“` and `”` as a prefix of the item's words (`docs/todo.md`: an open `- [ ]` item under its
@@ -723,7 +726,6 @@ in the 0.7.x releases* as one item; the two connector plans: a fixed list the sc
 | docs/todo.md | ### Selection: the text colour macOS pairs with the unemphasised selection | “`defaults.selection_inactive_background` is the selection” · l. 530 | M1a | S3's `selection_text_foreground_unfocused` (MAC-I05) is a colour role of the slice; the macOS lane states it. |
 | docs/todo.md | ### Presets: colours with no reproducible source | “These preset colours are” · l. 563 | settled by the model | Every preset value enters from a verified fact (S17, S19.1), so the unsourced colours go and the lanes state each from its source or derivation. |
 | docs/todo.md | ### Disabled: presets that state both mechanisms | “The disabled rule (`docs/platform-facts.md`” · l. 656 | settled by the model | Disabled looks become stated `{disabled}` rules (R20, the catalogue's `opacity @ {disabled}`), and the community presets become palettes stating no disabled mechanism (S14, S19.1). |
-| docs/todo.md | ### KDE: the live reader's disabled text colour | “`native-theme/src/kde/colors.rs` reads `defaults.disabled_text_color`” · l. 681 | M1b | KColorScheme's effects are the platform function `kde_effects` (S2.2, R5.1 disabled roles) and the KDE reader is ported to S9.3 at M1b. |
 | docs/todo.md | ### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28) | “**gpui Textarea padding below” · l. 706 | not this plan's work | An upstream gpui-component seam (Textarea padding); the connector contract lists what the toolkit cannot draw (S21.3). |
 | docs/todo.md | ### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28) | “**macOS text area padding.**” · l. 719 | lane macos | NSTextView's insets are a macOS fact for `text_area` (published or measured). |
 | docs/todo.md | ### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28) | “**KDE expander header.** `KCollapsibleGroupBox`” · l. 722 | lane kde | KCollapsibleGroupBox's header size and arrow box are KDE facts for the catalogue's `expander`. |

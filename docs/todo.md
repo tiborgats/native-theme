@@ -158,8 +158,8 @@ cannot tell which file a bare number continues, so it does not look for one.
       the gpui connector cannot show `tab.background_color`; its contrast
       contract records `kde-breeze/dark` as an exception for the `tab label`
       pair (`IDLE_TAB_SURFACE`, `connectors/native-theme-gpui/src/contract.rs`).
-      On the live path the KDE reader (`native-theme/src/kde/colors.rs`) sets no
-      `tab` colour, so the full preset's stock-Breeze values
+      On the live path the KDE reader (`native-theme/src/kde/colors.rs` at
+      2e7c8e11) sets no `tab` colour, so the full preset's stock-Breeze values
       (`Window.darker(120)`, `mix(Window, WindowText, 0.2)`) stand for any colour
       scheme; computing them from the user's scheme needs `QColor::darker`
       ([qcolor.cpp:2993-3004](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/gui/painting/qcolor.cpp#L2993-L3004))
@@ -167,6 +167,12 @@ cannot tell which file a bare number continues, so it does not look for one.
       ([kcolorutils.cpp:144-165](https://invent.kde.org/frameworks/kguiaddons/-/blob/7c766f6f99238c13acb8c50d8391600e964f3b8a/src/colors/kcolorutils.cpp#L144-L165))
       ported to the reader, with `[KDE] frameContrast` read from kdeglobals
       (default 0.2, [kcolorscheme.cpp:529-538](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L529-L538)).
+      0.8.0 (ADD-A145): the KDE reader (`native-theme/src/kde/mod.rs`)
+      states the scheme's colour roles and `token.params.color.frame_contrast`
+      (kdeglobals' `[KDE] frameContrast`, else KColorScheme's 0.2), and no
+      widget colour; the KDE tab colours are the catalogue's rules over those
+      roles (K1.121–K1.123), whose facts the containers unit writes (M3). The
+      gpui connector's idle tab is M2.1's.
 
 ### Segmented control: the join and the divider
 
@@ -492,8 +498,11 @@ cannot tell which file a bare number continues, so it does not look for one.
       Accent is mixed 85 % `accent`, 15 % `highlightedText` (`:114-130`). Map each class to its
       `ResolvedTheme` leaf. The KDE reader takes `text_color` from
       `[Colors:Window] ForegroundNormal` but the status colours from
-      `[Colors:View]` (`native-theme/src/kde/colors.rs:18`, `:23`, `:39-43`),
-      so check which group Qt's palette fills from. Then `FreedesktopLoader`
+      `[Colors:View]` (`native-theme/src/kde/colors.rs:18`, `:23`, `:39-43` at
+      5cfe6220), so check which group Qt's palette fills from (settled for
+      0.8.0, ADD-A145: the palette's colours are S9.3's colours' source,
+      `palette_colors` in `native-theme/src/kde/mod.rs`, and the icon's
+      colours S2.9's). Then `FreedesktopLoader`
       takes those colours, not the one colour `color` takes, which would turn
       all eight classes into one colour
       (`/usr/include/KF6/KIconThemes/kiconcolors.h:40-42`), and rewrites the
@@ -675,26 +684,6 @@ cannot tell which file a bare number continues, so it does not look for one.
       presets above only ios-13 (0.3, `ios-13.toml` `[light.defaults] disabled_opacity`,
       `[dark.defaults] disabled_opacity`) and the ten
       community presets (0.5) still state both.
-
-### KDE: the live reader's disabled text colour
-
-- [ ] [1.0] `native-theme/src/kde/colors.rs` reads `defaults.disabled_text_color`
-      from `[Colors:View] ForegroundInactive`; Breeze paints disabled text
-      from the palette's Disabled group, which KColorScheme derives with the
-      scheme's `[ColorEffects:Disabled]` (`docs/platform-facts.md` §2.1.3,
-      §2.1.6: Breeze `#a0a1a3`, Breeze Dark `#686a6c`, which kde-breeze
-      states). Port KColorScheme's `StateEffects` (`kcolorscheme.cpp:36-101`
-      at 27066d47: Fade by `mix`, Darken in KColorUtils' HCY space) to the
-      reader, check it against the computed values, and derive the widgets'
-      disabled colours from it as the preset states them (Button, View and
-      Window sets, `ForegroundLink`); until then the live reader's
-      `defaults.disabled_text_color` is not Breeze's.
-      M8 T16c (2026-10-17): the switch's disabled outlines join them,
-      `switch.disabled_unchecked_track_border_color` (`handleBorderColor` in
-      the Disabled Button set, #e2e2e2 / #34373b) and
-      `disabled_checked_track_border_color` (Disabled Selection, #e3e5e7 /
-      #1f2124; `docs/platform-facts.md` §2.21), which kde-breeze states and the
-      reader leaves to the preset.
 
 ### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28)
 
@@ -977,11 +966,17 @@ model, the platform presets and the three connectors
 
 - [ ] [1.0] Research (M4 T11 ruling, 2026-10-12): a Qt 6 font string can carry a
       `styleName` in field 16, which the KDE reader's parser ignores
-      (`parse_qt_font_with_weight`, `native-theme/src/kde/fonts.rs:65`).
+      (`parse_qt_font_with_weight`, `native-theme/src/kde/fonts.rs:65` at
+      2ca74471).
       Unverified: whether a set `styleName` overrides fields 4 and 5 (weight
       and style) in Qt's font matching; read `qfont.cpp` at a pinned Qt tag. If
       it does, a KDE font with a `styleName` renders another weight than the
       reader reports. No user report.
+      0.8.0 (ADD-A145): the clean room's `qfont_from_string`
+      (`native-theme/src/cleanroom_readers/qfont_from_string.rs`) parses the
+      style name, which S9.3's fonts keep none of (`native-theme/src/kde/font.rs`);
+      whether it overrides the weight and style is a question for the clean
+      room's describer, not a read of `qfont.cpp` (D10).
 
 ### GNOME: the reader's dark mode does not read `GTK_THEME`
 
@@ -1380,13 +1375,16 @@ model, the platform presets and the three connectors
       hover tracks, which now differ from its rest tracks where §2.21 gives
       them equal.
       M8 T16 fix round 1 (2026-10-17): the KDE reader
-      (`native-theme/src/kde/colors.rs`) derives none of kde-breeze's new
+      (`native-theme/src/kde/colors.rs` at 13cee001) derives none of kde-breeze's new
       colour values, so under another colour scheme or accent they keep
       Breeze's. Three of them followed the reader before T16 and are frozen
       now: `slider.thumb_color` (it inherited the surface colour),
       `toolbar.background_color` (the window colour) and
       `switch.checked_background` (the accent): M8 T16b's (the T16 review's
-      finding 6). Also in fix round 1: the card's padding is 7, not 8, inside
+      finding 6). (Obsolete in 0.8.0's model, ADD-A145: those values become
+      KDE facts over the reader's colour roles in their units, M3, and the
+      presets are generated from the facts.) Also in fix round 1: the card's
+      padding is 7, not 8, inside
       its border line (Kirigami's 8 is from the outer edge; §2.26 corrected,
       b7f16c0d, 60841b4f); adwaita's text input and drop-down fill with
       `$button_color`, #e6e6e7 / #38383c (§2.4, §2.24 corrected), its input
@@ -1449,11 +1447,18 @@ model, the platform presets and the three connectors
       BorderSizeAuto` / `BorderSize`; breezehelper.cpp:1904-1941 at breeze
       f0b1d75; `docs/platform-facts.md` §2.13 `background_color`); otherwise
       the toolbar shows the window colour. The KDE reader
-      (`native-theme/src/kde/colors.rs`, `populate_colors`) assumes Plasma's
+      (`native-theme/src/kde/colors.rs` at e0ba719e, `populate_colors`) assumes Plasma's
       default, automatic, and gives `toolbar.background_color` the Header
       colour whatever the user set. Read kwinrc's border size, as Breeze
       does, and give the toolbar the window colour where it is another
       size.
+      0.8.0 (ADD-A145): the KDE reader (`native-theme/src/kde/mod.rs`)
+      reads no kwinrc and states the scheme's colour roles, no toolbar
+      colour. ADD-A145 records the catalogue binding the toolbar to
+      `Surface(Header)` at `variant top` with no border-size condition
+      (K1.150), K1.11's kwinrc read serving the window frame: whether the
+      toolbar's fill takes the border size is a KDE trace question for the
+      toolbar's unit (M3).
 
 ### windows-11: values WinUI 3 states no source for
 
@@ -1625,6 +1630,14 @@ model, the platform presets and the three connectors
       keeps #cccfd2 / #4e5359 where Plasma draws #3daee9. Decide whether the
       model gains hover outline fields (and the KDE reader derives them from
       `DecorationHover`) and a disabled thumb outline.
+      From *KDE: the live reader's disabled text colour* (closed 2026-11-09,
+      ADD-A145, `docs/archive/todo_closed.md`): the disabled track outlines
+      join them, `switch.disabled_unchecked_track_border_color`
+      (`handleBorderColor` in the Disabled Button set, #e2e2e2 / #34373b) and
+      `disabled_checked_track_border_color` (Disabled Selection, #e3e5e7 /
+      #1f2124; `docs/platform-facts.md` §2.21), which 0.7.0's reader left to
+      the preset: in 0.8.0 each is a KDE fact of the switch's parts over the
+      disabled roles `kde_effects` gives (M3 unit buttons and toggles).
 
 ### KDE: Union, the Application Style that is data (issue #4)
 
@@ -1685,7 +1698,9 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
       (`breezestyle.cpp:4875-4880`), not a `DecorationHover` blend. (7)
       `defaults.disabled_text_color`: the reader reads `[Colors:View] ForegroundInactive`
       (`native-theme/src/kde/colors.rs:493` at caeddd6b), KDE derives it through
-      `[ColorEffects:Disabled]` (`kcolorscheme.cpp:21-56`). (8) `input.caret_color`: Qt
+      `[ColorEffects:Disabled]` (`kcolorscheme.cpp:21-56`); fixed in 0.8.0 as
+      *KDE: the live reader's disabled text colour* (`docs/archive/todo_closed.md`,
+      ADD-A145). (8) `input.caret_color`: Qt
       may draw the line edit's caret in the text colour, not `DecorationFocus`; to measure.
       (9) `defaults.focus_ring_*`: Breeze's focus frame is a filled ring between two
       rounded rectangles, `Highlight` at `Blend_Value` 0.3 (`breezestyle.cpp:6770-6786`,
