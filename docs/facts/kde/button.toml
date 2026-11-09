@@ -13625,7 +13625,7 @@ quote = "icon.width: Kirigami.Units.iconSizes.smallMedium"
 [[fact]]
 key = "button.icon.icon.size"
 when = { conditions = ["flavor:kirigami"], variants = ["clear_field"], context = [{ scope = "any", widget = "search_field" }] }
-value = "= kirigami_label_icon_size(element.body_font_height)"
+value = "= kirigami_label_icon_size(body_font_height)"
 rows = ["Q1.1", "Q1.15"]
 
 [[fact.cite]]
@@ -13641,7 +13641,7 @@ quote = "int IconSizes::sizeForLabels() const { // gridUnit is the height of tex
 [[fact]]
 key = "button.icon.icon.size"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"], context = [{ scope = "any", widget = "input" }] }
-value = "= kirigami_label_icon_size(element.body_font_height)"
+value = "= kirigami_label_icon_size(body_font_height)"
 rows = ["Q1.1", "Q1.18"]
 
 [[fact.cite]]
@@ -13657,7 +13657,7 @@ quote = "int IconSizes::sizeForLabels() const { // gridUnit is the height of tex
 [[fact]]
 key = "button.icon.icon.size"
 when = { conditions = ["flavor:kirigami"], variants = ["remove"], context = [{ scope = "any", widget = "chip" }] }
-value = "= kirigami_label_icon_size(element.body_font_height)"
+value = "= kirigami_label_icon_size(body_font_height)"
 rows = ["Q1.1", "Q2.24"]
 
 [[fact.cite]]
