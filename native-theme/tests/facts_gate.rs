@@ -732,6 +732,54 @@ fn gate_fixture_derived_input_perturbed() {
     assert!(report.compared > 0, "{report:?}");
 }
 
+/// The perturbed pass replays the normal pass's probes where its
+/// resolution reads alike (S17: "reusing what the set's rules share"): the
+/// normal and the perturbed resolution of a scheme are alike, as the
+/// stand-in states colours and inputs alone; two schemes whose rules
+/// differ are not, where the perturbed pass would probe its own
+/// combinations.
+#[test]
+fn gate_probes_alike_reads_the_steps() {
+    let (root, presets) = fixture("surface_operand", "preset.toml");
+    let mut report = run::Report::default();
+    let units = units::Units::repository().unwrap();
+    let platform = run::Platform::read(&root.join("gnome"), &units, &mut report);
+    let preset = &presets[0].1;
+    let evidence = facts::Evidence::new(fixture_evidence(&root));
+    let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
+    let resolve = |scheme: &str, layer: &native_theme::Layer| {
+        let conditions = run::conditions(&[format!("scheme:{scheme}")], None).unwrap();
+        preset.resolve(&conditions, layer).unwrap()
+    };
+    let light = resolve("light", &native_theme::Layer::default());
+    let layer = run::stand_in(preset, &keys, &light).unwrap();
+    assert!(!layer.bases.inputs.entries.is_empty());
+    let inputs = run::root_inputs();
+    assert!(light.probes_alike(&resolve("light", &layer), &inputs));
+    assert!(!light.probes_alike(&resolve("dark", &native_theme::Layer::default()), &inputs));
+}
+
+/// A probe's failure is recorded under each pass's label, the perturbed
+/// pass's in the normal pass's order, where it replays the normal pass's
+/// probes as where it probes its own: the small size, which the preset
+/// does not declare, is not available in either.
+#[test]
+fn gate_fixture_perturbed_probe_failures_replayed() {
+    let report = fixture_report("not_drawn_unavailable");
+    let unavailable = |label: &str| -> Vec<String> {
+        report
+            .failures
+            .iter()
+            .filter_map(|failure| failure.strip_prefix(label))
+            .filter(|failure| failure.starts_with("not available"))
+            .map(str::to_owned)
+            .collect()
+    };
+    let normal = unavailable("Normal: ");
+    assert!(!normal.is_empty(), "{:?}", report.failures);
+    assert_eq!(unavailable("Perturbed: "), normal);
+}
+
 /// On `kde-breeze` the perturbed stand-in states no `accent` (S9.2, S17,
 /// ADD-A132): no accent-derivation layer is derived, the preset's
 /// no-accent derivations are compared, and `kde_accent` is the accent

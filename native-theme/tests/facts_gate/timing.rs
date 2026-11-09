@@ -27,16 +27,27 @@ pub enum Step {
     Signature,
     /// A distinct combination's keys compared.
     Compare,
+    /// A perturbed pass that replayed the normal pass's probes.
+    Replayed,
+    /// A perturbed pass whose resolution reads unlike the normal pass's,
+    /// its combinations probed.
+    Unlike,
+    /// A perturbed pass one of whose distinct combinations probed unlike
+    /// the normal pass's, its combinations probed.
+    Differed,
 }
 
 /// Every step, each at its own place, in the order the timing prints them.
-const STEPS: [Step; 6] = [
+const STEPS: [Step; 9] = [
     Step::Resolve,
     Step::Probe,
     Step::Session,
     Step::Applying,
     Step::Signature,
     Step::Compare,
+    Step::Replayed,
+    Step::Unlike,
+    Step::Differed,
 ];
 
 /// Each step's time in nanoseconds and how often it ran, by its place.
@@ -64,6 +75,15 @@ pub fn timed<R>(step: Step, f: impl FnOnce() -> R) -> R {
         slot.fetch_add(1, Ordering::Relaxed);
     }
     out
+}
+
+/// `step` counted once where the timing is on, taking no time.
+pub fn note(step: Step) {
+    if on()
+        && let Some(slot) = COUNTS.get(step as usize)
+    {
+        slot.fetch_add(1, Ordering::Relaxed);
+    }
 }
 
 /// Each step's time and count since the last print, printed for `what`

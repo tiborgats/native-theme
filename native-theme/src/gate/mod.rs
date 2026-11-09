@@ -2179,6 +2179,26 @@ impl Resolved {
         differs(measured.as_ref(), derived.as_ref(), &path, &tolerance)
     }
 
+    /// Whether every combination's probe reads this resolution as it reads
+    /// `other` (S17, the perturbed pass replaying the normal pass's probes):
+    /// the same window, declarations and flavour, every part's and widget
+    /// values' steps the same (their selectors, presences, bindings and
+    /// patches), and the same root scope under `root`. Their colours,
+    /// inputs and tokens may differ: a session's parsing, its scopes'
+    /// entries as matching reads them (S8), its parts' presences and its
+    /// matches read none of them. Whether a part's style resolves, which
+    /// validation decides (S12), is not read here.
+    #[must_use]
+    pub fn probes_alike(&self, other: &Resolved, root: &RootInputs) -> bool {
+        let (theme, other_theme) = (&self.theme, &other.theme);
+        self.window == other.window
+            && theme.declarations == other_theme.declarations
+            && theme.flavor == other_theme.flavor
+            && theme.parts == other_theme.parts
+            && theme.values == other_theme.values
+            && self.root(root) == other.root(root)
+    }
+
     /// The combination's element queried top-down, each part in the scope
     /// the query of the part enclosing it returns (S8), measured by
     /// `metrics`.
