@@ -1,6 +1,6 @@
 # native-theme
 
-[![License: (MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0](https://img.shields.io/badge/license-(MIT%20%7C%20Apache--2.0%20%7C%200BSD)%20AND%20Apache--2.0-blue.svg)](#license)
+[![License: (MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT](https://img.shields.io/badge/license-(MIT%20%7C%20Apache--2.0%20%7C%200BSD)%20AND%20Apache--2.0%20AND%20MIT-blue.svg)](#license)
 
 ## What it does
 
@@ -209,16 +209,18 @@ Licensed under any of
 
 at your option.
 
-Three files are not: `src/ripple.rs` ports the Android Open Source Project's
+Four files are not: `src/ripple.rs` ports the Android Open Source Project's
 `RippleShader.java`, `RippleAnimationSession.java` and Compose's ripple and
 colour code, `src/platform/android_non_linear.rs` its `FontScaleConverter`
 (Android's non-linear font scaling) and Compose's line-height threshold, and
 `src/platform/m3_role.rs` ports Google's material-color-utilities (its dynamic
-scheme, tonal palettes and HCT colour space); all three stay under the
+scheme, tonal palettes and HCT colour space); these three stay under the
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) with
-their copyright notices, whichever licence you pick for the rest. The crate's
-licence is therefore `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0`; the crate
-ships the licence (`LICENSE-APACHE`) and the ports' notices (`NOTICE`).
+their copyright notices, whichever licence you pick for the rest;
+`src/platform/win_ui.rs` ports microsoft-ui-xaml's `GetScaledFontSize` (WinUI's
+text-size curve) and stays under the MIT License with Microsoft's notice. The
+crate's licence is therefore `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT`;
+the crate ships the licence (`LICENSE-APACHE`) and the ports' notices (`NOTICE`).
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall
