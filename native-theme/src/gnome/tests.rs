@@ -7,7 +7,7 @@ use ashpd::desktop::Color as PortalColor;
 use ashpd::desktop::settings::{ColorScheme, Contrast as PortalContrast, ReducedMotion};
 
 use super::*;
-use crate::blocks::text::{FontStyle, TextCase, TextStylePatch};
+use crate::blocks::text::{FontPatch, TextStylePatch};
 use crate::units::FontSize;
 use helpers::AdwAccent;
 
@@ -455,18 +455,37 @@ fn the_fonts_patch_body_and_monospace() {
     let body = font(&body);
     assert_eq!(body.family, Some(Value::Stated("Adwaita Sans".to_string())));
     assert_eq!(body.size, Some(Value::Stated(FontSize::Px(16.0))));
-    assert_eq!(body.weight, Some(Value::Stated(700)));
-    assert_eq!(body.style, Some(Value::Stated(FontStyle::Italic)));
     let mono = font(&mono);
     assert_eq!(mono.family, Some(Value::Stated("Adwaita Mono".to_string())));
     assert_eq!(mono.size, Some(Value::Stated(FontSize::Px(15.0))));
-    assert_eq!(mono.weight, Some(Value::Stated(400)));
-    assert_eq!(mono.style, Some(Value::Stated(FontStyle::Normal)));
+}
+
+/// The family and the size alone: GTK 4 takes nothing else from
+/// `gtk-font-name` (`gtk@4.24.1 gtk/gtksettings.c:1356-1390`; S9.3's *The
+/// GNOME reader's readings*, ADD-A141), so a weight, style, width or
+/// variant the string names patches nothing, and the slot keeps the
+/// preset's. Synthetic strings.
+#[test]
+fn a_font_string_patches_its_family_and_size_alone() {
+    let style = helpers::font_patch(
+        "Adwaita Sans Bold Italic Small-Caps Condensed 12",
+        Some(96.0),
+    )
+    .unwrap();
+    let expected = TextStylePatch {
+        font: Some(FontPatch {
+            family: Some(Value::Stated("Adwaita Sans".to_string())),
+            size: Some(Value::Stated(FontSize::Px(16.0))),
+            ..FontPatch::default()
+        }),
+        ..TextStylePatch::default()
+    };
+    assert_eq!(style, expected);
 }
 
 /// What the reader keeps of a description (synthetic strings): the first
-/// family of a list; no size where none or zero is given; small caps as
-/// the case; a width in percent; no patch for a string naming no family.
+/// family of a list; no size where none or zero is given; no patch for a
+/// string naming no family.
 #[test]
 fn a_font_string_patches_what_it_states() {
     let patch = |text: &str| helpers::font_patch(text, Some(96.0));
@@ -474,14 +493,7 @@ fn a_font_string_patches_what_it_states() {
     let font = style.font.clone().unwrap();
     assert_eq!(font.family, Some(Value::Stated("Cantarell".to_string())));
     assert_eq!(font.size, None);
-    assert_eq!(style.case, Some(Value::Stated(TextCase::SmallCaps)));
-    assert!(matches!(font.width, Some(Value::Stated(width)) if width < 100.0));
     assert_eq!(patch("Sans 0").unwrap().font.unwrap().size, None);
-    assert_eq!(patch("Sans 11").unwrap().case, None);
-    assert_eq!(
-        patch("Sans 11").unwrap().font.unwrap().width,
-        Some(Value::Stated(100.0))
-    );
     for text in ["", "   ", "11", "Bold 11"] {
         assert_eq!(patch(text), None, "{text:?}");
     }
