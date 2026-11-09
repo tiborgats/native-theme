@@ -858,9 +858,13 @@ impl Stack {
     /// The accent-derivation layer for the current preset (S8, S9.2;
     /// ADD-A132): on a preset that derives its accent-dependent roles
     /// ([`derives_accent`]), a layer directly above the preset, beneath the
-    /// reader or stand-in; `None` on every other preset. It states nothing
-    /// yet: its roles over the accent in force, at the slots where a layer
-    /// above the preset gives that accent, enter with `kde_accent` (M1b).
+    /// reader or stand-in; `None` on every other preset. On such a preset
+    /// the layer holds its place whatever the accent: where no layer above
+    /// the preset gives the accent in force it states nothing, which is
+    /// ADD-A132's "no stated accent, no layer", so no place in the stack
+    /// moves with `set_accent`. It states nothing yet: its roles over the
+    /// accent in force, at the slots where a layer above the preset gives
+    /// that accent, enter with `kde_accent` (M1b).
     fn derived_derivation(&self) -> Option<Arc<Layer>> {
         derives_accent(self.preset).then(Arc::default)
     }

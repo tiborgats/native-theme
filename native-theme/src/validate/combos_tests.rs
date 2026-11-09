@@ -1030,10 +1030,12 @@ fn combination_mapping_palette() {
 /// shared, over every bundled preset's declarations and over every surface
 /// set with every `[WM]` keyed role declared, the scheme tinting or not.
 #[test]
-fn accent_dependent_roles_as_mapping_palette_listed_them() {
+fn accent_dependent_roles_as_mapping_palette_listed_them() -> Result<(), Box<dyn std::error::Error>>
+{
     use super::combos::{AccentRole, accent_dependent_roles};
     use crate::inputs::{KdeSchemeKey as K, KdeWmKey};
     use crate::roles::SurfaceSet as S;
+    // The list as `mapping_palette` built it in place.
     let listed_before = |decl: &Declarations, tints: bool| {
         let mut roles: Vec<String> = Vec::new();
         for set in &decl.surface_sets {
@@ -1070,16 +1072,19 @@ fn accent_dependent_roles_as_mapping_palette_listed_them() {
         }
         roles
     };
-    let mut every = Declarations::default();
-    every.surface_sets = S::ALL.to_vec();
-    every.color_roles = KdeWmKey::ALL
-        .iter()
-        .map(|key| crate::key::Key::new(&format!("wm_{}", key.name())).unwrap())
-        .collect();
+    let every = Declarations {
+        surface_sets: S::ALL.to_vec(),
+        color_roles: KdeWmKey::ALL
+            .iter()
+            .map(|key| crate::key::Key::new(&format!("wm_{}", key.name())))
+            .collect::<Result<Vec<_>, _>>()?,
+        ..Declarations::default()
+    };
+    assert_eq!(every.color_roles.len(), KdeWmKey::ALL.len());
     let mut decls: Vec<Declarations> = crate::presets::PresetId::all()
         .iter()
-        .map(|id| read_preset(id.source()).unwrap().declarations)
-        .collect();
+        .map(|id| read_preset(id.source()).map(|file| file.declarations))
+        .collect::<Result<Vec<_>, _>>()?;
     decls.push(every);
     for decl in &decls {
         for tints in [false, true] {
@@ -1090,12 +1095,15 @@ fn accent_dependent_roles_as_mapping_palette_listed_them() {
             assert_eq!(shared, listed_before(decl, tints));
         }
     }
-    let breeze = read_preset(crate::presets::PresetId::KdeBreeze.source())
-        .unwrap()
-        .declarations;
+    let breeze = read_preset(crate::presets::PresetId::KdeBreeze.source())?.declarations;
     let roles = accent_dependent_roles(&breeze, false);
     assert!(roles.contains(&AccentRole::Surface(S::Header, K::BackgroundNormal)));
-    assert!(roles.contains(&AccentRole::Wm(KdeWmKey::ALL[0])));
+    assert!(
+        KdeWmKey::ALL
+            .iter()
+            .all(|key| roles.contains(&AccentRole::Wm(*key)))
+    );
+    Ok(())
 }
 
 /// `kde_effects` and `kde_selection_inactive` read `token.kde` themselves,
