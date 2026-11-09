@@ -150,8 +150,11 @@ rows = ["W-P3-16†"]
 # microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111), whose arithmetic the
 # compositor holds, not the cache: measured (U157). The WinUI host's brush transitions between colours of different
 # alpha over white draw straight interpolation (each channel and the alpha apart, unpremultiplied) within a level,
-# premultiplied and Oklab off by 16 to 51 levels (read_host.py's [color_space]); the model's `straight_srgb8`, whose
-# truncation toward zero lies beneath that precision.
+# premultiplied and Oklab off by 16 to 51 levels (read_host.py's [color_space]), which names the model's
+# `straight_srgb8`. ADD-A141 (S2.7) names `straight_srgb` instead, the refit with and without the 8-bit truncation
+# showing the compositor does not truncate; the fact keeps the committed analysis's member until read_host.py's next
+# revision (U701) commits that refit and states its method (the t grid, the error measure, the composite rounded to whole
+# levels or not), as S2.7 requires before the fact names the member.
 [[fact]]
 key = "token.motion.color_space"
 value = "straight_srgb8"
@@ -2981,10 +2984,12 @@ key = "token.size_classes"
 pending = "U512"
 rows = []
 
-# Text: WinUI scales a font size by UISettings.TextScaleFactor where IsTextScaleFactorEnabled. At 150 % the WinUI
-# host's TextBlocks grow by 1.59 at 10 px and 1.05 at 68 px (the run's README), WinUI's own curve
-# (TextFormatting::GetScaledFontSize), which ADD-A141 adds as `TextScaling::WinUi` (S9.4): pending (U508) until the
-# model has the member and the run's text-scale/ files are in the evidence repository to check it. The rendering
+# Text: WinUI scales a font size by UISettings.TextScaleFactor where IsTextScaleFactorEnabled, by its own curve,
+# TextFormatting::GetScaledFontSize (`TextScaling::WinUi`, S9.4, ADD-A141). Checked against the WinUI host's
+# text-scale run (run 42308526155, text-scale/frames.toml, at UISettings.TextScaleFactor 1.5, against run 1's
+# frames.toml at 1): each of the nine TextBlocks' (10 to 68 px) height and width grow by the curve's factor, 1.587 at
+# 10 px to 1.048 at 68 px, the size each implies within 3e-6 px of the curve's and of the vector table
+# native-theme/tests/vectors/win_ui.tsv at factor 1.5 (`linear` would put the 68 px height 40.9 px off). The rendering
 # settings (W3-22): WinUI draws its text with greyscale antialiasing (no coloured pixel, read_host.py's
 # [text_rendering]); DirectWrite's default and monitor parameters on the runner image are ClearType's: gamma 1.8,
 # enhanced contrast 0.5, pixel geometry RGB. Its grid-fit and rendering modes read DEFAULT, which names no hinting
@@ -2993,11 +2998,16 @@ rows = []
 # the contrast is DirectWrite's greyscale enhanced contrast, which the host read as 1 (`grayscale_enhanced_contrast`),
 # not ClearType's 0.5, and the subpixel order and the LCD filter are absent, which no committed analysis states yet:
 # the subpixel order, ClearType's RGB until now, is pending with the filter (U508) until read_host.py's next revision
-# writes the drawn rendering's absent fields.
+# (U701) writes the drawn rendering's absent fields.
 [[fact]]
 key = "token.text.scaling"
-pending = "U508"
+value = "win_ui"
 rows = ["W3-36"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/common/TextFormatting.cpp:181-204"
+quote = "return (XFLOAT)(inputFontSize + std::max(-exp(1) * log(inputFontSize) + 18, 0.0) * (fontScale - 1));"
 
 [[fact]]
 key = "token.text.rendering.antialiasing"
