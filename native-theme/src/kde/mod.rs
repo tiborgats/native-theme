@@ -17,7 +17,8 @@
 //! The results, the scheme and the accent's `Selection` background come
 //! from the colours plasma-integration builds the palette from: kdeglobals
 //! where it has a `[Colors:View]` group, else the look-and-feel package's
-//! colours, else the scheme file, else Breeze Light's ([`palette_colors`],
+//! colours, else the scheme file, else Breeze Light's
+//! ([`palette_colors`](crate::kde::palette_colors),
 //! S9.3).
 //!
 //! Every key the reader reads that its file leaves unset is read as KDE
