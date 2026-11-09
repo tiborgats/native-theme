@@ -2545,6 +2545,17 @@ fn gate_fixture_listed_surface_role_beside_stated() -> Result<(), String> {
     )
 }
 
+/// A keyed list listed where a preset rule merges over the synthetic list
+/// (S17 *Where a listed path is found*, ADD-A144): the preset states the
+/// list there, so the hover fact, U41, leaves no listed path, and U40 is
+/// the path's alone.
+#[test]
+fn gate_fixture_listed_keyed_list_merged_over() -> Result<(), String> {
+    let report = fixture_report("listed_keyed_list");
+    let ids = listed_ids(&report, "button.body.bindings")?;
+    expected(report.failures.is_empty() && ids == ["U40"], &report)
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the
