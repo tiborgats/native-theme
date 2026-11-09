@@ -565,6 +565,9 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:923-929"
 quote = "public val ContentPadding: PaddingValues ="
 
+# md.comp.button's 24 px leading and trailing space, the text button's and the standard menu button's too (R1.6,
+# ADD-A141): the text style's own set is deprecated for md.comp.button's and the menu-button set names no space,
+# both implementations drawing that button as their text button
 [[fact]]
 key = "button.body.padding.right"
 value = "24px"
@@ -574,6 +577,17 @@ rows = []
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button.scss:41"
 quote = "$trailing-space: 24px;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-text-button.scss:25-27"
+quote = "/// @deprecated This token is deprecated. Use the corresponding token from either the md.comp.button.text or md.comp.button.(size) set instead."
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:24-103"
+quote = "/// md.comp.standard-menu-button.container.height (Enabled / Container)"
+absent = ["leading-space", "trailing-space"]
 
 [[fact]]
 key = "button.body.padding.bottom"
@@ -599,6 +613,17 @@ rows = []
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button.scss:39"
 quote = "$leading-space: 24px;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-text-button.scss:25-27"
+quote = "/// @deprecated This token is deprecated. Use the corresponding token from either the md.comp.button.text or md.comp.button.(size) set instead."
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:24-103"
+quote = "/// md.comp.standard-menu-button.container.height (Enabled / Container)"
+absent = ["leading-space", "trailing-space"]
 
 [[fact]]
 key = "button.body.margin.top"
