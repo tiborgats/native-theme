@@ -495,14 +495,18 @@ fn glyph_draw_start_may_be_absent() {
 }
 
 #[test]
-fn text_decorations_and_spacings_may_be_absent() {
-    for path in [
-        "decoration",
-        "mnemonic_decoration",
-        "letter_spacing",
-        "word_spacing",
-    ] {
+fn text_decorations_may_be_absent() {
+    for path in ["decoration", "mnemonic_decoration"] {
         assert!(marked("TextStyle", path), "{path}");
+    }
+}
+
+/// A spacing is `0px` where the platform adds none, never `Absent` (S6.3,
+/// ADD-A141).
+#[test]
+fn text_spacings_may_not_be_absent() {
+    for path in ["letter_spacing", "word_spacing"] {
+        assert!(!marked("TextStyle", path), "{path}");
     }
 }
 
@@ -599,9 +603,7 @@ fn no_other_field_may_be_absent_or_auto() {
         "PartStyle.touch_target",
         "PresentationStep.duration",
         "TextStyle.decoration",
-        "TextStyle.letter_spacing",
         "TextStyle.mnemonic_decoration",
-        "TextStyle.word_spacing",
         "Transition.duration",
         "Transition.timing",
         "PresentationStep.timing",
@@ -668,8 +670,8 @@ fn text_style() -> TextStyle {
             features: Value::Stated(Vec::new()),
         },
         scaling_role: Value::Stated(None),
-        letter_spacing: Value::Absent,
-        word_spacing: Value::Absent,
+        letter_spacing: Value::Stated(FontSize::Px(0.0)),
+        word_spacing: Value::Stated(FontSize::Px(0.0)),
         line_height: Value::Auto,
         decoration: Value::Absent,
         mnemonic_decoration: Value::Stated(decoration_value()),

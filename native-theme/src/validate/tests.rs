@@ -3841,6 +3841,31 @@ fn keyed_icon_context_fields_may_be_absent() {
 /// A keyed text style's and a slot's drawn-text leaves, `fill`, `elision`,
 /// `wrap` and `max_lines`, may be `Absent`, a mark of those places only
 /// (S2.8, S6.3): no other leaf there, and none of the four on a part.
+/// `letter_spacing` and `word_spacing` are never `Absent`, on a part, a
+/// slot or a keyed style (S6.3, ADD-A141): a platform whose text has no
+/// such spacing states `0px`.
+#[test]
+fn a_spacing_is_never_absent() {
+    for field in ["letter_spacing", "word_spacing"] {
+        for table in ["widgets.button.label.text", "tokens.text.roles.body"] {
+            assert_eq!(
+                bare(&toml(&format!("[{table}]\n{field} = \"absent\""))),
+                [format!("{table}.{field}: may not be absent")]
+            );
+            assert_eq!(bare(&toml(&format!("[{table}]\n{field}_px = 0"))), NONE);
+        }
+        let decl = declare("text_styles = [\"title\"]");
+        let preset = toml("[tokens.text.keyed.title]\nfont.family = \"Probe Sans\"");
+        let keyed = toml(&format!("[tokens.text.keyed.title]\n{field} = \"absent\""));
+        assert_eq!(
+            found_over(&keyed, &decl, &preset),
+            [format!(
+                "tokens.text.keyed.title.{field}: may not be absent"
+            )]
+        );
+    }
+}
+
 #[test]
 fn keyed_style_drawn_text_leaves_may_be_absent() {
     let decl = declare("text_styles = [\"title\"]");

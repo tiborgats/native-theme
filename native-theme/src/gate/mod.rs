@@ -3478,7 +3478,7 @@ mod tests {
         };
         assert_eq!(body.get("max_lines"), Some(&Item::Integer(1)));
         assert_eq!(
-            body.get("letter_spacing"),
+            body.get("decoration"),
             Some(&Item::String("absent".to_owned()))
         );
     }

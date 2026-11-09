@@ -51,7 +51,7 @@ set = { fill.append = ["= alpha(surface.foreground, 0.08)"] }
 [[rules]]
 when = { conditions = ["scheme:dark", "window_inactive"], context = [{ widget = "button", part = "body", states = ["@keyboard_focus_change"] }] }
 target = "button.label"
-set = { text = { replace = { font = { family = "Cantarell", size_pt = 10, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }, scaling_role = "none", letter_spacing = "absent", word_spacing = "absent", line_height = "auto", decoration = "absent", mnemonic_decoration = "absent", case = "mixed", elision = "end", wrap = "word", max_lines = 1, fill = "#000000" } } }
+set = { text = { replace = { font = { family = "Cantarell", size_pt = 10, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }, scaling_role = "none", letter_spacing_px = 0, word_spacing_px = 0, line_height = "auto", decoration = "absent", mnemonic_decoration = "absent", case = "mixed", elision = "end", wrap = "word", max_lines = 1, fill = "#000000" } } }
 
 [[rules]]
 when = { conditions = ["contrast_high"] }

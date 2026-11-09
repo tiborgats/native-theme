@@ -24,7 +24,7 @@ mod pango_font_description;
 pub(crate) use adw_accent_nearest::{AdwAccent, adw_accent_nearest};
 pub(crate) use pango_font_description::{PangoDescription, pango_font_description};
 
-use crate::blocks::text::{FontPatch, FontStyle, TextCase, TextStylePatch};
+use crate::blocks::text::{FontPatch, TextStylePatch};
 use crate::color::Color;
 use crate::units::FontSize;
 use crate::value::Value;
@@ -64,15 +64,6 @@ const PANGO_SCALE: f64 = 1024.0;
 /// The points per inch of S9.4's conversion, `pt × dpi / 72`.
 const POINTS_PER_INCH: f64 = 72.0;
 
-/// Pango's width integer per percent of normal: the description holds it
-/// in permille (`PangoDescription::width`), the model's `Font.width` in
-/// percent (S2.8).
-const PERMILLE_PER_PERCENT: f32 = 10.0;
-
-/// The weights the model's `Font.weight` takes, the CSS and OpenType ones
-/// (S2.8, S12).
-const WEIGHTS: std::ops::RangeInclusive<i32> = 1..=1000;
-
 /// The text style a gsettings font string `text` (`font-name`,
 /// `monospace-font-name`) patches a text-role slot with, its size in
 /// logical pixels converted by `font_dpi` (S9.4, S9.5); `None` where the
@@ -80,13 +71,13 @@ const WEIGHTS: std::ops::RangeInclusive<i32> = 1..=1000;
 /// preset's.
 ///
 /// Of Pango's description: the family, the first non-empty entry of its
-/// comma-separated list (the model's family is one name); the size,
+/// comma-separated list (the model's family is one name), and the size,
 /// unpatched where it is unset or zero (a zero size names no usable font)
-/// or, for a point size, where `font_dpi` is `None`; the weight, unpatched
-/// outside 1 to 1000; the style (Normal, Oblique, Italic; another
-/// integer, which only `style=N` gives, unpatched); the width, permille to
-/// percent; small caps as [`TextCase::SmallCaps`]. Its other variants,
-/// gravity, colour, variations and features are not read.
+/// or, for a point size, where `font_dpi` is `None`; nothing else. GTK 4
+/// takes only the family and the size from `gtk-font-name`, never its
+/// weight (`gtk@4.24.1 gtk/gtksettings.c:1356-1390`), so the slot's weight,
+/// style, width and case stay the preset's (S9.3's *The GNOME reader's
+/// readings*, ADD-A141); `monospace` takes the same two fields.
 pub(crate) fn font_patch(text: &str, font_dpi: Option<f32>) -> Option<TextStylePatch> {
     let desc = pango_font_description(text);
     let family = desc
@@ -98,25 +89,13 @@ pub(crate) fn font_patch(text: &str, font_dpi: Option<f32>) -> Option<TextStyleP
     let font = FontPatch {
         family: Some(Value::Stated(family)),
         size: font_size(&desc, font_dpi).map(Value::Stated),
-        weight: WEIGHTS
-            .contains(&desc.weight)
-            .then(|| u16::try_from(desc.weight).ok())
-            .flatten()
-            .map(Value::Stated),
-        style: font_style(desc.style).map(Value::Stated),
-        width: Some(Value::Stated(desc.width as f32 / PERMILLE_PER_PERCENT)),
         ..FontPatch::default()
     };
     Some(TextStylePatch {
         font: Some(font),
-        case: (desc.variant == SMALL_CAPS).then_some(Value::Stated(TextCase::SmallCaps)),
         ..TextStylePatch::default()
     })
 }
-
-/// `PANGO_VARIANT_SMALL_CAPS`, the variant integer of the `Small-Caps`
-/// word (`pango@1.58.2 pango/pango-font.h:100-108`).
-const SMALL_CAPS: i32 = 1;
 
 /// The description's size in logical pixels: an absolute size as it is, a
 /// point size converted by `font_dpi`; `None` where the size is unset or
@@ -130,15 +109,4 @@ fn font_size(desc: &PangoDescription, font_dpi: Option<f32>) -> Option<FontSize>
         size * f64::from(font_dpi?) / POINTS_PER_INCH
     };
     Some(FontSize::Px(px as f32))
-}
-
-/// Pango's style integer as the model's style: Normal 0, Oblique 1, Italic
-/// 2 (`pango@1.58.2 pango/pango-font.h:74-78`).
-fn font_style(style: i32) -> Option<FontStyle> {
-    match style {
-        0 => Some(FontStyle::Normal),
-        1 => Some(FontStyle::Oblique),
-        2 => Some(FontStyle::Italic),
-        _ => None,
-    }
 }

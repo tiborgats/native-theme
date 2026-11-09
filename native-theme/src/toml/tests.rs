@@ -479,6 +479,59 @@ fn decoration_line_underline_low_reads() {
     );
 }
 
+/// `straight_srgb` is S2.7's straight unrounded colour space and
+/// `straight_srgb8` Qt's truncating one, two members (ADD-A141).
+#[test]
+fn the_straight_colour_spaces_are_two() {
+    use crate::tokens::ColorInterpolation;
+
+    let space = |name: &str| {
+        layer(&format!("[tokens.motion]\ncolor_space = \"{name}\""))
+            .bases
+            .tokens
+            .motion
+            .and_then(|motion| motion.color_space)
+    };
+    assert_eq!(
+        space("straight_srgb"),
+        Some(Value::Stated(ColorInterpolation::StraightSrgb))
+    );
+    assert_eq!(
+        space("straight_srgb8"),
+        Some(Value::Stated(ColorInterpolation::StraightSrgb8))
+    );
+}
+
+/// `win_ui` is S9.4's `WinUi` scaling (ADD-A141).
+#[test]
+fn win_ui_is_a_text_scaling() {
+    let scaling = layer("[tokens.text]\nscaling = \"win_ui\"")
+        .bases
+        .tokens
+        .text
+        .and_then(|text| text.scaling);
+    assert_eq!(scaling, Some(crate::tokens::TextScaling::WinUi));
+}
+
+/// `filled_ring` names no `FocusKind` (S2.10's *One ring*, ADD-A141):
+/// Breeze's filled frame is a `ring`.
+#[test]
+fn a_filled_ring_is_no_focus_kind() {
+    assert_eq!(
+        problems("[widgets.button.body]\nfocus.kind = \"filled_ring\""),
+        ["widgets.button.body.focus.kind: unknown name \"filled_ring\""]
+    );
+    assert_eq!(
+        body_of("focus.kind = \"ring\"")
+            .focus
+            .and_then(|focus| match focus {
+                BlockPatch::Fields(focus) => focus.kind,
+                _ => None,
+            }),
+        Some(crate::blocks::focus::FocusKind::Ring)
+    );
+}
+
 #[test]
 fn spelling_enum_variant() {
     let style = body_of("corners.curve = \"continuous\"\nshadow = { elevation = \"2\" }");

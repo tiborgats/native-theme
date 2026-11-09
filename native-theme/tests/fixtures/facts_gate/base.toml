@@ -119,8 +119,8 @@ font_dpi = 96
 [tokens.text.keyed.body]
 font = { family = "Probe Sans", size_px = 12, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }
 scaling_role = "none"
-letter_spacing = "absent"
-word_spacing = "absent"
+letter_spacing_px = 0
+word_spacing_px = 0
 line_height = "auto"
 decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
 mnemonic_decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
