@@ -28,7 +28,7 @@ targets = [
 
 # The KDE Plasma reader: kdeglobals as KConfig cascades it, the colour
 # scheme file it names and, on X11, Xft.dpi; and the KDE icon theme (Linux).
-kde = ["dep:configparser"]
+kde = []
 # The GNOME and Budgie reader, and the portal-only read of the Linux desktops
 # with no reader of their own: the XDG Desktop Portal settings and gsettings
 # (Linux).
@@ -76,6 +76,10 @@ system-icons = [
 
 [dependencies]
 arc-swap = "1.9.2"
+# KConfig's files, read by the KDE reader and by a KDE port's conversion,
+# `Palette::from_port`, in every build on every target (S14); used under its
+# MIT licence.
+configparser = "3.2.0"
 fontdb = { version = "0.23", optional = true, default-features = false, features = ["fs", "fontconfig", "memmap"] }
 native-theme-derive = { version = "0.8.0", path = "../native-theme-derive" }
 pollster = "1.0"
@@ -138,7 +142,6 @@ ashpd = { version = "0.13.13", optional = true, default-features = false, featur
     "settings",
 ] }
 async-io = { version = "2.6.0", optional = true }
-configparser = { version = "3.2.0", optional = true }
 freedesktop-icons = { version = "0.4", optional = true }
 notify = { version = "8.2", optional = true, default-features = false }
 png = { version = "0.18.1", optional = true, default-features = false }

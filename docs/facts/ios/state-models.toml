@@ -41,7 +41,11 @@
 #   press; no `toggle`: a selection menu is a pop-up button, `combo_box`); `flat` takes a corner style only with
 #   `toggle`, as plain draws a bezel only while checked (analysis.toml `cells.<scheme>.plain.<size>.selected`; no
 #   bezel at rest, pressed, disabled or toggled off); each configuration style with `@role_primary` (the sets the run
-#   drew, `<style>__role_primary`, the prominent glass ones on 26 too).
+#   drew, `<style>__role_primary`, the prominent glass ones on 26 too); and the base's own sets (ADD-A141, *What the
+#   axes and sets hold*: the system type with no configuration takes an image, `setImage:forState:`, a menu, `menu`
+#   with `@menu_on_hold` its long press, and the selection toggle, `changesSelectionAsPrimaryAction`, UIButton's own
+#   API, so it draws an image with a toggle, a menu with an image and a menu on hold, which the gate met only where a
+#   fact's own `when` named them, the iOS facts lane's round 5, c8610c67; no toggle with a menu, as for the styles).
 # - Sizes (S10; ADD-A131): an element with no configuration style takes one size, `regular` (no `buttonSize`), so
 #   `sizes = ["regular"]` and its default `regular`; each configuration style takes the four `buttonSize`s in its
 #   `sizes_by_variant` entry, its default `regular` (U129 settled: run 42269041636 read a new configuration's
@@ -93,6 +97,8 @@ variant_products = [
   [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }],
+  [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }],
+  [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }],
 ]
 not_drawn = [
   { states = ["checked"], not_variants = ["toggle"] },
@@ -338,6 +344,12 @@ quote = "@property (nonatomic, assign, readonly, getter = isHovered) BOOL hovere
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:93-94"
 quote = "/// Enables this button's built-in pointer interaction. @property (nonatomic, readwrite, assign, getter = isPointerInteractionEnabled) BOOL pointerInteractionEnabled API_AVAILABLE(ios(13.4)) API_UNAVAILABLE(watchos, tvos);"
+
+# `with_icon`, `icon_only`: UIButton's own image, on the system type as on a configured button (the base's sets)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:122"
+quote = "- (void)setImage:(nullable UIImage *)image forState:(UIControlState)state;"
 
 # `menu` (`@menu_on_hold`: the menu on a long press, not as the primary action)
 [[model.cite]]
@@ -801,6 +813,8 @@ variant_products = [
   [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }],
+  [{ any = ["with_icon", "icon_only"] }, { any = ["toggle"] }],
+  [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }],
   [{ one = ["glass", "clear"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
@@ -1151,6 +1165,12 @@ quote = "@property (nonatomic, assign, readonly, getter = isHovered) BOOL hovere
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:93-94"
 quote = "/// Enables this button's built-in pointer interaction. @property (nonatomic, readwrite, assign, getter = isPointerInteractionEnabled) BOOL pointerInteractionEnabled API_AVAILABLE(ios(13.4)) API_UNAVAILABLE(watchos, tvos);"
+
+# `with_icon`, `icon_only`: UIButton's own image, on the system type as on a configured button (the base's sets)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:122"
+quote = "- (void)setImage:(nullable UIImage *)image forState:(UIControlState)state;"
 
 # `menu` (`@menu_on_hold`: the menu on a long press, not as the primary action)
 [[model.cite]]
