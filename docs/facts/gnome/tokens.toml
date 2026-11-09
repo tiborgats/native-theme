@@ -153,9 +153,11 @@ quote = "transition: background 150ms ease-in-out;"
 
 # AdwTabThumbnail's (`tabthumbnail`, the tab overview's thumbnails): its box shadow 200 ms ease-out-quad; its
 # background colour's transition states no duration, so it runs in CSS's initial 0s (instant), a value of that
-# transition, not a motion token
+# transition, not a motion token. The class's code runs a fade of its own (adw-tab-thumbnail.c:18), so the class
+# states two values and the stylesheet's key takes its transition's property, `tab_thumbnail_box_shadow`, as
+# AdwBottomSheet's two do (S4.1 step 2, ADD-A141)
 [[fact]]
-key = "token.motion.durations.tab_thumbnail"
+key = "token.motion.durations.tab_thumbnail_box_shadow"
 value = "200ms"
 rows = ["GN-3.18"]
 
@@ -5385,10 +5387,23 @@ source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
 quote = ".document {"
 absent = ["color"]
 
+# libadwaita takes the family and the size alone from `monospace-font-name`: its style manager writes them as
+# `--monospace-font-family` and `--monospace-font-size` (adw-style-manager.c:169-225), which `.monospace` reads; the
+# other fields of the description reach no CSS (the weight and style facts below cite the function so)
 [[fact]]
 key = "token.text.keyed.monospace.font.family"
 value = "Adwaita Mono"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace { font-family: var(--monospace-font-family);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-style-manager.c:198-200"
+quote = "if (monospace_desc && (pango_font_description_get_set_fields (monospace_desc) & (PANGO_FONT_MASK_FAMILY)) != 0) { const char *family = pango_font_description_get_family (monospace_desc);"
 
 [[fact.cite]]
 kind = "published"
@@ -5399,6 +5414,11 @@ quote = "<key name=\"monospace-font-name\" type=\"s\"> <default>'Adwaita Mono 11
 key = "token.text.keyed.monospace.font.size"
 value = "11pt"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-style-manager.c:205-214"
+quote = "if (monospace_desc && (pango_font_description_get_set_fields (monospace_desc) & (PANGO_FONT_MASK_SIZE)) != 0) {"
 
 [[fact.cite]]
 kind = "published"
@@ -5431,6 +5451,12 @@ kind = "published"
 source = "pango@1.58.2 pango/pango-font.h:136"
 quote = "PANGO_WEIGHT_NORMAL = 400,"
 
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-style-manager.c:169-225"
+quote = "generate_fonts_css (AdwStyleManager *self)"
+absent = ["pango_font_description_get_weight", "pango_font_description_get_style", "pango_font_description_get_stretch", "pango_font_description_get_width", "pango_font_description_get_variant", "pango_font_description_get_variations", "pango_font_description_get_features"]
+
 [[fact]]
 key = "token.text.keyed.monospace.font.style"
 value = "normal"
@@ -5445,6 +5471,12 @@ quote = ".monospace { font-family: var(--monospace-font-family); font-size: var(
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
 quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-style-manager.c:169-225"
+quote = "generate_fonts_css (AdwStyleManager *self)"
+absent = ["pango_font_description_get_weight", "pango_font_description_get_style", "pango_font_description_get_stretch", "pango_font_description_get_width", "pango_font_description_get_variant", "pango_font_description_get_variations", "pango_font_description_get_features"]
 
 [[fact]]
 # the class sets no line height: GTK's default, the font's own spacing

@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 b88860c48462fcdcc274085a83de22a29f89cae99d76b2c8328b3ed92a141648
+# generated lines: sha256 5751f27e5b0246c7cdea2ad2e71850f08be38ca16ac5c7923e71774bd387cd56
 
 [preset]
 id = "adwaita"
@@ -158,25 +158,25 @@ keys = [
 ]
 # hand-written: end declare
 
-# docs/facts/gnome/state-models.toml:4
+# docs/facts/gnome/state-models.toml:6
 [declare.widget.button]
 available = true
 variants = ["primary", "destructive", "flat", "pill", "circular", "toggle", "menu", "icon_only", "with_icon", "close", "back", "previous", "next", "add", "clear_field", "reveal", "play", "volume", "pane_toggle", "@osd", "@opaque", "@card", "@with_arrow", "@arrow_only", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button", "@tab_overflow", "@custom_child", "@image_text_box"]
 sizes = []
 densities = []
-exclusive = []
+exclusive = [["disabled", "hover"], ["disabled", "pressed"], ["disabled", "focused"], ["disabled", "focus_visible"], ["disabled", "drop_target"]]
 exclusive_variants = [["icon_only", "with_icon", "@custom_child"], ["@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none"], ["@with_arrow", "@arrow_only"]]
 # docs/facts/gnome/button.toml:465, docs/facts/gnome/button.toml:480
 data = { label = ["font_underline_thickness"] }
 
 [pending]
-# docs/facts/gnome/tokens.toml:2256
+# docs/facts/gnome/tokens.toml:2258
 "tokens.behavior.touch.delay_ms" = "U151"
-# docs/facts/gnome/tokens.toml:6870
+# docs/facts/gnome/tokens.toml:6902
 "tokens.text.fallbacks.families" = "U150"
-# docs/facts/gnome/tokens.toml:6875
+# docs/facts/gnome/tokens.toml:6907
 "tokens.text.fallbacks.per_language" = "U150"
-# docs/facts/gnome/tokens.toml:6880
+# docs/facts/gnome/tokens.toml:6912
 "tokens.text.fallbacks.per_family" = "U150"
 
 [inputs.accent]
@@ -2128,989 +2128,989 @@ durations.places_view_ms = 200
 durations.expander_row_ms = 200
 # docs/facts/gnome/tokens.toml:139
 durations.tab_bar_ms = 150
-# docs/facts/gnome/tokens.toml:157
-durations.tab_thumbnail_ms = 200
-# docs/facts/gnome/tokens.toml:168
+# docs/facts/gnome/tokens.toml:159
+durations.tab_thumbnail_box_shadow_ms = 200
+# docs/facts/gnome/tokens.toml:170
 durations.toggle_group_ms = 200
-# docs/facts/gnome/tokens.toml:179
+# docs/facts/gnome/tokens.toml:181
 timings.linear = "linear"
-# docs/facts/gnome/tokens.toml:199
+# docs/facts/gnome/tokens.toml:201
 timings.ease_in_out = { cubic_bezier = [0.42, 0.0, 0.58, 1.0] }
-# docs/facts/gnome/tokens.toml:214
+# docs/facts/gnome/tokens.toml:216
 timings.ease_in = { cubic_bezier = [0.42, 0.0, 1.0, 1.0] }
-# docs/facts/gnome/tokens.toml:224
+# docs/facts/gnome/tokens.toml:226
 timings.ease_out = { cubic_bezier = [0.0, 0.0, 0.58, 1.0] }
-# docs/facts/gnome/tokens.toml:234
+# docs/facts/gnome/tokens.toml:236
 timings.ease = { cubic_bezier = [0.25, 0.1, 0.25, 1.0] }
-# docs/facts/gnome/tokens.toml:251
+# docs/facts/gnome/tokens.toml:253
 timings.ease_in_cubic = { platform = { adw = "ease_in_cubic" } }
-# docs/facts/gnome/tokens.toml:277
+# docs/facts/gnome/tokens.toml:279
 timings.ease_out_cubic = { platform = { adw = "ease_out_cubic" } }
-# docs/facts/gnome/tokens.toml:298
+# docs/facts/gnome/tokens.toml:300
 timings.ease_in_out_sine = { platform = { adw = "ease_in_out_sine" } }
-# docs/facts/gnome/tokens.toml:324
+# docs/facts/gnome/tokens.toml:326
 timings.ease_in_expo = { platform = { adw = "ease_in_expo" } }
-# docs/facts/gnome/tokens.toml:345
+# docs/facts/gnome/tokens.toml:347
 timings.ease_out_expo = { platform = { adw = "ease_out_expo" } }
-# docs/facts/gnome/tokens.toml:370
+# docs/facts/gnome/tokens.toml:372
 durations.revealer_ms = 250
-# docs/facts/gnome/tokens.toml:380
+# docs/facts/gnome/tokens.toml:382
 durations.stack_ms = 200
-# docs/facts/gnome/tokens.toml:390
+# docs/facts/gnome/tokens.toml:392
 durations.scrolled_window_ms = 200
-# docs/facts/gnome/tokens.toml:407
+# docs/facts/gnome/tokens.toml:409
 durations.entry_row_ms = 150
-# docs/facts/gnome/tokens.toml:418
+# docs/facts/gnome/tokens.toml:420
 durations.flap_fold_ms = 250
-# docs/facts/gnome/tokens.toml:429
+# docs/facts/gnome/tokens.toml:431
 durations.leaflet_mode_ms = 250
-# docs/facts/gnome/tokens.toml:440
+# docs/facts/gnome/tokens.toml:442
 durations.tab_close_btn_ms = 150
-# docs/facts/gnome/tokens.toml:450
+# docs/facts/gnome/tokens.toml:452
 durations.tab_attention_indicator_ms = 250
-# docs/facts/gnome/tokens.toml:461
+# docs/facts/gnome/tokens.toml:463
 durations.tab_box_open_ms = 200
-# docs/facts/gnome/tokens.toml:471
+# docs/facts/gnome/tokens.toml:473
 durations.tab_box_close_ms = 200
-# docs/facts/gnome/tokens.toml:481
+# docs/facts/gnome/tokens.toml:483
 durations.tab_box_focus_ms = 200
-# docs/facts/gnome/tokens.toml:491
+# docs/facts/gnome/tokens.toml:493
 durations.tab_box_scroll_ms = 200
-# docs/facts/gnome/tokens.toml:501
+# docs/facts/gnome/tokens.toml:503
 durations.tab_box_resize_ms = 200
-# docs/facts/gnome/tokens.toml:511
+# docs/facts/gnome/tokens.toml:513
 durations.tab_box_reorder_ms = 250
-# docs/facts/gnome/tokens.toml:521
+# docs/facts/gnome/tokens.toml:523
 durations.tab_box_icon_resize_ms = 200
-# docs/facts/gnome/tokens.toml:532
+# docs/facts/gnome/tokens.toml:534
 durations.tab_grid_open_ms = 200
-# docs/facts/gnome/tokens.toml:542
+# docs/facts/gnome/tokens.toml:544
 durations.tab_grid_close_ms = 200
-# docs/facts/gnome/tokens.toml:552
+# docs/facts/gnome/tokens.toml:554
 durations.tab_grid_focus_ms = 200
-# docs/facts/gnome/tokens.toml:562
+# docs/facts/gnome/tokens.toml:564
 durations.tab_grid_resize_ms = 200
-# docs/facts/gnome/tokens.toml:572
+# docs/facts/gnome/tokens.toml:574
 durations.tab_grid_reorder_ms = 250
-# docs/facts/gnome/tokens.toml:582
+# docs/facts/gnome/tokens.toml:584
 durations.tab_grid_icon_resize_ms = 200
-# docs/facts/gnome/tokens.toml:593
+# docs/facts/gnome/tokens.toml:595
 durations.tab_overview_scroll_ms = 200
-# docs/facts/gnome/tokens.toml:603
+# docs/facts/gnome/tokens.toml:605
 durations.tab_overview_ms = 400
-# docs/facts/gnome/tokens.toml:614
+# docs/facts/gnome/tokens.toml:616
 durations.toast_overlay_show_ms = 300
-# docs/facts/gnome/tokens.toml:624
+# docs/facts/gnome/tokens.toml:626
 durations.toast_overlay_hide_ms = 300
-# docs/facts/gnome/tokens.toml:634
+# docs/facts/gnome/tokens.toml:636
 durations.toast_overlay_replace_ms = 500
-# docs/facts/gnome/tokens.toml:645
+# docs/facts/gnome/tokens.toml:647
 durations.view_stack_ms = 200
-# docs/facts/gnome/tokens.toml:657
+# docs/facts/gnome/tokens.toml:659
 speed_factor = 1
-# docs/facts/gnome/tokens.toml:695
+# docs/facts/gnome/tokens.toml:697
 color_space = "premultiplied_srgb"
-# docs/facts/gnome/tokens.toml:710
+# docs/facts/gnome/tokens.toml:712
 timings.floating_sheet_open = { spring = { mass = 1, stiffness = 500, damping_ratio = 0.62, initial_velocity = 0, rest_epsilon = 0.01, clamp = false, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:797
+# docs/facts/gnome/tokens.toml:799
 timings.floating_sheet_close = { spring = { mass = 1, stiffness = 500, damping_ratio = 0.62, initial_velocity = 0, rest_epsilon = 0.01, clamp = true, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:886
+# docs/facts/gnome/tokens.toml:888
 timings.bottom_sheet_open = { spring = { mass = 1, stiffness = 400, damping_ratio = 0.8, initial_velocity = 0, rest_epsilon = 0.0001, clamp = false, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:967
+# docs/facts/gnome/tokens.toml:969
 timings.bottom_sheet_close = { spring = { mass = 1, stiffness = 400, damping_ratio = 0.8, initial_velocity = 0, rest_epsilon = 0.0001, clamp = true, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:1050
+# docs/facts/gnome/tokens.toml:1052
 timings.navigation_view_push = { spring = { mass = 1, stiffness = 1000, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = false, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:1090
+# docs/facts/gnome/tokens.toml:1092
 timings.navigation_view_pop = { spring = { mass = 1, stiffness = 1000, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:1131
+# docs/facts/gnome/tokens.toml:1133
 timings.overlay_split_view_show = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = false, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:1166
+# docs/facts/gnome/tokens.toml:1168
 timings.overlay_split_view_hide = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:1202
+# docs/facts/gnome/tokens.toml:1204
 timings.carousel = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:1234
+# docs/facts/gnome/tokens.toml:1236
 timings.flap_reveal = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:1264
+# docs/facts/gnome/tokens.toml:1266
 timings.leaflet_child = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
 
 [tokens.params]
-# docs/facts/gnome/tokens.toml:1294
+# docs/facts/gnome/tokens.toml:1296
 opacity.border = 0.15
-# docs/facts/gnome/tokens.toml:1310
+# docs/facts/gnome/tokens.toml:1312
 opacity.focus_border = 0.5
-# docs/facts/gnome/tokens.toml:1343
+# docs/facts/gnome/tokens.toml:1345
 opacity.dimmer = 0.3
-# docs/facts/gnome/tokens.toml:1366
+# docs/facts/gnome/tokens.toml:1368
 opacity.strong_disabled = 0.3
-# docs/facts/gnome/tokens.toml:1377
+# docs/facts/gnome/tokens.toml:1379
 opacity.dim = 0.55
-# docs/facts/gnome/tokens.toml:1388
+# docs/facts/gnome/tokens.toml:1390
 opacity.disabled = 0.5
-# docs/facts/gnome/tokens.toml:2292
+# docs/facts/gnome/tokens.toml:2294
 pointer_repeat.delay = 500
-# docs/facts/gnome/tokens.toml:2302
+# docs/facts/gnome/tokens.toml:2304
 pointer_repeat.interval = 250
 
 [tokens.focus]
-# docs/facts/gnome/tokens.toml:1440
+# docs/facts/gnome/tokens.toml:1442
 kind = "ring"
-# docs/facts/gnome/tokens.toml:1450
+# docs/facts/gnome/tokens.toml:1452
 width_px = 2
-# docs/facts/gnome/tokens.toml:1465
+# docs/facts/gnome/tokens.toml:1467
 paint = "= alpha(role.global.accent_standalone, token.params.opacity.focus_border)"
-# docs/facts/gnome/tokens.toml:1501
+# docs/facts/gnome/tokens.toml:1503
 dash = "solid"
-# docs/facts/gnome/tokens.toml:1511
+# docs/facts/gnome/tokens.toml:1513
 offset.top_px = "= sub(0px, token.focus.width)"
-# docs/facts/gnome/tokens.toml:1532
+# docs/facts/gnome/tokens.toml:1534
 offset.right_px = "= token.focus.offset.top"
-# docs/facts/gnome/tokens.toml:1553
+# docs/facts/gnome/tokens.toml:1555
 offset.bottom_px = "= token.focus.offset.top"
-# docs/facts/gnome/tokens.toml:1574
+# docs/facts/gnome/tokens.toml:1576
 offset.left_px = "= token.focus.offset.top"
-# docs/facts/gnome/tokens.toml:1595
+# docs/facts/gnome/tokens.toml:1597
 corners.top_left = "follow_part"
-# docs/facts/gnome/tokens.toml:1605
+# docs/facts/gnome/tokens.toml:1607
 corners.top_right = "follow_part"
-# docs/facts/gnome/tokens.toml:1615
+# docs/facts/gnome/tokens.toml:1617
 corners.bottom_right = "follow_part"
-# docs/facts/gnome/tokens.toml:1625
+# docs/facts/gnome/tokens.toml:1627
 corners.bottom_left = "follow_part"
-# docs/facts/gnome/tokens.toml:1635
+# docs/facts/gnome/tokens.toml:1637
 corners.curve = "circular"
-# docs/facts/gnome/tokens.toml:1645
+# docs/facts/gnome/tokens.toml:1647
 shadow = "absent"
-# docs/facts/gnome/tokens.toml:1656
+# docs/facts/gnome/tokens.toml:1658
 transition = { properties = [], kind = "interpolate", duration_ms = "= mul(token.motion.durations.focus, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", engine = "gtk_css", from = "none" }
 
 [tokens.caret]
-# docs/facts/gnome/tokens.toml:1691
+# docs/facts/gnome/tokens.toml:1693
 color = "= surface.foreground"
-# docs/facts/gnome/tokens.toml:1709
+# docs/facts/gnome/tokens.toml:1711
 width_px = "absent"
-# docs/facts/gnome/tokens.toml:1730
+# docs/facts/gnome/tokens.toml:1732
 blink_on_ms = "= mul(1200ms, 0.5)"
-# docs/facts/gnome/tokens.toml:1751
+# docs/facts/gnome/tokens.toml:1753
 blink_off_ms = "= mul(1200ms, 0.5)"
-# docs/facts/gnome/tokens.toml:1772
+# docs/facts/gnome/tokens.toml:1774
 blink_timeout_ms = 10000
-# docs/facts/gnome/tokens.toml:1789
+# docs/facts/gnome/tokens.toml:1791
 blink_style = "fade"
-# docs/facts/gnome/tokens.toml:1804
+# docs/facts/gnome/tokens.toml:1806
 secondary = "absent"
-# docs/facts/gnome/tokens.toml:1815
+# docs/facts/gnome/tokens.toml:1817
 shown_in_read_only = false
-# docs/facts/gnome/tokens.toml:1831
+# docs/facts/gnome/tokens.toml:1833
 solid_while_typing = true
 
 [tokens.behavior]
-# docs/facts/gnome/tokens.toml:1861
+# docs/facts/gnome/tokens.toml:1863
 double_click_time_ms = 400
-# docs/facts/gnome/tokens.toml:1876
+# docs/facts/gnome/tokens.toml:1878
 double_click_distance_px = 5
-# docs/facts/gnome/tokens.toml:1891
+# docs/facts/gnome/tokens.toml:1893
 double_click_height_px = "= token.behavior.double_click_distance"
-# docs/facts/gnome/tokens.toml:1901
+# docs/facts/gnome/tokens.toml:1903
 drag_threshold_px = 8
-# docs/facts/gnome/tokens.toml:1916
+# docs/facts/gnome/tokens.toml:1918
 key_repeat.delay_ms = 500
-# docs/facts/gnome/tokens.toml:1931
+# docs/facts/gnome/tokens.toml:1933
 key_repeat.interval_ms = 30
-# docs/facts/gnome/tokens.toml:1941
+# docs/facts/gnome/tokens.toml:1943
 hide_pointer_while_typing = true
-# docs/facts/gnome/tokens.toml:1976
+# docs/facts/gnome/tokens.toml:1978
 long_press_ms = 500
-# docs/facts/gnome/tokens.toml:1986
+# docs/facts/gnome/tokens.toml:1988
 spring_loading_ms = 500
-# docs/facts/gnome/tokens.toml:1996
+# docs/facts/gnome/tokens.toml:1998
 mnemonics = { on_alt = { delay_ms = 300 } }
-# docs/facts/gnome/tokens.toml:2006
+# docs/facts/gnome/tokens.toml:2008
 focus_visible_when = { keyboard = { timeout_ms = 3000 } }
-# docs/facts/gnome/tokens.toml:2029
+# docs/facts/gnome/tokens.toml:2031
 hover_time_ms = "absent"
-# docs/facts/gnome/tokens.toml:2081
+# docs/facts/gnome/tokens.toml:2083
 drag_min_delay_ms = 100
-# docs/facts/gnome/tokens.toml:2102
+# docs/facts/gnome/tokens.toml:2104
 drag_time_ms = "absent"
-# docs/facts/gnome/tokens.toml:2119
+# docs/facts/gnome/tokens.toml:2121
 mnemonic_when_disabled = false
-# docs/facts/gnome/tokens.toml:2136
+# docs/facts/gnome/tokens.toml:2138
 hide_pointer_delay_ms = "absent"
-# docs/facts/gnome/tokens.toml:2152
+# docs/facts/gnome/tokens.toml:2154
 hide_pointer_fade_ms = 0
-# docs/facts/gnome/tokens.toml:2171
+# docs/facts/gnome/tokens.toml:2173
 single_click_activates = false
-# docs/facts/gnome/tokens.toml:2192
+# docs/facts/gnome/tokens.toml:2194
 touch.slop_px = "= token.behavior.drag_threshold"
-# docs/facts/gnome/tokens.toml:2213
+# docs/facts/gnome/tokens.toml:2215
 touch.paging_slop_px = 16
-# docs/facts/gnome/tokens.toml:2229
+# docs/facts/gnome/tokens.toml:2231
 touch.double_tap_time_ms = "= token.behavior.double_click_time"
-# docs/facts/gnome/tokens.toml:2245
+# docs/facts/gnome/tokens.toml:2247
 touch.double_tap_slop_px = "absent"
 
 [tokens]
-# docs/facts/gnome/tokens.toml:2262
+# docs/facts/gnome/tokens.toml:2264
 elevation = {}
-# docs/facts/gnome/tokens.toml:2281
+# docs/facts/gnome/tokens.toml:2283
 size_classes = {}
-# docs/facts/gnome/tokens.toml:7929
+# docs/facts/gnome/tokens.toml:7961
 kde = "absent"
-# docs/facts/gnome/tokens.toml:7946
+# docs/facts/gnome/tokens.toml:7978
 material = "absent"
 
 [tokens.text]
-# docs/facts/gnome/tokens.toml:2315
+# docs/facts/gnome/tokens.toml:2317
 keyed.tab_counter.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:2331
+# docs/facts/gnome/tokens.toml:2333
 keyed.tab_counter.font.size_px = 10.5
-# docs/facts/gnome/tokens.toml:2341
+# docs/facts/gnome/tokens.toml:2343
 keyed.tab_counter.font.weight = 800
-# docs/facts/gnome/tokens.toml:2351
+# docs/facts/gnome/tokens.toml:2353
 keyed.tab_counter.font.style = "normal"
-# docs/facts/gnome/tokens.toml:2367
+# docs/facts/gnome/tokens.toml:2369
 keyed.tab_counter.line_height = "auto"
-# docs/facts/gnome/tokens.toml:2382
+# docs/facts/gnome/tokens.toml:2384
 keyed.tab_counter.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:2397
+# docs/facts/gnome/tokens.toml:2399
 keyed.tab_counter.case = "mixed"
-# docs/facts/gnome/tokens.toml:2412
+# docs/facts/gnome/tokens.toml:2414
 keyed.tab_counter.decoration = "absent"
-# docs/facts/gnome/tokens.toml:2424
+# docs/facts/gnome/tokens.toml:2426
 keyed.tab_counter.font.width = 100
-# docs/facts/gnome/tokens.toml:2456
+# docs/facts/gnome/tokens.toml:2458
 keyed.tab_counter.font.axes = {}
-# docs/facts/gnome/tokens.toml:2478
+# docs/facts/gnome/tokens.toml:2480
 keyed.tab_counter.font.features = { tnum = 1 }
-# docs/facts/gnome/tokens.toml:2499
+# docs/facts/gnome/tokens.toml:2501
 keyed.tab_counter.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:2510
+# docs/facts/gnome/tokens.toml:2512
 keyed.tab_counter.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:2523
+# docs/facts/gnome/tokens.toml:2525
 keyed.tab_counter.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:2541
+# docs/facts/gnome/tokens.toml:2543
 keyed.tab_counter.elision = "absent"
-# docs/facts/gnome/tokens.toml:2552
+# docs/facts/gnome/tokens.toml:2554
 keyed.tab_counter.wrap = "absent"
-# docs/facts/gnome/tokens.toml:2563
+# docs/facts/gnome/tokens.toml:2565
 keyed.tab_counter.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:2575
+# docs/facts/gnome/tokens.toml:2577
 keyed.tab_counter.fill = "absent"
-# docs/facts/gnome/tokens.toml:2588
+# docs/facts/gnome/tokens.toml:2590
 keyed.smaller.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:2605
+# docs/facts/gnome/tokens.toml:2607
 keyed.smaller.font.size = "= div(token.text.roles.body.font.size, 1.2)"
-# docs/facts/gnome/tokens.toml:2626
+# docs/facts/gnome/tokens.toml:2628
 keyed.smaller.font.weight = 400
-# docs/facts/gnome/tokens.toml:2646
+# docs/facts/gnome/tokens.toml:2648
 keyed.smaller.font.style = "normal"
-# docs/facts/gnome/tokens.toml:2662
+# docs/facts/gnome/tokens.toml:2664
 keyed.smaller.line_height = "auto"
-# docs/facts/gnome/tokens.toml:2677
+# docs/facts/gnome/tokens.toml:2679
 keyed.smaller.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:2692
+# docs/facts/gnome/tokens.toml:2694
 keyed.smaller.case = "mixed"
-# docs/facts/gnome/tokens.toml:2707
+# docs/facts/gnome/tokens.toml:2709
 keyed.smaller.decoration = "absent"
-# docs/facts/gnome/tokens.toml:2719
+# docs/facts/gnome/tokens.toml:2721
 keyed.smaller.font.width = 100
-# docs/facts/gnome/tokens.toml:2751
+# docs/facts/gnome/tokens.toml:2753
 keyed.smaller.font.axes = {}
-# docs/facts/gnome/tokens.toml:2774
+# docs/facts/gnome/tokens.toml:2776
 keyed.smaller.font.features = {}
-# docs/facts/gnome/tokens.toml:2796
+# docs/facts/gnome/tokens.toml:2798
 keyed.smaller.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:2807
+# docs/facts/gnome/tokens.toml:2809
 keyed.smaller.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:2820
+# docs/facts/gnome/tokens.toml:2822
 keyed.smaller.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:2838
+# docs/facts/gnome/tokens.toml:2840
 keyed.smaller.elision = "absent"
-# docs/facts/gnome/tokens.toml:2849
+# docs/facts/gnome/tokens.toml:2851
 keyed.smaller.wrap = "absent"
-# docs/facts/gnome/tokens.toml:2860
+# docs/facts/gnome/tokens.toml:2862
 keyed.smaller.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:2872
+# docs/facts/gnome/tokens.toml:2874
 keyed.smaller.fill = "absent"
-# docs/facts/gnome/tokens.toml:2883
+# docs/facts/gnome/tokens.toml:2885
 keyed.title_1.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:2900
+# docs/facts/gnome/tokens.toml:2902
 keyed.title_1.font.size = "= mul(token.text.roles.body.font.size, 1.81)"
-# docs/facts/gnome/tokens.toml:2912
+# docs/facts/gnome/tokens.toml:2914
 keyed.title_1.font.weight = 800
-# docs/facts/gnome/tokens.toml:2923
+# docs/facts/gnome/tokens.toml:2925
 keyed.title_1.font.style = "normal"
-# docs/facts/gnome/tokens.toml:2939
+# docs/facts/gnome/tokens.toml:2941
 keyed.title_1.line_height = "auto"
-# docs/facts/gnome/tokens.toml:2956
+# docs/facts/gnome/tokens.toml:2958
 keyed.title_1.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:2972
+# docs/facts/gnome/tokens.toml:2974
 keyed.title_1.case = "mixed"
-# docs/facts/gnome/tokens.toml:2988
+# docs/facts/gnome/tokens.toml:2990
 keyed.title_1.decoration = "absent"
-# docs/facts/gnome/tokens.toml:3000
+# docs/facts/gnome/tokens.toml:3002
 keyed.title_1.font.width = 100
-# docs/facts/gnome/tokens.toml:3032
+# docs/facts/gnome/tokens.toml:3034
 keyed.title_1.font.axes = {}
-# docs/facts/gnome/tokens.toml:3054
+# docs/facts/gnome/tokens.toml:3056
 keyed.title_1.font.features = {}
-# docs/facts/gnome/tokens.toml:3076
+# docs/facts/gnome/tokens.toml:3078
 keyed.title_1.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:3087
+# docs/facts/gnome/tokens.toml:3089
 keyed.title_1.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:3100
+# docs/facts/gnome/tokens.toml:3102
 keyed.title_1.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:3118
+# docs/facts/gnome/tokens.toml:3120
 keyed.title_1.elision = "absent"
-# docs/facts/gnome/tokens.toml:3129
+# docs/facts/gnome/tokens.toml:3131
 keyed.title_1.wrap = "absent"
-# docs/facts/gnome/tokens.toml:3140
+# docs/facts/gnome/tokens.toml:3142
 keyed.title_1.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:3152
+# docs/facts/gnome/tokens.toml:3154
 keyed.title_1.fill = "absent"
-# docs/facts/gnome/tokens.toml:3163
+# docs/facts/gnome/tokens.toml:3165
 keyed.title_2.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:3180
+# docs/facts/gnome/tokens.toml:3182
 keyed.title_2.font.size = "= mul(token.text.roles.body.font.size, 1.36)"
-# docs/facts/gnome/tokens.toml:3192
+# docs/facts/gnome/tokens.toml:3194
 keyed.title_2.font.weight = 800
-# docs/facts/gnome/tokens.toml:3203
+# docs/facts/gnome/tokens.toml:3205
 keyed.title_2.font.style = "normal"
-# docs/facts/gnome/tokens.toml:3219
+# docs/facts/gnome/tokens.toml:3221
 keyed.title_2.line_height = "auto"
-# docs/facts/gnome/tokens.toml:3236
+# docs/facts/gnome/tokens.toml:3238
 keyed.title_2.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:3252
+# docs/facts/gnome/tokens.toml:3254
 keyed.title_2.case = "mixed"
-# docs/facts/gnome/tokens.toml:3268
+# docs/facts/gnome/tokens.toml:3270
 keyed.title_2.decoration = "absent"
-# docs/facts/gnome/tokens.toml:3280
+# docs/facts/gnome/tokens.toml:3282
 keyed.title_2.font.width = 100
-# docs/facts/gnome/tokens.toml:3312
+# docs/facts/gnome/tokens.toml:3314
 keyed.title_2.font.axes = {}
-# docs/facts/gnome/tokens.toml:3334
+# docs/facts/gnome/tokens.toml:3336
 keyed.title_2.font.features = {}
-# docs/facts/gnome/tokens.toml:3356
+# docs/facts/gnome/tokens.toml:3358
 keyed.title_2.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:3367
+# docs/facts/gnome/tokens.toml:3369
 keyed.title_2.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:3380
+# docs/facts/gnome/tokens.toml:3382
 keyed.title_2.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:3398
+# docs/facts/gnome/tokens.toml:3400
 keyed.title_2.elision = "absent"
-# docs/facts/gnome/tokens.toml:3409
+# docs/facts/gnome/tokens.toml:3411
 keyed.title_2.wrap = "absent"
-# docs/facts/gnome/tokens.toml:3420
+# docs/facts/gnome/tokens.toml:3422
 keyed.title_2.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:3432
+# docs/facts/gnome/tokens.toml:3434
 keyed.title_2.fill = "absent"
-# docs/facts/gnome/tokens.toml:3443
+# docs/facts/gnome/tokens.toml:3445
 keyed.title_3.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:3460
+# docs/facts/gnome/tokens.toml:3462
 keyed.title_3.font.size = "= mul(token.text.roles.body.font.size, 1.36)"
-# docs/facts/gnome/tokens.toml:3472
+# docs/facts/gnome/tokens.toml:3474
 keyed.title_3.font.weight = 700
-# docs/facts/gnome/tokens.toml:3483
+# docs/facts/gnome/tokens.toml:3485
 keyed.title_3.font.style = "normal"
-# docs/facts/gnome/tokens.toml:3499
+# docs/facts/gnome/tokens.toml:3501
 keyed.title_3.line_height = "auto"
-# docs/facts/gnome/tokens.toml:3516
+# docs/facts/gnome/tokens.toml:3518
 keyed.title_3.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:3532
+# docs/facts/gnome/tokens.toml:3534
 keyed.title_3.case = "mixed"
-# docs/facts/gnome/tokens.toml:3548
+# docs/facts/gnome/tokens.toml:3550
 keyed.title_3.decoration = "absent"
-# docs/facts/gnome/tokens.toml:3560
+# docs/facts/gnome/tokens.toml:3562
 keyed.title_3.font.width = 100
-# docs/facts/gnome/tokens.toml:3592
+# docs/facts/gnome/tokens.toml:3594
 keyed.title_3.font.axes = {}
-# docs/facts/gnome/tokens.toml:3614
+# docs/facts/gnome/tokens.toml:3616
 keyed.title_3.font.features = {}
-# docs/facts/gnome/tokens.toml:3636
+# docs/facts/gnome/tokens.toml:3638
 keyed.title_3.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:3647
+# docs/facts/gnome/tokens.toml:3649
 keyed.title_3.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:3660
+# docs/facts/gnome/tokens.toml:3662
 keyed.title_3.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:3678
+# docs/facts/gnome/tokens.toml:3680
 keyed.title_3.elision = "absent"
-# docs/facts/gnome/tokens.toml:3689
+# docs/facts/gnome/tokens.toml:3691
 keyed.title_3.wrap = "absent"
-# docs/facts/gnome/tokens.toml:3700
+# docs/facts/gnome/tokens.toml:3702
 keyed.title_3.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:3712
+# docs/facts/gnome/tokens.toml:3714
 keyed.title_3.fill = "absent"
-# docs/facts/gnome/tokens.toml:3723
+# docs/facts/gnome/tokens.toml:3725
 keyed.title_4.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:3740
+# docs/facts/gnome/tokens.toml:3742
 keyed.title_4.font.size = "= mul(token.text.roles.body.font.size, 1.18)"
-# docs/facts/gnome/tokens.toml:3752
+# docs/facts/gnome/tokens.toml:3754
 keyed.title_4.font.weight = 700
-# docs/facts/gnome/tokens.toml:3763
+# docs/facts/gnome/tokens.toml:3765
 keyed.title_4.font.style = "normal"
-# docs/facts/gnome/tokens.toml:3779
+# docs/facts/gnome/tokens.toml:3781
 keyed.title_4.line_height = "auto"
-# docs/facts/gnome/tokens.toml:3796
+# docs/facts/gnome/tokens.toml:3798
 keyed.title_4.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:3812
+# docs/facts/gnome/tokens.toml:3814
 keyed.title_4.case = "mixed"
-# docs/facts/gnome/tokens.toml:3828
+# docs/facts/gnome/tokens.toml:3830
 keyed.title_4.decoration = "absent"
-# docs/facts/gnome/tokens.toml:3840
+# docs/facts/gnome/tokens.toml:3842
 keyed.title_4.font.width = 100
-# docs/facts/gnome/tokens.toml:3872
+# docs/facts/gnome/tokens.toml:3874
 keyed.title_4.font.axes = {}
-# docs/facts/gnome/tokens.toml:3894
+# docs/facts/gnome/tokens.toml:3896
 keyed.title_4.font.features = {}
-# docs/facts/gnome/tokens.toml:3916
+# docs/facts/gnome/tokens.toml:3918
 keyed.title_4.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:3927
+# docs/facts/gnome/tokens.toml:3929
 keyed.title_4.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:3940
+# docs/facts/gnome/tokens.toml:3942
 keyed.title_4.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:3958
+# docs/facts/gnome/tokens.toml:3960
 keyed.title_4.elision = "absent"
-# docs/facts/gnome/tokens.toml:3969
+# docs/facts/gnome/tokens.toml:3971
 keyed.title_4.wrap = "absent"
-# docs/facts/gnome/tokens.toml:3980
+# docs/facts/gnome/tokens.toml:3982
 keyed.title_4.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:3992
+# docs/facts/gnome/tokens.toml:3994
 keyed.title_4.fill = "absent"
-# docs/facts/gnome/tokens.toml:4003
+# docs/facts/gnome/tokens.toml:4005
 keyed.heading.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:4019
+# docs/facts/gnome/tokens.toml:4021
 keyed.heading.font.size = "= token.text.roles.body.font.size"
-# docs/facts/gnome/tokens.toml:4035
+# docs/facts/gnome/tokens.toml:4037
 keyed.heading.font.weight = 700
-# docs/facts/gnome/tokens.toml:4045
+# docs/facts/gnome/tokens.toml:4047
 keyed.heading.font.style = "normal"
-# docs/facts/gnome/tokens.toml:4060
+# docs/facts/gnome/tokens.toml:4062
 keyed.heading.line_height = "auto"
-# docs/facts/gnome/tokens.toml:4076
+# docs/facts/gnome/tokens.toml:4078
 keyed.heading.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:4091
+# docs/facts/gnome/tokens.toml:4093
 keyed.heading.case = "mixed"
-# docs/facts/gnome/tokens.toml:4106
+# docs/facts/gnome/tokens.toml:4108
 keyed.heading.decoration = "absent"
-# docs/facts/gnome/tokens.toml:4118
+# docs/facts/gnome/tokens.toml:4120
 keyed.heading.font.width = 100
-# docs/facts/gnome/tokens.toml:4150
+# docs/facts/gnome/tokens.toml:4152
 keyed.heading.font.axes = {}
-# docs/facts/gnome/tokens.toml:4172
+# docs/facts/gnome/tokens.toml:4174
 keyed.heading.font.features = {}
-# docs/facts/gnome/tokens.toml:4194
+# docs/facts/gnome/tokens.toml:4196
 keyed.heading.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:4205
+# docs/facts/gnome/tokens.toml:4207
 keyed.heading.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:4218
+# docs/facts/gnome/tokens.toml:4220
 keyed.heading.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:4236
+# docs/facts/gnome/tokens.toml:4238
 keyed.heading.elision = "absent"
-# docs/facts/gnome/tokens.toml:4247
+# docs/facts/gnome/tokens.toml:4249
 keyed.heading.wrap = "absent"
-# docs/facts/gnome/tokens.toml:4258
+# docs/facts/gnome/tokens.toml:4260
 keyed.heading.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:4270
+# docs/facts/gnome/tokens.toml:4272
 keyed.heading.fill = "absent"
-# docs/facts/gnome/tokens.toml:4281
+# docs/facts/gnome/tokens.toml:4283
 keyed.body.font.family = "Adwaita Sans"
-# docs/facts/gnome/tokens.toml:4291
+# docs/facts/gnome/tokens.toml:4293
 keyed.body.font.size_pt = 11
-# docs/facts/gnome/tokens.toml:4307
+# docs/facts/gnome/tokens.toml:4309
 keyed.body.font.weight = 400
-# docs/facts/gnome/tokens.toml:4318
+# docs/facts/gnome/tokens.toml:4320
 keyed.body.font.style = "normal"
-# docs/facts/gnome/tokens.toml:4334
+# docs/facts/gnome/tokens.toml:4336
 keyed.body.line_height = "= mul(font_size, 1.4)"
-# docs/facts/gnome/tokens.toml:4345
+# docs/facts/gnome/tokens.toml:4347
 keyed.body.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:4361
+# docs/facts/gnome/tokens.toml:4363
 keyed.body.case = "mixed"
-# docs/facts/gnome/tokens.toml:4377
+# docs/facts/gnome/tokens.toml:4379
 keyed.body.decoration = "absent"
-# docs/facts/gnome/tokens.toml:4389
+# docs/facts/gnome/tokens.toml:4391
 keyed.body.font.width = 100
-# docs/facts/gnome/tokens.toml:4421
+# docs/facts/gnome/tokens.toml:4423
 keyed.body.font.axes = {}
-# docs/facts/gnome/tokens.toml:4443
+# docs/facts/gnome/tokens.toml:4445
 keyed.body.font.features = {}
-# docs/facts/gnome/tokens.toml:4465
+# docs/facts/gnome/tokens.toml:4467
 keyed.body.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:4476
+# docs/facts/gnome/tokens.toml:4478
 keyed.body.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:4489
+# docs/facts/gnome/tokens.toml:4491
 keyed.body.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:4507
+# docs/facts/gnome/tokens.toml:4509
 keyed.body.elision = "absent"
-# docs/facts/gnome/tokens.toml:4518
+# docs/facts/gnome/tokens.toml:4520
 keyed.body.wrap = "absent"
-# docs/facts/gnome/tokens.toml:4529
+# docs/facts/gnome/tokens.toml:4531
 keyed.body.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:4541
+# docs/facts/gnome/tokens.toml:4543
 keyed.body.fill = "absent"
-# docs/facts/gnome/tokens.toml:4552
+# docs/facts/gnome/tokens.toml:4554
 keyed.caption_heading.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:4569
+# docs/facts/gnome/tokens.toml:4571
 keyed.caption_heading.font.size = "= mul(token.text.roles.body.font.size, 0.82)"
-# docs/facts/gnome/tokens.toml:4581
+# docs/facts/gnome/tokens.toml:4583
 keyed.caption_heading.font.weight = 700
-# docs/facts/gnome/tokens.toml:4592
+# docs/facts/gnome/tokens.toml:4594
 keyed.caption_heading.font.style = "normal"
-# docs/facts/gnome/tokens.toml:4608
+# docs/facts/gnome/tokens.toml:4610
 keyed.caption_heading.line_height = "auto"
-# docs/facts/gnome/tokens.toml:4625
+# docs/facts/gnome/tokens.toml:4627
 keyed.caption_heading.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:4641
+# docs/facts/gnome/tokens.toml:4643
 keyed.caption_heading.case = "mixed"
-# docs/facts/gnome/tokens.toml:4657
+# docs/facts/gnome/tokens.toml:4659
 keyed.caption_heading.decoration = "absent"
-# docs/facts/gnome/tokens.toml:4669
+# docs/facts/gnome/tokens.toml:4671
 keyed.caption_heading.font.width = 100
-# docs/facts/gnome/tokens.toml:4701
+# docs/facts/gnome/tokens.toml:4703
 keyed.caption_heading.font.axes = {}
-# docs/facts/gnome/tokens.toml:4723
+# docs/facts/gnome/tokens.toml:4725
 keyed.caption_heading.font.features = {}
-# docs/facts/gnome/tokens.toml:4745
+# docs/facts/gnome/tokens.toml:4747
 keyed.caption_heading.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:4756
+# docs/facts/gnome/tokens.toml:4758
 keyed.caption_heading.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:4769
+# docs/facts/gnome/tokens.toml:4771
 keyed.caption_heading.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:4787
+# docs/facts/gnome/tokens.toml:4789
 keyed.caption_heading.elision = "absent"
-# docs/facts/gnome/tokens.toml:4798
+# docs/facts/gnome/tokens.toml:4800
 keyed.caption_heading.wrap = "absent"
-# docs/facts/gnome/tokens.toml:4809
+# docs/facts/gnome/tokens.toml:4811
 keyed.caption_heading.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:4821
+# docs/facts/gnome/tokens.toml:4823
 keyed.caption_heading.fill = "absent"
-# docs/facts/gnome/tokens.toml:4832
+# docs/facts/gnome/tokens.toml:4834
 keyed.caption.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:4849
+# docs/facts/gnome/tokens.toml:4851
 keyed.caption.font.size = "= mul(token.text.roles.body.font.size, 0.82)"
-# docs/facts/gnome/tokens.toml:4861
+# docs/facts/gnome/tokens.toml:4863
 keyed.caption.font.weight = 400
-# docs/facts/gnome/tokens.toml:4872
+# docs/facts/gnome/tokens.toml:4874
 keyed.caption.font.style = "normal"
-# docs/facts/gnome/tokens.toml:4888
+# docs/facts/gnome/tokens.toml:4890
 keyed.caption.line_height = "= mul(font_size, 1.4)"
-# docs/facts/gnome/tokens.toml:4899
+# docs/facts/gnome/tokens.toml:4901
 keyed.caption.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:4915
+# docs/facts/gnome/tokens.toml:4917
 keyed.caption.case = "mixed"
-# docs/facts/gnome/tokens.toml:4931
+# docs/facts/gnome/tokens.toml:4933
 keyed.caption.decoration = "absent"
-# docs/facts/gnome/tokens.toml:4943
+# docs/facts/gnome/tokens.toml:4945
 keyed.caption.font.width = 100
-# docs/facts/gnome/tokens.toml:4975
+# docs/facts/gnome/tokens.toml:4977
 keyed.caption.font.axes = {}
-# docs/facts/gnome/tokens.toml:4997
+# docs/facts/gnome/tokens.toml:4999
 keyed.caption.font.features = {}
-# docs/facts/gnome/tokens.toml:5019
+# docs/facts/gnome/tokens.toml:5021
 keyed.caption.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:5030
+# docs/facts/gnome/tokens.toml:5032
 keyed.caption.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:5043
+# docs/facts/gnome/tokens.toml:5045
 keyed.caption.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:5061
+# docs/facts/gnome/tokens.toml:5063
 keyed.caption.elision = "absent"
-# docs/facts/gnome/tokens.toml:5072
+# docs/facts/gnome/tokens.toml:5074
 keyed.caption.wrap = "absent"
-# docs/facts/gnome/tokens.toml:5083
+# docs/facts/gnome/tokens.toml:5085
 keyed.caption.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:5095
+# docs/facts/gnome/tokens.toml:5097
 keyed.caption.fill = "absent"
-# docs/facts/gnome/tokens.toml:5106
+# docs/facts/gnome/tokens.toml:5108
 keyed.document.font.family = "Adwaita Sans"
-# docs/facts/gnome/tokens.toml:5116
+# docs/facts/gnome/tokens.toml:5118
 keyed.document.font.size_pt = 12
-# docs/facts/gnome/tokens.toml:5132
+# docs/facts/gnome/tokens.toml:5134
 keyed.document.font.weight = 400
-# docs/facts/gnome/tokens.toml:5154
+# docs/facts/gnome/tokens.toml:5156
 keyed.document.font.style = "normal"
-# docs/facts/gnome/tokens.toml:5170
+# docs/facts/gnome/tokens.toml:5172
 keyed.document.line_height = "= mul(font_size, 1.4)"
-# docs/facts/gnome/tokens.toml:5181
+# docs/facts/gnome/tokens.toml:5183
 keyed.document.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:5197
+# docs/facts/gnome/tokens.toml:5199
 keyed.document.case = "mixed"
-# docs/facts/gnome/tokens.toml:5213
+# docs/facts/gnome/tokens.toml:5215
 keyed.document.decoration = "absent"
-# docs/facts/gnome/tokens.toml:5225
+# docs/facts/gnome/tokens.toml:5227
 keyed.document.font.width = 100
-# docs/facts/gnome/tokens.toml:5257
+# docs/facts/gnome/tokens.toml:5259
 keyed.document.font.axes = {}
-# docs/facts/gnome/tokens.toml:5279
+# docs/facts/gnome/tokens.toml:5281
 keyed.document.font.features = {}
-# docs/facts/gnome/tokens.toml:5301
+# docs/facts/gnome/tokens.toml:5303
 keyed.document.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:5312
+# docs/facts/gnome/tokens.toml:5314
 keyed.document.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:5325
+# docs/facts/gnome/tokens.toml:5327
 keyed.document.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:5343
+# docs/facts/gnome/tokens.toml:5345
 keyed.document.elision = "absent"
-# docs/facts/gnome/tokens.toml:5354
+# docs/facts/gnome/tokens.toml:5356
 keyed.document.wrap = "absent"
-# docs/facts/gnome/tokens.toml:5365
+# docs/facts/gnome/tokens.toml:5367
 keyed.document.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:5377
+# docs/facts/gnome/tokens.toml:5379
 keyed.document.fill = "absent"
-# docs/facts/gnome/tokens.toml:5388
+# docs/facts/gnome/tokens.toml:5393
 keyed.monospace.font.family = "Adwaita Mono"
-# docs/facts/gnome/tokens.toml:5398
-keyed.monospace.font.size_pt = 11
 # docs/facts/gnome/tokens.toml:5413
+keyed.monospace.font.size_pt = 11
+# docs/facts/gnome/tokens.toml:5433
 keyed.monospace.font.weight = 400
-# docs/facts/gnome/tokens.toml:5434
+# docs/facts/gnome/tokens.toml:5460
 keyed.monospace.font.style = "normal"
-# docs/facts/gnome/tokens.toml:5449
+# docs/facts/gnome/tokens.toml:5481
 keyed.monospace.line_height = "auto"
-# docs/facts/gnome/tokens.toml:5465
+# docs/facts/gnome/tokens.toml:5497
 keyed.monospace.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:5480
+# docs/facts/gnome/tokens.toml:5512
 keyed.monospace.case = "mixed"
-# docs/facts/gnome/tokens.toml:5495
+# docs/facts/gnome/tokens.toml:5527
 keyed.monospace.decoration = "absent"
-# docs/facts/gnome/tokens.toml:5507
-keyed.monospace.font.width = 100
 # docs/facts/gnome/tokens.toml:5539
+keyed.monospace.font.width = 100
+# docs/facts/gnome/tokens.toml:5571
 keyed.monospace.font.axes = {}
-# docs/facts/gnome/tokens.toml:5561
+# docs/facts/gnome/tokens.toml:5593
 keyed.monospace.font.features = {}
-# docs/facts/gnome/tokens.toml:5583
+# docs/facts/gnome/tokens.toml:5615
 keyed.monospace.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:5594
+# docs/facts/gnome/tokens.toml:5626
 keyed.monospace.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:5607
+# docs/facts/gnome/tokens.toml:5639
 keyed.monospace.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:5625
+# docs/facts/gnome/tokens.toml:5657
 keyed.monospace.elision = "absent"
-# docs/facts/gnome/tokens.toml:5636
+# docs/facts/gnome/tokens.toml:5668
 keyed.monospace.wrap = "absent"
-# docs/facts/gnome/tokens.toml:5647
+# docs/facts/gnome/tokens.toml:5679
 keyed.monospace.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:5659
+# docs/facts/gnome/tokens.toml:5691
 keyed.monospace.fill = "absent"
-# docs/facts/gnome/tokens.toml:5670
-keyed.numeric.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:5686
-keyed.numeric.font.size = "= token.text.roles.body.font.size"
 # docs/facts/gnome/tokens.toml:5702
+keyed.numeric.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:5718
+keyed.numeric.font.size = "= token.text.roles.body.font.size"
+# docs/facts/gnome/tokens.toml:5734
 keyed.numeric.font.weight = 400
-# docs/facts/gnome/tokens.toml:5723
+# docs/facts/gnome/tokens.toml:5755
 keyed.numeric.font.style = "normal"
-# docs/facts/gnome/tokens.toml:5738
+# docs/facts/gnome/tokens.toml:5770
 keyed.numeric.font.features = { tnum = 1 }
-# docs/facts/gnome/tokens.toml:5753
+# docs/facts/gnome/tokens.toml:5785
 keyed.numeric.line_height = "auto"
-# docs/facts/gnome/tokens.toml:5769
+# docs/facts/gnome/tokens.toml:5801
 keyed.numeric.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:5784
+# docs/facts/gnome/tokens.toml:5816
 keyed.numeric.case = "mixed"
-# docs/facts/gnome/tokens.toml:5799
+# docs/facts/gnome/tokens.toml:5831
 keyed.numeric.decoration = "absent"
-# docs/facts/gnome/tokens.toml:5811
-keyed.numeric.font.width = 100
 # docs/facts/gnome/tokens.toml:5843
+keyed.numeric.font.width = 100
+# docs/facts/gnome/tokens.toml:5875
 keyed.numeric.font.axes = {}
-# docs/facts/gnome/tokens.toml:5865
+# docs/facts/gnome/tokens.toml:5897
 keyed.numeric.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:5876
+# docs/facts/gnome/tokens.toml:5908
 keyed.numeric.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:5889
+# docs/facts/gnome/tokens.toml:5921
 keyed.numeric.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:5907
+# docs/facts/gnome/tokens.toml:5939
 keyed.numeric.elision = "absent"
-# docs/facts/gnome/tokens.toml:5918
+# docs/facts/gnome/tokens.toml:5950
 keyed.numeric.wrap = "absent"
-# docs/facts/gnome/tokens.toml:5929
+# docs/facts/gnome/tokens.toml:5961
 keyed.numeric.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:5941
+# docs/facts/gnome/tokens.toml:5973
 keyed.numeric.fill = "absent"
-# docs/facts/gnome/tokens.toml:5954
+# docs/facts/gnome/tokens.toml:5986
 keyed.narrow_switcher_label.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:5971
+# docs/facts/gnome/tokens.toml:6003
 keyed.narrow_switcher_label.font.size = "= mul(token.text.roles.body.font.size, 0.75)"
-# docs/facts/gnome/tokens.toml:5999
+# docs/facts/gnome/tokens.toml:6031
 keyed.narrow_switcher_label.font.weight = 700
-# docs/facts/gnome/tokens.toml:6030
+# docs/facts/gnome/tokens.toml:6062
 keyed.narrow_switcher_label.font.style = "normal"
-# docs/facts/gnome/tokens.toml:6046
+# docs/facts/gnome/tokens.toml:6078
 keyed.narrow_switcher_label.line_height = "auto"
-# docs/facts/gnome/tokens.toml:6061
+# docs/facts/gnome/tokens.toml:6093
 keyed.narrow_switcher_label.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:6076
+# docs/facts/gnome/tokens.toml:6108
 keyed.narrow_switcher_label.case = "mixed"
-# docs/facts/gnome/tokens.toml:6091
+# docs/facts/gnome/tokens.toml:6123
 keyed.narrow_switcher_label.decoration = "absent"
-# docs/facts/gnome/tokens.toml:6103
-keyed.narrow_switcher_label.font.width = 100
 # docs/facts/gnome/tokens.toml:6135
+keyed.narrow_switcher_label.font.width = 100
+# docs/facts/gnome/tokens.toml:6167
 keyed.narrow_switcher_label.font.axes = {}
-# docs/facts/gnome/tokens.toml:6157
+# docs/facts/gnome/tokens.toml:6189
 keyed.narrow_switcher_label.font.features = {}
-# docs/facts/gnome/tokens.toml:6179
+# docs/facts/gnome/tokens.toml:6211
 keyed.narrow_switcher_label.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:6190
+# docs/facts/gnome/tokens.toml:6222
 keyed.narrow_switcher_label.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:6203
+# docs/facts/gnome/tokens.toml:6235
 keyed.narrow_switcher_label.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:6221
+# docs/facts/gnome/tokens.toml:6253
 keyed.narrow_switcher_label.elision = "absent"
-# docs/facts/gnome/tokens.toml:6232
+# docs/facts/gnome/tokens.toml:6264
 keyed.narrow_switcher_label.wrap = "absent"
-# docs/facts/gnome/tokens.toml:6243
+# docs/facts/gnome/tokens.toml:6275
 keyed.narrow_switcher_label.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:6255
+# docs/facts/gnome/tokens.toml:6287
 keyed.narrow_switcher_label.fill = "absent"
-# docs/facts/gnome/tokens.toml:6269
+# docs/facts/gnome/tokens.toml:6301
 keyed.badge_label.font.family = "= token.text.roles.body.font.family"
-# docs/facts/gnome/tokens.toml:6286
+# docs/facts/gnome/tokens.toml:6318
 keyed.badge_label.font.size = "= mul(token.text.roles.body.font.size, 0.6)"
-# docs/facts/gnome/tokens.toml:6312
+# docs/facts/gnome/tokens.toml:6344
 keyed.badge_label.font.weight = 700
-# docs/facts/gnome/tokens.toml:6332
+# docs/facts/gnome/tokens.toml:6364
 keyed.badge_label.font.style = "normal"
-# docs/facts/gnome/tokens.toml:6348
+# docs/facts/gnome/tokens.toml:6380
 keyed.badge_label.line_height = "auto"
-# docs/facts/gnome/tokens.toml:6363
+# docs/facts/gnome/tokens.toml:6395
 keyed.badge_label.letter_spacing_px = 0
-# docs/facts/gnome/tokens.toml:6378
+# docs/facts/gnome/tokens.toml:6410
 keyed.badge_label.case = "mixed"
-# docs/facts/gnome/tokens.toml:6393
+# docs/facts/gnome/tokens.toml:6425
 keyed.badge_label.decoration = "absent"
-# docs/facts/gnome/tokens.toml:6405
-keyed.badge_label.font.width = 100
 # docs/facts/gnome/tokens.toml:6437
+keyed.badge_label.font.width = 100
+# docs/facts/gnome/tokens.toml:6469
 keyed.badge_label.font.axes = {}
-# docs/facts/gnome/tokens.toml:6459
+# docs/facts/gnome/tokens.toml:6491
 keyed.badge_label.font.features = {}
-# docs/facts/gnome/tokens.toml:6481
+# docs/facts/gnome/tokens.toml:6513
 keyed.badge_label.scaling_role = "none"
-# docs/facts/gnome/tokens.toml:6492
+# docs/facts/gnome/tokens.toml:6524
 keyed.badge_label.word_spacing_px = 0
-# docs/facts/gnome/tokens.toml:6505
+# docs/facts/gnome/tokens.toml:6537
 keyed.badge_label.mnemonic_decoration = "absent"
-# docs/facts/gnome/tokens.toml:6523
+# docs/facts/gnome/tokens.toml:6555
 keyed.badge_label.elision = "absent"
-# docs/facts/gnome/tokens.toml:6534
+# docs/facts/gnome/tokens.toml:6566
 keyed.badge_label.wrap = "absent"
-# docs/facts/gnome/tokens.toml:6545
-keyed.badge_label.max_lines = "absent"
-# docs/facts/gnome/tokens.toml:6557
-keyed.badge_label.fill = "#ffffff"
-# docs/facts/gnome/tokens.toml:6567
-roles.body = "= token.text.keyed.body"
 # docs/facts/gnome/tokens.toml:6577
+keyed.badge_label.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:6589
+keyed.badge_label.fill = "#ffffff"
+# docs/facts/gnome/tokens.toml:6599
+roles.body = "= token.text.keyed.body"
+# docs/facts/gnome/tokens.toml:6609
 roles.caption = "= token.text.keyed.caption"
-# docs/facts/gnome/tokens.toml:6587
+# docs/facts/gnome/tokens.toml:6619
 roles.title1 = "= token.text.keyed.title_2"
-# docs/facts/gnome/tokens.toml:6597
+# docs/facts/gnome/tokens.toml:6629
 roles.title2 = "= token.text.keyed.title_3"
-# docs/facts/gnome/tokens.toml:6607
+# docs/facts/gnome/tokens.toml:6639
 roles.title3 = "= token.text.keyed.title_4"
-# docs/facts/gnome/tokens.toml:6617
+# docs/facts/gnome/tokens.toml:6649
 roles.headline = "= token.text.keyed.heading"
-# docs/facts/gnome/tokens.toml:6627
+# docs/facts/gnome/tokens.toml:6659
 roles.subheadline = "= token.text.roles.body"
-# docs/facts/gnome/tokens.toml:6637
+# docs/facts/gnome/tokens.toml:6669
 roles.large_title = "= token.text.keyed.title_1"
-# docs/facts/gnome/tokens.toml:6647
+# docs/facts/gnome/tokens.toml:6679
 roles.display_large = "= token.text.roles.large_title"
-# docs/facts/gnome/tokens.toml:6657
+# docs/facts/gnome/tokens.toml:6689
 roles.display_medium = "= token.text.roles.large_title"
-# docs/facts/gnome/tokens.toml:6667
+# docs/facts/gnome/tokens.toml:6699
 roles.display_small = "= token.text.roles.large_title"
-# docs/facts/gnome/tokens.toml:6677
+# docs/facts/gnome/tokens.toml:6709
 roles.body_emphasized = "= token.text.roles.headline"
-# docs/facts/gnome/tokens.toml:6687
+# docs/facts/gnome/tokens.toml:6719
 roles.callout = "= token.text.roles.body"
-# docs/facts/gnome/tokens.toml:6697
+# docs/facts/gnome/tokens.toml:6729
 roles.footnote = "= token.text.roles.caption"
-# docs/facts/gnome/tokens.toml:6707
+# docs/facts/gnome/tokens.toml:6739
 roles.caption_emphasized = "= token.text.keyed.caption_heading"
-# docs/facts/gnome/tokens.toml:6717
+# docs/facts/gnome/tokens.toml:6749
 roles.caption2 = "= token.text.roles.caption"
-# docs/facts/gnome/tokens.toml:6727
+# docs/facts/gnome/tokens.toml:6759
 roles.label = "= token.text.roles.body"
-# docs/facts/gnome/tokens.toml:6737
+# docs/facts/gnome/tokens.toml:6769
 roles.monospace = "= token.text.keyed.monospace"
-# docs/facts/gnome/tokens.toml:6747
+# docs/facts/gnome/tokens.toml:6779
 roles.numeric = "= token.text.keyed.numeric"
-# docs/facts/gnome/tokens.toml:6757
+# docs/facts/gnome/tokens.toml:6789
 font_dpi = 96
-# docs/facts/gnome/tokens.toml:6767
+# docs/facts/gnome/tokens.toml:6799
 scaling = "linear"
-# docs/facts/gnome/tokens.toml:6777
+# docs/facts/gnome/tokens.toml:6809
 rendering.antialiasing = "grayscale"
-# docs/facts/gnome/tokens.toml:6787
+# docs/facts/gnome/tokens.toml:6819
 rendering.hinting = "slight"
-# docs/facts/gnome/tokens.toml:6797
+# docs/facts/gnome/tokens.toml:6829
 rendering.subpixel_order = "rgb"
-# docs/facts/gnome/tokens.toml:6807
+# docs/facts/gnome/tokens.toml:6839
 rendering.engine = "automatic"
-# docs/facts/gnome/tokens.toml:6818
+# docs/facts/gnome/tokens.toml:6850
 rendering.lcd_filter = "absent"
-# docs/facts/gnome/tokens.toml:6835
+# docs/facts/gnome/tokens.toml:6867
 rendering.gamma = "absent"
-# docs/facts/gnome/tokens.toml:6852
+# docs/facts/gnome/tokens.toml:6884
 rendering.contrast = "absent"
-# docs/facts/gnome/tokens.toml:6885
+# docs/facts/gnome/tokens.toml:6917
 fallbacks.emoji_family = "emoji"
 
 [tokens.icons]
-# docs/facts/gnome/tokens.toml:6895
+# docs/facts/gnome/tokens.toml:6927
 theme = "Adwaita"
-# docs/facts/gnome/tokens.toml:6905
+# docs/facts/gnome/tokens.toml:6937
 theme_fallback = "hicolor"
-# docs/facts/gnome/tokens.toml:6920
+# docs/facts/gnome/tokens.toml:6952
 set = "freedesktop"
-# docs/facts/gnome/tokens.toml:6932
+# docs/facts/gnome/tokens.toml:6964
 mirroring = {}
-# docs/facts/gnome/tokens.toml:6947
+# docs/facts/gnome/tokens.toml:6979
 sizes.small.size_px = 16
-# docs/facts/gnome/tokens.toml:6962
+# docs/facts/gnome/tokens.toml:6994
 sizes.toolbar.size_px = 16
-# docs/facts/gnome/tokens.toml:6973
+# docs/facts/gnome/tokens.toml:7005
 sizes.large.size_px = 32
-# docs/facts/gnome/tokens.toml:6983
+# docs/facts/gnome/tokens.toml:7015
 sizes.large.weight = 134
-# docs/facts/gnome/tokens.toml:6993
+# docs/facts/gnome/tokens.toml:7025
 sizes.keyed.status_page.size_px = 128
-# docs/facts/gnome/tokens.toml:7003
+# docs/facts/gnome/tokens.toml:7035
 sizes.keyed.status_page.weight = 134
-# docs/facts/gnome/tokens.toml:7013
+# docs/facts/gnome/tokens.toml:7045
 sizes.keyed.status_page_compact.size_px = 96
-# docs/facts/gnome/tokens.toml:7023
-sizes.keyed.status_page_compact.weight = 134
-# docs/facts/gnome/tokens.toml:7033
-sizes.keyed.about.size_px = 128
-# docs/facts/gnome/tokens.toml:7043
-sizes.keyed.check.size_px = 14
 # docs/facts/gnome/tokens.toml:7055
-sizes.toolbar.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
+sizes.keyed.status_page_compact.weight = 134
 # docs/facts/gnome/tokens.toml:7065
-sizes.toolbar.axes = {}
+sizes.keyed.about.size_px = 128
 # docs/facts/gnome/tokens.toml:7075
+sizes.keyed.check.size_px = 14
+# docs/facts/gnome/tokens.toml:7087
+sizes.toolbar.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
+# docs/facts/gnome/tokens.toml:7097
+sizes.toolbar.axes = {}
+# docs/facts/gnome/tokens.toml:7107
 sizes.toolbar.symbol_variants = []
-# docs/facts/gnome/tokens.toml:7085
+# docs/facts/gnome/tokens.toml:7117
 sizes.small.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
-# docs/facts/gnome/tokens.toml:7095
+# docs/facts/gnome/tokens.toml:7127
 sizes.small.axes = {}
-# docs/facts/gnome/tokens.toml:7105
+# docs/facts/gnome/tokens.toml:7137
 sizes.small.symbol_variants = []
-# docs/facts/gnome/tokens.toml:7115
+# docs/facts/gnome/tokens.toml:7147
 sizes.large.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
-# docs/facts/gnome/tokens.toml:7125
+# docs/facts/gnome/tokens.toml:7157
 sizes.large.axes = {}
-# docs/facts/gnome/tokens.toml:7135
+# docs/facts/gnome/tokens.toml:7167
 sizes.large.symbol_variants = []
-# docs/facts/gnome/tokens.toml:7145
+# docs/facts/gnome/tokens.toml:7177
 sizes.keyed.status_page.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
-# docs/facts/gnome/tokens.toml:7155
+# docs/facts/gnome/tokens.toml:7187
 sizes.keyed.status_page.axes = {}
-# docs/facts/gnome/tokens.toml:7165
+# docs/facts/gnome/tokens.toml:7197
 sizes.keyed.status_page.symbol_variants = []
-# docs/facts/gnome/tokens.toml:7175
+# docs/facts/gnome/tokens.toml:7207
 sizes.keyed.status_page_compact.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
-# docs/facts/gnome/tokens.toml:7185
+# docs/facts/gnome/tokens.toml:7217
 sizes.keyed.status_page_compact.axes = {}
-# docs/facts/gnome/tokens.toml:7195
+# docs/facts/gnome/tokens.toml:7227
 sizes.keyed.status_page_compact.symbol_variants = []
-# docs/facts/gnome/tokens.toml:7205
+# docs/facts/gnome/tokens.toml:7237
 sizes.keyed.about.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
-# docs/facts/gnome/tokens.toml:7215
+# docs/facts/gnome/tokens.toml:7247
 sizes.keyed.about.axes = {}
-# docs/facts/gnome/tokens.toml:7225
+# docs/facts/gnome/tokens.toml:7257
 sizes.keyed.about.symbol_variants = []
-# docs/facts/gnome/tokens.toml:7235
+# docs/facts/gnome/tokens.toml:7267
 sizes.keyed.check.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
-# docs/facts/gnome/tokens.toml:7245
+# docs/facts/gnome/tokens.toml:7277
 sizes.keyed.check.axes = {}
-# docs/facts/gnome/tokens.toml:7255
+# docs/facts/gnome/tokens.toml:7287
 sizes.keyed.check.symbol_variants = []
-# docs/facts/gnome/tokens.toml:7270
-sizes.small.fill = "= surface.foreground"
-# docs/facts/gnome/tokens.toml:7286
-sizes.small.rendering_mode = "absent"
 # docs/facts/gnome/tokens.toml:7302
+sizes.small.fill = "= surface.foreground"
+# docs/facts/gnome/tokens.toml:7318
+sizes.small.rendering_mode = "absent"
+# docs/facts/gnome/tokens.toml:7334
 sizes.small.scale = "absent"
-# docs/facts/gnome/tokens.toml:7313
+# docs/facts/gnome/tokens.toml:7345
 sizes.small.state_effect = "absent"
-# docs/facts/gnome/tokens.toml:7329
+# docs/facts/gnome/tokens.toml:7361
 sizes.small.animation = "absent"
-# docs/facts/gnome/tokens.toml:7352
+# docs/facts/gnome/tokens.toml:7384
 sizes.small.weight = 400
-# docs/facts/gnome/tokens.toml:7373
+# docs/facts/gnome/tokens.toml:7405
 sizes.toolbar.fill = "= surface.foreground"
-# docs/facts/gnome/tokens.toml:7383
+# docs/facts/gnome/tokens.toml:7415
 sizes.toolbar.rendering_mode = "absent"
-# docs/facts/gnome/tokens.toml:7393
+# docs/facts/gnome/tokens.toml:7425
 sizes.toolbar.scale = "absent"
-# docs/facts/gnome/tokens.toml:7404
+# docs/facts/gnome/tokens.toml:7436
 sizes.toolbar.state_effect = "absent"
-# docs/facts/gnome/tokens.toml:7414
-sizes.toolbar.animation = "absent"
-# docs/facts/gnome/tokens.toml:7431
-sizes.toolbar.weight = 400
 # docs/facts/gnome/tokens.toml:7446
-sizes.large.fill = "= surface.foreground"
-# docs/facts/gnome/tokens.toml:7462
-sizes.large.rendering_mode = "absent"
+sizes.toolbar.animation = "absent"
+# docs/facts/gnome/tokens.toml:7463
+sizes.toolbar.weight = 400
 # docs/facts/gnome/tokens.toml:7478
+sizes.large.fill = "= surface.foreground"
+# docs/facts/gnome/tokens.toml:7494
+sizes.large.rendering_mode = "absent"
+# docs/facts/gnome/tokens.toml:7510
 sizes.large.scale = "absent"
-# docs/facts/gnome/tokens.toml:7489
+# docs/facts/gnome/tokens.toml:7521
 sizes.large.state_effect = "absent"
-# docs/facts/gnome/tokens.toml:7505
+# docs/facts/gnome/tokens.toml:7537
 sizes.large.animation = "absent"
-# docs/facts/gnome/tokens.toml:7528
+# docs/facts/gnome/tokens.toml:7560
 sizes.keyed.status_page.fill = "= alpha(surface.foreground, token.params.opacity.dim)"
-# docs/facts/gnome/tokens.toml:7538
+# docs/facts/gnome/tokens.toml:7570
 sizes.keyed.status_page.rendering_mode = "absent"
-# docs/facts/gnome/tokens.toml:7554
+# docs/facts/gnome/tokens.toml:7586
 sizes.keyed.status_page.scale = "absent"
-# docs/facts/gnome/tokens.toml:7565
+# docs/facts/gnome/tokens.toml:7597
 sizes.keyed.status_page.state_effect = "absent"
-# docs/facts/gnome/tokens.toml:7581
+# docs/facts/gnome/tokens.toml:7613
 sizes.keyed.status_page.animation = "absent"
-# docs/facts/gnome/tokens.toml:7603
-sizes.keyed.status_page_compact.fill = "= alpha(surface.foreground, token.params.opacity.dim)"
-# docs/facts/gnome/tokens.toml:7619
-sizes.keyed.status_page_compact.rendering_mode = "absent"
 # docs/facts/gnome/tokens.toml:7635
+sizes.keyed.status_page_compact.fill = "= alpha(surface.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/tokens.toml:7651
+sizes.keyed.status_page_compact.rendering_mode = "absent"
+# docs/facts/gnome/tokens.toml:7667
 sizes.keyed.status_page_compact.scale = "absent"
-# docs/facts/gnome/tokens.toml:7646
+# docs/facts/gnome/tokens.toml:7678
 sizes.keyed.status_page_compact.state_effect = "absent"
-# docs/facts/gnome/tokens.toml:7662
+# docs/facts/gnome/tokens.toml:7694
 sizes.keyed.status_page_compact.animation = "absent"
-# docs/facts/gnome/tokens.toml:7684
-sizes.keyed.about.fill = "= surface.foreground"
-# docs/facts/gnome/tokens.toml:7700
-sizes.keyed.about.rendering_mode = "absent"
 # docs/facts/gnome/tokens.toml:7716
+sizes.keyed.about.fill = "= surface.foreground"
+# docs/facts/gnome/tokens.toml:7732
+sizes.keyed.about.rendering_mode = "absent"
+# docs/facts/gnome/tokens.toml:7748
 sizes.keyed.about.scale = "absent"
-# docs/facts/gnome/tokens.toml:7727
+# docs/facts/gnome/tokens.toml:7759
 sizes.keyed.about.state_effect = "absent"
-# docs/facts/gnome/tokens.toml:7743
+# docs/facts/gnome/tokens.toml:7775
 sizes.keyed.about.animation = "absent"
-# docs/facts/gnome/tokens.toml:7766
+# docs/facts/gnome/tokens.toml:7798
 sizes.keyed.about.weight = 134
-# docs/facts/gnome/tokens.toml:7797
-sizes.keyed.check.fill = "= role.global.accent_foreground"
-# docs/facts/gnome/tokens.toml:7814
-sizes.keyed.check.rendering_mode = "template"
 # docs/facts/gnome/tokens.toml:7829
+sizes.keyed.check.fill = "= role.global.accent_foreground"
+# docs/facts/gnome/tokens.toml:7846
+sizes.keyed.check.rendering_mode = "template"
+# docs/facts/gnome/tokens.toml:7861
 sizes.keyed.check.scale = "absent"
-# docs/facts/gnome/tokens.toml:7840
+# docs/facts/gnome/tokens.toml:7872
 sizes.keyed.check.state_effect = "absent"
-# docs/facts/gnome/tokens.toml:7856
+# docs/facts/gnome/tokens.toml:7888
 sizes.keyed.check.animation = "absent"
-# docs/facts/gnome/tokens.toml:7879
+# docs/facts/gnome/tokens.toml:7911
 sizes.keyed.check.weight = 400
-# docs/facts/gnome/tokens.toml:7901
+# docs/facts/gnome/tokens.toml:7933
 sizes.dialog = "absent"
-# docs/facts/gnome/tokens.toml:7912
+# docs/facts/gnome/tokens.toml:7944
 sizes.panel = "absent"
 # S4.5
 animated_visuals = {}
@@ -3148,7 +3148,7 @@ interaction = "absent"
 fill = "= alpha(surface.foreground, 0.1)"
 # docs/facts/gnome/button.toml:1198
 shadow = "absent"
-# docs/facts/gnome/button.toml:1537
+# docs/facts/gnome/button.toml:1539
 opacity = 1
 
 [widgets.button.label]
@@ -3268,31 +3268,31 @@ presentations = []
 absent = true
 
 [widgets.button.menu_indicator]
-# docs/facts/gnome/button.toml:3614
+# docs/facts/gnome/button.toml:3616
 glyph.size_px = 16
-# docs/facts/gnome/button.toml:3629
+# docs/facts/gnome/button.toml:3631
 glyph.fill = "= surface.foreground"
-# docs/facts/gnome/button.toml:3640
+# docs/facts/gnome/button.toml:3642
 glyph.stroke = "absent"
-# docs/facts/gnome/button.toml:3652
+# docs/facts/gnome/button.toml:3654
 glyph.source = { theme_icon = { name = "pan-down-symbolic", fallbacks = [] } }
-# docs/facts/gnome/button.toml:3732
+# docs/facts/gnome/button.toml:3734
 glyph.mirroring = "never"
-# docs/facts/gnome/button.toml:3742
+# docs/facts/gnome/button.toml:3744
 glyph.axes = {}
-# docs/facts/gnome/button.toml:3753
+# docs/facts/gnome/button.toml:3755
 glyph.draw_extent = "absent"
-# docs/facts/gnome/button.toml:3763
+# docs/facts/gnome/button.toml:3765
 glyph.draw_start = "absent"
-# docs/facts/gnome/button.toml:3775
+# docs/facts/gnome/button.toml:3777
 min_width_px = 16
-# docs/facts/gnome/button.toml:3791
+# docs/facts/gnome/button.toml:3793
 min_height_px = 16
-# docs/facts/gnome/button.toml:3809
+# docs/facts/gnome/button.toml:3811
 margin = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
-# docs/facts/gnome/button.toml:3825
+# docs/facts/gnome/button.toml:3827
 transform = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
-# docs/facts/gnome/button.toml:3847
+# docs/facts/gnome/button.toml:3849
 transitions = []
 
 [[rules]]
@@ -3378,23 +3378,23 @@ when = { variants = ["@card"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1235
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+# docs/facts/gnome/button.toml:1237
+shadow = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["@card"], conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1256
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+# docs/facts/gnome/button.toml:1258
+shadow = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
 when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1282
+# docs/facts/gnome/button.toml:1284
 shadow = "absent"
 
 [[rules]]
@@ -3402,7 +3402,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1294
+# docs/facts/gnome/button.toml:1296
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
@@ -3410,7 +3410,7 @@ when = { states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1320
+# docs/facts/gnome/button.toml:1322
 fill = "= alpha(surface.foreground, 0.15)"
 
 [[rules]]
@@ -3418,7 +3418,7 @@ when = { states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1337
+# docs/facts/gnome/button.toml:1339
 fill = "= alpha(surface.foreground, 0.3)"
 
 [[rules]]
@@ -3426,7 +3426,7 @@ when = { states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1354
+# docs/facts/gnome/button.toml:1356
 fill = "= alpha(surface.foreground, 0.3)"
 
 [[rules]]
@@ -3434,7 +3434,7 @@ when = { states = ["open"], variants = ["menu"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1371
+# docs/facts/gnome/button.toml:1373
 fill = "= alpha(surface.foreground, 0.3)"
 
 [[rules]]
@@ -3442,7 +3442,7 @@ when = { states = ["open"], variants = ["back"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1393
+# docs/facts/gnome/button.toml:1395
 fill = "= alpha(surface.foreground, 0.3)"
 
 [[rules]]
@@ -3450,7 +3450,7 @@ when = { states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1415
+# docs/facts/gnome/button.toml:1417
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3458,7 +3458,7 @@ when = { states = ["open", "hover"], variants = ["menu"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1432
+# docs/facts/gnome/button.toml:1434
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3466,7 +3466,7 @@ when = { states = ["open", "hover"], variants = ["back"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1454
+# docs/facts/gnome/button.toml:1456
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3474,7 +3474,7 @@ when = { states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1476
+# docs/facts/gnome/button.toml:1478
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3482,7 +3482,7 @@ when = { states = ["open", "pressed"], variants = ["menu"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1493
+# docs/facts/gnome/button.toml:1495
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3490,7 +3490,7 @@ when = { states = ["open", "pressed"], variants = ["back"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1515
+# docs/facts/gnome/button.toml:1517
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3498,7 +3498,7 @@ when = { states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1547
+# docs/facts/gnome/button.toml:1549
 opacity = "= token.params.opacity.disabled"
 
 [[rules]]
@@ -3506,9 +3506,9 @@ when = { variants = ["icon_only"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1558
+# docs/facts/gnome/button.toml:1560
 min_width_px = "= add(24px, add(part.padding.left, part.padding.right))"
-# docs/facts/gnome/button.toml:1579
+# docs/facts/gnome/button.toml:1581
 padding = { top_px = 5, right_px = 5, bottom_px = 5, left_px = 5 }
 
 [[rules]]
@@ -3516,7 +3516,7 @@ when = { variants = ["with_icon"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1595
+# docs/facts/gnome/button.toml:1597
 padding = { top_px = 5, right_px = 9, bottom_px = 5, left_px = 9 }
 
 [[rules]]
@@ -3524,7 +3524,7 @@ when = { variants = ["@custom_child"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1613
+# docs/facts/gnome/button.toml:1615
 padding = { top_px = 5, right_px = 10, bottom_px = 5, left_px = 10 }
 
 [[rules]]
@@ -3532,7 +3532,7 @@ when = { variants = ["@with_arrow"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1636
+# docs/facts/gnome/button.toml:1638
 padding = { top_px = 5, right_px = 9, bottom_px = 5, left_px = 9 }
 
 [[rules]]
@@ -3540,7 +3540,7 @@ when = { variants = ["@with_arrow"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1657
+# docs/facts/gnome/button.toml:1659
 menu_indicator_gap_px = 4
 
 [[rules]]
@@ -3548,9 +3548,9 @@ when = { states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1668
+# docs/facts/gnome/button.toml:1670
 bindings = [{ role = { role = { surface = "foreground" }, value = "= role.global.accent" } }]
-# docs/facts/gnome/button.toml:1684
+# docs/facts/gnome/button.toml:1686
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
@@ -3558,15 +3558,15 @@ when = { variants = ["@osd"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1710
+# docs/facts/gnome/button.toml:1712
 min_width_px = "= add(32px, add(part.padding.left, part.padding.right))"
-# docs/facts/gnome/button.toml:1731
+# docs/facts/gnome/button.toml:1733
 min_height_px = "= add(32px, add(part.padding.top, part.padding.bottom))"
-# docs/facts/gnome/button.toml:1754
+# docs/facts/gnome/button.toml:1756
 focus.offset = { top_px = 1, right_px = 1, bottom_px = 1, left_px = 1 }
-# docs/facts/gnome/button.toml:1812
+# docs/facts/gnome/button.toml:1814
 bindings = [{ role = { role = { surface = "foreground" }, value = "srgb(1, 1, 1, 0.9)" } }]
-# docs/facts/gnome/button.toml:1845
+# docs/facts/gnome/button.toml:1847
 fill = "srgb(0, 0, 0, 0.65)"
 
 [[rules]]
@@ -3574,7 +3574,7 @@ when = { variants = ["@osd"], not_states = ["focused"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1770
+# docs/facts/gnome/button.toml:1772
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3582,7 +3582,7 @@ when = { variants = ["@osd"], not_states = ["focus_visible"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1791
+# docs/facts/gnome/button.toml:1793
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3590,7 +3590,7 @@ when = { variants = ["@osd"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1829
+# docs/facts/gnome/button.toml:1831
 bindings = [{ role = { role = { surface = "foreground" }, value = "= role.global.accent" } }]
 
 [[rules]]
@@ -3598,7 +3598,7 @@ when = { conditions = ["contrast_high"], variants = ["@osd"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1856
+# docs/facts/gnome/button.toml:1858
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= surface.foreground", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
@@ -3606,7 +3606,7 @@ when = { variants = ["@osd"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1877
+# docs/facts/gnome/button.toml:1879
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
@@ -3614,9 +3614,9 @@ when = { variants = ["@osd"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1903
+# docs/facts/gnome/button.toml:1905
 bindings = [{ role = { role = { surface = "foreground" }, value = "#ffffff" } }]
-# docs/facts/gnome/button.toml:1915
+# docs/facts/gnome/button.toml:1917
 fill = "= alpha(mix(#000000, surface.foreground, 0.15), 0.65)"
 
 [[rules]]
@@ -3624,9 +3624,9 @@ when = { variants = ["@osd"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1927
+# docs/facts/gnome/button.toml:1929
 bindings = [{ role = { role = { surface = "foreground" }, value = "#ffffff" } }]
-# docs/facts/gnome/button.toml:1938
+# docs/facts/gnome/button.toml:1940
 fill = "= alpha(mix(#000000, surface.foreground, 0.25), 0.65)"
 
 [[rules]]
@@ -3634,7 +3634,7 @@ when = { variants = ["@osd"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1950
+# docs/facts/gnome/button.toml:1952
 fill = "= alpha(mix(#000000, surface.foreground, 0.2), 0.65)"
 
 [[rules]]
@@ -3642,7 +3642,7 @@ when = { variants = ["menu", "@osd"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1962
+# docs/facts/gnome/button.toml:1964
 fill = "= alpha(mix(#000000, surface.foreground, 0.2), 0.65)"
 
 [[rules]]
@@ -3650,7 +3650,7 @@ when = { variants = ["@osd"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1979
+# docs/facts/gnome/button.toml:1981
 fill = "= alpha(mix(#000000, surface.foreground, 0.25), 0.65)"
 
 [[rules]]
@@ -3658,7 +3658,7 @@ when = { variants = ["menu", "@osd"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1991
+# docs/facts/gnome/button.toml:1993
 fill = "= alpha(mix(#000000, surface.foreground, 0.25), 0.65)"
 
 [[rules]]
@@ -3666,7 +3666,7 @@ when = { variants = ["@osd"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2008
+# docs/facts/gnome/button.toml:2010
 fill = "= alpha(mix(#000000, surface.foreground, 0.35), 0.65)"
 
 [[rules]]
@@ -3674,7 +3674,7 @@ when = { variants = ["menu", "@osd"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2020
+# docs/facts/gnome/button.toml:2022
 fill = "= alpha(mix(#000000, surface.foreground, 0.35), 0.65)"
 
 [[rules]]
@@ -3682,13 +3682,13 @@ when = { variants = ["primary"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2037
+# docs/facts/gnome/button.toml:2039
 bindings = [{ role = { role = { surface = "foreground" }, value = "= role.global.accent_foreground" } }]
-# docs/facts/gnome/button.toml:2048
+# docs/facts/gnome/button.toml:2050
 fill = "= role.global.accent"
-# docs/facts/gnome/button.toml:2059
+# docs/facts/gnome/button.toml:2061
 shadow = "absent"
-# docs/facts/gnome/button.toml:2072
+# docs/facts/gnome/button.toml:2074
 focus.offset = { top_px = 1, right_px = 1, bottom_px = 1, left_px = 1 }
 
 [[rules]]
@@ -3696,7 +3696,7 @@ when = { variants = ["primary"], not_states = ["focused"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2088
+# docs/facts/gnome/button.toml:2090
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3704,7 +3704,7 @@ when = { variants = ["primary"], not_states = ["focus_visible"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2109
+# docs/facts/gnome/button.toml:2111
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3712,7 +3712,7 @@ when = { variants = ["primary"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2130
+# docs/facts/gnome/button.toml:2132
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3720,7 +3720,7 @@ when = { variants = ["primary"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2147
+# docs/facts/gnome/button.toml:2149
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "#00000633" }, blend = "normal" }] }
 
 [[rules]]
@@ -3728,7 +3728,7 @@ when = { variants = ["primary"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2163
+# docs/facts/gnome/button.toml:2165
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3736,7 +3736,7 @@ when = { variants = ["menu", "primary"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2179
+# docs/facts/gnome/button.toml:2181
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3744,7 +3744,7 @@ when = { variants = ["primary"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2200
+# docs/facts/gnome/button.toml:2202
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3752,7 +3752,7 @@ when = { variants = ["menu", "primary"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2216
+# docs/facts/gnome/button.toml:2218
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3760,7 +3760,7 @@ when = { variants = ["primary"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2237
+# docs/facts/gnome/button.toml:2239
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3768,7 +3768,7 @@ when = { variants = ["menu", "primary"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2253
+# docs/facts/gnome/button.toml:2255
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3776,13 +3776,13 @@ when = { variants = ["@opaque"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2274
+# docs/facts/gnome/button.toml:2276
 bindings = [{ role = { role = { surface = "foreground" }, value = "= role.window.foreground" } }]
-# docs/facts/gnome/button.toml:2285
+# docs/facts/gnome/button.toml:2287
 fill = "= mix(role.window.background, role.window.foreground, 0.15)"
-# docs/facts/gnome/button.toml:2302
+# docs/facts/gnome/button.toml:2304
 shadow = "absent"
-# docs/facts/gnome/button.toml:2315
+# docs/facts/gnome/button.toml:2317
 focus.offset = { top_px = 1, right_px = 1, bottom_px = 1, left_px = 1 }
 
 [[rules]]
@@ -3790,7 +3790,7 @@ when = { variants = ["@opaque"], not_states = ["focused"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2331
+# docs/facts/gnome/button.toml:2333
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3798,7 +3798,7 @@ when = { variants = ["@opaque"], not_states = ["focus_visible"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2352
+# docs/facts/gnome/button.toml:2354
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3806,7 +3806,7 @@ when = { variants = ["@opaque"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2373
+# docs/facts/gnome/button.toml:2375
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3814,7 +3814,7 @@ when = { variants = ["@opaque"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2396
+# docs/facts/gnome/button.toml:2398
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "#00000633" }, blend = "normal" }] }
 
 [[rules]]
@@ -3822,7 +3822,7 @@ when = { variants = ["@opaque"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2418
+# docs/facts/gnome/button.toml:2420
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3830,7 +3830,7 @@ when = { variants = ["menu", "@opaque"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2440
+# docs/facts/gnome/button.toml:2442
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3838,7 +3838,7 @@ when = { variants = ["@opaque"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2468
+# docs/facts/gnome/button.toml:2470
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3846,7 +3846,7 @@ when = { variants = ["menu", "@opaque"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2490
+# docs/facts/gnome/button.toml:2492
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3854,7 +3854,7 @@ when = { variants = ["@opaque"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2522
+# docs/facts/gnome/button.toml:2524
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3862,7 +3862,7 @@ when = { variants = ["menu", "@opaque"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2544
+# docs/facts/gnome/button.toml:2546
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3870,9 +3870,9 @@ when = { variants = ["destructive"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2577
+# docs/facts/gnome/button.toml:2579
 bindings = [{ role = { role = { global = "accent" }, value = "= role.global.status.destructive.fill" } }, { role = { role = { global = "accent_foreground" }, value = "= role.global.status.destructive.foreground" } }, { role = { role = { global = "accent_standalone" }, value = "= role.global.status.destructive.standalone" } }, { role = { role = { surface = "foreground" }, value = "= role.global.status.destructive.standalone" } }]
-# docs/facts/gnome/button.toml:2588
+# docs/facts/gnome/button.toml:2590
 fill = "= alpha(surface.foreground, 0.15)"
 
 [[rules]]
@@ -3880,7 +3880,7 @@ when = { variants = ["destructive"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2605
+# docs/facts/gnome/button.toml:2607
 fill = "= alpha(surface.foreground, 0.2)"
 
 [[rules]]
@@ -3888,7 +3888,7 @@ when = { variants = ["destructive"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2622
+# docs/facts/gnome/button.toml:2624
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3896,7 +3896,7 @@ when = { variants = ["destructive"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2639
+# docs/facts/gnome/button.toml:2641
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3904,7 +3904,7 @@ when = { variants = ["menu", "destructive"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2656
+# docs/facts/gnome/button.toml:2658
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3912,7 +3912,7 @@ when = { variants = ["destructive"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2678
+# docs/facts/gnome/button.toml:2680
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3920,7 +3920,7 @@ when = { variants = ["menu", "destructive"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2695
+# docs/facts/gnome/button.toml:2697
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3928,7 +3928,7 @@ when = { variants = ["destructive"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2717
+# docs/facts/gnome/button.toml:2719
 fill = "= alpha(surface.foreground, 0.45)"
 
 [[rules]]
@@ -3936,7 +3936,7 @@ when = { variants = ["menu", "destructive"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2734
+# docs/facts/gnome/button.toml:2736
 fill = "= alpha(surface.foreground, 0.45)"
 
 [[rules]]
@@ -3944,9 +3944,9 @@ when = { variants = ["flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2756
+# docs/facts/gnome/button.toml:2758
 fill = "absent"
-# docs/facts/gnome/button.toml:2767
+# docs/facts/gnome/button.toml:2769
 shadow = "absent"
 
 [[rules]]
@@ -3954,7 +3954,7 @@ when = { variants = ["flat"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2779
+# docs/facts/gnome/button.toml:2781
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
@@ -3962,7 +3962,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2805
+# docs/facts/gnome/button.toml:2807
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
@@ -3970,7 +3970,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2831
+# docs/facts/gnome/button.toml:2833
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
@@ -3978,7 +3978,7 @@ when = { conditions = ["contrast_high"], variants = ["flat"], states = ["checked
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2857
+# docs/facts/gnome/button.toml:2859
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
@@ -3986,7 +3986,7 @@ when = { variants = ["flat"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2883
+# docs/facts/gnome/button.toml:2885
 fill = "= alpha(surface.foreground, 0.07)"
 
 [[rules]]
@@ -3994,7 +3994,7 @@ when = { variants = ["flat"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2900
+# docs/facts/gnome/button.toml:2902
 fill = "= alpha(surface.foreground, 0.16)"
 
 [[rules]]
@@ -4002,7 +4002,7 @@ when = { variants = ["flat"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2917
+# docs/facts/gnome/button.toml:2919
 fill = "= alpha(surface.foreground, 0.1)"
 
 [[rules]]
@@ -4010,7 +4010,7 @@ when = { variants = ["menu", "flat"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2934
+# docs/facts/gnome/button.toml:2936
 fill = "= alpha(surface.foreground, 0.1)"
 
 [[rules]]
@@ -4018,7 +4018,7 @@ when = { variants = ["flat"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2956
+# docs/facts/gnome/button.toml:2958
 fill = "= alpha(surface.foreground, 0.13)"
 
 [[rules]]
@@ -4026,7 +4026,7 @@ when = { variants = ["menu", "flat"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2973
+# docs/facts/gnome/button.toml:2975
 fill = "= alpha(surface.foreground, 0.13)"
 
 [[rules]]
@@ -4034,7 +4034,7 @@ when = { variants = ["flat"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2995
+# docs/facts/gnome/button.toml:2997
 fill = "= alpha(surface.foreground, 0.19)"
 
 [[rules]]
@@ -4042,7 +4042,7 @@ when = { variants = ["menu", "flat"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3012
+# docs/facts/gnome/button.toml:3014
 fill = "= alpha(surface.foreground, 0.19)"
 
 [[rules]]
@@ -4050,7 +4050,7 @@ when = { variants = ["flat"], states = ["disabled"], not_states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3034
+# docs/facts/gnome/button.toml:3036
 opacity = "= token.params.opacity.strong_disabled"
 
 [[rules]]
@@ -4058,13 +4058,13 @@ when = { variants = ["circular"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3050
+# docs/facts/gnome/button.toml:3052
 min_width_px = "= add(34px, add(part.padding.left, part.padding.right))"
-# docs/facts/gnome/button.toml:3071
+# docs/facts/gnome/button.toml:3073
 min_height_px = "= add(34px, add(part.padding.top, part.padding.bottom))"
-# docs/facts/gnome/button.toml:3092
+# docs/facts/gnome/button.toml:3094
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
-# docs/facts/gnome/button.toml:3103
+# docs/facts/gnome/button.toml:3105
 corners = { replace = { top_left = { full = { maximum_px = "absent" } }, top_right = { full = { maximum_px = "absent" } }, bottom_right = { full = { maximum_px = "absent" } }, bottom_left = { full = { maximum_px = "absent" } }, curve = "circular" } }
 
 [[rules]]
@@ -4072,9 +4072,9 @@ when = { variants = ["pill"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3119
+# docs/facts/gnome/button.toml:3121
 padding = { top_px = 10, right_px = 32, bottom_px = 10, left_px = 32 }
-# docs/facts/gnome/button.toml:3130
+# docs/facts/gnome/button.toml:3132
 corners = { replace = { top_left = { full = { maximum_px = "absent" } }, top_right = { full = { maximum_px = "absent" } }, bottom_right = { full = { maximum_px = "absent" } }, bottom_left = { full = { maximum_px = "absent" } }, curve = "circular" } }
 
 [[rules]]
@@ -4082,11 +4082,11 @@ when = { variants = ["@card"], not_variants = ["menu"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3148
+# docs/facts/gnome/button.toml:3150
 fill = "= role.card.background"
-# docs/facts/gnome/button.toml:3189
+# docs/facts/gnome/button.toml:3191
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
-# docs/facts/gnome/button.toml:3202
+# docs/facts/gnome/button.toml:3204
 focus.offset = { top_px = -1, right_px = -1, bottom_px = -1, left_px = -1 }
 
 [[rules]]
@@ -4094,7 +4094,7 @@ when = { variants = ["@card"], not_variants = ["menu"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3162
+# docs/facts/gnome/button.toml:3164
 text.font.weight = 400
 
 [[rules]]
@@ -4102,7 +4102,7 @@ when = { variants = ["@card"], not_variants = ["menu"], not_states = ["focused"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3218
+# docs/facts/gnome/button.toml:3220
 focus.offset = { top_px = "= add(add(-1px, token.focus.width), 4px)", right_px = "= add(add(-1px, token.focus.width), 4px)", bottom_px = "= add(add(-1px, token.focus.width), 4px)", left_px = "= add(add(-1px, token.focus.width), 4px)" }
 
 [[rules]]
@@ -4110,7 +4110,7 @@ when = { variants = ["@card"], not_variants = ["menu"], not_states = ["focus_vis
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3239
+# docs/facts/gnome/button.toml:3241
 focus.offset = { top_px = "= add(add(-1px, token.focus.width), 4px)", right_px = "= add(add(-1px, token.focus.width), 4px)", bottom_px = "= add(add(-1px, token.focus.width), 4px)", left_px = "= add(add(-1px, token.focus.width), 4px)" }
 
 [[rules]]
@@ -4118,7 +4118,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3260
+# docs/facts/gnome/button.toml:3262
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.04)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4126,7 +4126,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3282
+# docs/facts/gnome/button.toml:3284
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.08)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4134,7 +4134,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3304
+# docs/facts/gnome/button.toml:3306
 fill = "= alpha(surface.foreground, 0.1)"
 
 [[rules]]
@@ -4142,7 +4142,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3317
+# docs/facts/gnome/button.toml:3319
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.04)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4150,7 +4150,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3341
+# docs/facts/gnome/button.toml:3343
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.08)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4158,7 +4158,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3364
+# docs/facts/gnome/button.toml:3366
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.25)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4166,7 +4166,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "ho
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3386
+# docs/facts/gnome/button.toml:3388
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4174,7 +4174,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "pr
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3408
+# docs/facts/gnome/button.toml:3410
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.39)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4182,7 +4182,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "op
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3430
+# docs/facts/gnome/button.toml:3432
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4190,7 +4190,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3454
+# docs/facts/gnome/button.toml:3456
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.25)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4198,7 +4198,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3477
+# docs/facts/gnome/button.toml:3479
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4206,7 +4206,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3500
+# docs/facts/gnome/button.toml:3502
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.39)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4214,7 +4214,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3523
+# docs/facts/gnome/button.toml:3525
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4222,7 +4222,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["drop_target"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3546
+# docs/facts/gnome/button.toml:3548
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
@@ -4230,7 +4230,7 @@ when = { not_variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3573
+# docs/facts/gnome/button.toml:3575
 absent = true
 
 [[rules]]
@@ -4238,7 +4238,7 @@ when = { variants = ["menu"], not_variants = ["@with_arrow", "@arrow_only"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3593
+# docs/facts/gnome/button.toml:3595
 absent = true
 
 [[rules]]
@@ -4246,7 +4246,7 @@ when = { variants = ["menu", "@arrow_up"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3667
+# docs/facts/gnome/button.toml:3669
 glyph.source = { theme_icon = { name = "pan-up-symbolic", fallbacks = [] } }
 
 [[rules]]
@@ -4254,7 +4254,7 @@ when = { variants = ["menu", "@arrow_start"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3683
+# docs/facts/gnome/button.toml:3685
 glyph.source = { theme_icon = { name = "pan-start-symbolic", fallbacks = [] } }
 
 [[rules]]
@@ -4262,7 +4262,7 @@ when = { variants = ["menu", "@arrow_end"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3699
+# docs/facts/gnome/button.toml:3701
 glyph.source = { theme_icon = { name = "pan-end-symbolic", fallbacks = [] } }
 
 [[rules]]
@@ -4270,7 +4270,7 @@ when = { variants = ["menu", "@arrow_none"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3715
+# docs/facts/gnome/button.toml:3717
 glyph.source = { theme_icon = { name = "open-menu-symbolic", fallbacks = [] } }
 
 [[rules]]
@@ -4278,7 +4278,7 @@ when = { variants = ["with_icon"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3858
+# docs/facts/gnome/button.toml:3860
 icon_text_gap_px = 6
 
 [[rules]]
@@ -4286,7 +4286,7 @@ when = { variants = ["with_icon"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3870
+# docs/facts/gnome/button.toml:3872
 padding = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 0 }
 
 [[rules]]
@@ -4294,7 +4294,7 @@ when = { variants = ["with_icon", "@with_arrow"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3889
+# docs/facts/gnome/button.toml:3891
 padding = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 0 }
 
 [[rules]]
@@ -4302,7 +4302,7 @@ when = { variants = ["with_icon", "@image_text_box"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3922
+# docs/facts/gnome/button.toml:3924
 icon_text_gap_px = 4
 
 [[rules]]
@@ -4310,7 +4310,7 @@ when = { variants = ["with_icon", "@image_text_box"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3933
+# docs/facts/gnome/button.toml:3935
 padding = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 2 }
 
 [[rules]]
@@ -4318,9 +4318,9 @@ when = { variants = ["menu", "@card"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3950
+# docs/facts/gnome/button.toml:3952
 corners = { replace = { top_left_px = 12, top_right_px = 12, bottom_right_px = 12, bottom_left_px = 12, curve = "circular" } }
-# docs/facts/gnome/button.toml:3969
+# docs/facts/gnome/button.toml:3971
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4328,7 +4328,7 @@ when = { variants = ["menu", "@card"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3991
+# docs/facts/gnome/button.toml:3993
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4336,7 +4336,7 @@ when = { variants = ["menu", "@card"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4013
+# docs/facts/gnome/button.toml:4015
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4344,7 +4344,7 @@ when = { variants = ["menu", "@card"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4035
+# docs/facts/gnome/button.toml:4037
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4352,7 +4352,7 @@ when = { variants = ["menu", "@card"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4062
+# docs/facts/gnome/button.toml:4064
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4360,7 +4360,7 @@ when = { variants = ["menu", "@card"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4089
+# docs/facts/gnome/button.toml:4091
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4368,7 +4368,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu",
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4116
+# docs/facts/gnome/button.toml:4118
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4376,7 +4376,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu",
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4140
+# docs/facts/gnome/button.toml:4142
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4384,7 +4384,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu",
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4164
+# docs/facts/gnome/button.toml:4166
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4392,7 +4392,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu",
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4188
+# docs/facts/gnome/button.toml:4190
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4400,7 +4400,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu",
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4217
+# docs/facts/gnome/button.toml:4219
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4408,7 +4408,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu",
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4246
+# docs/facts/gnome/button.toml:4248
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4416,39 +4416,39 @@ when = { variants = ["menu", "@card"], conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4275
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+# docs/facts/gnome/button.toml:4278
+shadow = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["menu", "@card"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4306
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+# docs/facts/gnome/button.toml:4309
+shadow = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["menu", "@card"], states = ["drop_target"], conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4338
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
+# docs/facts/gnome/button.toml:4341
+shadow = { layers = [{ x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4376
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
+# docs/facts/gnome/button.toml:4379
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu", "@card"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4408
+# docs/facts/gnome/button.toml:4411
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
@@ -4456,8 +4456,8 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["menu",
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:4440
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(srgb(1, 1, 1, 0.9), token.params.opacity.border)", inset = false, falloff = "gaussian" }] }
+# docs/facts/gnome/button.toml:4443
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(srgb(1, 1, 1, 0.9), token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { conditions = ["contrast_high"] }
@@ -4502,7 +4502,7 @@ when = { conditions = ["animations_off"] }
 target = "tokens"
 
 [rules.set]
-# docs/facts/gnome/tokens.toml:672
+# docs/facts/gnome/tokens.toml:674
 motion.speed_factor = 0
 
 [[rules]]
@@ -4510,13 +4510,13 @@ when = { conditions = ["reduced_motion"] }
 target = "tokens"
 
 [rules.set]
-# docs/facts/gnome/tokens.toml:751
+# docs/facts/gnome/tokens.toml:753
 motion.timings.floating_sheet_open = { spring = { mass = 1, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.01, clamp = false, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:837
+# docs/facts/gnome/tokens.toml:839
 motion.timings.floating_sheet_close = { spring = { mass = 1, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.01, clamp = true, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:926
+# docs/facts/gnome/tokens.toml:928
 motion.timings.bottom_sheet_open = { spring = { mass = 1, stiffness = 400, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.0001, clamp = false, time_scale = "= token.motion.speed_factor" } }
-# docs/facts/gnome/tokens.toml:1007
+# docs/facts/gnome/tokens.toml:1009
 motion.timings.bottom_sheet_close = { spring = { mass = 1, stiffness = 400, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.0001, clamp = true, time_scale = "= token.motion.speed_factor" } }
 
 [[rules]]
@@ -4524,15 +4524,15 @@ when = { conditions = ["contrast_high"] }
 target = "tokens"
 
 [rules.set]
-# docs/facts/gnome/tokens.toml:1321
+# docs/facts/gnome/tokens.toml:1323
 params.opacity.focus_border = 0.8
-# docs/facts/gnome/tokens.toml:1354
+# docs/facts/gnome/tokens.toml:1356
 params.opacity.dimmer = 0.8
-# docs/facts/gnome/tokens.toml:1399
+# docs/facts/gnome/tokens.toml:1401
 params.opacity.border = 0.5
-# docs/facts/gnome/tokens.toml:1416
+# docs/facts/gnome/tokens.toml:1418
 params.opacity.dim = 0.9
-# docs/facts/gnome/tokens.toml:1428
+# docs/facts/gnome/tokens.toml:1430
 params.opacity.disabled = 0.4
-# docs/facts/gnome/tokens.toml:1485
+# docs/facts/gnome/tokens.toml:1487
 focus.paint = "= alpha(role.global.accent_standalone, token.params.opacity.focus_border)"
