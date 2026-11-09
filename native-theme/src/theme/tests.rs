@@ -1581,7 +1581,9 @@ fn a_gnome_reading_over_adwaita() {
     );
     let body = tokens.text.roles.body.as_ref().unwrap().font.clone();
     assert_eq!(body.family.as_deref(), Some("Adwaita Sans"));
-    assert_eq!(body.weight, Some(700));
+    // GTK 4 takes only the family and size from `gtk-font-name` (S9.3,
+    // ADD-A141), so the string's `Bold` leaves the preset's weight.
+    assert_eq!(body.weight, Some(400));
     // 12 pt at 96 DPI is 16 px, scaled by 1.25.
     assert_eq!(body.size, Some(crate::units::Px(20.0)));
 }
