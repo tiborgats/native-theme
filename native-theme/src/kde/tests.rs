@@ -1471,7 +1471,7 @@ fn the_palette_colours_follow_plasma_integration() -> Result<(), Box<dyn std::er
     let both = [first.clone(), second];
     let window = |kdeglobals: &str, dirs: &[std::path::PathBuf]| {
         palette_colors(&ini(kdeglobals), dirs)
-            .map(|colors| colors.get("Colors:Window", "BackgroundNormal"))
+            .map(|palette| palette.colors.get("Colors:Window", "BackgroundNormal"))
     };
     let red = |value: &str| Some(Some(format!("{value},0,0")));
 
@@ -1507,7 +1507,84 @@ fn the_palette_colours_follow_plasma_integration() -> Result<(), Box<dyn std::er
     );
     let none = palette_colors(&ini("[KDE]\nLookAndFeelPackage=missing\n"), &[first])
         .ok_or("no `[Colors:View]` group: the palette's colours are read")?;
-    assert!(none.get_map_ref().is_empty());
+    assert!(none.colors.get_map_ref().is_empty());
+    assert_eq!(none.unreadable, None);
+    Ok(())
+}
+
+/// Where no colours file is found, the palette's colours are an empty
+/// file's, every key KColorScheme's default, and the status has no
+/// fallback: nothing failed (S9.3).
+#[test]
+fn no_palette_colours_file_found_is_no_fallback() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = temp_config_dir("palette-colors-none");
+    let kdeglobals = "[General]\nColorScheme=Missing\n";
+    let colors = palette_colors(&ini(kdeglobals), std::slice::from_ref(&dir.0))
+        .ok_or("no `[Colors:View]` group: the palette's colours are read")?;
+    assert!(colors.colors.get_map_ref().is_empty());
+    assert_eq!(colors.unreadable, None);
+    let mut data = data(kdeglobals, SchemeFile::Unnamed);
+    data.colors = Some(colors);
+    let reading = reading(&data);
+    assert_eq!(reading.fallback, None);
+    assert_eq!(reading.state.scheme, Scheme::Light);
+    Ok(())
+}
+
+/// A colours file found that cannot be read: an empty file's colours, no
+/// further candidate taken (Qt locates by existence), and the status's
+/// fallback naming the file; where the scheme file fails too, its failure
+/// comes first (S9.3, S1).
+#[test]
+fn an_unreadable_palette_colours_file_is_the_fallback() -> Result<(), Box<dyn std::error::Error>> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = temp_config_dir("palette-colors-unreadable");
+    let package = dir
+        .0
+        .join("plasma/look-and-feel/org.kde.breeze.desktop/contents/colors");
+    let breeze = dir.0.join("color-schemes/BreezeLight.colors");
+    for file in [&package, &breeze] {
+        if let Some(parent) = file.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(file, "[Colors:Window]\nBackgroundNormal=1,2,3\n")?;
+    }
+    std::fs::set_permissions(&package, std::fs::Permissions::from_mode(0o000))?;
+    let locked = std::fs::read(&package).is_err();
+    let found = palette_colors(&ini(""), std::slice::from_ref(&dir.0));
+    std::fs::set_permissions(&package, std::fs::Permissions::from_mode(0o644))?;
+    if locked {
+        let found = found.ok_or("no `[Colors:View]` group: the palette's colours are read")?;
+        assert!(found.colors.get_map_ref().is_empty());
+        let why = found.unreadable.ok_or("the unreadable file is reported")?;
+        assert!(why.contains(&package.display().to_string()), "{why}");
+        assert!(why.contains("cannot be read"), "{why}");
+    }
+
+    let unreadable = || PaletteColors {
+        colors: create_kde_parser(),
+        unreadable: Some("the palette's colours file: gone".to_string()),
+    };
+    let mut colors_only = data("", SchemeFile::Unnamed);
+    colors_only.colors = Some(unreadable());
+    assert_eq!(
+        reading(&colors_only).fallback,
+        Some(ReaderFailure::Platform(
+            "the palette's colours file: gone".to_string()
+        ))
+    );
+    let mut both = data(
+        "",
+        SchemeFile::Unreadable("the colour scheme `Synthetic`: gone".to_string()),
+    );
+    both.colors = Some(unreadable());
+    assert_eq!(
+        reading(&both).fallback,
+        Some(ReaderFailure::Platform(
+            "the colour scheme `Synthetic`: gone".to_string()
+        ))
+    );
     Ok(())
 }
 
@@ -1523,10 +1600,14 @@ fn without_a_view_group_the_colours_are_the_palettes() -> Result<(), Box<dyn std
          [ColorEffects:Disabled]\nIntensityAmount=0.15\n",
         SchemeFile::Unnamed,
     );
-    data.colors = Some(ini("[Colors:Window]\nBackgroundNormal=240,241,242\n\
+    data.colors = Some(PaletteColors {
+        colors: ini("[Colors:Window]\nBackgroundNormal=240,241,242\n\
          [Colors:Window][Inactive]\nBackgroundNormal=230,231,232\n\
-         [Colors:Selection]\nBackgroundNormal=1,2,3\n"));
+         [Colors:Selection]\nBackgroundNormal=1,2,3\n"),
+        unreadable: None,
+    });
     let reading = reading(&data);
+    assert_eq!(reading.fallback, None);
     assert_eq!(reading.state.scheme, Scheme::Light);
     assert_eq!(
         input_color(&reading.layer.bases, "accent", Scheme::Light),

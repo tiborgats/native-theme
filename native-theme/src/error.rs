@@ -159,8 +159,9 @@ pub enum ReaderStatus {
     /// The application's stand-in stands for the reader.
     StandIn,
     /// Read, but one source failed and another stood in for it, which the
-    /// failure names (the KDE scheme file, S9.1, or an accent input the
-    /// reader could not read, S9.3; the first failure where several).
+    /// failure names (the KDE scheme file, S9.1, the KDE palette's colours
+    /// file, or an accent input the reader could not read, S9.3; the first
+    /// failure where several).
     Fallback(ReaderFailure),
     /// A re-read failed; the previous reader layer stays (S8, S16).
     Failed(ReaderFailure),
