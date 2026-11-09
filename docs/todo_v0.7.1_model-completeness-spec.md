@@ -6025,7 +6025,16 @@ which fields are struct blocks the valid keys decide (below).
   (a number a TOML number, a bool a TOML bool, a variant with data a one-key table, a list of layers a list of
   tables), with the key's own length, duration or angle in S2.2's units (`"4px"`, `"150ms"`) since the key carries no
   suffix, while tables nested in a value keep S11's suffixed keys (`x_px = <n>`); the quote check compares its
-  numeric, colour and text leaves. A keyed list (S6.1's: the transitions, bindings and presentations) is stated as
+  numeric, colour and text leaves. Every expression a fact states (`"= …"`, the value or any leaf or item of it) is
+  read by S2.2's grammar, which `check_facts.py` applies production by production (ADD-A144): each operand as its
+  own production spells it, the reserved operands bare (`body_font_height`, `text_scale`, `font_size`,
+  `line_height`, `base`, `scheme`) and taking no path, `element.` followed by one of the names its own production
+  lists (`ElementData`'s fields and the font metrics it names) and no other word, a call's name one of S2.2's
+  functions with its arity, `active(…)` around a role reference, so `element.body_font_height`, which the parser
+  refuses, fails the checker too (the three KDE facts 0ed889fb corrected, found by `kirigami_label_icon_size`'s
+  wiring test while the gate skipped them, their units not enabled). Rejected: the gate parsing every fact's expression whatever its unit (it parses each when the unit is
+  enabled, before anything ships, so it would add only an earlier report the checker gives); the core's parser
+  called from the checker (a build in a check that runs without one). A keyed list (S6.1's: the transitions, bindings and presentations) is stated as
   the query resolves it under the fact's `when`, the merged list in S6.1's order (the base's items no rule replaces,
   then each applying rule's), as every fact states the resolved value the gate compares (rejected: the applying rule's
   own patch, the other reading the ledger's question asked about, which is no resolved value and leaves the base's
