@@ -1789,6 +1789,41 @@ mod tests {
         );
     }
 
+    /// A bare `active` is `KdeGroup`'s variant where the group operand
+    /// expects it, `kde_accent`'s and `kde_effects`'; refused by typing
+    /// where no enum operand takes it (S2.2, ADD-A143).
+    #[test]
+    fn bare_active_types_as_the_kde_group() {
+        for text in [
+            "kde_accent(view, foreground_link, active)",
+            "kde_effects(surface.foreground, role.window.background, active, foreground)",
+        ] {
+            assert_eq!(typed(text, Ty::Color), Ty::Color, "{text}");
+        }
+        let active = || Name::Variant(key!("active"));
+        assert_eq!(
+            refused("alpha(active, 0.5)", Ty::Color),
+            TypeError::UnexpectedName {
+                name: active(),
+                expected: Some(Ty::Color)
+            }
+        );
+        assert_eq!(
+            refused("active", Ty::Color),
+            TypeError::UnexpectedName {
+                name: active(),
+                expected: Some(Ty::Color)
+            }
+        );
+        assert_eq!(
+            refused("uikit_prominence(#000000, active)", Ty::Color),
+            TypeError::UnknownVariant {
+                ty: "Prominence",
+                name: key!("active")
+            }
+        );
+    }
+
     #[test]
     fn kde_selection_inactive_is_implemented() {
         assert_eq!(
