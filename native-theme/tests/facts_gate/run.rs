@@ -1872,27 +1872,82 @@ pub fn declarations_run(
     }
 }
 
-/// A fact's own combination completed to one the state model `entry`
-/// draws (S17: the gate also resolves each fact's own `when`): where the
-/// entry requires a variant the `when` names none of, the first required
-/// variant its `when` does not exclude and no variant it holds shares an
-/// `exclusive_variants` group with; `None` where none is left, as the fact
-/// then applies to no element the platform draws.
-pub fn complete(mut combination: Combination, when: &Value, entry: &Model) -> Option<Combination> {
+/// A fact's own combinations, its own combination completed to those the
+/// state model `entry` draws (S17: the gate also resolves each fact's own
+/// `when`): with what the entry requires ([`required`]); where the size it
+/// names is one its variants do not take (`ios-13`'s facts naming `mini`
+/// and no style, which only the styles take), once with each
+/// `sizes_by_variant` entry's variant whose sizes hold it, the `when` not
+/// excluding it and no variant held sharing an `exclusive_variants` group
+/// with it, each completion that then takes the size (ADD-A141); where none
+/// does, the completion with the size alone, which the run finds not
+/// available. Empty where nothing required is left, as the fact then
+/// applies to no element the platform draws.
+pub fn complete(combination: Combination, when: &Value, entry: &Model) -> Vec<Combination> {
+    let Some(completed) = required(combination.clone(), when, entry) else {
+        return Vec::new();
+    };
+    let Some(size) = completed.size.clone() else {
+        return vec![completed];
+    };
+    let takes = |held: &Combination| {
+        model::size_options(entry, &held.variants, held.context.as_ref())
+            .contains(&Some(size.clone()))
+    };
+    if takes(&completed) {
+        return vec![completed];
+    }
+    let excluded = strings(when.get("not_variants"));
+    let mut styled: Vec<Combination> = Vec::new();
+    for (variant, sizes, _) in &entry.sizes_by_variant {
+        if !sizes.contains(&size)
+            || excluded.contains(variant)
+            || combination.variants.contains(variant)
+            || exclusive_with(entry, variant, &combination.variants)
+        {
+            continue;
+        }
+        let mut with = combination.clone();
+        with.variants.push(variant.clone());
+        if let Some(with) = required(with, when, entry)
+            && takes(&with)
+            && !styled.contains(&with)
+        {
+            styled.push(with);
+        }
+    }
+    if styled.is_empty() {
+        vec![completed]
+    } else {
+        styled
+    }
+}
+
+/// The combination completed with what the state model `entry` requires
+/// (S17): where the entry requires a variant the `when` names none of, the
+/// first required variant its `when` does not exclude and no variant it
+/// holds shares an `exclusive_variants` group with; `None` where none is
+/// left.
+fn required(mut combination: Combination, when: &Value, entry: &Model) -> Option<Combination> {
     let required = &entry.requires_variants;
     if required.is_empty() || required.iter().any(|v| combination.variants.contains(v)) {
         return Some(combination);
     }
     let excluded = strings(when.get("not_variants"));
     let variant = required.iter().find(|variant| {
-        !excluded.contains(variant)
-            && !entry.exclusive_variants.iter().any(|group| {
-                group.contains(variant)
-                    && combination.variants.iter().any(|held| group.contains(held))
-            })
+        !excluded.contains(variant) && !exclusive_with(entry, variant, &combination.variants)
     })?;
     combination.variants.push(variant.clone());
     Some(combination)
+}
+
+/// Whether `variant` shares one of the entry's `exclusive_variants` groups
+/// with a variant `held`.
+fn exclusive_with(entry: &Model, variant: &String, held: &[String]) -> bool {
+    entry
+        .exclusive_variants
+        .iter()
+        .any(|group| group.contains(variant) && held.iter().any(|other| group.contains(other)))
 }
 
 /// Each state-model entry's `not_drawn` entries read for the preset, once,
@@ -2050,20 +2105,25 @@ fn check(
                 shared.combinations_skipped += 1;
                 continue;
             };
-            let combination = match entries
+            let completed = match entries
                 .iter()
                 .find(|entry| Some(&entry.widget) == widget.as_ref())
             {
                 Some(entry) => complete(combination, when, entry),
-                None => Some(combination),
+                None => vec![combination],
             };
-            let Some(combination) = combination else {
+            if completed.is_empty() {
                 shared.whens_not_drawn += 1;
                 continue;
-            };
+            }
             for vector in vectors {
                 match &widget {
-                    Some(_) => own.entry(vector).or_default().insert(combination.clone()),
+                    Some(_) => {
+                        let held = own.entry(vector).or_default();
+                        for combination in &completed {
+                            held.insert(combination.clone());
+                        }
+                    }
                     None => {
                         global_vectors.insert(vector);
                     }
@@ -3517,7 +3577,15 @@ struct PassCheck<'k> {
     not_drawn: &'k [When],
     vector: Vec<String>,
     resolution: usize,
+    /// The pass's completions under the vector ([`complete`]), by index,
+    /// and how many: an undrawn one of several fails only where every one
+    /// of them is undrawn.
+    group: (usize, usize),
 }
+
+/// A measured derivation's undrawn completions under a vector: how many,
+/// of how many, and the first one's key, place, vector and refusal.
+type Undrawn = (usize, usize, String, String, String, Unread);
 
 /// Every measured derivation's passes (S17 *A measured derivation*): for
 /// each pass, the preset resolved with the stand-in stating the varied
@@ -3540,6 +3608,7 @@ fn derivations(
     let schemes = preset.schemes();
     let drawing = drawing(platform, flavor);
     let mut checks: Vec<PassCheck<'_>> = Vec::new();
+    let mut groups = 0_usize;
     let mut resolutions: Vec<(Vec<String>, String)> = Vec::new();
     for key in keys {
         for prepared in &key.facts {
@@ -3561,17 +3630,17 @@ fn derivations(
                 let entry = entries
                     .iter()
                     .find(|entry| Some(&entry.widget) == widget.as_ref());
-                let combination = match entry {
+                let completed = match entry {
                     Some(entry) => complete(combination, &when, entry),
-                    None => Some(combination),
+                    None => vec![combination],
                 };
-                let Some(combination) = combination else {
+                if completed.is_empty() {
                     report.fail(format!(
                         "{}: its `when` names no combination the state model draws",
                         describe()
                     ));
                     continue;
-                };
+                }
                 let not_drawn: &[When] = entry
                     .and_then(|entry| entry_not_drawn.get(&entry_id(entry)))
                     .map_or(&[], Vec::as_slice);
@@ -3607,17 +3676,21 @@ fn derivations(
                             resolutions.len() - 1
                         }
                     };
-                    checks.push(PassCheck {
-                        key,
-                        prepared,
-                        value,
-                        pass,
-                        result,
-                        combination: combination.clone(),
-                        not_drawn,
-                        vector,
-                        resolution,
-                    });
+                    for combination in &completed {
+                        checks.push(PassCheck {
+                            key,
+                            prepared,
+                            value,
+                            pass,
+                            result,
+                            combination: combination.clone(),
+                            not_drawn,
+                            vector: vector.clone(),
+                            resolution,
+                            group: (groups, completed.len()),
+                        });
+                    }
+                    groups += 1;
                 }
             }
         }
@@ -3628,6 +3701,7 @@ fn derivations(
             .map_err(|unread| format!("{unread:?}"))
             .and_then(|conditions| preset.resolve_pass(&conditions, &layer))
     });
+    let mut undrawn: BTreeMap<usize, Undrawn> = BTreeMap::new();
     for check in checks {
         let PassCheck {
             key,
@@ -3639,6 +3713,7 @@ fn derivations(
             not_drawn,
             vector,
             resolution,
+            group,
         } = check;
         let describe = || format!("the pass {:?} of {}", pass.inputs, prepared.fact.place());
         let widget = key.key.widget();
@@ -3687,9 +3762,25 @@ fn derivations(
                             result,
                             &pass.tolerance.drawn_by(drawing),
                         ),
-                        Err(why) => Err(Unread::Refused(format!(
-                            "the pass's combination {combination:?} is {why}"
-                        ))),
+                        Err(why) => {
+                            let refused = Unread::Refused(format!(
+                                "the pass's combination {combination:?} is {why}"
+                            ));
+                            let (index, total) = group;
+                            if total > 1 {
+                                let held = undrawn.entry(index).or_insert((
+                                    0,
+                                    total,
+                                    key.name.clone(),
+                                    describe(),
+                                    format!("{vector:?}"),
+                                    refused,
+                                ));
+                                held.0 += 1;
+                                continue;
+                            }
+                            Err(refused)
+                        }
                     }
                 }
                 Err(Unread::NotHeld(_)) => {
@@ -3708,5 +3799,19 @@ fn derivations(
             &|| under.clone(),
             Pass::Measured,
         );
+    }
+    // A pass none of whose completions is drawn holds in no combination the
+    // platform draws: a finding of its fact (S17, ADD-A141).
+    for (count, total, name, place, under, refused) in undrawn.into_values() {
+        if count == total {
+            record(
+                Err(refused),
+                &name,
+                &place,
+                report,
+                &|| under.clone(),
+                Pass::Measured,
+            );
+        }
     }
 }

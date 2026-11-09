@@ -2543,18 +2543,68 @@ fn own_combination_completed_by_the_filters() {
     let completed = |variants: &[&str], when: &toml::Value| {
         let mut combination = Combination::new("button");
         combination.variants = variants.iter().map(|v| (*v).to_owned()).collect();
-        run::complete(combination, when, entry).map(|c| c.variants)
+        run::complete(combination, when, entry)
+            .into_iter()
+            .map(|c| c.variants)
+            .collect::<Vec<_>>()
     };
     let plain = when("");
-    assert_eq!(completed(&[], &plain), Some(vec!["flat".to_owned()]));
+    assert_eq!(completed(&[], &plain), vec![vec!["flat".to_owned()]]);
     let not_flat = when("not_variants = [\"flat\"]");
-    assert_eq!(completed(&[], &not_flat), Some(vec!["primary".to_owned()]));
+    assert_eq!(completed(&[], &not_flat), vec![vec!["primary".to_owned()]]);
     assert_eq!(
         completed(&["@x"], &plain),
-        Some(vec!["@x".to_owned(), "primary".to_owned()])
+        vec![vec!["@x".to_owned(), "primary".to_owned()]]
     );
     let neither = when("not_variants = [\"primary\"]");
-    assert_eq!(completed(&["@x"], &neither), None);
+    assert!(completed(&["@x"], &neither).is_empty());
+}
+
+/// A fact naming a size its variants do not take is completed once with
+/// each `sizes_by_variant` entry's variant whose sizes hold it, less those
+/// its `when` excludes or an exclusive group rules out (S17, ADD-A141); a
+/// size no entry holds leaves the completion with the size alone.
+#[test]
+fn own_combination_completed_by_the_styles_taking_its_size() -> Result<(), String> {
+    let models = model::Model::read(
+        "probe",
+        "[[model]]\nwidget = \"button\"\navailable = true\n\
+         variants = [\"flat\", \"primary\", \"tinted\", \"toggle\"]\nsizes = [\"regular\"]\n\
+         densities = []\nexclusive = []\nexclusive_variants = [[\"flat\", \"primary\", \"tinted\"]]\n\
+         sizes_by_variant = [{ variant = \"flat\", sizes = [\"small\", \"regular\"] }, \
+         { variant = \"primary\", sizes = [\"small\", \"regular\"] }, \
+         { variant = \"tinted\", sizes = [\"regular\"] }]\nrows = []\n",
+    )?;
+    let entry = models.first().ok_or("no model read")?;
+    let completed =
+        |variants: &[&str], size: &str, when: &str| -> Result<Vec<Vec<String>>, String> {
+            let when: toml::Value = toml::from_str(when).map_err(|error| error.to_string())?;
+            let mut combination = Combination::new("button");
+            combination.variants = variants.iter().map(|v| (*v).to_owned()).collect();
+            combination.size = Some(size.to_owned());
+            Ok(run::complete(combination, &when, entry)
+                .into_iter()
+                .map(|c| c.variants)
+                .collect())
+        };
+    let names = |lists: &[&[&str]]| -> Vec<Vec<String>> {
+        lists
+            .iter()
+            .map(|list| list.iter().map(|v| (*v).to_owned()).collect())
+            .collect()
+    };
+    assert_eq!(
+        completed(&[], "small", "")?,
+        names(&[&["flat"], &["primary"]])
+    );
+    assert_eq!(
+        completed(&["toggle"], "small", "not_variants = [\"flat\"]")?,
+        names(&[&["toggle", "primary"]])
+    );
+    assert_eq!(completed(&["flat"], "small", "")?, names(&[&["flat"]]));
+    assert_eq!(completed(&["tinted"], "small", "")?, names(&[&["tinted"]]));
+    assert_eq!(completed(&[], "large", "")?, names(&[&[]]));
+    Ok(())
 }
 
 /// The perturbed run's colours are one-to-one over many operands (S17): no
