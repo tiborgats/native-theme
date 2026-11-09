@@ -914,7 +914,7 @@ fn a_set_stated_whole_beneath_the_derivation() -> Result<(), Box<dyn std::error:
     )?;
     let accent = Color::parse("#e5a50a").ok_or("not a colour")?;
     let accent = Accent::new(InputValue::new(SchemeMap::new(
-        Value::Stated(accent.clone()),
+        Value::Stated(accent),
         Value::Stated(accent),
     )));
     let named = |error: LayerError| match error {
