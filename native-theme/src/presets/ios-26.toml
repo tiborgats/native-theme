@@ -7,7 +7,7 @@
 [preset]
 id = "ios-26"
 # hand-written: begin preset
-# docs/facts/sources.toml:1063
+# docs/facts/sources.toml:1066 (xcode@26.6)
 generation = "ios-26"
 # hand-written: end preset
 
@@ -17,7 +17,7 @@ surface_sets = [
     "window",  # docs/facts/ios/roles.toml:1819
     "dialog",  # docs/facts/ios/roles.toml:3743
     "popover",  # docs/facts/ios/roles.toml:3810
-    "selection",  # docs/facts/ios/roles.toml:7446
+    "selection",  # docs/facts/ios/roles.toml:7230
 ]
 color_roles = [
     "label_tertiary",  # docs/facts/ios/roles.toml:1885
@@ -71,51 +71,51 @@ text_styles = [
     "footnote",  # docs/facts/ios/tokens.toml:414
     "caption_1",  # docs/facts/ios/tokens.toml:464
     "caption_2",  # docs/facts/ios/tokens.toml:514
-    "large_title_tight",  # docs/facts/ios/tokens.toml:5273
-    "large_title_loose",  # docs/facts/ios/tokens.toml:5666
-    "title_1_tight",  # docs/facts/ios/tokens.toml:6057
-    "title_1_loose",  # docs/facts/ios/tokens.toml:6450
-    "title_2_tight",  # docs/facts/ios/tokens.toml:6841
-    "title_2_loose",  # docs/facts/ios/tokens.toml:7234
-    "title_3_tight",  # docs/facts/ios/tokens.toml:7625
-    "title_3_loose",  # docs/facts/ios/tokens.toml:8018
-    "headline_tight",  # docs/facts/ios/tokens.toml:8409
-    "headline_loose",  # docs/facts/ios/tokens.toml:8802
-    "subheadline_tight",  # docs/facts/ios/tokens.toml:9193
-    "subheadline_loose",  # docs/facts/ios/tokens.toml:9586
-    "body_tight",  # docs/facts/ios/tokens.toml:9977
-    "body_loose",  # docs/facts/ios/tokens.toml:10370
-    "callout_tight",  # docs/facts/ios/tokens.toml:10761
-    "callout_loose",  # docs/facts/ios/tokens.toml:11154
-    "footnote_tight",  # docs/facts/ios/tokens.toml:11545
-    "footnote_loose",  # docs/facts/ios/tokens.toml:11938
-    "caption_1_tight",  # docs/facts/ios/tokens.toml:12329
-    "caption_1_loose",  # docs/facts/ios/tokens.toml:12722
-    "caption_2_tight",  # docs/facts/ios/tokens.toml:13113
-    "caption_2_loose",  # docs/facts/ios/tokens.toml:13506
-    "large_title_emphasized",  # docs/facts/ios/tokens.toml:13898
-    "title_1_emphasized",  # docs/facts/ios/tokens.toml:14291
-    "title_2_emphasized",  # docs/facts/ios/tokens.toml:14684
-    "title_3_emphasized",  # docs/facts/ios/tokens.toml:15077
-    "headline_emphasized",  # docs/facts/ios/tokens.toml:15470
-    "subheadline_emphasized",  # docs/facts/ios/tokens.toml:15863
-    "body_emphasized",  # docs/facts/ios/tokens.toml:16256
-    "callout_emphasized",  # docs/facts/ios/tokens.toml:16649
-    "footnote_emphasized",  # docs/facts/ios/tokens.toml:17042
-    "caption_1_emphasized",  # docs/facts/ios/tokens.toml:17435
-    "caption_2_emphasized",  # docs/facts/ios/tokens.toml:17828
-    "extra_large_title",  # docs/facts/ios/tokens.toml:18272
-    "extra_large_title_2",  # docs/facts/ios/tokens.toml:18665
+    "large_title_tight",  # docs/facts/ios/tokens.toml:5604
+    "large_title_loose",  # docs/facts/ios/tokens.toml:6029
+    "title_1_tight",  # docs/facts/ios/tokens.toml:6452
+    "title_1_loose",  # docs/facts/ios/tokens.toml:6877
+    "title_2_tight",  # docs/facts/ios/tokens.toml:7300
+    "title_2_loose",  # docs/facts/ios/tokens.toml:7725
+    "title_3_tight",  # docs/facts/ios/tokens.toml:8148
+    "title_3_loose",  # docs/facts/ios/tokens.toml:8573
+    "headline_tight",  # docs/facts/ios/tokens.toml:8996
+    "headline_loose",  # docs/facts/ios/tokens.toml:9421
+    "subheadline_tight",  # docs/facts/ios/tokens.toml:9844
+    "subheadline_loose",  # docs/facts/ios/tokens.toml:10269
+    "body_tight",  # docs/facts/ios/tokens.toml:10692
+    "body_loose",  # docs/facts/ios/tokens.toml:11117
+    "callout_tight",  # docs/facts/ios/tokens.toml:11540
+    "callout_loose",  # docs/facts/ios/tokens.toml:11965
+    "footnote_tight",  # docs/facts/ios/tokens.toml:12388
+    "footnote_loose",  # docs/facts/ios/tokens.toml:12813
+    "caption_1_tight",  # docs/facts/ios/tokens.toml:13236
+    "caption_1_loose",  # docs/facts/ios/tokens.toml:13661
+    "caption_2_tight",  # docs/facts/ios/tokens.toml:14084
+    "caption_2_loose",  # docs/facts/ios/tokens.toml:14509
+    "large_title_emphasized",  # docs/facts/ios/tokens.toml:14933
+    "title_1_emphasized",  # docs/facts/ios/tokens.toml:15358
+    "title_2_emphasized",  # docs/facts/ios/tokens.toml:15783
+    "title_3_emphasized",  # docs/facts/ios/tokens.toml:16208
+    "headline_emphasized",  # docs/facts/ios/tokens.toml:16633
+    "subheadline_emphasized",  # docs/facts/ios/tokens.toml:17058
+    "body_emphasized",  # docs/facts/ios/tokens.toml:17483
+    "callout_emphasized",  # docs/facts/ios/tokens.toml:17908
+    "footnote_emphasized",  # docs/facts/ios/tokens.toml:18333
+    "caption_1_emphasized",  # docs/facts/ios/tokens.toml:18758
+    "caption_2_emphasized",  # docs/facts/ios/tokens.toml:19183
+    "extra_large_title",  # docs/facts/ios/tokens.toml:19659
+    "extra_large_title_2",  # docs/facts/ios/tokens.toml:20084
 ]
 timings = [
     "default",  # docs/facts/ios/tokens.toml:1514
-    "navigation",  # docs/facts/ios/tokens.toml:20366
+    "navigation",  # docs/facts/ios/tokens.toml:21826
 ]
 durations = [
     "ca_transaction",  # docs/facts/ios/tokens.toml:1460
     "navigation_controller_hide_show_bar",  # docs/facts/ios/tokens.toml:1478
     "default",  # docs/facts/ios/tokens.toml:1496
-    "navigation",  # docs/facts/ios/tokens.toml:20347
+    "navigation",  # docs/facts/ios/tokens.toml:21807
 ]
 inputs = [
     "accent",  # docs/facts/ios/roles.toml:3664
@@ -131,7 +131,7 @@ symbol_scales = [
 # S4.6, S10: one unit per group, the opacity group's `fraction` (S10's `opacity = { unit = "fraction" }`)
 unit = "fraction"
 keys = [
-    "disabled",  # docs/facts/ios/tokens.toml:20372
+    "disabled",  # docs/facts/ios/tokens.toml:21832
 ]
 # hand-written: end declare
 
