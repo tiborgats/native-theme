@@ -1643,64 +1643,100 @@ fn root_role(theme: &super::Theme, role: crate::blocks::part_style::RoleRef) -> 
         .map(crate::color::Color::to_srgb8_clamped)
 }
 
-/// `kde_accent` and `kde_accent_wm` resolved over `kde-breeze`'s own scheme
-/// inputs at light with the accent `#e5a50a` give what Plasma wrote for
-/// that pair (`docs/facts/kde/accent.toml`'s light-e5a50a facts:
-/// `role.view.link` `#a77807`, `role.selection.background` `#ecbf53`,
-/// `role.@wm_active_background` `#e3e5e7`), stated by an application layer
-/// until the accent-derivation layer states them (S9.2, M1b). The group
-/// `active` is written bare (S2.2, ADD-A143). The layer states
-/// `token.kde.tint_factor` `none` itself, Breeze Light's (no `TintFactor`):
-/// an operand both calls read, which S12's absent-operand check passes, as
-/// `None` is a stated value, not an absent one (S4.8).
+/// `set_accent(#e5a50a)` on `kde-breeze` at light: the accent-derivation
+/// layer states Plasma's derivation over the preset's own scheme inputs
+/// (S9.2; ADD-A132), which gives what Plasma wrote for that pair, each role
+/// and inactive input role compared with its light-e5a50a fact in
+/// `docs/facts/kde/accent.toml` (`breeze@6.8.2 colors/BreezeLight.colors`,
+/// run 41158393408): `role.view.link` `#a77807` (:77),
+/// `role.selection.background` `#ecbf53` (:948),
+/// `role.@wm_active_background` `#e3e5e7` (:2196),
+/// `role.view.foreground_active` `#e5a50a` (:64),
+/// `role.window.decoration_focus` `#e5a50a` (:454),
+/// `role.button.background_alternate` `#ebbf52` (:649),
+/// `role.selection.background_alternate` `#ecbf53` (:961),
+/// `role.selection.foreground` `#000000` (:974), `role.selection.link`
+/// `#ffd5a2` (:1013), `role.complementary.link` `#e5a50a` (:1637),
+/// `role.header.foreground` `#232629` (:1910),
+/// `role.@wm_active_foreground` `#232629` (:2209),
+/// `role.@wm_inactive_background` `#eff0f1` (:2222),
+/// `input.inactive.view.foreground_link` `#a77807` (:233) and
+/// `input.inactive.selection.background_normal` `#ecbf53` (:1104). The
+/// accent is light's alone, so dark keeps the preset's own link, as
+/// without it.
 #[test]
-fn kde_accent_over_kde_breeze() {
+fn kde_accent_over_kde_breeze() -> Result<(), Box<dyn std::error::Error>> {
     use crate::blocks::part_style::RoleRef;
     use crate::color::Color;
     use crate::inputs::{Accent, InputValue};
-    use crate::roles::{SurfaceRole, SurfaceSet};
+    use crate::roles::{SurfaceRole as R, SurfaceSet as S};
     use crate::value::{SchemeMap, Value};
 
     let mut theme = synthetic_theme(PresetId::KdeBreeze);
-    let accent = Color::parse("#e5a50a").unwrap();
+    let mut plain = synthetic_theme(PresetId::KdeBreeze);
+    let parse = |hex: &str| Color::parse(hex).ok_or("not a colour");
+    let accent = parse("#e5a50a")?;
     let accent = InputValue::new(SchemeMap::one(Scheme::Light, Value::Stated(accent)));
-    theme.set_accent(Some(Accent::new(accent))).unwrap();
-    let view_link = || RoleRef::Set(SurfaceSet::View, SurfaceRole::Link);
-    assert_eq!(
-        root_role(&theme, view_link()),
-        Some([0x29, 0x80, 0xb9, 0xff]),
-        "the preset's own link, no accent derived"
-    );
-    theme
-        .add_layer(
-            Layer::from_toml(
-                "[colors.light.surfaces.view]\n\
-                 link = \"= kde_accent(view, foreground_link, active)\"\n\
-                 [colors.light.surfaces.selection]\n\
-                 background = \"= kde_accent(selection, background_normal, active)\"\n\
-                 [colors.light.keyed]\n\
-                 wm_active_background = \"= kde_accent_wm(active_background)\"\n\
-                 [tokens.kde]\n\
-                 tint_factor = \"none\"\n",
-            )
-            .unwrap(),
-        )
-        .unwrap();
-    assert_eq!(
-        root_role(&theme, view_link()),
-        Some([0xa7, 0x78, 0x07, 0xff])
-    );
-    assert_eq!(
-        root_role(
-            &theme,
-            RoleRef::Set(SurfaceSet::Selection, SurfaceRole::Background)
+    theme.set_accent(Some(Accent::new(accent)))?;
+    let wm = |key: &str| crate::key::Key::new(key).map(RoleRef::Keyed);
+    let facts: [(RoleRef, &str); 13] = [
+        (RoleRef::Set(S::View, R::Link), "#a77807"),
+        (RoleRef::Set(S::Selection, R::Background), "#ecbf53"),
+        (wm("wm_active_background")?, "#e3e5e7"),
+        (RoleRef::Set(S::View, R::ForegroundActive), "#e5a50a"),
+        (RoleRef::Set(S::Window, R::DecorationFocus), "#e5a50a"),
+        (RoleRef::Set(S::Button, R::BackgroundAlternate), "#ebbf52"),
+        (
+            RoleRef::Set(S::Selection, R::BackgroundAlternate),
+            "#ecbf53",
         ),
-        Some([0xec, 0xbf, 0x53, 0xff])
-    );
+        (RoleRef::Set(S::Selection, R::Foreground), "#000000"),
+        (RoleRef::Set(S::Selection, R::Link), "#ffd5a2"),
+        (RoleRef::Set(S::Complementary, R::Link), "#e5a50a"),
+        (RoleRef::Set(S::Header, R::Foreground), "#232629"),
+        (wm("wm_active_foreground")?, "#232629"),
+        (wm("wm_inactive_background")?, "#eff0f1"),
+    ];
+    for (role, fact) in facts {
+        let fact = parse(fact)?.to_srgb8_clamped();
+        assert_eq!(root_role(&theme, role.clone()), Some(fact), "{role:?}");
+    }
+    let inputs = [
+        ("inactive.view.foreground_link", "#a77807"),
+        ("inactive.selection.background_normal", "#ecbf53"),
+    ];
+    for (input, fact) in inputs {
+        let fact = parse(fact)?.to_srgb8_clamped();
+        assert_eq!(root_input(&theme, input)?, Some(fact), "{input}");
+    }
+    let view_link = || RoleRef::Set(S::View, R::Link);
+    theme.pick(Some(Scheme::Dark))?;
+    plain.pick(Some(Scheme::Dark))?;
     assert_eq!(
-        root_role(&theme, RoleRef::Keyed(crate::key!("wm_active_background"))),
-        Some([0xe3, 0xe5, 0xe7, 0xff])
+        root_role(&theme, view_link()),
+        root_role(&plain, view_link())
     );
+    Ok(())
+}
+
+/// The value the input `name` has in force at the root of `theme`, as
+/// 8-bit sRGB.
+fn root_input(theme: &super::Theme, name: &str) -> Result<Option<[u8; 4]>, crate::error::KeyError> {
+    let path = name
+        .split('.')
+        .map(crate::key::Key::new)
+        .collect::<Result<Vec<_>, _>>()?;
+    let resolved = theme
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = resolved.root_scope(&root());
+    Ok(resolved
+        .evaluate_role(&scope, &crate::expr::Ref::Input(path))
+        .value
+        .map(crate::color::Color::to_srgb8_clamped))
 }
 
 /// `kirigami_label_icon_size(body_font_height)` over `kde-breeze`'s own

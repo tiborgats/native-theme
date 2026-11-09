@@ -74,6 +74,7 @@ fn found_over(layer: &Layer, decl: &Declarations, below: &Layer) -> Vec<String> 
     let below = [super::Stacked {
         layer: below,
         kind: LayerKind::Preset,
+        left_out: None,
     }];
     let cx = Context {
         declarations: decl,
@@ -4797,6 +4798,7 @@ kinds! {
     EntryCreatedUnset { .. },
     ElementSizeInLayout { .. },
     LeftToPreset { .. },
+    SetStatedWhole { .. },
     Unused { .. },
     SyntheticExpression,
     SyntheticOverlap,
@@ -4822,6 +4824,7 @@ fn layer_error_every_variant_triggers() {
             .map(|layer| super::Stacked {
                 layer,
                 kind: LayerKind::Preset,
+                left_out: None,
             })
             .collect();
         let cx = Context {
@@ -4990,6 +4993,7 @@ fn layer_error_every_variant_triggers() {
         let layers = [super::Stacked {
             layer: &layer,
             kind: LayerKind::Application,
+            left_out: None,
         }];
         let cx = Context {
             declarations: &none,
@@ -5011,10 +5015,12 @@ fn layer_error_every_variant_triggers() {
             super::Stacked {
                 layer: &preset,
                 kind: LayerKind::Preset,
+                left_out: None,
             },
             super::Stacked {
                 layer: &palette,
                 kind: LayerKind::Palette,
+                left_out: None,
             },
         ];
         let cx = Context {
@@ -5025,6 +5031,28 @@ fn layer_error_every_variant_triggers() {
             below: &[],
         };
         super::combos::mapping_palette(&super::stack::Stack::new(&layers, cx), 1)
+    };
+    let whole = {
+        use crate::roles::SurfaceSet;
+        let preset = read_preset(crate::presets::PresetId::KdeBreeze.source()).ok();
+        let mut stand_in = Layer::default();
+        stand_in.bases.colors.light = preset.and_then(|preset| preset.layer.bases.colors.light);
+        let left_out = crate::resolve::LeftOut::new(
+            vec![crate::selector::Scheme::Light],
+            &[super::AccentRole::Surface(
+                SurfaceSet::View,
+                crate::inputs::KdeSchemeKey::ForegroundLink,
+            )],
+            Vec::new(),
+        );
+        super::sets_stated_whole(
+            &super::Stacked {
+                layer: &stand_in,
+                kind: LayerKind::Reader,
+                left_out: Some(&left_out),
+            },
+            None,
+        )
     };
     let rule = |when: &str, target: &str, set: &str| {
         format!("[[rules]]\nwhen = {when}\ntarget = \"{target}\"\nset = {set}\n")
@@ -5358,6 +5386,7 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (V::LeftToPreset, left),
+        (V::SetStatedWhole, whole),
         (
             V::SyntheticExpression,
             super::synthetic_shape(

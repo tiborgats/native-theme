@@ -284,9 +284,10 @@ pub(crate) struct Reused {
 }
 
 /// [`Reused`]'s steps, and what they were found over: the layers, each
-/// with what it is to the stack, the preset and its declarations.
+/// with what it is to the stack and what S8 leaves out of it, the preset
+/// and its declarations.
 struct Memory {
-    layers: Vec<(Layer, LayerKind)>,
+    layers: Vec<(Layer, LayerKind, Option<crate::resolve::LeftOut>)>,
     preset: Option<PresetId>,
     declarations: Declarations,
     steps: HashMap<StepKey, Memo>,
@@ -2206,23 +2207,30 @@ impl Checks<'_, '_> {
         // below the added ones, preset and declarations; the added layers
         // are kept for the check of the layer above them.
         if let Some(memory) = memory.as_mut() {
-            let same = memory.as_ref().is_some_and(|held| {
-                held.preset == stack.preset()
-                    && held.declarations == *stack.decl()
-                    && held.layers.len() == below.len()
-                    && held
-                        .layers
-                        .iter()
-                        .zip(below)
-                        .all(|((layer, kind), stacked)| {
-                            layer == stacked.layer && *kind == stacked.kind
-                        })
-            });
+            let same =
+                memory.as_ref().is_some_and(|held| {
+                    held.preset == stack.preset()
+                        && held.declarations == *stack.decl()
+                        && held.layers.len() == below.len()
+                        && held.layers.iter().zip(below).all(
+                            |((layer, kind, left_out), stacked)| {
+                                layer == stacked.layer
+                                    && *kind == stacked.kind
+                                    && left_out.as_ref() == stacked.left_out
+                            },
+                        )
+                });
             if !same {
                 **memory = Some(Memory {
                     layers: below
                         .iter()
-                        .map(|stacked| (stacked.layer.clone(), stacked.kind))
+                        .map(|stacked| {
+                            (
+                                stacked.layer.clone(),
+                                stacked.kind,
+                                stacked.left_out.cloned(),
+                            )
+                        })
                         .collect(),
                     preset: stack.preset(),
                     declarations: stack.decl().clone(),
@@ -2231,11 +2239,13 @@ impl Checks<'_, '_> {
             }
             if let Some(held) = memory.as_mut() {
                 let above = stack.layers.get(added..).unwrap_or_default();
-                held.layers.extend(
-                    above
-                        .iter()
-                        .map(|stacked| (stacked.layer.clone(), stacked.kind)),
-                );
+                held.layers.extend(above.iter().map(|stacked| {
+                    (
+                        stacked.layer.clone(),
+                        stacked.kind,
+                        stacked.left_out.cloned(),
+                    )
+                }));
             }
         }
         let added_sources: Vec<&Source> = stack

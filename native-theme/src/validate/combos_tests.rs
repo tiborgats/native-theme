@@ -33,6 +33,7 @@ fn over(below: &str, top: &str, decl: &Declarations) -> Vec<String> {
     let below = [Stacked {
         layer: &below,
         kind: LayerKind::Preset,
+        left_out: None,
     }];
     let cx = Context {
         declarations: decl,
@@ -964,10 +965,12 @@ fn combination_mapping_palette() {
             Stacked {
                 layer: preset,
                 kind: LayerKind::Preset,
+                left_out: None,
             },
             Stacked {
                 layer: &palette,
                 kind: LayerKind::Palette,
+                left_out: None,
             },
         ];
         let cx = Context {
@@ -1938,6 +1941,7 @@ fn combination_input_cycle_reader_accent_left_out() {
     let below = [Stacked {
         layer: &preset,
         kind: LayerKind::Preset,
+        left_out: None,
     }];
     let reader = toml("[inputs.accent]\nlight = \"#3366ff\"");
     let found = |left_out: bool| {
@@ -2047,7 +2051,11 @@ fn layers_added_at_once_each_problem_its_layer() {
     let dash = toml("[widgets.button.body.stroke.top]\ndash = \"absent\"");
     let fill = toml("[widgets.button.icon.icon]\nfill = \"absent\"");
     let decl = Declarations::default();
-    let stacked = |layer, kind| Stacked { layer, kind };
+    let stacked = |layer, kind| Stacked {
+        layer,
+        kind,
+        left_out: None,
+    };
     let layers = [
         stacked(&preset, LayerKind::Preset),
         stacked(&dash, LayerKind::Application),
