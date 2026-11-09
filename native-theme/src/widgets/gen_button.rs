@@ -160,10 +160,27 @@ pub enum IndicatorAnchor {
     Inline,
     /// Inline top.
     InlineTop,
+    /// Top start.
+    TopStart,
     /// Top end.
     TopEnd,
+    /// Bottom start.
+    BottomStart,
     /// Bottom end.
     BottomEnd,
+}
+
+/// Its start and end swapped for a right-to-left layout (S2.4).
+impl Mirror for IndicatorAnchor {
+    fn mirror(&mut self) {
+        *self = match *self {
+            IndicatorAnchor::TopStart => IndicatorAnchor::TopEnd,
+            IndicatorAnchor::TopEnd => IndicatorAnchor::TopStart,
+            IndicatorAnchor::BottomStart => IndicatorAnchor::BottomEnd,
+            IndicatorAnchor::BottomEnd => IndicatorAnchor::BottomStart,
+            other => other,
+        };
+    }
 }
 
 /// The values of `button`'s `menu_trigger`: the touch-and-hold variant.
