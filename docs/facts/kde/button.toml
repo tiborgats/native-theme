@@ -597,7 +597,7 @@ quote = "The border is rendered within the rectangle's boundaries."
 # the token's leaves, its corners Frame_FrameRadius
 [[fact]]
 key = "button.body.focus.kind"
-value = "filled_ring"
+value = "ring"
 rows = ["K3.20"]
 
 [[fact.cite]]
@@ -13421,17 +13421,78 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/ContextualHelpButton.qml:66-69"
 quote = "onReleased: { toolTip.delay = toolTipVisible ? Platform.Units.toolTipDelay : 0; toolTipVisible = !toolTipVisible; }"
 
-# the button takes clicks in its own rect only
+# the button takes clicks in its own rect only: no hit area beyond it, a zero on each side, S17's zero by omission
+# (ADD-A141; `Absent` would mean a platform without the value). Qt Widgets' QAbstractButton::hitButton tests the
+# widget's rect alone; a Qt Quick button (Kirigami's, qqc2's) is hit where QQuickItem::contains holds, its bounding
+# box, no button template setting a containmentMask (qtdeclarative's quicktemplates, qqc2-desktop-style's and
+# Kirigami's button QML name none)
 [[fact]]
-key = "button.values.hit_extension"
-value = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+key = "button.values.hit_extension.top"
+value = "0px"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:1-1260"
-quote = "// Copyright (C) 2020 The Qt Company Ltd."
-absent = ["hitExtension", "touchMargin"]
+source = "qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:895-898"
+quote = "bool QAbstractButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:8923-8943"
+quote = "bool QQuickItem::contains(const QPointF &point) const"
+absent = []
+
+[[fact]]
+key = "button.values.hit_extension.right"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:895-898"
+quote = "bool QAbstractButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:8923-8943"
+quote = "bool QQuickItem::contains(const QPointF &point) const"
+absent = []
+
+[[fact]]
+key = "button.values.hit_extension.bottom"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:895-898"
+quote = "bool QAbstractButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:8923-8943"
+quote = "bool QQuickItem::contains(const QPointF &point) const"
+absent = []
+
+[[fact]]
+key = "button.values.hit_extension.left"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:895-898"
+quote = "bool QAbstractButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:8923-8943"
+quote = "bool QQuickItem::contains(const QPointF &point) const"
+absent = []
 
 # no appear or disappear animation of a button's own
 [[fact]]

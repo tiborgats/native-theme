@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 b8c6f15e97d390fa4137987d1b84d40ba6c802f1c901a420c440e75bd299940c
+# generated lines: sha256 1e0aa047fb4a4af28b38b321bc27d6f772b6868d4f56c4f2f79a7388aee43b48
 
 [preset]
 id = "macos-monterey"
@@ -148,14 +148,6 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "widgets.button.body.corners.bottom_right" = ["U137", "U142", "U132", "U133", "U692", "U695"]
 # docs/facts/macos/button.toml:171452
 "widgets.button.body.corners.bottom_left" = ["U137", "U142", "U132", "U133", "U692", "U695"]
-# docs/facts/macos/button.toml:208485
-"widgets.button.body.padding.top_px" = ["U137", "U145", "U692", "U695"]
-# docs/facts/macos/button.toml:208506
-"widgets.button.body.padding.right_px" = ["U137", "U145", "U692"]
-# docs/facts/macos/button.toml:208524
-"widgets.button.body.padding.bottom_px" = ["U137", "U145", "U692", "U695"]
-# docs/facts/macos/button.toml:208542
-"widgets.button.body.padding.left_px" = ["U137", "U145", "U692"]
 # docs/facts/macos/button.toml:208842
 "widgets.button.body.shadow" = ["U137", "U136", "U132", "U133", "U692", "U695"]
 # docs/facts/macos/button.toml:212972
@@ -203,7 +195,7 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 # docs/facts/macos/button.toml:218507
 "widgets.button.label.text.max_lines" = ["U178", "U692"]
 # docs/facts/macos/button.toml:222607
-"widgets.button.icon.glyph" = ["U614", "U692"]
+"widgets.button.icon.glyph" = "U614"
 # docs/facts/macos/button.toml:222645
 "widgets.button.menu_indicator" = "U615"
 # docs/facts/macos/button.toml:222651
@@ -268,6 +260,14 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "widgets.button.menu_indicator.transform" = "U615"
 # docs/facts/macos/button.toml:223222
 "widgets.button.menu_indicator.transitions" = "U181"
+# docs/facts/macos/button.toml:242947
+"widgets.button.body.padding.bottom_px" = "U692"
+# docs/facts/macos/button.toml:242953
+"widgets.button.body.padding.left_px" = "U692"
+# docs/facts/macos/button.toml:242959
+"widgets.button.body.padding.right_px" = "U692"
+# docs/facts/macos/button.toml:242965
+"widgets.button.body.padding.top_px" = "U692"
 # docs/facts/macos/button.toml:243061
 "widgets.button.icon.icon.size_px" = "U692"
 # docs/facts/macos/button.toml:243139

@@ -1,5 +1,7 @@
 # adwaita's state models (S17): the combinations libadwaita 1.10.0 and GTK 4.24.1 draw. Written by the GNOME facts
-# lane. States combine (no exclusive group: libadwaita's CSS selects each pseudo-class on its own).
+# lane. States combine (libadwaita's CSS selects each pseudo-class on its own), but for the flags GTK clears or never
+# sets on an insensitive widget: hover, press, focus, focus-visible and a drop, each an exclusive group of its own with
+# `disabled` first (S10's *A flag the platform clears*, ADD-A141; the cited gtkwidget.c and gtkmain.c lines below).
 
 [[model]]
 widget = "button"
@@ -8,7 +10,7 @@ variants = ["primary", "destructive", "flat", "pill", "circular", "toggle", "men
 sizes = []
 densities = []
 axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "open", "drop_target"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "popover" }, { scope = "any", widget = "layout", variants = ["@linked"] }, { scope = "any", widget = "layout", variants = ["@linked", "vertical"] }, { scope = "any", variants = ["@osd"] }, [{ widget = "toolbar", part = "bar" }, { widget = "layout", variants = ["@linked"] }], [{ widget = "toolbar", part = "bar" }, { widget = "layout", variants = ["@linked", "vertical"] }], [{ widget = "window", part = "title_bar" }, { widget = "layout", variants = ["@linked"] }], [{ widget = "window", part = "title_bar" }, { widget = "layout", variants = ["@linked", "vertical"] }]] }
-exclusive = []
+exclusive = [["disabled", "hover"], ["disabled", "pressed"], ["disabled", "focused"], ["disabled", "focus_visible"], ["disabled", "drop_target"]]
 exclusive_variants = [["icon_only", "with_icon", "@custom_child"], ["@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none"], ["@with_arrow", "@arrow_only"]]
 variant_sets = [["back", "icon_only"], ["close", "icon_only"], ["@tab_button", "icon_only"], ["@tab_button", "@tab_overflow", "icon_only"]]
 variant_products = [
@@ -45,7 +47,7 @@ variant_products = [
    { any = ["pill", "circular"] },
    { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd", "@card"] }],
 ]
-not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "drop_target"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["@with_arrow"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["icon_only"] }, { variants = ["menu"], not_variants = ["icon_only", "with_icon", "@custom_child", "@with_arrow", "@arrow_none"] }, { variants = ["@arrow_up"], not_variants = ["menu"] }, { variants = ["@arrow_start"], not_variants = ["menu"] }, { variants = ["@arrow_end"], not_variants = ["menu"] }, { variants = ["@arrow_none"], not_variants = ["menu"] }, { variants = ["@image_text_box"], not_variants = ["with_icon"] }, { variants = ["back"], not_variants = ["icon_only"] }, { variants = ["close"], not_variants = ["icon_only"] }, { variants = ["@tab_button"], not_variants = ["icon_only"] }, { variants = ["@tab_overflow"], not_variants = ["@tab_button"] }]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { variants = ["@with_arrow"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["icon_only"] }, { variants = ["menu"], not_variants = ["icon_only", "with_icon", "@custom_child", "@with_arrow", "@arrow_none"] }, { variants = ["@arrow_up"], not_variants = ["menu"] }, { variants = ["@arrow_start"], not_variants = ["menu"] }, { variants = ["@arrow_end"], not_variants = ["menu"] }, { variants = ["@arrow_none"], not_variants = ["menu"] }, { variants = ["@image_text_box"], not_variants = ["with_icon"] }, { variants = ["back"], not_variants = ["icon_only"] }, { variants = ["close"], not_variants = ["icon_only"] }, { variants = ["@tab_button"], not_variants = ["icon_only"] }, { variants = ["@tab_overflow"], not_variants = ["@tab_button"] }]
 rows = ["GN-1.26", "GN-3.11"]
 
 [[model.cite]]

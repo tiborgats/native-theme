@@ -92,7 +92,7 @@ source = "windows-dev-docs@f54166ed hub/apps/design/motion/timing-and-easing.md:
 quote = "cubic-bezier(1 , 0 , 1 , 1)"
 
 # The connected animation's default duration and curve, CConnectedAnimationService's own (S4.1 step 2:
-# `connected_service`); the scroll into view is measured (W-P4-3†) and pending (register U50).
+# `connected_service`); the scroll into view is measured (W-P4-3†), a duration with no timing (below).
 [[fact]]
 key = "token.motion.durations.connected_service"
 value = "300ms"
@@ -124,9 +124,9 @@ source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAn
 quote = "CreateCubicBezierEasingFunction(renderTarget->GetDCompTreeHost()->GetCompositor(), s_ControlPoint1, s_ControlPoint2, &cubicBezier)"
 
 # The scroll into view (W-P4-3†): a TextBox below a ScrollViewer's view focused by keyboard moves the view to its
-# final offset in one step, with no inertial change (the WinUI host, read_host.py's [scroll_into_view]): a stated
-# zero (U50). Its keyed timing has no curve to state, and `token.motion.timings` entries are no `Value` that a
-# zero duration's `Absent` could take (S2.7's rule for a transition): pending (U50), a spec finding.
+# final offset in one step, with no inertial change (the WinUI host, read_host.py's [scroll_into_view]): a measured
+# zero. A motion in no time runs no curve, so it has its duration and no keyed timing (S4.1's *A motion in no time*,
+# ADD-A141): no `token.motion.timings.scroll_into_view` fact or key.
 [[fact]]
 key = "token.motion.durations.scroll_into_view"
 value = "0ms"
@@ -136,11 +136,6 @@ rows = ["W-P4-3†"]
 kind = "measured"
 evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#scroll_into_view.duration_ms"
 tolerance = 0
-
-[[fact]]
-key = "token.motion.timings.scroll_into_view"
-pending = "U50"
-rows = ["W-P4-3†"]
 
 # The theme change (S4.3): what a theme switch does to WinUI's brush transitions and visual-state storyboards (a
 # brush swapped, or a colour changed in place) and to a transition running at the switch is runtime behaviour no
@@ -2987,16 +2982,22 @@ pending = "U512"
 rows = []
 
 # Text: WinUI scales a font size by UISettings.TextScaleFactor where IsTextScaleFactorEnabled. At 150 % the WinUI
-# host's TextBlocks grow by 1.59 at 10 px and 1.05 at 68 px (text-scale/frames.toml), a curve that none of
-# `TextScaling`'s members (linear, Android's, Dynamic Type) states: pending (U508), a spec finding. The rendering
+# host's TextBlocks grow by 1.59 at 10 px and 1.05 at 68 px (the run's README), WinUI's own curve
+# (TextFormatting::GetScaledFontSize), which ADD-A141 adds as `TextScaling::WinUi` (S9.4): pending (U508) until the
+# model has the member and the run's text-scale/ files are in the evidence repository to check it. The rendering
 # settings (W3-22): WinUI draws its text with greyscale antialiasing (no coloured pixel, read_host.py's
 # [text_rendering]); DirectWrite's default and monitor parameters on the runner image are ClearType's: gamma 1.8,
 # enhanced contrast 0.5, pixel geometry RGB. Its grid-fit and rendering modes read DEFAULT, which names no hinting
-# level, and no read names an LCD filter or a render engine: those three stay pending (U508).
+# level, and no read names an LCD filter or a render engine: those three stay pending (U508). Each rendering field
+# states what WinUI's own text drawing uses (S4's *The rendering drawn*, ADD-A141): under its greyscale antialiasing
+# the contrast is DirectWrite's greyscale enhanced contrast, which the host read as 1 (`grayscale_enhanced_contrast`),
+# not ClearType's 0.5, and the subpixel order and the LCD filter are absent, which no committed analysis states yet:
+# the subpixel order, ClearType's RGB until now, is pending with the filter (U508) until read_host.py's next revision
+# writes the drawn rendering's absent fields.
 [[fact]]
 key = "token.text.scaling"
 pending = "U508"
-rows = []
+rows = ["W3-36"]
 
 [[fact]]
 key = "token.text.rendering.antialiasing"
@@ -3015,13 +3016,8 @@ rows = ["W3-22"]
 
 [[fact]]
 key = "token.text.rendering.subpixel_order"
-value = "rgb"
+pending = "U508"
 rows = ["W3-22"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#text_rendering.subpixel_order"
-tolerance = 0
 
 [[fact]]
 key = "token.text.rendering.engine"
@@ -3045,12 +3041,12 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.rendering.contrast"
-value = 0.5
+value = 1.0
 rows = ["W3-22"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#text_rendering.contrast"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#text_rendering.grayscale_enhanced_contrast"
 tolerance = 0
 
 # WinUI states no monospace style (no XAML file of the pin names a fixed-width family); the console's and Windows
