@@ -25,6 +25,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
 tolerance = 0
 
@@ -42,6 +47,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -67,6 +77,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
 tolerance = 0
 
@@ -84,6 +99,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -109,6 +129,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
 tolerance = 0
 
@@ -126,6 +151,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -151,6 +181,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
 tolerance = 0
 
@@ -168,6 +203,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -193,6 +233,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
 tolerance = 0
 
@@ -210,6 +255,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -235,6 +285,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
 tolerance = 0
 
@@ -252,6 +307,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -277,6 +337,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
 tolerance = 0
 
@@ -294,6 +359,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -319,6 +389,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
 tolerance = 0
 
@@ -336,6 +411,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -362,6 +442,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.sizes.smallSystemFontSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.sizes.smallSystemFontSize"
 tolerance = 0
 
@@ -379,6 +464,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -404,6 +494,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -421,6 +516,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -446,6 +546,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title1.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title1.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -463,6 +568,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -488,6 +598,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title2.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -505,6 +620,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -530,6 +650,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title3.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title3.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -547,6 +672,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -572,6 +702,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.headline.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
@@ -589,6 +724,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -614,6 +754,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -631,6 +776,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -656,6 +806,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.body.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -673,6 +828,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -698,6 +858,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.callout.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.callout.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -715,6 +880,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -740,6 +910,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -757,6 +932,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -782,6 +962,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -799,6 +984,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -824,6 +1014,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
@@ -841,6 +1036,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -866,6 +1066,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.labelFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.labelFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -883,6 +1088,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -908,6 +1118,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.messageFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -925,6 +1140,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -950,6 +1170,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.paletteFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.paletteFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -967,6 +1192,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -992,6 +1222,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.menuBarFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -1009,6 +1244,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -1034,6 +1274,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.controlContentFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.controlContentFontOfSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -1055,6 +1300,12 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.tokens.NSEvent.doubleClickInterval_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
 [[fact]]
 # NSEvent.keyRepeatDelay; InitialKeyRepeat and KeyRepeat absent from the user defaults (`[macos.tokens.user_defaults]`)
 key = "token.behavior.key_repeat.delay"
@@ -1068,6 +1319,12 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.tokens.NSEvent.keyRepeatDelay_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
 [[fact]]
 # NSEvent.keyRepeatInterval
 key = "token.behavior.key_repeat.interval"
@@ -1078,6 +1335,12 @@ rows = ["MAC-X12"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.tokens.NSEvent.keyRepeatInterval_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.tokens.NSEvent.keyRepeatInterval_s"
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
@@ -1096,7 +1359,19 @@ conversion = ["seconds_to_ms"]
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.tokens.NSButton_periodic.default_delay_interval_s.0"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.0"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.0"
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
@@ -1114,7 +1389,19 @@ conversion = ["seconds_to_ms"]
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.tokens.NSButton_periodic.default_delay_interval_s.1"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.1"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.1"
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
@@ -1191,6 +1478,12 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/
 tolerance = 0
 conversion = ["seconds_to_ms"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.tokens.NSAnimationContext.currentContext_duration_s"
+tolerance = 0
+conversion = ["seconds_to_ms"]
+
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1200,6 +1493,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -1213,6 +1511,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1222,6 +1525,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1245,6 +1553,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_1_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1256,6 +1569,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_1_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1265,6 +1583,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1288,6 +1611,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_2_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1299,6 +1627,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_2_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1308,6 +1641,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1331,6 +1669,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_3_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1342,6 +1685,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_3_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1351,6 +1699,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1374,6 +1727,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.headline_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1385,6 +1743,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.headline_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1394,6 +1757,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1417,6 +1785,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.subheadline_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1428,6 +1801,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.subheadline_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1437,6 +1815,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1460,6 +1843,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.body_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1471,6 +1859,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.body_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1480,6 +1873,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1503,6 +1901,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.callout_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1514,6 +1917,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.callout_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1523,6 +1931,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1546,6 +1959,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.footnote_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1557,6 +1975,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.footnote_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1566,6 +1989,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1589,6 +2017,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.caption_1_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1600,6 +2033,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.caption_1_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1609,6 +2047,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -1632,6 +2075,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.caption_2_emphasized.font.family"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1643,6 +2091,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.familyName"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.familyName"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.caption_2_emphasized.font.weight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -1652,6 +2105,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.descriptor.CTFontCopyVariation.2003265652"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.descriptor.CTFontCopyVariation.2003265652"
 tolerance = 0
 
 [[fact.cite]]
@@ -2054,12 +2512,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2075,12 +2548,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2096,12 +2584,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2117,12 +2620,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2138,12 +2656,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2159,12 +2692,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2180,12 +2728,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2201,12 +2764,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2222,12 +2800,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2243,12 +2836,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2264,12 +2872,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2285,12 +2908,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2306,12 +2944,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2327,12 +2980,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2348,12 +3016,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2369,12 +3052,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
 tolerance = 0
 
 [[fact]]
@@ -2390,12 +3088,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.sizes.smallSystemFontSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.sizes.smallSystemFontSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.sizes.smallSystemFontSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.sizes.smallSystemFontSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.sizes.smallSystemFontSize"
 tolerance = 0
 
 [[fact]]
@@ -2411,12 +3124,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2453,12 +3181,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2495,12 +3238,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2537,12 +3295,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2579,12 +3352,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2621,12 +3409,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2663,12 +3466,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2705,12 +3523,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2747,12 +3580,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2789,12 +3637,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2831,12 +3694,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2873,12 +3751,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2915,12 +3808,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2957,12 +3865,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
 tolerance = 0
 
 [[fact]]
@@ -2999,12 +3922,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3041,12 +3979,27 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3082,6 +4035,12 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.tokens.NSEvent.doubleClickInterval_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
 [[fact]]
 key = "token.behavior.key_repeat.delay"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3094,6 +4053,12 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.tokens.NSEvent.keyRepeatDelay_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
 [[fact]]
 key = "token.behavior.key_repeat.interval"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3103,6 +4068,12 @@ rows = ["MAC-X12"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSEvent.keyRepeatInterval_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.tokens.NSEvent.keyRepeatInterval_s"
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
@@ -3120,7 +4091,19 @@ conversion = ["seconds_to_ms"]
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.default_delay_interval_s.0"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.0"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.0"
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
@@ -3138,7 +4121,19 @@ conversion = ["seconds_to_ms"]
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.default_delay_interval_s.1"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.1"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.1"
 tolerance = 0.001
 conversion = ["seconds_to_ms"]
 
@@ -3165,6 +4160,12 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 conversion = ["seconds_to_ms"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.tokens.NSAnimationContext.currentContext_duration_s"
+tolerance = 0
+conversion = ["seconds_to_ms"]
+
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.font.size"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3176,6 +4177,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3185,6 +4191,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3219,6 +4230,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_1_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3228,6 +4244,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3262,6 +4283,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_2_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3271,6 +4297,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3305,6 +4336,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.title_3_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3314,6 +4350,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3348,6 +4389,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.headline_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3357,6 +4403,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3391,6 +4442,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.subheadline_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3400,6 +4456,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3434,6 +4495,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.body_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3443,6 +4509,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3477,6 +4548,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.callout_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3486,6 +4562,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3520,6 +4601,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.footnote_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3529,6 +4615,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3563,6 +4654,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.caption_1_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3572,6 +4668,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.familyName"
 tolerance = 0
 
 [[fact]]
@@ -3606,6 +4707,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.pointSize"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.pointSize"
+tolerance = 0
+
 [[fact]]
 key = "token.text.keyed.caption_2_emphasized.font.family"
 when = { conditions = ["preset:macos-monterey"] }
@@ -3615,6 +4721,11 @@ rows = ["MAC-TS01"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.familyName"
 tolerance = 0
 
 [[fact]]
@@ -10198,6 +11309,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.largeTitle.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.largeTitle.style"
 tolerance = 0
 
@@ -10219,6 +11335,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.largeTitle.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.largeTitle.axes"
 tolerance = 0
 
@@ -10236,6 +11357,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.largeTitle.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.largeTitle.features"
 tolerance = 0
 
 [[fact.cite]]
@@ -10264,6 +11390,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -10281,6 +11412,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.largeTitle.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.largeTitle.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -10490,6 +11626,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title1.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.title1.style"
 tolerance = 0
 
@@ -10507,6 +11648,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title1.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title1.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -10532,6 +11678,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title1.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.title1.features"
 tolerance = 0
 
@@ -10553,6 +11704,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title1.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title1.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -10570,6 +11726,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title1.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title1.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -10779,6 +11940,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title2.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.title2.style"
 tolerance = 0
 
@@ -10796,6 +11962,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title2.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title2.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -10821,6 +11992,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title2.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.title2.features"
 tolerance = 0
 
@@ -10842,6 +12018,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title2.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -10859,6 +12040,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title2.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title2.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -11068,6 +12254,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title3.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.title3.style"
 tolerance = 0
 
@@ -11085,6 +12276,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title3.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title3.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -11110,6 +12306,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title3.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.title3.features"
 tolerance = 0
 
@@ -11131,6 +12332,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.title3.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title3.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -11148,6 +12354,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title3.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.title3.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -11357,6 +12568,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.headline.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.headline.style"
 tolerance = 0
 
@@ -11374,6 +12590,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.headline.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.headline.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -11399,6 +12620,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.headline.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.headline.features"
 tolerance = 0
 
@@ -11420,6 +12646,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.headline.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -11437,6 +12668,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.headline.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.headline.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -11646,6 +12882,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.subheadline.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.subheadline.style"
 tolerance = 0
 
@@ -11663,6 +12904,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.subheadline.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.subheadline.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -11688,6 +12934,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.subheadline.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.subheadline.features"
 tolerance = 0
 
@@ -11709,6 +12960,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -11726,6 +12982,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.subheadline.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.subheadline.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -11935,6 +13196,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.body.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.body.style"
 tolerance = 0
 
@@ -11952,6 +13218,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.body.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.body.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -11977,6 +13248,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.body.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.body.features"
 tolerance = 0
 
@@ -11998,6 +13274,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.body.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -12015,6 +13296,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.body.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.body.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -12224,6 +13510,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.callout.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.callout.style"
 tolerance = 0
 
@@ -12241,6 +13532,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.callout.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.callout.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -12266,6 +13562,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.callout.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.callout.features"
 tolerance = 0
 
@@ -12287,6 +13588,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.callout.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.callout.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -12304,6 +13610,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.callout.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.callout.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -12513,6 +13824,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.footnote.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.footnote.style"
 tolerance = 0
 
@@ -12530,6 +13846,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.footnote.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.footnote.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -12555,6 +13876,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.footnote.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.footnote.features"
 tolerance = 0
 
@@ -12576,6 +13902,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -12593,6 +13924,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.footnote.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.footnote.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -12802,6 +14138,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption1.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.caption1.style"
 tolerance = 0
 
@@ -12819,6 +14160,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption1.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption1.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -12844,6 +14190,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption1.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.caption1.features"
 tolerance = 0
 
@@ -12865,6 +14216,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -12882,6 +14238,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption1.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption1.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -13091,6 +14452,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption2.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.caption2.style"
 tolerance = 0
 
@@ -13108,6 +14474,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption2.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption2.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -13133,6 +14504,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption2.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle.caption2.features"
 tolerance = 0
 
@@ -13154,6 +14530,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -13171,6 +14552,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption2.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle.caption2.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -13380,6 +14766,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.labelFontOfSize.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.labelFontOfSize.style"
 tolerance = 0
 
@@ -13397,6 +14788,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.labelFontOfSize.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.labelFontOfSize.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -13422,6 +14818,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.labelFontOfSize.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.labelFontOfSize.features"
 tolerance = 0
 
@@ -13443,6 +14844,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.labelFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.labelFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -13460,6 +14866,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.labelFontOfSize.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.labelFontOfSize.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -13669,6 +15080,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.messageFontOfSize.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.messageFontOfSize.style"
 tolerance = 0
 
@@ -13686,6 +15102,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.messageFontOfSize.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.messageFontOfSize.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -13711,6 +15132,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.messageFontOfSize.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.messageFontOfSize.features"
 tolerance = 0
 
@@ -13732,6 +15158,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.messageFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -13749,6 +15180,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.messageFontOfSize.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.messageFontOfSize.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -13958,6 +15394,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.paletteFontOfSize.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.paletteFontOfSize.style"
 tolerance = 0
 
@@ -13975,6 +15416,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.paletteFontOfSize.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.paletteFontOfSize.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -14000,6 +15446,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.paletteFontOfSize.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.paletteFontOfSize.features"
 tolerance = 0
 
@@ -14021,6 +15472,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.paletteFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.paletteFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -14038,6 +15494,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.paletteFontOfSize.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.paletteFontOfSize.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -14247,6 +15708,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.menuBarFontOfSize.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.menuBarFontOfSize.style"
 tolerance = 0
 
@@ -14264,6 +15730,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.menuBarFontOfSize.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.menuBarFontOfSize.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -14289,6 +15760,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.menuBarFontOfSize.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.menuBarFontOfSize.features"
 tolerance = 0
 
@@ -14310,6 +15786,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.menuBarFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -14327,6 +15808,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.menuBarFontOfSize.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.menuBarFontOfSize.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -14536,6 +16022,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.controlContentFontOfSize.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.controlContentFontOfSize.style"
 tolerance = 0
 
@@ -14553,6 +16044,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.controlContentFontOfSize.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.controlContentFontOfSize.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -14578,6 +16074,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.controlContentFontOfSize.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.controlContentFontOfSize.features"
 tolerance = 0
 
@@ -14599,6 +16100,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.controlContentFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.controlContentFontOfSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -14616,6 +16122,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.controlContentFontOfSize.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.controlContentFontOfSize.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -14825,6 +16336,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.systemFontOfSize_smallSystemFontSize.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.systemFontOfSize_smallSystemFontSize.style"
 tolerance = 0
 
@@ -14842,6 +16358,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.named.systemFontOfSize_smallSystemFontSize.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.systemFontOfSize_smallSystemFontSize.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -14867,6 +16388,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.named.systemFontOfSize_smallSystemFontSize.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.named.systemFontOfSize_smallSystemFontSize.features"
 tolerance = 0
 
@@ -14888,6 +16414,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -14905,6 +16436,11 @@ rows = ["MAC-TS02", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.systemFontOfSize_smallSystemFontSize.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.systemFontOfSize_smallSystemFontSize.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -14931,6 +16467,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.familyName"
 tolerance = 0
 
@@ -14948,6 +16489,11 @@ rows = ["MAC-TS02"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.descriptor.CTFontCopyVariationAxes.3.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
 [[fact.cite]]
@@ -15157,6 +16703,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.largeTitle.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.largeTitle.style"
 tolerance = 0
 
@@ -15174,6 +16725,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.largeTitle.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.largeTitle.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -15199,6 +16755,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.largeTitle.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.largeTitle.features"
 tolerance = 0
 
@@ -15220,6 +16781,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -15237,6 +16803,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.largeTitle.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.largeTitle.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -15446,6 +17017,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title1.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title1.style"
 tolerance = 0
 
@@ -15463,6 +17039,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title1.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title1.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -15488,6 +17069,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title1.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title1.features"
 tolerance = 0
 
@@ -15509,6 +17095,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -15526,6 +17117,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title1.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title1.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -15735,6 +17331,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title2.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title2.style"
 tolerance = 0
 
@@ -15752,6 +17353,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title2.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title2.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -15777,6 +17383,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title2.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title2.features"
 tolerance = 0
 
@@ -15798,6 +17409,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -15815,6 +17431,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title2.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title2.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -16024,6 +17645,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title3.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title3.style"
 tolerance = 0
 
@@ -16041,6 +17667,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title3.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title3.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -16066,6 +17697,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title3.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title3.features"
 tolerance = 0
 
@@ -16087,6 +17723,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -16104,6 +17745,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title3.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.title3.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -16313,6 +17959,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.headline.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.headline.style"
 tolerance = 0
 
@@ -16330,6 +17981,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.headline.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.headline.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -16355,6 +18011,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.headline.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.headline.features"
 tolerance = 0
 
@@ -16376,6 +18037,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -16393,6 +18059,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.headline.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.headline.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -16602,6 +18273,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.subheadline.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.subheadline.style"
 tolerance = 0
 
@@ -16619,6 +18295,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.subheadline.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.subheadline.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -16644,6 +18325,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.subheadline.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.subheadline.features"
 tolerance = 0
 
@@ -16665,6 +18351,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -16682,6 +18373,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.subheadline.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.subheadline.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -16891,6 +18587,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.body.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.body.style"
 tolerance = 0
 
@@ -16908,6 +18609,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.body.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.body.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -16933,6 +18639,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.body.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.body.features"
 tolerance = 0
 
@@ -16954,6 +18665,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -16971,6 +18687,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.body.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.body.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -17180,6 +18901,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.callout.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.callout.style"
 tolerance = 0
 
@@ -17197,6 +18923,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.callout.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.callout.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -17222,6 +18953,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.callout.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.callout.features"
 tolerance = 0
 
@@ -17243,6 +18979,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -17260,6 +19001,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.callout.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.callout.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -17469,6 +19215,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.footnote.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.footnote.style"
 tolerance = 0
 
@@ -17486,6 +19237,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.footnote.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.footnote.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -17511,6 +19267,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.footnote.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.footnote.features"
 tolerance = 0
 
@@ -17532,6 +19293,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -17549,6 +19315,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.footnote.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.footnote.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -17758,6 +19529,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption1.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption1.style"
 tolerance = 0
 
@@ -17775,6 +19551,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption1.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption1.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -17800,6 +19581,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption1.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption1.features"
 tolerance = 0
 
@@ -17821,6 +19607,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -17838,6 +19629,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption1.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption1.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -18047,6 +19843,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption2.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption2.style"
 tolerance = 0
 
@@ -18064,6 +19865,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption2.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption2.axes"
 tolerance = 0
 
 [[fact.cite]]
@@ -18089,6 +19895,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption2.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption2.features"
 tolerance = 0
 
@@ -18110,6 +19921,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
 tolerance = 0
 
@@ -18127,6 +19943,11 @@ rows = ["MAC-TS01", "MAC-X18"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption2.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.preferredFontForTextStyle_emphasized.caption2.line_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -32518,7 +34339,8 @@ quote = "typedef NSString * NSFontTextStyleOptionKey NS_TYPED_ENUM API_AVAILABLE
 # from the pass; the family (`familyName`) and the weight, the drawn face's `wght` coordinate (S2.8 *Weight*: the
 # variation's `wght`, else the axis's default), from run 42272240639's line-height pass (the trait-added font's
 # descriptor; the face can change with the trait: headline's `.SFNS-Bold` becomes `.SFNS-Heavy`, 860, caption 2's
-# `.SFNS-Medium` stays 510); the other descriptor leaves (U311) and the `auto` line heights (U312) are pending.
+# `.SFNS-Medium` stays 510); the other descriptor leaves, measured in the macOS tie-break round 7 (780d88cb; U311,
+# retired by ADD-A141), are stated below; the `auto` line heights (U312) are pending.
 
 [[fact]]
 key = "token.text.keyed.large_title_tight.font.size"
@@ -32529,6 +34351,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.largeTitle.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.largeTitle.tightLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -32851,7 +34678,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.largeTitle.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.largeTitle.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.largeTitle.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -33067,6 +34904,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.largeTitle.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.largeTitle.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -33577,6 +35419,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title1.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title1.tightLeading.pointSize"
 tolerance = 0
 
@@ -33895,7 +35742,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title1.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title1.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title1.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -34111,6 +35968,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title1.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title1.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -34621,6 +36483,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title2.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title2.tightLeading.pointSize"
 tolerance = 0
 
@@ -34939,7 +36806,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title2.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title2.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title2.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -35155,6 +37032,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title2.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title2.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -35665,6 +37547,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title3.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title3.tightLeading.pointSize"
 tolerance = 0
 
@@ -36167,6 +38054,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title3.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.title3.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -36677,6 +38569,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.headline.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.headline.tightLeading.pointSize"
 tolerance = 0
 
@@ -36995,7 +38892,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.headline.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.headline.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.headline.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -37211,6 +39118,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.headline.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.headline.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -37721,6 +39633,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.subheadline.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.subheadline.tightLeading.pointSize"
 tolerance = 0
 
@@ -38039,7 +39956,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.subheadline.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.subheadline.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.subheadline.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -38255,6 +40182,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.subheadline.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.subheadline.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -38765,6 +40697,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.body.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.body.tightLeading.pointSize"
 tolerance = 0
 
@@ -39083,7 +41020,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.body.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.body.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.body.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -39299,6 +41246,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.body.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.body.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -39809,6 +41761,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.callout.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.callout.tightLeading.pointSize"
 tolerance = 0
 
@@ -40127,7 +42084,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.callout.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.callout.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.callout.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -40343,6 +42310,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.callout.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.callout.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -40853,6 +42825,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.footnote.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.footnote.tightLeading.pointSize"
 tolerance = 0
 
@@ -41171,7 +43148,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.footnote.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.footnote.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.footnote.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -41387,6 +43374,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.footnote.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.footnote.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -41897,6 +43889,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption1.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption1.tightLeading.pointSize"
 tolerance = 0
 
@@ -42215,7 +44212,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption1.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption1.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption1.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -42431,6 +44438,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption1.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption1.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]
@@ -42941,6 +44953,11 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption2.tightLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption2.tightLeading.pointSize"
 tolerance = 0
 
@@ -43259,7 +45276,17 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption2.tightLeading.laid_out.first_line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption2.tightLeading.laid_out.line_advance"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption2.tightLeading.laid_out.line_advance"
 tolerance = 0
 
 [[fact.cite]]
@@ -43475,6 +45502,11 @@ rows = ["MAC-TS03†"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption2.looseLeading.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/probe.toml#macos.line_height.fonts.preferredFontForTextStyle.caption2.looseLeading.pointSize"
 tolerance = 0
 
 [[fact.cite]]

@@ -30,7 +30,10 @@
 # and no `default` (the class declares no enabled state, key equivalent or control size: it takes no size), and
 # `route_active` only on it; `@bordered` is `routePickerButtonBordered` (:118-121, default YES), only on it.
 # The tie-break of MC-C1 (the blind verifier, its model compared): `indeterminate` (a toggle in the mixed state: an
-# NSButton holds one NSControlStateValue, so never with `checked`, and only a stateful type shows it), `selected` (the
+# NSButton holds one NSControlStateValue, so never with `checked`, and only a stateful type shows it; `exclusive`'s
+# group `[indeterminate, checked]`, ADD-A141 in place of a `not_drawn` pair: the button's one `state` property is
+# mixed, off or on, the mixed state a value of its own in place of on, so a connector reporting both is answered with
+# the mixed state, NSButton.h's `state` and NSCell.h's three values below), `selected` (the
 # item NSToolbar's `selectedItemIdentifier` names, highlighted, in a toolbar only; MAC-TL11†) and `@menu_on_hold` (an
 # NSComboButton with an action, its menu on a click and hold, the catalogue's) are drawn, their looks pending (U693,
 # U694; `menu_trigger` stated); NSComboButton is no NSButton and declares no key equivalent, and the window's default
@@ -47,11 +50,11 @@ default_size = "regular"
 sizes_by_variant = [{ variant = "route", sizes = [] }]
 densities = []
 axes = { states = ["pressed", "disabled", "default", "checked", "indeterminate", "focus_visible", "selected", "route_active"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-exclusive = []
+exclusive = [["indeterminate", "checked"]]
 variant_sets = [["route", "@bordered"]]
 exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "menu", "route"], ["pill", "@rounded_rectangle", "circular"], ["primary", "tinted"], ["icon_only", "with_icon"]]
 variant_products = [[{ any = ["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat"] }, { any = ["pill", "@rounded_rectangle"] }, { any = ["primary", "tinted"] }, { any = ["toggle"] }, { any = ["destructive"] }, { any = ["icon_only", "with_icon"] }], [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["icon_only", "with_icon"] }]]
-not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["route_active"], not_variants = ["route"] }, { variants = ["@bordered"], not_variants = ["route"] }, { states = ["disabled"], variants = ["route"] }, { states = ["default"], variants = ["route"] }, { states = ["checked", "indeterminate"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["selected"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@menu_on_hold"], not_variants = ["menu"] }, { states = ["default"], variants = ["menu"] }]
+not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["route_active"], not_variants = ["route"] }, { variants = ["@bordered"], not_variants = ["route"] }, { states = ["disabled"], variants = ["route"] }, { states = ["default"], variants = ["route"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["selected"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@menu_on_hold"], not_variants = ["menu"] }, { states = ["default"], variants = ["menu"] }]
 rows = ["MAC-B01", "MAC-B02", "MAC-B07", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17", "MAC-P3-9†", "MAC-TL11†", "MAC-N29†"]
 
 [[model.cite]]
@@ -62,7 +65,12 @@ quote = "Buttons support the off and on states, and an additional mixed state de
 [[model.cite]]
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:71-74"
-quote = "static const NSControlStateValue NSControlStateValueMixed = -1;"
+quote = "static const NSControlStateValue NSControlStateValueMixed = -1; static const NSControlStateValue NSControlStateValueOff = 0; static const NSControlStateValue NSControlStateValueOn = 1;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:151"
+quote = "@property NSControlStateValue state;"
 
 [[model.cite]]
 kind = "published"
@@ -349,7 +357,10 @@ tolerance = 0
 # otherwise: the toolbar bezel in a toolbar is 22 px high, on the sheet 20 px (the item view's and the sheet button's
 # intrinsic height, the last two citations; the tie-break of the monterey slice).
 # The tie-break of MC-C1 (the blind verifier, its model compared): `indeterminate` (a toggle in the mixed state: an
-# NSButton holds one NSControlStateValue, so never with `checked`, and only a stateful type shows it), `selected` (the
+# NSButton holds one NSControlStateValue, so never with `checked`, and only a stateful type shows it; `exclusive`'s
+# group `[indeterminate, checked]`, ADD-A141 in place of a `not_drawn` pair: the button's one `state` property is
+# mixed, off or on, the mixed state a value of its own in place of on, so a connector reporting both is answered with
+# the mixed state, NSButton.h's `state` and NSCell.h's three values below), `selected` (the
 # item NSToolbar's `selectedItemIdentifier` names, highlighted, in a toolbar only; MAC-TL11†) and `@menu_on_hold` (an
 # NSComboButton with an action, its menu on a click and hold, the catalogue's) are drawn, their looks pending (U693,
 # U694; `menu_trigger` stated); NSComboButton is no NSButton and declares no key equivalent, and the window's default
@@ -369,11 +380,11 @@ default_size = "regular"
 sizes_by_variant = [{ variant = "route", sizes = [] }]
 densities = []
 axes = { states = ["pressed", "disabled", "default", "checked", "indeterminate", "focus_visible", "selected", "route_active"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-exclusive = []
+exclusive = [["indeterminate", "checked"]]
 variant_sets = [["route", "@bordered"]]
 exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "menu", "route"], ["icon_only", "with_icon"]]
 variant_products = [[{ any = ["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat"] }, { any = ["toggle"] }, { any = ["destructive"] }, { any = ["icon_only", "with_icon"] }], [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["icon_only", "with_icon"] }]]
-not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["route_active"], not_variants = ["route"] }, { variants = ["@bordered"], not_variants = ["route"] }, { states = ["disabled"], variants = ["route"] }, { states = ["default"], variants = ["route"] }, { states = ["checked", "indeterminate"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["selected"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@menu_on_hold"], not_variants = ["menu"] }, { states = ["default"], variants = ["menu"] }]
+not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["route_active"], not_variants = ["route"] }, { variants = ["@bordered"], not_variants = ["route"] }, { states = ["disabled"], variants = ["route"] }, { states = ["default"], variants = ["route"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["selected"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@menu_on_hold"], not_variants = ["menu"] }, { states = ["default"], variants = ["menu"] }]
 rows = ["MAC-B01", "MAC-B02", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17", "MAC-P3-9†", "MAC-TL11†", "MAC-N29†"]
 
 [[model.cite]]
@@ -384,7 +395,12 @@ quote = "Buttons support the off and on states, and an additional mixed state de
 [[model.cite]]
 kind = "published"
 source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:71-74"
-quote = "static const NSControlStateValue NSControlStateValueMixed = -1;"
+quote = "static const NSControlStateValue NSControlStateValueMixed = -1; static const NSControlStateValue NSControlStateValueOff = 0; static const NSControlStateValue NSControlStateValueOn = 1;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:148"
+quote = "@property NSControlStateValue state;"
 
 [[model.cite]]
 kind = "published"
