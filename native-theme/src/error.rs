@@ -640,6 +640,15 @@ pub enum ProblemKind {
         /// The role or input, as its TOML path names it.
         role: String,
     },
+    /// On `kde-breeze`, a reader's or stand-in's layer stating a surface
+    /// set whole, a block and not field by field, where S8 leaves its
+    /// accent-dependent roles out beneath the accent-derivation layer: the
+    /// leave-out is per role and reaches no role of a block stated whole
+    /// (S8, S9.2, S12).
+    SetStatedWhole {
+        /// The surface set.
+        set: &'static str,
+    },
     /// A declared keyed name nothing uses: no rule selects on it, no base
     /// states it, or no `presentations` list names the event (a typo's
     /// sign, S12).
@@ -882,6 +891,10 @@ impl fmt::Display for ProblemKind {
             ProblemKind::LeftToPreset { role } => {
                 write!(f, "`{role}` left to the preset's value under the palette")
             }
+            ProblemKind::SetStatedWhole { set } => write!(
+                f,
+                "the surface set `{set}` stated whole where its accent-dependent roles are left out; state its roles one by one"
+            ),
             ProblemKind::SyntheticExpression => {
                 f.write_str("an expression in a synthetic layer, which states constant values")
             }

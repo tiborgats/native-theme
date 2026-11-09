@@ -23,6 +23,7 @@ use super::inputs::Contrast;
 use super::layer::{Bases, Layer};
 use super::presets::PresetId;
 use super::resolve::ReaderState;
+use super::roles::ColorRolesPatch;
 use super::selector::{Scheme, WidgetRef};
 use super::toml::read::Named;
 pub(crate) use checks::{TypeTarget, type_env};
@@ -92,9 +93,10 @@ pub(crate) fn check_stacked(
     layers.extend(added.iter().copied());
     let found = combinations(&layers, *cx, reused);
     let mut problems: Vec<Problem> = Vec::new();
-    for (offset, Stacked { layer, .. }) in added.iter().enumerate() {
+    for (offset, stacked) in added.iter().enumerate() {
         let at = first.saturating_add(offset);
-        let mut own = checks::layer(layer, cx);
+        let mut own = checks::layer(stacked.layer, cx);
+        own.extend(sets_stated_whole(stacked, cx.preset));
         add(
             &mut own,
             found
@@ -114,6 +116,66 @@ pub(crate) fn check_stacked(
     } else {
         Err(LayerError::Invalid(problems))
     }
+}
+
+/// Each surface set `stacked` states whole, a block and not field by
+/// field, where S8 leaves its accent-dependent roles out beneath the
+/// accent-derivation layer (S8, S9.2, S12): in its colour bases (its part
+/// for `preset` included) at a scheme of the leave-out, and in its
+/// `Colors` rules, which can hold there. The leave-out is per role and
+/// reaches no role of a block stated whole, so such a set is refused
+/// rather than left in force over the accent-derivation layer's roles. No
+/// reader or stand-in states one: the KDE reader, a KDE port and the facts
+/// gate's stand-ins each state their roles field by field, and a
+/// reference, `absent` or `auto` there is refused for every layer
+/// ([`ProblemKind::NotABlock`]).
+pub(crate) fn sets_stated_whole(stacked: &Stacked<'_>, preset: Option<PresetId>) -> Vec<Problem> {
+    let Some(left_out) = stacked.left_out else {
+        return Vec::new();
+    };
+    let layer = stacked.layer;
+    let whole = |roles: &ColorRolesPatch, at: &str, problems: &mut Vec<Problem>| {
+        for (set, patch) in roles.surfaces.iter().flat_map(|surfaces| surfaces.iter()) {
+            let stated = matches!(
+                patch,
+                crate::blocks::BlockPatch::Set(crate::value::Value::Stated(_))
+            );
+            if stated && left_out.holds_set(set) {
+                let at = format!("{at}surfaces.{}", set.name());
+                problems.push(Problem::new(
+                    &at,
+                    ProblemKind::SetStatedWhole { set: set.name() },
+                ));
+            }
+        }
+    };
+    let mut problems = Vec::new();
+    let parts = std::iter::once((&layer.bases, String::new())).chain(
+        layer
+            .for_preset
+            .iter()
+            .filter(|(held, _)| Some(*held) == preset)
+            .map(|(held, bases)| (bases, format!("for_preset.{}.", held.key()))),
+    );
+    for (bases, prefix) in parts {
+        for scheme in left_out.schemes() {
+            if let Some(roles) = bases.colors.get(*scheme) {
+                let at = format!("{prefix}colors.{}.", scheme.name());
+                whole(roles, &at, &mut problems);
+            }
+        }
+    }
+    let body = if matches!(layer.spelled, crate::layer::Spelled::Toml) {
+        "set"
+    } else {
+        "body"
+    };
+    for (number, rule) in layer.rules.iter().enumerate() {
+        if let crate::selector::RuleBody::Colors(roles) = &rule.body {
+            whole(roles, &format!("rules[{number}].{body}."), &mut problems);
+        }
+    }
+    problems
 }
 
 /// [`check_stacked`] over the layers `added`, nothing of them left out.

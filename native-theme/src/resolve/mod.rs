@@ -447,7 +447,9 @@ pub(crate) struct LeftOut {
 }
 
 impl LeftOut {
-    fn new(
+    /// The leave-out of `roles` and the inactive input roles `inputs` at
+    /// `schemes`.
+    pub(crate) fn new(
         schemes: Vec<Scheme>,
         roles: &[validate::AccentRole],
         inputs: Vec<InputName>,
@@ -471,13 +473,29 @@ impl LeftOut {
         self.at(scheme) && self.paths.iter().any(|held| held == path)
     }
 
+    /// The schemes at which the layer's roles and inputs are left out.
+    pub(crate) fn schemes(&self) -> &[Scheme] {
+        &self.schemes
+    }
+
+    /// Whether an accent-dependent role of the surface set `set` is left
+    /// out.
+    pub(crate) fn holds_set(&self, set: SurfaceSet) -> bool {
+        self.roles
+            .iter()
+            .any(|role| matches!(role, validate::AccentRole::Surface(held, _) if *held == set))
+    }
+
     /// Whether the input `name` is left out at `scheme`.
     pub(crate) fn input(&self, scheme: Scheme, name: &InputName) -> bool {
         self.at(scheme) && self.inputs.contains(name)
     }
 
     /// `roles` without the roles left out: each stated as a field of its
-    /// set's patch or as a keyed entry taken out.
+    /// set's patch or as a keyed entry taken out. A set stated whole is
+    /// left as it is: validation refuses one where its roles are left out
+    /// ([`validate::sets_stated_whole`]), and no reader or stand-in states
+    /// one, each stating its roles field by field.
     fn strip(&self, roles: &mut ColorRolesPatch) {
         for role in &self.roles {
             match role {

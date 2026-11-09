@@ -873,3 +873,77 @@ fn accent_derivation_layer() -> Result<(), Box<dyn std::error::Error>> {
     assert!(kept.set_accent(None).is_err());
     Ok(())
 }
+
+/// A stand-in stating a surface set whole on `kde-breeze`, a block and not
+/// field by field (here the preset's own `view` block at light), which S8's
+/// per-role leave-out cannot reach (S8, S9.2, S12): kept while no layer
+/// above it gives the accent, refused under an `Accent`, so `set_accent`
+/// is refused over it and the stand-in under it, each leaving the stack as
+/// it was.
+#[test]
+fn a_set_stated_whole_beneath_the_derivation() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::blocks::BlockPatch;
+    use crate::roles::{ColorRolesPatch, SurfaceSet};
+    let file = read_preset(PresetId::KdeBreeze.source())?;
+    let view = file
+        .layer
+        .bases
+        .colors
+        .light
+        .as_ref()
+        .and_then(|roles| roles.surfaces.as_ref())
+        .and_then(|surfaces| surfaces.get(SurfaceSet::View))
+        .cloned()
+        .ok_or("the preset states its view set")?;
+    assert!(matches!(view, BlockPatch::Set(Value::Stated(_))));
+    let mut surfaces = crate::value::SurfaceMap::default();
+    surfaces.insert(SurfaceSet::View, view);
+    let mut whole = Layer::default();
+    whole.bases.colors.light = Some(ColorRolesPatch {
+        surfaces: Some(surfaces),
+        ..ColorRolesPatch::default()
+    });
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    let plain = Stack::synthetic(
+        Some(PresetId::KdeBreeze),
+        file.declarations,
+        file.layer,
+        Scheme::Light,
+        file.pending,
+        layers,
+    )?;
+    let accent = Color::parse("#e5a50a").ok_or("not a colour")?;
+    let accent = Accent::new(InputValue::new(SchemeMap::new(
+        Value::Stated(accent.clone()),
+        Value::Stated(accent),
+    )));
+    let named = |error: LayerError| match error {
+        LayerError::Invalid(problems) => problems.iter().map(ToString::to_string).collect(),
+        other => vec![other.to_string()],
+    };
+    let refusal = [
+        "colors.light.surfaces.view: the surface set `view` stated whole where its \
+         accent-dependent roles are left out; state its roles one by one",
+    ];
+
+    let mut stood = plain.clone();
+    stood.set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), whole.clone())?;
+    let before = stood.clone();
+    let refused = stood
+        .set_accent(Some(accent.clone()))
+        .err()
+        .ok_or("set_accent kept")?;
+    assert_eq!(named(refused), refusal);
+    assert_eq!(stood, before);
+
+    let mut accented = plain;
+    accented.set_accent(Some(accent))?;
+    let before = accented.clone();
+    let refused = accented
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), whole)
+        .err()
+        .ok_or("the stand-in kept")?;
+    assert_eq!(named(refused), refusal);
+    assert_eq!(accented, before);
+    Ok(())
+}
