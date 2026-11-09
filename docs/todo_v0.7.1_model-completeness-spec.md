@@ -6936,9 +6936,9 @@ facts cover, the gate resolves `material-3` with that accent set through `set_ac
 accent-dependent role (S9.1) with the facts that apply for that accent: the dynamic scheme's roles for that seed as material-color-utilities gives them at its pin (generated, or
 published by its own tests), so the layer's statements and the variant, version and contrast level `m3_role` reads
 are compared, while `m3_role`'s own rows are its vector table's (S2.2). Until this run is built (the plan's M2.4,
-ledger queue #185), a Material fact naming `accent` fails the gate, as `check_facts.py` refuses it, since no run
-compares it (R4: a fact compared nowhere would pass a wrong value); none exists, the Material lane recording them
-with the run (ADD-A145, task T7's reading). Rejected: such a fact listed and skipped as a pending one is (it states
+ledger queue #185), a fact naming `accent` outside the `kde` directory, a Material one included, fails the gate, as
+`check_facts.py` refuses it, since no run compares it (R4: a fact compared nowhere would pass a wrong value); none
+exists, the Material lane recording them with the run (ADD-A145, task T7's reading). Rejected: such a fact listed and skipped as a pending one is (it states
 a value, which a skip would leave unchecked with no register row naming why).
 
 ## S18. Documents and scripts
