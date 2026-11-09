@@ -121,10 +121,7 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
 /// <https://learn.microsoft.com/en-us/windows/win32/api/objidlbase/ne-objidlbase-apttypequalifier>),
 /// and the shell's server it runs in (`thumbcache.dll`) was unloaded under
 /// it, an access violation (CI run 42554706381, the Windows watcher's thread
-/// uninitializing), or a load that returned no icon (CI run 38478340750,
-/// beside a watcher start that failed at once and uninitialized; stock icon
-/// loads ran one at a time after it, for a cause then unconfirmed, until
-/// this). The Windows watcher's thread initializes and
+/// uninitializing). The Windows watcher's thread initializes and
 /// uninitializes its own apartment: its start failed where another
 /// thread's uninitialization was the last (0x8000000E, "the application is
 /// exiting", and 0x80080008, `CO_E_SERVER_STOPPING`; CI run 42556588847),

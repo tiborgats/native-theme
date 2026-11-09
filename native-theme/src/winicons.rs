@@ -264,11 +264,26 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
     Some((width, height, pixels))
 }
 
+/// Held for each stock icon load, so that one runs at a time.
+///
+/// A mitigation for an unconfirmed cause. On GitHub's `windows-latest` image
+/// one test thread's load of `SIID_WARNING` returned `None` while another's,
+/// with the same arguments in the same process, returned the icon (CI run
+/// 38478340750): the failure depends on timing, and which step failed was not
+/// recorded. Loads running at once are one cause that fits; a first-use
+/// initialisation inside the shell fits equally well. Microsoft documents no
+/// thread rule for SHGetStockIconInfo. The lock is this crate's own: it does
+/// not serialise other code in the process that calls the shell's icon
+/// functions.
+#[cfg(target_os = "windows")]
+static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 /// Load a stock system icon by its SIID_ name.
 ///
 /// Maps the name to a SHSTOCKICONID, calls SHGetStockIconInfo to get
-/// an HICON, extracts RGBA pixels, and cleans up the icon handle, with COM's
-/// MTA kept for the process ([`crate::windows::mta_kept`]).
+/// an HICON, extracts RGBA pixels, and cleans up the icon handle, one load
+/// at a time ([`STOCK_ICON_LOCK`]), with COM's MTA kept for the process
+/// ([`crate::windows::mta_kept`]).
 #[cfg(target_os = "windows")]
 fn load_stock_icon(name: &str) -> Option<IconData> {
     let siid = siid_from_name(name)?;
@@ -276,6 +291,12 @@ fn load_stock_icon(name: &str) -> Option<IconData> {
         note_failure(format_args!("CoIncrementMTAUsage: {err}"));
         return None;
     }
+    // The lock guards no data, so a load that panicked leaves nothing to
+    // repair.
+    let _one_at_a_time = STOCK_ICON_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+
     // SAFETY: `sii` is a live SHSTOCKICONINFO with `cbSize` set to its size, for
     // SHGetStockIconInfo to fill; on success `hIcon` is an icon this function owns,
     // live for `hicon_to_rgba` and destroyed once afterwards, after its last use.
