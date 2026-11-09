@@ -1,6 +1,6 @@
-name: win-com2 diagnostics
+name: win-com2 gate
 
-# Temporary, on the win-com2 branch only.
+# Temporary, on the win-com2 branch only: ci.yml's test job, its Windows entries.
 on:
   push:
     branches: [win-com2]
@@ -9,42 +9,42 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  diag:
-    name: Diag ${{ matrix.name }}
-    runs-on: windows-latest
+  test:
+    name: Test ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { name: "watch vs MTA", features: "windows,watch", rounds: 5, args: "watch::tests::windows_subscribe_and_drop_returns_while_another_thread_leaves_the_mta --exact" }
-          - { name: "icons vs MTA", features: "system-icons", rounds: 5, args: "winicons::tests::stock_icons_load_while_another_thread_leaves_the_mta --exact" }
-          - { name: "winicons x30", features: "windows,watch,system-icons", rounds: 30, args: "winicons::" }
-          - { name: "full suite x3", features: "windows,watch,system-icons", rounds: 3, args: "--skip facts_gate --exact" }
+          - { name: "Windows (no features)", os: windows-latest, flags: "--no-default-features" }
+          - { name: "Windows (windows)", os: windows-latest, flags: "--features windows" }
+          - { name: "Windows (windows, watch, system-icons)", os: windows-latest, flags: "--features windows,watch,system-icons" }
+          - { name: "Windows (system-fonts)", os: windows-latest, flags: "--features system-fonts" }
     steps:
       - uses: actions/checkout@v6
+      # The facts gate's fixtures read the evidence at its pin.
       - uses: ./.github/actions/evidence
+      # `from_port`'s tests read Breeze's scheme files from the source cache.
+      - uses: ./.github/actions/sources
+        with:
+          ids: breeze@6.8.2
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Build the lib tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          exe=$(cargo test -p native-theme --features ${{ matrix.features }} --lib --no-run --message-format=json \
-            | jq -r 'select(.reason == "compiler-artifact" and .profile.test == true and .executable != null) | .executable' | tail -n1)
-          echo "TEST_EXE=$exe" >> "$GITHUB_ENV"
-      - name: Run
-        shell: bash
-        run: |
-          set +e
-          fails=0
-          for i in $(seq 1 ${{ matrix.rounds }}); do
-            "$TEST_EXE" ${{ matrix.args }} > out.txt 2>&1
-            st=$?
-            if [ "$st" != 0 ]; then
-              fails=$((fails + 1))
-              grep -E "panicked|failed:|FAILED|test result" out.txt | head -20
-            fi
-            echo "=== round $i status $st ==="
-          done
-          echo "=== failed rounds: $fails ==="
-          [ "$fails" = 0 ]
+      # Every test but the facts gate itself, which the facts-gate jobs run:
+      # no `cfg` reaches it (its code, the gate module, resolution and the
+      # presets hold none; the platform readers, icon loaders, font lookup
+      # and watchers that do are not on its path), so its outcome is one
+      # for every target and feature set. Its fixtures' tests run here.
+      - run: cargo test -p native-theme ${{ matrix.flags }} -- --skip facts_gate --exact
+      # Both connectors enable `system-icons` by default, and its icon code
+      # imports the platform crates, so it must build alone on each platform.
+      - name: Check system-icons alone
+        if: runner.os != 'Linux' && matrix.flags == '--no-default-features'
+        run: cargo check -p native-theme --no-default-features --features system-icons
+      # The platform readers and icon loaders compile only on their own
+      # target, so their dead code and unchecked results show only here.
+      - name: Check all features, warnings denied
+        if: runner.os != 'Linux' && matrix.flags == '--no-default-features'
+        env:
+          RUSTFLAGS: -Dwarnings
+        run: cargo check -p native-theme --all-features

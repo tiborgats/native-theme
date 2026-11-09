@@ -266,15 +266,16 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
 
 /// Held for each stock icon load, so that one runs at a time.
 ///
-/// A mitigation for an unconfirmed cause. On GitHub's `windows-latest` image
-/// one test thread's load of `SIID_WARNING` returned `None` while another's,
-/// with the same arguments in the same process, returned the icon (CI run
-/// 38478340750): the failure depends on timing, and which step failed was not
-/// recorded. Loads running at once are one cause that fits; a first-use
-/// initialisation inside the shell fits equally well. Microsoft documents no
-/// thread rule for SHGetStockIconInfo. The lock is this crate's own: it does
-/// not serialise other code in the process that calls the shell's icon
-/// functions.
+/// On GitHub's `windows-latest` image one test thread's load of
+/// `SIID_WARNING` returned `None` while another's, with the same arguments
+/// in the same process, returned the icon (CI run 38478340750). Loads
+/// running at once are the cause, not COM uninitialized under them: with
+/// COM's MTA kept for the process ([`crate::windows::mta_kept`]) and no
+/// lock, `winicons`' tests failed in each of 30 runs, stock loads returning
+/// `None`, and with the lock passed in each of 30 (CI runs 42565816772 and
+/// 42565651243). Microsoft documents no thread rule for SHGetStockIconInfo.
+/// The lock is this crate's own: it does not serialise other code in the
+/// process that calls the shell's icon functions.
 #[cfg(target_os = "windows")]
 static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
