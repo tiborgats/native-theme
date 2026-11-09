@@ -25,8 +25,13 @@ pub struct Fact {
     pub when: Option<Value>,
     pub stated: Stated,
     pub cites: Vec<Table>,
-    /// It carries `scheme_file` and `accent`: the accent run's alone (S17).
+    /// It carries `scheme_file` or `accent`: the accent run's alone (S17).
     pub accent_run: bool,
+    /// The scheme file it was measured with, `<entry> <path>` (S17 *The
+    /// accent run*).
+    pub scheme_file: Option<String>,
+    /// The accent it was measured with, a colour literal.
+    pub accent: Option<String>,
     /// Every unit it belongs to is enabled (S17 *While 0.8.0 is built*);
     /// set as its platform is read.
     pub enabled: bool,
@@ -99,6 +104,15 @@ pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
             .and_then(Value::as_array)
             .map(|cites| cites.iter().filter_map(Value::as_table).cloned().collect())
             .unwrap_or_default();
+        let text = |field: &str| match entry.get(field) {
+            None => Ok(None),
+            Some(Value::String(text)) => Ok(Some(text.clone())),
+            Some(_) => Err(format!(
+                "{file}: fact {}'s `{field}` is no string",
+                index + 1
+            )),
+        };
+        let (scheme_file, accent) = (text("scheme_file")?, text("accent")?);
         out.push(Fact {
             file: file.to_owned(),
             index,
@@ -106,7 +120,9 @@ pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
             when: entry.get("when").cloned(),
             stated,
             cites,
-            accent_run: entry.contains_key("scheme_file") || entry.contains_key("accent"),
+            accent_run: scheme_file.is_some() || accent.is_some(),
+            scheme_file,
+            accent,
             enabled: true,
         });
     }
@@ -297,6 +313,136 @@ pub fn evidence_root_at(
                 changed.len()
             ))
         }
+    }
+}
+
+/// Where the accent run reads a scheme file that is not the preset's own
+/// (S17 *The scheme files read*).
+#[derive(Clone, Debug)]
+pub enum Sources {
+    /// The source cache: each entry's checkout at `<cache>/<entry>`, at the
+    /// commit `sources.toml` pins, the file tracked and unchanged.
+    Cache(PathBuf),
+    /// A fixture's own files, at `<folder>/<entry>/<path>`: no checkout and
+    /// no pin, each written for the fixture.
+    Fixture(PathBuf),
+}
+
+/// The source cache the gate reads the scheme files from outside a fixture:
+/// the folder `NATIVE_THEME_SOURCES` names, else `scripts/citations.py`'s
+/// default, the cache [`evidence_root`] reads.
+pub fn sources() -> Sources {
+    let cache = std::env::var_os(SOURCES_VARIABLE).filter(|value| !value.is_empty());
+    Sources::Cache(cache.map_or_else(|| PathBuf::from(DEFAULT_CACHE), PathBuf::from))
+}
+
+/// A `scheme_file`'s entry and path (`<entry> <path>`, S17 *Fields*).
+pub fn scheme_file_parts(scheme_file: &str) -> Option<(&str, &str)> {
+    scheme_file
+        .split_once(' ')
+        .filter(|(entry, path)| !entry.is_empty() && !path.is_empty() && !path.contains(' '))
+}
+
+/// The commit `sources.toml` (its text) pins the git entry `id` at.
+fn entry_pin(sources: &str, id: &str) -> Result<String, String> {
+    let table: Table = toml::from_str(sources).map_err(|error| format!("sources.toml: {error}"))?;
+    let entries: Vec<&Value> = table
+        .get("source")
+        .and_then(Value::as_array)
+        .map(|entries| {
+            entries
+                .iter()
+                .filter(|entry| entry.get("id").and_then(Value::as_str) == Some(id))
+                .collect()
+        })
+        .unwrap_or_default();
+    match entries.as_slice() {
+        [entry] if entry.get("kind").and_then(Value::as_str) == Some("git") => entry
+            .get("commit")
+            .and_then(Value::as_str)
+            .map(str::to_owned)
+            .ok_or_else(|| format!("sources.toml: the entry {id} has no commit")),
+        [_] => Err(format!("sources.toml: the entry {id} is no git entry")),
+        _ => Err(format!(
+            "sources.toml: {} entries {id}, not one",
+            entries.len()
+        )),
+    }
+}
+
+impl Sources {
+    /// The bytes of the scheme file `scheme_file` (`<entry> <path>`) for the
+    /// facts root `facts`. From the cache, the entry's checkout must be the
+    /// top of a git checkout at the commit `sources.toml` pins, with the
+    /// file tracked and unchanged, which the gate checks itself through git
+    /// as it checks the evidence root; otherwise an error naming the entry,
+    /// so the run never compares nothing.
+    pub fn read(&self, facts: &Path, scheme_file: &str) -> Result<Vec<u8>, String> {
+        let (entry, path) = scheme_file_parts(scheme_file)
+            .ok_or_else(|| format!("the scheme file `{scheme_file}` is no `<entry> <path>`"))?;
+        let cache = match self {
+            Sources::Fixture(folder) => {
+                let file = folder.join(entry).join(path);
+                return std::fs::read(&file)
+                    .map_err(|error| format!("{}: {error}", file.display()));
+            }
+            Sources::Cache(cache) => cache,
+        };
+        let text = std::fs::read_to_string(facts.join("sources.toml"))
+            .map_err(|error| format!("{}: {error}", facts.join("sources.toml").display()))?;
+        let commit = entry_pin(&text, entry)?;
+        let root = cache.join(entry);
+        let fix = format!("fetch it with scripts/update_sources.sh --only {entry}");
+        let place = format!(
+            "the scheme file {scheme_file}: {} (the source cache's checkout of {entry})",
+            root.display()
+        );
+        if !root.is_dir() {
+            return Err(format!(
+                "{place} is no directory; the pin is {commit} ({fix})"
+            ));
+        }
+        let git = |args: &[&str]| -> Result<Option<String>, String> {
+            let output = std::process::Command::new("git")
+                .arg("-C")
+                .arg(&root)
+                .args(args)
+                .output()
+                .map_err(|error| format!("{place}: git: {error}"))?;
+            Ok(output
+                .status
+                .success()
+                .then(|| String::from_utf8_lossy(&output.stdout).into_owned()))
+        };
+        if git(&["rev-parse", "--show-prefix"])?.as_deref() != Some("\n") {
+            return Err(format!(
+                "{place} is not the top of a git checkout; the pin is {commit} ({fix})"
+            ));
+        }
+        let head = git(&["rev-parse", "--verify", "-q", "HEAD"])?.unwrap_or_default();
+        let head = head.trim();
+        if head != commit {
+            return Err(format!(
+                "{place} is at {}, not at the pin {commit} ({fix})",
+                if head.is_empty() { "no commit" } else { head }
+            ));
+        }
+        if git(&["ls-files", "--error-unmatch", "--", path])?.is_none() {
+            return Err(format!("{place} does not track {path} at the pin {commit}"));
+        }
+        match git(&["status", "--porcelain", "--", path])?
+            .as_deref()
+            .map(str::trim)
+        {
+            Some("") => {}
+            _ => {
+                return Err(format!(
+                    "{place}: {path} is changed at the pin {commit} ({fix})"
+                ));
+            }
+        }
+        let file = root.join(path);
+        std::fs::read(&file).map_err(|error| format!("{}: {error}", file.display()))
     }
 }
 

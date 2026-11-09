@@ -49,6 +49,13 @@
 //! `native-theme-evidence/`, clean and at the commit `docs/facts/sources.toml`
 //! pins (`scripts/update_sources.sh` fetches it); `facts_gate` fails without
 //! one. A fixture's evidence lies under its own root.
+//!
+//! The accent run (S17 *The accent run*, `run::accent_run`), which the first
+//! shard runs whole, reads each scheme file that is not `kde-breeze`'s own
+//! from the same source cache, at `<cache>/<entry>/<path>`, the entry's
+//! checkout at its pin with the file tracked and unchanged
+//! (`facts::Sources`); `facts_gate` fails where one is missing. A fixture's
+//! scheme files lie under its own `sources/`.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -271,6 +278,12 @@ fn fixture_evidence(root: &Path) -> &Path {
     root.parent().and_then(Path::parent).unwrap()
 }
 
+/// A fixture's scheme files (S17 *The scheme files read*): its own, at
+/// `<case>/sources/<entry>/<path>`, its facts root being `<case>/docs/facts`.
+fn fixture_sources(root: &Path) -> facts::Sources {
+    facts::Sources::Fixture(fixture_evidence(root).join("sources"))
+}
+
 /// A fixture's facts root and its preset (the fixtures' base with the
 /// case's declarations and rules, its `file`, appended), checked against
 /// its `gnome` directory.
@@ -310,7 +323,12 @@ fn fixture_report(name: &str) -> run::Report {
 /// `file`, a twin of its `preset.toml`.
 fn fixture_report_with(name: &str, file: &str) -> run::Report {
     let (root, presets) = fixture(name, file);
-    run::run(&root, fixture_evidence(&root), &presets)
+    run::run(
+        &root,
+        fixture_evidence(&root),
+        &fixture_sources(&root),
+        &presets,
+    )
 }
 
 /// A listed path's register ids found, in order.
@@ -727,7 +745,12 @@ fn stand_in_inputs(root: &Path, presets: &[(String, Preset)]) -> Vec<String> {
 fn gate_fixture_derived_input_perturbed() {
     let (root, presets) = fixture_edited("derived_input", with_tint);
     assert_eq!(stand_in_inputs(&root, &presets), ["accent"]);
-    let report = run::run(&root, fixture_evidence(&root), &presets);
+    let report = run::run(
+        &root,
+        fixture_evidence(&root),
+        &fixture_sources(&root),
+        &presets,
+    );
     assert_eq!(report.failures, Vec::<String>::new());
     assert!(report.compared > 0, "{report:?}");
 }
@@ -2235,7 +2258,12 @@ fn gate_measured_colour_drawn_per_renderer() {
             .into_iter()
             .map(|(_, preset)| (platform.to_owned(), preset))
             .collect();
-        run::run(&root, fixture_evidence(&root), &presets)
+        run::run(
+            &root,
+            fixture_evidence(&root),
+            &fixture_sources(&root),
+            &presets,
+        )
     };
     for platform in ["gnome", "kde", "material"] {
         let drawn = report(platform);
@@ -2273,7 +2301,12 @@ fn gate_measured_colour_drawn_only_from_pixels() {
             .into_iter()
             .map(|(_, preset)| (platform.to_owned(), preset))
             .collect();
-        run::run(&root, fixture_evidence(&root), &presets)
+        run::run(
+            &root,
+            fixture_evidence(&root),
+            &fixture_sources(&root),
+            &presets,
+        )
     };
     for name in ["measured_read", "measured_node", "measured_node_analysis"] {
         for platform in ["gnome", "kde", "material", "macos"] {
@@ -2636,13 +2669,24 @@ fn gate_shards_add_up() {
         gated += 1;
         let root = case.join("docs/facts");
         let presets = vec![("gnome".to_owned(), preset)];
-        let whole = run::run(&root, fixture_evidence(&root), &presets);
+        let whole = run::run(
+            &root,
+            fixture_evidence(&root),
+            &fixture_sources(&root),
+            &presets,
+        );
         for count in [2, 3, 5] {
             let _ = std::fs::remove_dir_all(&listed);
             let mut merged = run::Report::default();
             for index in 0..count {
                 let shard = run::Shard { index, count };
-                let part = run::run_shard(&root, fixture_evidence(&root), &presets, shard);
+                let part = run::run_shard(
+                    &root,
+                    fixture_evidence(&root),
+                    &fixture_sources(&root),
+                    &presets,
+                    shard,
+                );
                 if index > 0 && part.compared > 0 {
                     split += 1;
                 }
@@ -2728,6 +2772,253 @@ fn facts_gate_threads_variable() {
         let error = run::thread_count(Some(refused)).unwrap_err();
         assert!(error.contains("no number above zero"), "{error}");
     }
+}
+
+/// The accent run of the fixture case `name` (S17 *The accent run*):
+/// `kde-breeze` against the case's `kde` directory, its scheme files its own
+/// (`<case>/sources/`), the other runs left out, as the case's facts state
+/// only what the accent run reads.
+fn accent_fixture_report(name: &str) -> Result<run::Report, String> {
+    let case = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/facts_gate")
+        .join(name);
+    let root = case.join("docs/facts");
+    let preset = Preset::bundled(PresetId::KdeBreeze)?;
+    let units = units::Units::repository()?;
+    let mut report = run::Report::default();
+    let platform = run::Platform::read(&root.join("kde"), &units, &mut report);
+    let evidence = facts::Evidence::new(&case);
+    let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
+    run::accent_run(
+        &run::AccentRun {
+            root: &root,
+            platform: &platform,
+            preset: &preset,
+            keys: &keys,
+            evidence: &evidence,
+            sources: &fixture_sources(&root),
+        },
+        &mut report,
+    );
+    Ok(report)
+}
+
+/// A wrong accent fact fails at its role (S17 *The accent run*): on the
+/// preset's own light file with a synthetic accent set, the link's fact
+/// fails and the decoration focus, the accent, agrees; both are compared.
+#[test]
+fn gate_fixture_accent_run_wrong_accent() -> Result<(), String> {
+    let report = accent_fixture_report("accent_run_wrong_accent")?;
+    let wrong = failing(&report, "`role.view.link`");
+    assert!(!wrong.is_empty(), "{:?}", report.failures);
+    assert_eq!(wrong.len(), report.failures.len(), "{:?}", report.failures);
+    assert!(
+        wrong.iter().all(|failure| failure.starts_with("Accent:")
+            && failure.contains("probe@1 colors/OwnLight.colors with the accent #123456")),
+        "{wrong:?}"
+    );
+    assert_eq!(report.accent_run, 2);
+    Ok(())
+}
+
+/// A wrong no-accent fact fails the `#00000000` row (S17 *A port's own
+/// roles*, ADD-A142): a file that is not the preset's own, resolved with
+/// the accent `#00000000` set and with no accent set, fails its wrong
+/// background both ways; its foreground agrees.
+#[test]
+fn gate_fixture_accent_run_wrong_no_accent() -> Result<(), String> {
+    let report = accent_fixture_report("accent_run_wrong_no_accent")?;
+    let wrong = failing(&report, "`role.view.background`");
+    assert_eq!(wrong.len(), report.failures.len(), "{:?}", report.failures);
+    let row = |text: &str| {
+        wrong
+            .iter()
+            .filter(|failure| failure.contains(text))
+            .count()
+    };
+    assert_eq!(
+        row("probe@1 colors/Port.colors with the accent #00000000"),
+        1,
+        "{wrong:?}"
+    );
+    assert_eq!(
+        row("probe@1 colors/Port.colors with no accent set"),
+        1,
+        "{wrong:?}"
+    );
+    assert_eq!(report.accent_run, 2);
+    Ok(())
+}
+
+/// A file that is not the preset's own goes through `from_port` (S14, S17):
+/// its pairs, with a synthetic accent and with none, agree with the
+/// file's own colours, which no kde-breeze scheme holds; the no-accent pair
+/// compared through `set_accent` and with no accent set, and each own
+/// file's `#00000000` row over the roles the accent facts state.
+#[test]
+fn gate_fixture_accent_run_through_from_port() -> Result<(), String> {
+    let report = accent_fixture_report("accent_run_port")?;
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(report.accent_run, 4);
+    // 4 facts through set_accent, the no-accent pair's 3 with no accent set,
+    // and 3 roles on each own file.
+    assert_eq!(report.compared, 4 + 3 + 2 * 3);
+    Ok(())
+}
+
+/// A scheme file the sources lack fails, naming it (S17 *The scheme files
+/// read*): the run never compares nothing.
+#[test]
+fn gate_fixture_accent_run_missing_file() -> Result<(), String> {
+    let report = accent_fixture_report("accent_run_missing_file")?;
+    let missing = failing(&report, "probe@1/colors/Missing.colors");
+    assert!(!missing.is_empty(), "{:?}", report.failures);
+    assert_eq!(report.accent_run, 0);
+    Ok(())
+}
+
+/// A pending no-accent pair is listed with its id and skipped (S17 *A
+/// port's own roles*): no failure, the accent pair compared.
+#[test]
+fn gate_fixture_accent_run_pending_pair() -> Result<(), String> {
+    let report = accent_fixture_report("accent_run_pending_pair")?;
+    assert_eq!(report.failures, Vec::<String>::new());
+    let listed: Vec<(&str, &str, u64)> = report
+        .pending
+        .values()
+        .map(|(id, key, count)| (id.as_str(), key.as_str(), *count))
+        .collect();
+    assert_eq!(listed, [("U1", "role.view.decoration_focus", 2)]);
+    assert_eq!(report.accent_run, 1);
+    Ok(())
+}
+
+/// A file that is not the preset's own with no no-accent pair, stated or
+/// pending, fails as a key with no fact (S17 *A port's own roles*, R4).
+#[test]
+fn gate_fixture_accent_run_no_pair() -> Result<(), String> {
+    let report = accent_fixture_report("accent_run_no_pair")?;
+    assert_eq!(
+        failing(&report, "has no fact"),
+        [
+            &"`role.view.decoration_focus` has no fact under probe@1 colors/Port.colors with no \
+           accent set under [\"scheme:light\"]"
+                .to_owned()
+        ],
+        "{:?}",
+        report.failures
+    );
+    assert_eq!(report.accent_run, 1);
+    Ok(())
+}
+
+/// The accent-run facts the gate refuses (S17 *Fields*, ADD-A142): a
+/// `scheme_file` without `accent`, a fact with no `scheme:` condition, a
+/// pair whose facts name two schemes, and a pair naming an own file under
+/// the other scheme.
+#[test]
+fn gate_fixture_accent_run_refused() -> Result<(), String> {
+    let report = accent_fixture_report("accent_run_refused")?;
+    for want in [
+        "kde/accent.toml fact 1: `scheme_file` and `accent` are stated both or neither",
+        "kde/accent.toml fact 2: 0 `scheme:` conditions in its `when`, not one",
+        "kde/accent.toml fact 4: under scheme:dark, its pair's first fact under scheme:light",
+        "the pair probe@1 colors/OwnDark.colors #123456 names the preset's own file at \
+         scheme:dark under scheme:light",
+    ] {
+        assert_eq!(
+            failing(&report, want).len(),
+            1,
+            "{want}: {:?}",
+            report.failures
+        );
+    }
+    Ok(())
+}
+
+/// A scheme file read from the source cache (S17 *The scheme files read*,
+/// [`facts::Sources::read`]): the entry's checkout at its pin, the file
+/// tracked and unchanged; refused without the checkout, at another commit,
+/// for an untracked or a changed file, and without one git entry.
+#[test]
+fn facts_gate_scheme_file_read() -> Result<(), String> {
+    let base =
+        std::env::temp_dir().join(format!("native-theme-scheme-file-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&base);
+    let cache = base.join("cache");
+    let repo = cache.join("probe@1");
+    let at = |error: std::io::Error| error.to_string();
+    std::fs::create_dir_all(repo.join("colors")).map_err(at)?;
+    std::fs::write(repo.join("colors/A.colors"), "[Colors:View]\n").map_err(at)?;
+    let git = |args: &[&str]| -> Result<String, String> {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&repo)
+            .args([
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "-c",
+                "commit.gpgsign=false",
+            ])
+            .args(args)
+            .output()
+            .map_err(at)?;
+        if !output.status.success() {
+            return Err(format!("git {args:?}: {output:?}"));
+        }
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    };
+    git(&["init", "-q"])?;
+    git(&["add", "-A"])?;
+    git(&["commit", "-q", "-m", "c"])?;
+    let head = git(&["rev-parse", "HEAD"])?.trim().to_owned();
+    let facts = base.join("facts");
+    std::fs::create_dir_all(&facts).map_err(at)?;
+    let pin = |commits: &[&str]| -> Result<(), String> {
+        let entries: String = commits
+            .iter()
+            .map(|commit| {
+                format!("[[source]]\nid = \"probe@1\"\nkind = \"git\"\ncommit = \"{commit}\"\n\n")
+            })
+            .collect();
+        std::fs::write(facts.join("sources.toml"), entries).map_err(at)
+    };
+    let sources = facts::Sources::Cache(cache.clone());
+    let refused = |file: &str, want: &str| -> Result<(), String> {
+        match sources.read(&facts, file) {
+            Ok(_) => Err(format!("{file}: read, not refused with {want:?}")),
+            Err(error) if error.contains(want) => Ok(()),
+            Err(error) => Err(format!("{file}: {error}, not {want:?}")),
+        }
+    };
+    pin(&[&head])?;
+    assert_eq!(
+        sources.read(&facts, "probe@1 colors/A.colors")?,
+        b"[Colors:View]\n"
+    );
+    refused("probe@1 colors/B.colors", "does not track colors/B.colors")?;
+    std::fs::write(repo.join("colors/B.colors"), "[Colors:View]\n").map_err(at)?;
+    refused("probe@1 colors/B.colors", "does not track colors/B.colors")?;
+    std::fs::write(repo.join("colors/A.colors"), "[Colors:Window]\n").map_err(at)?;
+    refused("probe@1 colors/A.colors", "colors/A.colors is changed")?;
+    std::fs::write(repo.join("colors/A.colors"), "[Colors:View]\n").map_err(at)?;
+    refused("probe@1colors/A.colors", "is no `<entry> <path>`")?;
+    refused("other@1 colors/A.colors", "0 entries other@1")?;
+    let other = "0".repeat(40);
+    pin(&[&other])?;
+    refused(
+        "probe@1 colors/A.colors",
+        &format!("is at {head}, not at the pin {other}"),
+    )?;
+    pin(&[&head, &head])?;
+    refused("probe@1 colors/A.colors", "2 entries probe@1")?;
+    pin(&[&head])?;
+    std::fs::remove_dir_all(&repo).map_err(at)?;
+    refused("probe@1 colors/A.colors", "is no directory; the pin is")?;
+    std::fs::remove_dir_all(&base).map_err(at)?;
+    Ok(())
 }
 
 /// The evidence root outside a fixture (S17 *The evidence root*,
@@ -2893,7 +3184,7 @@ fn facts_gate() {
         return;
     }
     let evidence = facts::evidence_root(&root).unwrap_or_else(|error| panic!("{error}"));
-    let report = run::run_shard(&root, &evidence, &presets, shard);
+    let report = run::run_shard(&root, &evidence, &facts::sources(), &presets, shard);
     if shard != run::Shard::WHOLE
         && let Some(directory) = directory_variable(LISTED_VARIABLE)
     {
@@ -2925,20 +3216,21 @@ fn facts_gate() {
         ));
     }
     eprintln!(
-        "facts gate: {scope}, {} keys compared over {} distinct combinations in {:?}; \
+        "facts gate: {scope}, {} keys compared over {} distinct combinations in {:?}, \
+         {} accent-run facts among them; \
          {} pending facts; skipped: {} facts of {} keys the model does not hold, {} facts of a unit \
          not enabled, {} whens, \
-         {} accent-run facts, {} facts naming a preset not bundled, {} combinations, \
+         {} facts naming a preset not bundled, {} combinations, \
          {} state-model variants only skipped facts name",
         report.compared,
         report.queried,
         report.elapsed,
+        report.accent_run,
         report.pending.len(),
         report.keys_not_held.values().sum::<usize>(),
         report.keys_not_held.len(),
         report.units_not_enabled.values().sum::<usize>(),
         report.whens_not_held.values().sum::<usize>(),
-        report.accent_run,
         report.other_presets,
         report.combinations_skipped,
         report.variants_not_held.len(),

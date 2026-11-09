@@ -1,0 +1,29 @@
+# Synthetic facts (S17 *The accent run*): the no-accent pair (ADD-A142) of a file that is not the preset's own
+# (sources/probe@1/colors/Port.colors), under scheme:light. Its background is wrong (the file states 1,2,3), so the
+# `#00000000` row fails, through set_accent and with no accent set; its foreground agrees.
+
+[[fact]]
+key = "role.view.background"
+when = { conditions = ["scheme:light"] }
+value = "#010204"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#00000000"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.foreground"
+when = { conditions = ["scheme:light"] }
+value = "#040506"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#00000000"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"

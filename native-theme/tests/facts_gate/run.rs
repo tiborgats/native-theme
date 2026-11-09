@@ -95,6 +95,9 @@ pub enum Pass {
     Perturbed,
     /// A measured derivation's evidence passes, each against its result.
     Measured,
+    /// The accent run (S17 *The accent run*): `kde-breeze` over a scheme
+    /// file, with an accent set or none, against the facts measured so.
+    Accent,
 }
 
 /// What a run found (S17): the failures, the pending facts met (listed
@@ -137,7 +140,8 @@ pub struct Report {
     /// of its entry's declarations and combinations (ADD-A128), by
     /// `<file> <widget> <variant>`.
     pub variants_not_held: BTreeSet<String>,
-    /// Facts of the accent run, which this gate does not run.
+    /// The accent run's facts compared (S17 *The accent run*), each once
+    /// however many of its resolutions compare it.
     pub accent_run: usize,
     /// Field facts that apply where their part is not drawn, so compare
     /// nothing: the part's own key is compared there (S17, ADD-A130).
@@ -499,8 +503,8 @@ const GLOBAL_WHEN: [&str; 2] = ["conditions", "not_conditions"];
 /// counted (S17: skipped while 0.8.0 is built).
 pub fn read_all(platform: &Platform, report: &mut Report) {
     for fact in &platform.facts {
+        // The accent run reads its own facts ([`accent_run`]).
         if fact.accent_run {
-            report.accent_run += 1;
             continue;
         }
         if !fact.enabled {
@@ -926,7 +930,7 @@ fn record(
                 "{pass:?}: `{key}` at `{at}` under {}: {} gives {theme}, {place} gives {fact}",
                 combination(),
                 match pass {
-                    Pass::Normal | Pass::Perturbed => "the preset",
+                    Pass::Normal | Pass::Perturbed | Pass::Accent => "the preset",
                     Pass::Measured => "the measured result",
                 }
             ),
@@ -1519,16 +1523,24 @@ fn vector_count(planned: &[Planned<'_>], own: Option<&Distinct>, vector: &[Strin
 /// Runs the gate over the facts root `root` for `presets`, each with the
 /// platform directory it is checked against (S17 *Generations*), the
 /// citations' evidence read under the evidence root `evidence` (S17 *The
-/// evidence root*: [`facts::evidence_root`]'s, or a fixture's own root).
-pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report {
-    run_shard(root, evidence, presets, Shard::WHOLE)
+/// evidence root*: [`facts::evidence_root`]'s, or a fixture's own root), the
+/// accent run's scheme files from `sources` (S17 *The scheme files read*).
+pub fn run(
+    root: &Path,
+    evidence: &Path,
+    sources: &facts::Sources,
+    presets: &[(String, Preset)],
+) -> Report {
+    run_shard(root, evidence, sources, presets, Shard::WHOLE)
 }
 
 /// [`run`]'s shard `shard` alone ([`Shard`]): its condition vectors
-/// checked, and where it is the first, the rest of the run recorded.
+/// checked, and where it is the first, the rest of the run recorded and the
+/// accent run run whole, which no condition vector splits (S17).
 pub fn run_shard(
     root: &Path,
     evidence: &Path,
+    sources: &facts::Sources,
     presets: &[(String, Preset)],
     shard: Shard,
 ) -> Report {
@@ -1644,6 +1656,19 @@ pub fn run_shard(
                     shared,
                 );
             }
+            if shard.index == 0 {
+                accent_run(
+                    &AccentRun {
+                        root,
+                        platform: &platform,
+                        preset,
+                        keys: &keys,
+                        evidence: &evidence,
+                        sources,
+                    },
+                    &mut report,
+                );
+            }
             // The listed paths are found over every vector (S17, ADD-A128):
             // a split run leaves them to its shards' findings merged
             // ([`Shard`]).
@@ -1717,6 +1742,641 @@ pub fn listed_paths(preset: &Preset, report: &mut Report) {
                 ));
             }
             Some(_) => {}
+        }
+    }
+}
+
+/// What the accent run reads (S17 *The accent run*).
+pub struct AccentRun<'a, 'f> {
+    /// The facts root, whose `sources.toml` pins the scheme files' entries.
+    pub root: &'a Path,
+    pub platform: &'f Platform,
+    pub preset: &'a Preset,
+    /// The preset's facts prepared ([`prepare`]): its no-accent facts.
+    pub keys: &'a [KeyFacts<'f>],
+    pub evidence: &'a facts::Evidence,
+    pub sources: &'a facts::Sources,
+}
+
+/// One fact of an accent-run pair, read for its key.
+struct Measured<'f> {
+    fact: &'f Fact,
+    key: FactKey,
+    when: When,
+    /// Its value; `None` where it is pending.
+    value: Option<FactValue>,
+    tolerance: Tolerance,
+}
+
+/// The facts measured with one scheme file and one accent (S17 *The accent
+/// run*), in file order, and the scheme their `when` names.
+struct Pair<'f> {
+    scheme_file: String,
+    accent: String,
+    scheme: String,
+    facts: Vec<Measured<'f>>,
+}
+
+/// The accent-run facts of `run`'s platform that can apply to its preset,
+/// in pairs ([`Pair`]), each read for its key; a fact the gate refuses
+/// fails and is left out (S17 *Fields*, ADD-A142): one outside the `kde`
+/// directory, a `scheme_file` or an `accent` without the other, a
+/// `scheme_file` that is no `<entry> <path>`, a fact with no `scheme:`
+/// condition or several, and one whose pair's first fact names another
+/// scheme. What the model does not hold yet is counted, as [`read_all`]
+/// counts it.
+fn pairs<'f>(run: &AccentRun<'_, 'f>, report: &mut Report) -> Vec<Pair<'f>> {
+    let preset = run.preset.id();
+    let mut out: Vec<Pair<'f>> = Vec::new();
+    for fact in run.platform.facts.iter().filter(|fact| fact.accent_run) {
+        let place = fact.place();
+        let Some((written, _)) = facts::for_preset(fact.when.as_ref(), preset) else {
+            continue;
+        };
+        if run.platform.name != "kde" {
+            report.fail(format!(
+                "{place}: an accent-run fact outside the `kde` directory, which no accent run of \
+                 the gate compares (S17)"
+            ));
+            continue;
+        }
+        let (Some(scheme_file), Some(accent)) = (&fact.scheme_file, &fact.accent) else {
+            report.fail(format!(
+                "{place}: `scheme_file` and `accent` are stated both or neither (S17)"
+            ));
+            continue;
+        };
+        if facts::scheme_file_parts(scheme_file).is_none() {
+            report.fail(format!(
+                "{place}: the scheme file `{scheme_file}` is no `<entry> <path>` (S17)"
+            ));
+            continue;
+        }
+        let schemes: Vec<String> =
+            strings(written.as_ref().and_then(|when| when.get("conditions")))
+                .into_iter()
+                .filter_map(|condition| condition.strip_prefix("scheme:").map(str::to_owned))
+                .collect();
+        let [scheme] = schemes.as_slice() else {
+            report.fail(format!(
+                "{place}: {} `scheme:` conditions in its `when`, not one (S17, ADD-A142)",
+                schemes.len()
+            ));
+            continue;
+        };
+        if !fact.enabled {
+            *report
+                .units_not_enabled
+                .entry(fact.key.clone())
+                .or_default() += 1;
+            continue;
+        }
+        let key = match run.platform.key(&fact.key) {
+            Some(Ok(key)) => key.clone(),
+            Some(Err(Unread::NotHeld(_))) | None => {
+                *report.keys_not_held.entry(fact.key.clone()).or_default() += 1;
+                continue;
+            }
+            Some(Err(Unread::Refused(why))) => {
+                report.fail(format!("{place}: the key `{}` is refused: {why}", fact.key));
+                continue;
+            }
+        };
+        let when = match read_when(written.as_ref()) {
+            Ok(when) => when,
+            Err(Unread::NotHeld(why)) => {
+                *report.whens_not_held.entry(why).or_default() += 1;
+                continue;
+            }
+            Err(Unread::Refused(why)) => {
+                report.fail(format!("{place}: its `when` is refused: {why}"));
+                continue;
+            }
+        };
+        let value = match &fact.stated {
+            Stated::Pending(_) => None,
+            Stated::Value(value) => match parse_value(&key, value) {
+                Ok(value) => Some(value),
+                Err(Unread::NotHeld(why) | Unread::Refused(why)) => {
+                    report.fail(format!(
+                        "{place}: the value of `{}` is refused: {why}",
+                        fact.key
+                    ));
+                    continue;
+                }
+            },
+        };
+        let measured = Measured {
+            fact,
+            key,
+            when,
+            value,
+            tolerance: facts::tolerance(fact, run.evidence, preset)
+                .drawn_by(drawing(&run.platform.name, None)),
+        };
+        match out
+            .iter_mut()
+            .find(|pair| pair.scheme_file == *scheme_file && pair.accent == *accent)
+        {
+            Some(pair) if pair.scheme != *scheme => report.fail(format!(
+                "{place}: under scheme:{scheme}, its pair's first fact under scheme:{} \
+                 (S17, ADD-A142)",
+                pair.scheme
+            )),
+            Some(pair) => pair.facts.push(measured),
+            None => out.push(Pair {
+                scheme_file: scheme_file.clone(),
+                accent: accent.clone(),
+                scheme: scheme.clone(),
+                facts: vec![measured],
+            }),
+        }
+    }
+    out
+}
+
+/// A citation's source less its line part (`breeze@6.8.2
+/// colors/BreezeLight.colors:115` is `breeze@6.8.2
+/// colors/BreezeLight.colors`).
+fn source_file(source: &str) -> &str {
+    match source.rsplit_once(':') {
+        Some((file, lines))
+            if !lines.is_empty()
+                && lines
+                    .chars()
+                    .all(|c| c.is_ascii_digit() || c == '-' || c == ',') =>
+        {
+            file
+        }
+        _ => source,
+    }
+}
+
+/// The preset's own scheme files, by scheme (S17 *The preset's own scheme
+/// files*, ADD-A142): at each scheme the preset declares, the one `.colors`
+/// file that the scheme-input facts (`input.kde_scheme.*`) whose `when`
+/// names `scheme:<s>` cite, as `<entry> <path>`; a scheme with no such file
+/// or several fails and has none.
+fn own_files(run: &AccentRun<'_, '_>, report: &mut Report) -> BTreeMap<String, String> {
+    let mut cited: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for fact in &run.platform.facts {
+        if fact.accent_run || !fact.key.starts_with("input.kde_scheme.") {
+            continue;
+        }
+        let Some((written, _)) = facts::for_preset(fact.when.as_ref(), run.preset.id()) else {
+            continue;
+        };
+        let schemes: Vec<String> =
+            strings(written.as_ref().and_then(|when| when.get("conditions")))
+                .into_iter()
+                .filter_map(|condition| condition.strip_prefix("scheme:").map(str::to_owned))
+                .collect();
+        let files: Vec<String> = fact
+            .cites
+            .iter()
+            .filter_map(|cite| cite.get("source").and_then(Value::as_str))
+            .map(source_file)
+            .filter(|file| file.ends_with(".colors"))
+            .map(str::to_owned)
+            .collect();
+        for scheme in schemes {
+            cited
+                .entry(scheme)
+                .or_default()
+                .extend(files.iter().cloned());
+        }
+    }
+    let mut out = BTreeMap::new();
+    for scheme in run.preset.schemes() {
+        let files: Vec<&String> = cited.get(&scheme).into_iter().flatten().collect();
+        match files.as_slice() {
+            [file] => {
+                out.insert(scheme, (*file).clone());
+            }
+            _ => report.fail(format!(
+                "{}: {} own scheme files at scheme:{scheme}, not one: the `.colors` files its \
+                 scheme-input facts under scheme:{scheme} cite ({}; S17, ADD-A142)",
+                run.preset.id(),
+                files.len(),
+                files
+                    .iter()
+                    .map(|file| file.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )),
+        }
+    }
+    out
+}
+
+/// The accent the preset states for no accent under `scheme`: the literal
+/// of its `input.accent` fact that applies there (on `kde-breeze` Breeze's
+/// own `#00000000`, `colorssettings.kcfg`'s default, S17 *The accent
+/// run*), which the run sets on each own file and which marks a file's
+/// no-accent pair; an error where none applies or it is no literal.
+fn no_accent(run: &AccentRun<'_, '_>, scheme: &str) -> Result<String, String> {
+    let vector = vec![format!("scheme:{scheme}")];
+    let conditions = conditions(&vector, None).map_err(|unread| format!("{unread:?}"))?;
+    let resolved = run.preset.resolve(&conditions, &Layer::default())?;
+    let key = run
+        .keys
+        .iter()
+        .find(|key| key.name == "input.accent")
+        .ok_or_else(|| format!("{}: no `input.accent` fact", run.preset.id()))?;
+    let mut probe = Report::default();
+    let fact = applying(
+        &key.facts,
+        |when| resolved.conditions_hold(when),
+        &mut probe,
+        &String::new,
+    )
+    .ok_or_else(|| format!("no `input.accent` fact applies under {vector:?}"))?;
+    match &fact.fact.stated {
+        Stated::Value(Value::String(accent)) if !fact.fact.derivation() => Ok(accent.clone()),
+        _ => Err(format!(
+            "{}: the `input.accent` fact under {vector:?} states no colour literal",
+            fact.fact.place()
+        )),
+    }
+}
+
+/// Whether the accents `a` and `b` are one literal, as written but for
+/// the case of their letters.
+fn same_accent(a: &str, b: &str) -> bool {
+    a.trim().eq_ignore_ascii_case(b.trim())
+}
+
+/// One accent-run comparison: `value` of the fact at `place` for `key`
+/// evaluated in `resolved`'s root scope beside the key's own value, at
+/// `tolerance`; a value whose evaluation reaches a synthetic layer's step
+/// is skipped and listed as the normal run lists it (S17, ADD-A128).
+fn accent_compare(
+    resolved: &Resolved,
+    root: &RootInputs,
+    (name, key): (&str, &FactKey),
+    (value, tolerance): (&FactValue, &Tolerance),
+    place: &str,
+    combination: &dyn Fn() -> String,
+    report: &mut Report,
+) {
+    match resolved.global_synthetic(key, Some(value), root, &[]) {
+        Ok(true) => {
+            let entry = report
+                .synthetic
+                .entry(place.to_owned())
+                .or_insert_with(|| (name.to_owned(), 0));
+            entry.1 += 1;
+        }
+        Ok(false) => {
+            let outcome = resolved.compare_global(key, value, root, tolerance);
+            record(outcome, name, place, report, combination, Pass::Accent);
+        }
+        Err(unread) => record(Err(unread), name, place, report, combination, Pass::Accent),
+    }
+}
+
+/// Each fact of `pair` compared in `resolved` (S17 *The accent run*); a
+/// pending one listed with its id and skipped, a fact whose `when` does not
+/// hold there failed. With `counted`, each fact compared adds to
+/// `Report::accent_run`.
+fn compare_pair(
+    pair: &Pair<'_>,
+    resolved: &Resolved,
+    root: &RootInputs,
+    combination: &dyn Fn() -> String,
+    counted: bool,
+    report: &mut Report,
+) {
+    for measured in &pair.facts {
+        let place = measured.fact.place();
+        if !resolved.conditions_hold(&measured.when) {
+            report.fail(format!(
+                "{place}: its `when` does not hold where its pair is resolved, {}",
+                combination()
+            ));
+            continue;
+        }
+        let Some(value) = &measured.value else {
+            if let Stated::Pending(id) = &measured.fact.stated {
+                let entry = report
+                    .pending
+                    .entry(place)
+                    .or_insert_with(|| (id.clone(), measured.fact.key.clone(), 0));
+                entry.2 += 1;
+            }
+            continue;
+        };
+        accent_compare(
+            resolved,
+            root,
+            (&measured.fact.key, &measured.key),
+            (value, &measured.tolerance),
+            &place,
+            combination,
+            report,
+        );
+        if counted {
+            report.accent_run += 1;
+        }
+    }
+}
+
+/// The accent run (S17 *The accent run*, ADD-A142) of `run`'s preset over
+/// its platform's accent-run facts, run whole by the first shard alone:
+///
+/// - each pair (a scheme file and an accent) is resolved under the scheme
+///   its facts name, with that accent set through `set_accent`: over the
+///   preset's own scheme inputs for one of its own files ([`own_files`]),
+///   else with the palette `from_port` converts from the file applied,
+///   the file read from `run.sources`; its facts compared;
+/// - each own file is resolved with the preset's no-accent accent
+///   ([`no_accent`]) set, and every key the pairs state compared with the
+///   preset's no-accent facts that apply there;
+/// - each other file is also resolved with no accent set, its port's own
+///   roles showing (*A port's own roles*), and compared with its no-accent
+///   pair; a key of its pairs with no fact there, stated or pending, fails
+///   as a key with no fact (R4).
+///
+/// A pair naming an own file under the other scheme fails, as does a file
+/// the sources lack or hold at another pin, never comparing nothing.
+pub fn accent_run(run: &AccentRun<'_, '_>, report: &mut Report) {
+    let started = Instant::now();
+    let pairs = pairs(run, report);
+    if pairs.is_empty() {
+        return;
+    }
+    let own = own_files(run, report);
+    // The no-accent accent at each scheme a pair or an own file names.
+    let mut markers: BTreeMap<&str, String> = BTreeMap::new();
+    for scheme in pairs
+        .iter()
+        .map(|pair| pair.scheme.as_str())
+        .chain(own.keys().map(String::as_str))
+    {
+        if markers.contains_key(scheme) {
+            continue;
+        }
+        match no_accent(run, scheme) {
+            Ok(accent) => {
+                markers.insert(scheme, accent);
+            }
+            Err(why) => report.fail(format!("the no-accent accent at scheme:{scheme}: {why}")),
+        }
+    }
+    // Each file that is not the preset's own, read once; a pair naming an
+    // own file under the other scheme refused.
+    let mut ports: BTreeMap<&str, Vec<u8>> = BTreeMap::new();
+    let mut refused: BTreeSet<&str> = BTreeSet::new();
+    let mut others: Vec<(&str, &str)> = Vec::new();
+    let mut kept: Vec<&Pair<'_>> = Vec::new();
+    for pair in &pairs {
+        let file = pair.scheme_file.as_str();
+        if own.get(&pair.scheme).map(String::as_str) == Some(file) {
+            kept.push(pair);
+            continue;
+        }
+        if let Some((scheme, _)) = own.iter().find(|(_, own)| own.as_str() == file) {
+            report.fail(format!(
+                "the pair {file} {} names the preset's own file at scheme:{scheme} under \
+                 scheme:{} (S17, ADD-A142)",
+                pair.accent, pair.scheme
+            ));
+            continue;
+        }
+        if !others.contains(&(file, pair.scheme.as_str())) {
+            others.push((file, &pair.scheme));
+        }
+        if !ports.contains_key(file) && !refused.contains(file) {
+            match run.sources.read(run.root, file) {
+                Ok(bytes) => {
+                    ports.insert(file, bytes);
+                }
+                Err(error) => {
+                    report.fail(error);
+                    refused.insert(file);
+                }
+            }
+        }
+        if ports.contains_key(file) {
+            kept.push(pair);
+        }
+    }
+    // Every pair through set_accent, each own file's no-accent row, and
+    // each other file's no-accent pair with no accent set, its keys with
+    // no fact there, stated or pending, failed.
+    let mut jobs: Vec<AccentJob<'_, '_>> = kept.into_iter().map(AccentJob::Pair).collect();
+    for (scheme, file) in &own {
+        if let Some(accent) = markers.get(scheme.as_str()) {
+            jobs.push(AccentJob::Own {
+                scheme,
+                file,
+                accent,
+            });
+        }
+    }
+    for (file, scheme) in others {
+        let Some(marker) = markers.get(scheme) else {
+            continue;
+        };
+        let none = pairs.iter().find(|pair| {
+            pair.scheme_file == file && pair.scheme == scheme && same_accent(&pair.accent, marker)
+        });
+        let mut keys: Vec<&str> = Vec::new();
+        for measured in pairs
+            .iter()
+            .filter(|pair| pair.scheme_file == file)
+            .flat_map(|pair| &pair.facts)
+        {
+            if !keys.contains(&measured.fact.key.as_str()) {
+                keys.push(&measured.fact.key);
+            }
+        }
+        for name in keys {
+            let held = none
+                .is_some_and(|pair| pair.facts.iter().any(|measured| measured.fact.key == name));
+            if !held {
+                report.fail_in(
+                    ("Accent".to_owned(), name.to_owned(), String::new()),
+                    format!("`{name}` has no fact under {file} with no accent set under [\"scheme:{scheme}\"]"),
+                );
+            }
+        }
+        if let Some(none) = none
+            && ports.contains_key(file)
+        {
+            jobs.push(AccentJob::Port(none));
+        }
+    }
+    // The keys the pairs state: the roles each own file's no-accent row
+    // compares.
+    let mut stated: Vec<&str> = Vec::new();
+    for measured in pairs.iter().flat_map(|pair| &pair.facts) {
+        if !stated.contains(&measured.fact.key.as_str()) {
+            stated.push(&measured.fact.key);
+        }
+    }
+    let root = root_inputs();
+    let found = parallel(&jobs, |job| {
+        let mut found = Report::default();
+        job.check(run, &ports, &stated, &root, &mut found);
+        found
+    });
+    for found in found {
+        report.merge(found);
+    }
+    super::timing::print(
+        &format!("{} accent run", run.preset.id()),
+        started.elapsed(),
+    );
+}
+
+/// One resolution of the accent run ([`accent_run`]) and what it compares.
+enum AccentJob<'p, 'f> {
+    /// A pair, its accent set through `set_accent`, over its file's port
+    /// where the file is not the preset's own.
+    Pair(&'p Pair<'f>),
+    /// The preset's own file `file` at `scheme` with the no-accent accent
+    /// `accent` set, against the preset's no-accent facts.
+    Own {
+        scheme: &'p str,
+        file: &'p str,
+        accent: &'p str,
+    },
+    /// A file's no-accent pair with no accent set, its port's own roles
+    /// showing (*A port's own roles*).
+    Port(&'p Pair<'f>),
+}
+
+impl AccentJob<'_, '_> {
+    /// The job's resolution, its comparisons recorded in `report`: `ports`
+    /// holds the files that are not the preset's own, `stated` the keys an
+    /// own file's row compares.
+    fn check(
+        &self,
+        run: &AccentRun<'_, '_>,
+        ports: &BTreeMap<&str, Vec<u8>>,
+        stated: &[&str],
+        root: &RootInputs,
+        report: &mut Report,
+    ) {
+        let (scheme, port, accent) = match self {
+            AccentJob::Pair(pair) => (
+                pair.scheme.as_str(),
+                ports.get(pair.scheme_file.as_str()),
+                Some(pair.accent.as_str()),
+            ),
+            AccentJob::Own { scheme, accent, .. } => (*scheme, None, Some(*accent)),
+            AccentJob::Port(pair) => (
+                pair.scheme.as_str(),
+                ports.get(pair.scheme_file.as_str()),
+                None,
+            ),
+        };
+        let vector = vec![format!("scheme:{scheme}")];
+        let conditions = match conditions(&vector, None) {
+            Ok(conditions) => conditions,
+            Err(Unread::NotHeld(why) | Unread::Refused(why)) => {
+                report.fail(format!("the conditions {vector:?} are refused: {why}"));
+                return;
+            }
+        };
+        let resolved = match run
+            .preset
+            .resolve_accent(&conditions, port.map(Vec::as_slice), accent)
+        {
+            Ok(resolved) => resolved,
+            Err(why) => {
+                report.fail(format!(
+                    "Accent: {} does not resolve under {vector:?}: {why}",
+                    run.preset.id()
+                ));
+                return;
+            }
+        };
+        match self {
+            AccentJob::Pair(pair) => {
+                let combination = || {
+                    format!(
+                        "{} with the accent {} under {vector:?}",
+                        pair.scheme_file, pair.accent
+                    )
+                };
+                compare_pair(pair, &resolved, root, &combination, true, report);
+            }
+            AccentJob::Port(pair) => {
+                let combination =
+                    || format!("{} with no accent set under {vector:?}", pair.scheme_file);
+                compare_pair(pair, &resolved, root, &combination, false, report);
+            }
+            AccentJob::Own { file, accent, .. } => {
+                let combination = || format!("{file} with the accent {accent} under {vector:?}");
+                compare_own(run, &resolved, stated, root, &combination, report);
+            }
+        }
+    }
+}
+
+/// Each key of `stated` compared in `resolved`, an own file with the
+/// no-accent accent set, with the preset's no-accent fact that applies
+/// there (S17 *The accent run*); a key with none fails (R4), a pending one
+/// is listed with its id.
+fn compare_own(
+    run: &AccentRun<'_, '_>,
+    resolved: &Resolved,
+    stated: &[&str],
+    root: &RootInputs,
+    combination: &dyn Fn() -> String,
+    report: &mut Report,
+) {
+    for name in stated {
+        let fact = run
+            .keys
+            .iter()
+            .find(|key| key.name == *name)
+            .and_then(|key| {
+                let fact = applying(
+                    &key.facts,
+                    |when| resolved.conditions_hold(when),
+                    report,
+                    combination,
+                );
+                fact.map(|fact| (key, fact))
+            });
+        let Some((key, prepared)) = fact else {
+            report.fail_in(
+                ("Accent".to_owned(), (*name).to_owned(), String::new()),
+                format!("`{name}` has no fact under {}", combination()),
+            );
+            continue;
+        };
+        match (&prepared.fact.stated, &prepared.value) {
+            (Stated::Pending(id), _) => {
+                let entry = report
+                    .pending
+                    .entry(prepared.fact.place())
+                    .or_insert_with(|| (id.clone(), (*name).to_owned(), 0));
+                entry.2 += 1;
+            }
+            (Stated::Value(_), Some(value)) => accent_compare(
+                resolved,
+                root,
+                (name, &key.key),
+                (
+                    value,
+                    &prepared
+                        .tolerance
+                        .drawn_by(drawing(&run.platform.name, None)),
+                ),
+                &prepared.fact.place(),
+                combination,
+                report,
+            ),
+            (Stated::Value(_), None) => report.fail(format!(
+                "{}: `{name}`'s fact is a set-whole block's leaf, which the accent run does not \
+                 compose, {}",
+                prepared.fact.place(),
+                combination()
+            )),
         }
     }
 }

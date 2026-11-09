@@ -1,0 +1,28 @@
+# Synthetic facts (S17 *The accent run*): the pairs of a file that is not the preset's own and that the fixture's
+# sources/ lacks (probe@1 colors/Missing.colors): the run fails naming it, never comparing nothing.
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#123456"
+rows = []
+scheme_file = "probe@1 colors/Missing.colors"
+accent = "#123456"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#070809"
+rows = []
+scheme_file = "probe@1 colors/Missing.colors"
+accent = "#00000000"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"

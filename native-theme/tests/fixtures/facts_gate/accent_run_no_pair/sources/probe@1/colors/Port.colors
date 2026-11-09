@@ -1,0 +1,6 @@
+# A synthetic scheme file written for the facts gate's accent-run fixtures (S17 *The scheme files read*): no
+# platform's, no copy of a pinned file. Each colour stated differs from kde-breeze's own.
+[Colors:View]
+BackgroundNormal=1,2,3
+ForegroundNormal=4,5,6
+DecorationFocus=7,8,9
