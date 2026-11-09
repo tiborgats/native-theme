@@ -987,6 +987,30 @@ fn input_cycle_refused() {
     );
 }
 
+/// An input reading a role's active value, read by that role's own rule,
+/// is no cycle (S12, ADD-A144: a port's inactive input under the inactive
+/// rule): `active(…)` reads the role's bases alone, which do not read the
+/// rule. One the role's bases read back is.
+#[test]
+fn an_input_reading_its_roles_active_value_under_its_rule() {
+    let input = "[inputs.accent]\nlight = \"= active(role.global.accent)\"\n";
+    let rule = "[[rules]]\nwhen = { conditions = [\"scheme:light\"] }\ntarget = \"colors\"\n\
+                set = { global.accent = \"= mix(input.accent, #000000, 0.5)\" }";
+    let theme = resolved(&[BASE, &format!("{input}{rule}")], 1.0);
+    let found = theme.evaluate_role(&scope(), &reference("role.global.accent"));
+    assert_eq!(found.refusals, []);
+    assert!(found.value.is_some(), "{:?}", found.value);
+    let read_back = format!("{input}[colors.light.global]\naccent = \"= input.accent\"");
+    let theme = resolved(&[BASE, &read_back], 1.0);
+    let found = theme.evaluate_role(&scope(), &reference("role.global.accent"));
+    assert_eq!(found.value, None);
+    assert!(
+        matches!(found.refusals.as_slice(), [Refusal::Cycle { .. }]),
+        "{:?}",
+        found.refusals
+    );
+}
+
 /// Task 11a's review: `active(…)` reads every place it reaches from the
 /// bases alone, before any rule, and follows no `Role` binding (S2.2).
 #[test]

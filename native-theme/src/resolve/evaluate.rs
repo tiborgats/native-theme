@@ -558,8 +558,12 @@ pub(crate) struct Cx<'t> {
     /// last, entered before their fonts, each with whether reading it read a
     /// synthetic layer's step; read under `DynamicType` alone (S9.4).
     roles: Vec<(Option<TextRole>, bool)>,
-    /// The places whose references are being followed.
-    visiting: Vec<(Target, String)>,
+    /// The places whose references are being followed, each with whether
+    /// it is read from its bases alone (inside `active(…)`): a role's
+    /// active value read while the role itself is evaluated is no cycle
+    /// (S12, ADD-A144: a port's `input.inactive.<set>.<key> =
+    /// active(role.<set>.<role>)` under the role's inactive rule).
+    visiting: Vec<(Target, String, bool)>,
     /// Inside an expression on a `Font.size`: font sizes read converted, not
     /// yet scaled (S9.4).
     unscaled: bool,
@@ -1224,7 +1228,8 @@ impl<'t> Cx<'t> {
         bases_only: bool,
         f: impl FnOnce(&mut Self, &[Fold<'t>]) -> Option<R>,
     ) -> Option<R> {
-        let key = (target, path.join("."));
+        let bases_only = bases_only || self.bases_only;
+        let key = (target, path.join("."), bases_only);
         if self.visiting.contains(&key) {
             self.refusals.push(Refusal::Cycle {
                 target,
@@ -1239,7 +1244,6 @@ impl<'t> Cx<'t> {
             });
             return None;
         }
-        let bases_only = bases_only || self.bases_only;
         let folds = self.locate(target, &path, bases_only);
         // The place evaluated: the one being evaluated where there is one,
         // else (a reference read alone, a role's) the one followed.
@@ -1439,7 +1443,11 @@ impl<'t> Cx<'t> {
                 };
                 // An input reading itself, directly or through others, is a
                 // cycle (S12), refused as any other.
-                let key = (Target::Roles, format!("input.{}", segments(path).join(".")));
+                let key = (
+                    Target::Roles,
+                    format!("input.{}", segments(path).join(".")),
+                    self.bases_only,
+                );
                 if self.visiting.contains(&key) {
                     self.refusals.push(Refusal::Cycle {
                         target: key.0,
