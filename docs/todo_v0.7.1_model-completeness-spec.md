@@ -4775,10 +4775,12 @@ decides where each read goes:
   `contrast.increased` bases at both schemes, with no per-scheme value (S9.2's exception), placed as with the flag
   off, and the roles as reader rules under `scheme:<s>`, `contrast_increased` and `preset:<own>`.
 The slots it does not read are slots the platform gives none at (above), no `Fallback`: with the flag off, the
-increased-contrast slots, where an application's `set_contrast(Some(Increased))` shows the reader's per-scheme inputs
+increased-contrast slots, where an application's `set_contrast(ContrastChoice::Increased)` shows the reader's per-scheme inputs
 and the preset's increased-contrast rules on the roles (every layer's bases apply before every layer's rules, S8);
-with it on, the slots without a contrast, then in force nowhere (`set_contrast(None)` takes the reader's contrast,
-S16), and the high-contrast slots, which only `set_contrast(Some(High))` reaches and where the preset's values show,
+with it on, the slots without a contrast, which only `set_contrast(ContrastChoice::Standard)` reaches (`System`
+takes the reader's contrast, S16; ADD-A146), and the high-contrast slots, which only
+`set_contrast(ContrastChoice::High)` reaches, at both of which the preset's values show, AppKit giving the reader
+no value without the contrast in force and
 macOS having no high contrast of its own. Rejected: the increased-contrast appearance names, through their `extern`
 statics or as strings (AppKit returns no appearance for them; their documented use,
 `bestMatchFromAppearancesWithNames:`, tells only what the flag tells); the preset's increased-contrast values copied
@@ -5730,18 +5732,60 @@ pub enum PlacementSide { Below, Above, Start, End, AtPointer }
 pub enum PlacementAlign { Start, Center, End }
 pub enum AnchorWidth { Content, AtLeastAnchor, Anchor }
 pub enum HostArea { Window, ClientArea, Overlay }
-pub struct PlacementInput { pub anchor: Rect, pub size: Size, pub window: Rect, pub work_area: Rect,
-                             pub pointer: Option<Point>, pub selected_item: Option<Rect>,
+pub struct PlacementInput { pub anchor: Rect, pub size: Size, pub window: Rect,
+                             pub host: Rect,                    // the area `params.host` names (below)
+                             pub work_area: Option<Rect>,       // None: the toolkit does not give it
+                             pub pointer: Option<Point>,
+                             pub selected_item: Option<Rect>,   // relative to the element's origin (below)
                              pub keyboard: Option<Rect>, pub direction: Direction }
-pub fn place(strategy: &PlacementStrategy, params: &ResolvedPlacementParams, input: &PlacementInput) -> Rect;
+pub struct Placed { pub frame: Rect,                            // the element's rect, in the input's space
+                    pub side: PlacementSide,                    // the side it ended on, after `flip`
+                    pub tip: Option<Point> }                    // where its tail points, in that space; None:
+                                                                // the strategy draws none
+pub fn place(strategy: &PlacementStrategy, params: &ResolvedPlacementParams, input: &PlacementInput) -> Placed;
 // ResolvedPlacementParams: PlacementParams with every Value evaluated, as `values()` returns it (S8)
 ```
 
 `native_theme::placement`, pure functions, each to its platform's source (cited in its doc comment); the closed
 list is the traceability's placement rows, each implemented (R16). `params` are physical as the query returns them
 (S2.4), so `place()` does not mirror them again; `direction` is the element's, for what a strategy's source reads of
-the direction beyond those parameters. An optional input a strategy needs and lacks is
-taken as: no pointer, the anchor's start corner; no selected item, the first item; no keyboard, none shown.
+the direction beyond those parameters.
+
+**The input** (ADD-A146). Every rect and point of a `PlacementInput` is in one coordinate space of the connector's
+choosing, its window's or its screen's, in logical pixels with y growing downward, and `place()` answers in that
+space: the strategies read differences of the rects only, so either space gives the same placement. `anchor` is the
+rect the element is placed against, `size` the element's own, `window` the window's, and `host` the rect of the area
+the element is placed in, the one `params.host` names: the window's (then `window` again), its client area (the window less its title or header bar)
+or the overlay the element is presented in (AdwToastOverlay's, GN-2.12), which the connector alone knows; it reads
+`params.host`, which it passes, and fills the one rect (rejected: a rect per area, of which a call reads one, the
+overlay's an `Option` beside). `work_area` is the screen's work area in the same space, `None` where the toolkit
+does not give the window's place on its screen. `selected_item` is the rect, relative to the element's origin, as
+the element is not placed yet, of the item a strategy with `over_selected_item` puts over the anchor: the selected
+item's, or the first item's where none is selected, which the connector passes as it lays the items out (`place()`
+holds no item). `max_visible_items` is the connector's to apply as it sizes the element, `size` being the size with
+at most that many items shown: `place()` is given no item's extent. An optional input a strategy needs and lacks is
+taken as: no pointer, the anchor's start corner; no selected item (an element with no item), a rect of zero height
+along the element's top edge; no keyboard, none shown; no work area, the window's rect.
+
+**The answer** (ADD-A146). `Placed.frame` is the element's rect; `side` the side it ended on, the stated one or its
+opposite where `flip` turned it, physical as the parameters are; `tip` the point its tail points from, on the
+frame's edge, where the strategy's source computes one with the placement (GtkPopover keeps the final position
+after a flip and derives the tail's coordinates from it and the pointing rect, `gtk@4.24.1 gtk/gtkpopover.c:430-444`,
+`:1305-1394`), else `None`. So a connector draws a popover's `arrow` part from the answer. Rejected: a bare `Rect`
+(each connector would find the side by comparing rects and write the tail's rule again, where R16 has each
+strategy written once).
+
+**The keyboard strategies** (ADD-A146). A `KeyboardAvoid` member places what it moves for the on-screen keyboard,
+the thing whose `keyboard_avoidance` value states it: `anchor` is that thing's rect before the keyboard shows and
+`size` its size, `host` the area it moves in, `selected_item` the focused field's rect in it where the member's
+source reads one, `keyboard` the keyboard's rect. `frame` is its rect while the keyboard shows, `anchor`'s where
+`keyboard` is `None`; `side` is the stated one and `tip` `None`. By member, each to its source as any strategy:
+`WinUiContentDialog` and `UiKitAlert`, the dialog; `UiKitSheet`, the sheet; `AndroidPan`, `AndroidResize` and
+`AndroidInsetsAnimation`, the window's content, panned, resized, or moved by the insets animation (its end state:
+the motion between is the platform's, the catalogue's *placement strategies*); `WinUiScrollIntoView`, the content
+of the focused field's nearest scroll container, its `host` that container's viewport, the area it scrolls in,
+which no `HostArea` names. What each computes from them is its source's, cited in its doc comment and checked by its
+vectors (below).
 
 **Checked against their references** (ADD-A113): each strategy, in the `placement` module, has a vector table as
 S2.2's platform functions do, generated by the reference where one runs (the GTK and Qt containers, Compose's code, a
@@ -5750,8 +5794,9 @@ size and window in, frame out, each with its evidence); `scripts/check_function_
 
 ## S14. Palettes (R19)
 
-A palette is a file in S11's format with `[preset] kind = "palette"`: colour-role bases, input bases and colour
-tokens for the schemes its project defines (R19). Two sources, each stated in the file's header:
+A palette is a file in S11's format with `[preset] kind = "palette"`: colour-role bases, input bases, colour rules
+and `token.kde`, the one token group it may state (S11), for the schemes its project defines (R19). A bundled
+palette is one variant its project publishes (S19.1). Two sources, each stated in the file's header:
 
 - **native-theme's mapping** (the default): each role it covers maps to a colour the project publishes, or to a
   derivation of those (S2.2); the file's `[palette.sources]` table names, for each colour it states, by the colour's
@@ -5762,10 +5807,18 @@ tokens for the schemes its project defines (R19). Two sources, each stated in th
   `Palette::from_port(file, scheme) -> Result<Palette, PortError>` converts a KDE `.colors` file mechanically, and
   that palette is used on `kde-breeze` in place of the mapping. A `.colors` file does not say whether it is light or
   dark, so the caller names its one scheme: each bundled palette states it (Catppuccin Latte light, its other flavours
-  and Dracula dark, R19), and an application loading a port names it (no luminance guess).
+  and Dracula dark, R19), and an application loading a port names it (no luminance guess). Where the project
+  publishes a scheme file per accent (Catppuccin's, one for each flavour and accent, R19), a bundled palette's port
+  is the file of its own variant, the flavour with the one accent the palette has (S19.1; ADD-A146).
 
 A palette's bases name typed roles, the `accent` input and the declared inputs of the presets it has sections for; a
-typed role or surface set the current preset does not declare is skipped, not refused (S12). On `windows-11`,
+typed role or surface set the current preset does not declare is skipped, not refused (S12). A role a mapping states
+is the mapping's under every condition it applies in (ADD-A146): where a `Colors` rule of the preset would set that
+role there to a value that follows nothing the mapping states (`adwaita`'s inactive window's sidebar, a literal), the
+mapping states the role under that condition by a colour rule of its own, conditioned `preset:<id>`, a reference or
+a derivation as its rules are (S11: `= active(role.<set>.<role>)` keeps its base), and `apply_palette` and
+`set_preset` refuse a mapping that leaves such a rule standing (S12's check, on every preset; the palette run, which
+resolves the base conditions, does not see it, S17). On `windows-11`,
 `macos-*` and `ios-*`, whose accent derivations are not published (R2.6), the mapping states the preset's accent
 inputs (S9.1) in a per-preset section (`[for_preset.windows-11.inputs]`), each labelled as native-theme's pick (R19), and
 `apply_palette` refuses a mapping that lacks one of the current preset's at one of the palette's schemes (its
@@ -5859,12 +5912,20 @@ converts to the `kde_scheme.*` inputs, the colour roles and `token.kde`), else t
 preset and scheme: where a preset has a port with fewer schemes than the mapping (a one-scheme `.colors` file beside
 a two-scheme mapping), the port serves its scheme and the mapping the palette's others, so each scheme has one
 source and the palette applies under every scheme it declares; the port's `token.kde` then applies under its scheme
-only (a `Tokens` rule under that scheme), the mapping keeping the preset's under the others. It refuses a palette
-under a scheme it lacks (`Err(SchemeNotInPalette)`); when the system scheme changes to one the palette lacks, the
-palette is suspended, the theme is the preset with the reader's values, and the palette applies again when the
-scheme returns (R19); `ResolvedTheme::palette_status()` reports `Applied`, `Suspended` or `SkippedForContrast` (`None`:
-no palette). A palette carries no icon set. A palette states its schemes in its `[declare] schemes` (S10);
-`Theme::pick(Some(s))` of a scheme the applied palette lacks is refused like `apply_palette`, while `pick(None)`, which
+only (a `Tokens` rule under that scheme), the mapping keeping the preset's under the others. A palette that lacks
+the scheme in force is refused where the application picked that scheme and suspended where the scheme is followed
+(ADD-A146): `apply_palette` is `Err(SchemeNotInPalette)` only while `pick(Some(s))` holds a scheme the palette
+lacks, two choices of the application's that contradict; while the scheme is followed (`pick(None)`: the reader's or
+the stand-in's, else the one `from_preset` was given, S16) it accepts the palette and suspends it, the theme being
+the preset with the reader's values, as when the system scheme changes to one the palette lacks, and the palette
+applies when the scheme in force is one it has (R19: it stays chosen, so the application need not watch the scheme
+to apply it again); `ResolvedTheme::palette_status()` reports `Applied`, `Suspended` or `SkippedForContrast` (`None`:
+no palette). Rejected: refusing it under a followed scheme too (the outcome then depends on the order at start-up:
+an application that follows the system and starts in light with a dark-only palette gets an error and no palette,
+and must watch the scheme to apply it later, which R19 says it need not); never refusing, a picked scheme
+suspending it too (two choices of the application's own, which no system change resolves, where the error says so
+at once). A palette carries no icon set. A palette states its schemes in its `[declare] schemes` (S10);
+`Theme::pick(Some(s))` of a scheme the applied palette lacks is refused (`Err(SchemeNotInPalette)`), while `pick(None)`, which
 follows the system's scheme, suspends the palette while that scheme is one it lacks, as a system change does; a
 `set_preset` to a preset whose accent inputs the applied mapping's per-preset section lacks at one of the palette's
 schemes is refused (`Err(AccentInputsMissing)`), as `apply_palette` refuses it; a palette that has neither a
@@ -5876,7 +5937,8 @@ application removes the palette first (`apply_palette(None)`) to switch. A mappi
 `token.kde`: the preset's applies. The facts gate checks each mapped colour against the project's
 published colours (pinned like any source, S17) and skips the picks: the colours are palette facts (S17), and the
 gate's palette run resolves every bundled palette over each preset it has a source for and compares each colour its
-`[palette.sources]` names (a role, input or token colour, by its TOML path) with that fact; a colour stated as a
+`[palette.sources]` names (a role, input or token colour, by its TOML path) with that fact, under the schemes, on
+the presets and for the paths S17's *The palette run* states; a colour stated as a
 derivation names none, its operands being checked where they are mapped (ADD-A115).
 
 ## S15. System control rendering (R11)
@@ -5884,10 +5946,12 @@ derivation names none, its operands being checked where they are mapped (ADD-A11
 ```rust
 pub enum SystemControl { AppKitCheckbox, AppKitRadio, AppKitDisclosure, AppKitPushDisclosure, AppKitPopUp }
 pub struct ControlImage { pub width: u32, pub height: u32, pub pixels: Vec<[f32; 4]>,  // extended sRGB, straight
-                          pub arrow: Option<Rect> }                                     // alpha (S2.1)
+                          pub alignment: Rect }       // alpha (S2.1); the control's alignment rect inside the
+                                                      // image, in logical px from its top-left corner (below)
 pub struct SystemAppearance { pub scheme: Scheme, pub increased_contrast: bool }   // AppKit's four appearances
 pub fn render_system_control(control: SystemControl, states: StateFlags, size: ControlSize,
-                             appearance: SystemAppearance, key_window: bool, scale: f32,
+                             appearance: SystemAppearance, key_window: bool, direction: Direction,
+                             scale: f32,
                              width: Option<Px>) -> Option<ControlImage>;   // width: a content-sized control's
 ```
 
@@ -5895,12 +5959,37 @@ It returns `None` for a `ControlSize` AppKit has no size for on the running macO
 the facts', S17), as the preset declares no such size there (S7.3).
 
 What each image covers: `AppKitCheckbox`, `AppKitRadio`, the box and mark; `AppKitDisclosure`, the triangle;
-`AppKitPushDisclosure`, the bezel and chevron; `AppKitPopUp`, the whole button at `width`, its arrow area being the
-cell's `indicatorRect` (`ControlImage.arrow`). The rendering uses the system's accent; an accent the
+`AppKitPushDisclosure`, the bezel and chevron; `AppKitPopUp`, the whole button at `width`. The image is the control
+as AppKit draws it, and `ControlImage.alignment` the control's alignment rect inside it: AppKit holds a control's
+frame and its alignment rect apart (`alignmentRectForFrame:`, `alignmentRectInsets`, `NSLayoutConstraint.h:297-302`
+at xcode@26.6), and the facts measure a control's box from the alignment rect (S17's evidence rule, AppKit's
+padding), so the connector lays the image with that rect over the box of the parts it replaces (ADD-A146). The
+pop-up's arrow area is no field of the image: the connector places it from the resolved values, its width
+`arrow_area.min_width` and its inset from the image's end `body.padding`'s end (the catalogue's `combo_box` layout,
+MAC-CB01's measurements), the SDK declaring no rect for it (`NSPopUpButtonCell.h:95` declares `arrowPosition` alone,
+`NSCell.h:154-156` the image, title and drawing rects) (ADD-A146; rejected: `ControlImage.arrow` from the cell's
+`indicatorRect`, a name no header of the SDK declares, at xcode@26.6 or xcode@16.4; the cell's frame less
+`titleRectForBounds:`, a second source for a place the facts already give, to be measured equal before it could
+stand). The rendering uses the system's accent; an accent the
 application or a palette sets cannot reach it, which the connector's contract records as its limit (R11, R23).
 
+**The parameters** (ADD-A146). `states` sets the cell's own state and nothing more: `Checked` its `state` on and
+`Indeterminate` mixed, else off (`NSControlStateValueOn`, `Mixed`, `Off`, `NSCell.h:71-74`, `:111`), which on the two
+disclosure controls `Open` sets on; `Pressed` its `highlighted` (`:127`); `Disabled` its `enabled` off (`:117`). The
+cell declares no state for another flag: the focus ring is a drawing of its own beside the cell's
+(`drawFocusRingMaskWithFrame:inView:`, `:225`, against `drawWithFrame:inView:`, `:164`), the part's `focus` (S2.10),
+and whether AppKit draws any of the five differently under the pointer is unmeasured, pending on a register row
+(the macOS lane's, proposed with this batch), a flag it finds joining this list. `direction` sets the cell's
+`userInterfaceLayoutDirection` (`NSCell.h:197-199`), which otherwise follows the application's (`NSView.h:354`) and
+not the element's (S8); whether AppKit mirrors the pop-up's arrow side and the disclosure triangle by it is the
+same row's reading, the parameter deciding the image either way.
+
 On macOS's main thread it renders; anywhere else, and off macOS, it returns `None`, so connectors need no `cfg` of
-their own. Cached per (control, states, size, appearance, key, scale, width). **Approved by the maintainer (2026-10-29):** rendering through AppKit uses `unsafe` objc2 calls under the same
+their own. Cached per (control, states, size, appearance, key, direction, scale, width), and emptied whenever the
+reader reads again (`reload_reader`, S16, which the application calls on the watcher's notification): AppKit's
+drawing follows settings the key does not hold, the system's accent among them, so a cached checkbox would keep the
+old accent while every role follows the new one (ADD-A146; rejected: the accent in the key, one of the settings the
+drawing follows, not all of them). **Approved by the maintainer (2026-10-29):** rendering through AppKit uses `unsafe` objc2 calls under the same
 exception as the SF Symbols loader (`native-theme/src/sficons.rs`): module-scoped, each block with its safety
 argument. A glyph naming a system control
 (`GlyphSource::SystemControl { control, replaces }`) states the parts the rendering replaces (the checkbox's box and
@@ -5977,6 +6066,9 @@ impl Theme {
     pub fn preset(&self) -> PresetId;                     // the current preset
     pub fn flavor(&self) -> Option<Key>;                  // the flavour in force: set, or the preset's default;
                                                           // None on a preset that declares no flavours (R1.6)
+    pub fn flavors(&self) -> Vec<Key>;                    // the current preset's declared flavours, its default
+                                                          // first (S10), the keys `set_flavor` accepts; empty
+                                                          // where it declares none (ADD-A146)
     pub fn scheme(&self) -> Scheme;                       // the scheme in force: `pick`ed, else the reader's or
                                                           // stand-in's, else the one `from_preset` was given
     pub fn version_match(&self) -> Option<VersionMatch>; // how the running OS version relates to the current
@@ -5992,8 +6084,11 @@ impl Theme {
                                                           // error (S1)
     pub fn set_accent(&mut self, accent: Option<Accent>) -> Result<(), LayerError>;   // None: the system's again
     pub fn apply_palette(&mut self, palette: Option<Palette>) -> Result<(), LayerError>;  // None: removes it;
-                                                          // refused as S14 says (a scheme it lacks, no source for
-                                                          // the preset, missing accent inputs)
+                                                          // refused as S14 says (a picked scheme it lacks, no
+                                                          // source for the preset, missing accent inputs, a preset
+                                                          // colour rule left standing over a role it states);
+                                                          // under a followed scheme it lacks, accepted and
+                                                          // suspended (ADD-A146)
     pub fn reader_status(&self) -> ReaderStatus;         // `Fallback` where a read succeeded with a source standing
                                                           // in (S9.1; the KDE palette's colours file, S9.3) or an
                                                           // accent group left out after a failed read (S9.3; not
@@ -6001,14 +6096,18 @@ impl Theme {
                                                           // `from_system` returns the theme then
     pub fn reload_reader(&mut self) -> ReaderStatus;     // re-read the system into the reader layer in place
                                                           // (a failure keeps the old layer); the application calls it
-                                                          // from its event loop on the watcher's `on_theme_change`
+                                                          // from its event loop on the watcher's `on_theme_change`;
+                                                          // it empties S15's rendering cache
     pub async fn reload_reader_async(&mut self) -> ReaderStatus;   // the same, awaited (as `from_system_async`)
     pub fn system(&self) -> Option<&ReaderState>;         // the conditions the reader or stand-in reports, for what
                                                           // an application acts on itself (Windows' ShowSounds,
                                                           // W-P3-11†); None without either
-    pub fn set_contrast(&mut self, contrast: Option<Contrast>) -> Result<(), LayerError>;  // None: the reader's
+    pub fn set_contrast(&mut self, contrast: ContrastChoice) -> Result<(), LayerError>;   // below
     pub fn resolve(&self, window: &mut WindowState, conditions: &WindowConditions) -> Resolution;   // S8
 }
+pub enum ContrastChoice { System,       // the reader's or stand-in's contrast (none without either), the default
+                          Standard,     // no contrast condition, whatever the reader reports
+                          Increased, High }   // that `Contrast`, whatever the reader reports (ADD-A146)
 impl ResolvedTheme {
     pub fn icon(&self, scope: &Scope, id: IconId<'_>, style: &ResolvedIconStyle) -> Option<IconData>;
                                                           // from `token.icons`' set, theme and theme fallback (S4.5),
@@ -6021,13 +6120,15 @@ impl ResolvedTheme {
 }
 impl PresetId {
     pub fn all() -> &'static [PresetId];                  // every bundled preset, in a stable order
-    pub fn for_platform() -> Vec<PresetId>;               // those whose platform is the running one, and `material-3`
-    pub fn for_system() -> PresetId;                      // the preset the platform, the detected desktop and the OS
+    pub fn for_platform() -> Vec<PresetId>;               // the presets to offer on the running platform and
+                                                          // desktop, in `all()`'s order (*Which presets*, below)
+    pub fn for_system() -> Option<PresetId>;              // the preset the platform, the detected desktop and the OS
                                                           // version choose, as `from_system(None)` does, without
                                                           // reading the theme or asking the portal (on Linux the
                                                           // desktop the last read refined, as `platform_preset_name`
                                                           // does today); where the version cannot be read (the
-                                                          // reader's feature off), the oldest generation's
+                                                          // reader's feature off), the oldest generation's; None
+                                                          // on a platform `from_system` reads nothing on (below)
     pub fn key(self) -> &'static str;                     // `"kde-breeze"`: S11's `id`, `preset:<key>`, `for_preset`
     pub fn from_key(key: &str) -> Option<PresetId>;
     pub fn display_name(self) -> &'static str;            // `"KDE Breeze"`
@@ -6058,6 +6159,16 @@ preset's token converts its points, S9.4). Nothing in it is a reading, so `syste
 read in `from_system` is an error carrying the preset it chose, not a silent fallback: the application that wants the
 preset alone calls `from_preset(preset, scheme)` with the scheme it chooses, so no scheme is assumed for it. A later
 failed re-read keeps the previous reader layer and `ReaderState` (S8).
+
+**The contrast an application picks** (ADD-A146). `set_contrast` takes a `ContrastChoice`: `System` follows the
+reader's or stand-in's `ReaderState.contrast`, and `Standard`, `Increased` and `High` hold whatever it reports,
+`Standard` being no contrast condition at all. So an application resolves the standard look on a system with
+Increase Contrast on (a showcase's contrast picker, a screenshot run), as `pick(Some(scheme))` gives it either scheme
+over the system's: the application's conditions win over the reader's (S8). `ReaderState.contrast` stays an
+`Option<Contrast>`, a reader reporting one contrast or none. Rejected: `Option<Contrast>` with `None` the reader's,
+as it was (no value says "no contrast" over a reader that reports one); `Option<Option<Contrast>>` (two `None`s to
+tell apart at every call); a `Contrast::Standard` member (`ReaderState.contrast` would then spell no contrast two
+ways).
 
 **Which reader** (ADD-A135; ledger queue #173). `from_system` chooses the reader and its preset from the platform and,
 on Linux, the desktop `XDG_CURRENT_DESKTOP` names, refined where it names none by asking the session bus which portal
@@ -6096,6 +6207,23 @@ desktop's portal backend forwards them, as GNOME's does (`xdg-desktop-portal-gno
 and `gtk-3.0/settings.ini` (a file no signal reports, which 0.7.0 did not watch either) are not watched, so a change
 there shows at the next read (ADD-A138; ledger queue #179).
 
+**Which presets** (ADD-A146). `PresetId::for_system()` is `Some` on the platforms `from_system` has a reader for,
+macOS, Windows and Linux, whatever the build's features, the preset `from_system(None)` chooses there (*Which
+reader*); on any other platform (iOS and Android until their readers, R18; any target the crate reads nothing on) it
+is `None`, as `from_system` is `Err(PlatformUnsupported)` there: the library reports that it knows no preset of the
+system, and the application chooses one, from `for_platform()` or `all()`. `PresetId::for_platform()` lists the
+presets to offer on the running platform and desktop, by 0.7.0's platform tags (`native-theme/src/presets.rs:58-64`,
+`:164-174` at `v0.7.0`; the 0.8.0 plan's D13), `ios-26` tagged as `ios-13` is: on macOS `macos-monterey`,
+`macos-tahoe`, `ios-13` and `ios-26`; on iOS `ios-13` and `ios-26`; on Windows `windows-11`; on Linux `adwaita`,
+and on a KDE desktop (the desktop `for_system` reads) `kde-breeze` as well; and on every platform `material-3`,
+which has no tag, alone on a platform no tag names. Rejected: `for_system() -> PresetId` (it is called exactly
+where the read failed, `PlatformUnsupported` among the failures, and would name a preset for a system the library
+knows nothing of: 0.7.0 answered `adwaita` there, `native-theme/src/pipeline.rs:693-696` at `v0.7.0`, a choice the
+library has no ground for); `adwaita` listed on a platform no tag names (0.7.0's listing, its platform detection
+answering `linux` for every other target, `presets.rs:149-157` at `v0.7.0`: the same choice); "those whose platform
+is the running one", the rule as it stood (it said neither that a KDE desktop lists `adwaita` too nor that macOS
+lists the iOS presets).
+
 **The main thread on macOS** (ADD-A138; ledger queue #178). AppKit gives the Keyboard navigation setting and the
 scroller style to the main thread only, so `from_system`, `from_system_async`, `reload_reader` and
 `reload_reader_async` read `full_keyboard_access` and `overlay_scrollbars` only when called on the main thread, and
@@ -6108,7 +6236,8 @@ loop.
 
 - *Preset listing* (`Theme::list_presets`, `list_presets_for_platform`, `PresetInfo`): kept, as `PresetId::all`,
   `PresetId::for_platform` and `PresetId`'s `key` and `display_name` (`PresetInfo`'s fields; the platform tags stay
-  internal, read by `for_platform`); the community presets, now palettes, are listed by `PaletteId::all`. The showcases'
+  internal, read by `for_platform`, whose list *Which presets*, above, states); the community presets, now palettes,
+  are listed by `PaletteId::all`, and a preset's flavours by `Theme::flavors` (ADD-A146). The showcases'
   pickers and an application's own still need them.
 - *`from_system_with_preset` and the two `_async` constructors:* `from_system_with_preset` is replaced by
   `from_system(Some(generation))`, one constructor with the generation an optional input (R1.5's opt-out; it differs
@@ -6136,19 +6265,24 @@ loop.
   widget value (`dialog.values.action_layout.row_order`), the icon theme `token.icons.theme`.
 - *`SystemTheme`'s fields:* `preset` is `Theme::preset()` (the gpui showcase reads it for its picker's default);
   `mode` is `Theme::scheme()`; `version_match` is `Theme::version_match()`, kept with `VersionMatch` (R1.5's case,
-  an OS newer or older than the chosen generation; the type loses `#[non_exhaustive]`, S21.2); `light` and `dark`
+  an OS newer or older than the chosen generation; a status enum, the type keeps `#[non_exhaustive]`, S21.2,
+  ADD-A146); `light` and `dark`
   are `Theme::resolve` under each scheme (S8): `resolve` takes the scheme in force, so a caller wanting both
-  `pick(Some(..))`s each in turn and resolves (a palette refusing a scheme it lacks, S14), then restores its choice; `icon_set` and `icon_theme` the resolved `token.icons`; `layout` the
+  `pick(Some(..))`s each in turn and resolves each with a `WindowState` of its own, not a window's (a window's would
+  record a theme change, and `suspends`, at that window's next resolution, S4.3), a palette refusing a scheme it
+  lacks (S14), then `pick`s again what it had picked, which it keeps itself: `scheme()` reports the scheme in force,
+  not whether it was picked (ADD-A146); `icon_set` and `icon_theme` the resolved `token.icons`; `layout` the
   `layout` widget's values (the catalogue); `accessibility` `Theme::system()`. `name` (the KDE colour scheme's name,
   or the preset's) is removed: a scheme file's name is not a theme value, and its one caller, the gpui connector,
   needs only a name for its toolkit's theme, which it takes from `Theme::preset().display_name()`.
 - *`pipeline::platform_preset_name()` and `PlatformPreset`:* replaced by `PresetId::for_system()`, the same choice
-  without reading the theme; the three showcases call it for their pickers' default where the system read fails,
-  and the egui connector's font tests for the platform's preset.
+  without reading the theme, `None` where 0.7.0 answered `adwaita` for a platform it did not know (*Which presets*,
+  above; ADD-A146); the three showcases call it for their pickers' default where the system read fails, choosing
+  their own where it is `None`, and the egui connector's font tests for the platform's preset.
 - *`pipeline::diagnose_platform_support()` and `DiagnosticEntry`:* kept: they report what the readers' detection
   depends on (the desktop, environment variables, tools, configuration files, features, the OS generation), which the
   model does not change, for an application to show when a read fails; `DiagnosticEntry::OsGeneration.preset`
-  becomes a `PresetId`, and the enum loses `#[non_exhaustive]` (S21.2).
+  becomes a `PresetId`, and the enum, a diagnostic one, keeps `#[non_exhaustive]` (S21.2; ADD-A146).
 - *`SystemTheme::with_overlay`:* replaced by `Theme::add_layer` (R2.4): an application's look is a layer in the
   stack, validated when added (S8, S12).
 - *Helpers outside the model:* `color::composite_over` is kept, over `Color` (a translucent colour or appended
@@ -6167,7 +6301,8 @@ loop.
   `from_file`, `pick_variant`), `UnknownPreset` (a `PresetId` is never unknown; `PresetId::from_key` returns `None`),
   `ResolutionIncomplete` and `ResolutionInvalid` with `RangeViolation` (validation is `LayerError`'s, S12).
   `ErrorKind` and `Error::kind()` go: the
-  three variants left are matched directly, the enum being exhaustive (S21.2). The theme's own errors are S1's.
+  three variants left are matched directly, beside a wildcard arm, the enum having `#[non_exhaustive]` as every
+  error enum has (S21.2; ADD-A146). The theme's own errors are S1's.
 
 A look of the application's own is an application layer over a bundled preset (`Layer::from_toml`, S1), never a whole
 preset of its own: today's `Theme::from_toml` and `Theme::from_file`, which load a whole theme, go (R21), so every
@@ -6478,7 +6613,7 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   fact of the enabled units (*While the units are built*, below) is a finding, whether or not its id names a row,
   beside the register's undecided rows of the enabled units (a row is of a unit not enabled where every pending fact
   naming it is; a row no pending fact names is the enabled units'); a state model's pending entry
-  (`default_size = { pending = "U129" }`, `docs/facts/ios/state-models.toml:69`) counts as a pending fact of its
+  (`default_size = { pending = "U<n>" }`) counts as a pending fact of its
   widget's unit, and each release's gate requires no S17 pending
   fact of its enabled units, so no release is made while one remains (R21; ADD-A135, the 0.8.0 plan's D13). The gate (below) reads no
   ledger, a plan document archived with the plan: it lists each pending fact with its id, whatever the register
@@ -6643,8 +6778,8 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   those), as R21 and
   ADD-A122 require of pending facts. Rejected: the preset left out of the bundle (the gate then resolves none of its
   facts, M1a design decision 7, against the plan's queue of every preset per unit); a `Pending` answer of the query, and
-  `PresetPending` variants of `ThemeError` and `LayerError` (each a permanent API and variant, which every caller of
-  an exhaustive error handles and the refusal test must trigger, for a state that ends before the release); S6.1's deferral of the field
+  `PresetPending` variants of `ThemeError` and `LayerError` (each a permanent API and variant, which the refusal
+  test must trigger, for a state that ends before the release); S6.1's deferral of the field
   from its unit (it removes the field from every preset and context, and a pending leaf may be a leaf of a type
   every context shares, as `IconStyle`'s fields are); a placeholder value or `Absent` (both
   invented: `Absent` says the platform draws nothing where it draws something not yet measured); an earlier
@@ -6900,14 +7035,19 @@ variant's facts would wait on a measurement they do not need).
 
 The gate also resolves each fact's own
 `when`, so a fact naming a size class, a position or a direction is checked too. A fact's own combination is its
-`when`'s positive lists completed with what the widget requires (`requires_variants`) and nothing else; where that
+`when`'s positive lists completed with what the widget requires and nothing else: where the widget requires a form
+(`requires_variants`, any one of which draws it, S10) and the `when` names none of them, it is completed once with
+each required form the `when` does not exclude and no variant it names shares an `exclusive_variants` group with
+(ADD-A146; rejected: the first such form alone, an order the declaration happens to have, as for a size's styles,
+below); where that
 completion is one the state model does not draw, for a size or a variant its named variants lack (`ios-13`'s 94
 facts naming `mini`, `small` or `large` and no style, which only the configuration styles take, `sizes_by_variant`;
 52 "not available (Size)" failures in the iOS facts lane's round 5) or by `not_drawn`, it is completed once with each
 variant, or set, the state model draws that makes it drawn (for a size, each `sizes_by_variant` entry whose `sizes`
-hold it), each completion the declarations and `not_drawn` leave drawn checked, an undrawn one no failure (the gate
-today refuses the size before it reads `not_drawn`); a `when` no completion makes drawn holds in no combination the platform draws, a finding of the
-fact, not a skip (ADD-A141; the gate's code a follow-up). Rejected: the first such style alone (the lane's proposal: an
+hold it), each completion the declarations and `not_drawn` leave drawn checked, an undrawn one no failure; a `when` no completion makes drawn holds in no combination the platform draws, a finding of the
+fact, not a skip (ADD-A141). The gate completes a size by its styles so (`complete`, `native-theme/tests/facts_gate/run.rs`,
+with the fixture `own_size_styles`); the completion with each required form, where it takes the first today, and
+with each variant or set where the lack is not a size's are the gate's work at M4 (ADD-A146). Rejected: the first such style alone (the lane's proposal: an
 order the entries happen to have picks the one style that checks a fact claiming them all, and a fact naming a
 condition outside the axes would be checked on that style only); the style required in the `when` (a size's look
 held by every style would be split into a fact per style, the same value each); the combination skipped (a fact
@@ -6947,6 +7087,17 @@ the facts' citations; they have no `when`, no `rows` (no gap-map row carries the
 entry being the project's at its pin with `generations = []`. `check_facts.py` checks that every value of a bundled
 palette's `[palette.sources]` is a palette-fact key, and that every colour literal the palette states is in exactly one
 of `[palette.sources]` and `[palette.picks]` (S11, S14).
+
+**The palette run** (ADD-A146). The gate resolves every bundled palette over each preset it has a source for, under
+each scheme the palette declares, in the no-reader state (S16) with the palette applied and no other layer. On each
+preset and scheme where the mapping is the palette's source, it compares each colour `[palette.sources]` names, by
+its TOML path, with its palette fact, where the preset declares the path: a typed role or surface set the preset
+does not declare is skipped there (S12, S14), and a `for_preset.<id>.…` path is compared on the preset `<id>`
+alone. A path compared on no preset fails the run, a mapped colour nothing checks. A preset and scheme a port
+serves is not compared: the mapping's paths resolve to the port's colours there, the port is the project's own
+file, converted mechanically, and the conversion is the accent run's to check (below), each bundled port being
+validated by the build test (S19.1). The run resolves the base conditions alone, so a preset rule that would undo
+a mapped role under a condition is S12's refusal, not the run's (S12, S14).
 
 **Which fact applies.** Facts in a file are ordered as the platform's source orders them (CSS order for libadwaita,
 visual-state order for WinUI, branch order for Breeze), so their order is the platform's, independent of the preset's
@@ -7131,7 +7282,9 @@ why).
   (S17's quote, absence, evidence and citation rules), `scripts/check_facts_trace.py` (every live trace row of an
   enabled unit in a fact's or a state-model entry's `rows`, or carrying a verdict, S20), `scripts/check_function_vectors.py` (S2.2, S13),
   `scripts/check_sources.py` and `scripts/update_sources.sh` (S17's sources), `scripts/generate_platform_facts.py`
-  (`platform-facts.md` from the facts), `scripts/verify_facts.py` (the verifiers' units, briefs and mechanical
+  (`platform-facts.md` from the facts), `scripts/generate_preset.py` (each preset's rules and its `[pending]` table
+  from the facts, S11, S17), `scripts/check_ledger.py` (the register and each pending fact against it, `--final` at
+  a release, S17, S21.1; ADD-A146), `scripts/verify_facts.py` (the verifiers' units, briefs and mechanical
   comparisons of state models and facts, and the audit sample), and the one-off converters
   `scripts/import_platform_facts.py` (today's rows as lane input) and `scripts/convert_inheritance_rules.py` (S19.2):
   new, in `scripts/check_release.sh` or not as the 0.8.0 plan's table of scripts states (ADD-A117).
@@ -7141,7 +7294,16 @@ why).
 ## S19. Migration inside the branch
 
 **S19.1** The presets are rewritten to S11 from the facts; the community presets become palettes (S14): one per
-variant the project publishes, their invented light variants and their `icon_set` removed. A build test parses and
+variant the project publishes, their invented light variants and their `icon_set` removed. A variant is a scheme
+with its accent (R19), and 0.8.0 bundles the ten schemes 0.7.0 ships, each as one palette (the 0.8.0 plan's D13): a
+Catppuccin flavour is bundled with the one accent 0.7.0's preset of that flavour states (`accent_color`: `#1e66f5`,
+`catppuccin-latte.toml:10`; `#8caaee`, `#8aadf4` and `#89b4fa`, `catppuccin-frappe.toml`,
+`catppuccin-macchiato.toml` and `catppuccin-mocha.toml` `:253`, under `native-theme/src/presets/` at `v0.7.0`; the
+project's name for each is its palette fact's, S17), so Catppuccin is four palettes, each with that variant's port
+(S14). A flavour under another accent is another variant, so another palette, which 0.8.0 does not bundle: an
+application sets the accent over the bundled one (`set_accent`, S9.2) or builds that palette (`Palette::from_toml`
+with its port, S14) (ADD-A146; rejected: a palette for every flavour and accent the project publishes, 56 for
+Catppuccin with as many bundled ports, where D13 asks for what 0.7.0 has, four). A build test parses and
 validates every bundled preset and palette (each palette over every preset it has a source for, Dracula's KDE port,
 which lacks two colour groups, among them, S14), so `Theme::from_preset` and `Palette::bundled` never meet their error in a
 release (S16). The test validates each bundled preset through `from_preset` where its `[pending]` table is empty,
@@ -7201,12 +7363,23 @@ gate with no fact of those units skipped or pending (S17), `check_ledger.py --fi
 the register), every `[pending]` table empty (S17, S19.1), each connector's contract test with no `pending` entry
 (S21.3). The last follow-up release also passes the facts gate with no fact skipped and `check_facts_trace.py` over
 every trace line. Rejected: one release holding every unit (the plan's D13 (A)); releases by capability (D13 (C)).
-**S21.2** Every public enum is exhaustive (S1), so a connector maps each in full: `IconRole`, `IconSet`,
-`watch::ThemeChangeEvent`, `VersionMatch`, `DiagnosticEntry`, `crate::Error` and every other enum of today's API
-that stays lose their `#[non_exhaustive]`. Every public
+**S21.2** The model's enums are exhaustive (S1), so a connector maps each in full, a new member breaking its build,
+which before 1.0 is the check that it maps it (R21): every enum a layer states, a selector names or the query and
+the resolution answer with, and every enum of today's API that stays but those named next (`IconRole`, `IconSet`
+and `watch::ThemeChangeEvent` among them), which lose their `#[non_exhaustive]`. The error, status and diagnostic
+enums have `#[non_exhaustive]` (ADD-A146):
+`LayerError`, `ProblemKind`, `ThemeError`, `ReaderFailure`, `PortError` and `crate::Error`; `ReaderStatus` and
+`PaletteStatus`; `VersionMatch` and `DiagnosticEntry`, which keep theirs. No connector maps one of these: an
+application reports it or matches the members it handles, beside a wildcard arm, so a new validation problem or
+failure breaks no build and its release is no breaking one by the 0.8.0 plan's D14; the crate's own refusal tests
+match them in full, the attribute not reaching inside the crate. Rejected: every public enum exhaustive, the error
+enums included, the rule as it stood (R21's reason is the connector's mapping, which these enums have none of, and
+under D14 each member added to one, a new `ProblemKind` with a later unit's check, would make that follow-up
+release a breaking one). Every public
 struct has it, except the two groups S1 names: the closed value structs, and the inputs their caller fills in full
 (`WindowConditions`, `RootInputs`, `SizeClasses`, `Sibling`, `PlacementInput`, `SystemAppearance`, `ReaderState`,
-`fonts::FaceTraits`), which are exhaustive for the same reason as the enums (R21). `FaceTraits` (ADD-A134) is the
+`fonts::FaceTraits`, and the two the motion runtime takes from a connector, `MotionUpdate` and `Drawn`, S2.7;
+ADD-A146), which are exhaustive for the same reason as the enums (R21). `FaceTraits` (ADD-A134) is the
 face a caller of `select_face` describes, every field an operand of CSS's matching (`families`, `width`, `style`,
 `weight`), built as a struct literal (`connectors/native-theme-egui/src/fonts.rs:231`, `native-theme/src/fonts.rs:213`);
 rejected: `#[non_exhaustive]` with `FaceTraits::new(families, width, style, weight)` (S1's form for a struct with no
@@ -7221,7 +7394,17 @@ toolkit's pinned source, and in the third case the limit and its size. egui's `C
 (the first case, as the egui connector records, `connectors/native-theme-egui/src/convert.rs:158-159`); iced's
 `Color` and gpui's `Hsla` are float types, whose case (whether the renderer takes them unclamped and premultiplies
 them itself) each connector states when it ports to `Color` (the 0.8.0 plan's M2.1), the toolkits' sources not being
-in the facts' source cache. A connector test fails when a resolved field is neither mapped nor listed. The connectors' milestones apply it
+in the facts' source cache. The table also holds what the connector supplies (ADD-A146), each entry supplied, with
+the toolkit lines it is read from, or listed with the reason the toolkit cannot give it: every `StateFlag`, and
+whether it reports their order (`state_order`, S7.2); every content-variant pair of the catalogue (S8); every
+`ElementData` and `RootInputs` field, and the font metrics (`Element.metrics`, S8); the `Presence` members it
+reports (S2.7); and one row per keyed component a bundled preset declares, drawn, its parts and values
+mapped as a typed widget's are, or not drawn, with the reason. A flag or a datum a connector never supplies turns
+off every rule that selects on it, with no build error: a connector builds flags and never matches on them, so the
+exhaustive enum does not catch it, and a keyed component, role or text style is no Rust field the generator's list
+of new fields reaches. A connector test fails when a resolved field, a flag, a content-variant pair, a data or root
+field, or a declared keyed component of an enabled unit is neither mapped nor listed (rejected: these left to the
+description of the element tree, prose no test reads). The connectors' milestones apply it
 (R21). While the units are built, a table may hold `pending` entries, resolved fields the connector does not map yet, which
 the test accepts; from the connectors' port to the model (the 0.8.0 plan's M2.1) a commit that adds a resolved field
 adds it to every connector's table, mapped or `pending` (the generator lists the new fields), and each release is made
