@@ -3482,7 +3482,12 @@ keyed component (R14), named by a `Key`: bases state it as a `ComponentBase` (S1
 it by `PartRef::Component` and `WidgetRef::Component`, and the query answers with `ResolvedPartStyle` and
 `ComponentValues` as for a typed widget. One route states a component's shape: each component's table of
 parts and their fields is generated from the catalogue, as for a typed widget (S6.1), and the preset's
-`[declare.component.<key>]` states only its availability, sizes, densities, variants, flags and values' types (S10);
+`[declare.component.<key>]` states what `[declare.widget.<w>]` states, each key as for a widget (`available`,
+`variants`, `flags`, `sizes`, `default_size`, `densities`, `exclusive`, `recency`, `exclusive_variants`,
+`requires_variants`, `sizes_by_variant`, `sizes_by_context`, `data`), and `values`, its values' types, in place of
+`keys` (S10; ADD-A146; rejected: availability, sizes, densities, variants, flags and values' types alone, the list
+this sentence had, under which KDE's `led`, `delay_button` and `char_select` could not declare the element data their
+parts read, nor Material's `fab_menu` its recency set, S12 refusing both undeclared);
 adding a layer checks its rules and bases against both (S12).
 
 **S5.2 Window.** `WindowTheme` has the parts the catalogue lists, among them `frame`, `title_bar`, `title`,
@@ -3500,7 +3505,12 @@ resolved type (every `Value<T>` resolved to `Option<T>`, where `None` is "not dr
 `patch` (every field an `Option` of that field's type in `ResolvedPartStyle`, `None` where the patch does not set it, or where it sets a field that resolves `Absent`, or on a part that resolves
 `NotDrawn` or `DrawnAs`; S2.7, ADD-A122), the field-path registry used by the TOML key check of `Layer::from_toml` (S11, the TOML reader's own, `LayerError`) and the facts gate, and the
 `may_be_absent` table. `ResolvedPartStyle` carries one field no patch sets, added by the resolution: `breeze_tests:
-Vec<BreezeTest>`, the Breeze tests of every rule that can apply to the element, in rank order (S2.7, S8; ADD-A126);
+Vec<(BreezeTest, Vec<PropertyGroup>, bool)>`, the Breeze tests of every rule that can apply to the element, in rank
+order, each with the property groups its transitions list in those rules and whether a `FocusIndicator.transition`
+names it (the indicator one group of its own, S2.7), so the reduction, which is per group, reads a group's tests off
+the entries that list it, a test only a rule not applying now names among them (S2.7, S8; ADD-A126, ADD-A146;
+rejected: the tests alone, every test then reducing every group, where Breeze's precedence is per drawing function,
+S2.7, so one function's test would hide another's flags);
 and `ResolvedTransition.engine` is a `ResolvedEngine`, `TransitionEngine`'s members with
 `WinUiAnimatedIcon(ResolvedAnimatedVisual)` holding the visual its `visual` names, resolved from
 `token.icons.animated_visuals` (`ResolvedAnimatedVisual { duration: Ms, markers: Vec<(String, f32)> }`, S2.7). A length that may be `Auto` resolves to `Option<Length>`, `Length = Px(f32) | Auto`, so "sized
@@ -3797,6 +3807,16 @@ exactly one size of each container the preset declares (`container_sizes`, S10):
 reports for it (`ReaderState.container_sizes`), else its declared default, the first, also in the no-reader state
 (S16), so a rule under the default size applies wherever nothing is read.
 
+A keyed condition (`SystemSetting`, `DeviceModel`, a `ContainerSize`'s size) holds by its key under whichever preset
+is current (ADD-A146): the reader reports the keys of what it read in its `ReaderState`, part of what any preset
+takes (S9.5), a rule selects on a key its own preset declares (S10), and a reported key the current preset does not
+declare selects nothing (for a container, its declared default then holding, above). So a `SystemSetting` key names
+one setting on every platform whose preset declares it, and two platforms' settings that differ take a key each (the
+catalogue's *conditions*: Win32's `SPI_GETUIEFFECTS`, W3-53†, and KDE's `GraphicEffectsLevel`, K-P3-24†, are two).
+Rejected: a reader's keyed conditions holding under its own preset alone, as its keyed roles and tokens apply (S9.5):
+a switch between the two macOS generations would lose the sidebar size the user set, and a key means one setting
+either way.
+
 The list is closed by the catalogue and the traceability: a condition a row needs that is not here is added here.
 The additions and their rows: ADD-A01 … ADD-A12, ADD-A76, ADD-A83 (S22). `OverlayScrollbars` replaces `scrollbar.overlay_mode`.
 The readers report the system conditions directly (R2.3; today's `AccessibilityPreferences` goes, S16);
@@ -3875,9 +3895,18 @@ pub enum Comparison { AtLeast, AtMost, Above, Below }  // ≥, ≤, >, < (AdwDia
 pub enum Combine { All, Any }                          // both stated sizes must hold, or either
 ```
 
-A widget's `breakpoints: Vec<Breakpoint>` is a widget value read through `values()`; the connector evaluates each
-against the allocation or the window it measures and adds the variant to `Element.variants` while it holds; rules of
-two variants that hold together apply in stated rule order, as any rules do.
+A widget's `breakpoints: Vec<Breakpoint>` is a widget value (R16), stated among its values (S11's `Breakpoint` row)
+and read through `values()`, so a rule restates the list under a condition or a variant and a threshold may read
+element data (the catalogue's `dialog`: AdwPreferencesDialog's under `paged`, its first threshold an expression over
+`element.item_count`; Kirigami's under `mobile_form_factor`). It is no declaration (ADD-A146; rejected:
+`[declare.widget.<w>] breakpoints`, as S10's example had it and the slice's code read it: a declaration differs by
+flavour alone, S10, and reads no element data, so it could state neither). The connector queries `values()` with the
+element's other variants, evaluates each `Breakpoint` of the list that query returns against the allocation or the
+window it measures, adds the variant of each that holds to `Element.variants` while it holds, and queries the
+element's parts and values again with them. The list and the thresholds it evaluates are the first query's, so no
+breakpoint's variant feeds back into its own test (as `Measured` names no box the variant sizes, below), and S12
+refuses a `Values` rule patching `breakpoints` that selects on a variant a breakpoint of that widget sets, a list no
+connector would evaluate. Rules of two variants that hold together apply in stated rule order, as any rules do.
 
 ```rust
 pub enum Measured { Allocation, Window, Part(PartRef) }   // the size the parent offers the element, the window's,
@@ -3930,8 +3959,9 @@ pub struct ReaderState {                                   // the system conditi
     pub container_sizes: Vec<(WidgetRef, Key)>, pub system_settings: Vec<Key>,
     pub text_scaling_factor: f32,                          // S9.4
     pub font_dpi: Option<f32>,                             // the system's font DPI where the platform has a setting
-                                                           // (KDE's `Xft.dpi` on X11, S9.3); None: the preset's
-                                                           // `token.text.font_dpi` (S9.4)
+                                                           // the toolkit's scale factor does not carry (S9.4: no
+                                                           // reader of 0.8.0 reports one; a stand-in may); None:
+                                                           // the preset's `token.text.font_dpi` (S9.4)
     pub content_size_category: Option<ContentSizeCategory>,   // iOS's, for `DynamicType` and `uifm_scaled`
                                                            // (S9.4); None: the default category, the one the
                                                            // `DynamicType` kind's table names (the facts, S17)
@@ -3955,7 +3985,12 @@ pub struct RootInputs { pub density: Option<Density>, pub size_classes: SizeClas
 
 Typed structs make a condition from the wrong source unrepresentable: a connector cannot state the scheme, nor a
 reader a window's state. The application's conditions (flavour, the scheme and the contrast it picks, R2.3, R25.2)
-come from `Theme`'s setters, and win over the reader's.
+come from `Theme`'s setters, and win over the reader's. The layout direction is the connector's (`RootInputs.direction`,
+R2.3): its toolkit's layout direction for the window, else the application's own; no reader reports one, `ReaderState`
+holding none (ADD-A146: GTK's and Qt's, `gtk_get_locale_direction` and `QGuiApplication::layoutDirection`, GN-FM03†,
+K-FM03†, are toolkit calls, which a reader that links neither toolkit cannot make; rejected:
+`ReaderState.direction: Option<Direction>` from the locale's script, a second source for a value the toolkit or the
+application already holds).
 
 **Layers and order.** The stack is: the preset; on `kde-breeze` and `material-3`, the accent-derivation layer `Theme` derives, stating
 its roles at the slots where a layer above the preset gives the accent in force (S9.2; ADD-A132, ADD-A134); the reader, or the stand-in an application without a reader sets
@@ -4053,7 +4088,8 @@ impl ResolvedTheme {
                                                             // a transition's `from` and a Breeze test are matched
                                                             // against (S2.7); a resolved part style carries the
                                                             // Breeze tests of every rule that can apply to the
-                                                            // element, in rank order (`breeze_tests`, S2.7)
+                                                            // element, in rank order, each with the groups its
+                                                            // transitions list (`breeze_tests`, S6.1, S2.7)
 }
 pub struct Element<'a> {                                   // Element::new(part, scope, metrics) and setters
     pub part: PartRef,                                     // names the widget too (S1)
@@ -4068,7 +4104,8 @@ pub struct Element<'a> {                                   // Element::new(part,
     pub states: StateFlags,
     pub state_order: &'a [StateFlag],                      // the order the connector last set its flags in, the
                                                            // latest last; empty by default (S7.2's recency, R25.3)
-    pub siblings: &'a [Sibling<'a>], pub index: usize,                  // all siblings, itself at `index`
+    pub siblings: &'a [Sibling<'a>], pub index: usize,                  // its siblings, itself at `index`; those a
+                                                                        // connector may leave out: *Siblings*, below
     pub data: ElementData<'a>,
     pub metrics: &'a dyn FontMetrics,                      // the toolkit's measurement
 }
@@ -4104,7 +4141,9 @@ The query tells the variants apart by name and element: the content variants are
 widget or one of its *(element)* parts and a typed variant name (`button`: `icon_only`; `list.row`: `with_subtitle`;
 *Entry format*, ADD-A61), or a keyed one whose meaning only one platform has (`button`'s `@with_arrow`, GTK's), which the
 connector sets by that platform's rule under every preset (ADD-A123), a name being a content variant only on the widget or part its pair names; the breakpoint
-variants are those the widget's `breakpoints` value names (S7.3); and every other variant in `Element.variants` (the
+variants are those a `Breakpoint` names in the widget's `breakpoints` value in any base of the stack or any rule of it
+that can apply under the current preset, read off the stack as it is validated, not evaluated, as the value may
+differ by rule (S7.3; ADD-A146); and every other variant in `Element.variants` (the
 same name on another widget or part included: `vertical` on `slider`) is one the application asked for. The
 declarations in force are the preset's, a flavour's section replacing the keys it states (S10). The query: ignores a
 content or breakpoint variant the widget does not declare (as an undeclared density), and a keyed flag the widget does not declare selects nothing; answers `NotAvailable` for a size the element does not take (S10: its variant's and its context's), for no size where the sizes the element takes (S10) are not empty and its default is pending (S10's *A pending default*; on a synthetic theme alone, S17), an element that takes no size resolving with none (S10; ADD-A131), for an undeclared variant the
@@ -4112,9 +4151,11 @@ application asked for, an unavailable widget, an element holding none of
 its widget's `requires_variants` (S10), or a part the widget does not have, and `NotDrawn` for a part whose style resolved `Absent` (the children of
 a `NotDrawn` or `NotAvailable` element take the parent's scope), and `NotAvailable(Variant)` for an element holding two
 variants of one exclusive variant group (S10); drops excluded flags by the exclusive groups (S10),
-the element's by its widget's groups, and each ancestor's and sibling's states (which `ContextMatch.states` and
-`SiblingMatch.states` match) by its own widget's groups, and ignores a density the widget does not declare (R15);
-orders the element's kept flags of each recency set by `Element.state_order` and the set's stated order (S7.2), a flag
+the element's by the groups its widget declares for its element (the widget's own element, or the *(element)* part
+it is queried with; a group naming no parts is every element's, S10; ADD-A146), and each ancestor's and sibling's
+states (which `ContextMatch.states` and `SiblingMatch.states` match) by the groups its own widget declares for its
+element, and ignores a density the widget does not declare (R15);
+orders the element's kept flags of each recency set that applies to it (S10) by `Element.state_order` and the set's stated order (S7.2), a flag
 of `state_order` that is not present, or that the drop removed, counting for nothing, and a flag listed twice by its last
 position; takes density, size classes, direction, language and
 bindings from the scope, the element's own overriding them; applies the part's kept rules in order, skipping those
@@ -4132,6 +4173,20 @@ a split button's label reads its half's corners, `widget.primary.corners`); on a
 handle), and on `Concentric` and `FollowPart` anywhere, it is refused (S12), as only the connector computes those at
 layout (S2.4); so is one on an `Ellipse` corner, whose two radii are no one length. `Element.variants` includes the variants the connector sets from the element's content
 (`icon_only`, `with_icon`; GTK sets `.image-button` itself, ADD-A61).
+
+**Siblings** (ADD-A146). A position term reads of `Element.siblings` only, per `among` scope, which is a set of
+parts (S7): whether a counted sibling precedes the element and whether one follows it (`first`, `last`, `only`), the
+parity of the number that precede it (`parity`), and the nearest counted sibling on each side (`previous`, `next`:
+its part, variants and states). So a connector need not pass every sibling of a long or virtualised container: before
+the element it may leave out an even number of each part's siblings, after it any number, and on neither side a
+part's nearest sibling. What it passes then answers every position term as the whole list would, under every
+`among`; a sibling it passes that is not its part's nearest on its side is counted only, its variants and states
+unread. A list whose siblings are rows and separators so needs at most four siblings before a row and two after it,
+whatever its length. Rejected: counts of the siblings left out at each end (`siblings_before`, `siblings_after`: two
+more fields of an input filled in full, S21.2, and exact for one `among` scope only, the siblings left out being of
+several parts); a constant-size position in place of the slice (R2.5's words, its position and its two neighbours:
+they are per scope, the scopes are the rules', which the connector does not hold, and it is a breaking change to a
+built type for the same answers).
 
 The query cannot fail (R2.8): element data are plain values. Each part declares the data its values read (S10,
 `data = [...]`, the font metrics included; a widget value that reads element data, a presentation step's duration
@@ -4169,7 +4224,8 @@ pub struct InputBases { pub entries: Vec<(InputName, InputValue)>,
                                               // scheme replaces the earlier one whole
 pub struct InputValue { pub per_scheme: SchemeMap<Value<Color>>,
                         pub per_contrast: Vec<(Contrast, SchemeMap<Value<Color>>)> }
-pub enum Contrast { Increased, High }         // one at a time: `ReaderState.contrast` and `set_contrast` hold one,
+pub enum Contrast { Increased, High }         // one at a time: `ReaderState.contrast` holds one or none, and
+                                              // `set_contrast` picks one or none over it (`ContrastChoice`, S16),
                                               // so the two conditions exclude each other (S12)
 // An input is replaced slot by slot, never whole (ADD-A132). A slot is a scheme with no contrast or one `Contrast`, six
 // in all; a layer's value of an input at a slot is its contrast base for that contrast at that scheme, else its
@@ -4381,8 +4437,8 @@ literals, shows. The preset's typed sets and global roles reference the keyed ro
 layers above it, it is `kde-breeze`'s (the bullets above, read with Material's roles and no scheme inputs): a reader's
 (the Android reader's, R18, whose roles hold the dynamic scheme the system derived) or a stand-in's stated roles
 replace the layer's, and are left out at a slot where a layer above them gives the accent in force (S8); an
-application layer's role wins over the layer's; a mapping palette, which states typed roles and its accent but no
-`md.sys.color` role (S14), has its accent's derivation show in every role it leaves. `kde_accent`'s no-accent branch
+application layer's role wins over the layer's, as each role a mapping palette states does, and an `md.sys.color`
+role a mapping does not state shows the derivation of the mapping's accent. `kde_accent`'s no-accent branch
 has no counterpart, the baseline being the preset's own literals. Rejected: the preset's roles as `= m3_role(@<role>)` with a
 seed as its accent (the baseline is no seed's scheme in any pinned source, so a seed would be a value no fact gives,
 and its roles would not be Compose's tokens); the baseline literals with no derivation (an `Accent` would change no
@@ -4609,35 +4665,38 @@ Beside its accent (above) and its scheme inputs (S9.1), it states:
   is KIconTheme's own default for its group (`kiconthemes@6.31.0 src/kicontheme.cpp:160-167`, the keys read over them
   at `:469-472`), and a whole number not above zero is not stated. The six defaults are cited on the KDE
   `token.icons.sizes` facts as the KDE lane cites KColorScheme's rows on the scheme inputs' (above; a KDE facts
-  follow-up), the reader's constants citing them, which it states once they land. Rejected: the preset's value for an omitted key (Breeze's `DesktopDefault` is not KIconTheme's Desktop default,
+  follow-up), the reader's constants citing them, which it states once they land. The theme is the one kdeglobals'
+  `[Icons] Theme` names, its `index.theme` found under `icons/<theme>/` in the data directories as KIconTheme finds
+  it (`:382`, `:395-405`). Where kdeglobals has no such key, KIconTheme's default for it is `breeze` (`:686`), whose
+  sizes are the preset's facts, so the reader states no size and the preset's show; where the value is empty, is not
+  one plain path component, or names a theme whose `index.theme` is found in none of those directories, it states
+  none either, with no `Fallback`, nothing having been read (ADD-A146: the port's rule, stated). Rejected: the preset's value for an omitted key (Breeze's `DesktopDefault` is not KIconTheme's Desktop default,
   `breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:8` against `kicontheme.cpp:161`, so a theme without the key
   would show Breeze's size where KDE draws its default); the defaults dropped as no fact holds them (the port; the
   pinned source states them, so facts can).
-- the font DPI (S9.4; K3.46): on an X11 session (`$XDG_SESSION_TYPE` `x11`) only, `Xft.dpi` as Qt's xcb plugin takes
-  its logical DPI from it (`qtbase@6.12.0 src/plugins/platforms/xcb/qxcbscreen.cpp:856-876`): of the X resources'
-  `Xft.dpi:` lines the last Qt parses, as an integer or else a decimal rounded (`:298-314`, `:366-373`), where it is
-  above zero; parsed by the reader helper `qxcb_xft_dpi` (S2.2), Qt's code being LGPL, from the resources as 0.7.0 read
-  them (`xrdb -query`). Where the session sets none, Qt falls back to the DPI `kde-breeze`'s `token.text.font_dpi`
-  states (`:870-875`), so the reader reports none. Off X11 it reports none: Qt's Wayland screen gives that same
-  logical DPI unless `QT_WAYLAND_FORCE_DPI` is set (`qtbase@6.12.0 src/plugins/platforms/wayland/qwaylandscreen.cpp:150-160`,
+- no font DPI (`font_dpi: None`) on any session (S9.4; K3.46; ADD-A146). Off X11, Qt's Wayland screen gives the
+  logical DPI `kde-breeze`'s `token.text.font_dpi` states unless `QT_WAYLAND_FORCE_DPI` is set (`qtbase@6.12.0
+  src/plugins/platforms/wayland/qwaylandscreen.cpp:150-160`,
   the preset's fact, `docs/facts/kde/tokens.toml:7938-7946`), and the `Xft.dpi` Plasma sets for Xwayland there is the
   Xwayland scale, no font setting (platform-facts' *Font DPI override* and *Scale factor*,
-  `docs/facts/imported/kde.toml:701`, `:711`). Not read: `kcmfonts`' `forceFontDPI` (Plasma 6.8 removed it with krdb,
-  its only reader, `c675077b`, `fe367323`, and on Plasma 6.7 krdb gave it to X11 as `Xft.dpi`, so `Xft.dpi` holds it
-  wherever it applies; the same row), so `kcmfonts` leaves the reader and its watcher; 0.7.0's `xrandr` step (Qt's
-  logical DPI takes no physical DPI, `:870-874`) and its fixed DPI (the preset's token states Qt's). Rejected:
-  `forceFontDPI` before `Xft.dpi` (the port: on Plasma 6.8 a value left over from 6.7, which nothing reads, would
-  override the one Qt uses); `QT_WAYLAND_FORCE_DPI` (a variable of each Qt process's own environment, which Plasma
+  `docs/facts/imported/kde.toml:701`, `:711`). On an X11 session (`$XDG_SESSION_TYPE` `x11`) Qt's xcb plugin takes
+  its logical DPI from `Xft.dpi`, and the preset's where the session sets none (`qtbase@6.12.0
+  src/plugins/platforms/xcb/qxcbscreen.cpp:856-876`), and there the toolkits the connectors draw with take their
+  scale factor from that same setting, so it has reached every logical pixel, the text's among them, before a reader
+  could report it (S9.4's *What the toolkit's scale carries*). Plasma at its pin ships no X11 session besides
+  (`plasma-workspace@6.8.2 login-sessions/CMakeLists.txt:3-7` installs one session file, into `wayland-sessions`,
+  and `startkde/CMakeLists.txt:16` builds `startplasma-wayland` alone), so the case is Plasma 6.7's and older. Not read:
+  `kcmfonts`' `forceFontDPI` (Plasma 6.8 removed it with krdb,
+  its only reader, `c675077b`, `fe367323`, and on Plasma 6.7 krdb gave it to X11 as `Xft.dpi`; the same row), so
+  `kcmfonts` leaves the reader and its watcher; 0.7.0's `xrdb` and `xrandr` steps and its fixed DPI (the preset's
+  token states Qt's). Rejected: `Xft.dpi` on an X11 session reported as the font DPI (ADD-A140's reading, parsed by a
+  clean-room helper `qxcb_xft_dpi`: with an `Xft.dpi` of 120 the query converts a point size by 120/72 and winit or
+  gpui scales the result by 120/96 again, where Qt converts it by 120/72 once; the GNOME reader withholds its factor
+  on X11 for that reason, and one rule now serves both readers, S9.4); `forceFontDPI` (on Plasma 6.8 a value left
+  over from 6.7, which nothing reads); `QT_WAYLAND_FORCE_DPI` (a variable of each Qt process's own environment, which Plasma
   does not set: none of plasma-workspace, plasma-integration and plasma-desktop names it at its pin, and KWin's own
   platform plugin reads it for KWin's windows, `kwin@6.8.2 src/plugins/qpa/screen.cpp:22-25`; the reader's environment
-  is the application's); the `RESOURCE_MANAGER` property read directly, Qt's route (an X11 client library for the
-  text `xrdb -query` gives). Qt's xcb plugin also takes an XSETTINGS manager's `Xft/DPI` (DPI × 1024) over the
-  resources' value, read at start and on each change (`qxcbscreen.cpp:81-89`, `:385-396`; the clean room's
-  `qxcb_xft_dpi` description, readers-cr2), which the reader does not read: open (ADD-A141) on whether a Plasma X11
-  session's XSETTINGS manager (kde-gtk-config's xsettingsd, at no pin) sets an `Xft/DPI` that differs from `Xft.dpi`.
-  A KDE render-host read of both on a Plasma X11 session settles it: where they can differ, the reader reads the
-  setting first, `qxcb_xft_dpi` taking it as a second input through the clean room; where they cannot, `Xft.dpi`
-  alone stands.
+  is the application's).
 
 **The GNOME reader's readings** (ADD-A135, ADD-A138; ledger queue #171, #173, #179). Its sources are the XDG Settings portal's
 `org.freedesktop.appearance` namespace and gsettings, each setting the portal does not give (no session bus, no
@@ -4664,7 +4723,8 @@ setting neither gives stated by nothing, so it keeps the no-reader state's value
   `reduced_motion` from the portal's `reduced-motion`, else `org.gnome.desktop.a11y.interface reduced-motion`
   (GN-3.26); `animations_off` where `org.gnome.desktop.interface enable-animations` is false (GN-3.25), a condition
   of its own beside reduced motion (S7.1); `overlay_scrollbars` from `overlay-scrolling` (GN-1.85); the text-scaling
-  factor from `text-scaling-factor`, off an X11 session (S9.4).
+  factor from `text-scaling-factor`, off an X11 session, where it reports a factor of 1 (S9.4's *What the toolkit's
+  scale carries*; ADD-A146).
 - no font DPI (`font_dpi: None`): GNOME's is a fixed base, `DPI_FALLBACK`, times the text-scaling factor
   (`gnome-settings-daemon@51.1 plugins/xsettings/gsd-xsettings-manager.c:243`, `:582-594`), the factor it already
   reports, so `adwaita`'s
@@ -4725,6 +4785,31 @@ statics or as strings (AppKit returns no appearance for them; their documented u
 into the slots not read (values not read under their conditions); the reads under the flag stated as per-scheme
 values too (values under a condition they were not read in, which would put inputs read under Increase Contrast beside
 the preset's normal roles at a high-contrast slot).
+
+Its other reads, as the reader's code has them (ADD-A146; `native-theme/src/macos.rs`'s *Sources*, `system_scheme`
+and `read`). The scheme is the global user default `AppleInterfaceStyle`: dark where it reads `Dark`, light
+otherwise, the default being absent in light mode (no header of the SDK names the key); its change is the
+distributed notification `AppleInterfaceThemeChangedNotification`, which the watcher observes. Weighed against it:
+`NSApplication.effectiveAppearance` (`NSApplication.h:345-346` at xcode@26.6), AppKit's on the main thread only, as
+the two flags below are, and the application's own `appearance` where it sets one, not the system's setting.
+`reduced_motion` and `reduced_transparency` are `NSWorkspace.accessibilityDisplayShouldReduceMotion` and
+`accessibilityDisplayShouldReduceTransparency` (`NSAccessibility.h:103`, `:100`), read beside Increase Contrast
+(`:94`), the three reported by one notification (`NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification`,
+`:121`). The whole read fails (`ReaderFailure::Platform`) on macOS before 11, which lacks
+`performAsCurrentDrawingAppearance:` (the reader does not send the selector there), and where AppKit gives neither
+the Aqua nor the DarkAqua appearance; a first read's failure is `from_system`'s error and a re-read's keeps the
+previous reader layer (S8, S16).
+
+It reads no system effect of a colour (ADD-A146; MAC-X30†). AppKit's rollover, pressed, deep-pressed and disabled
+looks are effects applied to a part's own colour (`NSColorSystemEffect`, `colorWithSystemEffect:`, `NSColor.h:68-74`,
+`:290` at xcode@26.6), no colour of a role or an input: the parts' `{hover}`, `{pressed}` and `{disabled}` rules
+state them, the presets' measured values, as the macOS role facts assume (`docs/facts/macos/roles.toml:9037-9040`).
+A reader's layer has no place for them: a state rule needs the part that draws each colour, which the preset's rules
+hold, not the reader. Recorded as the route should a user's accent be found to change a state colour the measured
+rules do not follow: a keyed role per effect of each colour the facts need, a base the preset states from its
+measurements and the reader restates, which the parts' state rules reference, those of an accent input joining
+`accent_inputs` (S9.1). Rejected for 0.8.0: that route now (keyed roles and reads for looks the presets' facts
+already state per state, with no finding yet that an accent changes one the rules do not follow).
 
 Each target is read from the `NSColor` property its own preset's fact for that target measured (the fact's evidence
 names it, `…/probe.toml#macos.colors.<appearance>.<property>`), so on the OS the facts were measured on the
@@ -4795,8 +4880,9 @@ system font to the other presets as if the user had chosen it); the face's `wght
   `reduce_motion`; the two read the same on the three Windows probe images (`:1889-1890`), though no Microsoft page
   says they are one setting. So Windows has one motion setting, as KDE has its factor (above), and it stands for both
   conditions, which keeps 0.7.0's reduced motion (D13); the desktops with no reader of their own differ, gsettings
-  holding two settings there, each its own condition (S16). Rejected: `SPI_GETCLIENTAREAANIMATION` (an `unsafe` call,
-  its change a `WM_SETTINGCHANGE` the windowless watcher does not receive, and not what WinUI reads); both, a condition
+  holding two settings there, each its own condition (S16). Rejected: `SPI_GETCLIENTAREAANIMATION` (not what WinUI
+  reads, where a property WinUI does read gives the setting; that it is an `unsafe` call whose change the windowless
+  watcher does not hear holds of the high-contrast reads too, below, which have no such alternative, ADD-A146); both, a condition
   holding where either is off (two reads of what the probe found one setting); `animations_off` alone (the port:
   reduced motion would never hold on Windows, where 0.7.0 reported it).
 - `reduced_transparency` where `UISettings.AdvancedEffectsEnabled` is false (W3-38; the registry's
@@ -4817,6 +4903,15 @@ system font to the other presets as if the user had chosen it); the face's `wght
   system colour there, so those slots are ones the platform gives none at (ADD-A138), no `Fallback`. Rejected: the
   rule under the scheme read as well (after a `pick` of the other scheme under high contrast the preset's placeholders
   would show where WinUI shows the same system colours).
+- no watched high contrast (ADD-A146): a change of high contrast, and of the system colours under it, is announced
+  by no event the watcher receives, so it shows at the reader's next read, as macOS's Keyboard navigation setting
+  does (S7.1). `WM_SETTINGCHANGE` and `WM_SYSCOLORCHANGE` are "sent to all top-level windows" (`win32@ca8274de
+  desktop-src/winmsg/wm-settingchange.md:11`, `desktop-src/gdi/wm-syscolorchange.md:11`), of which the watcher has
+  none, and `AccessibilitySettings.HighContrastChanged` "never fires" outside UWP, relying on a `CoreWindow` to
+  handle `WM_THEMECHANGED` (`WindowsAppSDK@2.5.1 specs/themes/ThemeSettings.md:10-12`). A hidden top-level window on
+  the watcher's thread would receive them, as .NET's `SystemEvents` creates one (`:157-159`): `docs/todo.md`'s
+  *Theme watcher: OS changes it does not report* holds it with the other window-only sources, for the readers unit;
+  0.7.0 did not watch it either, so nothing is lost (D13), and no decision is taken here.
 - no text-role slot, no font DPI, no system metric and no icon size, which 0.7.0 read
   (`2796b26e:native-theme/src/windows.rs`: `NONCLIENTMETRICSW`'s message, caption, menu and status fonts into the
   default, title-bar, menu, tooltip and status-bar fonts, `:182-191`, `:584-592`; a font DPI fixed at
@@ -4850,9 +4945,9 @@ system font to the other presets as if the user had chosen it); the face's `wght
   rendering read*, ADD-A144; whether a changed DirectWrite setting reaches WinUI's text is open, U702).
 
 **S9.4 Points, then text scaling.** A font size, line height, letter spacing or word spacing stated in points becomes logical pixels first, as
-`pt × dpi / 72`, where `dpi` is `ReaderState.font_dpi` where the reader reports one (the platform's setting: on KDE
-`Xft.dpi` on an X11 session, as Qt reads it, S9.3's *The KDE reader's readings*, `platform-facts.md`'s *Font DPI
-override* recording `forceFontDPI`, which reaches Qt only through it; ADD-A140) and otherwise the current
+`pt × dpi / 72`, where `dpi` is `ReaderState.font_dpi` where the reader or stand-in reports one (a platform's
+font-DPI setting that the toolkit's scale factor does not carry: no reader of 0.8.0's reports one, *What the
+toolkit's scale carries*, below; ADD-A146) and otherwise the current
 preset's `token.text.font_dpi`, stated per preset from its platform's facts, or by the definition below where the
 point is the logical pixel (no number is stated here for the others); one stated in pixels is already logical. Where the platform's point is its logical pixel (AppKit's and UIKit's points, their toolkits'
 logical unit, in which they lay out and which the screen's scale turns into device pixels: the iOS host's
@@ -4876,6 +4971,28 @@ its own preset's `token.text.font_dpi`), so they keep their size under any prese
 conversion comes before the text scaling, and both before every font-derived length (convert, then scale, then
 derive).
 
+**What the toolkit's scale carries** (ADD-A146; one rule for every reader). On an X11 session (`$XDG_SESSION_TYPE`
+`x11`) the desktop writes its text setting into the session's font DPI, the X resource `Xft.dpi` and the XSETTINGS
+`Xft/DPI`: gnome-settings-daemon 96 times the text-scaling factor times the window scale (`gnome-settings-daemon@51.1
+plugins/xsettings/gsd-xsettings-manager.c:243`, `:582-594`, `:666-668`, `:742`, `:797-798`), Plasma 6.7 and older its
+forced font DPI (S9.3's *The KDE reader's readings*). The toolkits the connectors draw with take their X11 scale
+factor from that DPI over 96: winit from XSETTINGS, else the resource (winit 0.30.13
+`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:145-146`), gpui from the resource (gpui-pre-linux 0.3.10
+`src/linux/x11/client.rs:2674-2681`), each while its own override is unset (`WINIT_X11_SCALE_FACTOR`,
+`GPUI_X11_SCALE_FACTOR`, under which the application owns the scale). That factor multiplies every logical pixel, the
+text's too, so the setting is applied before the model resolves anything. A reader therefore reports on an X11
+session neither a text-scaling factor nor a font DPI that this DPI holds: the GNOME reader a factor of 1, the KDE
+reader no font DPI (S9.3), and the conversion and the scaling here add nothing to what the toolkit has done. Off X11
+neither toolkit reads the resource or XSETTINGS (only their `x11` modules do), so a reader reports its setting and
+the query applies it. The rule reads the session's type, not the client's backend, which no reader can see: an X11
+client under Xwayland on a GNOME Wayland session, or in a session started from a text login, gets the DPI through
+its toolkit and the factor from the reader, and draws it twice, the inexactness `docs/todo.md`'s *Font DPI* records.
+Rejected: a rule per reader (ADD-A140's: the KDE reader reported on X11, as its font DPI, what the GNOME reader
+withheld there as its factor, for one mechanism); the readers reporting on X11 and each connector taking the setting
+back out of its toolkit's scale (the connectors do not own that scale, their entry points taking no window, the
+ruling the same `docs/todo.md` entry records; the lengths those toolkits scale with the text there, which GTK does
+not, are the toolkits' either way).
+
 **Text scaling.** The reader supplies `text_scaling_factor` (1 where the platform scales by the font size
 itself, and 1 where a reader reads each text style's size, R10); the query scales font sizes by it before
 font-derived lengths, by the preset's `token.text.scaling`: `Linear` (a product); `AndroidNonLinear`, Android 14's
@@ -4890,7 +5007,8 @@ reads each style's size reports the default category. A font size is scaled once
 `Font.size` stated as an expression over other font sizes (`= mul(token.text.roles.body.font.size, <factor>)`) reads
 them converted and not yet scaled, and its result is scaled by its own style's curve (S2.2), so a size derived from
 another style's is never scaled twice, and under a non-linear kind it follows its own size's curve, as a platform
-scales a size stated in its own scalable unit (Android's sp, UIKit's `UIFontMetrics` over a custom size). The last two stand in while `material-3` and `ios-*` have no
+scales a size stated in its own scalable unit (Android's sp, UIKit's `UIFontMetrics` over a custom size).
+`AndroidNonLinear` and `DynamicType` stand in while `material-3` and `ios-*` have no
 reader (R25.15). Under `DynamicType` the factor is not read: the category alone scales (`None` is the default
 category), so a factor read on another platform does not reach an `ios-*` preset. Validation refuses a reader's or
 stand-in's factor that is not finite and above zero (S12).
@@ -4958,7 +5076,8 @@ where WinUI draws 71.27); a sampled table (the curve is in the source).
 
 **S9.5 What a reader states for any preset.** A reader builds its layer in two parts: its common bases, which any
 preset takes (`input.accent` and its per-contrast bases, except where S8 leaves them out, below; the conditions,
-text-scaling factor and font DPI in its `ReaderState`; and the typed text-role slots it reads, as `Fields` patches
+the keyed ones among them, each holding by its key under any preset that declares it (S7.1; ADD-A146), the
+text-scaling factor and the font DPI in its `ReaderState`; and the typed text-role slots it reads, as `Fields` patches
 over the style each slot references, their sizes in logical pixels (S9.4), composed lazily in R2.4's order (S2.2), so
 the user's fonts reach the parts whose leaves reference the slots and the preset's token rules on the referenced styles still
 apply over them), and everything else, its own platform's keyed roles, tokens and inputs, under
@@ -4994,7 +5113,7 @@ color_roles = ["fill_tertiary", …]            # keyed roles
 text_styles = [ … ]
 elevation = ["<step>", …]                       # the platform's ramp's names
 surface_sets = ["window", "view", …]
-conditions = ["@graphic_effects_level", …,     # SystemSetting keys; one only applications read, which no rule
+conditions = ["@ui_effects", …,                # SystemSetting keys; one only applications read, which no rule
               { key = "@show_sounds", for_applications = true }]   # selects on, is marked (S12, `Theme::system`)
 params = { layout = { unit = "px", keys = ["grid_unit", …] }, opacity = { unit = "fraction", keys = [ … ] } }
 inputs = ["accent", "accent_ramp.light1", …]
@@ -5028,10 +5147,13 @@ sizes = ["small", "regular", "large"]
 densities = ["compact"]
 flags = ["@<flag>"]
 exclusive = [["disabled", "pressed", "hover"]]              # one group, highest precedence first; the gate checks
-                                                           # the order against the state models (S17)
+                                                           # the order against the state models (S17); a group of
+                                                           # some of the widget's elements only names them:
+                                                           # { parts = ["<part>", …], flags = [ … ] } (below)
 exclusive_variants = [["primary", "flat"]]                # variants an element holds at most one of (below)
 recency = { elevation = ["pressed", "focus_visible", "hover"] }   # named recency sets, each in its stated order
-                                                           # (below, S7.2); the gate checks them (S17)
+                                                           # (below, S7.2); the gate checks them (S17); a set of
+                                                           # some elements only, as a group: { parts, flags }
 sizes_by_context = [{ context = { scope = "any", widget = "navigation_bar" }, sizes = ["regular"],
                      default_size = "regular" }]           # S11's context selector; the first entry matching
                                                            # applies; its default (below, ADD-A131)
@@ -5054,18 +5176,18 @@ available = true
 data = { indicator = ["width", "height"] }                 # element data a part's values read (S8; names below)
 
 [declare.component.rule_editor]                # parts and their fields: the catalogue's, generated (S5.1, S6.1);
-available = true                               # here only what varies per preset: availability,
-sizes = ["regular"]                            # a component's sizes and densities, as a widget's,
-default_size = "regular"                       # its default size (ADD-A131),
-values = { indent_per_level = "length", presentations = "presentations" }   # values' types,
-variants = ["@<variant>"]                                           # variants, flags
+available = true                               # here what a widget's declaration states, each key as a widget's
+sizes = ["regular"]                            # (S5.1's list: availability, sizes and densities, the default
+default_size = "regular"                       # size, ADD-A131, variants, flags, groups, sets, element data),
+values = { indent_per_level = "length", presentations = "presentations" }   # and `values`, its values' types,
+variants = ["@<variant>"]                                           # in place of a widget's `keys`
 flags = ["@<flag>"]
+data = { <part> = ["<operand>", …] }           # as a widget's (below; ADD-A146)
+recency = { <set> = ["<flag>", "<flag>"] }
 
 [declare.widget.segmented_control]
 keys = { compression = ["<key>", …] }          # the keys of a typed widget's `Value<Key>` value, keyed map,
                                                # `Vec<Key>` list or list entries' keys (below)
-breakpoints = [{ measured = { part = "content" }, width = { at_most = <n> }, variant = "@<v>" }]
-                                               # `Measured::Part` in TOML, by S11's enum rule
 ```
 
 A component value's type names one of these `WidgetValue` members (S1): `"number"`, `"integer"`, `"length"`, `"duration"`,
@@ -5075,7 +5197,7 @@ enums (`"enum:Alignment"`, a shared value type of the catalogue's); and `{ key =
 value of the component's own, a `Value<Key>` whose keys the catalogue entry lists. The other members (a font size,
 `Vec<char>`, `Vec<Key>`, `Vec<MenuEntry>`) type typed widgets' values only: no component's entry has such a value.
 
-A `data` list (per part, and `values` for the widget's values) names what the query reads from `Element.data` and
+A `data` list (per part, and `values` for the widget's or the component's values) names what the query reads from `Element.data` and
 `Element.metrics` (S8), one entry per operand: an `element.` operand by its name (`width`, `progress`, `char_width`,
 `font_underline_offset`, …); `line_spacing`, the own font's line spacing that the `line_height` operand reads under
 `auto` (S2.2); `body_font_height`; and another part's font metric as `widget.<part>.<metric>` (`char_width`,
@@ -5100,6 +5222,19 @@ state names to them); the order of precedence inside a group is a fact, cited fr
 preset states it as the order of its `exclusive` arrays, and the gate checks that order against the state-model data
 (S17).
 
+**Groups and sets per element** (ADD-A146). An `exclusive` group or a `recency` set stated as a bare array of flags
+applies to every element of the widget, its own element and its *(element)* parts; stated as a table, `{ parts =
+["increment", "decrement"], flags = ["disabled", "pressed", "hover"] }`, it applies to the elements `parts` names:
+the widget's root part, which stands for the widget's own element, or its *(element)* parts, each once. So a widget
+whose elements follow different state models states each on its own elements: WinUI's number box holds the text
+box's CommonStates on `stepper`'s `body` and the spin buttons' on `increment` and `decrement` (the catalogue's
+`stepper`), where one list for the whole widget drops a text box's hover under a press it never has and a spin
+button's under a focus it never has. A component's groups and sets take the same two forms (S5.1). Rejected: such
+parts as nested `button` widgets (the catalogue's nested-control route would serve `stepper`, but not a set on some
+elements only where they are the widget's own parts, `split_button`'s `primary` and `secondary`); a group or set per
+part always (`button`, whose one element is the widget, and every widget whose elements share one model would
+restate each list per part).
+
 **A flag the platform clears** (ADD-A141; the MT-C1 and GN-C1 tie-breaks). Where the platform never holds a flag while
 another holds, clearing or refusing it (GTK never holds hover, active, focus or a drop on an insensitive widget,
 `gtk@4.24.1 gtk/gtkwidget.c:6253-6257`, `:8260-8261`, `:8320-8321`, `:10520-10522`, `gtk/gtkdroptarget.c:204-205`, as
@@ -5122,9 +5257,11 @@ members are a fact cited from the platform's code (the list of interactions it k
 tie-break for flags whose order the connector does not report, its first the latest, chosen as the order a connector
 that reports none should give and stated in the state models with its reason, as an exclusive group's precedence is
 (S17). A flag may be in several sets (Compose's hover is in the state layer's and in the elevation's) and in an
-exclusive group too, the drop applying first. A widget's sets apply to each element of the widget, its *(element)*
-parts included, as its exclusive groups do, and a flavour's section replaces them as any key. The name is a key
-(S1), declared where it is used, so a `latest` term naming a set the widget does not declare is refused (S12).
+exclusive group too, the drop applying first. A widget's sets apply to the elements they name, to every element of
+the widget, its *(element)* parts included, where they name none, as its exclusive groups do (*Groups and sets per
+element*, above; ADD-A146), and a flavour's section replaces them as any key. The name is a key
+(S1), one set per name in a widget, declared where it is used, so a `latest` term naming a set the widget does not
+declare, or one that does not apply to the element its rule's part is queried with, is refused (S12).
 
 `exclusive_variants` lists groups of variants of which an element holds at most one, as the platform's style is one
 of them (iOS's `UIButton.Configuration` styles, B-1): an element given two of one
@@ -5251,7 +5388,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | a whole `Value` struct block, or a struct bare-block map entry, in a patch | `{ replace = { <the block's table> } }`, the block stated whole (S2.2), accepted only where the type at its position is a struct block's patch: a rule's `set`, a layer's bases above the preset, a `[for_preset.<id>]` part, a keyframe's `patch` wherever the keyframe stands (S2.2); where the type is the block itself (the preset layer's bases outside a keyframe's `patch`, a list's item, inside a `replace`) and on a plain block or a `Value<Paint>` it is an unknown key, which the TOML reader refuses (`LayerError`, S1); `replace` is the table's only key, another beside it refused, and its value a table only, never a reference or `"absent"` (on a `Value` block those are the bare forms; on a struct bare-block entry they are refused, S12); an enum block is spelt whole by its variant with no wrapper; `replace` is reserved, no field or variant named so (ADD-A125) |
 | an enum variant | a unit variant is its snake_case name (`"follow_part"`, `"continuous"`); a variant with data is a one-key table, `{ <variant> = <payload> }`: `top_left = { concentric = { minimum_px = <n> } }` (a `Corners` field is a table of its four corners and its curve, S2.4), `shadow = { elevation = "<step>" }`, `timing = { spring = { mass = <n>, … } }` |
 | a list | a TOML array; where the platform has none, `[]` with its citation (a list is never `"absent"`, S2.11) |
-| a map (`Vec<(K, V)>`) | a TOML table, one key per entry, never a list of pairs: a `Key` (or an enum-keyed map's variant) bare, by S1's key grammar; a key that is text (`per_family`'s font families, `per_language`'s language tags) as written, quoted where TOML does not allow it bare (`"Segoe Fluent Icons" = ["Segoe MDL2 Assets"]`); two keys are one entry exactly where they are equal as TOML keys, that is case-sensitively, so a family is written as its source writes it, and the toolkit's own family matching (fontconfig's ignores case and blanks, `fontconfig@2.18.3 src/fcmatch.c:69-82`) is the connector's (ADD-A123); an entry whose value has a unit (`Value<Ms>`, `Value<Px>`) takes the unit's suffix on its key as a field does (`[tokens.motion.durations] button_ms = <n>`), its path naming it without (`token.motion.durations.button`), while a `Scalar` entry (a keyed param, a material or transition param) takes none, its number in the unit its declaration names (S10); an empty map `{}` with its citation (in a patch on the map itself, outside a `{ replace = { … } }` and not creating an entry, `{}` is no change, S6.1); in a `Value` (`Font.axes`, `Font.features`) also `"= <reference>"` (ADD-A125) |
+| a map (`Vec<(K, V)>`) | a TOML table, one key per entry, never a list of pairs: a `Key` (or an enum-keyed map's variant) bare, by S1's key grammar; a key that is text (`per_family`'s font families, `per_language`'s language tags) as written, quoted where TOML does not allow it bare (`"Segoe Fluent Icons" = ["Segoe MDL2 Assets"]`); two keys are one entry exactly where they are equal as TOML keys, that is case-sensitively, so a family is written as its source writes it, and the toolkit's own family matching (fontconfig's ignores case and blanks, `fontconfig@2.18.3 src/fcmatch.c:69-82`) is the connector's (ADD-A123); an entry whose value has a unit (`Value<Ms>`, `Value<Px>`) takes the unit's suffix on its key as a field does (`[tokens.motion.durations] button_ms = <n>`), its path naming it without (`token.motion.durations.button`), while a `Scalar` entry (a keyed param, a material or transition param) and a component's value (`[components.<key>.values]`: `delay = <n>`, `button_gap = <n>`) take none, the number in the unit the declaration names (S10: a `"length"` in px, a `"duration"` in ms; ADD-A146, the catalogue's rule stated here; rejected: `delay_ms`, as a `Value<Ms>` entry spells it: a component value's type is `Value<WidgetValue>`, which names no unit, its declaration does); an empty map `{}` with its citation (in a patch on the map itself, outside a `{ replace = { … } }` and not creating an entry, `{}` is no change, S6.1); in a `Value` (`Font.axes`, `Font.features`) also `"= <reference>"` (ADD-A125) |
 | a tuple, a tuple variant | a positional TOML array: `center = [<x>, <y>]` (`Radial.center`, `Conic.center`), `origin = [<x>, <y>]` (`Transform.origin`); a tuple variant is a one-key table holding that array, `timing = { cubic_bezier = [<x1>, <y1>, <x2>, <y2>] }` |
 | `input.kde_scheme.groups`, `.inactive_groups`, `.unset_keys` | `[inputs.kde_scheme.groups]`, `[inputs.kde_scheme.inactive_groups]` and `[inputs.kde_scheme.unset_keys]`, each with `light` and `dark`: arrays of surface sets (`["header"]`, or `[]`), and for `unset_keys` of scheme input names (`["kde_scheme.view.foreground_visited"]`, or `[]`) |
 | a `PartRef` stated as a value (a keyframe's `part`, S2.7; `Measured::Part`; a fade's `under`; an `IndicationBox.part`, S2.12) | `"<part>"`, a bare name of the parts of the widget whose table it is in, or `"<widget>.<part>"`, which names its widget (a keyframe of a component's loop naming a part of a widget it holds); a bare name where no widget's table is read is mistyped (ADD-A123) |
@@ -5263,6 +5400,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | a path pending in a preset (S17) | `[pending]`, one entry per path, its TOML path quoted and its register id: `"tokens.behavior.touch.delay_ms" = "U151"`, or, where the path's pending facts (or a state model's pending `default_size`) that leave it listed carry two or more ids, the list of them, each id once, in any order (one id is always the string, a list of one being mistyped): a field S6.1 sets whole whose leaves are pending under different ids (`"tokens.behavior.key_repeat" = ["<id>", "<id>"]`), or a field whose pending facts differ by combination (`"widgets.button.body.corners.curve" = ["<id>", "<id>"]`, two facts split by `variants` and `not_variants`; ADD-A131), a pending `default_size` by its declaration's path (`"declare.widget.button.sizes_by_variant.@gray.default_size" = "U129"`: a `sizes_by_variant` entry's by its variant's name as the segment, `@` included, a `sizes_by_context` entry's by its position, a flavour's under `declare.flavor.<f>.`; S17), a pending presence by its part's path (`"widgets.button.label" = "U122"`, S17), a pending input by its scheme, `"inputs.<name>.<scheme>"` (`"inputs.accent.dark" = "U<n>"`, the last segment the scheme; only a per-scheme value is listed, a pending contrast base standing over its scheme's per-scheme value, S9, S17; ADD-A132), the path as S11 writes its key, unit suffix included, which the reader maps to the model's path (`token.behavior.touch.delay`), the spelling of the problems and of the synthetic values; a preset's only, written by `generate_preset.py`, empty at the release (ADD-A128) |
 | one preset's part of a layer | `[for_preset.<id>.…]` (bases naming that preset's keyed names, in an application layer or a palette) |
 | widget values, component parts | `[widgets.<widget>.values]`, `[components.<key>.<part>]`, `[components.<key>.values]` |
+| a `Breakpoint` (S7.3), an item of a widget's `breakpoints` value | `breakpoints = [{ measured = "window", width = { at_most = <n> }, height = { at_most = <n> }, combine = "any", variant = "bottom_sheet" }]`, among the widget's values or in a `Values` rule's `set`: `measured` by the enum rule (`"allocation"`, `"window"`, `{ part = "<part>" }`, a bare name of the widget's parts); `width` and `height` each a one-key table of the `Comparison`'s snake_case name and the threshold, a number in px or `"= …"` (the key is the comparison, so it takes no unit suffix), one left out where the breakpoint does not test that size; `combine` `"all"` or `"any"`, left out only where fewer than two sizes are tested; `variant` the variant's name, `@` before a keyed one (ADD-A146: the form S10's example showed under `[declare.widget.<w>]`, moved with the value, S7.3) |
 
 `when` keys: `conditions`, `not_conditions`, `context` and `not_context` (arrays of `{ scope = "any" | { nearest =
 [...] }` (left out: `"any"`, any ancestor; ADD-A123), widget, part, surface, sizes, not_sizes, variants, not_variants, states, not_states }`; `widget` may be left out to match by
@@ -5330,8 +5468,20 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `DynamicType` (S2.2, S9.4);
 - `token.text.font_dpi`, or a reader's or stand-in's `ReaderState.font_dpi` or `text_scaling_factor`, is not finite
   and above zero (S9.4); a `ReaderState.container_sizes` names one container twice (one value at a time, below);
-- on `kde-breeze`, a mapping palette leaves an accent-dependent role (S9.1's list, its tinting entries wherever the
-  preset's `token.kde.tint_factor` can be `Some`) or an inactive input role to the preset's Breeze value, so an
+- under a mapping palette the preset shows a colour of its own beside the palette's (S14). On every preset
+  (ADD-A146): a `Colors` rule of the current preset that can apply while the palette applies (under any combination
+  of conditions but a contrast the palette is skipped under, S8) sets a role the palette's bases state at that scheme
+  to a value that, followed through references, reads no role and no input the palette states (a literal; a keyed
+  role or an input the palette leaves to the preset), and no colour rule of the palette states that role under every
+  combination in which the preset's rule applies. Every layer's bases apply before every layer's rules (S8), so such
+  a rule wins over the palette's base: `adwaita`'s sidebar in an inactive window, a literal under `window_inactive`,
+  and `macos-*`'s inactive selection, `= role.@selected_control_secondary`, would show the platform's colour in the
+  palette's window; a rule that follows the palette passes (`adwaita`'s header, `= role.window.background`;
+  `kde-breeze`'s inactive rule where the mapping states the inactive input roles it reads), and a palette's rule
+  that keeps its own base is `= active(role.<set>.<role>)` (S2.2, S11). And on `kde-breeze`: a mapping palette
+  leaves unstated an accent-dependent role (S9.1's list, its tinting entries wherever the
+  preset's `token.kde.tint_factor` can be `Some`) or an inactive input role, which the accent-derivation layer would
+  derive over Breeze's scheme inputs, a mapping having none, so an
   inactive window or a title bar would show Breeze's colours under the palette's (S9.2, S14); an
   `input.kde_scheme.groups` or `inactive_groups` list names a set twice or a set the preset does not declare, or an
   `unset_keys` list names an input twice or one that is not a declared `kde_scheme.<set>.<key>` or
@@ -5394,9 +5544,16 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `Concentric` corner's container (S2.4) has a matching corner that can be `Ellipse` (no one radius), each under
   some combination, following references and rules (ADD-A124);
 - a widget's `recency` set (S10) has fewer than two flags, or names a flag twice or a keyed flag the widget does not
-  declare (as a rule's `states` may not, above), or two of a widget's sets order two flags oppositely (so the answer
+  declare (as a rule's `states` may not, above), or two of a widget's sets that apply to one element order two flags
+  oppositely (so the answer
   under no reported order is one order of the flags, which the gate checks, S17); a `latest` term names a set the queried element's widget does not
-  declare, or a flag that is not a member of it (S7.2; ADD-A124);
+  declare or one that does not apply to that element, or a flag that is not a member of it (S7.2; ADD-A124); an
+  `exclusive` group's or a `recency` set's `parts` (S10's *Groups and sets per element*) is empty, names a part
+  twice, or names a part that is neither the widget's root part nor one of its *(element)* parts (ADD-A146);
+- a `Values` rule patches `breakpoints` and selects, in `variants` or `not_variants`, on a variant a `Breakpoint` of
+  that widget sets, in any base of the stack or any rule of it that can apply under the current preset (S7.3, S8:
+  the connector evaluates the list before it sets those variants, so the term could never decide which list it
+  evaluates; ADD-A146);
 - a `Transition.from` is an empty list (it would apply from no state), names a flag twice, or names a keyed flag the
   widget of the element it is queried with does not declare (S2.7; ADD-A124);
 - a `StateLayer` transition is stated on a part whose fields lack `interaction` (S2.7, S2.12; ADD-A124);
@@ -5485,8 +5642,10 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   misspelt variant in the preset's declarations differs from the state model, which the gate fails, and one in the
   state model is no variant of the catalogue's entry, which `check_facts.py`'s state-model rule refuses, so the
   refusal would catch nothing there and would refuse a variant the platform draws by the rules that apply
-  (libadwaita's `@tab_button`, as `icon_only`); it stays for an application layer's and a palette's declared variants, which no
-  state model checks (ADD-A128);
+  (libadwaita's `@tab_button`, as `icon_only`); every bundled preset is a platform's and no layer above a preset
+  declares (S10: an application layer holds no `[declare]`, a palette `schemes` alone), so no declared variant is
+  refused as unused, and the refusal stays for the other keyed selector names (ADD-A128; ADD-A146: the clause had
+  kept it for an application layer's and a palette's declared variants, which no layer can state);
 - a stated number is not finite;
 - an `exclusive_variants` group names a variant twice (a variant may be in several groups); a
   `sizes_by_variant` entry names a variant the widget does not declare, states a `default_size` that is not one of its
@@ -5517,7 +5676,7 @@ evaluated violate, rules that apply and rules that do not alike.
 The exclusions are all the check knows of the atoms: the values of each one-of parametrised condition (`Scheme`,
 `Input`, `Idiom`, `DeviceModel`, `Posture`, `Flavor`, `Preset`, and `ContainerSize` per container; one value holds at
 a time), the two contrast conditions (`ReaderState.contrast` is one value, S9), the flags of each declared exclusive
-group, after the S10 reduction, the latest flag of each recency set (at most one, a kept flag, and one exactly
+group that applies to the element (S10), after the S10 reduction, the latest flag of each recency set that applies to it (at most one, a kept flag, and one exactly
 where any flag of the set is kept after the drop, S7.2), the variants of each exclusive variant group (at most one at a time, S10), the one-of selector parts (an element has one control size, one density, one
 direction, one size class on each axis and one parity at a time, and each ancestor one control size, which a
 `ContextMatch.sizes` tests per ancestor), and the model's own definitions among the atoms: among one `among` set of
@@ -6615,7 +6774,8 @@ and `variant_products` are optional, absent meaning none), `axes = { states, con
 contexts }` (what the platform's drawing distinguishes: states by S1's `StateFlag` names, conditions by S7.1's,
 contexts as S11's context selectors), `exclusive` (the exclusive groups, each in its order of precedence, S10),
 `recency` (the recency sets, each in its stated order, cited for its members and for the order's reason, S10;
-absent meaning none; ADD-A124),
+absent meaning none; ADD-A124), a group or a set of some elements only spelt as the declaration spells it, `{ parts =
+[ … ], flags = [ … ] }` (S10's *Groups and sets per element*; `check_facts.py` checks `parts` as S12 does; ADD-A146),
 `exclusive_variants` (S10), `variant_sets` (the sets of two or more variants the platform draws together on one
 element, each a list, `variant_sets = [["glass", "primary"], ["clear", "primary"]]`; none where it draws its variants
 one at a time; ADD-A121) and `variant_products` (the same sets as products of groups, below; ADD-A122) and `not_drawn` (combinations the platform does not draw, as `when`s); `available` is always stated, and a declaration
@@ -6644,7 +6804,8 @@ entry whose selector no `axes.contexts` entry's ancestors match, a declaration n
 reaches is pending, no default is in force for that set and context until it is stated (S10's *A pending default*),
 and nothing is checked for it (ADD-A131). Flavours are not an axis: a preset with flavours is checked
 once per flavour (below). A combination is a subset of `axes.states` (each
-state a flag) reduced by `exclusive` and, where it holds two or more flags of a recency set, ordered (one combination
+state a flag) reduced by `exclusive`, for each element the gate queries by the groups that apply to it (S10;
+ADD-A146), and, where it holds two or more flags of a recency set that applies to that element, ordered (one combination
 per order of its flags that belong to a recency set, the orders giving every set the same latest flag counted once;
 an element whose connector reports no order resolves as under one of them, so it is checked with them; a widget whose
 sets hold n flags together gives at most n! orders per combination, Material's widest, the card's and the chip's,
