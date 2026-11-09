@@ -4826,6 +4826,8 @@ spaces:
   carries it.
 - **Variants:**
   - on the widget, keyed, `ios-*`: `@menu` (the inline bar placement), `@list` (the stacked placement) (C-38†).
+  - on the widget, keyed, `adwaita`: `@emoji` (GtkEmojiCompletion, the emoji completion popover attached to a text,
+    `gtk@4.24.1 gtk/gtkemojicompletion.c:66`, its rows `menu.item` in `context autocomplete`, GN-2.43; ADD-A146).
   - Material's filled and outlined fields (MAT-N27) are the field's own (`input @filled`): the field is the
     autocomplete's ancestor, so no rule selects it by `context autocomplete`. Material's autocomplete tokens carry
     values for the field (`md.comp.outlined-autocomplete.text-field.*`, `material-web@2.5.0
@@ -4957,8 +4959,10 @@ spaces:
 - **Widget values:** `anchor_offset_x_px: Value<Px>`, `anchor_offset_y_px: Value<Px>` (the placement on its anchor icon
   or item: MAT-N10, GN-2.37, C-15, GN-1.41); `presentations: Vec<PresentationTransition>`: events `Appear`,
   `Disappear` (the needs-attention dot's appearance, GN-1.41); `anchor_corner: Value<BadgeAnchor>`,
-  `BadgeAnchor { TopEnd, TopStart,
-  TrailingInline }` (C-15's list-row badge is trailing inline); `cutout_px: Value<Px>` (the gap libadwaita's
+  `BadgeAnchor { TopEnd, TopStart, LeadingInline,
+  TrailingInline }` (C-15's list-row badge is trailing inline; `LeadingInline` is `TrailingInline`'s counterpart,
+  which the query returns for it in right-to-left, so that a resolved anchor names the physical side as every
+  resolved start and end does, S2.4; no platform's base states it; ADD-A146); `cutout_px: Value<Px>` (the gap libadwaita's
   indicator bin masks out of the anchor around the badge, GN-2.36). No row states a cap on the count shown, so no
   value carries one (ADD-A146: a `max_count` no survey found would be a value every preset had to invent).
 - **Variants:** typed form `dot` (GN-2.36, MAT-N10, W2-08, C-15), `count` (GN-2.36, MAT-N10, W2-08, C-15), `icon`
@@ -5047,7 +5051,8 @@ spaces:
   and vertical layouts, W2-07); `content_gap_px: Value<Px>` (GN-2.11, K-KA-10†, K-KA-29†); `action_gap_px: Value<Px>`
   (GN-2.11, MAT-N23); Material's heights per line count and form factor are `body.min_height` rules under `{multiline}`
   and the size class (MAT-N23; one home); `title_alignment: Value<BannerTitleAlignment>`, `BannerTitleAlignment {
-  Start, Center, CenterWhenFits }` (AdwBanner centres the title in the whole banner while it fits with
+  Start, End, Center, CenterWhenFits }` (`End` is `Start`'s counterpart, which the query returns for it in
+  right-to-left, S2.4; no platform's base states it; ADD-A146; AdwBanner centres the title in the whole banner while it fits with
   `centered_title_gap_px` on both sides of the button's width, and otherwise puts it at the start edge; under
   `vertical` it centres it, GN-2.11, `adw-banner.c:342-347`); `centered_title_gap_px: Value<Px>` (that gap,
   GN-2.11); `inner_corner_factor: Value<f32>` (Kirigami's inner radius as a fraction of the outer, read by
@@ -8420,10 +8425,14 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 
 One-platform kinds (R14, S5.1): a component is named by a `Key`; its parts and their fields are this catalogue's
 (generated, S6.1), a preset states it as a `ComponentBase` in its bases and its rules name it by `PartRef::Component`
-and `WidgetRef::Component` (S1, S5.1), and the preset's `[declare.component.<key>]` states its availability, sizes,
-variants, flags and its values' types (S10). Each value is a `Value<WidgetValue>` of the type its declaration names
+and `WidgetRef::Component` (S1, S5.1), and the preset's `[declare.component.<key>]` states what a widget's
+declaration states, each key as for a widget (`available`, `variants`, `flags`, `sizes`, `default_size`,
+`densities`, `exclusive`, `recency`, `exclusive_variants`, `requires_variants`, `sizes_by_variant`,
+`sizes_by_context`, `data`), and `values`, its values' types, in place of `keys` (S10; ADD-A146: the components
+below declare element data, `led`, `delay_button`, `char_select`, and a recency set, `fab_menu`, which a shorter
+list would refuse them). Each value is a `Value<WidgetValue>` of the type its declaration names
 in S10's closed vocabulary (`values = { <name> = "<type>" }`, *Shared value types*: `WidgetValue`): a keyed map, so a value's key carries no unit suffix
-(S4.1's rule for map keys; `delay: Value<Ms>`, `button_gap: Value<Px>`), the declaration's type giving the unit, and
+(S11's rule for entries typed by their declaration, ADD-A146; `delay: Value<Ms>`, `button_gap: Value<Px>`), the declaration's type giving the unit, and
 a path or expression names it as declared (`values.delay`); its TOML value is a plain number in that unit, or an
 expression. A component follows the entry format's rules for parts (its first part a container root, each part's fields
 listed) and the nested-control rule (a control of a typed kind inside it is that widget in `context
@@ -8454,15 +8463,22 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 
 #### component.emoji_chooser (gnome)
 
-- **Kind:** keyed component (GtkEmojiChooser, GTK). Row GN-2.43; one platform lists it (group 6's decision).
+- **Kind:** keyed component (GtkEmojiChooser, GTK). Row GN-2.43; one platform lists it (group 6's decision). The
+  chooser is a `popover`, its ancestor (`gtk@4.24.1 gtk/gtkemojichooser.c:248`, styled as a popover of the class
+  `emoji-picker`, `libadwaita@1.10.0 src/stylesheet/widgets/_emoji-chooser.scss:1-3`): its box, arrow, shadow, presentation and
+  placement are the popover's, and the component, the popover's content, is queried in `context popover`
+  (ADD-A146; rejected: a box with a fill of the component's own, which restated the popover's and gave the
+  connector no arrow, shadow or placement for it, R20). The emoji completion is no part of it: GtkEmojiCompletion
+  is a popover of its own attached to a text (`gtk/gtkemojicompletion.c:66`, `_emoji-chooser.scss:59-61`), the
+  completion attached to a field that `autocomplete` is on every platform, so it is `autocomplete` under
+  `adwaita`'s keyed `@emoji`, its rows `menu.item` in `context autocomplete` (ADD-A146).
 - **Available:** `adwaita`.
 - **Parts:**
-  - `body` — the root, the chooser's box: `fill`, `padding`, `bindings`.
+  - `body` — the root, the content box inside the popover: `padding`, `bindings`.
   - `cell` *(element; states hover, focus_visible)* — one emoji: `fill`, `corners`, `text`.
-  - `completion_row` *(element; states hover, focus_visible)* — a search completion row: `fill`, `text`, `padding`.
     Its section buttons are `button` elements in `context component.emoji_chooser` (Nested controls).
 - **Widget values:** none.
-- **Variants/sizes:** none. **Flags:** state flags only (hover, focus_visible on `cell` and `completion_row`, as
+- **Variants/sizes:** none. **Flags:** state flags only (hover, focus_visible on `cell`, as
   `_emoji-chooser.scss` selects them). **Exclusive groups:** none (libadwaita's CSS combines states); precedence:
   state models (S17).
 - **may_be_absent:** none beyond S6.3's drawing fields.
@@ -8581,7 +8597,12 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 - **Parts:**
   - `frame` — the root: `stroke`, `bindings` (the palette colours its digits take).
   - `segment` — a digit's segment: `fill`, `stroke` (the raised segments' edges).
-- **Widget values:** none.
+- **Widget values:** none yet, so the entry is not drawable as it stands (ADD-A146): Qt computes the digits'
+  geometry in code, the segment's length from the widget's width and height, the digit's advance and offsets and
+  the segment's width as a fifth of its length, with each segment's polygon after it (`qtbase@6.12.0
+  src/widgets/widgets/qlcdnumber.cpp:742-748`, `:841`), and a toolkit with no LCD widget can place or shape no
+  segment from two parts. Its unit adds that geometry, values as expressions over `element.width` and
+  `element.height` with their `data`, and the seven segments' shapes, as a class 2 change made with its facts.
 - **Variants:** keyed `@outline`, `@filled`, `@flat` (QLCDNumber's segment styles, the application's choice).
   **Sizes:** none.
 - **Flags:** state flags only (disabled, through the bound palette's disabled roles). **Exclusive groups:** none;
@@ -8603,7 +8624,8 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
     values.dark_factor)` `@ !{@on}` (the off look is the colour darkened by KLed's dark factor), the shape and shading
     by rules per variant; the part declares its data, `data = { body = ["color"] }` (S8, S10).
 - **Widget values:** `default_color: Value<Color>` (declared `"color"`: KLed's default colour), `dark_factor:
-  Value<u32>` (declared `"number"`: KLed's dark factor, an integer percent, `kled.cpp:19`), both from `kled.cpp` in the value phase.
+  Value<u32>` (declared `"integer"`, a `Value<u32>`'s type name as on `tab_overview`'s columns, `qt_darker` taking a
+  whole percent: KLed's dark factor, `kled.cpp:19`), both from `kled.cpp` in the value phase.
 - **Variants:** keyed `@round`, `@rectangular` (shape), `@raised`, `@sunken`, `@flat` (look), the application's
   choice. **Sizes:** none.
 - **Flags:** keyed `@on` (the lamp lit, set by the application); state flags used: disabled. **Exclusive groups:**
@@ -8971,9 +8993,13 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   Bar shows none, so an application draws no item there and nothing is queried (as content, S6.3).
 - **Parts:**
   - `bar` — the root: the application's area of the Touch Bar, holding its items: `fill`, `padding`.
-  - `item` *(element)* — a Touch Bar item (a button, a group's member, a popover item): `fill`, `corners`, `padding`,
-    `min_width`, `min_height`, `text`, `icon`. A control of a typed kind in it (a slider, a segmented control) is that
-    widget in `context component.touch_bar` (Nested controls).
+  - `item` *(element)* — the slot of one Touch Bar item (a button's, a group's member's, a popover item's):
+    `padding`, `min_width`, `min_height`. A control of a typed kind in it is that widget in `context
+    component.touch_bar` (Nested controls), the button first: a Touch Bar button is a button to the user, as a
+    toolbar's is, so it is `button @ context component.touch_bar`, its bezel, text and icon the button's there, with
+    the button's states (ADD-A146; rejected: the bezel, text and icon as this part's own fields, which restated
+    `button`'s parts with no state list, where every other component's buttons are `button` elements); a slider or
+    a segmented control likewise.
   - `scrubber` — an `NSScrubber`, the scrolling strip of items: `fill`, `corners`, `padding`.
   - `scrubber_item` *(element)*, in `scrubber` — one scrubber item: `fill`, `corners`, `text`, `icon`.
   - `scrubber_selection`, in `scrubber_item` — the scrubber's selection and highlight overlays
@@ -9170,7 +9196,10 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   - `track`, in `ring` — that ring's background ring: `fill`.
 - **Widget values:** `ring_gap: Value<Px>`; `stroke_width: Value<Px>` (the rings' width); `cap: Value<LineCap>`
   (the arc's ends, declared `"enum:LineCap"`, S10); each ring's progress is element data (`element.progress`), not
-  theme.
+  theme. Not drawable as it stands (ADD-A146): the rings state no angle the arc starts at and no direction it
+  sweeps in, which `dial` and `level_indicator` state for the same structure (`start_angle_deg`, `end_angle_deg`),
+  and S10's vocabulary of component value types has no angle; its unit adds the two values and the type, a class 2
+  change made with its facts.
 - **Variants:** keyed `@move`, `@exercise`, `@stand` (three rings with an Apple Watch paired, the Move ring only
   without one: the data decides which are drawn, so none is `may_be_absent`). **Sizes:** none.
 - **Flags:** none (the rings hold no interaction state). **Exclusive groups:** none; precedence: state models (S17).
@@ -9359,7 +9388,7 @@ group starts from the `Window` set's active values whatever `inactive_change_sel
 (`kcolorscheme.cpp:317-319`, S2.2), so each of those fields of `role.selection.disabled` is `=
 kde_effects(active(role.window.<role>), active(role.window.background), disabled, <kind>)` (R5.1). `border` is no
 KColorScheme role (below), so no effect applies to it: Breeze computes its frame colour from the palette group the
-widget is drawn in, `KColorUtils::mix(Window, WindowText, frameIntensityBias())` (`breeze@c97883a kstyle/breezehelper.cpp:142-144`,
+widget is drawn in, `KColorUtils::mix(Window, WindowText, frameIntensityBias())` (`breeze@6.8.2 kstyle/breezehelper.cpp:142-144`,
 the bias KColorScheme's `frameContrast`, `:105`), so `role.<set>.disabled.border` is the active `border`'s derivation
 (`kcu_mix(background, foreground, token.params.color.frame_contrast)` in the set, Q3.15) over the set's disabled roles,
 `= kcu_mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`; under
@@ -9449,7 +9478,7 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
 scheme's, which Plasma's derivation reads (S9.1). So a reader's `input.accent` from another platform applies on
 `kde-breeze`, where the accent-derivation layer, beneath the reader or stand-in, derives the accent-dependent roles
 from it by `kde_accent` over Breeze's scheme inputs, as for `set_accent`, at both schemes, each layer above replacing
-the roles it states (the KDE reader's results at the scheme it read, S9.2; ADD-A132); under a preset whose `accent_inputs` go beyond `accent` (`windows-11`, `macos-*`, `ios-*`), `Theme`
+the roles it states (the KDE reader's results at the scheme it read, S9.2; ADD-A132); under a preset whose `accent_inputs` go beyond `accent` (`windows-11`, `macos-*`; `ios-*` declares `accent` alone, so a foreign reader's accent reaches it as it reaches `adwaita`, ADD-A146), `Theme`
 leaves a foreign reader's `input.accent` out, so no accent mixes with another platform's derived inputs (S8, S9.5).
 
 Each key names one record field, the same in all three namespaces and in `kde_accent`'s `key` operand:
@@ -9514,7 +9543,7 @@ keyed, not per set: KDE computes them from Window. `wm_active_background`, `wm_a
 MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
 
 - the preset: Breeze's scheme files' `[WM]` values (`activeBackground`, `activeForeground`, `inactiveBackground`,
-  `inactiveForeground`; `kcolorscheme@b01fde3 src/color-schemes/BreezeLight.colors:189-195`, BreezeDark's likewise), as
+  `inactiveForeground`; `kcolorscheme@6.31.0 src/color-schemes/BreezeLight.colors:189-195`, BreezeDark's likewise), as
   Plasma's default path copies them into kdeglobals;
 - the reader: kdeglobals' `[WM]`, which Plasma's `applyScheme()` always writes
   (`plasma-workspace@v6.8.2 kcms/colors/colorsapplicator.cpp:287-309`): each key from the scheme file's `[WM]` where it
@@ -9523,7 +9552,7 @@ MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
   accent and tinting or the accent-coloured title bar, `applyScheme()` overrides them (the tinted `Window` background
   and its text; the accent title bar's background and its text, `:318-338`). Where kdeglobals has no `[WM]` (one the
   colours KCM never wrote), Breeze falls back to the palette's `Highlight` and `HighlightedText`, the active group's
-  for the active title bar and the disabled group's for the inactive one (`breeze@c97883a kstyle/breezehelper.cpp:98-102`),
+  for the active title bar and the disabled group's for the inactive one (`breeze@6.8.2 kstyle/breezehelper.cpp:99-103`),
   which the reader states, in its `for_preset.kde-breeze` part and under the scheme it read (S9.3), as references: `= active(role.selection.background)`,
   `= active(role.selection.foreground)`, `= role.selection.disabled.background`, `= role.selection.disabled.foreground`;
 - the accent-derivation layer: the accent's override (`:318-338`) is part of Plasma's derivation, so the layer
@@ -9573,7 +9602,11 @@ elevated twin (`role.@system_background` to `= role.@system_background_elevated`
 `system_orange`,
 `system_yellow`, `system_green`, `system_mint`, `system_teal`, `system_cyan`, `system_blue`, `system_indigo`,
 `system_purple`, `system_pink`, `system_brown`, `system_gray`, `system_gray2` .. `system_gray6` [D-13]. Tint-dependent
-roles are inputs (R2.6), each of them in the preset's `[declare] accent_inputs` with `accent` (S9.1); increased-contrast variants are colour-role rules under `ContrastIncreased` [D-15].
+roles reference `input.accent`, the preset's one input and so its `accent_inputs` (S9.1): a role that takes the tint
+whole is `= input.accent`, and one the tint changes otherwise is a measured derivation over it, as `macos-*`'s are,
+stated from the second-tint host pass (R2.6; until that pass the facts hold the literal measured under the default
+tint, pending on the unmeasured register's row for the pass, S17; ADD-A146, rejected: one more input per tint-dependent role, which the presets do
+not declare and no reader supplies); increased-contrast variants are colour-role rules under `ContrastIncreased` [D-15].
 
 **Windows (`windows-11`).** The WinUI tiers, one keyed role per brush of `Common_themeresources_any.xaml`, in the
 families the rows name: text tiers (`text_tertiary`, `text_inverse`, text on accent: secondary, disabled, selected)
@@ -9727,8 +9760,9 @@ size reports the default category) [D-5, TS-2, X-DT-1, R10]. So every keyed styl
 `body_monospaced_digits` the base style's; for the styles with no row of their own (`extra_large_title`,
 `extra_large_title_2`, `monospaced`), the role UIKit scales them by is the value phase's, from
 `preferredFont(forTextStyle:)` [D-5]. Every other preset's `token.text.scaling` is `linear`, but `material-3`'s
-(`android_non_linear`, MAT-X19); under those two the curve does not depend on the role, so their keyed styles state
-`scaling_role = "none"` (a `Value<Option<TextRole>>`, stated, S11). `macos-*`'s is `linear` because AppKit's text styles take
+(`android_non_linear`, MAT-X19) and `windows-11`'s (`win_ui`, S9.4, ADD-A141); under those three the curve does not
+depend on the role, no kind but `DynamicType` reading it (S2.8), so their keyed styles state
+`scaling_role = "none"` (a `Value<Option<TextRole>>`, stated, S11; ADD-A146). `macos-*`'s is `linear` because AppKit's text styles take
 no content-size category, `preferredFontForTextStyle:options:` taking an options dictionary whose key type the pinned
 headers declare with no key (`NSFont.h:184-187`, `NSFontDescriptor.h:59`), so only the text-scaling factor scales them
 (ADD-A130). A keyed style of any platform states each of `fill`, `elision`, `wrap` and `max_lines` only where its style
@@ -9768,12 +9802,10 @@ patches exactly the slots KDE has a setting for (S9.5): `body` from `[General] f
 `toolBarFont` fill no slot, and the reader states them on the keyed styles `menu` and `toolbar` in its
 `for_preset.kde-breeze` part (S9.5).
 
-**Derived sizes and text scaling.** A size derived from another style's (`mul(token.text.roles.body.font.size,
-<factor>)` above, the KDE sizes by `add`, `page_preview`'s filler text) reads that size converted and scaled (S2.2),
-and the query then scales every part's font size (S9.4), so as the core states it the derived size could be scaled
-twice. The entries assume text scaling applies once to a derived size; which of the two readings holds (the operand
-read unscaled and the result scaled, or the operand read scaled and the result not scaled again: the same under
-`Linear` for a product, different for `add` and under the non-linear curves) is the core's to state (S2.2, S9.4).
+**Derived sizes and text scaling.** A size stated as an expression over another style's size
+(`mul(token.text.roles.body.font.size, <factor>)` above, the KDE sizes by `add`, `page_preview`'s filler text, a
+`Font.size` expression on its part's text) reads its operands converted and not yet scaled, and its result is
+scaled once, by its own style's curve (S2.2, S9.4; ADD-A146).
 
 **Material.** The fifteen baseline styles, `display_large` .. `label_small` (five groups of large, medium, small:
 display,
@@ -9881,7 +9913,7 @@ read them, S4.8). The second is this table, for the tokens no block mark covers:
 |---|---|---|
 | `token.kde` | every preset but `kde-breeze` | KDE's colour effects and scheme options (S4.8) |
 | `token.material` | every preset but `material-3` | Material's dynamic scheme (S4.8) |
-| `token.icons.theme` | each preset whose `token.icons.set` is not `freedesktop`: `macos-*`, `ios-*`, `windows-11`, `material-3` | they draw one fixed symbol set and have no named icon theme the freedesktop lookup could use (today's presets repeat the set's name, `native-theme/src/presets/macos-tahoe.toml:19`, `ios-13.toml:27`, `windows-11.toml:18`, `material-3.toml:10`). This supersedes `docs/platform-facts.md` §2.1.9, which has such a preset state its set's name as `icon_theme`; the value phase updates platform-facts to this row |
+| `token.icons.theme` | each preset whose `token.icons.set` is not `freedesktop`: `macos-*`, `ios-*`, `windows-11`, `material-3` | they draw one fixed symbol set and have no named icon theme the freedesktop lookup could use (0.7.0's presets repeat the set's name, `2796b26e:native-theme/src/presets/macos-tahoe.toml:19`, `ios-13.toml:27`, `windows-11.toml:18`, `material-3.toml:10`). This supersedes `docs/platform-facts.md` §2.1.9, which has such a preset state its set's name as `icon_theme`; the value phase updates platform-facts to this row |
 | `token.icons.sizes.toolbar` | each preset whose platform names no such context: none of `adwaita`, `kde-breeze`, `macos-*`, `windows-11`, `material-3` (each names one, platform-facts §2.1.8); for `ios-*` the value phase names it from the facts (§2.1.8 has no iOS column; D-19) | today's five typed contexts are not every platform's (ADD-A43) |
 | `token.icons.sizes.small` | each preset whose platform names no such context: `material-3` (no small icon token, platform-facts §2.1.8); for `ios-*` the value phase names it from the facts (D-19) | as above |
 | `token.icons.sizes.large` | each preset whose platform names no such context: `macos-*`, `material-3` (platform-facts §2.1.8); for `ios-*` the value phase names it from the facts (D-19) | as above |
@@ -9926,7 +9958,7 @@ expand, the tab move and the dock-widget and toolbar re-layout, `qtbase@6.12.0 s
 `src/widgets/widgets/qtabbar_p.h:144`, `src/widgets/widgets/qwidgetanimator.cpp:62`), Kirigami's and qqc2-desktop-style's
 curves in use, `in_out_quad`, `out_cubic`, `in_cubic`, `in_out_cubic`, `out_quad`, `in_quad` (QML's `Easing.<curve>`,
 by search of `kirigami@6.31.0 src` and `qqc2-desktop-style@6.31.0`) and `out_expo` (`kirigami@6.31.0
-src/layouts/columnview.cpp:462`) (Q3.26); Breeze's `animations` (`Timing::Steps`, its count breezerc's `AnimationSteps`, K3.31); `in_out_sine`, Qt's
+src/layouts/columnview.cpp:462`) (Q3.26); Breeze's `animations` (`Timing::Steps`, its count breezerc's `AnimationSteps`, K3.31: the setting's one home, the KDE reader stating the timing whole from it, a `Timing` being stated whole, S6.1, as `Timing::Steps` of that count, jumping at each step's end, where the setting is above zero and `Linear` where it is not, as Breeze's `digitize` leaves the value then, `breeze@6.8.2 kstyle/animations/breezeanimationdata.h:72-80`; ADD-A146, rejected: a param holding the count beside the timing, which no expression read, `Steps.count` being a plain number that cannot refer to it, R20); `in_out_sine`, Qt's
 default easing curve for its timelines (`QTimeLine`'s, `qtbase@6.12.0 src/corelib/tools/qtimeline.cpp:24-25`, K3.37); WinUI's entering and exiting curves,
 `fast_out_slow_in` and `slow_out_fast_in`, and its control key spline `control_fast_out_slow_in`
 (`ControlFastOutSlowInKeySpline`, `Common_themeresources_any.xaml:602`) (W3-31), the connected animation's
@@ -9987,7 +10019,7 @@ is not).
 | libadwaita, macos-*, ios-* | (none): layers are stated per part (`PartStyle.shadow.layers`) | GN-3.01, MAC-X01, X-SH-1 |
 
 **token.params** (ADD-A44), keyed scalar tokens in groups, each group of one unit its declaration names (S4.6, S10):
-`token.params.shadow.strength` (K3.1, K3.2); `token.params.motion.animation_steps` (K3.31); `token.params.motion.kwin_speed_factor` (K1.17: the speed factor
+`token.params.shadow.strength` (K3.1, K3.2); `token.params.motion.kwin_speed_factor` (K1.17: the speed factor
 KWin and its decoration read, kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', which
 `token.motion.speed_factor` reads alone, and 1 where neither states one, the decoration's default,
 `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`; ADD-A123): the preset states it `= token.motion.speed_factor`,
@@ -9996,7 +10028,9 @@ kdeglobals' factor, as KConfig's cascade gives the decoration where kwinrc state
 factor in its layer where kwinrc states one, the one value no preset can know (ADD-A125);
 `token.params.color.contrast` and `token.params.color.frame_contrast` (K3.53, K3.91, Q3.14, Q3.15);
 `token.params.layout.grid_unit` (Q3.29, a length); `token.params.optics.optical_centering` (MAT-X37†: Material's
-unitless optical-centering coefficient, in a group of unit `number` of its own, since `layout` is a group of lengths);
+unitless optical-centering coefficient, in a group of unit `number` of its own, since `layout` is a group of lengths;
+S4.6's list of groups names it, and `material-3` declares it with the first unit whose rule reads it, `split_button`'s,
+after 0.8.0, so the tokens unit's list of groups does not hold it, ADD-A146);
 `token.params.caret.aspect_ratio` (GN-3.36); `token.params.shape.<step>` for Material's shape scale from `none` to `extra_extra_large` (MAT-X11; its `full`, half
 the height at any size, is no scalar: the parts state it as `Radius::Full { maximum: Absent }`, MAT-X11's trace);
 `token.params.display`'s four corner keys (S4.6, R25.11, W-6, X-CR-4: the absence row above);
@@ -10083,12 +10117,13 @@ Kirigami's elevation entries are (`token.elevation`); Material's `_emphasized` s
 the per-role line height, letter spacing and optical-size axis (MAC-X18, W3-23, MAT-X16,
 X-DT-5, GN-3.57's weight), the default size category's sizes on `ios-*` (X-DT-1), `monospace` with a source on
 `windows-11` (W3-47†) and the platform default sans and monospace on `material-3` (MAT-X36†). `token.text.fallbacks`
-(ADD-A41) holds the family fallbacks, emoji family and per-language fallback map (all FM rows); `token.text.rendering`
+(ADD-A41) holds the family fallbacks, emoji family, per-language fallback map (all FM rows) and the per-family
+chains, `per_family` (S4.4, ADD-A122, ADD-A123); `token.text.rendering`
 (ADD-B04) holds `engine` (Qt Quick's render type, Q3.32), `antialiasing`, `hinting`, `subpixel_order`,
 `lcd_filter`, `gamma` and `contrast` (S4); `token.text.scaling` how the
 text-scaling factor applies (`AndroidNonLinear` on `material-3`, MAT-X19; `DynamicType` on `ios-*`, Apple's
 per-style table for the content-size category, `ReaderState.content_size_category` (`ContentSizeCategory`, S8), D-5,
-TS-2, X-DT-1, R25.15; `Linear` elsewhere; S9.4, ADD-A88), with
+TS-2, X-DT-1, R25.15; `WinUi` on `windows-11`, ADD-A141; `Linear` elsewhere; S9.4, ADD-A88), with
 each keyed style's `scaling_role` (*keyed text styles per platform*).
 
 **token.icons** (`IconTokens`, S4.5): `set`, `theme`, `theme_fallback`, `sizes`, `animated_visuals` and `mirroring` (per icon role,
@@ -10101,6 +10136,13 @@ them), keyed by visual (`accept`, W1-039; the chevrons, the back arrow, the hamb
 
 **token.pointer** (ADD-A46): cursor theme, cursor size, pointer colours where read; `drag_cursors` keyed by drop
 operation (`copy`, `move`, `link`, `ask`, `none`, `not_allowed`) for GN-P3-12†, K-P4-7†, W-P4-5†, MAT-P4-3†, P3-10†.
+S4.7's one `color: Value<Color>` does not hold what two rows name, macOS's pointer colours, an outline and a fill
+(MAC-X20, the map's "colours"; no pinned source states them), and Windows' pointer style, white, black, inverted
+or a custom colour (W3-50†), of which `inverted` is no colour and which the trace sends to `theme`, a cursor
+theme's name on GNOME and KDE. The tokens unit decides it with its pointer facts (ADD-A146; the ledger's queue):
+`fill`, `outline` and a keyed `style`, each absent where the platform has none, if the macOS facts confirm two
+colours; else the one `color` kept and S4.7 recording that Windows' style and a second macOS colour are not
+modelled. Until then the entry is S4.7's as it stands, and no fact states a pointer colour.
 
 **token.size_classes**: no row of group 8 adds a threshold list. `ios-*` takes its class from the system (X-SV-1,
 read by the connector at the root, R16); Material's width thresholds are stated by the widget groups' rows;
@@ -10130,8 +10172,11 @@ contrast themes and GNOME's high contrast are `ContrastHigh`; Material's medium 
 and `ContrastHigh`; Plasma reports no contrast setting, so on KDE a contrast condition holds only when the application
 sets it, K3.91, R25.2):
 
-- `AnimationsOff` from a speed factor of zero on KDE (K3.30, K3.31); `ReducedMotion` as a degree on KDE is the factor
-  (K3.90).
+- `AnimationsOff` and `ReducedMotion` both from a speed factor of zero on KDE (K3.30, K3.31, K3.90): `[KDE]
+  AnimationDurationFactor` is the one setting standing for both, as KDE's portal publishes `reduced-motion` from it
+  and plasma-integration gives Qt's motion preference from it (S9.3); a factor above zero sets neither and is
+  `token.motion.speed_factor` (ADD-A146: the reader as built sets the two together; rejected: `AnimationsOff`
+  alone, with reduced motion left as "a degree", a condition having no degree).
 - `input:touch` and `input:pen` (`Input(InputKind)`) carry Material's pointer-precision sizing (MAT-X31), WinUI's touch
   menu sizes (W3-40, with the `opened_by_touch` flag for the element) and Kirigami's transient touch.
 - `flavor:baseline` and `flavor:expressive` carry the Material look choice (MAT-P3-19†, MAT-X13).
@@ -10151,7 +10196,7 @@ The conditions these rows added to S7.1 (ADD-A04 … ADD-A11, ADD-A76, ADD-A83),
 | `Freeform` | an Android desktop-windowing (freeform) window, with its own corner radius (ADD-A83) | MAT-W5† |
 | `Posture(Posture)` | a foldable's posture (Jetpack WindowManager): two stacked panes in tabletop (ADD-A83) | MAT-P3-13† |
 | `DeviceModel(Key)` | the device model, where a measured value differs per model: the display's corner radius (ADD-A83) | W-6, X-CR-4 |
-| `SystemSetting(Key)` | a platform-specific switch the reader reads, declared by the preset in `[declare] conditions` (the traceability's `cond system_setting:<key>` lines are the full set, each with its row): Win32 `menu_fade`, `tooltip_fade`, `selection_fade`, `combo_animation`, `listbox_smooth_scroll`, `hot_tracking`, `drop_shadow`, `ui_effects` (W3-53†), `menu_animation` (W1-054), `tooltip_animation` (W1-058), `menu_drop_alignment` (`SPI_GETMENUDROPALIGNMENT`, W3-55†), `accent_on_title_bars` (W1-001, W1-013), `material_policy` (W3-07), `show_sounds` (W-P3-11†, declared `for_applications = true`: only applications read it, through `Theme::system`, S10); KDE `ui_effects` (K-P3-24†), `stacked_widget_transitions` (breezerc `StackedWidgetTransitionsEnabled`, K3.31), `dock_widget_draw_frame` (breezerc `DockWidgetDrawFrame`, K2.10), `outline_enabled` (breezerc `[Common] OutlineEnabled`, K1.9), `rounded_corners`, `no_borders` (K1.10, K-P3-1†), `no_side_borders` (K-P3-1†), `draw_border_on_maximized`, `hide_title_bar` (K1.15), `title_bar_gradient` (K1.14), `outline_close_button` (K1.7), `menu_item_strong_focus` (K1.62), `show_icons_in_menus` (K1.70), `slider_tick_marks` (K1.103), `toolbar_draw_item_separator` (K1.156), `side_panel_draw_frame` (K1.140), `view_draw_focus_indicator` (K1.175), `view_draw_tree_branch_lines` (K1.176), `qqc2_desktop_style` (K-KA-40†), `single_click` (kdeglobals `[KDE] SingleClick`: the file views' hover feedback, K3.73); macOS `wallpaper_tinting` (MAC-W08, MAC-X27) and `title_icons` (MAC-X31†); iOS `glass_look` (X-MT-11) and `pointer_animations` (the Pointer Animations setting, P3-12†, X-PH-1) | W3-53†, W1-054, W1-058, W3-55†, W1-001, W1-013, W3-07, W-P3-11†, K-P3-24†, K3.31, K2.10, K1.9, K1.10, K-P3-1†, K1.15, K1.14, K1.7, K1.62, K1.70, K1.103, K1.156, K1.140, K1.175, K1.176, K-KA-40†, K3.73, MAC-W08, MAC-X27, MAC-X31†, X-MT-11, P3-12† |
+| `SystemSetting(Key)` | a platform-specific switch the reader reads, declared by the preset in `[declare] conditions` (the traceability's `cond system_setting:<key>` lines are the full set, each with its row). A key is declared by the preset with the first unit whose rule selects on it, S12 refusing a declared key no rule selects on, and the reader's read of it comes with that unit's readers step, so the tokens-and-conditions unit brings only the keys its own token rules select on (ADD-A146; rejected: every key declared at once by that unit, which S12 refuses, or an exemption from S12 for them). A keyed condition holds by its key under any preset that declares it, whichever reader set it (S7.1, S9.5), so one key names one setting on every platform that declares it, and settings that differ take different keys (ADD-A146; rejected: the one key `ui_effects` for Win32's `SPI_GETUIEFFECTS` and KDE's `GraphicEffectsLevel`, under which `windows-11` on a KDE desktop selected its rules by KDE's level). The keys: Win32 `menu_fade`, `tooltip_fade`, `selection_fade`, `combo_animation`, `listbox_smooth_scroll`, `hot_tracking`, `drop_shadow`, `ui_effects` (W3-53†), `menu_animation` (W1-054), `tooltip_animation` (W1-058), `menu_drop_alignment` (`SPI_GETMENUDROPALIGNMENT`, W3-55†), `accent_on_title_bars` (W1-001, W1-013), `material_policy` (W3-07), `show_sounds` (W-P3-11†, declared `for_applications = true`: only applications read it, through `Theme::system`, S10); KDE `graphic_effects_level` (kdeglobals `[KDE] GraphicEffectsLevel` above zero, K-P3-24†), `stacked_widget_transitions` (breezerc `StackedWidgetTransitionsEnabled`, K3.31), `dock_widget_draw_frame` (breezerc `DockWidgetDrawFrame`, K2.10), `outline_enabled` (breezerc `[Common] OutlineEnabled`, K1.9), `rounded_corners`, `no_borders` (K1.10, K-P3-1†), `no_side_borders` (K-P3-1†), `draw_border_on_maximized`, `hide_title_bar` (K1.15), `title_bar_gradient` (K1.14), `outline_close_button` (K1.7), `menu_item_strong_focus` (K1.62), `show_icons_in_menus` (K1.70), `slider_tick_marks` (K1.103), `toolbar_draw_item_separator` (K1.156), `side_panel_draw_frame` (K1.140), `view_draw_focus_indicator` (K1.175), `view_draw_tree_branch_lines` (K1.176), `qqc2_desktop_style` (K-KA-40†), `single_click` (kdeglobals `[KDE] SingleClick`: the file views' hover feedback, K3.73); macOS `wallpaper_tinting` (MAC-W08, MAC-X27) and `title_icons` (MAC-X31†); iOS `glass_look` (X-MT-11) and `pointer_animations` (the Pointer Animations setting, P3-12†, X-PH-1) | W3-53†, W1-054, W1-058, W3-55†, W1-001, W1-013, W3-07, W-P3-11†, K-P3-24†, K3.31, K2.10, K1.9, K1.10, K-P3-1†, K1.15, K1.14, K1.7, K1.62, K1.70, K1.103, K1.156, K1.140, K1.175, K1.176, K-KA-40†, K3.73, MAC-W08, MAC-X27, MAC-X31†, X-MT-11, P3-12† |
 
 Conditions the rows do not need: a "colour filters" or "invert" condition (system-applied, R1.1: K3.93, W3-56†,
 MAC-P4-3†, X-A11-8, MAT-X35†), and a "not responding" condition or an attention mark the shell or the compositor
@@ -10161,9 +10206,15 @@ condition `AttentionFlash` (ADD-A03, `window.values.attention_flash`).
 ### readers
 
 One line per read: platform, what, API or key as the row states it, rows. `(R18)` marks the platforms without a
-reader until the platform-support milestone; the milestone implements these, the model already carries them. The
-traceability's `reader` lines are the full set; this list groups them, and where the two differ the traceability
-holds.
+reader until the platform-support milestone; the milestone implements these, the model already carries them. This
+list holds the reads of group 8's rows; the traceability's `reader` lines are the full set. The readers unit
+implements every desktop `reader` line of the traces whose target (a role, token, input, text slot or condition)
+lies in an enabled unit, this list's among them; a line whose target is a widget's part or value, or a condition
+only a later unit's rule selects on, waits for that unit's readers step (ADD-A146: one scope for the unit, the
+plan's and the core's; rejected: this list as the unit's scope, which leaves out the reads the core assigns to it
+whose rows other groups traced, MAC-DF01 to MAC-DF05†'s keyed roles, MAC-I07's user fonts, GN-1.191's document
+font, W3-50†'s pointer tokens). Where this list and the traceability differ the traceability holds, and the core's
+S9.3 over both for the reads it states.
 
 **GNOME (libadwaita and GTK)**
 
@@ -10175,7 +10226,8 @@ holds.
   unnamed one), the portal's `org.freedesktop.appearance` settings, then 0.7.0's chain for the scheme (`GTK_THEME`,
   gsettings' `color-scheme`, `gtk-3.0/settings.ini`) and its `enable-animations`, with gsettings' `reduced-motion` a new read, under
   `adwaita` (S16's *Which reader*, ADD-A135).
-- accent-color enum, `org.gnome.desktop.interface` (schema lines 314-320), fallback to the portal: GN-3.16.
+- the accent-color enum, `org.gnome.desktop.interface` (schema lines 314-320), read where the portal gives no
+  accent, the portal first (S9.3): GN-3.16.
 - reduced-motion, `org.gnome.desktop.a11y.interface` (schema lines 18-24); `enable-animations` already read: GN-3.25,
   GN-3.26.
 - keyboard-focus-visible-timeout, `org.gnome.desktop.a11y.interface` (lines 25-32): GN-3.30.
@@ -10185,9 +10237,8 @@ holds.
 - double-click time and drag threshold, `org.gnome.desktop.peripherals` (lines 243-252): GN-3.47, GN-3.48; key repeat
   (lines 144-159): GN-3.68†.
 - antialiasing, hinting, subpixel order, `org.gnome.desktop.interface` (lines 277-312): GN-3.56.
-- font-name family list (the reader drops it today, `gnome/mod.rs:194-200`) and `fc-match` for the emoji family:
-  GN-FM01†, GN-FM02†.
-- text direction, `gtk_get_locale_direction()`: GN-FM03†.
+- font-name family list (the reader drops it today, `gnome/mod.rs:194-200` at `2796b26e`) and `fc-match` for the
+  emoji family: GN-FM01†, GN-FM02†.
 - overlay-scrolling, `org.gnome.desktop.interface`, into `cond overlay_scrollbars` (read today into
   today's scroll-bar field `overlay_mode`, gap-map-gnome's W1-152† note): GN-1.85.
 - show-status-shapes, `org.gnome.desktop.a11y.interface` (lines 11-17), into `cond differentiate_without_color`:
@@ -10198,8 +10249,10 @@ holds.
 - breezerc `[Common] ShadowSize`, `ShadowStrength`, `ShadowColor`: K3.1, K3.2.
 - kwinrc `[Effect-blur] BlurStrength`, `NoiseStrength`, `Saturation`: K3.11.
 - kdeglobals `[KDE] AnimationDurationFactor`: K3.30, K3.90, Q3.24; plasmarc `[Units] longDuration`: Q3.24.
-- breezerc `[Style] AnimationsEnabled`, `AnimationSteps`, `AnimationsDuration`, `StackedWidgetTransitionsEnabled`:
-  K3.31.
+- breezerc `[Style] AnimationsEnabled`, `AnimationSteps` (into `token.motion.timings.animations`, stated whole:
+  `Timing::Steps` of that count, jumping at each step's end, above zero, `Linear` otherwise, *tokens*; ADD-A146),
+  `AnimationsDuration`,
+  `StackedWidgetTransitionsEnabled`: K3.31.
 - kdeglobals `[ColorEffects:Disabled]` (six keys: intensity, colour, contrast effect and amount),
   `[ColorEffects:Inactive]`
   including `ChangeSelectionColor` and `Enable`, and the `[Colors:*][Inactive]` subgroups: K3.40, K3.50, K3.51.
@@ -10217,7 +10270,7 @@ holds.
 - kdeglobals `[KDE] CursorBlinkRate`: K3.41; `DoubleClickInterval`: K3.70; `StartDragDist`, `StartDragTime`: K3.71;
   `WheelScrollLines`: K3.72; `SingleClick` (into `cond system_setting:single_click`, under which the preset's
   `Tokens` rule states `token.behavior.single_click_activates`, one route, S4.2): K3.73; `SmoothScroll`: K-P3-18†; `GraphicEffectsLevel` (into `cond
-  system_setting:ui_effects`): K-P3-24†.
+  system_setting:graphic_effects_level`): K-P3-24†.
 - breezerc `[Style] MnemonicsMode`: K3.44.
 - kdeglobals `[General] XftAntialias`, `XftHintStyle`, `XftSubPixel` (keys to verify in plasma-workspace): K3.45.
 - kdeglobals font strings with their extras (`[General] font`, `fixed`, `smallestReadableFont`, `menuFont`,
@@ -10232,7 +10285,7 @@ holds.
 - Kirigami's `Settings.isMobile` (what it reads, to verify) into `cond mobile_form_factor`: Q3.31, K3.83 (the rules
   under it: Q1.6, Q2.39, Q2.58†, K-KA-9†).
 - breezerc and kwinrc menu opacity and blur (K3.10, K3.11): K3.92.
-- `fc-match` for the emoji family and per language; `QGuiApplication::layoutDirection()`: K-FM01†, K-FM02†, K-FM03†.
+- `fc-match` for the emoji family and per language: K-FM01†, K-FM02†.
 - breezerc `[Style] DockWidgetDrawFrame` into `cond system_setting:dock_widget_draw_frame`: K2.10; breezerc
   `[Style] SliderDrawTickMarks` into `cond system_setting:slider_tick_marks`: K1.103.
 - kdeglobals `[General] ColorScheme` and the scheme file it names (the `kde_scheme.*` inputs), `[General]
@@ -10243,15 +10296,17 @@ holds.
 
 - `UISettings.GetColorValue` for `AccentDark1`–`3`, `AccentLight1`–`3`: W3-12.
 - `SPI_GETKEYBOARDCUES`: W3-21, W3-48†.
-- `SPI_GETCLEARTYPE`, `SPI_GETFONTSMOOTHING`, `SPI_GETFONTSMOOTHINGTYPE`, `SPI_GETFONTSMOOTHINGCONTRAST`: W3-22,
-  ClearType's settings, which WinUI's greyscale text does not take, so the Windows reader states from them nothing
-  `token.text.rendering` holds for `windows-11`, its rendering parameters being those WinUI draws with, DirectWrite's
-  greyscale enhanced contrast and gamma (S4's *The rendering drawn*, ADD-A141).
+- no text-rendering read (W3-22): `windows-11` states `token.text.rendering` from its facts alone, the reader
+  reading none of ClearType's settings (`SPI_GETCLEARTYPE`, `SPI_GETFONTSMOOTHING`, `SPI_GETFONTSMOOTHINGTYPE`,
+  `SPI_GETFONTSMOOTHINGCONTRAST`), which WinUI's greyscale text does not take, and no DirectWrite rendering
+  parameters (S4's *No Windows rendering read*, ADD-A144; open on U702).
 - `SPI_GETCARETWIDTH`, `GetCaretBlinkTime`, `UISettings.CaretWidth`, `UISettings.CaretBlinkRate`,
   `SPI_GETCARETTIMEOUT` (to verify): W3-24.
 - `UISettings.CursorSize`, `SM_CXCURSOR`: W3-29.
-- `GetSysColor` under high contrast, `AccessibilitySettings.HighContrastScheme`, `UISettings.UIElementColor` (to
-  verify): W3-35.
+- `SPI_GETHIGHCONTRAST` into `cond contrast_high`, and under it `GetSysColor`'s eight colours, the keyed roles
+  WinUI's high-contrast dictionaries draw with (S9.3, ADD-A135, ADD-A140); `AccessibilitySettings.HighContrastScheme`
+  and `UISettings.UIElementColor` not read, the reader as built reading neither (S9.3's *The Windows reader's
+  readings*): W3-35.
 - the material policy state (AcrylicBrush's `OnMaterialPolicyStatusChanged`; its inputs to verify) into
   `cond system_setting:material_policy`, and the battery saver state (API to verify) into `cond battery_saver`: W3-07.
 - `UISettings.AutoHideScrollBars` into `cond overlay_scrollbars`: W1-152†.
@@ -10277,8 +10332,14 @@ holds.
   increased-contrast colours (the increased-contrast appearance names give no appearance, `NSAppearance.h:73-74`),
   stored as the inputs' `contrast.increased` bases and the roles' `contrast_increased` rules: MAC-X22 (S9.3,
   ADD-A138).
-- `NSColor.withSystemEffect` (rollover, pressed, deepPressed, disabled) of each read colour, stated as state rules:
-  MAC-X30†.
+- no read of `NSColor.withSystemEffect` (rollover, pressed, deepPressed, disabled; MAC-X30†): the reader reads
+  colours, roles and inputs, and a state rule needs a part, so it could state an effect's form only by knowing
+  which part draws which colour, the preset's rules restated in its layer, and an application's `set_accent` could
+  not reach forms computed from the system accent; the parts' `{hover}`, `{pressed}` and `{disabled}` rules stay the
+  presets' measured values (ADD-A146). Rejected for 0.8.0, and the route if a user accent is found to change a
+  state colour the facts cannot follow: keyed roles per effect of the colours the facts need, bases the preset
+  states and the reader restates, which the parts' state rules reference, those of an accent input joining
+  `accent_inputs`.
 - `NSAnimationContext.duration`, `NSWindow.animationResizeTime(_:)`, `CAMediaTimingFunction` control points: MAC-X11.
 - `NSEvent.doubleClickInterval`, `keyRepeatDelay`, `keyRepeatInterval`, `NSButtonCell.getPeriodicDelay` (into
   `token.params.pointer_repeat.delay` and `.interval`), user defaults

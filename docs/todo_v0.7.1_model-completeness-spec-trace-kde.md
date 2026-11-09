@@ -173,7 +173,8 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.55 | `radio.dot.{shown,transform} @ {checked}` (true and scale 1, the drawn dot) | rule |
 | K1.55 | `checkbox.box.transitions (Fill); radio.ring.transitions` | field |
 | K1.55 | `token.motion.durations.animations, token.motion.speed_factor` | token |
-| K1.56 | `checkbox.box.stroke, checkbox.box.fill @ {checked} variant warning / radio.ring.stroke, radio.ring.fill @ {checked} variant warning` | rule |
+| K1.56 | `checkbox.box.stroke @ variant warning; radio.ring.stroke @ variant warning` (the pen `NeutralText` in every state, unchecked included, `breezehelper.cpp:850-858`, `:1002-1010`) | rule |
+| K1.56 | `checkbox.box.fill @ {checked} variant warning / {indeterminate} variant warning; radio.ring.fill @ {checked} variant warning` (the tint, drawn unless off, `breezehelper.cpp:865-873`, `:1015-1023`) | rule |
 | K1.57 | `checkbox.box.focus; radio.ring.focus` | field |
 | K1.58† | `checkbox.mark.glyph (Path, stroke: GlyphStroke width and join)` | field |
 | K1.58† | `checkbox.mark.glyph @ {indeterminate} (three dots and their spacing, Path)` | rule |
@@ -1296,7 +1297,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-FM03† | `Selector.direction Rtl (S7): the dir rtl rules per part` | rule |
 | K-FM03† | `Glyph.mirroring, token.icons.mirroring (S2.9)` | field |
 | K-FM03† | `window.values.caption_button_layout @ dir rtl` | rule |
-| K-FM03† | `reader:kde:QGuiApplication layoutDirection` | reader |
+| K-FM03† | `RootInputs.direction, Element.direction (the layout direction, S8)` (the connector's: its toolkit's layout direction, else the application's; Qt's is `QGuiApplication::layoutDirection()`, which no reader calls, a reader linking no Qt and `ReaderState` holding no direction) | field |
 | K-P3-1† | `window.values.resize_band (outside per side, = token.params.layout.large_spacing; the top band above the title bar)` | field |
 | K-P3-1† | `window.values.resize_band (the sides and the bottom) @ cond system_setting:no_borders / (the sides only) @ cond system_setting:no_side_borders` | rule |
 | K-P3-1† | `window.values.resize_band (Absent on a maximised axis) @ cond maximized / cond tiled:top / cond tiled:bottom / cond tiled:left / cond tiled:right` | rule |
@@ -1367,9 +1368,9 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-P3-21† | - | out (R1.1) |
 | K-P3-22† | - | out (R1.1) |
 | K-P3-23† | - | out (R1.1) |
-| K-P3-24† | `cond system_setting:ui_effects (ADD-A04)` | condition |
-| K-P3-24† | `menu.values.presentations, tooltip.values.presentations @ !cond system_setting:ui_effects` (the empty list: the menu and the tooltip appear without animation; `UI_AnimateMenu`, `UI_FadeMenu`, `UI_AnimateTooltip`, `UI_FadeTooltip`) | rule |
-| K-P3-24† | `menu.values.presentations @ !cond system_setting:ui_effects context combo_box` (the combo box's popup, `UI_AnimateCombo`; the tool box's page animation, `UI_AnimateToolBox`, on `component.tool_box` where the value phase confirms it) | rule |
+| K-P3-24† | `cond system_setting:graphic_effects_level (ADD-A04)` (KDE's own key: `ui_effects` is Win32's `SPI_GETUIEFFECTS`, one key naming one setting) | condition |
+| K-P3-24† | `menu.values.presentations, tooltip.values.presentations @ !cond system_setting:graphic_effects_level` (the empty list: the menu and the tooltip appear without animation; `UI_AnimateMenu`, `UI_FadeMenu`, `UI_AnimateTooltip`, `UI_FadeTooltip`) | rule |
+| K-P3-24† | `menu.values.presentations @ !cond system_setting:graphic_effects_level context combo_box` (the combo box's popup, `UI_AnimateCombo`; the tool box's page animation, `UI_AnimateToolBox`, on `component.tool_box` where the value phase confirms it) | rule |
 | K-P3-24† | `reader:kde:kdeglobals [KDE] GraphicEffectsLevel` | reader |
 | K-RV1† | `scrollbar.values.trough_click` | field |
 | K-RV1† | `reader:kde:kdeglobals [KDE] ScrollbarLeftClickNavigatesByPage -> scrollbar.values.trough_click` | reader |

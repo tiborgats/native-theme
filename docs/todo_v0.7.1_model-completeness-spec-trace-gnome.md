@@ -354,7 +354,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.140 | `list.values.row_background_inset, list.values.leading_gap @ variant sidebar; list.view.padding @ variant sidebar` (the row's own padding is `list.row.padding`, AdwSidebar's box padding the view's: two parts, one variant) | rule |
 | GN-1.141 | `list.row_background.fill.append @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {context_menu_open} variant sidebar` | rule |
 | GN-1.142 | `list.section_header.padding @ variant sidebar / variant sidebar pos first` | rule |
-| GN-1.142 | `separator.line.margin @ context sidebar.pane` | rule |
+| GN-1.142 | `separator.line.margin @ context list variant sidebar` (the `.navigation-sidebar` list's own separators, `_sidebars.scss:152-155`, as GN-1.187's line) | rule |
 | GN-1.143 | `list.row_background.corners, list.row.padding, list.values.row_background_inset @ variants {sidebar,grid}` | rule |
 | GN-1.144 | `list.values.leading_gap, list.values.trailing_gap @ variant sidebar (the prefix and suffix areas' margins)` | rule |
 | GN-1.145 | `sidebar.values.drag_hover_delay` | field |
@@ -372,7 +372,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.153 | `toolbar.bar.shadow @ variants {@raised,top} cond contrast_high / variants {@raised,bottom} cond contrast_high` | rule |
 | GN-1.154 | `toolbar.bar.stroke (one edge), toolbar.bar.shadow (Absent) @ variants {@raised,@border,top} / variants {@raised,@border,bottom}` | rule |
 | GN-1.155 | `toolbar.bar.fill @ cond window_inactive variant @raised` | rule |
-| GN-1.155 | `toolbar.content.{opacity,transitions} @ cond window_inactive variant @raised` (the bar's content dimmed as one group) | rule |
+| GN-1.155 | `toolbar.content.{opacity,transitions} @ cond window_inactive variant top / cond window_inactive variant bottom` (AdwToolbarView's top and bottom bars, raised or flat: `&:backdrop > windowhandle`, `_toolbars.scss:308-311`, whose `&` is every top and bottom bar, `:275-277`; the bar's content dimmed as one group) | rule |
 | GN-1.155 | `toolbar.bar.transitions` | field |
 | GN-1.156 | `scroll_view.edge_effect.{fill,stroke} @ variant top {scrolled} / variant bottom {scrolled} (the content under an AdwToolbarView's top or bottom bar: the undershoot at that edge, its own element)` | rule |
 | GN-1.157 | `toolbar.bar.fill, toolbar.bar.stroke.top, toolbar.bar.padding @ variant bottom (GtkActionBar, AdwToolbarView's bottom bar)` | rule |
@@ -453,7 +453,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.286† | `edit_menu.values.placement (GtkPopover, anchor_grow)` | placement |
 | GN-1.186 | `splitter.divider.stroke, splitter.divider.min_width @ variant wide` | rule |
 | GN-1.187 | `menu.separator.margin` (the menu's separator item, its margins) | field |
-| GN-1.187 | `separator.line.margin @ context sidebar.pane` (the sidebar's separator) | rule |
+| GN-1.187 | `separator.line.margin @ context list variant sidebar` (the `.navigation-sidebar` list's own separators, `> separator` and `> .header > separator`, `_sidebars.scss:152-155`: the list's style class, not the split view's pane, `.sidebar-pane`, `:1-40`) | rule |
 | GN-1.188 | `separator.line.{stroke,min_width,min_height} @ variant @spacer (stroke Absent)` | rule |
 | GN-1.189 | `token.text.keyed.title_3` | token |
 | GN-1.189 | `token.text.keyed.title_4` | token |
@@ -810,7 +810,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.42 | `input.selection_handle.padding; text_area.selection_handle.padding` | field |
 | GN-2.42 | `input.selection_handle.transform @ variant insertion; text_area.selection_handle.transform @ variant insertion` | rule |
 | GN-2.42 | `input.magnifier.fill; text_area.magnifier.fill` | field |
-| GN-2.43 | `component.emoji_chooser.body.{fill,padding,bindings}, component.emoji_chooser.cell.{fill,corners,text}, component.emoji_chooser.completion_row.{fill,text,padding}` | component |
+| GN-2.43 | `component.emoji_chooser.body.{padding,bindings}, component.emoji_chooser.cell.{fill,corners,text}` (the chooser is a `popover`, `gtkemojichooser.c:248`: its box the popover's, the component its content) | component |
+| GN-2.43 | `menu.item.{fill,padding}, menu.item_label.text @ context autocomplete variant @emoji; menu.body.padding @ context autocomplete variant @emoji` (the emoji completion, a popover of its own attached to a text, `gtkemojicompletion.c:66`, `_emoji-chooser.scss:59-96`: its rows and its contents' padding) | rule |
 | GN-2.43 | `button @ context component.emoji_chooser (the section buttons)` | rule |
 | GN-2.44 | `media_controls.play_overlay.{icon,fill,min_height}` | field |
 | GN-2.44 | `media_controls.play_overlay.corners` | field |
@@ -1071,7 +1072,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-FM03† | `Selector.direction Rtl (S7)` | rule |
 | GN-FM03† | `token.icons.mirroring (S2.9)` | token |
 | GN-FM03† | `icon lookup by direction, -rtl names (ADD-B05)` | field |
-| GN-FM03† | `reader:gnome:gtk_get_locale_direction` | reader |
+| GN-FM03† | `RootInputs.direction, Element.direction (the layout direction, S8)` (the connector's: its toolkit's layout direction, else the application's; GTK takes its own from the locale, `gtk_get_locale_direction`, which no reader calls, a reader linking no GTK and `ReaderState` holding no direction) | field |
 | GN-P3-1† | - | out (R1.1) |
 | GN-P3-2† | - | out (R1.1) |
 | GN-P3-3† | `window.values.window_menu_items (GTK's fallback)` | field |

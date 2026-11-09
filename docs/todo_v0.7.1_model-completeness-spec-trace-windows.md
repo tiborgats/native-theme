@@ -207,7 +207,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-064 | `scrollbar.values.auto_hide_delay` | field |
 | W1-065 | `scroll_view.corner.{fill,transitions}` | field |
 | W1-065 | `scroll_view.values.scrollbar_margin` | field |
-| W1-066 | `reader:windows:UISettings.ScrollBarSize, ScrollBarArrowSize, ScrollBarThumbBoxSize -> scrollbar.body.min_width, scrollbar.arrow_button.min_height, scrollbar.thumb.min_width` | reader |
+| W1-066 | - (the Win32 scroll bar's metrics, which WinUI's scroll bar, sized by its XAML resources, W1-060, does not read: `microsoft-ui-xaml@2.5.1 src/` holds `ScrollBarArrowSize` and `ScrollBarThumbBoxSize` nowhere and `ScrollBarSize` only as a resource key) | preset (R1.3) |
 | W1-152† | `reader:windows:UISettings.AutoHideScrollBars -> cond overlay_scrollbars` | reader |
 | W1-152† | `cond overlay_scrollbars` | condition |
 | W1-067 | `slider.thumb_inner.{fill,min_width,min_height}` | field |
@@ -760,7 +760,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-35 | `switch.track.stroke @ {checked} cond contrast_high (the on track's border drawn only there)` | rule |
 | W3-35 | `PartStyle.{fill,shadow} @ cond contrast_high (materials to Material.fallback, shadows removed)` | rule |
 | W3-35 | `cond contrast_high` | condition |
-| W3-35 | `reader:windows:GetSysColor under high contrast, AccessibilitySettings.HighContrastScheme, UISettings.UIElementColor` | reader |
+| W3-35 | `reader:windows:SPI_GETHIGHCONTRAST -> cond contrast_high; GetSysColor under high contrast` (S9.3; `AccessibilitySettings.HighContrastScheme` and `UISettings.UIElementColor` not read) | reader |
 | W3-36 | `PartStyle.{min_height,padding} (= an expression on text_scale or font_size where the control grows with the text; ADD-A55)` | field |
 | W3-36 | `TextStyle.{wrap,max_lines} (the wrapping)` | field |
 | W3-36 | `IconStyle.size (= an expression on text_scale where the icon grows; ADD-A55)` | field |
@@ -769,7 +769,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-37 | `token.motion.speed_factor @ cond animations_off` | rule |
 | W3-37 | `reader:windows:UISettings.AnimationsEnabled` (false: `cond animations_off` and `cond reduced_motion`, Windows' one motion setting, which WinUI reads; `SPI_GETCLIENTAREAANIMATION` not read; S9.3, ADD-A140) | reader |
 | W3-38 | `Material.fallback @ cond reduced_transparency per material` | rule |
-| W3-38 | `reader:windows:UISettings.AdvancedEffectsEnabled, registry EnableTransparency` | reader |
+| W3-38 | `reader:windows:UISettings.AdvancedEffectsEnabled` (the registry's `EnableTransparency` not read beside it, the API reporting the same setting, S9.3) | reader |
 | W3-39 | `declare.widget.{input,text_area,combo_box,list,date_picker,time_picker,picker_wheel}.densities (compact)` (each entry's *Sizes and densities*) | field |
 | W3-39 | `input.body.{min_height,padding}, text_area.body.{min_height,padding}, list.row.min_height, combo_box.body.{min_height,padding}, date_picker.field.padding, time_picker.field.padding @ density compact` (the combo box's compact padding `12,1,0,3` and minimum height 24, `microsoft-ui-xaml@2.5.1 src/controls/dev/dll/DensityStyles/Compact.xaml:21-22`, its end 0 as written; the chevron's end margin 14, W1-132, unchanged; its editable text box's `10,0,30,0`, `:20`, W1-137's padding under compact; ADD-A127) | rule |
 | W3-39 | `list.row.min_height @ variant sidebar density compact (the nav item height)` | rule |

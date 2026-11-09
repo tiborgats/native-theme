@@ -646,7 +646,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N23 | `bottom_tab_bar.* @ variant @sidebar_adaptable` | rule |
 | MAC-N24 | - (macOS 27's `NSScrollView.refreshController`; `macos-tahoe` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | MAC-N25 | - (notification banners and Notification Center, the Dock tile's badge, the share picker, and the open, save, colour, font and print panels, which the row finds drawn by the OS or AppKit, not by the application's toolkit; whether AppKit draws any of the panels in the application's process, which R1.1 would bring in as it does Qt's QPrintDialog, is to verify) | out (R1.1) |
-| MAC-N26 | `component.touch_bar.bar.{fill,padding}, component.touch_bar.item.{fill,corners,padding,min_width,min_height,text,icon}, component.touch_bar.values.item_gap` (the application's `NSTouchBar` items, which AppKit draws in its process: what it configures, R1.1) | component |
+| MAC-N26 | `component.touch_bar.bar.{fill,padding}, component.touch_bar.item.{padding,min_width,min_height}, component.touch_bar.values.item_gap` (the application's `NSTouchBar` items, which AppKit draws in its process: what it configures, R1.1) | component |
+| MAC-N26 | `button.{body.fill,body.corners,label.text,icon.icon} @ context component.touch_bar` (a Touch Bar button: its bezel, text and icon the `button`'s there) | rule |
 | MAC-N26 | `component.touch_bar.scrubber.{fill,corners,padding}, component.touch_bar.scrubber_item.{fill,corners,text,icon}, component.touch_bar.scrubber_selection.{fill,stroke,corners}, component.touch_bar.values.scrubber_item_gap` (`NSScrubber`) | component |
 | MAC-N27† | - | out (R1.1) |
 | MAC-N28† | `split_button.primary.{fill,stroke,corners}, split_button.secondary.{fill,stroke,corners}, split_button.divider.stroke, split_button.arrow.glyph` | field |
@@ -869,8 +870,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X29 | `PartStyle rules @ {checked,hover}, {checked,pressed}, {checked,disabled}, {default,pressed}, {focused,hover} per widget` | rule |
 | MAC-X29 | `cond not_main` | condition |
 | MAC-X29 | `declare.widget.*.exclusive` | field |
-| MAC-X30† | `reader:macos:NSColor.withSystemEffect rollover, pressed, deepPressed, disabled per read colour` | reader |
-| MAC-X30† | `PartStyle fill rules @ {hover} / {pressed} / {disabled}` | rule |
+| MAC-X30† | `PartStyle fill rules @ {hover} / {pressed} / {disabled}` (the facts' measured state rules; no reader read of `NSColor.withSystemEffect`: a read colour has no part for a state rule, the catalogue's *readers*) | rule |
 | MAC-X31† | - (the OS's Full Keyboard Access highlight) | out (R1.1) |
 | MAC-X31† | `window.title_icon @ cond system_setting:title_icons` | rule |
 | MAC-X31† | `cond system_setting:title_icons (ADD-A04)` | condition |
