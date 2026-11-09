@@ -3315,13 +3315,76 @@ struct Probed {
     /// The combinations skipped, those the enumeration left out among
     /// them.
     skipped: u64,
-    /// The distinct combinations, the first of each signature, in order.
-    queried: Vec<Combination>,
-    /// Each distinct signature, by its combination's place in `queried`.
-    signatures: HashMap<Signature, usize>,
+    /// The distinct combinations, the first of each signature, in order,
+    /// each held by the places of its names in `names`
+    /// ([`Names::held`]): a vector holds hundreds of thousands of them.
+    queried: Vec<Box<[usize]>>,
+    /// The names and contexts `queried` holds.
+    names: Names,
+    /// Each element and the steps that apply to it with each part's
+    /// answer among the signatures, held once: a vector's signatures share
+    /// far fewer of them than they are.
+    alike: Interned<(String, Vec<u32>)>,
+    /// Each key's applying fact among the signatures ([`signature`]), held
+    /// once.
+    facts: Interned<Vec<u32>>,
+    /// Each distinct signature, its element and steps by their place in
+    /// `alike` and its facts by theirs in `facts`, by its combination's
+    /// place in `queried`.
+    signatures: HashMap<(usize, usize), usize>,
 }
 
 impl Probed {
+    /// The place in `alike` of `element` and `steps`, where it holds them.
+    fn alike_at(&self, element: &str, steps: &[u32]) -> Option<usize> {
+        self.alike
+            .find(alike_hash(element, steps), |(held, held_steps)| {
+                held == element && held_steps == steps
+            })
+    }
+
+    /// The place in `queried` of the distinct combination of `signature`,
+    /// where it holds one.
+    fn place_of(&self, signature: &Signature) -> Option<usize> {
+        let (element, steps, facts) = signature;
+        let alike = self.alike_at(element, steps)?;
+        let facts = self.facts.find(facts_hash(facts), |held| held == facts)?;
+        self.signatures.get(&(alike, facts)).copied()
+    }
+
+    /// `combination` held as the distinct one of `signature` where none is
+    /// held yet; given back where it would not be given back as it is
+    /// ([`Names::combination`]), so it is not held.
+    fn insert(
+        &mut self,
+        signature: Signature,
+        combination: Combination,
+    ) -> Result<(), Box<Combination>> {
+        let (element, steps, facts) = signature;
+        let alike = self
+            .alike
+            .place(alike_hash(&element, &steps), (element, steps));
+        let facts = self.facts.place(facts_hash(&facts), facts);
+        let next = self.queried.len();
+        let std::collections::hash_map::Entry::Vacant(vacant) =
+            self.signatures.entry((alike, facts))
+        else {
+            return Ok(());
+        };
+        let held = self.names.held(combination.clone());
+        if self.names.combination(&held).as_ref() != Some(&combination) {
+            return Err(Box::new(combination));
+        }
+        vacant.insert(next);
+        self.queried.push(held);
+        Ok(())
+    }
+
+    /// The distinct combination `held` holds ([`Names::combination`]).
+    fn combination(&self, held: &[usize]) -> Option<Combination> {
+        self.names.combination(held)
+    }
+
     /// `failure` found, held where it is not already.
     fn failed(&mut self, failure: String) {
         let hash = text_hash(&failure);
@@ -3338,53 +3401,184 @@ impl Probed {
 
     /// What it holds, in counts and bytes ([`super::timing::sizes`]).
     fn sizes(&self) -> Vec<(&'static str, usize)> {
-        let combinations: usize = self.queried.iter().map(combination_bytes).sum();
-        let (mut element, mut steps, mut facts, mut steps_len) = (0, 0, 0, 0);
-        let mut distinct: HashSet<&Vec<u32>> = HashSet::new();
-        for key in self.signatures.keys() {
-            element += key.0.capacity();
-            steps += key.1.capacity() * 4;
-            facts += key.2.capacity() * 4;
-            steps_len += key.1.len();
-            distinct.insert(&key.1);
+        let word = std::mem::size_of::<usize>();
+        let queried: usize = self
+            .queried
+            .iter()
+            .map(|held| (held.len() + 2) * word)
+            .sum();
+        let (mut element, mut steps) = (0, 0);
+        for (held, held_steps) in &self.alike.values {
+            element += held.capacity();
+            steps += held_steps.capacity() * 4;
         }
+        let facts: usize = self
+            .facts
+            .values
+            .iter()
+            .map(|held| held.capacity() * 4)
+            .sum();
         vec![
             ("queried", self.queried.len()),
-            ("queried bytes", combinations),
-            ("signature elements bytes", element),
-            ("signature steps bytes", steps),
-            ("signature steps distinct", distinct.len()),
-            ("signature steps len", steps_len),
-            ("signature facts bytes", facts),
+            ("queried bytes", queried),
+            ("names", self.names.names.len()),
+            ("alike", self.alike.values.len()),
+            ("alike elements bytes", element),
+            ("alike steps bytes", steps),
+            ("facts", self.facts.values.len()),
+            ("facts bytes", facts),
             (
                 "signatures table bytes",
-                self.signatures.capacity() * (std::mem::size_of::<(Signature, usize)>() + 1),
+                self.signatures.capacity() * (std::mem::size_of::<((usize, usize), usize)>() + 1),
             ),
             ("failures", self.failures.len()),
         ]
     }
 }
 
-/// The heap bytes `combination` holds, about ([`Probed::sizes`]).
-fn combination_bytes(combination: &Combination) -> usize {
-    let strings = |strings: &[String]| {
-        strings
+/// Values held once each, by their place, found by a hash of each.
+struct Interned<T> {
+    values: Vec<T>,
+    by_hash: HashMap<u64, Vec<usize>>,
+}
+
+impl<T> Default for Interned<T> {
+    fn default() -> Self {
+        Interned {
+            values: Vec::new(),
+            by_hash: HashMap::new(),
+        }
+    }
+}
+
+impl<T> Interned<T> {
+    /// The place of the value of the hash `hash` that `is` names.
+    fn find(&self, hash: u64, is: impl Fn(&T) -> bool) -> Option<usize> {
+        self.by_hash
+            .get(&hash)?
             .iter()
-            .map(|string| string.capacity() + std::mem::size_of::<String>())
-            .sum::<usize>()
-    };
-    std::mem::size_of::<Combination>()
-        + combination.widget.capacity()
-        + strings(&combination.variants)
-        + strings(&combination.states)
-        + strings(&combination.order)
-        + combination.size.as_ref().map_or(0, String::capacity)
-        + combination.density.as_ref().map_or(0, String::capacity)
-        + combination.direction.as_ref().map_or(0, String::capacity)
-        + combination
-            .context
-            .as_ref()
-            .map_or(0, |context| format!("{context:?}").len())
+            .copied()
+            .find(|at| self.values.get(*at).is_some_and(&is))
+    }
+
+    /// The place of `value`, of the hash `hash`, held where it is not yet.
+    fn place(&mut self, hash: u64, value: T) -> usize
+    where
+        T: PartialEq,
+    {
+        if let Some(at) = self.find(hash, |held| *held == value) {
+            return at;
+        }
+        let at = self.values.len();
+        self.by_hash.entry(hash).or_default().push(at);
+        self.values.push(value);
+        at
+    }
+}
+
+/// A hash of the facts that apply to a combination's keys ([`Probed`]).
+fn facts_hash(facts: &[u32]) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    facts.hash(&mut hasher);
+    hasher.finish()
+}
+
+/// The names and contexts of the distinct combinations [`Probed`] holds,
+/// each once, so a combination is held by their places ([`Names::held`]).
+#[derive(Default)]
+struct Names {
+    names: Vec<String>,
+    by_name: HashMap<String, usize>,
+    contexts: Vec<Value>,
+}
+
+impl Names {
+    /// The place of `name`, held where it is not yet.
+    fn name(&mut self, name: String) -> usize {
+        if let Some(at) = self.by_name.get(&name) {
+            return *at;
+        }
+        let at = self.names.len();
+        self.names.push(name.clone());
+        self.by_name.insert(name, at);
+        at
+    }
+
+    /// `combination` by the places of its names: its widget; its
+    /// variants, states and order, each list after its length; its size,
+    /// density and direction, each `0` where it has none and its place
+    /// after one otherwise; its context so among `contexts`; its siblings
+    /// before and after it.
+    fn held(&mut self, combination: Combination) -> Box<[usize]> {
+        let Combination {
+            widget,
+            variants,
+            states,
+            order,
+            size,
+            density,
+            direction,
+            context,
+            before,
+            after,
+            ..
+        } = combination;
+        let mut out = vec![self.name(widget)];
+        for list in [variants, states, order] {
+            out.push(list.len());
+            for name in list {
+                out.push(self.name(name));
+            }
+        }
+        for name in [size, density, direction] {
+            out.push(name.map_or(0, |name| self.name(name).saturating_add(1)));
+        }
+        out.push(context.map_or(0, |context| {
+            let at = match self.contexts.iter().position(|held| *held == context) {
+                Some(at) => at,
+                None => {
+                    self.contexts.push(context);
+                    self.contexts.len().saturating_sub(1)
+                }
+            };
+            at.saturating_add(1)
+        }));
+        out.push(before);
+        out.push(after);
+        out.into_boxed_slice()
+    }
+
+    /// The combination [`Names::held`] gave `held`; `None` where it names
+    /// a place no name holds.
+    fn combination(&self, held: &[usize]) -> Option<Combination> {
+        let mut places = held.iter().copied();
+        let name = |at: usize| self.names.get(at).cloned();
+        let mut combination = Combination::new(&name(places.next()?)?);
+        let list = |places: &mut dyn Iterator<Item = usize>| -> Option<Vec<String>> {
+            let count = places.next()?;
+            (0..count).map(|_| name(places.next()?)).collect()
+        };
+        combination.variants = list(&mut places)?;
+        combination.states = list(&mut places)?;
+        combination.order = list(&mut places)?;
+        let optional = |places: &mut dyn Iterator<Item = usize>| -> Option<Option<String>> {
+            match places.next()? {
+                0 => Some(None),
+                at => name(at.checked_sub(1)?).map(Some),
+            }
+        };
+        combination.size = optional(&mut places)?;
+        combination.density = optional(&mut places)?;
+        combination.direction = optional(&mut places)?;
+        combination.context = match places.next()? {
+            0 => None,
+            at => Some(self.contexts.get(at.checked_sub(1)?)?.clone()),
+        };
+        combination.before = places.next()?;
+        combination.after = places.next()?;
+        places.next().is_none().then_some(combination)
+    }
 }
 
 /// How many combinations [`check_widgets`] probes, or compares, at once
@@ -3831,12 +4025,11 @@ fn check_widgets(
                     for failure in failures {
                         report.fail(failure);
                     }
-                    let next = probed.queried.len();
-                    if let std::collections::hash_map::Entry::Vacant(vacant) =
-                        probed.signatures.entry(signature)
-                    {
-                        vacant.insert(next);
-                        probed.queried.push(combination);
+                    if let Err(combination) = probed.insert(signature, combination) {
+                        report.fail(format!(
+                            "{pass:?}: a distinct combination is not held as it was probed \
+                             under {vector:?} {combination:?}"
+                        ));
                     }
                 }
             }
@@ -3865,21 +4058,24 @@ fn compare_widgets(run: &Run<'_, '_>, probed: &Probed, alike: bool, report: &mut
     let size = PROBED_BY_THREAD.saturating_mul(threads);
     let memo = Memo::of_probed(probed);
     for (chunk_at, chunk) in probed.queried.chunks(size).enumerate() {
-        let items: Vec<(usize, &Combination)> = chunk
+        let items: Vec<(usize, &[usize])> = chunk
             .iter()
             .enumerate()
-            .map(|(at, combination)| {
-                (
-                    chunk_at.saturating_mul(size).saturating_add(at),
-                    combination,
-                )
-            })
+            .map(|(at, held)| (chunk_at.saturating_mul(size).saturating_add(at), &**held))
             .collect();
-        let found = parallel_on(threads, &items, |(at, combination)| {
+        let found = parallel_on(threads, &items, |(at, held)| {
             let mut report = Report::default();
+            let Some(combination) = probed.combination(held) else {
+                report.fail(format!(
+                    "{:?}: the distinct combination at {at} under {:?} names a name it does \
+                     not hold",
+                    run.pass, run.vector
+                ));
+                return (true, report);
+            };
             let expected = alike.then_some((probed, *at));
             let compared = timed(Step::Compare, || {
-                compare_widget(run, combination, expected, &memo, &mut report)
+                compare_widget(run, &combination, expected, &memo, &mut report)
             });
             (compared, report)
         });
@@ -4029,10 +4225,7 @@ fn compare_widget(
     let mut probe = Report::default();
     let applying = run.applying(&combination.widget, &session, &mut probe, &describe);
     if let Some((probed, at)) = expected
-        && probed
-            .signatures
-            .get(&signature(combination, &session, &applying))
-            != Some(&at)
+        && probed.place_of(&signature(combination, &session, &applying)) != Some(at)
     {
         return false;
     }
@@ -4180,29 +4373,24 @@ fn compare_widget(
 ///
 /// [`Session::signature`]: native_theme::gate::Session::signature
 struct Memo<'p> {
-    /// Each element and steps `probed` holds for more than one distinct
-    /// combination, by a hash of both ([`alike_hash`]), with its place in
-    /// `last`.
-    shared: HashMap<u64, Vec<(Alike<'p>, usize)>>,
-    /// The place in `probed` of the last distinct combination of each of
-    /// `shared`.
-    last: Vec<usize>,
+    /// The probes whose distinct combinations are compared.
+    probed: &'p Probed,
+    /// The place in `probed.queried` of the last distinct combination of
+    /// each element and steps, by its place in `probed.alike`, that
+    /// `probed` holds for more than one.
+    last: HashMap<usize, usize>,
     sessions: Mutex<Sessions>,
 }
 
-/// The sessions a [`Memo`] holds, by their place in its `last`, and the
-/// most it held at once.
+/// The sessions a [`Memo`] holds, by their element and steps' place in
+/// its probes' `alike`, and the most it held at once.
 #[derive(Default)]
 struct Sessions {
     held: HashMap<usize, Arc<Answers>>,
     most: usize,
 }
 
-/// A session's element and the steps that apply to it with each part's
-/// answer ([`Memo`]).
-type Alike<'p> = (&'p str, &'p [u32]);
-
-/// A hash of an element and its steps, by which [`Memo`] finds them.
+/// A hash of an element and its steps, by which [`Probed`] finds them.
 fn alike_hash(element: &str, steps: &[u32]) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -4214,57 +4402,42 @@ fn alike_hash(element: &str, steps: &[u32]) -> u64 {
 impl<'p> Memo<'p> {
     /// The memo of the distinct combinations `probed` holds.
     fn of_probed(probed: &'p Probed) -> Memo<'p> {
-        let mut uses: HashMap<Alike<'p>, (usize, usize)> = HashMap::new();
-        for ((element, steps, _), at) in &probed.signatures {
-            let (count, last) = uses
-                .entry((element.as_str(), steps.as_slice()))
-                .or_insert((0, 0));
+        let mut uses: HashMap<usize, (usize, usize)> = HashMap::new();
+        for ((alike, _), at) in &probed.signatures {
+            let (count, last) = uses.entry(*alike).or_insert((0, 0));
             *count += 1;
             *last = (*last).max(*at);
         }
-        let mut memo = Memo {
-            shared: HashMap::new(),
-            last: Vec::new(),
+        Memo {
+            probed,
+            last: uses
+                .into_iter()
+                .filter(|(_, (count, _))| *count > 1)
+                .map(|(alike, (_, last))| (alike, last))
+                .collect(),
             sessions: Mutex::default(),
-        };
-        for (alike, (count, last)) in uses {
-            if count > 1 {
-                memo.shared
-                    .entry(alike_hash(alike.0, alike.1))
-                    .or_default()
-                    .push((alike, memo.last.len()));
-                memo.last.push(last);
-            }
         }
-        memo
     }
 
     /// The answers of the sessions alike with `session`, `combination`'s;
     /// none held where no later distinct combination is alike with it.
     fn of(&self, combination: &Combination, session: &native_theme::gate::Session<'_>) -> Asking {
-        if self.shared.is_empty() {
+        if self.last.is_empty() {
             return Asking(None);
         }
         let element = format!(
             "{} {:?} {:?}",
             combination.widget, combination.context, combination.direction
         );
-        let steps = session.signature();
-        let Some(place) = self
-            .shared
-            .get(&alike_hash(&element, &steps))
-            .and_then(|held| {
-                held.iter()
-                    .find(|((held_element, held_steps), _)| {
-                        *held_element == element && *held_steps == steps.as_slice()
-                    })
-                    .map(|(_, place)| *place)
-            })
+        let Some(alike) = self
+            .probed
+            .alike_at(&element, &session.signature())
+            .filter(|alike| self.last.contains_key(alike))
         else {
             return Asking(None);
         };
         let mut sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
-        let answers = Arc::clone(sessions.held.entry(place).or_default());
+        let answers = Arc::clone(sessions.held.entry(alike).or_default());
         sessions.most = sessions.most.max(sessions.held.len());
         Asking(Some(answers))
     }
@@ -4276,7 +4449,7 @@ impl<'p> Memo<'p> {
         let last = &self.last;
         sessions
             .held
-            .retain(|place, _| last.get(*place).is_some_and(|last| *last >= before));
+            .retain(|alike, _| last.get(alike).is_some_and(|last| *last >= before));
     }
 
     /// How many elements and steps it holds sessions for, and the most
