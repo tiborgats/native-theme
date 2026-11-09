@@ -1,0 +1,57 @@
+name: win-crash diagnostics
+
+on:
+  push:
+    branches: [win-crash]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  diag:
+    name: Diag ${{ matrix.name }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "cdb parallel", mode: cdb, args: "--skip facts_gate --exact" }
+          - { name: "parallel", mode: plain, args: "--skip facts_gate --exact" }
+          - { name: "serial", mode: plain, args: "--skip facts_gate --exact --test-threads=1 --nocapture" }
+          - { name: "watch drop alone", mode: plain, args: "watch::tests::windows_subscribe_and_drop_returns --exact --nocapture" }
+          - { name: "winicons alone", mode: plain, args: "winicons:: --nocapture" }
+          - { name: "watch drop and winicons", mode: cdb, args: "--skip facts_gate --skip theme:: --skip resolve:: --skip presets:: --skip widgets:: --skip icons:: --nocapture" }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/evidence
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the lib tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          exe=$(cargo test -p native-theme --features windows,watch,system-icons --lib --no-run --message-format=json \
+            | jq -r 'select(.reason == "compiler-artifact" and .profile.test == true and .executable != null) | .executable' | tail -n1)
+          echo "exe=$exe"
+          echo "TEST_EXE=$exe" >> "$GITHUB_ENV"
+      - name: Run (plain)
+        if: matrix.mode == 'plain'
+        shell: bash
+        run: |
+          "$TEST_EXE" ${{ matrix.args }}
+      - name: Run (under cdb)
+        if: matrix.mode == 'cdb'
+        shell: bash
+        env:
+          _NT_SYMBOL_PATH: srv*C:\symbols*https://msdl.microsoft.com/download/symbols
+        run: |
+          set -uo pipefail
+          cdb="/c/Program Files (x86)/Windows Kits/10/Debuggers/x64/cdb.exe"
+          ls -la "$cdb"
+          for i in 1 2 3; do
+            echo "=== round $i ==="
+            "$cdb" -lines -c 'sxd -c2 ".echo SECONDCHANCE_AV; .lastevent; r; kn 80; ~*kn 60; q" av; sxd -c2 ".echo SECONDCHANCE_SO; .lastevent; kn 80; q" sov; g' "$(cygpath -w "$TEST_EXE")" ${{ matrix.args }} 2>&1 | grep -v '^ModLoad' | tail -n 4000
+            st=${PIPESTATUS[0]}
+            echo "=== round $i status $st ==="
+          done
