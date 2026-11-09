@@ -280,7 +280,8 @@ static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 /// Whether COM's multithreaded apartment is kept for the process, from the
 /// first stock icon load to the process's end: `CoIncrementMTAUsage`, once,
-/// its cookie never given back; the failure where it failed.
+/// on a thread of its own, its cookie never given back; the failure noted
+/// where it failed.
 ///
 /// SHGetStockIconInfo runs code of a COM server of the shell's
 /// (`thumbcache.dll`, loaded through COM's DLL cache), and COM must be
@@ -313,14 +314,25 @@ static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 fn mta_kept() -> bool {
     static KEPT: std::sync::OnceLock<Result<(), String>> = std::sync::OnceLock::new();
     let kept = KEPT.get_or_init(|| {
-        // SAFETY: CoIncrementMTAUsage writes its cookie into a value the
-        // binding owns and returns; it is not called during process
-        // shutdown or from DllMain, which its documentation rules out. The
-        // cookie is dropped without CoDecrementMTAUsage: the usage is kept
-        // for the process, on purpose.
-        unsafe { windows::Win32::System::Com::CoIncrementMTAUsage() }
-            .map(|_kept_for_the_process| ())
-            .map_err(|err| err.to_string())
+        // On a thread of its own: the call puts a thread in no apartment
+        // into the MTA, and the caller's thread is left as it is. The usage
+        // outlives the thread (its cookie may be given back from any other).
+        let keeper = std::thread::Builder::new()
+            .spawn(|| {
+                // SAFETY: CoIncrementMTAUsage writes its cookie into a value
+                // the binding owns and returns; it is not called during
+                // process shutdown or from DllMain, which its documentation
+                // rules out. The cookie is dropped without
+                // CoDecrementMTAUsage: the usage is kept for the process, on
+                // purpose.
+                unsafe { windows::Win32::System::Com::CoIncrementMTAUsage() }
+                    .map(|_kept_for_the_process| ())
+                    .map_err(|err| err.to_string())
+            })
+            .map_err(|err| format!("no thread to call it on: {err}"))?;
+        keeper
+            .join()
+            .map_err(|_| "its thread panicked".to_owned())?
     });
     if let Err(err) = kept {
         note_failure(format_args!("CoIncrementMTAUsage: {err}"));
@@ -1036,14 +1048,17 @@ mod tests {
         });
     }
 
-    /// Every stock icon role loads, two hundred times over, while another
-    /// thread joins the process's multithreaded apartment and leaves it again
-    /// and again. A thread that has not initialized COM uses it as a member
-    /// of the MTA while one exists, and the last thread to uninitialize COM
-    /// in the process unloads the servers COM loaded (combase's
-    /// `ProcessUninitialize`), the shell's server a load was running in among
-    /// them (CI run 42554706381, where the Windows watcher's thread,
-    /// subscribed and dropped a thousand times, uninitialized it).
+    /// After a first load, every stock icon role loads, two hundred times
+    /// over, while another thread joins the process's multithreaded apartment
+    /// and leaves it again and again. A thread that has not initialized COM
+    /// uses it as a member of the MTA while one exists, and the last thread to
+    /// uninitialize COM in the process unloads the servers COM loaded
+    /// (combase's `ProcessUninitialize`), the shell's server a load was
+    /// running in among them (CI run 42554706381, where the Windows watcher's
+    /// thread, subscribed and dropped a thousand times, uninitialized it).
+    /// The first load comes before the other thread starts, so that, with
+    /// the MTA kept, its leaving never uninitializes COM in the process under
+    /// another test's COM work.
     #[cfg(target_os = "windows")]
     #[test]
     fn stock_icons_load_while_another_thread_leaves_the_mta() {
@@ -1058,6 +1073,12 @@ mod tests {
             }
         }
 
+        let first = load_role(IconRole::DialogWarning);
+        assert!(
+            matches!(first, Some(IconData::Rgba(_))),
+            "DialogWarning should load as RGBA; failed at: {}",
+            last_failure()
+        );
         let done = AtomicBool::new(false);
         std::thread::scope(|scope| {
             scope.spawn(|| {
