@@ -904,6 +904,15 @@ def based_paths(bases) -> list:
     return out
 
 
+def by_ckey(facts) -> dict:
+    """{a key: its facts, in their order}: what alive() and ruled_beneath() read of `facts`, each key's list
+    found once."""
+    out = {}
+    for f in facts:
+        out.setdefault(f.ckey, []).append(f)
+    return out
+
+
 def alive(f: Fact, facts) -> tuple:
     """The schemes a fact applies in somewhere, no later fact of its key covering it there (S17 *Which fact
     applies*: the last in file order)."""
@@ -928,13 +937,28 @@ def ruled_beneath(f: Fact, facts, scheme, models=(), off=()) -> bool:
     return bool(models) and all(elements_beneath(f, earlier, scheme, model, off) for model in models)
 
 
+VARIANT_FIELDS = ("variants", "exclusive_variants", "variant_sets", "variant_products", "requires_variants",
+                  "not_drawn")
+_variant_options = {}   # variant_options() by what it reads: the model's VARIANT_FIELDS and `off`
+
+
 def variant_options(model, off=()) -> list:
     """The variant sets a state model's elements hold (S17 *State models*, *Variant products*, as the gate's
     model::variant_options gives them): none, each variant, each set `variant_sets` lists and each set
     `variant_products` gives (every choice of one variant or none from each `any` group and one from each `one`
     group, those of two or more variants, none holding two of an `exclusive_variants` group), less those
     `requires_variants` excludes, those holding a variant `off` names (left out with its unit, off_variants()) and
-    those a `not_drawn` entry of variants alone refuses; each once, sorted."""
+    those a `not_drawn` entry of variants alone refuses; each once, sorted. Computed once per distinct input: the
+    model's VARIANT_FIELDS, the only ones read, by their text, and `off` as a set, as it is read; each call gets its
+    own lists."""
+    key = (repr([model.get(k) for k in VARIANT_FIELDS]), frozenset(off))
+    if key not in _variant_options:
+        _variant_options[key] = computed_variant_options(model, off)
+    return [list(held) for held in _variant_options[key]]
+
+
+def computed_variant_options(model, off=()) -> list:
+    """variant_options() computed."""
     variants = [v for v in model.get("variants", []) if isinstance(v, str)]
     groups = [set(g) for g in model.get("exclusive_variants", []) if isinstance(g, list)]
     sets = [[]] + [[v] for v in variants] + [s for s in model.get("variant_sets", []) if isinstance(s, list)]
@@ -1020,6 +1044,7 @@ def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> li
     are typed, as the reader refuses that key."""
     block_of = block_of or set_whole_block
     based = based_paths(bases)
+    same = by_ckey(facts)
     out, seen = [], {}
     for f in facts:
         if f.status != PENDING:
@@ -1027,7 +1052,7 @@ def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> li
         presence = False
         if f.kind == "input":
             contrast = any(c in dict(CONTRASTS) for c in f.when.get("conditions", []))
-            paths = [] if contrast else [("inputs",) + tuple(f.ckey[1:]) + (s,) for s in alive(f, facts)]
+            paths = [] if contrast else [("inputs",) + tuple(f.ckey[1:]) + (s,) for s in alive(f, same[f.ckey])]
         else:
             try:
                 place(f)
@@ -1040,7 +1065,8 @@ def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> li
                                  f"are typed (S11, S17; ledger #150)")
             held = models_holding(models or {}, f.widget, f.when)
             left_out = (off or {}).get(f.widget, ())
-            slots = tuple(s for s in alive(f, facts) if not ruled_beneath(f, facts, s, held, left_out))
+            slots = tuple(s for s in alive(f, same[f.ckey])
+                          if not ruled_beneath(f, same[f.ckey], s, held, left_out))
             below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
             schemes = slots if f.kind == "role" else (None,)
             paths = [(f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
@@ -1072,9 +1098,10 @@ def redrawn_pending(facts, bases) -> list:
     wholes = {tuple(header) for section, _, header, dotted, value, _ in bases if whole_part(section, dotted, value)}
     present = {f.ckey for f in facts if f.kind == "widget" and f.status not in (PENDING, SHADOWED)
                and f.item.data.get("value") == "present"}
+    same = by_ckey(facts)
     out = []
     for f in facts:
-        if f.status != PENDING or f.kind != "widget" or not alive(f, facts):
+        if f.status != PENDING or f.kind != "widget" or not alive(f, same[f.ckey]):
             continue
         try:
             place(f)
@@ -3629,6 +3656,23 @@ def self_test() -> int:
     for when, d, groups, recency, want in HOLDS_CASES:
         if holds(when, combo(d), groups, recency) != want:
             failures.append(f"holds({when}, {d}): not {want}")
+    # the computed-once results: variant_options() follows a model changed in place, `off` and every field it reads,
+    # and a caller changing its lists changes no later call's
+    model = {"variants": ["flat", "help"]}
+    first = variant_options(model)
+    first[1].append("help")
+    model["variants"].append("icon_only")
+    model["exclusive_variants"] = [["flat", "help"]]
+    model["variant_products"] = [[{"any": ["flat", "help"]}, {"any": ["icon_only"]}]]
+    got = [first, variant_options({"variants": ["flat", "help"]}), variant_options(model),
+           variant_options(model, ["help"]), variant_options(model, ("help",)), variant_options({**model, "not_drawn": [
+               {"variants": ["icon_only"]}]}), variant_options({**model, "requires_variants": ["help"]})]
+    want = [[[], ["flat", "help"], ["help"]], [[], ["flat"], ["help"]],
+            [[], ["flat"], ["help"], ["icon_only"], ["flat", "icon_only"], ["help", "icon_only"]],
+            [[], ["flat"], ["icon_only"], ["flat", "icon_only"]], [[], ["flat"], ["icon_only"], ["flat", "icon_only"]],
+            [[], ["flat"], ["help"]], [["help"], ["help", "icon_only"]]]
+    if got != want:
+        failures.append(f"variant_options computed once: {got}, expected {want}")
     # the model's fields a preset leaves unstated: none where it states each, the field where one line is gone; the
     # sources' tests, comments and attributes are no model
     with tempfile.TemporaryDirectory() as tmp:
