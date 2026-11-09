@@ -1,0 +1,67 @@
+# Entries of the source cache (the 0.8.0 plan's D1) that the tests read, for
+# the jobs that run them: each named git entry of docs/facts/sources.toml
+# checked out at its pinned commit alone (depth 1), byte for byte (no
+# line-ending conversion), into $RUNNER_TEMP/native-theme-sources/<id>, as
+# scripts/update_sources.sh lays the cache out locally, and
+# NATIVE_THEME_SOURCES set to that folder for the job's later steps. The
+# tests read each file there and fail where it is missing.
+#
+# Like the evidence action, it needs only bash and git, which every runner
+# has: scripts/update_sources.sh also needs python3 3.11 (tomllib), GNU
+# `realpath -m` and bash 4.3 (`wait -n`), which the macOS and Windows runners
+# do not all guarantee. An entry with sparse folders is refused: none of the
+# entries the tests read has them.
+name: Source cache entries
+description: Checks the named docs/facts/sources.toml git entries out at their pins and sets NATIVE_THEME_SOURCES.
+inputs:
+  ids:
+    description: The entries' ids, space-separated (`breeze@6.8.2`).
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Source cache entries at their pins
+      shell: bash
+      env:
+        IDS: ${{ inputs.ids }}
+      run: |
+        set -euo pipefail
+        cache="$RUNNER_TEMP/native-theme-sources"
+        mkdir -p "$cache"
+        for id in $IDS; do
+          # The entry's repository, commit and sparse line: check_sources.py's
+          # form puts each field of a [[source]] table on a line of its own
+          # (a Windows checkout's carriage returns dropped).
+          entry=$(awk -v id="$id" '
+            function flush() { if (found) print repo, commit, sparse }
+            { sub(/\r$/, "") }
+            /^\[\[/ { flush(); found = 0; repo = ""; commit = ""; sparse = "-"; next }
+            $0 == "id = \"" id "\"" { found = 1 }
+            /^repository = "/ { repo = $3; gsub(/"/, "", repo) }
+            /^commit = "/ { commit = $3; gsub(/"/, "", commit) }
+            /^sparse = / { sparse = "sparse" }
+            END { flush() }
+          ' docs/facts/sources.toml)
+          if [ "$(grep -c . <<<"$entry")" != 1 ]; then
+            echo "docs/facts/sources.toml: not exactly one entry $id: $entry"
+            exit 1
+          fi
+          read -r repository commit sparse <<<"$entry"
+          if [[ "$repository" != https://* || ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "docs/facts/sources.toml: the entry $id's repository or commit does not read: $entry"
+            exit 1
+          fi
+          if [ "$sparse" != "-" ]; then
+            echo "docs/facts/sources.toml: the entry $id has sparse folders, which this action does not fetch"
+            exit 1
+          fi
+          dir="$cache/$id"
+          git init -q "$dir"
+          git -C "$dir" config core.autocrlf false
+          git -C "$dir" remote add origin "$repository"
+          git -C "$dir" fetch -q --depth 1 origin "$commit"
+          git -C "$dir" -c advice.detachedHead=false checkout -q --detach "$commit"
+          test "$(git -C "$dir" rev-parse HEAD)" = "$commit"
+          echo "$id at $commit in $dir"
+        done
+        echo "NATIVE_THEME_SOURCES=$cache" >>"$GITHUB_ENV"

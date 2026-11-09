@@ -299,8 +299,10 @@ fn breeze_file(name: &str) -> Vec<u8> {
     let path = source_cache().join("breeze@6.8.2/colors").join(name);
     std::fs::read(&path).unwrap_or_else(|error| {
         panic!(
-            "{} cannot be read ({error}): the source cache holds it after \
-             `scripts/update_sources.sh --only breeze@6.8.2`",
+            "{} cannot be read ({error}): the source cache (NATIVE_THEME_SOURCES, else its \
+             default) lacks the entry breeze@6.8.2, which \
+             `scripts/update_sources.sh --only breeze@6.8.2` fetches \
+             (CI: .github/actions/sources)",
             path.display()
         )
     })

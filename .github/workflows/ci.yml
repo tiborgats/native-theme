@@ -261,6 +261,10 @@ jobs:
       - uses: actions/checkout@v6
       # The facts gate's fixtures read the evidence at its pin.
       - uses: ./.github/actions/evidence
+      # `from_port`'s tests read Breeze's scheme files from the source cache.
+      - uses: ./.github/actions/sources
+        with:
+          ids: breeze@6.8.2
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       # Every test but the facts gate itself, which the facts-gate jobs run:
@@ -268,14 +272,7 @@ jobs:
       # presets hold none; the platform readers, icon loaders, font lookup
       # and watchers that do are not on its path), so its outcome is one
       # for every target and feature set. Its fixtures' tests run here.
-      # The two tests of `from_port` over Breeze's files read them from the
-      # source cache (breeze@6.8.2), which these jobs do not fetch: skipped
-      # by name too.
-      - run: >-
-          cargo test -p native-theme ${{ matrix.flags }} -- --exact
-          --skip facts_gate
-          --skip palette::tests::from_port_of_breeze_light_is_kde_breezes_own_at_light
-          --skip palette::tests::from_port_of_breeze_dark_is_kde_breezes_own_at_dark
+      - run: cargo test -p native-theme ${{ matrix.flags }} -- --skip facts_gate --exact
       # Both connectors enable `system-icons` by default, and its icon code
       # imports the platform crates, so it must build alone on each platform.
       - name: Check system-icons alone
