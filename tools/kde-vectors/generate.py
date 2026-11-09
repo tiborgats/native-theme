@@ -36,6 +36,11 @@ Writes these tables under `native-theme/tests/vectors/`:
   src/plugins/platforms/xcb/qxcbscreen.cpp:298-314`, `:366-373`, `:856-876`) forces from the X resources, the
   system's Qt 6.12.0 run against an Xvfb server whose root window holds them (`readers.cpp`), each input also read
   back through `xrdb -query`, which the KDE reader reads.
+- `kde_accent.tsv` and `kde_accent_wm.tsv`, by the `compiled_source` route: Plasma's colour scheme applier
+  (`plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp` and `.h`, compiled unchanged with `accent.cpp`) applied to
+  generated scheme files and accents, each case's kdeglobals read back through the system's KColorScheme 6.31 as the
+  KDE reader reads kdeglobals; the nine measured (scheme file, accent) pairs of `docs/facts/kde/accent.toml` re-run
+  first, the run stopping on any fact that differs.
 
 The functions' inputs: the Breeze 6.8.2 colour schemes' colours (`breeze@6.8.2 colors/BreezeLight.colors`,
 `BreezeDark.colors`, read from the source cache) at the arguments the facts pass (`docs/facts/kde/`), the branches'
@@ -55,10 +60,11 @@ row.
 The remaining sources Qt's and KDE's headers need are the system's: it requires g++, bubblewrap, Qt 6.12.0's
 development headers (private ones included) and `moc`, and the KF6 Config 6.31 headers and libraries; it refuses
 another Qt or KConfig. The readers' two tables also need the KF6 ColorScheme 6.31 headers and library, the
-plasma-integration platform theme, Qt's xcb plugin, Xvfb and xrdb. Run from the repository root, the source cache's
-folder optional (`--only-readers`: those two tables alone):
+plasma-integration platform theme, Qt's xcb plugin, Xvfb and xrdb; the accent's two the KF6 GuiAddons and ColorScheme
+6.31 headers and libraries and QtDBus's headers. Run from the repository root, the source cache's folder optional
+(`--only-readers`: the readers' two tables alone; `--only-accent`: the accent's two alone):
 
-    python3 -I tools/kde-vectors/generate.py [--only-readers] [source cache]
+    python3 -I tools/kde-vectors/generate.py [--only-readers | --only-accent] [source cache]
 """
 
 import json
@@ -68,6 +74,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -1197,18 +1204,492 @@ def readers_tables(source_cache: Path, work: Path, rng):
     qxcb_xft_dpi_table(exe)
 
 
+# ---- The accent derivation: plasma-workspace's applyScheme() (`kde_accent`, `kde_accent_wm`), by the
+# `compiled_source` route. kcms/colors/colorsapplicator.cpp and .h compiled unchanged with accent.cpp over the
+# system's Qt 6.12.0, KConfig, KGuiAddons and KColorScheme 6.31; each case's kdeglobals read back through
+# KColorScheme as the KDE reader reads kdeglobals.
+
+PLASMA_WORKSPACE = "plasma-workspace@6.8.2"
+APPLICATOR = ["kcms/colors/colorsapplicator.cpp", "kcms/colors/colorsapplicator.h"]
+KGUIADDONS_MINOR = "6.31"
+ACCENT_LIBS = ["-lKF6ColorScheme", "-lKF6GuiAddons", "-lKF6ConfigGui", "-lKF6ConfigCore", "-lQt6Gui", "-lQt6DBus",
+               "-lQt6Core"]
+ACCENT_TABLE_SOURCES = [PLASMA_WORKSPACE, "kcolorscheme@6.31.0", "kconfig@6.31.0", "kguiaddons@6.31.0",
+                        "qtbase@6.12.0"]
+ACCENT_FACTS = ROOT / "docs" / "facts" / "kde" / "accent.toml"
+SUSE_CAFE = "SUSE-Cafe@2f66c168"
+# applyScheme()'s twelve keys (colorsapplicator.cpp:165-176), in KdeSchemeKey's order (S4.8), and the four [WM]
+# keys KdeWmKey names (S4.8; colorsapplicator.cpp:291-294).
+SCHEME_KEYS = ["BackgroundNormal", "BackgroundAlternate", "ForegroundNormal", "ForegroundInactive", "ForegroundActive",
+               "ForegroundLink", "ForegroundVisited", "ForegroundNegative", "ForegroundNeutral", "ForegroundPositive",
+               "DecorationFocus", "DecorationHover"]
+WM_KEYS = ["activeBackground", "activeForeground", "inactiveBackground", "inactiveForeground"]
+# The facts' role field of each scheme key (the catalogue's key table, as docs/facts/kde/accent.toml names them).
+ROLE_FIELDS = dict(zip(SCHEME_KEYS, ["background", "background_alternate", "foreground", "foreground_inactive",
+                                     "foreground_active", "link", "link_visited", "negative", "neutral", "positive",
+                                     "decoration_focus", "decoration_hover"]))
+ACCENT_SEED = 20261109
+RANDOM_ACCENTS = 12
+RANDOM_ACCENT_ROWS = 12
+# A case's later accent keeps at most this many of the rows its result changes (seeded).
+LATER_ROWS = 16
+
+
+def snake(name):
+    return re.sub(r"(?<!^)([A-Z])", r"_\1", name).lower()
+
+
+def accent_build(cache: Path, work: Path):
+    qt = [QT_INCLUDE, QT_INCLUDE / "QtCore", QT_INCLUDE / "QtGui", QT_INCLUDE / "QtDBus",
+          QT_INCLUDE / "QtCore" / QT_VERSION, QT_INCLUDE / "QtCore" / QT_VERSION / "QtCore",
+          QT_INCLUDE / "QtGui" / QT_VERSION, QT_INCLUDE / "QtGui" / QT_VERSION / "QtGui"]
+    kf6 = [KF6_INCLUDE / "KColorScheme", KF6_INCLUDE / "KConfig", KF6_INCLUDE / "KConfigCore",
+           KF6_INCLUDE / "KConfigGui", KF6_INCLUDE / "KGuiAddons"]
+    colors = cache / PLASMA_WORKSPACE / "kcms" / "colors"
+    common = ["g++", "-std=c++20", "-fPIC", *REFERENCE_FLAGS, "-DQT_NO_DEBUG",
+              *(f"-I{p}" for p in [colors, *qt, *kf6])]
+    objects = []
+    for source in [colors / "colorsapplicator.cpp", HERE / "accent.cpp"]:
+        obj = work / f"accent-{source.stem}.o"
+        pinned.sandboxed([*common, "-c", source, "-o", obj], writable=[work], check=True)
+        objects.append(obj)
+    exe = work / "accent"
+    pinned.sandboxed(["g++", *REFERENCE_FLAGS, "-o", exe, *objects, *ACCENT_LIBS], writable=[work], check=True)
+    return exe
+
+
+def colour_text(text):
+    """A harness colour, `invalid` or `r,g,b,a` (QColor's redF() … alphaF()), as the model holds it (f32s)."""
+    return None if text == "invalid" else tuple(f32(float(x)) for x in text.split(","))
+
+
+def accent_run(exe: Path, cases):
+    """Each case (scheme bytes, accent: None or four f32s) applied: {"lists", "in", "wmin", "out", "wm", "raw"}."""
+    lines = []
+    for scheme, accent in cases:
+        arg = "-" if accent is None else ",".join(f32_text(x) for x in accent)
+        lines.append(f"{scheme.hex()} {arg}")
+    out = pinned.sandboxed([exe], readable=[exe.parent], input="".join(x + "\n" for x in lines), capture_output=True,
+                           text=True, check=True).stdout
+    results, current = [], None
+    for line in out.splitlines():
+        f = line.split("\t")
+        if current is None:
+            current = {"in": {}, "out": {}, "wmin": {}, "wm": {}}
+        if f[0] == "lists":
+            current["groups"] = [] if f[1] == "-" else f[1].split(",")
+            current["inactive_groups"] = [] if f[2] == "-" else f[2].split(",")
+            current["unset"] = [] if f[3] == "-" else f[3].split(",")
+            current["tint"] = None if f[4] == "-" else f32(float(f[4]))
+            current["titlebar"] = f[5] == "1"
+        elif f[0] in ("in", "out"):
+            current[f[0]][(f[1], f[2])] = (colour_text(f[3]), colour_text(f[4]))
+        elif f[0] in ("wmin", "wm"):
+            current[f[0]][f[1]] = colour_text(f[2])
+        elif f[0] == "raw":
+            current["raw"] = bytes.fromhex(f[1]).decode("utf-8")
+        elif f[0] == "end":
+            results.append(current)
+            current = None
+    if len(results) != len(cases):
+        sys.exit(f"{exe.name}: {len(results)} results for {len(cases)} cases")
+    return results
+
+
+# A scheme file as an ordered list of [group header, [(key, value)]], the preamble's lines under the header None.
+def scheme_parse(text):
+    groups = [[None, []]]
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("[") and s.endswith("]"):
+            groups.append([s[1:-1], []])
+        elif s and not s.startswith("#") and "=" in s:
+            k, v = s.split("=", 1)
+            groups[-1][1].append((k, v))
+    return groups
+
+
+def scheme_text(groups):
+    out = []
+    for name, entries in groups:
+        if name is not None:
+            out.append(f"[{name}]")
+        out += [f"{k}={v}" for k, v in entries]
+        out.append("")
+    return "\n".join(out).encode("utf-8")
+
+
+def scheme_edit(groups, *, drop_groups=(), drop_keys=(), set_keys=(), add_groups=()):
+    """A copy with whole groups dropped, (group, key)s dropped, (group, key, value)s set (the group appended where
+    missing) and (group, entries) groups appended."""
+    out = [[n, list(e)] for n, e in groups if n not in drop_groups]
+    for g, k in drop_keys:
+        for entry in out:
+            if entry[0] == g:
+                entry[1] = [(a, b) for a, b in entry[1] if a != k]
+    for g, k, v in set_keys:
+        entry = next((e for e in out if e[0] == g), None)
+        if entry is None:
+            entry = [g, []]
+            out.append(entry)
+        entry[1] = [(a, b) for a, b in entry[1] if a != k] + [(k, v)]
+    for g, entries in add_groups:
+        out.append([g, list(entries)])
+    return out
+
+
+def hex8(c):
+    return tuple(round(x * 255) for x in c)
+
+
+def accent_cases(cache: Path):
+    """The cases: (name, scheme bytes, the accents, the sets whose rows are kept (None: all), the [WM] rows kept)."""
+    light = scheme_parse(pinned.pinned(cache, BREEZE, "colors/BreezeLight.colors").decode("utf-8"))
+    dark = scheme_parse(pinned.pinned(cache, BREEZE, "colors/BreezeDark.colors").decode("utf-8"))
+    classic = scheme_parse(pinned.pinned(cache, BREEZE, "colors/BreezeClassic.colors").decode("utf-8"))
+    yellow, violet, none = c8(229, 165, 10), c8(94, 44, 165), c8(0, 0, 0, 0)
+    measured = [yellow, violet, none]
+    more = [c8(61, 174, 233), c8(255, 255, 255), c8(0, 0, 0), c8(255, 0, 0, 0), c8(61, 174, 233, 128),
+            (f32(0.2), f32(0.55), f32(0.9), ONE), (f32(0.0), f32(0.0), f32(0.0), f32(1e-6))]
+    tint = ("General", "TintFactor")
+    titlebar = ("General", "TitlebarIsAccentColored", "true")
+    header_inactive = "Colors:Header][Inactive"
+    window_bg = ("Colors:Window", "BackgroundNormal")
+    cases = [
+        ("BreezeLight", light, measured + more, None, True),
+        ("BreezeDark", dark, measured + more[1:3] + more[4:5], None, True),
+        ("BreezeClassic (the title-bar option, no Header group)", classic, measured + more[:2], None, True),
+        ("BreezeDark tinting (TintFactor 0.15)", scheme_edit(dark, set_keys=[(*tint, "0.15")]),
+         measured + more[:2], None, True),
+        ("BreezeLight tinting (0.3) with the title-bar option",
+         scheme_edit(light, set_keys=[(*tint, "0.3"), titlebar]), measured, None, True),
+        ("BreezeLight, the title-bar option by accentActiveTitlebar",
+         scheme_edit(light, set_keys=[("General", "accentActiveTitlebar", "true")]), [yellow], ["Header"], True),
+        ("BreezeLight, TitlebarIsAccentColored false over accentActiveTitlebar true",
+         scheme_edit(light, set_keys=[("General", "accentActiveTitlebar", "true"),
+                                      ("General", "TitlebarIsAccentColored", "false")]), [yellow], ["Header"], True),
+        ("BreezeDark, the title-bar option, a Header group without [Inactive]",
+         scheme_edit(dark, drop_groups=[header_inactive], set_keys=[titlebar]), measured, ["Header", "Window"], True),
+        ("a SUSE-Cafe-shaped file: tinting 0.15, the title-bar option, a Header group of two keys",
+         scheme_edit(dark, drop_groups=["Colors:Header", header_inactive],
+                     set_keys=[(*tint, "0.15"), titlebar],
+                     add_groups=[("Colors:Header", [("BackgroundNormal", "41,44,48"),
+                                                    ("BackgroundAlternate", "49,54,59")])]),
+         measured, None, True),
+        ("BreezeLight without a Header group", scheme_edit(light, drop_groups=["Colors:Header", header_inactive]),
+         [yellow, violet, none], ["Header", "Window"], True),
+        ("BreezeClassic tinting (0.2)", scheme_edit(classic, set_keys=[(*tint, "0.2")]), [yellow, none],
+         ["Header", "Window"], True),
+        ("BreezeLight without View and Button groups",
+         scheme_edit(light, drop_groups=["Colors:View", "Colors:Button"]), [yellow, violet, none],
+         ["View", "Button", "Selection"], False),
+        ("BreezeLight without View and Button groups, tinting 0.15",
+         scheme_edit(light, drop_groups=["Colors:View", "Colors:Button"], set_keys=[(*tint, "0.15")]),
+         [yellow, none], ["View", "Button", "Selection"], False),
+        ("BreezeLight without a Window group, the title-bar option",
+         scheme_edit(light, drop_groups=["Colors:Window"], set_keys=[titlebar]), [yellow, violet, none],
+         ["Window", "Header"], True),
+        ("BreezeLight without a Window group, tinting 0.15",
+         scheme_edit(light, drop_groups=["Colors:Window"], set_keys=[(*tint, "0.15")]), [yellow, none],
+         ["Window", "Header"], True),
+        ("BreezeClassic without a Window group", scheme_edit(classic, drop_groups=["Colors:Window"]),
+         [yellow, none], ["Window", "Header"], True),
+        ("BreezeDark with unset keys",
+         scheme_edit(dark, drop_keys=[("Colors:View", "BackgroundNormal"), ("Colors:Window", "ForegroundLink"),
+                                      ("Colors:Window", "DecorationHover"), ("Colors:Header", "ForegroundNormal"),
+                                      ("Colors:Header", "BackgroundNormal"), ("Colors:Selection", "ForegroundActive"),
+                                      ("Colors:Tooltip", "ForegroundLink"), (header_inactive, "BackgroundAlternate"),
+                                      (header_inactive, "ForegroundLink"), ("Colors:Button", "BackgroundNormal")]),
+         [yellow, violet, none], None, True),
+        ("BreezeDark with unset keys, tinting 0.15, the title-bar option",
+         scheme_edit(dark, drop_keys=[("Colors:View", "BackgroundNormal"), ("Colors:Window", "ForegroundLink"),
+                                      ("Colors:Window", "BackgroundNormal"), ("Colors:Header", "ForegroundNormal"),
+                                      ("Colors:Selection", "ForegroundActive"), (header_inactive, "ForegroundLink"),
+                                      (header_inactive, "BackgroundAlternate")],
+                     set_keys=[(*tint, "0.15"), titlebar]),
+         [yellow, none], None, True),
+        ("BreezeLight with [Inactive] groups in Window (four keys) and View",
+         scheme_edit(light, add_groups=[
+             ("Colors:Window][Inactive", [("BackgroundNormal", "230,231,232"), ("ForegroundNormal", "60,63,66"),
+                                          ("ForegroundLink", "20,100,160"), ("DecorationFocus", "200,0,0")]),
+             ("Colors:View][Inactive", [(k, "250,250,250" if k.startswith("Background") else "50,50,50")
+                                        for k in SCHEME_KEYS])]),
+         [yellow, none], ["Window", "View", "Header"], False),
+        ("the same, tinting 0.15",
+         scheme_edit(light, set_keys=[(*tint, "0.15")], add_groups=[
+             ("Colors:Window][Inactive", [("BackgroundNormal", "230,231,232"), ("ForegroundNormal", "60,63,66"),
+                                          ("ForegroundLink", "20,100,160"), ("DecorationFocus", "200,0,0")])]),
+         [yellow, none], ["Window", "Header"], False),
+        ("BreezeLight, Window without its backgrounds (the Header table's)",
+         scheme_edit(light, drop_keys=[window_bg, ("Colors:Window", "BackgroundAlternate")]),
+         [yellow, none], ["Window", "Header"], True),
+        ("the same with the title-bar option and no Header [Inactive]",
+         scheme_edit(light, drop_keys=[window_bg, ("Colors:Window", "BackgroundAlternate")],
+                     drop_groups=[header_inactive], set_keys=[titlebar]),
+         [yellow, none], ["Window", "Header"], True),
+        ("BreezeLight, a Header [Inactive] but no Window group",
+         scheme_edit(light, drop_groups=["Colors:Window"]), [yellow, none], ["Header"], False),
+        ("translucent backgrounds (View, Button, Window, Header)",
+         scheme_edit(light, set_keys=[("Colors:View", "BackgroundNormal", "255,255,255,128"),
+                                      ("Colors:Button", "BackgroundNormal", "252,252,252,0"),
+                                      ("Colors:Window", "BackgroundNormal", "239,240,241,200"),
+                                      ("Colors:Header", "BackgroundNormal", "222,224,226,100"), titlebar]),
+         [yellow, violet], ["Selection", "Button", "Header", "View", "Window"], True),
+        ("a Header group only in its [Inactive] subgroup, an empty Tooltip group",
+         scheme_edit(light, drop_groups=["Colors:Header", "Colors:Tooltip"],
+                     add_groups=[("Colors:Tooltip", []),
+                                 ("Colors:Header][Inactive", [("BackgroundNormal", "200,201,202")])]),
+         [yellow, none], ["Header", "Tooltip"], False),
+        ("tint factor 0",
+         scheme_edit(dark, set_keys=[(*tint, "0")]), [yellow], ["Window", "Header"], True),
+        ("tint factor 1", scheme_edit(dark, set_keys=[(*tint, "1")]), [yellow], ["Window", "Header"], True),
+        ("tint factor unreadable", scheme_edit(dark, set_keys=[(*tint, "much")]), [yellow], ["Header"], True),
+        ("tint factor empty", scheme_edit(dark, set_keys=[(*tint, "")]), [violet], ["Header"], True),
+        ("BreezeDark tinting (0.15), Window colours with a zero red or blue channel",
+         scheme_edit(dark, set_keys=[(*tint, "0.15"), ("Colors:Window", "ForegroundLink", "0,128,255"),
+                                     ("Colors:Window", "ForegroundPositive", "0,200,0"),
+                                     ("Colors:Window", "ForegroundNeutral", "255,128,0"),
+                                     ("Colors:Window", "BackgroundNormal", "0,0,0"),
+                                     ("Colors:Window", "DecorationFocus", "0,0,255")]),
+         [c8(0, 128, 255), c8(0, 255, 0), yellow], ["Window"], True),
+        ("BreezeDark without a [WM] group, the inactive effects on (the start values KColorScheme gives)",
+         scheme_edit(dark, drop_groups=["WM"], set_keys=[("ColorEffects:Inactive", "Enable", "true")]),
+         [yellow, violet, none], [], True),
+        ("the same, tinting 0.15, the title-bar option",
+         scheme_edit(dark, drop_groups=["WM"], set_keys=[("ColorEffects:Inactive", "Enable", "true"),
+                                                         (*tint, "0.15"), titlebar]),
+         [yellow, none], [], True),
+        ("a [WM] group of other values",
+         scheme_edit(classic, set_keys=[("WM", "activeBackground", "10,20,30"),
+                                        ("WM", "inactiveForeground", "200,100,50,128"), (*tint, "0.25")]),
+         [yellow, none], [], True),
+    ]
+    return [(name, scheme_text(groups), accents, sets, wm) for name, groups, accents, sets, wm in cases]
+
+
+def accent_lists(r):
+    groups = [snake(s) for s in SETS if s in r["groups"]]
+    inactive = [snake(s) for s in SETS if s in r["inactive_groups"]]
+    unset = []
+    for s in SETS:
+        for part in ("", "inactive."):
+            unset += [f"{snake(s)}.{part}{snake(k)}" for k in SCHEME_KEYS if f"{s}.{part}{k}" in r["unset"]]
+    return [json.dumps(",".join(x)) for x in (groups, inactive, unset)]
+
+
+def accent_rows(case, accent, r, sets, wm):
+    """The case's kde_accent and kde_accent_wm rows: (inputs, result) cell lists."""
+    groups, inactive_groups, unset = accent_lists(r)
+    tint = "none" if r["tint"] is None else f32_text(r["tint"])
+    titlebar = bool_cell(r["titlebar"])
+    a_rows, wm_rows = [], []
+    for s in SETS:
+        if sets is not None and s not in sets:
+            continue
+        for k in SCHEME_KEYS:
+            for g, i in (("active", 0), ("inactive", 1)):
+                result = r["out"][(s, k)][i]
+                if result is None:
+                    sys.exit(f"{case}: {s} {k} {g} reads as an invalid colour")
+                inputs = [snake(s), snake(k), g, colour_cell(accent), colour_cell(r["in"][(s, k)][0]),
+                          colour_cell(r["in"][(s, k)][1]), colour_cell(r["in"][(s, "BackgroundNormal")][0]),
+                          colour_cell(r["in"][("Window", k)][0]),
+                          colour_cell(r["in"][("Window", "BackgroundNormal")][0]),
+                          colour_cell(r["in"][("View", "BackgroundNormal")][0]),
+                          groups, inactive_groups, unset, tint, titlebar]
+                a_rows.append((inputs, srgb(result)))
+    if wm:
+        for k in WM_KEYS:
+            result = r["wm"][k]
+            if result is None:
+                sys.exit(f"{case}: [WM] {k} reads as an invalid colour")
+            inputs = [snake(k), colour_cell(accent), colour_cell(r["wmin"][k]),
+                      colour_cell(r["in"][("Window", "BackgroundNormal")][0]), groups, unset, tint, titlebar]
+            wm_rows.append((inputs, srgb(result)))
+    return a_rows, wm_rows
+
+
+def accent_facts_check(cache: Path, exe: Path):
+    """The nine measured (scheme file, accent) pairs re-run: each fact's value equals the harness's (8-bit), or the
+    run stops naming the differences. Returns the number of facts compared."""
+    facts = tomllib.loads(ACCENT_FACTS.read_text(encoding="utf-8"))["fact"]
+    pairs = {}
+    for f in facts:
+        pairs.setdefault((f["scheme_file"], f["accent"]), []).append(f)
+    cases, keys = [], []
+    for (scheme_file, accent), group in pairs.items():
+        sid, path = scheme_file.split(" ", 1)
+        text = pinned.pinned(cache, sid, path)
+        a = tuple(int(accent[i:i + 2], 16) for i in range(1, len(accent), 2))
+        colour = c8(*a)
+        runs = [colour] if a[3:] != (0,) else [None, colour]   # no AccentColor as measured, and #00000000
+        for run_accent in runs:
+            cases.append((text, run_accent))
+            keys.append((scheme_file, accent, run_accent, group))
+    results = accent_run(exe, cases)
+    wrong, compared = [], 0
+    for (scheme_file, accent, run_accent, group), r in zip(keys, results):
+        for f in group:
+            parts = f["key"].split(".")
+            if parts[0] == "role" and parts[1].startswith("@wm_"):
+                got = r["wm"][WM_KEYS[[snake(k) for k in WM_KEYS].index(parts[1][4:])]]
+            elif parts[0] == "role":
+                key = next(k for k, v in ROLE_FIELDS.items() if v == parts[2])
+                got = r["out"][(SETS[[snake(s) for s in SETS].index(parts[1])], key)][0]
+            else:
+                key = next(k for k in SCHEME_KEYS if snake(k) == parts[3])
+                got = r["out"][(SETS[[snake(s) for s in SETS].index(parts[2])], key)][1]
+            want = f["value"].lower()
+            have = None if got is None else hex_color(hex8(got))
+            exact = got is not None and all(abs(x * 255 - round(x * 255)) < 1e-4 for x in got)
+            compared += 1
+            if have != want or not exact:
+                wrong.append(f"{scheme_file} {accent} (run with {'no AccentColor' if run_accent is None else accent}): "
+                             f"{f['key']} is {want} in the facts, {have} here")
+    if wrong:
+        sys.exit("the measured pairs differ from the harness:\n" + "\n".join(wrong))
+    return len(pairs), len(facts), compared
+
+
+def accent_tables(source_cache: Path, work: Path, rng):
+    if not kcolorscheme_version().startswith(KCOLORSCHEME_MINOR + "."):
+        sys.exit(f"KF6 ColorScheme {kcolorscheme_version() or '(none)'} found; the pin is KColorScheme "
+                 f"{KCOLORSCHEME_MINOR}")
+    if not kguiaddons_version().startswith(KGUIADDONS_MINOR + "."):
+        sys.exit(f"KF6 GuiAddons {kguiaddons_version() or '(none)'} found; the pin is KGuiAddons {KGUIADDONS_MINOR}")
+    cache = work / "accent-sources"
+    pinned.materialise(source_cache, [(PLASMA_WORKSPACE, p) for p in APPLICATOR], cache)
+    exe = accent_build(cache, work)
+    pairs, n_facts, compared = accent_facts_check(source_cache, exe)
+    # The transforms' constants as the system's Qt computed them (the behavioural description quotes them).
+    print(pinned.sandboxed([exe, "constants"], readable=[exe.parent], capture_output=True, text=True,
+                           check=True).stdout, end="")
+    cases = []
+    for name, scheme, accents, sets, wm in accent_cases(source_cache):
+        cases += [(name, scheme, a, sets, wm) for a in accents]
+    # Seeded random accents (8-bit and 16-bit) over the first five cases' schemes, some of their rows kept.
+    mains = accent_cases(source_cache)[:5]
+    for _ in range(RANDOM_ACCENTS):
+        name, scheme, _, _, _ = rng.choice(mains)
+        accent = c8(*(rng.randrange(256) for _ in range(3))) if rng.random() < 0.7 else \
+            c16((*(rng.randrange(65536) for _ in range(3)), 65535))
+        cases.append((name + ", a seeded random accent", scheme, accent, "random", True))
+    results = accent_run(exe, [(scheme, accent) for _, scheme, accent, _, _ in cases])
+    a_rows, wm_rows, seen, earlier = [], [], {}, {}
+    for (name, scheme, accent, sets, wm), r in zip(cases, results):
+        a, w = accent_rows(name, accent, r, None if sets == "random" else sets, wm)
+        if sets == "random":
+            a = rng.sample(a, RANDOM_ACCENT_ROWS)
+        else:
+            # A later accent of the case: only the rows whose result differs from every earlier accent's.
+            later = name in earlier
+            before = earlier.setdefault(name, {})
+            kept = []
+            for table, rows in (("a", a), ("w", w)):
+                out = []
+                for inputs, result in rows:
+                    call = (table, inputs[0], inputs[1], inputs[2]) if table == "a" else (table, inputs[0])
+                    if call not in before or result not in before[call]:
+                        out.append((inputs, result))
+                    before.setdefault(call, set()).add(result)
+                kept.append(out)
+            a, w = kept
+            if later and len(a) > LATER_ROWS:
+                a = rng.sample(a, LATER_ROWS)
+        for table, rows in (("kde_accent", a), ("kde_accent_wm", w)):
+            for inputs, result in rows:
+                key = (table, tuple(inputs))
+                if key in seen and seen[key] != result:
+                    sys.exit(f"{table}: the inputs {inputs} give {seen[key]} and {result}: the operands do not "
+                             "determine the result")
+                if key in seen:
+                    continue
+                seen[key] = result
+                (a_rows if table == "kde_accent" else wm_rows).append(inputs + [result])
+    names = [f"  {name}" for name in dict.fromkeys(c[0] for c in cases if c[3] != "random")]
+    built = [f"written by tools/kde-vectors/generate.py on Qt {QT_VERSION}, KConfig {kconfig_version()},",
+             f"KGuiAddons {kguiaddons_version()} and KColorScheme {kcolorscheme_version()}; do not edit. Each case:",
+             "a scheme file and an accent, applyScheme(file, a fresh kdeglobals, KConfig::Normal, accent)",
+             "(colorsapplicator.cpp compiled unchanged), the kdeglobals synced and opened afresh."]
+    cases_text = ["A row already listed is not repeated; no two rows with the same inputs differ. The nine",
+                  f"measured (file, accent) pairs of docs/facts/kde/accent.toml ({n_facts} facts; the pair with no",
+                  "AccentColor run both as measured, with no accent argument, and with #00000000) were re-run",
+                  "and equal it; SUSE-Cafe's file (GPL-2.0) is read for that check alone. The cases:",
+                  *names,
+                  f"then {RANDOM_ACCENTS} seeded random accents over the first five, {RANDOM_ACCENT_ROWS} rows each.",
+                  "Each case's first accent gives its rows (of the sets it names); a later accent those whose",
+                  f"result differs from every earlier accent's, at most {LATER_ROWS} of them (seeded)."]
+    lists_text = ["the lists JSON strings, their names comma-separated (groups and inactive_groups the sets,",
+                  "unset_keys the scheme inputs below input.kde_scheme, `<set>.<key>`, `<set>.inactive.<key>`);",
+                  "tint_factor token.kde.tint_factor (none: the file has no TintFactor), titlebar_is_accent_colored",
+                  "the token. Every operand is read over the scheme file as the KDE reader reads it."]
+    write_table(
+        VECTORS / "kde_accent.tsv",
+        header("kde_accent", ACCENT_TABLE_SOURCES,
+               "set:enum<SurfaceSet> key:enum<KdeSchemeKey> group:enum<KdeGroup> accent:colour value:colour "
+               "inactive_value:colour background:colour window_value:colour window_background:colour "
+               "view_background:colour groups:string inactive_groups:string unset_keys:string "
+               "tint_factor:option<number> titlebar_is_accent_colored:bool",
+               built + ["The result: KColorScheme's colour of the key in the set over it, the active state for",
+                        "group active, the inactive one with the inactive effects and the Selection set's inactive",
+                        "change off for group inactive (the set's [Inactive] value, else its active one).",
+                        "The operands: accent input.accent (#00000000: none); value input.kde_scheme.<set>.<key>,",
+                        "inactive_value .<set>.inactive.<key>, background .<set>.background_normal, window_value",
+                        ".window.<key>, window_background .window.background_normal, view_background",
+                        ".view.background_normal (KColorScheme over the scheme file: a key a group lacks from its",
+                        "defaults, Header's from [Colors:Window]);"] + lists_text + cases_text),
+        ["set", "key", "group", "accent", "value", "inactive_value", "background", "window_value",
+         "window_background", "view_background", "groups", "inactive_groups", "unset_keys", "tint_factor",
+         "titlebar_is_accent_colored", "result"],
+        a_rows,
+    )
+    write_table(
+        VECTORS / "kde_accent_wm.tsv",
+        header("kde_accent_wm", ACCENT_TABLE_SOURCES,
+               "key:enum<KdeWmKey> accent:colour value:colour window_background:colour groups:string "
+               "unset_keys:string tint_factor:option<number> titlebar_is_accent_colored:bool",
+               built + ["The result: the written [WM] key as KConfig reads a colour.",
+                        "The operands: accent input.accent (#00000000: none); value input.kde_scheme.wm.<key> (the",
+                        "file's [WM] key, else KColorScheme's Header colours over the file: Normal background and",
+                        "foreground, Inactive background and foreground with the file's inactive effects, S9.1);",
+                        "window_background input.kde_scheme.window.background_normal;"]
+               + [lists_text[0].replace(" and inactive_groups", ""), *lists_text[1:]] + cases_text),
+        ["key", "accent", "value", "window_background", "groups", "unset_keys", "tint_factor",
+         "titlebar_is_accent_colored", "result"],
+        wm_rows,
+    )
+    print(f"kde_accent.tsv: {len(a_rows)} rows; kde_accent_wm.tsv: {len(wm_rows)} rows; the {pairs} measured pairs' "
+          f"{n_facts} facts equal ({compared} comparisons)")
+
+
+def kguiaddons_version():
+    """The KF6 GuiAddons headers' `KGUIADDONS_VERSION_STRING`; empty where they are missing."""
+    try:
+        text = (KF6_INCLUDE / "KGuiAddons" / "kguiaddons_version.h").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    found = re.search(r'#define KGUIADDONS_VERSION_STRING "([^"]+)"', text)
+    return found.group(1) if found else ""
+
+
 def main():
     if qt_version() != QT_VERSION:
         sys.exit(f"Qt {qt_version() or '(none)'} found; the pin is Qt {QT_VERSION}")
     if not kconfig_version().startswith(KCONFIG_MINOR + "."):
         sys.exit(f"KF6 Config {kconfig_version() or '(none)'} found; the pin is KConfig {KCONFIG_MINOR}")
-    args = [a for a in sys.argv[1:] if a != "--only-readers"]
+    only = {a for a in sys.argv[1:] if a in ("--only-readers", "--only-accent")}
+    args = [a for a in sys.argv[1:] if a not in only]
+    if len(only) > 1:
+        sys.exit("--only-readers and --only-accent exclude each other")
     source_cache = citations.cache_dir(args[0] if args else None)
     rng = random.Random(SEED)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        if len(args) < len(sys.argv) - 1:
+        if "--only-readers" in only:
             readers_tables(source_cache, tmp, random.Random(SEED + 1))
+            return
+        if "--only-accent" in only:
+            accent_tables(source_cache, tmp, random.Random(ACCENT_SEED))
             return
         cache = tmp / "sources"
         pinned.materialise(source_cache, [(sid, path) for sid, paths in FILES.items() for path in paths], cache)
@@ -1275,6 +1756,7 @@ def main():
         new_tables(rng, reference, fused, source_cache)
         qfont_table(source_cache, tmp)
         readers_tables(source_cache, tmp, random.Random(SEED + 1))
+        accent_tables(source_cache, tmp, random.Random(ACCENT_SEED))
 
 if __name__ == "__main__":
     main()
