@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 8eb6f1b50ff9a1c66f21f02ff91aba2b6ca41a3ef64ff163ab26764eba79ed5f
+# generated lines: sha256 1905eb5727ee3780e344c12d633f245feb85836ad376d6db0c1460de23740f4d
 
 [preset]
 id = "ios-26"
@@ -164,7 +164,7 @@ sizes_by_context = []
 # docs/facts/ios/button.toml:212485
 "widgets.button.label.text.fill" = ["U255", "U114", "U116", "U111", "U115", "U122", "U113", "U112", "U475", "U685", "U686", "U703", "U704"]
 # docs/facts/ios/button.toml:239082
-"widgets.button.icon.icon.fill" = ["U115", "U114", "U116", "U122", "U120", "U111", "U113", "U112", "U475", "U685", "U686", "U704"]
+"widgets.button.icon.icon.fill" = ["U115", "U114", "U116", "U122", "U120", "U111", "U113", "U112", "U475", "U685", "U686", "U704", "U255"]
 # docs/facts/ios/button.toml:244057
 "widgets.button.values.menu_indicator_gap_px" = ["U120", "U114", "U113", "U112"]
 # docs/facts/ios/button.toml:244767
