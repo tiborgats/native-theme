@@ -2480,6 +2480,36 @@ fn gate_fixture_pending_table_both_ways() {
     );
 }
 
+/// `Ok` where `holds`, else the report as the error.
+fn expected(holds: bool, report: &run::Report) -> Result<(), String> {
+    if holds {
+        Ok(())
+    } else {
+        Err(format!("{report:?}"))
+    }
+}
+
+/// The register ids the report found the listed path `key` of the probe
+/// preset with; an error naming what it found where it found none.
+fn listed_ids<'r>(report: &'r run::Report, key: &str) -> Result<Vec<&'r str>, String> {
+    report
+        .listed
+        .get(&format!("probe {key}"))
+        .map(|(ids, _)| ids_of(ids))
+        .ok_or_else(|| format!("no listed `{key}` in {:?}", report.listed))
+}
+
+/// A whole map listed where a preset rule creates an entry of it (S17
+/// *Where a listed path is found*, ADD-A144): the preset states the map
+/// there, so the dark scheme's pending fact, U151, leaves no listed path,
+/// and the light scheme's, U150, is the path's alone.
+#[test]
+fn gate_fixture_listed_map_rule_entry() -> Result<(), String> {
+    let report = fixture_report("listed_map_rule_entry");
+    let ids = listed_ids(&report, "token.text.fallbacks.per_language")?;
+    expected(report.failures.is_empty() && ids == ["U150"], &report)
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the
