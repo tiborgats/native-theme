@@ -354,7 +354,11 @@ its own font's metric (`element.char_width`), which it declares (S8).
 **`active(ref)`** names a role's active value (R5.1): the role is found as any reference finds it (S3.3: a
 `surface.x` through the `Surface(S)` bindings in scope to `role.S.x`), and its value is the colour roles' value from
 the bases of every layer, before any rule; a `Binding::Role` is not followed, as it is an element's value, not the
-role's base.
+role's base. So the place `active(ref)` reads is the role's bases, not the role: evaluating a role's value (its rules
+included) and reading its `active(…)` value inside it is no cycle, in evaluation as in S12's validation, while its
+bases reading their own value back, directly or through an input, is one (ADD-A145, from task T6b: a port's
+`input.inactive.<set>.<key> = active(role.<set>.<role>)` under the role's inactive rule, S14, which evaluation took
+for a cycle and drew transparent).
 
 **Typing.** One rule for every field: a field of type `T` accepts a stated `T`; a `Value<T>` field also accepts a
 reference to a token or a field of type `T` (a block, enum, bool, key, map, paint, shadow or scalar alike: `= token.behavior.focus_visible_when`,
@@ -3959,10 +3963,12 @@ the order it adds them (R2.4), the palette `apply_palette` adds among them where
 accent layer, which `Theme` derives from the `Accent` the application set on every change of the stack (preset,
 palette, reader re-read), so which accent shows never depends on call order. The accent is a setting, not a layer
 the application stacks. Every layer's bases apply in that order, then every
-layer's rules in that order. While a palette applies, the reader's or stand-in's colour bases, colour rules, colour inputs (the
-`kde_scheme.*` scheme inputs and their `groups`, `inactive_groups` and `unset_keys` lists among them; its accent
-inputs under a mapping, which states its own, R19, but not under a KDE port, which states none, so the reader's or
-stand-in's `input.accent` stays in force there, R2.6; ADD-A142) and `token.kde` are left out; the palette does not apply while `ContrastIncreased` or `ContrastHigh` holds unless it
+layer's rules in that order. While a palette applies, the reader's or stand-in's colour bases, colour rules, inputs
+(every input it states, each a colour, S9's `InputValue`: the `kde_scheme.*` scheme inputs and their `groups`,
+`inactive_groups` and `unset_keys` lists and the inactive input roles among them; its accent inputs, the preset's
+`accent_inputs`, S9.1, under a mapping, which states its own, R19, but not under a KDE port, which states none, so
+the reader's or stand-in's `input.accent` stays in force there, R2.6; ADD-A142, ADD-A145) and `token.kde` are left
+out; the palette does not apply while `ContrastIncreased` or `ContrastHigh` holds unless it
 states colours for that condition (colour rules under it, or per-contrast input bases for it, S9), and the reader's or
 stand-in's colours then apply as without it (R19). While the current preset is not the reader's own (S9.5) and declares
 `accent_inputs` beyond `accent` (S9.1), `Theme` leaves the reader's common `input.accent`, with its per-contrast
@@ -3982,7 +3988,11 @@ which hold the scheme of their own seed (ADD-A134).
 
 **Validation** (S12) runs on every change of the stack (S16): it validates the whole stack, conservatively (every
 rule and binding an expression can meet, under every combination of conditions that can hold together, S12,
-R2.8), and a change that fails is refused
+R2.8; beneath a palette it may keep the reader's or stand-in's `token.kde`, which it reads under every scheme at
+once, since no check then differs: every field of `token.kde` is stated, S4.8, and was validated with that layer, a
+port's `Tokens` rule states every field over it at the port's scheme, and S12's one check reading a `token.kde`
+value across layers reads the preset's `tint_factor`; ADD-A145, task T6b's reading), and a change that fails is
+refused
 whole, leaving the theme as it was (R2.5). So resolution and the query cannot fail. A reader's re-read that fails keeps
 the previous reader layer; `Theme::reader_status()` reports the error.
 
@@ -5354,7 +5364,8 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - an input's expression (S9: a per-scheme value or a contrast base; a scheme input's `= input.…`, an inactive input
   role's `= kde_accent(…)` or a port's or mapping's `= active(role.<set>.<role>)`, S14) fails a check a colour role's
   expression fails: it is validated as one, in the root scope with no element and no binding (ADD-A144, task T6a's
-  question), and its cycle check follows `active(ref)` to the role's bases alone, the value S2.2 gives it, so an input
+  question), and its cycle check follows `active(ref)` to the role's bases alone, the value S2.2 gives it (evaluation
+  following it so too, S2.2, ADD-A145), so an input
   a role's rule reads that reads that role's active value is no cycle (`kde-breeze`'s inactive rule over a port's
   `input.inactive.<set>.<key> = active(role.<set>.<role>)`), while one the role's bases read back is
   (`ProblemKind::ExpressionCycle`);
