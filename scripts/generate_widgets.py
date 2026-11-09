@@ -65,8 +65,17 @@ What it reads from an entry
   the entry's is refused, and so is a name listed after a section's first sentence (prose may mention one there), and
   a record value (`Placement`, `Value<Placement>`), whose `Value` members, at any
   depth, the mark allows `Absent` too (S6.3): those members' marks are not generated yet.
-- **Variants**: the sub-bullets starting `typed`, their first sentence's names outside parentheses; the keyed ones
-  are the presets' (S10).
+- **Variants** (spec_catalogue.variant_bullets): the sub-bullets starting with the word `on`, their head the text up
+  to the first colon outside parentheses: `on the widget, typed` gives the widget's typed variants, `` on `<part>`,
+  typed `` an *(element)* part's own, each the names outside parentheses of the first sentence after the colon; the
+  keyed ones (`` keyed, `<preset>` ``) are the presets' (S10), and a sub-bullet not starting with `on` is a note. A
+  head of another form, or a part that is no *(element)* part of the entry, is refused, and so, for now, is an
+  enabled widget with a part's own typed variants (`WidgetInfo` lists the widget's only).
+- **Mirroring** (S2.4, ADD-A146): an enum of the entry or of *Shared value types* whose variant's name holds the word
+  `Start`, `End`, `Leading` or `Trailing` (alone or as a word of its `UpperCamelCase` name) gets a `Mirror` that swaps
+  it with its counterpart, each such word swapped (`TopEnd` and `TopStart`), and a widget value of such an enum is
+  mirrored with the widget's values. An enum lacking a counterpart is refused, in every mode. `Axes<…>` is a type the
+  generator does not handle yet (its `vertical` member is not mirrored, S2.4).
 - **Content variants** (spec_catalogue.content_variants, from *Entry format*'s list of pairs, not from the entry):
   the widget's own and its *(element)* parts' (a `<widget>.<part>` pair), typed and keyed (`@custom_child`) as the
   list writes them, in `WidgetInfo.content_variants`, each with its part (`None`: the widget's own). A pair naming a
@@ -322,25 +331,46 @@ class Widget:
     variants: list
     deferred: dict
     content_variants: list = field(default_factory=list)
+    part_variants: dict = field(default_factory=dict)
 
 
 # The model's types a widget value may hold that the query mirrors in right-to-left (S2.4): a presentation's start
 # or end edge and its translation, a placement's sides and alignments; and every `Sides`.
 MIRRORED = {"PresentationTransition", "Placement"}
 
-# The start and end of an alignment value, as the catalogue's enums name them, which the query swaps in
-# right-to-left (S2.4: "the start and end of every other alignment value").
-ALIGNMENT_ENDS = [("Start", "End"), ("Leading", "Trailing")]
+# The words of a variant's name that name a horizontal end of the layout, each with its counterpart: the query swaps
+# them in right-to-left wherever a variant's name holds one (S2.4, ADD-A146), so `TopEnd` and `TopStart` are a pair.
+END_WORDS = {"Start": "End", "End": "Start", "Leading": "Trailing", "Trailing": "Leading"}
 
 
-def alignment_ends(e) -> list:
-    """The pairs of `ALIGNMENT_ENDS` an enum declares both members of."""
-    return [(a, b) for a, b in ALIGNMENT_ENDS if a in e.variants and b in e.variants]
+def counterpart(variant: str) -> str | None:
+    """`variant` with each of its words END_WORDS names swapped (`TopEnd` -> `TopStart`); None where it holds none
+    (`BothEnds`)."""
+    words_of = re.findall(r"[A-Z][a-z0-9]*", variant)
+    if not any(w in END_WORDS for w in words_of):
+        return None
+    return "".join(END_WORDS.get(w, w) for w in words_of)
+
+
+def mirror_pairs(e) -> list:
+    """The pairs of `e`'s variants the query swaps in right-to-left (S2.4), each once, in the enum's order. A variant
+    holding a word of a pair whose counterpart the enum lacks is refused: the query returns the counterpart for it."""
+    pairs, seen = [], set()
+    for v in e.variants:
+        other = counterpart(v)
+        if other is None or v in seen:
+            continue
+        if other not in e.variants:
+            raise InputError(f"catalogue line {e.line}: `{e.name}::{v}` names an end of the layout and `{e.name}` "
+                             f"lacks its counterpart `{other}`, which the query returns for it in right-to-left (S2.4)")
+        pairs.append((v, other))
+        seen |= {v, other}
+    return pairs
 
 
 def mirrors(ty: str, aligned=frozenset()) -> bool:
     """Whether the query mirrors a value of type `ty` in right-to-left (S2.4); `aligned` names the widget's enums
-    with a start and an end."""
+    with variants naming an end of the layout."""
     wrapper, inner = split_type(ty)
     name = split_type(inner)[1]
     return wrapper == "Sides" or name in MIRRORED or name in aligned
@@ -387,10 +417,11 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
         added = spec_catalogue.Value(FOCUS_VISIBLE_WHEN[0], FOCUS_VISIBLE_WHEN[1], entry.line)
         declared.append(added)
     if item:
-        for _, _, span in spec_catalogue.depth0_tokens(item.text)[0]:
+        for start, _, span in spec_catalogue.depth0_tokens(item.text)[0]:
             m = ENUM_DEF.fullmatch(span.strip())
             if m:
-                enums.append(EnumDecl(m.group(1), m.group(2).split(", "), "", item.line))
+                enums.append(EnumDecl(m.group(1), m.group(2).split(", "), "", item.line_at(start)))
+                mirror_pairs(enums[-1])
     enum_names = {e.name for e in enums}
     for v in declared:
         ty = v.type
@@ -452,6 +483,7 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
             note = cell[groups[0][0] + 1:groups[0][1] - 1] if groups else ""
             out_shared[inner] = EnumDecl(inner, names, sentence_doc(
                 f"a shared value type of the catalogue{': ' + note if note else ''}"), cell_line)
+            mirror_pairs(out_shared[inner])
             continue
         raise InputError(f"{where}: value `{v.written}: {v.ty}`: `{inner}` is no type the generator knows")
 
@@ -493,18 +525,28 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
                                          "members' marks (S6.3, at any depth) are not generated yet")
                     value.may_be_absent = True
 
-    # typed variants
-    variants = []
+    # typed variants, the widget's own and its *(element)* parts'
+    variants, part_variants = [], {}
     item = entry.item("Variants")
-    for _, text in sub_bullets(item) if item else []:
-        if not text.startswith("typed"):
+    for bullet in spec_catalogue.variant_bullets(item) if item else []:
+        if not bullet.form:
+            raise InputError(f"{where}: the Variants sub-bullet at line {bullet.line} starts with `on` but its head "
+                             "is not `on the widget, typed`, `` on `<part>`, typed `` or `keyed, `<preset>`` "
+                             "(Entry format)")
+        if bullet.keyed:
             continue
-        for name in depth0_names(first_sentence(text)):
+        if bullet.part is not None:
+            part = by_name.get(bullet.part)
+            if part is None or not part.element:
+                raise InputError(f"{where}: the Variants sub-bullet at line {bullet.line} is on `{bullet.part}`, no "
+                                 "*(element)* part of the entry")
+        held = variants if bullet.part is None else part_variants.setdefault(bullet.part, [])
+        for name in bullet.names:
             if not IDENT.fullmatch(name):
                 raise InputError(f"{where}: typed variant `{name}` is no identifier")
-            if name not in variants:
-                variants.append(name)
-    return Widget(w, entry.line, parts, values, enums, variants, deferred)
+            if name not in held:
+                held.append(name)
+    return Widget(w, entry.line, parts, values, enums, variants, deferred, part_variants=part_variants)
 
 
 # ----------------------------------------------------------------------------------------------- the output
@@ -530,13 +572,15 @@ def enum_code(e: EnumDecl) -> list:
     for v in e.variants:
         out += wrap_doc(words(v), "    ") + [f"    {v},"]
     out += ["}", ""]
-    ends = alignment_ends(e)
+    ends = mirror_pairs(e)
     if ends:
         out += ["/// Its start and end swapped for a right-to-left layout (S2.4).", f"impl Mirror for {e.name} {{",
                 "    fn mirror(&mut self) {", "        *self = match *self {"]
         for a, b in ends:
             out += [f"            {e.name}::{a} => {e.name}::{b},", f"            {e.name}::{b} => {e.name}::{a},"]
-        out += ["            other => other,", "        };", "    }", "}", ""]
+        if 2 * len(ends) < len(e.variants):
+            out.append("            other => other,")
+        out += ["        };", "    }", "}", ""]
     return out
 
 
@@ -624,7 +668,7 @@ def widget_file(w: Widget, shared_names: set) -> str:
     body += ["}", ""]
     for e in w.enums:
         body += enum_code(e)
-        if alignment_ends(e):
+        if mirror_pairs(e):
             imports.add(("query::mirror", "Mirror"))
     used_shared = sorted({split_type(v.ty)[1] for v in w.values} & shared_names)
     for name in used_shared:
@@ -744,10 +788,10 @@ def index_file(widgets: list, shared: dict) -> str:
                 "        applies: &dyn Fn(&Selector) -> bool,", "        direction: Direction,",
                 f"    ) -> Option<Resolved{W}Values> {{",
                 f"        theme.widget_values::<{W}Values>(Self::KIND, element, applies, direction)", "    }", "}", ""]
-        aligned = frozenset(e.name for e in list(w.enums) + list(shared.values()) if alignment_ends(e))
+        aligned = frozenset(e.name for e in list(w.enums) + list(shared.values()) if mirror_pairs(e))
         mirrored = [v.rust for v in w.values if mirrors(v.ty, aligned)]
         out += [f"/// `{w.name}`'s values mirrored for a right-to-left layout (S2.4): its `Sides`, presentations,",
-                "/// placements and alignments.", f"impl Mirror for Resolved{W}Values {{"]
+                "/// placements and the values naming a start or an end.", f"impl Mirror for Resolved{W}Values {{"]
         if mirrored:
             out += ["    fn mirror(&mut self) {"] + [f"        self.{name}.mirror();" for name in mirrored] + ["    }"]
         else:
@@ -819,6 +863,14 @@ def content_variants_of(widget, pairs: dict) -> list:
     return out
 
 
+def refuse_part_variants(widget) -> None:
+    """An *(element)* part's own typed variants are read but not generated yet: `WidgetInfo` lists the widget's."""
+    if widget.part_variants:
+        listed = ", ".join(f"`{p}`" for p in widget.part_variants)
+        raise InputError(f"catalogue line {widget.line}, `{widget.name}`: the typed variants on {listed} are a "
+                         "part's own, which are not generated yet (`WidgetInfo` lists the widget's)")
+
+
 def content_variant(part, variant: str) -> str:
     """One `WidgetInfo.content_variants` item: `(None, "<variant>")` or `(Some("<part>"), "<variant>")`."""
     return f'(None, "{variant}")' if part is None else f'(Some("{part}"), "{variant}")'
@@ -841,7 +893,12 @@ def generate(root: Path) -> dict:
             raise InputError(f"{UNITS}: `{name}` is no typed widget of the catalogue")
         widget = read_widget(entry, units, shared_table, shared)
         widget.content_variants = content_variants_of(widget, pairs)
+        refuse_part_variants(widget)
         widgets.append(widget)
+    for name, (line, cell) in shared_table.items():
+        names = depth0_names(cell)
+        if cell.startswith("`") and names and all(CAMEL.fullmatch(n) for n in names):
+            mirror_pairs(EnumDecl(name, names, "", line))
     out = {f"gen_{w.name}.rs": rustfmt(widget_file(w, set(shared)), f"gen_{w.name}.rs") for w in widgets}
     out[INDEX] = rustfmt(index_file(widgets, shared), INDEX)
     return out
@@ -880,6 +937,7 @@ SELF_TEST_CATALOGUE = """\
 |---|---|
 | `Side` | `Start`, `End` (a note) |
 | `Record` | `{ a: Value<Px> }` |
+| `Corner` | `TopStart`, `TopEnd`, `BothEnds` |
 
 ## Buttons and toggles
 
@@ -895,12 +953,17 @@ SELF_TEST_CATALOGUE = """\
   - `reach_px: Value<Px>` (`Auto` where the platform sizes it by its content) — how far it reaches.
   - `side: Value<Side>` — which side.
   - `turn: Value<Turn>`, `Turn { Left, RightOrUp }` — the turn. More.
+  - `anchor: Value<Anchor>`, `Anchor { Inline, TopEnd, BottomLeadingEnd, TopStart, BottomTrailingStart }` — where it lies.
+  - `edge: Value<Edge>`, `Edge { Start, End }` — which edge.
+  - `corner: Value<Corner>` — which corner.
   - `spot: Placement` — where it goes.
   - `place: Value<Placement>` — where it is placed.
   - `presentations: Vec<PresentationTransition>` — events `Appear` (a note), `@spin`.
 - **Variants:**
-  - typed (shared): `flat` (a note, `not_this`), `round`. Then `prose`.
-  - keyed, `adwaita`: `@raised`.
+  - on the widget, typed (shared): `flat` (a note, `not_this`), `round`. Then `prose`.
+  - on the widget, keyed, `adwaita`: `@raised`.
+  - Under `material-3` a note: `not_read`.
+  - on the widget, typed: `sharp`.
 - **may_be_absent:**
   - parts: `mark` (`adwaita`). - fields: `body.stroke` (all). - values: `turn` (all), `spot` (all). `side` is not.
 """
@@ -950,16 +1013,46 @@ def self_test() -> int:
         ("reach_px", "reach", "Value<Px>", False, True, "How far it reaches."),
         ("side", "side", "Value<Side>", False, False, "Which side."),
         ("turn", "turn", "Value<Turn>", True, False, "The turn."),
+        ("anchor", "anchor", "Value<Anchor>", False, False, "Where it lies."),
+        ("edge", "edge", "Value<Edge>", False, False, "Which edge."),
+        ("corner", "corner", "Value<Corner>", False, False, "Which corner."),
         ("place", "place", "Value<Placement>", False, False, "Where it is placed."),
         ("presentations", "presentations", "Vec<PresentationTransition>", False, False, "Events `Appear`, `@spin`."),
         ("focus_visible_when", "focus_visible_when", "Value<FocusVisibleWhen>", False, False,
          "When focus becomes visible (S2.11)."),
     ])
     expect("enums", [(e.name, e.variants, e.doc) for e in w.enums],
-           [("Turn", ["Left", "RightOrUp"], "The values of `knob`'s `turn`: the turn.")])
+           [("Turn", ["Left", "RightOrUp"], "The values of `knob`'s `turn`: the turn."),
+            ("Anchor", ["Inline", "TopEnd", "BottomLeadingEnd", "TopStart", "BottomTrailingStart"],
+             "The values of `knob`'s `anchor`: where it lies."),
+            ("Edge", ["Start", "End"], "The values of `knob`'s `edge`: which edge.")])
     expect("shared", [(e.name, e.variants, e.doc) for e in shared.values()],
-           [("Side", ["Start", "End"], "A shared value type of the catalogue: a note.")])
-    expect("variants", w.variants, ["flat", "round"])
+           [("Side", ["Start", "End"], "A shared value type of the catalogue: a note."),
+            ("Corner", ["TopStart", "TopEnd", "BothEnds"], "A shared value type of the catalogue.")])
+    expect("variants", (w.variants, w.part_variants), (["flat", "round", "sharp"], {}))
+    expect("counterparts", [counterpart(v) for v in ["Start", "Leading", "TopEnd", "EndColumn", "TrailingInline",
+                                                     "BothEnds", "Inline", "StartEnd"]],
+           ["End", "Trailing", "TopStart", "StartColumn", "LeadingInline", None, None, "EndStart"])
+    expect("mirror pairs", [mirror_pairs(e) for e in w.enums + list(shared.values())],
+           [[], [("TopEnd", "TopStart"), ("BottomLeadingEnd", "BottomTrailingStart")], [("Start", "End")],
+            [("Start", "End")], [("TopStart", "TopEnd")]])
+    try:
+        mirror_pairs(EnumDecl("Lone", ["Inline", "TopEnd"], "", 7))
+        failures.append("an end without its counterpart: not refused")
+    except InputError as err:
+        if "lacks its counterpart `TopStart`" not in str(err):
+            failures.append(f"an end without its counterpart: refused with {err}")
+    parted = SELF_TEST_CATALOGUE.replace("  - on the widget, typed: `sharp`.",
+                                         "  - on `label`, typed (its own): `bold`, `thin`.\n"
+                                         "  - on `label`, keyed, `adwaita`: `@dim`.")
+    w2 = read_widget(spec_catalogue.entries(parted)[0], units, spec_catalogue.shared_types(parted), {})
+    expect("a part's own variants", (w2.variants, w2.part_variants), (["flat", "round"], {"label": ["bold", "thin"]}))
+    try:
+        refuse_part_variants(w2)
+        failures.append("a part's own variants generated: not refused")
+    except InputError as err:
+        if "a part's own, which are not generated yet" not in str(err):
+            failures.append(f"a part's own variants generated: refused with {err}")
     expect("content variants", content_variants_of(w, {"knob": ["bare", "@own"], "knob.label": ["with_note"],
                                                         "dial": ["other"]}),
            [(None, "bare"), (None, "@own"), ("label", "with_note")])
@@ -979,17 +1072,30 @@ def self_test() -> int:
                    '#[parts(block = "fields", keyed)]', "#[parts(auto)]\n    pub reach: Value<Px>,",
                    "#[parts(may_be_absent)]\n    pub turn: Value<Turn>,",
                    '#[parts(block = "set")]\n    pub focus_visible_when: Value<FocusVisibleWhen>,',
-                   "use super::gen_index::Side;", "Deferred (scripts/widget_units.toml): `spot` to `placement`.",
+                   "use super::gen_index::{Corner, Side};", "Deferred (scripts/widget_units.toml): `spot` to `placement`.",
                    "pub enum Turn {", "    /// Right or up.\n    RightOrUp,",
-                   "use crate::blocks::part_style::PartStyle;", "use crate::units::Px;"]:
+                   "use crate::blocks::part_style::PartStyle;", "use crate::units::Px;",
+                   "use crate::query::mirror::Mirror;", "impl Mirror for Anchor {",
+                   "            Anchor::TopEnd => Anchor::TopStart,\n            Anchor::TopStart => Anchor::TopEnd,\n"
+                   "            Anchor::BottomLeadingEnd => Anchor::BottomTrailingStart,\n"
+                   "            Anchor::BottomTrailingStart => Anchor::BottomLeadingEnd,\n            other => other,",
+                   "            Edge::Start => Edge::End,\n            Edge::End => Edge::Start,\n        };"]:
         if needle not in code:
             failures.append(f"widget file lacks {needle!r}:\n{code}")
+    if "impl Mirror for Turn" in code:
+        failures.append(f"widget file mirrors `Turn`, which names no end:\n{code}")
     index = index_file([w], shared)
     for needle in ["pub enum WidgetKind {\n    /// `knob`.\n    Knob,", "    /// `round`, a typed variant of `knob`.",
-                   "    Knob(KnobPart),", "pub knob: Option<Box<KnobPatch>>,", "variants: &[Variant::Flat, Variant::Round],",
-                   "pub enum Side {", "use crate::blocks::{Apply, MergeConflict};"]:
+                   "    Knob(KnobPart),", "pub knob: Option<Box<KnobPatch>>,",
+                   "variants: &[Variant::Flat, Variant::Round, Variant::Sharp],",
+                   "pub enum Side {", "use crate::blocks::{Apply, MergeConflict};",
+                   "impl Mirror for Corner {", "            Corner::TopStart => Corner::TopEnd,",
+                   "        self.side.mirror();\n        self.anchor.mirror();\n        self.edge.mirror();\n"
+                   "        self.corner.mirror();\n        self.place.mirror();\n        self.presentations.mirror();"]:
         if needle not in index:
             failures.append(f"index lacks {needle!r}:\n{index}")
+    if "not_read" in index or "Variant::Bold" in index:
+        failures.append(f"index lists a note's or a part's variant:\n{index}")
 
     for label, text, needle in [
         ("deferral to an enabled unit", 'slice = ["knob"]\n[deferred.knob]\nspot = "placement"\n'
@@ -1048,6 +1154,15 @@ def self_test() -> int:
             "only a length may be")
     refused("untyped value", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.replace("`side: Value<Side>`", "`side` (a note)"),
             "states no type")
+    refused("a Variants head of another form", SELF_TEST_UNITS,
+            SELF_TEST_CATALOGUE.replace("on the widget, typed: `sharp`", "on the knob, typed: `sharp`"),
+            "starts with `on` but its head")
+    refused("variants on a plain part", SELF_TEST_UNITS,
+            SELF_TEST_CATALOGUE.replace("on the widget, typed: `sharp`", "on `mark`, typed: `sharp`"),
+            "no *(element)* part of the entry")
+    refused("an end without its counterpart", SELF_TEST_UNITS,
+            SELF_TEST_CATALOGUE.replace("`Edge { Start, End }`", "`Edge { Start, Middle }`"),
+            "`Edge` lacks its counterpart `End`")
 
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp) / OUT_DIR
