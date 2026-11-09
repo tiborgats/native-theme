@@ -22,8 +22,9 @@ The bundled presets are those of check_facts.PRESET_DIR, `native-theme/src/prese
 On stderr: the transcription share (facts transcribed, shadowed, pending, left out by reason; per widget and per
 unit), the rule and base-value counts, the pending facts' register ids, the facts gaps (a field no fact gives where
 the reader needs it), the model fields the preset leaves unstated (below), and the round trip's result. Exit 0, 1 when
-the round trip finds a mismatch (a generator bug) or `--check` finds the bundled preset differs, 2 on an input it
-cannot read, a hand-written part `--write` would lose (below) or a wrong command line.
+the round trip finds a mismatch (a generator bug), `--check` finds the bundled preset differs (a stale hand-written
+citation included) or `--write` or `--check` finds a hand-written citation whose fact it cannot find (below), 2 on an
+input it cannot read, a hand-written part `--write` would lose (below) or a wrong command line.
 
 The model fields the preset leaves unstated (unstated_fields())
 ---------------------------------------------------------------
@@ -63,6 +64,27 @@ hand-written line is dropped, changed or doubled, by this form:
   text is valid TOML, so a hand-written key the generator now writes too is a duplicate key, refused.
 Without a bundled preset `--write` writes the generated text, its blocks empty. `--check` compares what `--write`
 would write with the bundled file, byte for byte.
+
+The hand-written citations (Citations)
+--------------------------------------
+A hand-written value carries its fact's citation too (S11: "Every value carries its fact's citation in a comment"),
+`<file>:<line>` naming the fact's `[[fact]]` (or `[[model]]`) header, which moves when the facts files change.
+`--write` makes each citation it can judge true, in place: it keeps one that names a fact of the preset (the facts
+above, a state model's too) naming its subject, and points a stale one at the first such fact in the file it names,
+else in the platform's files in their order; it changes nothing else on the line. Their subjects:
+- a `[declare]` list entry, `"<name>",  # <citation>`, of a keyed namespace (`text_styles = [`, a
+  `[declare.params.<group>]` table's `keys = [`): a fact naming the entry where the model holds the namespace's keys
+  (NAMED_BY): its key holding it (`role.@<name>` for `color_roles`, `token.text.keyed.<name>.…`,
+  `token.params.<group>.<name>`, …), its value at the namespace's field (`symbol_scales`: an IconStyle `scale`), a key
+  of its table there (`symbolic_colors`), or a `when` naming `flavor:<name>` (the default flavour, the first: also a
+  state model naming no flavour);
+- a `read` fact's value in a `bases <table>` or `rule <key> <when>` block, its citation the comment line straight
+  above `<key> = …`: the `read` fact read_tables() places at that table and key;
+- `[preset] generation`, `# docs/facts/sources.toml:<line> (<source id>, …)`: that `[[source]]` entry's header.
+A stale citation whose fact none is found for (no fact names the entry, a namespace NAMED_BY has no rule for, a
+generation comment naming no source id) is never guessed: it is listed (`citation: …`) and the run exits 1, `--write`
+writing the rest. `--check` lists each stale citation (`stale citation: …`) and fails, as `--write` would change the
+file. Other citations in the blocks (in a comment's prose) are not judged.
 
 Which facts (S17 *Generations*)
 -------------------------------
@@ -700,6 +722,7 @@ class Draft:
     definitions: list = field(default_factory=list)  # (section, header, dotted, value, the defining section)
     read_tables: list = field(default_factory=list)  # (section, scheme or None, header): a `read` fact's base table
     read_rules: list = field(default_factory=list)   # `read` facts whose `when` is no base (read_tables())
+    items: list = field(default_factory=list)        # every item check_facts.load() reads (the citations', Citations)
 
 
 def accent_run(d) -> bool:
@@ -826,7 +849,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.reason = SET_WHOLE_PENDING
     listed = pending_table(ctx, facts, bases, models=models, off=dict(dropped)) + waiting
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
-                 listed, gaps, definitions(preset, tree), tables, read_rules)
+                 listed, gaps, definitions(preset, tree), tables, read_rules, items)
 
 
 def read_tables(facts) -> tuple:
@@ -1681,14 +1704,19 @@ def hand_parts(text: str) -> tuple:
     return blocks, generated, stated
 
 
-def carried(text: str, committed) -> str:
-    """The generated `text` with the committed preset's hand-written blocks carried into it (`--write`); the text
-    itself without one. InputError where a hand-written line would be lost or doubled: the committed file's
-    generated lines are not those its digest states (a line edited, added or removed outside the blocks), a
-    non-empty block's part the new text has no place for (a `read` fact gone), or the result fails verify()."""
+def carried(text: str, committed, refresh=None) -> str:
+    """The generated `text` with the committed preset's hand-written blocks carried into it (`--write`), each block
+    as `refresh` gives it where given (Citations.refresh(): its citations made true); the text itself without one.
+    InputError where a hand-written line would be lost or doubled: the committed file's generated lines are not
+    those its digest states (a line edited, added or removed outside the blocks), a non-empty block's part the new
+    text has no place for (a `read` fact gone), or the result fails verify() against the committed file with the
+    refreshed blocks."""
     if committed is None:
         return text
     blocks, generated, stated = hand_parts(committed)
+    if refresh is not None:
+        blocks = refresh(blocks)
+        committed = with_blocks(committed, blocks)
     if stated is None:
         raise InputError(f"no `{DIGEST.strip()}` line: the preset was not written by --write")
     if digest(generated) != stated:
@@ -1733,6 +1761,221 @@ def verify(committed: str, result: str) -> list:
     except tomllib.TOMLDecodeError as err:
         problems.append(f"not valid TOML: {err}")
     return problems
+
+
+def with_blocks(text: str, blocks: dict) -> str:
+    """`text` with the lines of each hand-written part `blocks` holds replaced by its lines there."""
+    out, skipping = [], False
+    for line in text.split("\n"):
+        if line.startswith(HAND + END):
+            skipping = False
+        elif skipping:
+            continue
+        out.append(line)
+        if line.startswith(HAND + BEGIN) and line[len(HAND + BEGIN):] in blocks:
+            out += blocks[line[len(HAND + BEGIN):]]
+            skipping = True
+    return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------------- the hand-written citations
+
+ENTRY_CITE = re.compile(r'^(?P<head>\s+"(?P<name>[^"]+)",\s+# )(?P<file>docs/facts/[\w./-]+\.toml):(?P<line>\d+)$')
+ABOVE_CITE = re.compile(r"^# (?P<file>docs/facts/[\w./-]+\.toml):(?P<line>\d+)$")
+SOURCES = "docs/facts/sources.toml"
+SOURCE_CITE = re.compile(rf"^# (?P<file>{re.escape(SOURCES)}):(?P<line>\d+)(?P<rest>.*)$")
+SOURCE_ID = re.compile(r"^ \((?P<id>[^,)\s]+)[,)]")
+LIST_OPEN = re.compile(r"^(\w+) = \[$")
+PARAMS_TABLE = re.compile(r"^\[declare\.params\.(\w+)\]$")
+# how a fact names an entry of a `[declare]` keyed namespace (S10), by the model field the namespace keys:
+# ("key", segments) its key starts with the segments, `{}` the entry's own (one or more, `inactive.view.…`) and `@{}`
+# its keyed segment; ("value", field) its key's last segment is the field (S10: `symbol_scales`, IconStyle.scale) and
+# its value the entry; ("map", field) likewise, the entry a key of its value's table; ("flavor", None) its `when`
+# names `flavor:<entry>` in its conditions, and the default flavour (the list's first, S10) is also named by a state
+# model naming none. A `[declare.params.<group>]` table's `keys`: ("key", ("token", "params", <group>, "{}")).
+NAMED_BY = {
+    "color_roles": (("key", ("role", "@{}")),),
+    "surface_sets": (("key", ("role", "{}")),),
+    "accent_ramp": (("key", ("role", "global", "accent_ramp", "{}")),),
+    "inputs": (("key", ("input", "{}")),),
+    "text_styles": (("key", ("token", "text", "keyed", "{}")),),
+    "elevation": (("key", ("token", "elevation", "{}")),),
+    "timings": (("key", ("token", "motion", "timings", "{}")),),
+    "durations": (("key", ("token", "motion", "durations", "{}")),),
+    "icon_contexts": (("key", ("token", "icons", "sizes", "keyed", "{}")), ("key", ("token", "icons", "sizes", "{}"))),
+    "symbol_scales": (("value", "scale"),),
+    "icon_state_effects": (("value", "state_effect"),),
+    "symbolic_colors": (("map", "symbolic_colors"),),
+    "rendering_engines": (("value", "engine"),),
+    "lcd_filters": (("value", "lcd_filter"),),
+    "spec_versions": (("value", "spec_version"),),
+    "flavors": (("flavor", None),),
+}
+
+
+def naming_index(items: list, rule) -> dict:
+    """{an entry: the items naming it by `rule` (NAMED_BY), in their order}; the default flavour's state models under
+    None."""
+    kind, at = rule
+    out = {}
+    for it in items:
+        d, names = it.data, []
+        if kind == "flavor":
+            when = d.get("when") if isinstance(d.get("when"), dict) else {}
+            conds = when.get("conditions", []) if isinstance(when.get("conditions"), list) else []
+            names = [c[7:] for c in conds if isinstance(c, str) and c.startswith("flavor:")]
+            if not names and it.table == "model":
+                names = [None]
+        elif it.table == "fact" and isinstance(d.get("key"), str):
+            parsed = check_facts.key_segments(d["key"])
+            segs = parsed[0] if isinstance(parsed, tuple) else []
+            if kind == "key":
+                i = len(at) - 1
+                if len(segs) > i and tuple(segs[:i]) == at[:i]:
+                    if at[i] == "@{}":
+                        names = [segs[i][1:]] if segs[i].startswith("@") else []
+                    else:
+                        names = [".".join(segs[i:j]) for j in range(i + 1, len(segs) + 1)]
+            elif segs and segs[-1] == at:
+                v = d.get("value")
+                values = [v] if kind == "value" else list(v) if isinstance(v, dict) else []
+                names = [x[1:] if x.startswith("@") else x for x in values if isinstance(x, str)]
+        for name in dict.fromkeys(names):
+            out.setdefault(name, []).append(it)
+    return out
+
+
+def read_places(facts) -> dict:
+    """{(the hand-written part, the dotted key its line states): the `read` facts written there}, as read_tables()
+    places them: a base table's (each scheme's of a colour role at rest) or the fact's own rule's."""
+    out = {}
+    for f in facts:
+        if f.reason != READ:
+            continue
+        if f.hand:
+            places = [(f.hand, dotted_key(f.rel))]
+        else:
+            g = Fact(f.item, f.key, f.ckey, f.when, f.kind, f.widget, f.typ, f.dim)
+            try:
+                place(g)
+            except Untranscribable:
+                continue
+            schemes = slots_of(f.when) if f.kind == "role" else (None,)
+            places = [(f"bases {dotted_key((g.section,) + ((s,) if s else ()) + g.header)}", dotted_key(g.dotted))
+                      for s in schemes]
+        for p in places:
+            out.setdefault(p, []).append(f.item)
+    return out
+
+
+def source_lines(text: str) -> dict:
+    """{a source id: the line of its `[[source]]` header} of sources.toml's text, as a fact is cited by its
+    `[[fact]]` header's."""
+    out, header = {}, None
+    for n, line in enumerate(text.split("\n"), 1):
+        if line.startswith("["):
+            header = n if line.strip() == "[[source]]" else None
+        m = re.match(r'^id = "([^"]+)"$', line)
+        if m and header is not None:
+            out.setdefault(m.group(1), header)
+    return out
+
+
+class Citations:
+    """The hand-written blocks' citation comments made true (the docstring's *The hand-written citations*):
+    refresh() gives each part's lines with every stale citation whose fact it finds pointed at that fact;
+    `refreshed` lists those, `findings` those whose fact it cannot find."""
+
+    def __init__(self, draft: Draft, sources_text: str):
+        self.preset = draft.preset
+        self.own = [it for it in draft.items if it.platform == draft.platform and holds_for(it, draft.preset)]
+        self.position = {id(it): n for n, it in enumerate(self.own)}
+        self.reads = read_places(draft.facts)
+        self.sources = source_lines(sources_text)
+        self.index, self.refreshed, self.findings = {}, [], []
+
+    def refresh(self, blocks: dict) -> dict:
+        return {part: self.refreshed_part(part, lines) for part, lines in blocks.items()}
+
+    def named(self, ns: str, name: str, first: bool):
+        """The preset's items naming the entry `name` of the namespace `ns`, in their order (`first`: the list's
+        first entry), or None where no rule (NAMED_BY) names the namespace's entries."""
+        group = re.fullmatch(r"params\.(\w+)", ns)
+        rules = (("key", ("token", "params", group.group(1), "{}")),) if group else NAMED_BY.get(ns)
+        if rules is None:
+            return None
+        found = []
+        for rule in rules:
+            if rule not in self.index:
+                self.index[rule] = naming_index(self.own, rule)
+            found += self.index[rule].get(name, []) + (self.index[rule].get(None, []) if first else [])
+        return sorted({id(it): it for it in found}.values(), key=lambda it: self.position[id(it)])
+
+    def judged(self, part: str, subject: str, cited: tuple, found: list) -> tuple:
+        """The citation `cited` of a subject the items `found` name, kept where it is the header of one of them,
+        else the first of them in its file, else the first; None where none does (a finding)."""
+        if any(cited == (it.file, it.line) for it in found):
+            return cited
+        if not found:
+            self.findings.append(f"{self.preset}: `{part}` {subject}: {cited[0]}:{cited[1]}: no fact names it")
+            return None
+        pick = next((it for it in found if it.file == cited[0]), found[0])
+        self.refreshed.append(f"{self.preset}: `{part}` {subject}: {cited[0]}:{cited[1]} names no fact of it, "
+                              f"{pick.file}:{pick.line} does")
+        return pick.file, pick.line
+
+    def refreshed_part(self, part: str, lines: list) -> list:
+        """A hand-written part's lines, each citation of a subject judged()."""
+        out, ns, group, count = list(lines), None, None, 0
+        for i, line in enumerate(lines):
+            if part == "declare":
+                opened, params = LIST_OPEN.match(line), PARAMS_TABLE.match(line)
+                if params:
+                    group = params.group(1)
+                elif line.startswith("["):
+                    group = None
+                if opened:
+                    ns = f"params.{group}" if opened.group(1) == "keys" and group else opened.group(1)
+                    count = 0
+                elif line == "]":
+                    ns = None
+                m = ENTRY_CITE.match(line)
+                if m and ns is not None:
+                    count += 1
+                    cited = (m.group("file"), int(m.group("line")))
+                    found = self.named(ns, m.group("name"), count == 1)
+                    subject = f"{ns} {m.group('name')!r}"
+                    if found is None:
+                        self.findings.append(f"{self.preset}: `{part}` {subject}: no rule finds the fact naming an "
+                                             f"entry of `{ns}` (NAMED_BY)")
+                        continue
+                    got = self.judged(part, subject, cited, found)
+                    if got is not None:
+                        out[i] = f"{m.group('head')}{got[0]}:{got[1]}"
+            elif part == "preset":
+                m = SOURCE_CITE.match(line)
+                if not m:
+                    continue
+                named = SOURCE_ID.match(m.group("rest"))
+                cited, sid = (m.group("file"), int(m.group("line"))), named.group("id") if named else None
+                if sid is None or sid not in self.sources:
+                    self.findings.append(f"{self.preset}: `{part}` {line[2:]}: names no source id of {SOURCES} "
+                                         f"(`# {SOURCES}:<line> (<id>)`)")
+                    continue
+                if cited[1] != self.sources[sid]:
+                    self.refreshed.append(f"{self.preset}: `{part}` {sid}: {SOURCES}:{cited[1]} is not its entry, "
+                                          f"{SOURCES}:{self.sources[sid]} is")
+                    out[i] = f"# {SOURCES}:{self.sources[sid]}{m.group('rest')}"
+            elif part.startswith(("bases ", "rule ")):
+                m = ABOVE_CITE.match(line)
+                if not m:
+                    continue
+                key = lines[i + 1].split("=", 1)[0].strip() if i + 1 < len(lines) and "=" in lines[i + 1] else ""
+                got = self.judged(part, repr(key), (m.group("file"), int(m.group("line"))),
+                                  self.reads.get((part, key), []))
+                if got is not None:
+                    out[i] = f"# {got[0]}:{got[1]}"
+        return out
 
 
 # ------------------------------------------------------------------------------------------- combinations
@@ -3321,6 +3564,165 @@ def hand_written_cases(text: str) -> list:
     return failures
 
 
+# the fixture's hand-written blocks with their citations, (the committed lines, the lines --write writes) each: a
+# true citation kept (a later fact naming the entry), stale ones pointed at the fact naming their subject in the
+# file they name (another file's where it names none), and ones whose fact none is found for kept and listed
+CITED_BLOCKS = {
+    "preset": ("# docs/facts/sources.toml:1 (libadwaita@1.10.0, its release)\ngeneration = \"libadwaita-1.10\"",
+               "# docs/facts/sources.toml:2 (libadwaita@1.10.0, its release)\ngeneration = \"libadwaita-1.10\""),
+    "declare": ('''durations = [
+    "button",  # docs/facts/gnome/tokens.toml:32
+]
+timings = [
+    "ease",  # docs/facts/gnome/tokens.toml:2
+    "missing",  # docs/facts/gnome/tokens.toml:12
+]
+color_roles = [
+    "overview_background",  # docs/facts/gnome/button.toml:2
+]
+blend_modes = [
+    "multiply",  # docs/facts/gnome/tokens.toml:2
+]''', '''durations = [
+    "button",  # docs/facts/gnome/tokens.toml:32
+]
+timings = [
+    "ease",  # docs/facts/gnome/tokens.toml:12
+    "missing",  # docs/facts/gnome/tokens.toml:12
+]
+color_roles = [
+    "overview_background",  # docs/facts/gnome/roles.toml:65
+]
+blend_modes = [
+    "multiply",  # docs/facts/gnome/tokens.toml:2
+]'''),
+    "bases colors.light.global": ('# docs/facts/gnome/roles.toml:3\naccent = "= input.accent"',
+                                  '# docs/facts/gnome/roles.toml:45\naccent = "= input.accent"'),
+    "bases colors.dark.global": ('# docs/facts/gnome/roles.toml:45\naccent = "= input.accent"',
+                                 '# docs/facts/gnome/roles.toml:45\naccent = "= input.accent"'),
+    'rule role.global.accent { conditions = ["window_inactive"] }': (
+        '# docs/facts/gnome/roles.toml:45\nglobal.accent = "= input.accent"',
+        '# docs/facts/gnome/roles.toml:119\nglobal.accent = "= input.accent"'),
+}
+
+
+def _item(file, line, data, table="fact"):
+    return check_facts.Item(f"docs/facts/kde/{file}.toml", line, table, "kde", data, [])
+
+
+# NAMED_BY's rules over synthetic items: (the entry line's namespace and name, its cited file and line, the line it
+# is refreshed to, None for kept, "finding" for none found)
+NAMING_ITEMS = [
+    _item("roles", 5, {"key": "role.@hover_tint", "value": "#000000"}),
+    _item("tokens", 7, {"key": "role.@hover_tint", "value": "#111111"}),
+    _item("tokens", 9, {"key": "token.text.keyed.heading.font.size", "value": "13pt",
+                        "when": {"conditions": ["preset:adwaita"]}}),
+    _item("tokens", 11, {"key": "token.text.keyed.heading.font.size", "value": "12pt"}),
+    _item("inputs", 13, {"key": "input.inactive.view.background_normal", "value": "#ffffff"}),
+    _item("tokens", 15, {"key": "token.params.layout.grid_unit", "value": "18px"}),
+    _item("button", 17, {"key": "button.icon.icon.scale", "value": "@large"}),
+    _item("tokens", 19, {"key": "token.icons.sizes.toolbar.symbolic_colors", "value": {"accent": "#000000"}}),
+    _item("tokens", 21, {"key": "token.icons.sizes.keyed.main_toolbar.size", "value": "22px"}),
+    _item("state-models", 23, {"widget": "button"}, "model"),
+    _item("button", 25, {"key": "button.body.fill", "value": "#000000",
+                         "when": {"conditions": ["flavor:kirigami"]}}),
+    _item("state-models", 27, {"widget": "button", "when": {"conditions": ["flavor:kirigami"]}}, "model"),
+]
+NAMING_CASES = [
+    ("color_roles", "hover_tint", "tokens:7", None),
+    ("color_roles", "hover_tint", "tokens:8", "tokens:7"),
+    ("color_roles", "hover_tint", "button:8", "roles:5"),
+    ("text_styles", "heading", "tokens:9", "tokens:11"),
+    ("inputs", "inactive.view.background_normal", "inputs:1", "inputs:13"),
+    ("params.layout", "grid_unit", "tokens:1", "tokens:15"),
+    ("params.shape", "grid_unit", "tokens:15", "finding"),
+    ("symbol_scales", "large", "tokens:1", "button:17"),
+    ("symbolic_colors", "accent", "tokens:1", "tokens:19"),
+    ("icon_contexts", "main_toolbar", "tokens:1", "tokens:21"),
+    ("flavors", "widgets", "state-models:1", "state-models:23"),
+    ("flavors", "widgets", "button:1", "state-models:23"),
+    ("flavors", "kirigami", "state-models:1", "state-models:27"),
+    ("flavors", "kirigami", "state-models:23", "state-models:27"),
+    ("durations", "heading", "tokens:11", "finding"),
+    ("blend_modes", "multiply", "tokens:11", "finding"),
+]
+
+
+def naming_cases() -> list:
+    """Citations over NAMING_ITEMS on kde-breeze: each NAMING_CASES entry in a list of its own namespace (the
+    flavours' first entry the default, `widgets` before `kirigami`), its citation kept (None), refreshed, or kept
+    and listed ("finding")."""
+    failures = []
+    draft = Draft("kde-breeze", "kde", [], [], [], [], [], {}, [], 0, items=NAMING_ITEMS)
+    for ns, name, cited, want in NAMING_CASES:
+        cites = Citations(draft, "")
+        head = [f"[declare.params.{ns[7:]}]", "keys = ["] if ns.startswith("params.") else [f"{ns} = ["]
+        first = ['    "widgets",  # docs/facts/kde/state-models.toml:23'] if ns == "flavors" and name != "widgets" else []
+        entry = f'    "{name}",  # docs/facts/kde/{{}}.toml:{{}}'
+        got = cites.refresh({"declare": head + first + [entry.format(*cited.split(":")), "]"]})["declare"][-2]
+        expected = entry.format(*(cited if want in (None, "finding") else want).split(":"))
+        if got != expected or bool(cites.findings) != (want == "finding") or bool(cites.refreshed) != (
+                want not in (None, "finding")):
+            failures.append(f"citations: {ns} {name!r} citing {cited}: {got!r}, refreshed {cites.refreshed}, "
+                            f"findings {cites.findings}")
+    return failures
+
+
+def citation_cases(root: Path) -> list:
+    """The hand-written citations (the docstring's *The hand-written citations*): --check fails on a stale one and
+    lists it, --write points each stale one at its fact and changes nothing else, keeps and lists one whose fact none
+    is found for and exits 1, and --check passes once none is left."""
+    failures = []
+    write(root, SELF_TEST_FILES)
+    path = root / "native-theme/src/presets/adwaita.toml"
+    path.parent.mkdir(parents=True)
+    with contextlib.redirect_stderr(io.StringIO()):
+        run(fixture_context(root), "adwaita", "--write", None)
+    text = path.read_text(encoding="utf-8")
+    if set(hand_parts(text)[0]) != set(CITED_BLOCKS):
+        return [f"citations: the fixture's parts are {sorted(hand_parts(text)[0])}"]
+
+    def filled(which):
+        out = text
+        for part, lines in CITED_BLOCKS.items():
+            marker = f"{HAND}{BEGIN}{part}\n"
+            out = out.replace(marker, marker + lines[which] + "\n")
+        return out
+
+    stale, fresh = filled(0), filled(1)
+    path.write_text(stale, encoding="utf-8")
+    with contextlib.redirect_stderr(io.StringIO()) as err:
+        code = run(fixture_context(root), "adwaita", "--check", None)
+    said = err.getvalue()
+    listed = [x for x in said.split("\n") if x.startswith("stale citation: ")]
+    if code != 1 or len(listed) != 5 or path.read_text(encoding="utf-8") != stale or any(
+            needle not in said for needle in ("timings 'ease': docs/facts/gnome/tokens.toml:2 names no fact of it, "
+                                              "docs/facts/gnome/tokens.toml:12 does",
+                                              "citation: adwaita: `declare` timings 'missing'",
+                                              "`blend_modes` (NAMED_BY)")):
+        failures.append(f"--check over stale citations: exit {code}, said {said!r}")
+    with contextlib.redirect_stderr(io.StringIO()) as err:
+        code = run(fixture_context(root), "adwaita", "--write", None)
+    said = err.getvalue()
+    if code != 1 or path.read_text(encoding="utf-8") != fresh or "hand-written citations refreshed: 5" not in said:
+        failures.append(f"--write over stale citations: exit {code}, written as expected "
+                        f"{path.read_text(encoding='utf-8') == fresh}, said {said!r}")
+    for gone in ('    "missing",  # docs/facts/gnome/tokens.toml:12\n',
+                 'blend_modes = [\n    "multiply",  # docs/facts/gnome/tokens.toml:2\n]\n'):
+        fresh = fresh.replace(gone, "")
+    path.write_text(fresh, encoding="utf-8")
+    with contextlib.redirect_stderr(io.StringIO()) as err:
+        code = run(fixture_context(root), "adwaita", "--check", None)
+    if code != 0 or "citation" in err.getvalue():
+        failures.append(f"--check over true citations: exit {code}, said {err.getvalue()!r}")
+    unnamed = fresh.replace(" (libadwaita@1.10.0, its release)", "")
+    path.write_text(unnamed, encoding="utf-8")
+    with contextlib.redirect_stderr(io.StringIO()) as err:
+        code = run(fixture_context(root), "adwaita", "--check", None)
+    if code != 1 or "names no source id" not in err.getvalue():
+        failures.append(f"--check over a generation comment naming no source: exit {code}, said {err.getvalue()!r}")
+    return failures
+
+
 def self_test() -> int:
     failures = []
     for name, typ, dim, value, want in SPELL_CASES:
@@ -4016,6 +4418,8 @@ def self_test() -> int:
         if code != 0 or written.read_text(encoding="utf-8") == stale:
             failures.append(f"--write over an exact round trip: exit {code}, "
                             f"written {written.read_text(encoding='utf-8') != stale}")
+        failures += citation_cases(Path(tmp) / "cites")
+        failures += naming_cases()
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
@@ -4067,8 +4471,10 @@ def run(ctx, preset: str, mode, out) -> int:
         draft, text, trip, units = generate(ctx, preset)
         path = ctx.root / check_facts.PRESET_DIR / f"{preset}.toml"
         committed = path.read_text(encoding="utf-8") if path.exists() else None
+        cites = None
         if mode in ("--write", "--check"):
-            text = carried(text, committed)
+            cites = Citations(draft, (ctx.root / SOURCES).read_text(encoding="utf-8"))
+            text = carried(text, committed, cites.refresh)
             written = text
         else:
             try:
@@ -4088,6 +4494,10 @@ def run(ctx, preset: str, mode, out) -> int:
         if not trip.mismatches:
             path.write_text(text, encoding="utf-8")
     elif text != committed:
+        for line in cites.refreshed:
+            print(f"stale citation: {line}", file=sys.stderr)
+        for line in cites.findings:
+            print(f"citation: {line}", file=sys.stderr)
         print(f"{check_facts.PRESET_DIR / preset}.toml is not what --write writes from the facts: run "
               f"`python3 scripts/generate_preset.py {preset} --write`", file=sys.stderr)
         return 1
@@ -4101,7 +4511,11 @@ def run(ctx, preset: str, mode, out) -> int:
         print(f"round trip: {m}", file=sys.stderr)
     if mode == "--write" and trip.mismatches:
         print(f"{check_facts.PRESET_DIR / preset}.toml not written: the round trip finds a mismatch", file=sys.stderr)
-    return 1 if trip.mismatches else 0
+    if cites is not None and mode == "--write" and cites.refreshed:
+        print(f"# hand-written citations refreshed: {len(cites.refreshed)}", file=sys.stderr)
+    for line in cites.findings if cites is not None else []:
+        print(f"citation: {line}", file=sys.stderr)
+    return 1 if trip.mismatches or (cites is not None and cites.findings) else 0
 
 
 if __name__ == "__main__":
