@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 919e3882716be10eb6dd680bb0d932b5b46b8f12c1c117f4ffaec48a493fe64d
+# generated lines: sha256 afd1840937ee38a1b423acc64722bf415895a1612c8ccb61ba296eb3e9050e92
 
 [preset]
 id = "ios-13"
@@ -171,7 +171,7 @@ sizes_by_variant = [{ variant = "flat", sizes = ["mini", "small", "regular", "la
 "widgets.button.label" = ["U115", "U114", "U255", "U122", "U113", "U112"]
 # docs/facts/ios/button.toml:94623
 "widgets.button.menu_indicator" = ["U113", "U114", "U112"]
-# docs/facts/ios/button.toml:104688
+# docs/facts/ios/button.toml:104784
 "widgets.button.subtitle.text.fill" = ["U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686"]
 # docs/facts/ios/button.toml:106668
 "widgets.button.subtitle.text.font.family" = ["U114", "U117", "U113", "U112"]
