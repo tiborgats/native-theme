@@ -526,7 +526,7 @@ the facts tooling reads it.
     carry S11's `when` and the platform's order, so there is less work and no drift, against longer presets. D6
     confirms it, over presets written by hand with the gate as a second derivation of them (which the gate no
     longer is, *How values are checked*), and decides what stays hand-written: today `[preset] generation`, the
-    `[declare]` keyed namespaces and the `read` facts' bases, in the generator's marked blocks, and S19.2's bases;
+    `[declare]` keyed namespaces and the `read` facts' values, in the generator's marked blocks, and S19.2's bases;
   - the audit sample's rate, from the slice's measured rate of agreed but wrong facts;
   - the spikes' results and the unmeasured register's open entries, by kind (*How values are checked*): a row with
     no route is the maintainer's to decide, a measurement to make the lanes' queue.
@@ -1293,7 +1293,7 @@ dev-dependencies and modules linked again.
   and a wrong function would pass the gate.
 - **The presets are generated** (ADD-A146) from the verified facts by `generate_preset.py`, whose `--check` fails
   where a bundled preset is not what its facts give; an author writes only its marked blocks (`[preset] generation`,
-  the `[declare]` keyed namespaces, the `read` facts' bases). So the gate's comparison of a preset with the facts
+  the `[declare]` keyed namespaces, the `read` facts' values). So the gate's comparison of a preset with the facts
   proves the generator and the resolution, not the facts: a look the lane never wrote and a literal written where
   the platform derives pass it (R4). What proves the facts is the two checks above, the mechanical one and the
   independent one, and on a measured platform a pass per input that derived values follow.
