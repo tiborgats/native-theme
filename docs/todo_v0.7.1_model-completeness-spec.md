@@ -2844,7 +2844,8 @@ order stated once per preset (WinUI holds both, by an element's corners and chil
 
 **One spelling for none** (ADD-A146). A part with no margin is laid out at its box with nothing added, so each side
 of its `margin` is `0px`, on a platform whose layout has no margin property too, which states that zero by omission,
-its citation an absence naming the property its layout lacks (S17): `margin` is never `Absent`. It is the rule
+its citation an absence naming the property its layout lacks (S17): `margin` is never `Absent`, and where the part
+itself is not drawn it is the part that is `Absent`, its margin stated nowhere for that state (S6.3). It is the rule
 letter and word spacing follow, for their reason (S6.3: one look, one spelling, where the lanes had written a
 platform without the property as `Absent` and one with it as `0px`). `touch_target` goes the other way for the
 same end: a minimum of zero and no minimum are one layout, and its one spelling is `Absent`, stated wherever the
