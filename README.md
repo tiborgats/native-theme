@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/native-theme.svg)](https://crates.io/crates/native-theme)
 [![docs.rs](https://img.shields.io/docsrs/native-theme)](https://docs.rs/native-theme)
 [![CI](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml/badge.svg)](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml)
-[![License: (MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0](https://img.shields.io/badge/license-(MIT%20%7C%20Apache--2.0%20%7C%200BSD)%20AND%20Apache--2.0-blue.svg)](#license)
+[![License: (MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT](https://img.shields.io/badge/license-(MIT%20%7C%20Apache--2.0%20%7C%200BSD)%20AND%20Apache--2.0%20AND%20MIT-blue.svg)](#license)
 [![core MSRV: 1.88.0](https://img.shields.io/badge/core%20MSRV-1.88.0-blue.svg)](https://blog.rust-lang.org/2025/06/26/Rust-1.88.0/)
 
 Cross-platform native themes for Rust GUI applications. A theme is a bundled
@@ -114,15 +114,18 @@ Licensed under any of
 
 at your option.
 
-Three files are not: `native-theme/src/ripple.rs` and
+Four files are not: `native-theme/src/ripple.rs` and
 `native-theme/src/platform/android_non_linear.rs` port code of the Android Open
 Source Project and `native-theme/src/platform/m3_role.rs` code of Google's
-material-color-utilities; all three stay under the
+material-color-utilities; these three stay under the
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) with
-their copyright notices, whichever licence you pick for the rest. The
+their copyright notices, whichever licence you pick for the rest;
+`native-theme/src/platform/win_ui.rs` ports Microsoft's microsoft-ui-xaml
+(WinUI's text-size curve) and stays under the MIT License with its notice. The
 `native-theme` crate's licence is therefore
-`(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0`, and the crate ships the licence
-and the ports' notices (`native-theme/LICENSE-APACHE`, `native-theme/NOTICE`).
+`(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT`, and the crate ships the
+licence and the ports' notices (`native-theme/LICENSE-APACHE`,
+`native-theme/NOTICE`).
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall

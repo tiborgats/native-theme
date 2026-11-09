@@ -39,3 +39,10 @@ License, Version 2.0 (LICENSE-APACHE) covers:
   java/contrast/Contrast.java; java/utils/ColorUtils.java and MathUtils.java.
 
 Copyright 2021, 2022, 2023, 2025 Google LLC. The project ships no NOTICE file.
+
+native-theme's src/platform/win_ui.rs ports TextFormatting::GetScaledFontSize
+of microsoft-ui-xaml (winui3/release/2.5.1,
+src/dxaml/xcp/core/text/common/TextFormatting.cpp), which the MIT License
+covers; the file holds Microsoft's copyright and permission notice in full:
+
+   Copyright (c) Microsoft Corporation. All rights reserved.
