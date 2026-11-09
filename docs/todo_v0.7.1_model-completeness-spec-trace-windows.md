@@ -341,6 +341,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-120 | `switch.thumb.{fill,min_width} @ {pressed} / {checked,pressed} (the fill and the stretch)` | rule |
 | W1-121 | `switch.thumb.fill @ {hover} / {checked,hover}` | rule |
 | W1-122 | `switch.thumb.{min_width,min_height} @ {hover} / {checked,hover}` | rule |
+| W1-122 | `switch.track.padding @ {hover} / {checked,hover}` (the drawn knob's inset in its cell, the knob centred in it and growing about its centre, `src/controls/dev/CommonStyles/ToggleSwitch_themeresources.xaml:509-515`; the base states the resting knob's; ADD-A146) | rule |
 | W1-123 | `switch.thumb.transitions (Geometry: the knob growing and shrinking by state)` | field |
 | W1-123 | `switch.thumb.transform @ {checked}` (the slide: a translation per state, as WinUI moves the knob) | rule |
 | W1-123 | `switch.thumb.transitions (Transform: the slide, RepositionThemeAnimation; measured)` | field |

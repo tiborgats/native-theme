@@ -161,7 +161,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.52 | `checkbox.box.shadow @ {hover} (inset ring layer); radio.ring.shadow @ {hover}` | rule |
 | K1.52 | `checkbox.box.shadow @ {hover} variant warning; radio.ring.shadow @ {hover} variant warning` | rule |
 | K1.52 | `checkbox.box.transitions (Shadow); radio.ring.transitions` | field |
-| K1.53 | `checkbox.values.indicator_cell` | field |
+| K1.53 | `checkbox.box.margin, radio.ring.margin` (the box's and the ring's inset in the indicator's cell, `breeze@6.8.2 kstyle/breezehelper.cpp:843-844`, `:995-996`; ADD-A146) | field |
 | K1.53 | `checkbox.box.min_width, checkbox.box.min_height, checkbox.box.corners` | field |
 | K1.54 | `checkbox.box.fill, checkbox.box.stroke @ {checked,hover} / {checked,pressed}` | rule |
 | K1.54 | `checkbox.box.stroke, checkbox.mark.glyph @ {indeterminate,hover}` | rule |
@@ -648,7 +648,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q1.98 | `layout.values.container_margin @ variant @page cond flavor:kirigami` (qqc2's Page: no padding) | rule |
 | Q1.98 | `layout.values.container_margin @ variants {@page,@kirigami_page} cond flavor:kirigami` (Kirigami's Page: a grid unit, `= token.params.layout.grid_unit`) | rule |
 | Q1.98 | `layout.values.container_margin @ cond flavor:kirigami` (a plain qqc2 Control's padding, from the style's `layout*margin` pixel metric) | rule |
-| Q1.99 | `switch.values.track_inset (= floor(mul(token.params.layout.grid_unit, <fraction>)))` | field |
+| Q1.99 | `switch.track.min_height (= sub(token.params.layout.grid_unit, mul(2, floor(mul(token.params.layout.grid_unit, <fraction>)))))` (the track shorter than the handle by its top and bottom margins, `qqc2-desktop-style@6.31.0 org.kde.desktop/private/SwitchIndicator.qml:41-46`; the handle the full height and centred across the track, flush along it, `:68`, so `switch.track.padding` zero; ADD-A146) | field |
 | Q1.99 | `switch.track.min_width, switch.track.min_height, switch.thumb.min_height` | field |
 | Q1.100 | `switch.track_fill.fill (from the track's start to the thumb's trailing edge, under the thumb when unchecked)` | field |
 | Q1.101 | `switch.thumb.stroke (= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast): the indicator's own Button set)` (`private/SwitchIndicator.qml:21-22`, `:30`) | field |

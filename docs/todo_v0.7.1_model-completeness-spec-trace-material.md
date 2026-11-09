@@ -397,6 +397,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-LA1 | `layout.values.window_margin, layout.values.pane_gap @ h_size_class compact / h_size_class medium / h_size_class expanded / h_size_class large / h_size_class extra_large` | rule |
 | MAT-LA1 | `token.size_classes` | token |
 | MAT-SW1 | `switch.thumb.min_width, switch.thumb.min_height @ {pressed}` | rule |
+| MAT-SW1 | `switch.track.padding @ {pressed} / {checked} / variant @icons` (the thumb's inset from the track's ends, half the track's height less the thumb's size, `material3/…/Switch.kt:295-304`, so it changes with the thumb's size; the base states the unchecked thumb's; ADD-A146) | rule |
 | MAT-SW2 | `switch.thumb.fill @ {hover} / {focus_visible} / {pressed} / {checked,hover} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-SW3 | `switch.thumb_icon.icon.{size,fill}` | field |
 | MAT-SW3 | `switch.thumb_icon.glyph @ !{checked} / {checked}` (the close and the check symbol) | rule |
