@@ -2179,14 +2179,25 @@ class Combinations:
             self.combinations[k] = c, (reduced(c["states"], groups) if c is not None else None)
         return self.combinations[k][0]
 
+    def holding(self, widget, when, scheme):
+        """holds() of a `when` in combination() of `when` under the scheme (not None), as a function of it."""
+        k = (widget, self.key(when), scheme)
+        groups, recency = self.reduction(widget, when)
+        c, states = self.combinations[k]
+        held, keys = self.held.setdefault(k, {}), self.keys
+
+        def holding(other) -> bool:
+            found = keys.get(id(other))
+            other_key = found[1] if found is not None else self.key(other)
+            if other_key not in held:
+                held[other_key] = holds(other, c, groups, recency, states)
+            return held[other_key]
+
+        return holding
+
     def holds(self, widget, when, scheme, other) -> bool:
         """holds() of the `when` `other` in combination() of `when` under the scheme (not None)."""
-        k = (widget, self.key(when), scheme, self.key(other))
-        if k not in self.held:
-            groups, recency = self.reduction(widget, when)
-            c, states = self.combinations[k[:3]]
-            self.held[k] = holds(other, c, groups, recency, states)
-        return self.held[k]
+        return self.holding(widget, when, scheme)(other)
 
 
 def last_holding(fs: list, c: dict, groups, recency):
@@ -2317,10 +2328,7 @@ def round_trip(draft: Draft, text: str) -> Trip:
                 if c is None:
                     continue
                 groups, recency = at.reduction(widget, when)
-
-                def holding(other, when=when, s=s):
-                    return at.holds(widget, when, s, other)
-
+                holding = at.holding(widget, when, s)
                 applies = next((f for f in reversed(fs) if holding(f.when)), None)
                 if applies is None:
                     if preset_value(got, fs[0].kind, c, s, groups, recency, fs[0].typ, holding) is not None:
