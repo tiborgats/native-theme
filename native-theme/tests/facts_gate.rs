@@ -739,24 +739,30 @@ fn gate_fixture_derived_input_perturbed() {
 /// differ are not, where the perturbed pass would probe its own
 /// combinations.
 #[test]
-fn gate_probes_alike_reads_the_steps() {
+fn gate_probes_alike_reads_the_steps() -> Result<(), String> {
     let (root, presets) = fixture("surface_operand", "preset.toml");
     let mut report = run::Report::default();
-    let units = units::Units::repository().unwrap();
+    let units = units::Units::repository().map_err(failed)?;
     let platform = run::Platform::read(&root.join("gnome"), &units, &mut report);
-    let preset = &presets[0].1;
+    let preset = &presets.first().ok_or("the fixture has no preset")?.1;
     let evidence = facts::Evidence::new(fixture_evidence(&root));
     let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
     let resolve = |scheme: &str, layer: &native_theme::Layer| {
-        let conditions = run::conditions(&[format!("scheme:{scheme}")], None).unwrap();
-        preset.resolve(&conditions, layer).unwrap()
+        let conditions = run::conditions(&[format!("scheme:{scheme}")], None).map_err(failed)?;
+        preset.resolve(&conditions, layer)
     };
-    let light = resolve("light", &native_theme::Layer::default());
-    let layer = run::stand_in(preset, &keys, &light).unwrap();
+    let light = resolve("light", &native_theme::Layer::default())?;
+    let layer = run::stand_in(preset, &keys, &light)?;
     assert!(!layer.bases.inputs.entries.is_empty());
     let inputs = run::root_inputs();
-    assert!(light.probes_alike(&resolve("light", &layer), &inputs));
-    assert!(!light.probes_alike(&resolve("dark", &native_theme::Layer::default()), &inputs));
+    assert!(light.probes_alike(&resolve("light", &layer)?, &inputs));
+    assert!(!light.probes_alike(&resolve("dark", &native_theme::Layer::default())?, &inputs));
+    Ok(())
+}
+
+/// A test's error, written as its value's debug form.
+fn failed(error: impl std::fmt::Debug) -> String {
+    format!("{error:?}")
 }
 
 /// A session of shapes alone (`Query::Shapes`, which the gate's probes
@@ -768,11 +774,11 @@ fn gate_probes_alike_reads_the_steps() {
 /// two sessions' signatures agree, and the shapes' `probed` gives what
 /// the styles' `holds_each` and `signature` give.
 #[test]
-fn gate_shapes_probe_as_styles() {
+fn gate_shapes_probe_as_styles() -> Result<(), String> {
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
-    let base = std::fs::read_to_string(fixtures.join("base.toml")).unwrap();
+    let base = std::fs::read_to_string(fixtures.join("base.toml")).map_err(failed)?;
     let mut cases: Vec<PathBuf> = std::fs::read_dir(&fixtures)
-        .unwrap()
+        .map_err(failed)?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|case| case.join("preset.toml").is_file())
@@ -781,8 +787,12 @@ fn gate_shapes_probe_as_styles() {
     let flags = ["hover", "pressed", "disabled", "checked", "focus_visible"];
     // `when`s with no conditions, so each holds in every resolution, on a
     // part's field, a whole part and a token (`Session::probed`).
-    let read = |text: &str| -> native_theme::gate::When {
-        native_theme::gate::parse_when(&toml::from_str::<toml::Value>(text).unwrap()).unwrap()
+    let read = |(when, key): (&str, &str)| {
+        let when = toml::from_str::<toml::Value>(when).map_err(failed)?;
+        Ok::<_, String>((
+            native_theme::gate::parse_when(&when).map_err(failed)?,
+            native_theme::gate::parse_key(key).map_err(failed)?,
+        ))
     };
     let parsed: Vec<(native_theme::gate::When, native_theme::gate::FactKey)> = [
         ("states = [\"hover\"]", "button.body.fill"),
@@ -797,8 +807,8 @@ fn gate_shapes_probe_as_styles() {
         ("states = [\"checked\"]", "token.focus.width"),
     ]
     .into_iter()
-    .map(|(when, key)| (read(when), native_theme::gate::parse_key(key).unwrap()))
-    .collect();
+    .map(read)
+    .collect::<Result<_, _>>()?;
     let whens: Vec<(&native_theme::gate::When, &native_theme::gate::FactKey)> =
         parsed.iter().map(|(when, key)| (when, key)).collect();
     let root = run::root_inputs();
@@ -823,10 +833,9 @@ fn gate_shapes_probe_as_styles() {
             .chain(declared.sizes.iter().cloned().map(Some))
             .collect();
         for scheme in preset.schemes() {
-            let conditions = run::conditions(&[format!("scheme:{scheme}")], None).unwrap();
-            let resolved = preset
-                .resolve(&conditions, &native_theme::Layer::default())
-                .unwrap();
+            let conditions =
+                run::conditions(&[format!("scheme:{scheme}")], None).map_err(failed)?;
+            let resolved = preset.resolve(&conditions, &native_theme::Layer::default())?;
             for set in 0..1_usize << flags.len() {
                 for variant in &variants {
                     for size in &sizes {
@@ -842,10 +851,10 @@ fn gate_shapes_probe_as_styles() {
                         let session = |query| {
                             resolved
                                 .session_drawn(&combination, &root, &metrics, &[], query)
-                                .unwrap()
-                                .unwrap()
+                                .map_err(failed)?
+                                .ok_or_else(|| format!("{combination:?} is named not drawn"))
                         };
-                        let (styles, shapes) = (session(Query::Styles), session(Query::Shapes));
+                        let (styles, shapes) = (session(Query::Styles)?, session(Query::Shapes)?);
                         assert_eq!(
                             (styles.unavailable(), styles.signature()),
                             (shapes.unavailable(), shapes.signature()),
@@ -863,6 +872,7 @@ fn gate_shapes_probe_as_styles() {
         }
     }
     assert!(sessions > 1000, "{sessions}");
+    Ok(())
 }
 
 /// A probe's failure is recorded under each pass's label, the perturbed
