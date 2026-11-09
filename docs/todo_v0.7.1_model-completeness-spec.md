@@ -3426,6 +3426,17 @@ model holds no invalid colour). A KDE port's `.colors` file, which no `applySche
 it unset. Rejected: an empty value read as unset (the port's: where the scheme file sets no `Enable`, KDE then draws
 the inactive effects the reader would state off).
 
+**An effect number with no member** (ADD-A144; task T6a's and the readers' question). An `IntensityEffect`,
+`ColorEffect` or `ContrastEffect` that KConfig reads as a number its enum names no member for (`4`, `-1`) is stated
+`none` by the reader and a port alike, in `token.kde` as in the operands the KDE functions read, the one reading
+the evaluator gives an effect it cannot name; so the token and the derivations over it agree, and no other file's
+value shows under the reader's (a token left unstated would show Breeze's). It is a recorded reading until the clean
+room's description of KColorScheme's effect application (`kcolorscheme.cpp`, D10) states what such a number draws; a
+different answer takes a spec row. Rejected: the token left unstated (Breeze's value beneath it, from a file the
+reader did not read, beside a derivation that takes none); the group's default, as for an unset key (KConfig
+converts the number, so KColorScheme does not read the key as unset); a refusal, a `Fallback` or a `PortError`
+(Plasma applies the file).
+
 These values are the scheme's: Plasma writes kdeglobals' effects and contrast from the scheme file
 (`colorsapplicator.cpp:311-318`, `:340-359`), and the tint and title-bar options are in the scheme file alone. So the reader states
 its `token.kde`, and its other scheme-file tokens (`token.params.color.contrast`, `frame_contrast`), as a `Tokens` rule
@@ -5320,6 +5331,13 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   plain reference on a field that allows `Auto`), or a plain
   reference can bring `Auto` to a field that does not allow it; a `TextStyle`
   token's expression reads `line_height` while that style's line height can be `Auto` (S2.2);
+- an input's expression (S9: a per-scheme value or a contrast base; a scheme input's `= input.…`, an inactive input
+  role's `= kde_accent(…)` or a port's or mapping's `= active(role.<set>.<role>)`, S14) fails a check a colour role's
+  expression fails: it is validated as one, in the root scope with no element and no binding (ADD-A144, task T6a's
+  question), and its cycle check follows `active(ref)` to the role's bases alone, the value S2.2 gives it, so an input
+  a role's rule reads that reads that role's active value is no cycle (`kde-breeze`'s inactive rule over a port's
+  `input.inactive.<set>.<key> = active(role.<set>.<role>)`), while one the role's bases read back is
+  (`ProblemKind::ExpressionCycle`);
 - a `widget.<part>` reference names a part of another element than the one its part is queried with (S2.2: an
   *(element)* part reads none of its host's parts, a font metric included, and a host's part none of an *(element)*
   part's), or a part that can resolve `Absent` as a whole or `DrawnAs` under some combination of the rules before it
@@ -5593,10 +5611,14 @@ inactive roles (ADD-A142; rejected: `= input.kde_scheme.wm.<key>`, which is half
 one colour group: the file is read as the KDE reader reads a scheme file, its bytes decoded as the reader decodes them
 and its lines by KConfig's rules (S9.3's *The KDE reader's readings*: the lines KConfig skips skipped, each colour
 entry read as KConfig reads a colour), so a group or key it lacks and a line KConfig skips are converted as Plasma
-applies the file, and `from_port` refuses only a file with no `[Colors:<Set>]` group of a declared set (its
-`kde_scheme.groups` empty; any such group counts, a subgroup such as `[Colors:Header][Inactive]` included),
-`Err(PortError::NoColorGroup)` (S1; ADD-A142): such a file (empty, or no colour scheme at
-all) would convert to KColorScheme's defaults, Breeze Light's colours under whichever scheme the caller names,
+applies the file, and `from_port` refuses only a file with no `[Colors:<Set>]` group of a declared set (any such
+group counts, a subgroup such as `[Colors:Header][Inactive]` included),
+`Err(PortError::NoColorGroup)` (S1; ADD-A142). The refusal reads the file's groups themselves, a subgroup counting
+for its set, and is no test of `kde_scheme.groups`, which lists the `[Colors:<Set>]` groups (S9.1): a file whose one
+colour group is a subgroup is converted, its `kde_scheme.groups` empty as the conversion reads it (ADD-A144, task
+T6a's question). Whether KConfig counts a set's own group as present where only its subgroup holds keys, which
+decides that list and `Header`'s reading of `Window`'s values (`kcolorscheme.cpp:330-333`), is the clean room's
+question (D10); no fact depends on it. A file the refusal meets (empty, or no colour scheme at all) would convert to KColorScheme's defaults, Breeze Light's colours under whichever scheme the caller names,
 presented as the file's, while no real scheme lacks every colour group; a file with some colour groups, which
 KColorScheme completes from its defaults as Plasma applies it, is converted (Dracula's port). Rejected:
 `PortError::Parse { line }` for a line KConfig skips (it refuses a file Plasma applies, and needs a second reading of
