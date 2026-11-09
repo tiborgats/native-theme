@@ -332,7 +332,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | PB-2 | `progress_bar.indicator.corners` | field |
 | PB-3 | `progress_bar.indicator.transitions` (`PropertyGroup::Geometry`: the animated progress change) | field |
 | PB-4† | `progress_bar.label.text; progress_bar.value_label.text` | field |
-| PB-4† | `progress_bar.values.label_position; progress_bar.values.label_gap` | field |
+| PB-4† | `progress_bar.values.label_gap; progress_bar.values.value_label_position; progress_bar.values.value_label_gap` (the title above the bar, the current-value label by its own position, ADD-A146) | field |
 | T-1 | `bottom_tab_bar.bar.fill (material)` | field |
 | T-1 | `bottom_tab_bar.bar.fill @ {scrolled} / !{scrolled}` (the standard and scroll-edge appearances) | rule |
 | T-1 | `reader:ios:UITabBarAppearance backgroundEffect` | readers (R18) |
@@ -515,7 +515,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | DL-5 | `button.body.{fill,corners,min_width} @ context dialog.action_area variant alert` (full-width cells; 26's capsules) | rule |
 | DL-5 | `button.body.fill @ {pressed} context dialog.action_area variant alert` | rule |
 | DL-5 | `button.body.fill @ {default} context dialog.action_area variant alert` (26's prominent default, to verify) | rule |
-| DL-5 | `dialog.values.action_layout.row_gap_px` | field |
+| DL-5 | `dialog.values.action_layout.gap` | field |
 | DL-6 | `dialog.values.action_layout.stack_rule (ByCount, long titles)` | field |
 | DL-6 | `dialog.values.action_layout.stacked_order` | field |
 | DL-7 | `button.label.text @ context dialog.action_area` (the other actions: regular, in tint) | rule |
@@ -541,7 +541,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CB-1 | `combo_box.arrow.glyph` (the pop-up button's indicator, its `.popup` up/down chevron pair, in the base: its identity, colour and weight; iOS's pull-down button is `button @ variant menu`, B-18†) | field |
 | CB-1 | `combo_box.body.padding; combo_box.label.padding; combo_box.arrow.margin; combo_box.values.{label_arrow_gap,content_width,content_slack}` (the content row, the catalogue: the pop-up button the `UIButton` menu configuration with the `.popup` indicator, `button @ variant menu` in the facts' `indicator_popup` cells, which the iOS host measured at `regular` on `ios-13` and `ios-26`, the facts in `docs/facts/ios/combo_box.toml`: its padding's start and end 12, `:140-174`, `:56-90` and on `ios-26` `:523-567`, `:419-463`, the gap 4, `:207-241`, `:600-644`, the indicator's start and end margins 0, `:250-284`, `:292-326`, `:653-697`, `:705-749`; the other sizes pending, register row U120; the indicator's top and bottom margins pending, U121, `:334-344`, `:757-767`; the title's own padding inside the row not measured, U257, `:182-204`, `:575-597`; whether the width follows the selected title, where a wider pop-up puts the spare width and how a long title is cut not measured, register rows U173–U175: the width's basis and the slack pending; ADD-A127) | field |
 | CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
-| CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
+| CB-3 | `combo_box.body.fill @ {open}; combo_box.arrow.{glyph,transform} @ context combo_box.body {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
 | CB-4 | `combo_box.label.text.fill` | field |
 | SG-1 | `segmented_control.indicator.{fill,stroke,corners,shadow}` | field |
@@ -567,7 +567,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CD-1 | `list.row_background.shadow` (its `shadowProperties`, layers S2.5; `card` is unavailable on `ios-*`, and GroupBox is `group_box`) | field |
 | CD-1 | `reader:ios:UIBackgroundConfiguration and UIShadowProperties` | readers (R18) |
 | EX-1 | `list.disclosure.glyph` (iOS's outline disclosure is a list row's `disclosure`; `expander` is unavailable on `ios-*`) | field |
-| EX-1 | `list.disclosure.transform @ {open}` | rule |
+| EX-1 | `list.disclosure.transform @ context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
 | EX-1 | `reader:ios:UICellAccessory.outlineDisclosure options` | readers (R18) |
 | EX-2 | `list.disclosure.transitions (Transform)` | field |
 | EX-2 | `list.values.presentations events @expand, @collapse` (the child rows' insertion) | field |

@@ -75,7 +75,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-016 | `reader:windows:SM_CXFRAME, SM_CXPADDEDBORDER, DWMWA_EXTENDED_FRAME_BOUNDS` | reader |
 | W1-017 | `cond animations_off (read from SPI_GETCLIENTAREAANIMATION)` | condition |
 | W1-017 | - (the DWM's open, close, minimize, maximize and restore animations) | out (R1.1) |
-| W1-148† | `window.values.caption_button_capabilities (the maximize button greyed on a window that cannot be resized: WhenMissing::Disable)` | field |
+| W1-148† | `window.values.caption_item_requirements (the maximize button greyed on a window that cannot be resized: WhenMissing::Disable)` | field |
 | W1-148† | `window.{caption_button.fill,caption_button_glyph.glyph.fill} @ {disabled}` | rule |
 | W1-148† | `window.values.caption_button_layout @ variant dialog (the close-only caption)` | rule |
 | W1-148† | - (the context-help "?" caption button, WS_EX_CONTEXTHELP: Win32 only) | preset (R1.3) |
@@ -195,6 +195,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-060 | `scrollbar.track.fill (Absent) @ cond overlay_scrollbars !{hover} (no track)` | rule |
 | W1-060 | `scrollbar.body.{min_width,min_height}; scrollbar.thumb.{stroke,min_width} (the expanded bar)` | field |
 | W1-061 | `scrollbar.arrow_button.{glyph,fill,stroke,padding}` | field |
+| W1-061 | `scrollbar.arrow_button.{glyph,padding} @ variant decrement / variant increment / variants {decrement,vertical} / variants {increment,vertical}` (the four glyphs and margins, `src/controls/dev/CommonStyles/ScrollBar_themeresources.xaml:258`, `:301`, `:344`, `:387`, `:195-198`; ADD-A146) | rule |
+| W1-061 | `scrollbar.values.arrow_buttons_start; scrollbar.values.arrow_buttons_end` (Single at each end, the template's one button there, `:681-711`; ADD-A146) | field |
 | W1-061 | `scrollbar.arrow_button.{fill,stroke,glyph.fill} @ {hover} / {pressed} / {disabled}` | rule |
 | W1-061 | `scrollbar.arrow_button.transform @ {pressed}` | rule |
 | W1-061 | `scrollbar.arrow_button.transitions (Transform: the press scale's animation)` | field |
@@ -243,7 +245,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-082 | `button.{body.min_width,body.min_height,icon.glyph} @ variant close context tab.tab (the button size, the glyph and its size)` | rule |
 | W1-082 | `button.{body.fill,icon.glyph.fill,body.stroke} @ {hover} / {pressed} / {disabled} variant close context tab.tab` | rule |
 | W1-082 | `button.{body.fill,icon.glyph.fill,body.stroke} @ variant close context tab.tab {selected} / variant close context tab.tab {hover} / variant close context tab.tab {pressed}` | rule |
-| W1-082 | `tab.values.close_button_shown` | field |
+| W1-082 | `tab.values.close_button_visibility` | field |
 | W1-082 | `tab.tab.padding @ variant closable` (CloseIconStates: the padding with and without the button) | rule |
 | W1-082 | `button.body.margin @ variant close context tab.tab` (`TabViewItemHeaderCloseMargin`: the gap to the label) | rule |
 | W1-083 | `button.{body.min_width,body.min_height,icon.glyph,body.fill} @ variant add context tab.bar` | rule |
@@ -273,7 +275,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-093 | `separator.line.{stroke,margin} @ context sidebar.pane (the colour, height and margin)` | rule |
 | W1-093 | `list.disclosure.glyph @ variant sidebar` | rule |
 | W1-093 | `list.values.disclosure_gap @ variant sidebar (the chevron margin)` | rule |
-| W1-093 | `list.disclosure.transform @ {open} variant sidebar` | rule |
+| W1-093 | `list.disclosure.transform @ variant sidebar context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
 | W1-093 | `list.disclosure.transitions (Transform: the rotation)` | field |
 | W1-094 | `sidebar.values.width, sidebar.values.collapsed_width` | field |
 | W1-094 | `sidebar.* @ variant compact / variant @left_minimal (LeftCompact, LeftMinimal; Left is the base)` | rule |
@@ -341,6 +343,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-120 | `switch.thumb.{fill,min_width} @ {pressed} / {checked,pressed} (the fill and the stretch)` | rule |
 | W1-121 | `switch.thumb.fill @ {hover} / {checked,hover}` | rule |
 | W1-122 | `switch.thumb.{min_width,min_height} @ {hover} / {checked,hover}` | rule |
+| W1-122 | `switch.track.padding @ {hover} / {checked,hover}` (the drawn knob's inset in its cell, the knob centred in it and growing about its centre, `src/controls/dev/CommonStyles/ToggleSwitch_themeresources.xaml:509-515`; the base states the resting knob's; ADD-A146) | rule |
 | W1-123 | `switch.thumb.transitions (Geometry: the knob growing and shrinking by state)` | field |
 | W1-123 | `switch.thumb.transform @ {checked}` (the slide: a translation per state, as WinUI moves the knob) | rule |
 | W1-123 | `switch.thumb.transitions (Transform: the slide, RepositionThemeAnimation; measured)` | field |
@@ -356,7 +359,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-126 | `dialog.action_area.{fill,stroke}` | field |
 | W1-127 | `dialog.values.title_message_gap` | field |
 | W1-127 | `button.body.{min_width,max_width,min_height} @ context dialog.action_area` | rule |
-| W1-127 | `dialog.values.action_layout.{equal_widths,row_gap}` | field |
+| W1-127 | `dialog.values.action_layout.{equal_widths,gap}` | field |
 | W1-128 | `dialog.values.presentations (events Appear, Disappear: Scale with Fade, their durations and timings, ADD-B10)` | field |
 | W1-129 | `dialog.body.shadow (Shadow::Elevation, the dialog entry of the ramp)` | field |
 | W1-130 | `spinner.{indicator,track}.* @ !{indeterminate}` (the determinate ring: the value arc's glyph, its draw_extent = element.progress) | rule |
@@ -367,7 +370,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-131 | `combo_box.body.stroke (gradient paint) @ {hover} / {pressed}` | rule |
 | W1-132 | `combo_box.arrow.glyph.fill` | field |
 | W1-132 | `combo_box.body.{padding,min_width,min_height}; combo_box.label.padding; combo_box.arrow.margin; combo_box.values.{label_arrow_gap,content_width,content_slack}` (the content row, the catalogue: the label in the star column, `ComboBoxPadding` `12,5,0,7` its padding as written, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:341`, `:360`, `:566-567`, `:577`, gaining no border, the presenter the bordered `Background`'s sibling, `:571`, `:577`, not inside it; the label with no padding; the chevron 12 wide right-aligned in the 38 column with its margin `0,0,14,0`, `:582`, so the gap 12 before its box; the body at least 64 wide, `ComboBoxThemeMinWidth` on the `Background`, `:321`, `:571`, and 32 tall, the chevron's `MinHeight`, `ComboBoxMinHeight`, `:327`, `:582`, centred in the whole row, the body's box; the presenter showing the selected item or the placeholder, `src/dxaml/xcp/dxaml/lib/ComboBox_Partial.cpp:1026`, `:1092`: `Shown`, the slack 0; the label cut at its slot, `src/dxaml/xcp/core/core/elements/framework.cpp:1839-1848`; ADD-A127) | field |
-| W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / {focused} / {focused,pressed}` | rule |
+| W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / context combo_box.body {focused} / context combo_box.body {focused,pressed}` (the combo box's states, read by context, ADD-A146) | rule |
 | W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_down_small" }, its `QueueOne` queue, `src/controls/dev/ComboBox/ComboBox_themeresources.xaml:583`, S2.7, ADD-A126)` | field |
 | W1-133 | `menu.body.{fill,stroke,padding,corners,shadow,min_width} @ context combo_box (fill PaintKind::Material @acrylic)` | rule |
 | W1-133 | `combo_box.values.popup_placement (its max_visible_items)` | placement |
@@ -499,7 +502,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-12 | `list.{row_background.fill,row_background.stroke,row.text.fill} @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {disabled}` | rule |
 | W2-12 | `list.values.indent_per_level` | field |
 | W2-12 | `list.disclosure.glyph; list.disclosure.transitions` | field |
-| W2-12 | `list.disclosure.transform @ {open}` | rule |
+| W2-12 | `list.disclosure.transform @ context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
 | W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill `shown` under `{selected}`, its fade and scale W1-107's, S2.7, ADD-A126) | field |
 | W2-12 | `checkbox.* @ context list.row (the multi-select check box)` | rule |
 | W2-12 | `list.row.min_height` | field |
@@ -821,10 +824,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-FM02† | - (GDI's SystemLink font-linking chains: Win32 controls) | preset (R1.3) |
 | W-P3-1† | `window.frame.corners @ cond tiled:left / cond tiled:right / cond tiled:top / cond tiled:bottom` | rule |
 | W-P3-1† | - (the snap overlay, the Snap bar, the shared edge of snapped windows, the snapped windows' gaps to the screen edge and to each other, and the settings that switch snapping: the shell's) | out (R1.1) |
-| W-P3-2† | `window.title_bar (absent) @ cond full_screen` | rule |
-| W-P3-2† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} (absent = true) @ cond full_screen` (the parts nested in the title bar, each by its own rule: Nesting) | rule |
+| W-P3-2† | `window.title_bar @ cond full_screen` (the revealed bar's style, the row's measurement; not absent: the connector draws the bar only while revealed, by `full_screen_title_bar_reveal`, ADD-A146) | rule |
+| W-P3-2† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} @ cond full_screen` (the parts nested in the revealed bar, where the measurement finds them unlike a window's outside full screen) | rule |
 | W-P3-2† | `window.values.full_screen_title_bar_reveal (SwipeFromTop)` | field |
-| W-P3-2† | `window.values.presentations (event @title_bar_show)` (the reveal presents a title bar `Absent` under `full_screen`: ADD-A129 (queue #118)) | field |
+| W-P3-2† | `window.values.presentations (event @title_bar_show)` (the reveal's motion and how long the bar stays: ADD-A129 (queue #118), the bar appearing and leaving at once meanwhile, S2.7) | field |
 | W-P3-2† | `window.{frame.corners,title_bar.min_height,values.default_size} @ variant @compact_overlay` | rule |
 | W-P3-2† | `window.caption_button.{min_width,min_height} @ context window.frame variant @compact_overlay` | rule |
 | W-P3-2† | - (entering and leaving each presenter: the system's window animation) | out (R1.1) |

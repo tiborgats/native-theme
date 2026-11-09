@@ -37,7 +37,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W02 | `window.caption_button_glyph.fill, window.caption_button_glyph.glyph.fill @ {pressed}` | rule |
 | MAC-W02 | `window.caption_button_glyph.fill @ cond window_inactive` | rule |
 | MAC-W02 | `window.caption_button_glyph.fill @ {disabled}` | rule |
-| MAC-W02 | `window.values.caption_button_capabilities (WhenMissing::Disable: the zoom button of a window that cannot zoom)` | field |
+| MAC-W02 | `window.values.caption_item_requirements (WhenMissing::Disable: the zoom button of a window that cannot zoom)` | field |
 | MAC-W02 | `window.caption_button_glyph.glyph @ variant close context window.frame {@document_edited}` | rule |
 | MAC-W02 | `window flags @document_edited` | flag |
 | MAC-W02 | `reader:macos:standardWindowButton frames per toolbar style` | reader |
@@ -70,7 +70,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W09 | `tab.separator.stroke @ context window.title_bar` | rule |
 | MAC-W09 | `tab.label.text @ context window.title_bar / {selected} context window.title_bar` | rule |
 | MAC-W09 | `button.body, button.icon @ variant close context tab.tab` | rule |
-| MAC-W09 | `tab.values.close_button_shown @ variant document context window.title_bar (OnHover)` | rule |
+| MAC-W09 | `tab.values.close_button_visibility @ variant document context window.title_bar (OnHover)` | rule |
 | MAC-W09 | `button.body, button.icon @ variant add context tab.bar` | rule |
 | MAC-W09 | `tab.bar.fill, tab.tab.fill, tab.label.text.fill @ variant document context window.title_bar cond window_inactive` | rule |
 | MAC-W09 | `tab.tab.{opacity,shadow} @ {dragged} context window.title_bar` | rule |
@@ -176,6 +176,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN10 | `menu.values.show_item_icons` | field |
 | MAC-MN11 | `menu.values.indent_step` | field |
 | MAC-MN12 | `menu.scroll_arrow.{glyph,fill,min_height}` | field |
+| MAC-MN12 | `menu.scroll_arrow.glyph @ variant top / variant bottom` (the up and the down arrow, one element per scroll area, its identity a variant; ADD-A146) | rule |
 | MAC-MN13 | `menu.item @ variant palette` | rule |
 | MAC-MN13 | `menu.item.stroke @ variant palette {checked} (selection ring)` | rule |
 | MAC-MN14 | `menu.body.{stroke,shadow,fill}` | field |
@@ -308,7 +309,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-L09 | `list.values.section_headers_sticky (floating group rows)` | field |
 | MAC-L10 | `list.values.indent_per_level` | field |
 | MAC-L10 | `list.disclosure.glyph (SystemControl AppKitDisclosure)` | system-control |
-| MAC-L10 | `list.disclosure.glyph.fill @ {pressed}; list.disclosure.transform @ {open}` | rule |
+| MAC-L10 | `list.disclosure.glyph.fill @ {pressed}; list.disclosure.transform @ context list.row {open}` (its own press; the row's `open`, read by context, ADD-A146) | rule |
 | MAC-L10 | `list.disclosure.transitions (transform)` | field |
 | MAC-L10 | `reader:macos:NSOutlineView.indentationPerLevel` | reader |
 | MAC-L11 | `list.row_background.stroke, list.row_background.corners @ {drop_target}` | rule |
@@ -375,8 +376,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-CB01 | `combo_box.arrow.{glyph,margin} @ variant editable` (NSComboBox's arrow button's glyph and its place in the button, drawn by the model, the `AppKitPopUp` rendering not covering it; the probe has not read it: register row U172, per control size; ADD-A127) | rule |
 | MAC-CB02 | `combo_box.arrow_area.fill` | field |
 | MAC-CB02 | `combo_box.arrow_area.fill @ cond window_inactive` | rule |
-| MAC-CB03 | `combo_box.arrow.glyph.fill @ {pressed} / {disabled}` | rule |
-| MAC-CB04 | `combo_box.{body,arrow} @ {open}` | rule |
+| MAC-CB03 | `combo_box.arrow.glyph.fill @ context combo_box.body {pressed} / {disabled}` (the pop-up's press, read by context: the arrow belongs to the arrow area's element, ADD-A146) | rule |
+| MAC-CB04 | `combo_box.body @ {open}; combo_box.arrow @ context combo_box.body {open}` | rule |
 | MAC-CB04 | `menu.body, menu.item.{min_height,fill} @ context combo_box variant editable (NSComboBox's list)` | rule |
 | MAC-CB04 | `menu.item.fill @ {focused} context combo_box variant editable / {hover} context combo_box variant editable` (the list's highlighted row: `focused` or `hover`, never `selected`, S7.2) | rule |
 | MAC-CB04 | `combo_box.values.popup_placement @ variant editable (its max_visible_items: numberOfVisibleItems)` | placement |
@@ -653,7 +654,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N28† | `split_button.secondary.fill, split_button.arrow.glyph @ {open}` | rule |
 | MAC-N28† | `split_button.* @ size mini / small / regular / large` | rule |
 | MAC-N29† | `button.body.*, button.menu_indicator @ variant menu {pressed} / variant menu {open}` (`NSComboButton` `.unified`) | rule |
-| MAC-N29† | `combo_box.{body,arrow} @ variant @pull_down {pressed} / variant @pull_down {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
+| MAC-N29† | `combo_box.body @ {pressed} variant @pull_down / {open} variant @pull_down; combo_box.arrow @ variant @pull_down context combo_box.body {pressed} / variant @pull_down context combo_box.body {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
 | MAC-N29† | `button.values.menu_indicator_gap` | field |
 | MAC-N29† | `button.values.menu_trigger @ variant menu / variants {menu,@menu_on_hold}` (`primary` where the unified NSComboButton has no action, `long_press` where it has one, `NSComboButton.h:18`; ADD-A135) | rule |
 | MAC-N29† | `button.* @ variant menu context toolbar.bar (NSMenuToolbarItem)` | rule |
@@ -924,10 +925,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P3-3† | `scrollbar.thumb.{min_width,min_height} @ cond overlay_scrollbars` | rule |
 | MAC-P3-3† | `scrollbar.values.overscroll_shrink` | field |
 | MAC-P3-4† | `progress_bar.label.text; progress_bar.value_label.text` | field |
-| MAC-P3-4† | `progress_bar.values.label_position; progress_bar.values.label_gap` | field |
+| MAC-P3-4† | `progress_bar.values.label_gap; progress_bar.values.value_label_position; progress_bar.values.value_label_gap` (the title above the bar, the current-value label by its own position, ADD-A146) | field |
 | MAC-P3-5† | `segmented_control.values.segment_width (Fill default)` | field |
 | MAC-P3-5† | `segmented_control.segment.padding` | field |
-| MAC-P3-5† | `segmented_control.values.compression` | field |
+| MAC-P3-5† | - (how segments compress: `activeCompressionOptions` reports what the system has applied to a view in the Touch Bar, the protocol "only applicable to views in the Touch Bar", `xcode@26.6 AppKit/NSUserInterfaceCompression.h:90-93`, `:113-117`, so a segmented control in a window has no such value; the Touch Bar's own items are `component.touch_bar`'s, MAC-N26; ADD-A146) | out (R1.1) |
 | MAC-P3-6† | `toolbar_editor.body` (the palette's content) | field |
 | MAC-P3-6† | `dialog @ variant @sheet` (the sheet that holds the palette; the editor is queried in its context) | rule |
 | MAC-P3-6† | `list @ variant grid context toolbar_editor` (the item grid) | rule |
