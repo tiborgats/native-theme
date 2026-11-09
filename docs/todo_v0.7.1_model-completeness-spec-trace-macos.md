@@ -539,8 +539,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N01 | `stepper.increment.fill, stepper.decrement.fill @ {pressed} / {disabled}` | rule |
 | MAC-N01 | `stepper.increment_glyph.glyph, stepper.decrement_glyph.glyph` | field |
 | MAC-N01 | `stepper.separator.stroke` | field |
-| MAC-N01 | `stepper.body.fill (macos-tahoe's translucent body)` | field |
-| MAC-N01 | `stepper.body, stepper.increment, stepper.decrement @ size mini / small / regular` | rule |
+| MAC-N01 | `stepper.buttons.fill (macos-tahoe's translucent body, the box of the two halves)` | field |
+| MAC-N01 | `stepper.buttons, stepper.increment, stepper.decrement @ size mini / small / regular` | rule |
 | MAC-N01 | `stepper.values.field_gap, stepper.values.repeat_delay, stepper.values.repeat_interval` (the repeat values' base `= token.params.pointer_repeat.delay` and `= token.params.pointer_repeat.interval`, MAC-X12, unless the facts show `NSStepper` timing its own) | field |
 | MAC-N01 | `reader:macos:the NSStepper metrics the map marks readable` | reader |
 | MAC-N02 | `input.body.{fill,stroke,corners,focus} @ context any search_field (the bezel and its focus ring)` | rule |
@@ -581,7 +581,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N06 | `level_indicator.value.fill, level_indicator.block.fill @ {@warning} / {@critical}; level_indicator.block.fill @ {filled} / !{filled} / {filled,@warning} variant @tiered / {filled,@critical} variant @tiered` (the block an element, tiered blocks each in their own tier) | rule |
 | MAC-N06 | `level_indicator.block, level_indicator.value @ variant continuous / discrete / @relevancy` | rule |
 | MAC-N06 | `level_indicator.tick.{fill,min_width,min_height}` (the tick marks, their width and length) | field |
-| MAC-N06 | `level_indicator.values.thresholds` | field |
+| MAC-N06 | `level_indicator.values.thresholds` (the `AtLeast` list, warning below critical) | field |
+| MAC-N06 | `level_indicator.values.thresholds @ variant @inverted` (the list restated `AtMost` from the critical up, where the element's warning value exceeds its critical one, `NSLevelIndicator.h:38`, `:40`) | rule |
 | MAC-N06 | `reader:macos:a new NSLevelIndicator's fillColor, warningFillColor, criticalFillColor` | reader |
 | MAC-N06 | `rating.star.glyph @ {filled} / {placeholder} (the rating style's stars and placeholders)` | rule |
 | MAC-N07 | `breadcrumb.separator.glyph` | field |
@@ -633,10 +634,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N19 | `splitter.divider @ variant sidebar (none beside the floating inspector)` | rule |
 | MAC-N20 | `menu_bar.bar.{min_height,fill} (the height; the wallpaper-tinted translucent fill)` | field |
 | MAC-N20 | `menu_bar.item_label.text` | field |
-| MAC-N20 | `menu_bar.app_name.text` | field |
-| MAC-N20 | `menu_bar.item.fill, menu_bar.item_label.text.fill, menu_bar.app_name.text.fill @ {open}` (the application menu's title, `app_name`, belongs to its `item`, so it follows the item's open highlight) | rule |
+| MAC-N20 | `menu_bar.item_label.text @ variant @app_menu` (the application menu's title in its own text style, the item's content variant) | rule |
+| MAC-N20 | `menu_bar.item.fill, menu_bar.item_label.text.fill @ {open}` (every title's open highlight, the application menu's among them) | rule |
 | MAC-N20 | `menu_bar.status_item.icon.size, menu_bar.values.status_item_gap` | field |
-| MAC-N20 | `menu_bar.item_label.text, menu_bar.app_name.text, menu_bar.bar.min_height @ cond container_size:menu_bar:large` | rule |
+| MAC-N20 | `menu_bar.item_label.text, menu_bar.bar.min_height @ cond container_size:menu_bar:large; menu_bar.item_label.text @ variant @app_menu cond container_size:menu_bar:large` | rule |
 | MAC-N20 | `reader:macos:NSStatusBar.system.thickness, NSMenu.menuBarHeight, menuBarFontOfSize:` | reader |
 | MAC-N20 | `reader:macos:the "Menu bar size" setting -> cond container_size:menu_bar:large` (the Accessibility setting, Default or Large; `container_sizes = { menu_bar = ["default", "large"] }`, the default first) | reader |
 | MAC-N21 | `form.card.{fill,corners,padding}, form.row_separator.{stroke,margin}, form.row.min_height, form.group_title.text, form.group_description.text` | field |
@@ -670,7 +671,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N33† | `search_field.*, input.* @ context menu.body (the Help menu's search field)` | rule |
 | MAC-N33† | `menu.item, menu.item_label.text (its results, help topics among them)` | field |
 | MAC-N33† | `menu.found_item_pointer.{glyph,fill,transitions}` | field |
-| MAC-N34† | `menu_bar.extra_window.fill (material), menu_bar.extra_window.corners, menu_bar.extra_window.shadow, menu_bar.values.extra_window_gap` | field |
+| MAC-N34† | `popover.body.{fill,corners,shadow}, popover.values.placement @ context menu_bar.status_item` (`MenuBarExtra`'s window, "a popover-like window": its material, corners and shadow the popover's, its gap to the bar the placement's `gap`) | rule |
 | MAC-N34† | - (macOS 27's `NSStatusItemExpandedInterfaceSession`; `macos-tahoe` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | MAC-N35† | `status_page.icon.icon, status_page.title.text, status_page.description.text` | field |
 | MAC-N35† | `status_page.values.{icon_to_title,title_to_description,description_to_actions}` | field |
@@ -692,7 +693,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X01 | `menu.body.shadow, popover.body.shadow, tooltip.body.shadow` | field |
 | MAC-X01 | `drag_image.image.shadow` | field |
 | MAC-X01 | `button.body.shadow, combo_box.body.shadow, segmented_control.indicator.shadow, slider.thumb.shadow, switch.thumb.shadow (macos-monterey)` | field |
-| MAC-X01 | `button.body.shadow @ variant glass; toolbar.item_group.shadow; sidebar.pane.shadow @ variant floating; glass_container.surface.shadow` (macos-tahoe's glass shadows) | rule |
+| MAC-X01 | `button.body.shadow @ variant glass; toolbar.item_group.shadow; sidebar.pane.shadow @ variant floating; glass_view.surface.shadow` (macos-tahoe's glass shadows) | rule |
 | MAC-X01 | `PartStyle.shadow.layers (ShadowLayer: offset, blur, spread, colour, inset)` | field |
 | MAC-X02 | `PartStyle.fill Material identities (vibrancy materials, blur, saturation, tint)` | field |
 | MAC-X02 | `Material.params (the blending mode, behind or within the window; isEmphasized; ADD-A47)` | field |
@@ -703,11 +704,11 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X03 | `role.* @ context sidebar / context menu / context popover` (the vibrant appearances `NSVisualEffectView` sets inside its materials, read as the reader reads them; ledger queue #153) | rule |
 | MAC-X03 | `reader:macos:NSColor resolved under NSAppearance vibrantLight and vibrantDark` | reader |
 | MAC-X04 | `PartStyle.fill Material identity glass, the regular glass (the base) and the variant clear (tint, lensing in the identity)` | field |
-| MAC-X04 | `glass_container.surface.{fill,corners} @ variant clear` (the regular glass is the base) | rule |
+| MAC-X04 | `glass_view.surface.{fill,corners} @ variant clear` (the regular glass is the base) | rule |
 | MAC-X04 | `PartStyle.shadow inset layer (the specular rim)` | field |
 | MAC-X04 | `Material.params interactive (ADD-A47)` | field |
-| MAC-X04 | `glass_container.surface.{transform,transitions} @ {pressed} (the interactive response; morphing)` | rule |
-| MAC-X04 | `glass_container.values.merge_gap` | field |
+| MAC-X04 | `glass_view.surface.{transform,transitions} @ {pressed} (the interactive response; morphing)` | rule |
+| MAC-X04 | `glass_view.values.merge_gap` | field |
 | MAC-X04 | `button.body.fill @ variant glass` | rule |
 | MAC-X04 | `toolbar.item_group.fill, sidebar.pane.fill, menu.body.fill, popover.body.fill, dialog.body.fill (Material identity glass on macos-tahoe)` | field |
 | MAC-X04 | `PartStyle.fill @ {over_dark_content} (adapting over dark content)` | rule |
@@ -748,7 +749,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `text_area.values.presentations event @find_indicator` | field |
 | MAC-X11 | `drag_image.values.presentations event @cancel (the failed drop sliding back)` | field |
 | MAC-X11 | `button.values.presentations, list.values.presentations event @spring_load` | field |
-| MAC-X11 | `glass_container.surface.transitions (glass morphing)` | field |
+| MAC-X11 | `glass_view.surface.transitions (glass morphing)` | field |
 | MAC-X11 | `PartStyle.transitions and widget presentation transitions` (each `PartStyle.transitions` engine measured, interrupted at three points of its run; until then those transitions are pending facts, the preset stating none, each path listed in its `[pending]` table (register U181); a presentation transition names no engine and is stated, as the rows above state the presentations, S2.7, S17, the catalogue's Open items, ADD-A126, ADD-A128) | field |
 | MAC-X11 | `PartStyle.transitions @ cond reduced_motion` | rule |
 | MAC-X11 | `window.values.presentations events Appear, Disappear` (the base) `@ variant dialog / variant utility` (window open and close per NSWindow.AnimationBehavior, which the application chooses) | rule |

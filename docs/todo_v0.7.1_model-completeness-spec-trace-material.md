@@ -562,17 +562,17 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N18 | `carousel.item.{fill,corners,shadow,stroke}; carousel.values.item_gap` | field |
 | MAT-N18 | `carousel.item.interaction; carousel.item.interaction.state_layer.alpha @ {hover} / {focus_visible}` (the tokens' state layers, the pressed one a ripple, `material-web@2.5.0 tokens/versions/latest/sass/_md-comp-carousel-item.scss:54-69`, drawn by neither implementation, Compose's carousel drawing no indication: the tokens' by R1.6, as MAT-I11's, plain state rules under the item's exclusive group; the values the unit's facts, M3) | rule |
 | MAT-N18 | `carousel.item.{min_width,max_width,corners} = expressions over element.scroll_progress (the masked shape changing with the scroll, ADD-B13)` | field |
-| MAT-N19 | `sheet.body.{fill,corners,shadow}, sheet.body.fill.append (surface tint) @ variants {bottom,@standard} / variants {bottom,@modal} / {minimized} variants {bottom,@standard}` | rule |
+| MAT-N19 | `sheet.body.{fill,corners,shadow}, sheet.body.fill.append (surface tint) @ variant bottom / variants {bottom,@modal} / {minimized} variant bottom` (the standard sheet's look under the place alone, `bottom` with no kind being the standard one; the modal look by the later rule under the pair) | rule |
 | MAT-N19 | `sheet.handle.{fill,min_width,min_height,opacity}; sheet.handle.focus @ {focus_visible}` | rule |
 | MAT-N19 | `sheet.values.presentations (events Appear, Disappear, @settle: the drag and settle motion)` | field |
-| MAT-N20 | `sheet.body.{fill,corners,shadow,min_width,max_width}, sheet.title.text, sheet.divider.stroke @ variants {@side,@standard} / variants {@side,@modal} / variants {@side,@detached}` (`min_width` and `max_width` both the docked container width: the side sheet's width is fixed) | rule |
-| MAT-N20 | `sheet.values.anchor @ variant @side` (`Side`: the docked side sheet at a window side, spanning the window's full height, the docked container height) | rule |
+| MAT-N20 | `sheet.body.{fill,corners,shadow,min_width,max_width}, sheet.title.text, sheet.divider.stroke @ variant @side / variants {@side,@modal} / variants {@side,@detached}` (`min_width` and `max_width` both the docked container width: the side sheet's width is fixed; the standard look under the place alone) | rule |
+| MAT-N20 | `sheet.values.placement @ variant @side` (the docked side sheet at a window side, spanning the window's full height, the docked container height; its strategy the placement unit's) | placement |
 | MAT-N20 | `sheet.body.margin @ variants {@side,@detached}` (the detached side sheet's insets from the window's edges, which set its height) | rule |
 | MAT-N20 | `sheet.handle (absent = true) @ variant @side` (the side sheet draws no drag handle) | rule |
 | MAT-N20 | `button.body.interaction.state_layer.alpha @ latest state_layer:hover / latest state_layer:focus_visible, each context sheet.body variant @side (the actions); button.label.text.fill @ {hover} / {focus_visible} / {pressed}, each context sheet.body variant @side (the actions)` | rule |
 | MAT-N20 | `button @ variant close context sheet.header (the close button)` | rule |
 | MAT-N21 | `sheet.body.{fill,shadow,corners}, sheet.body.fill.append (surface tint) @ variant floating` | rule |
-| MAT-N22 | `toast.body.{fill,corners,shadow,min_height}; toast.title.text` | field |
+| MAT-N22 | `toast.body.{fill,corners,shadow,min_height}; toast.message.text` | field |
 | MAT-N22 | `toast.body.min_height @ {multiline}` | rule |
 | MAT-N22 | `button.body.interaction.state_layer.alpha @ latest state_layer:hover / latest state_layer:focus_visible, each context toast.body (the action); button.label.text.fill @ {hover} / {focus_visible} / {pressed}, each context toast.body (the action)` | rule |
 | MAT-N22 | `button.icon.icon.{size,fill} @ variant close context toast.body; button.body.interaction.state_layer.alpha @ latest state_layer:hover / latest state_layer:focus_visible, each variant close context toast.body` | rule |
@@ -595,7 +595,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N27 | `input.* / input.* @ variant @filled` (the field's own values, outlined the base: the field is the autocomplete's ancestor, so no rule selects it by `context autocomplete`; whether the autocomplete tokens' field values, `md.comp.outlined-autocomplete.text-field.*` and the filled file's, differ from the text field's is the value phase's comparison, and a difference needs the content variant the `autocomplete` entry names, ADD-A146) | rule |
 | MAT-N27 | `autocomplete.values.placement (MaterialMenu)` | placement |
 | MAT-N28 | `pull_to_refresh.indicator.{fill,corners,shadow,min_width,min_height}; pull_to_refresh.values.trigger_distance` | field |
-| MAT-N28 | `spinner.* @ context pull_to_refresh (its spinner or loading shape); pull_to_refresh.values.progress_sweep (the arc following the pull, element.progress)` | rule |
+| MAT-N28 | `spinner.* @ context pull_to_refresh (its spinner or loading shape; the arc following the pull, its draw_extent = element.progress)` | rule |
 | MAT-N28 | `pull_to_refresh.values.presentations (event Disappear)` | field |
 | MAT-N28 | `pull_to_refresh flags pulling, refreshing` | flag |
 | MAT-N30† | `edit_menu.body.{fill,corners,shadow}` | field |
@@ -640,7 +640,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X13 | `cond flavor:expressive` (the flavours `baseline`, `expressive`, `[declare] flavors`) | condition |
 | MAT-X13 | `token.motion.timings @ cond flavor:expressive (the expressive motion scheme over the standard one)` | rule |
 | MAT-X13 | `PartStyle.transitions (engine ComposeAnimatable where animate*AsState or an Animatable runs them, a spring keeping the running velocity, `animation-core/…/Animatable.kt:227-243`; ComposeTransition where updateTransition does, its text fields' label, checkbox, list item, menu, tab, FAB, tooltip and floating toolbar, an interrupted tween or snap replaced by its interruption spring, `Transition.kt:1615-1659`; S2.7, ADD-A126)` | field |
-| MAT-X14 | `navigation_view.values.presentations events @push, @pop` (kinds `PresentationKind::Keyed` container_transform / shared_axis / fade_through, `PresentationKind::Fade`, ADD-A26) | field |
+| MAT-X14 | `navigation_view.values.presentations events @push, @pop` (the default pattern, the base, which the value phase names) | field |
+| MAT-X14 | `navigation_view.values.presentations events @push, @pop @ variant @container_transform / variant @shared_axis / variant @fade_through / variant @fade` (the patterns, the application's choice per navigation, one transition per variant; kinds `PresentationKind::Keyed` container_transform / shared_axis / fade_through, `PresentationKind::Fade`, ADD-A26) | rule |
 | MAT-X16 | `TextStyle.{letter_spacing,line_height}, TextStyle.font.{axes,features}` | field |
 | MAT-X16 | `token.text.keyed.<key>.font.family (brand or plain typeface)` | token |
 | MAT-X16 | `token.text.roles.*` | token |
@@ -709,7 +710,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-SF01† | `dialog.values.placement (CenteredInHost)` | placement |
 | MAT-SF02† | `dialog.values.breakpoints (measured Window, setting full_size; its comparison and width to verify, as the row says)` | field |
 | MAT-SF02† | `dialog.* @ variant full_size` | rule |
-| MAT-SF03† | `sheet.values.anchor (BottomCenter), sheet.body.max_width @ variants {bottom,@modal}` | rule |
+| MAT-SF03† | `sheet.values.placement, sheet.body.max_width @ variants {bottom,@modal}` (bottom-centred; its strategy the placement unit's) | rule |
 | MAT-SF04† | `layout.values.levitated_placement @ variant pane` (`MaterialLevitatedPane`: its alignment, `side` and `align`) | placement |
 | MAT-SF04† | `layout.scrim.fill (= role.global.scrim) @ variant pane` (the optional `LevitatedPaneScrim`, a part) | rule |
 | MAT-SF04† | `role.global.scrim` | role |

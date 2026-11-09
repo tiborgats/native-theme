@@ -427,7 +427,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-01 | `stepper.{increment,decrement}.{fill,stroke}; stepper.{increment_glyph,decrement_glyph}.glyph` | field |
 | W2-01 | `stepper.{increment.fill,increment.stroke,decrement.fill,decrement.stroke,increment_glyph.glyph.fill,decrement_glyph.glyph.fill} @ {hover} / {pressed} / {disabled} variant @inline` | rule |
 | W2-01 | `stepper.{increment.fill,increment.stroke,decrement.fill,decrement.stroke,increment_glyph.glyph.fill,decrement_glyph.glyph.fill} @ {hover} / {pressed} / {disabled} variant @compact` | rule |
-| W2-01 | `stepper.popup.{fill,stroke,shadow} @ variant @compact` | rule |
+| W2-01 | `stepper.popup.{fill,stroke,corners,shadow,padding} @ variant @compact` (the popup root's radius and padding, `NumberBox.xaml:116`) | rule |
 | W2-01 | `stepper.{popup,increment,decrement,increment_glyph,decrement_glyph} (absent = true) @ !{focused} variant @compact` (written last: NumberBox opens its popup on focus and closes it on focus loss, `microsoft-ui-xaml@2.5.1 src/controls/dev/NumberBox/NumberBox.cpp:415-439`, and under `Compact` its only spin buttons are the popup's, `NumberBox.xaml:115-166`, `:26-40`; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7) | rule |
 | W2-01 | `stepper.values.{popup_offset_x,popup_offset_y,invalid_input}; stepper.header.text` | field |
 | W2-01 | `input.* @ context stepper (the text box)` | rule |
@@ -484,7 +484,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-09 | `teaching_tip.{title,subtitle}.text.fill` | field |
 | W2-09 | `button.{body.min_width,body.min_height,icon.glyph} @ variant close context teaching_tip.body / variant close context teaching_tip.body variant @alternate_close` | rule |
 | W2-09 | `button.* @ context teaching_tip.action_area` | rule |
-| W2-09 | `teaching_tip.values.presentations (events @expand, @collapse)` | field |
+| W2-09 | `teaching_tip.values.presentations (events Appear, Disappear)` (TeachingTip's expand animation as it opens and its contract animation as it closes, `TeachingTip.cpp:837-920`, `:1411`) | field |
 | W2-09 | `WinUiTeachingTip (teaching_tip.values.placement: the tail's placement)` | placement |
 | W2-10 | `breadcrumb.crumb_label.text; breadcrumb.separator.{glyph,padding}` | field |
 | W2-10 | `breadcrumb.crumb_label.text.fill @ {hover} / {pressed} / {disabled} / {focus_visible} / {current} / {current,hover} / {current,pressed} / {current,disabled} / {current,focus_visible}` | rule |
@@ -574,7 +574,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-26 | `pull_to_refresh.indicator.{fill,min_width,min_height}; pull_to_refresh.arrow.glyph` | field |
 | W2-26 | `pull_to_refresh.values.{trigger_distance,loop}` | field |
 | W2-27 | `view_switcher.{item.padding,item_label.padding,indicator.fill,indicator.min_width,indicator.min_height}; view_switcher.values.item_gap` | field |
-| W2-27 | `view_switcher.{item.fill,item.stroke,item_icon.icon,item_label.text.fill,indicator.fill} @ {hover} / {pressed} / {selected} / {disabled} variant @selector_bar` | rule |
+| W2-27 | `view_switcher.{item.fill,item.stroke,item_icon.icon,item_label.text.fill,indicator.fill} @ {hover} / {pressed} / {selected} / {disabled}` (SelectorBar is `windows-11`'s base: its state rules name no form, as its rest values do not) | rule |
 | W2-27 | `view_switcher.values.presentations (event @indicator_move, part indicator)` | field |
 | W2-28 | `scrollbar.annotation_labels.{text,min_width}` | field |
 | W2-28 | `scrollbar.thumb.{fill,corners,min_height} @ variant @annotated` | rule |
@@ -733,7 +733,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-32 | `PresentationKind::Keyed (ADD-A26: one declared key per theme transition none of the typed kinds is)` | field |
 | W3-32 | `button.body.transform @ {pressed} (PointerDown and PointerUp: the press tilt)` | rule |
 | W3-32 | `button.body.transitions (Transform: the tilt's motion)` | field |
-| W3-32 | `navigation_view.values.presentations events @push, @pop` (Frame's Entrance, Content, DrillIn, Slide and Suppress navigation transitions, keyed kinds, ADD-A26) | field |
+| W3-32 | `navigation_view.values.presentations events @push, @pop` (Frame's default navigation transition, the base; a step's kind keyed where no typed kind states the motion, ADD-A26) | field |
+| W3-32 | `navigation_view.values.presentations events @push, @pop @ variant @entrance / variant @drill_in / variant @slide / variant @suppress` (Frame's `NavigationTransitionInfo` kinds, the application's choice per navigation, one transition per variant) | rule |
 | W3-33 | `PresentationKind::Keyed { key: connected_animation } with its parameters (ADD-A26)` | field |
 | W3-33 | `token.motion.durations.connected_service, token.motion.timings.connected_service (S4.1's step 2: ConnectedAnimationService's default duration and cubic Bézier, microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26-28)` | token |
 | W3-33 | `PartStyle.transform (translate as an expression on element.scroll_offset: ParallaxView, R25.3, ADD-B13)` | field |

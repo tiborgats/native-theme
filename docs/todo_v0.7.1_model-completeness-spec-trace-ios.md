@@ -614,7 +614,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-3 | `input.body.{fill,corners} @ context any search_field context toolbar.bar / context any search_field context bottom_tab_bar.bar` (the glass capsule) | rule |
 | C-3 | `button.* @ variant icon_only context toolbar.bar; search_field.values.presentations event @expand` (26's search button expanding into a field above the keyboard) | rule |
 | C-3 | - | readers (R18) |
-| C-4 | `stepper.body.{fill,corners,min_width,min_height}, stepper.separator.stroke` (the two-segment body, its divider and size) | field |
+| C-4 | `stepper.buttons.{fill,corners,min_width,min_height}, stepper.separator.stroke` (the two-segment body, its divider and size: the box of the two halves, `body` being the whole control with any text beside it) | field |
 | C-4 | `stepper.increment_glyph.glyph, stepper.decrement_glyph.glyph` (the plus and minus glyphs and colour) | field |
 | C-4 | `stepper.increment.fill, stepper.decrement.fill @ {pressed} / {disabled}` (the pressed segment; the segment disabled at a limit) | rule |
 | C-4 | `stepper.values.button_layout, stepper.values.repeat_delay, stepper.values.repeat_interval` | field |
@@ -651,7 +651,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-9 | `page_indicator.values.edge_dots_shrink; page_indicator.* @ variant vertical` | rule |
 | C-9 | - | readers (R18) |
 | C-10 | `spinner.spoke.fill @ context pull_to_refresh.indicator` (the tint) | rule |
-| C-10 | `pull_to_refresh.values.progress_sweep` (`Spokes`: the spokes appear as the pull progresses) | field |
+| C-10 | `spinner.spoke @ !{indeterminate} context pull_to_refresh {pulling}` (the spokes appear as the pull progresses: the share of them a determinate spinner draws, the `spinner` entry's rule) | rule |
 | C-10 | `spinner.spoke.fill @ !{indeterminate} context pull_to_refresh.indicator {pulling}` (the pull-progress spinner, its `element.progress` the pull progress; ADD-B12) | rule |
 | C-10 | `pull_to_refresh.values.trigger_distance, pull_to_refresh.title.text, pull_to_refresh.values.presentations event Disappear` | field |
 | C-10 | - | readers (R18) |
@@ -670,7 +670,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-12 | `sheet.scrim.opacity, sheet.values.undimmed_up_to` (the dim per detent) | field |
 | C-12 | `sheet.values.presenter_transform, sheet.values.presenter_corners; sheet.presenter_backdrop.fill` (13–18's stacked-card effect and the black behind the presenter) | field |
 | C-12 | `sheet.body.{max_width,max_height} @ variant @page / variant @form` (iPad page and form sheet sizes) | rule |
-| C-12 | `sheet.body.corners, sheet.values.anchor @ variant @edge_attached v_size_class compact` (the edge-attached compact-height variant) | rule |
+| C-12 | `sheet.body.corners, sheet.values.placement @ variant @edge_attached v_size_class compact` (the edge-attached compact-height variant) | rule |
 | C-12 | `sheet.values.swipe_to_close` (the interactive dismiss) | field |
 | C-12 | `sheet.values.presentations events Appear, Disappear, @settle` (the presentation spring, the detent changes) | field |
 | C-12 | `sheet.body.{fill,corners,shadow} @ variant floating` (`ios-26`'s inset glass sheet at partial detents; to verify) | rule |
@@ -709,10 +709,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-19 | `background_extension.extension.fill` | field |
 | C-19 | `background_extension.values.mirrors_content` | field |
 | C-19 | - | readers (R18) |
-| C-20 | `glass_container.surface.fill` (the regular glass, the base) | field |
-| C-20 | `glass_container.surface.fill @ variant clear` | rule |
-| C-20 | `glass_container.surface.{transform,transitions} @ {pressed}` (the interactive glass) | rule |
-| C-20 | `glass_container.values.merge_gap` | field |
+| C-20 | `glass_view.surface.fill` (the regular glass, the base) | field |
+| C-20 | `glass_view.surface.fill @ variant clear` | rule |
+| C-20 | `glass_view.surface.{transform,transitions} @ {pressed}` (the interactive glass) | rule |
+| C-20 | `glass_view.values.merge_gap` | field |
 | C-20 | - | readers (R18) |
 | C-21 | `bottom_tab_bar.accessory.fill` | field |
 | C-21 | `bottom_tab_bar.accessory.corners` | field |
@@ -838,10 +838,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MT-7 | `PartStyle.fill @ {over_dark_content} (adaptive flip)` | rule |
 | X-MT-7 | state flag `over_dark_content` (S7.2) | flag |
 | X-MT-7 | `Material.{tint,luminosity} per widget (the large glass surfaces state their greater opacity in their own fill: sidebar.pane, menu.body, sheet.body)` | rule |
-| X-MT-8 | `glass_container.surface.{fill,transform,transitions} @ {pressed}; button.body.{fill,transform,transitions} @ {pressed} variant glass` (press scale, highlight, shimmer) | rule |
-| X-MT-9 | `glass_container.values.merge_gap` | field |
+| X-MT-8 | `glass_view.surface.{fill,transform,transitions} @ {pressed}; button.body.{fill,transform,transitions} @ {pressed} variant glass` (press scale, highlight, shimmer) | rule |
+| X-MT-9 | `glass_view.values.merge_gap` | field |
 | X-MT-9 | `PresentationKind::Morph` in the merging elements' `presentations` (S2.7) | field |
-| X-MT-10 | `glass_container.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the dimming layer over clear glass where the content beneath is bright: the clear glass alone) | rule |
+| X-MT-10 | `glass_view.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the dimming layer over clear glass where the content beneath is bright: the clear glass alone) | rule |
 | X-MT-11 | `cond system_setting:glass_look (ADD-A04)` | condition |
 | X-MT-11 | `PartStyle.fill @ cond system_setting:glass_look` | rule |
 | X-MT-11 | `reader:ios:user Liquid Glass look preference` | readers (R18) |
@@ -947,7 +947,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SC-1 | `sheet.scrim.{fill,opacity}` (per detent, with `sheet.values.undimmed_up_to`) | field |
 | X-SC-1 | `component.context_menu_preview.scrim.{fill,opacity}` (the blur and dim) | component |
 | X-SC-1 | `sheet.values.presenter_transform, sheet.values.presenter_corners; sheet.presenter_backdrop.fill` (the 13–18 card-sheet background and its black backdrop) | field |
-| X-SC-1 | `glass_container.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the clear-glass dimming, X-MT-10) | rule |
+| X-SC-1 | `glass_view.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the clear-glass dimming, X-MT-10) | rule |
 | X-BT-1 | `token.behavior.long_press (ADD-A45)` | token |
 | X-BT-1 | `token.behavior.touch.delay (ADD-A45)` (the touch-highlight delay in scroll views) | token |
 | X-BT-1 | `token.caret.{blink_on,blink_off}` | token |
@@ -1009,10 +1009,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SF-5† | `rich_text.{emphasis,strong,strikethrough}.text, rich_text.inline_code.{text,fill} @ variant markdown context any text_area / variant markdown` (UIKit's rendering of the presentation intents in a `UITextView`, or a `UILabel` with no host widget; which intents it renders, and the block parts' absence, the probe shows, to verify) | rule |
 | SF-6† | `rich_text.heading_1.text … rich_text.heading_6.text, rich_text.code_block.{text,fill}, rich_text.preformatted.text, rich_text.block_quote.{fill,stroke}, rich_text.list_marker.glyph, rich_text.table.stroke, rich_text.table_cell.{padding,stroke,text}, rich_text.table_header_cell.text, rich_text.heading_1.margin … rich_text.heading_6.margin, rich_text.{paragraph,code_block,preformatted,block_quote,table}.margin @ variant html` | rule |
 | SF-6† | `link.text.text @ variant inline context rich_text` | rule |
-| SF-7† | `sheet.values.anchor @ h_size_class compact / h_size_class regular / v_size_class compact / v_size_class regular` (ADD-A20) | rule |
+| SF-7† | `sheet.values.placement @ h_size_class compact / h_size_class regular / v_size_class compact / v_size_class regular` (ADD-A20; the strategies the placement unit states) | rule |
 | SF-7† | `sheet.scrim.fill @ variant @page / variant @form` (the dimming layer; the form sheet's glass layer on 26) | rule |
-| SF-7† | `sheet.values.anchor, sheet.body.corners @ variant @edge_attached v_size_class compact` (attached to the bottom edge) | rule |
-| SF-7† | `sheet.values.anchor (full_screen) @ variant @page v_size_class compact / variant @form v_size_class compact` (compact height: full screen, unless the application asks for the edge-attached form, `@edge_attached`) | rule |
+| SF-7† | `sheet.values.placement, sheet.body.corners @ variant @edge_attached v_size_class compact` (attached to the bottom edge) | rule |
+| SF-7† | `sheet.values.placement @ variant @page v_size_class compact / variant @form v_size_class compact` (compact height: filling the window, unless the application asks for the edge-attached form, `@edge_attached`) | rule |
 | SF-7† | `sheet.values.edge_attached_width @ variant @edge_attached / variants {@edge_attached,@width_follows_content}` (the container's safe-area width, or the content's preferred width where the application asks, `widthFollowsPreferredContentSizeWhenEdgeAttached`) | rule |
 | SF-7† | - (iOS 27's `preferredPlacement`; `ios-26` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | SF-7† | - | readers (R18) |

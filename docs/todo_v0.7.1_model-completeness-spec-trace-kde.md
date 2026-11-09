@@ -471,9 +471,9 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q1.13 | `text_area.misspelling.fill @ {@holds_caret} cond flavor:kirigami (= with_alpha(role.view.negative, 0.1): Sonnet's background on the word holding the caret, `spellcheckhighlighter.cpp:114-117`, `:380-381`; ADD-A130)` | rule |
 | Q1.13 | `text_area.misspelling {@holds_caret}` (the connector-set flag, Sonnet's word against the caret's document position, or the selection's end while text is selected, `spellcheckhighlighter.cpp:370-381`, `:610-624`; ADD-A130) | flag |
 | Q1.13 | `text_area.misspelling.text.decoration.{thickness,offset} @ cond flavor:kirigami` (Qt Quick's form: the position rounded to the nearest pixel, the thickness unrounded, a wavy line's stroke capped; register U180's, S2.8, ADD-A130) | rule |
-| Q1.14 | `input.caret.min_width @ cond tablet_mode` | rule |
-| Q1.14 | `input.caret.fill @ cond tablet_mode` | rule |
-| Q1.14 | `input.selection_handle.glyph, input.selection_handle.min_width, input.selection_handle.min_height, input.selection_handle.corners (Full), input.selection_handle.fill (= kirigami_tint, ADD-A52) @ cond tablet_mode` | rule |
+| Q1.14 | `input.caret.min_width @ cond tablet_mode cond flavor:kirigami` (qqc2-desktop-style's mobile cursor, `org.kde.desktop/TextField.qml:50`, `private/MobileCursor.qml:23`) | rule |
+| Q1.14 | `input.caret.fill @ cond tablet_mode cond flavor:kirigami` | rule |
+| Q1.14 | `input.selection_handle.glyph, input.selection_handle.min_width, input.selection_handle.min_height, input.selection_handle.corners (Full), input.selection_handle.fill (= kirigami_tint, ADD-A52) @ cond tablet_mode cond flavor:kirigami` | rule |
 | Q1.15 | `input.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100), input.icon.icon.fill (= surface.disabled.foreground), input.icon.padding @ variant leading context any search_field cond flavor:kirigami` | rule |
 | Q1.15 | `input.body.padding (the text inset) @ context any search_field cond flavor:kirigami` | rule |
 | Q1.15 | `button.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100) @ variant clear_field context any search_field cond flavor:kirigami` | rule |
@@ -895,7 +895,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q2.11 | `page_indicator.values.dot_gap, page_indicator.body.padding` | field |
 | Q2.11 | `page_indicator.dot.transitions (Opacity; = token.motion.durations.short)` | field |
 | Q2.12 | `group_box.body.stroke, group_box.body.corners, group_box.body.padding @ variant @quick_frame; group_box.body.fill (Absent: the transparent box) @ variant @quick_frame` | rule |
-| Q2.13 | `group_box.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), GroupBox.qml:39), group_box.body.corners (square: no radius), group_box.title.text, group_box.body.padding, group_box.values.title_position (AboveTop) @ variant @quick_group_box` | rule |
+| Q2.13 | `group_box.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), GroupBox.qml:39), group_box.body.corners (square: no radius), group_box.title.text, group_box.body.padding, group_box.values.title_position (AboveTop) @ cond flavor:kirigami` (qqc2-desktop-style's GroupBox is the flavour's base, not a variant, R1.6) | rule |
 | Q2.14 | `navigation_view.values.presentations (@push, @pop, @replace: Slide and Fade together, = token.motion.durations.long, its timing; ADD-B10, ADD-A25, ADD-A26)` | field |
 | Q2.15 | `navigation_view.values.presentations (@push, @pop, @replace: Fade and Slide together, each its timing; ADD-B10, ADD-A25) @ variant @layer` | rule |
 | Q2.16 | `banner.body.fill (the type colour: InlineMessage's outer rectangle, which shows round `inner` as the border, `InlineMessage.qml:16-33`); banner.body.stroke (Absent) @ variant info / variant success / variant warning / variant error cond flavor:kirigami` | rule |
@@ -950,9 +950,9 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q2.38 | `sheet.scrim.fill, sheet.scrim.transitions (Opacity; = token.motion.durations.long, its timing) @ variant @overlay` | rule |
 | Q2.38 | `sheet.title.text (leaf by leaf: token.text.keyed.heading_2), sheet.header.padding @ variant @overlay` | rule |
 | Q2.38 | `sheet.header_separator.stroke, sheet.footer_separator.stroke, sheet.footer.padding @ variant @overlay` | rule |
-| Q2.39 | `sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.min_width, sheet.handle.min_height @ cond mobile_form_factor` | rule |
+| Q2.39 | `sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.min_width, sheet.handle.min_height @ cond input:touch` (the bar is drawn by Kirigami's transient-touch setting, `kirigami@6.31.0 src/templates/OverlaySheet.qml:264-275`, not by `isMobile`) | rule |
 | Q2.40 | `sheet.values.presentations (Appear, Disappear: Fade and Slide together, its distance = mul(token.params.layout.grid_unit, <n>); = token.motion.durations.long, its timing; ADD-B10, ADD-A25)` | field |
-| Q2.40 | `sheet.values.min_top_inset, sheet.values.swipe_to_close` | field |
+| Q2.40 | `sheet.values.placement (its edge_margin.top the sheet's top floor), sheet.values.swipe_to_close` | field |
 | Q2.41 | `list.section_header.text (leaf by leaf: token.text.keyed.heading_5_primary, its weight restated; fill at reduced alpha), list.section_header.icon.size (= token.icons.sizes.keyed.small_medium.size), list.section_header.padding @ cond flavor:kirigami` | rule |
 | Q2.41 | `list.section_header_line.stroke (filling the rest of the row)` | field |
 | Q2.41 | `list.section_header.fill (Absent: no hover or background) @ cond flavor:kirigami` | rule |
@@ -985,7 +985,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q2.53† | `edit_menu.values.placement (KirigamiTextActions: centred on the selection's start, above, else below its end; its gap the offset below the selection's end, MobileTextActionsToolBarImpl.qml:42-48)` | placement |
 | Q2.53† | `menu @ context any input / menu @ context any text_area (the desktop context menu)` | rule |
 | Q2.54† | `pull_to_refresh.strip.min_height, pull_to_refresh.indicator.padding` | field |
-| Q2.54† | `spinner.indicator.glyph (the arc; its draw_extent = element.progress, the pull progress, ADD-B12), spinner.icon (absent = true: no busy icon while pulling) @ !{indeterminate} context pull_to_refresh {pulling}; pull_to_refresh.values.progress_sweep (Arc)` | rule |
+| Q2.54† | `spinner.indicator.glyph (the arc; its draw_extent = element.progress, the pull progress, ADD-B12), spinner.icon (absent = true: no busy icon while pulling) @ !{indeterminate} context pull_to_refresh {pulling}` | rule |
 | Q2.54† | `pull_to_refresh.values.refresh_delay, pull_to_refresh.values.content_shift` | field |
 | Q2.54† | `spinner @ context pull_to_refresh {refreshing} (the BusyIndicator, Q1.119); spinner.indicator @ context pull_to_refresh {refreshing}` (`absent = true`: no arc while refreshing) | rule |
 | Q2.54† | `pull_to_refresh.values.presentations (@content_shift: = token.motion.durations.long, its timing)` | field |
@@ -1118,7 +1118,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K3.64 | `token.pointer.theme, token.pointer.size (ADD-A46)` | token |
 | K3.64 | `reader:kde:kcminputrc [Mouse] cursorTheme, cursorSize` | reader |
 | K3.65† | `PartStyle.cursor per part: link.body.cursor, splitter.divider.cursor @ variant @column_view, list.accessory.cursor @ variant reorder, button.body.cursor @ variant help, sidebar.handle (the drawer edges)` | field |
-| K3.65† | `selectable_label.body.cursor` (Text: Kirigami's `SelectableLabel`, `kirigami@eecf183a src/controls/SelectableLabel.qml:266`; qqc2-desktop-style's `Label`, `org.kde.desktop/Label.qml:23`) | field |
+| K3.65† | `selectable_label.body.cursor @ cond flavor:kirigami` (Text: Kirigami's `SelectableLabel`, `kirigami@6.31.0 src/controls/SelectableLabel.qml:266`; qqc2-desktop-style's `Label` shows a pointing hand over a link only, `org.kde.desktop/Label.qml:22-24`, the `link`'s cursor) | rule |
 | K3.65† | `token.behavior.{hide_pointer_while_typing,hide_pointer_delay}` (KLineEdit hides the pointer after its delay, ADD-A86) | token |
 | K3.66† | - | out (R1.1) |
 | K3.70 | `token.behavior.double_click_time` | token |
@@ -1173,7 +1173,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q3.14 | `token.params.color.frame_contrast (ADD-A44)` | token |
 | Q3.14 | `reader:kde:kdeglobals [KDE] frameContrast (store the factor, not only finished colours)` | reader |
 | Q3.15 | `role.<set>.border = kcu_mix(background, foreground, token.params.color.frame_contrast)` (Breeze's frame colour, `breezehelper.cpp:144`; Breeze draws Kirigami's buttons and fields with it too, `:250`, `:684-706`) | role |
-| Q3.15 | `group_box.body.stroke @ variant @quick_frame cond flavor:kirigami / variant @quick_group_box cond flavor:kirigami; menu.body.stroke, popover.body.stroke, tooltip.body.stroke @ cond flavor:kirigami = kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)` (the frames qqc2-desktop-style's own QML draws, `Frame.qml:25`, `GroupBox.qml:39`, `Menu.qml:133`, `Popup.qml:50`, `ToolTip.qml:115`; the same expression on its own rows: qqc2's `Dialog.qml:85` and Kirigami's `Dialog.qml:341` (Q1.112), the search field's popup `SearchField.qml:183` (Q1.16), the range slider's handles `RangeSlider.qml:32`, `:52` (Q1.46), Kirigami's card `DefaultCardBackground.qml:70` (Q1.129), chip `DefaultChipBackground.qml:30` (Q2.23) and separator `Separator.qml:65-69` (Q1.95), kirigami-addons' dialog surface `DialogRoundedBackground.qml:25` (K-KA-18†), segmented button `SegmentedButton.qml:112` (K-KA-24†), floating buttons `FloatingButton.qml:137` (K-KA-26†), banner line `Banner.qml:239` (K-KA-29†), video controls `VideoMaximizeDelegate.qml:349`, `:365` (K-KA-35†) and onboarding tip `OnboardToolTip.qml:52`, `OnboardingOverlay.qml:164`, `:187` (K-KA-45†); on the Button set, not the surface in scope: the switch's thumb `private/SwitchIndicator.qml:30` (Q1.101), RoundButton `RoundButton.qml:77` (Q2.5) and the double floating button's halves `DoubleFloatingButton.qml:159`, `:256` (K-KA-27†); ADD-A121) | rule |
+| Q3.15 | `group_box.body.stroke @ variant @quick_frame cond flavor:kirigami / cond flavor:kirigami; menu.body.stroke, popover.body.stroke, tooltip.body.stroke @ cond flavor:kirigami = kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)` (the frames qqc2-desktop-style's own QML draws, `Frame.qml:25`, `GroupBox.qml:39`, `Menu.qml:133`, `Popup.qml:50`, `ToolTip.qml:115`; the same expression on its own rows: qqc2's `Dialog.qml:85` and Kirigami's `Dialog.qml:341` (Q1.112), the search field's popup `SearchField.qml:183` (Q1.16), the range slider's handles `RangeSlider.qml:32`, `:52` (Q1.46), Kirigami's card `DefaultCardBackground.qml:70` (Q1.129), chip `DefaultChipBackground.qml:30` (Q2.23) and separator `Separator.qml:65-69` (Q1.95), kirigami-addons' dialog surface `DialogRoundedBackground.qml:25` (K-KA-18†), segmented button `SegmentedButton.qml:112` (K-KA-24†), floating buttons `FloatingButton.qml:137` (K-KA-26†), banner line `Banner.qml:239` (K-KA-29†), video controls `VideoMaximizeDelegate.qml:349`, `:365` (K-KA-35†) and onboarding tip `OnboardToolTip.qml:52`, `OnboardingOverlay.qml:164`, `:187` (K-KA-45†); on the Button set, not the surface in scope: the switch's thumb `private/SwitchIndicator.qml:30` (Q1.101), RoundButton `RoundButton.qml:77` (Q2.5) and the double floating button's halves `DoubleFloatingButton.qml:159`, `:256` (K-KA-27†); ADD-A121) | rule |
 | Q3.16 | `PartStyle.fill.append = alpha(...) @ {hover} / {pressed} / {checked}` | rule |
 | Q3.17 | `PartStyle.icon.fill (text or highlighted-text role)` | field |
 | Q3.17 | `PartStyle.icon.fill @ {selected}` | rule |
@@ -1200,20 +1200,20 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q3.26 | `PartStyle.transitions @ cond flavor:kirigami (engine QtQuick, for the QML `Behavior`s Kirigami and qqc2-desktop-style state, the parts qqc2 draws through Breeze's style being Breeze's, K1.30: those Behaviors start from the value drawn over their full duration, animate a theme switch, and retarget a SmoothedAnimation with its velocity, `qtdeclarative@6.12.0 src/quick/util/qquickbehavior.cpp:361-426`; S2.7, ADD-A126)` | rule |
 | Q3.27 | `token.motion.durations.human_moment (unscaled)` | token |
 | Q3.28 | `tooltip.values.show_delay` | field |
-| Q3.28 | `tooltip.values.show_delay (= token.behavior.long_press) @ cond tablet_mode` | rule |
+| Q3.28 | `tooltip.values.show_delay (= token.behavior.long_press) @ cond tablet_mode cond flavor:kirigami` (qqc2's ToolTip, `ToolTip.qml:44`, as Q1.36) | rule |
 | Q3.29 | `token.params.layout.grid_unit (ADD-A44)` | token |
 | Q3.29 | `Length expressions mul(token.params.layout.grid_unit, <n>)` | field |
 | Q3.30 | `checkbox.label.focus, radio.label.focus (Q1.21); button.body.focus, input.body.focus, tab.label.focus (keyboard only: focus_visible_when); bottom_tab_bar.item.focus (Q2.36)` | field |
 | Q3.30 | `link.text.text.font.weight @ {focus_visible} (Q1.135); list.row_background.fill @ {focus_visible} (Q1.78); switch.thumb.stroke @ {focus_visible} (Q1.101)` | rule |
 | Q3.31 | `cond tablet_mode` | condition |
 | Q3.31 | `cond input:touch` | condition |
-| Q3.31 | `menu.item.min_height, menu.item_icon.icon.size @ cond input:touch` | rule |
-| Q3.31 | `scrollbar.thumb.fill, scrollbar.thumb.min_width, scrollbar.thumb.corners, scrollbar.values.auto_hide_delay, scrollbar.values.presentations @ cond tablet_mode cond flavor:kirigami / cond input:touch cond flavor:kirigami (the overlay scroll bar, Q1.41)` | rule |
-| Q3.31 | `tooltip.values.show_on_press @ cond tablet_mode` | rule |
-| Q3.31 | `input.body.fill, input.body.stroke @ {hover} cond tablet_mode (as at rest: no hover look)` | rule |
-| Q3.31 | `input.selection_handle.fill, input.selection_handle.min_width, input.selection_handle.min_height @ cond tablet_mode` | rule |
+| Q3.31 | `menu.item.padding, menu.item_icon.icon.size @ cond flavor:kirigami cond input:touch` (Q1.28's and Q1.29's lines: the row's vertical padding and its icon, both by the transient-touch setting, `MenuItem.qml:34`, `:64`; this row restates no fact of its own) | rule |
+| Q3.31 | `scrollbar.thumb.fill, scrollbar.thumb.min_width, scrollbar.thumb.corners, scrollbar.values.auto_hide_delay, scrollbar.values.presentations @ cond input:touch cond flavor:kirigami` (the overlay scroll bar, Q1.41's lines: `ScrollBar.qml:24` reads the transient-touch setting alone, no tablet mode) | rule |
+| Q3.31 | `tooltip.values.show_on_press @ cond tablet_mode cond flavor:kirigami` (Q1.36's line, `ToolTip.qml:39-44`) | rule |
+| Q3.31 | `input.body.fill, input.body.stroke @ {hover} cond tablet_mode cond flavor:kirigami` (as at rest: no hover look, `TextField.qml:46`) | rule |
+| Q3.31 | `input.selection_handle.fill, input.selection_handle.min_width, input.selection_handle.min_height @ cond tablet_mode cond flavor:kirigami` (Q1.14's line, `private/MobileCursor.qml:23`) | rule |
 | Q3.31 | `sidebar.handle @ cond tablet_mode cond flavor:kirigami` | rule |
-| Q3.31 | `sheet.handle @ cond mobile_form_factor` | rule |
+| Q3.31 | `sheet.handle @ cond input:touch` (Q2.39's line: the transient-touch setting, `OverlaySheet.qml:275`) | rule |
 | Q3.31 | `cond mobile_form_factor` | condition |
 | Q3.31 | `reader:kde:Kirigami Settings.isMobile (what it reads, to verify) -> cond mobile_form_factor` | reader |
 | Q3.32 | `token.text.rendering.engine @ cond unit_scale (native rendering, ADD-A76) / !cond unit_scale (Qt's rendering) (ADD-B04)` | rule |
@@ -1259,7 +1259,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-SF20† | - | out (R1.1) |
 | K-SF21† | `dialog.values.placement @ cond flavor:kirigami (CenteredInHost)` | placement |
 | K-SF22† | `dialog.values.placement (CenteredInHost, host Overlay) @ cond flavor:kirigami` | placement |
-| K-SF23† | `sheet.values.anchor, sheet.values.min_top_inset @ variant @overlay` | field |
+| K-SF23† | `sheet.values.placement (CenteredInHost, its edge_margin.top the top floor) @ variant @overlay` | placement |
 | K-RL01† | `component.command_bar.frame.fill, component.command_bar.frame.stroke, component.command_bar.frame.padding` | component |
 | K-RL01† | `component.command_bar.frame.shadow (a ShadowLayer coloured role.@shade_dark)` | component |
 | K-RL01† | `input @ variant flat context component.command_bar` | rule |
@@ -1323,7 +1323,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-P3-8† | `dialog.action_area @ variant about cond flavor:widgets` (the hosting dialog's own part: the dialog is the about content's ancestor, so selected by its content variant, as K-KA-44†'s `natural_size`) | rule |
 | K-P3-8† | `button @ variant close context dialog.action_area variant about` | rule |
 | K-P3-9† | `dialog; input @ context dialog; list @ context dialog; expander @ context dialog; checkbox @ context dialog` (QPrintDialog, QPageSetupDialog and KIO's KOpenWithDialog, widget dialogs drawn in the application's process, in by R1.1: KOpenWithDialog's URL requester an `input`, its application tree a `list` with its header hidden, so no header is queried, its "Terminal options" group the KCollapsibleGroupBox `expander` of K1.250–K1.251, its check boxes `checkbox`) | rule |
-| K-P3-9† | `page_preview.{body.padding,body.min_width,body.min_height,page_shadow.stroke,page_shadow.transform,page.fill,margins.stroke,margins.padding,filler_text.text}, page_preview.values.{filler_gap_fraction,shadow_lines}` (QPageSetupDialog's page preview, `qpagesetupdialog_unix.cpp:105-142`: the page `= role.@shade_light`; its shadow lines, one `page_shadow` element each, the bottom and right edges of the page's box moved out by the line's step, in `role.@shade_mid` at an opacity falling with `element.item_index`; the dotted margin rectangle and the filler text in `role.@shade_dark`, the filler text's font scaled from the body font by the source's factor) | field |
+| K-P3-9† | `page_preview.{body.padding,body.min_width,body.min_height,page_shadow.stroke,page_shadow.transform,page.fill,margins.stroke,margins.padding,filler_text.text}, page_preview.values.{filler_gap_fraction,shadow_lines}` (QPageSetupDialog's page preview, `qpagesetupdialog_unix.cpp:106-144` at `qtbase@6.12.0`: the page `= role.@shade_light`; its shadow lines, one `page_shadow` element each, the bottom and right edges of the page's box moved out by the line's step, in `role.@shade_mid` at an opacity falling with `element.item_index`; the dotted margin rectangle and the filler text in `role.@shade_dark`, the filler text's font scaled from the body font by the source's factor) | field |
 | K-P3-9† | - (the print and Open With dialogs of a request that goes through the portal, which xdg-desktop-portal-kde draws in its own process: `xdg-desktop-portal-kde src/print.cpp:520`, `src/AppChooserDialog.qml`) | out (R1.1) |
 | K-P3-10† | `chart.body.fill, chart.body.bindings (Surface(View)) @ variant line / variant @pie` | rule |
 | K-P3-10† | `chart.series.fill, chart.legend_swatch.fill (= kqc_series_color(<seed> = role.global.accent, element.item_count, element.item_index), ADD-A57, ADD-B15)` | field |
@@ -1554,9 +1554,9 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-KA-29† | `button.icon.glyph (ThemeIcon dialog-close) @ variant close context banner variant @ka_banner; tooltip.values.show_on_press @ context banner cond tablet_mode` | rule |
 | K-KA-29† | `toolbar @ context banner variant @ka_banner (the non-flat action toolbar, aligned to the end)` | rule |
 | K-KA-29† | `banner.values.presentations (Appear, Disappear: Instant) @ variant @ka_banner` | rule |
-| K-KA-30† | `sheet.body.max_height (its height limit, a fraction of element.window_height), sheet.body.corners, sheet.header.corners, sheet.body.shadow @ variants {bottom,@ka_bottom_drawer}` | rule |
-| K-KA-30† | `sheet.handle.min_width, sheet.handle.min_height, sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.padding @ variant @ka_bottom_drawer` | rule |
-| K-KA-30† | `sheet.header.bindings (Surface(Window)), sheet.header_separator.stroke, sheet.body.bindings (Surface(View)), sheet.body.padding (the bottom safe area) @ variant @ka_bottom_drawer` | rule |
+| K-KA-30† | `sheet.body.max_height (its height limit, a fraction of element.window_height), sheet.body.corners, sheet.header.corners, sheet.body.shadow @ variant bottom` (the BottomDrawer is `kde-breeze`'s `bottom`, the one bottom sheet KDE's rows hold) | rule |
+| K-KA-30† | `sheet.handle.min_width, sheet.handle.min_height, sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.padding @ variant bottom` | rule |
+| K-KA-30† | `sheet.header.bindings (Surface(Window)), sheet.header_separator.stroke, sheet.body.bindings (Surface(View)), sheet.body.padding (the bottom safe area) @ variant bottom` | rule |
 | K-KA-31† | `menu.body, menu.item (the qqc2 Menu, Q1.23-Q1.32) @ cond flavor:kirigami` | rule |
 | K-KA-31† | `menu.values.convergent_variant` (`"none"`; `ka_bottom_drawer` `@ cond mobile_form_factor cond flavor:kirigami`: the variant the connector sets where the application states no display mode, `displayMode`'s default; else the connector sets `@ka_bottom_drawer` or `@ka_dialog` from the application's mode; both declared under `[declare.flavor.kirigami.widget.menu]` only) | rule |
 | K-KA-31† | `sheet @ variant @ka_bottom_drawer context menu (K-KA-30†)` | rule |
@@ -1627,7 +1627,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-KA-42† | `dialog @ variants {@search_dialog,@ka_dialog} (the K-KA-18† surface)` | rule |
 | K-KA-42† | `list @ variant @ka_rounded context dialog variant @search_dialog; list.trailing_text.text.fill (= role.window.disabled.foreground) @ context dialog variant @search_dialog` | rule |
 | K-KA-42† | `status_page @ context dialog variant @search_dialog ("No results found")` | rule |
-| K-KA-43† | `shortcuts_dialog.values.natural_size @ variant @ka_quick` | rule |
+| K-KA-43† | `dialog.values.natural_size @ variants {@ka_dialog,shortcuts}` (the dialog layer the editor opens in, a grid-unit square, the About page's call with the same arguments, `StatefulWindow.qml:92-100`, `:103-110`: the editor's ancestor, so selected by the content variant `shortcuts` the connector sets on a dialog hosting the editor, not by `context shortcuts_dialog`) | rule |
 | K-KA-43† | `search_field @ context shortcuts_dialog` | rule |
 | K-KA-43† | `list @ variant @ka_rounded context shortcuts_dialog` | rule |
 | K-KA-43† | `toolbar @ variant bottom context shortcuts_dialog (Save and Reset); toolbar.bar.padding @ variant bottom context shortcuts_dialog` | rule |

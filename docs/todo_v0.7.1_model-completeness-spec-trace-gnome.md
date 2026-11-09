@@ -690,7 +690,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.14 | `avatar.image.{corners,opacity}` | field |
 | GN-2.15 | `view_switcher.values.item_gap, view_switcher.item.{min_height,min_width}` (the minimum natural widths, by rules on the variants) | field |
 | GN-2.15 | `view_switcher.item.padding, view_switcher.item_label.text @ variant narrow` | rule |
-| GN-2.15 | `view_switcher.item.padding, view_switcher.values.item_gap @ variant @wide` | rule |
+| GN-2.15 | `view_switcher.item.padding, view_switcher.values.icon_text_gap @ variant @wide` (the wide button's box: its padding and its icon-to-label spacing, `_view-switcher.scss:27-30`; the gap between the buttons is the switcher's own, the line above, unchanged under `.wide`) | rule |
 | GN-2.15 | `view_switcher.bar.padding @ variant @title` | rule |
 | GN-2.15 | `bottom_tab_bar.bar.padding; bottom_tab_bar.item.{padding,min_height}, bottom_tab_bar.item_label.text` (AdwViewSwitcherBar, the bottom bar of a narrow window: its padding and narrow buttons) | field |
 | GN-2.15 | `badge.body.{min_width,min_height,corners,padding} @ variant count context any view_switcher variant @sidebar / variant dot context any view_switcher variant @sidebar` | rule |
@@ -703,7 +703,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.17 | `sheet.handle.{fill,opacity,min_width,min_height,padding,corners} @ variant bottom` | rule |
 | GN-2.17 | `sheet.bottom_bar.{fill,shadow}` | field |
 | GN-2.17 | `sheet.body.transitions (Corners, Shadow)` | field |
-| GN-2.17 | `sheet.values.presentations events Appear (spring), Disappear, @bottom_bar_show, @bottom_bar_hide; sheet.values.top_padding (= floor(add(values.top_padding_min, mul(sub(values.top_padding_target, values.top_padding_min), max(0, div(sub(element.window_height, values.top_padding_min_height), sub(values.top_padding_target_height, values.top_padding_min_height)))))): AdwBottomSheet's lerp by the window's height, adw-bottom-sheet.c:617-621), sheet.values.{top_padding_min,top_padding_target,top_padding_min_height,top_padding_target_height} (its four constants, :27-30)` | field |
+| GN-2.17 | `sheet.values.presentations events Appear (spring), Disappear, @bottom_bar_show, @bottom_bar_hide; sheet.values.window_margin (its vertical member = floor(max(<margin>, add(<margin>, mul(sub(element.window_height, <height>), <slope>)))): AdwBottomSheet's top padding, interpolated by the window's height, adw-bottom-sheet.c:27-30, :617-621, as dialog.values.window_margin under bottom_sheet, GN-SF19†)` | field |
+| GN-2.17 | `sheet.values.placement (BottomSheet)` (the strategy `dialog`'s `bottom_sheet` uses, AdwDialog's bottom sheet being an AdwBottomSheet, `adw-dialog.c:511-522`) | placement |
 | GN-2.18 | `navigation_view.values.presentations events @push, @pop (spring), navigation_view.incoming_page.{transform,opacity}, navigation_view.outgoing_page.{transform,opacity}, navigation_view.edge_shadow.{fill,min_width,opacity}, navigation_view.scrim.{fill,opacity}, navigation_view.values.swipe_back, navigation_view.values.swipe_duration_min, navigation_view.values.swipe_duration_max` | field |
 | GN-2.18 | `navigation_view.values.presentations @ cond reduced_motion` | rule |
 | GN-2.19 | `sidebar.scrim.{fill,opacity}, sidebar.edge_shadow.fill, sidebar.pane.bindings @ variant overlay` | rule |
@@ -752,6 +753,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.29 | `split_button.divider.stroke @ variant flat / variant flat cond contrast_high; split_button.divider.opacity @ {hover} variant flat / {focus_visible} variant flat` | rule |
 | GN-2.29 | `split_button.primary.fill, split_button.secondary.fill, split_button.divider.stroke @ variant primary / variant destructive / variant @opaque (the inset separator)` | rule |
 | GN-2.29 | `split_button.primary.fill, split_button.secondary.fill @ {disabled}` | rule |
+| GN-2.29 | `split_button.primary.focus, split_button.secondary.focus @ {focus_visible}` (each half a `button` node with the button's own focus ring, `_buttons.scss:17-26`, `:486-530`) | rule |
 | GN-2.30 | `menu_bar.bar.{stroke,padding}, menu_bar.item.{padding,min_height,corners}` | field |
 | GN-2.30 | `menu.body.{padding,corners} @ context any menu_bar (the submenu popovers)` | rule |
 | GN-2.30 | `menu_bar.item.fill @ {open} / {hover}; menu_bar.item.stroke @ cond contrast_high` | rule |
