@@ -39,7 +39,7 @@ Writes these tables under `native-theme/tests/vectors/`:
 - `kde_accent.tsv` and `kde_accent_wm.tsv`, by the `compiled_source` route: Plasma's colour scheme applier
   (`plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp` and `.h`, compiled unchanged with `accent.cpp`) applied to
   generated scheme files and accents, each case's kdeglobals read back through the system's KColorScheme 6.31 as the
-  KDE reader reads kdeglobals; the nine measured (scheme file, accent) pairs of `docs/facts/kde/accent.toml` re-run
+  KDE reader reads kdeglobals; the measured (scheme file, accent) pairs of `docs/facts/kde/accent.toml` re-run
   first, the run stopping on any fact that differs.
 - `kirigami_label_icon_size.tsv`, by the `compiled_source` route: Kirigami's `IconSizes::sizeForLabels` and
   `roundedIconSize` (`kirigami@6.31.0 src/platform/units.cpp:297-326`, compiled unchanged with `icon.cpp` and the
@@ -1518,8 +1518,8 @@ def accent_rows(case, accent, r, sets, wm):
 
 
 def accent_facts_check(cache: Path, exe: Path):
-    """The nine measured (scheme file, accent) pairs re-run: each fact's value equals the harness's (8-bit), or the
-    run stops naming the differences. Returns the number of facts compared."""
+    """The measured (scheme file, accent) pairs of accent.toml re-run: each fact's value equals the harness's (8-bit),
+    or the run stops naming the differences. Returns the numbers of pairs, facts and comparisons."""
     facts = tomllib.loads(ACCENT_FACTS.read_text(encoding="utf-8"))["fact"]
     pairs = {}
     for f in facts:
@@ -1619,8 +1619,8 @@ def accent_tables(source_cache: Path, work: Path, rng):
              f"KGuiAddons {kguiaddons_version()} and KColorScheme {kcolorscheme_version()}; do not edit. Each case:",
              "a scheme file and an accent, applyScheme(file, a fresh kdeglobals, KConfig::Normal, accent)",
              "(colorsapplicator.cpp compiled unchanged), the kdeglobals synced and opened afresh."]
-    cases_text = ["A row already listed is not repeated; no two rows with the same inputs differ. The nine",
-                  f"measured (file, accent) pairs of docs/facts/kde/accent.toml ({n_facts} facts; the pair with no",
+    cases_text = ["A row already listed is not repeated; no two rows with the same inputs differ. The",
+                  f"{pairs} measured (file, accent) pairs of docs/facts/kde/accent.toml ({n_facts} facts; the pairs with no",
                   "AccentColor run both as measured, with no accent argument, and with #00000000) were re-run",
                   "and equal it; SUSE-Cafe's file (GPL-2.0) is read for that check alone. The cases:",
                   *names,

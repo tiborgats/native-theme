@@ -21,7 +21,7 @@ By the `compiled_source` route through `accent.cpp`, the accent derivation's two
 generated scheme files (Breeze 6.8.2's three and variants of them: tinting, the accent-coloured title bar, a `Header`
 group or none, `[Inactive]` groups, missing groups and keys, translucent colours) and accents (Breeze's
 `#00000000` among them), each case in a fresh kdeglobals that KColorScheme then reads back as the KDE reader reads
-kdeglobals. Before writing them it re-runs the nine (scheme file, accent) pairs of `docs/facts/kde/accent.toml`
+kdeglobals. Before writing them it re-runs the measured (scheme file, accent) pairs of `docs/facts/kde/accent.toml`
 (SUSE-Cafe's file read from the cache, GPL-2.0, never written into a table) and stops on any fact that differs; it
 also prints the constants of the two colour transforms the tint uses, as the system's Qt computed them
 (`accent.cpp constants`), which the behavioural description quotes. Two runs write the same bytes.
