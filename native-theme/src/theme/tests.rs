@@ -1786,7 +1786,9 @@ fn kirigami_label_icon_size_over_kde_breeze() {
     }
 
     let declared = "[declare.widget.button]\navailable = true\n";
-    let source = PresetId::KdeBreeze.source();
+    // A Windows checkout gives the preset CRLF line endings; the edit below
+    // matches on "\n", so it reads the text with LF endings.
+    let source = PresetId::KdeBreeze.source().replace("\r\n", "\n");
     assert!(source.contains(declared));
     let text = format!(
         "{}\n[[rules]]\ntarget = \"button.icon\"\n\
