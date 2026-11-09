@@ -112,8 +112,10 @@ pub mod expr;
 #[doc(hidden)]
 pub mod gate;
 mod inputs;
+mod kde_config;
 mod key;
 mod layer;
+mod palette;
 pub mod placement;
 #[doc(hidden)]
 pub mod platform;
@@ -285,12 +287,14 @@ pub use blocks::{Block, BlockPatch, FieldsBlock};
 pub use color::Color;
 pub use declare::{DataName, FontMetric};
 pub use error::{
-    Error, KeyError, LayerError, Problem, ProblemKind, ReaderFailure, ReaderStatus, ThemeError,
+    Error, KeyError, LayerError, PortError, Problem, ProblemKind, ReaderFailure, ReaderStatus,
+    ThemeError,
 };
 pub use expr::{Expr, ParseError};
 pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
 pub use key::Key;
 pub use layer::{Bases, Layer, LayerId};
+pub use palette::Palette;
 pub use presets::PresetId;
 pub use query::{
     DataNeeds, Element, ElementData, FontMetrics, RootInputs, Scope, Sibling, Styled, Unavailable,

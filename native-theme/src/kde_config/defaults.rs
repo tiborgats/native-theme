@@ -1,5 +1,6 @@
 //! KColorScheme's and KIconTheme's built-in defaults, which the KDE reader
-//! states where the file it reads leaves a key unset, as KDE reads it there
+//! and a KDE port's conversion (S14) state where the file they read leaves
+//! a key unset, as KDE reads it there
 //! (S9.1, S9.3's *The KDE reader's readings*, S4.8, ADD-A140). Each constant
 //! cites its row at the pinned source and the KDE fact that cites that row
 //! (the KDE facts lane's round 5, d7fe49f2); a row is the constant's value
@@ -19,7 +20,7 @@ use crate::tokens::{KdeColorEffect, KdeContrastEffect, KdeIntensityEffect};
 /// colours, each set's own (`kcolorscheme.cpp:122-210`), and the two
 /// decoration colours of `defaultDecorationColors`, every set's
 /// (`:213-215`), as `[r, g, b]`.
-pub(super) struct SetDefaults {
+pub(crate) struct SetDefaults {
     /// `BackgroundNormal`, the table's `Background`.
     background_normal: [u8; 3],
     /// `BackgroundAlternate`, `Alternate`.
@@ -48,7 +49,7 @@ pub(super) struct SetDefaults {
 
 impl SetDefaults {
     /// The default of `key`.
-    pub(super) fn color(&self, key: KdeSchemeKey) -> Color {
+    pub(crate) fn color(&self, key: KdeSchemeKey) -> Color {
         srgb8(match key {
             KdeSchemeKey::BackgroundNormal => self.background_normal,
             KdeSchemeKey::BackgroundAlternate => self.background_alternate,
@@ -89,7 +90,7 @@ const DECORATION_HOVER: [u8; 3] = [147, 206, 233];
 
 /// `View`: `defaultViewColors` (`kcolorscheme.cpp:122-132`), each row cited
 /// on its fact in `docs/facts/kde/inputs.toml`.
-pub(super) const VIEW: SetDefaults = SetDefaults {
+pub(crate) const VIEW: SetDefaults = SetDefaults {
     background_normal: [255, 255, 255],    // :123, inputs.toml:1601
     background_alternate: [247, 247, 247], // :124, inputs.toml:1627
     foreground_normal: [35, 38, 41],       // :125, inputs.toml:1653
@@ -106,7 +107,7 @@ pub(super) const VIEW: SetDefaults = SetDefaults {
 
 /// `Window`: `defaultWindowColors` (`kcolorscheme.cpp:135-145`), each row
 /// cited on its fact in `docs/facts/kde/inputs.toml`.
-pub(super) const WINDOW: SetDefaults = SetDefaults {
+pub(crate) const WINDOW: SetDefaults = SetDefaults {
     background_normal: [239, 240, 241],    // :136, inputs.toml:1913
     background_alternate: [227, 229, 231], // :137, inputs.toml:1939
     foreground_normal: [35, 38, 41],       // :138, inputs.toml:1965
@@ -123,7 +124,7 @@ pub(super) const WINDOW: SetDefaults = SetDefaults {
 
 /// `Button`: `defaultButtonColors` (`kcolorscheme.cpp:148-158`), each row
 /// cited on its fact in `docs/facts/kde/inputs.toml`.
-pub(super) const BUTTON: SetDefaults = SetDefaults {
+pub(crate) const BUTTON: SetDefaults = SetDefaults {
     background_normal: [252, 252, 252],    // :149, inputs.toml:41
     background_alternate: [163, 212, 250], // :150, inputs.toml:67
     foreground_normal: [35, 38, 41],       // :151, inputs.toml:93
@@ -140,7 +141,7 @@ pub(super) const BUTTON: SetDefaults = SetDefaults {
 
 /// `Selection`: `defaultSelectionColors` (`kcolorscheme.cpp:161-171`), each
 /// row cited on its fact in `docs/facts/kde/inputs.toml`.
-pub(super) const SELECTION: SetDefaults = SetDefaults {
+pub(crate) const SELECTION: SetDefaults = SetDefaults {
     background_normal: [61, 174, 233],     // :162, inputs.toml:977
     background_alternate: [163, 212, 250], // :163, inputs.toml:1003
     foreground_normal: [255, 255, 255],    // :164, inputs.toml:1029
@@ -157,7 +158,7 @@ pub(super) const SELECTION: SetDefaults = SetDefaults {
 
 /// `Tooltip`: `defaultTooltipColors` (`kcolorscheme.cpp:174-184`), each row
 /// cited on its fact in `docs/facts/kde/inputs.toml`.
-pub(super) const TOOLTIP: SetDefaults = SetDefaults {
+pub(crate) const TOOLTIP: SetDefaults = SetDefaults {
     background_normal: [247, 247, 247],    // :175, inputs.toml:1289
     background_alternate: [239, 240, 241], // :176, inputs.toml:1315
     foreground_normal: [35, 38, 41],       // :177, inputs.toml:1341
@@ -174,7 +175,7 @@ pub(super) const TOOLTIP: SetDefaults = SetDefaults {
 
 /// `Complementary`: `defaultComplementaryColors` (`kcolorscheme.cpp:187-197`),
 /// each row cited on its fact in `docs/facts/kde/inputs.toml`.
-pub(super) const COMPLEMENTARY: SetDefaults = SetDefaults {
+pub(crate) const COMPLEMENTARY: SetDefaults = SetDefaults {
     background_normal: [42, 46, 50],      // :188, inputs.toml:353
     background_alternate: [27, 30, 32],   // :189, inputs.toml:379
     foreground_normal: [252, 252, 252],   // :190, inputs.toml:405
@@ -192,7 +193,7 @@ pub(super) const COMPLEMENTARY: SetDefaults = SetDefaults {
 /// `Header`: `defaultHeaderColors` (`kcolorscheme.cpp:200-210`), beneath the
 /// file's `[Colors:Window]` values (`:330-333`), each row cited on its fact
 /// in `docs/facts/kde/inputs.toml`.
-pub(super) const HEADER: SetDefaults = SetDefaults {
+pub(crate) const HEADER: SetDefaults = SetDefaults {
     background_normal: [222, 224, 226],    // :201, inputs.toml:665
     background_alternate: [239, 240, 241], // :202, inputs.toml:691
     foreground_normal: [35, 38, 41],       // :203, inputs.toml:717
@@ -209,35 +210,35 @@ pub(super) const HEADER: SetDefaults = SetDefaults {
 
 /// One colour group's effects as KColorScheme reads them unset
 /// (`kcolorscheme.cpp:36-49`), the `[ColorEffects:<group>]` keys.
-pub(super) struct EffectDefaults {
+pub(crate) struct EffectDefaults {
     /// `Enable` (`:39-40`).
-    pub(super) enable: bool,
+    pub(crate) enable: bool,
     /// `IntensityEffect` (`:41`).
-    pub(super) intensity: KdeIntensityEffect,
+    pub(crate) intensity: KdeIntensityEffect,
     /// `ColorEffect` (`:42`).
-    pub(super) color: KdeColorEffect,
+    pub(crate) color: KdeColorEffect,
     /// `ContrastEffect` (`:43`).
-    pub(super) contrast: KdeContrastEffect,
+    pub(crate) contrast: KdeContrastEffect,
     /// `IntensityAmount` (`:44`).
-    pub(super) intensity_amount: f32,
+    pub(crate) intensity_amount: f32,
     /// `ColorAmount` (`:45`).
-    pub(super) color_amount: f32,
+    pub(crate) color_amount: f32,
     /// `ContrastAmount` (`:46`).
-    pub(super) contrast_amount: f32,
+    pub(crate) contrast_amount: f32,
     /// `Color` (`:47-49`).
     color_color: [u8; 3],
 }
 
 impl EffectDefaults {
     /// The default `Color`.
-    pub(super) fn color_color(&self) -> Color {
+    pub(crate) fn color_color(&self) -> Color {
         srgb8(self.color_color)
     }
 }
 
 /// `[ColorEffects:Disabled]`'s defaults, each cited on its `token.kde.disabled`
 /// fact in `docs/facts/kde/tokens.toml`.
-pub(super) const DISABLED: EffectDefaults = EffectDefaults {
+pub(crate) const DISABLED: EffectDefaults = EffectDefaults {
     enable: true,                          // :39-40, the group being Disabled
     intensity: KdeIntensityEffect::Darken, // :41, tokens.toml:10868
     color: KdeColorEffect::None,           // :42, tokens.toml:10923
@@ -250,7 +251,7 @@ pub(super) const DISABLED: EffectDefaults = EffectDefaults {
 
 /// `[ColorEffects:Inactive]`'s defaults, each cited on its `token.kde.inactive`
 /// fact in `docs/facts/kde/tokens.toml`.
-pub(super) const INACTIVE: EffectDefaults = EffectDefaults {
+pub(crate) const INACTIVE: EffectDefaults = EffectDefaults {
     enable: false,                       // :39-40, tokens.toml:11248
     intensity: KdeIntensityEffect::None, // :41, tokens.toml:11058
     color: KdeColorEffect::Desaturate,   // :42, tokens.toml:11113
@@ -264,30 +265,44 @@ pub(super) const INACTIVE: EffectDefaults = EffectDefaults {
 /// `[ColorEffects:Inactive] ChangeSelectionColor` where neither it nor the
 /// group's `Enable` is set: `readEntry("Enable", true)` beneath it
 /// (`kcolorscheme.cpp:304-316`, `docs/facts/kde/tokens.toml:11268`).
-pub(super) const INACTIVE_CHANGE_SELECTION_COLOR: bool = true;
+pub(crate) const INACTIVE_CHANGE_SELECTION_COLOR: bool = true;
 
 /// KIconTheme's built-in default sizes, each its group's `defaultSize` in
 /// `m_iconGroups` (`kiconthemes@6.31.0 src/kicontheme.cpp:154-157`,
 /// `:160-166`), which `<Group>Default` replaces where the theme's
 /// `index.theme` states it (`:469-472`), each cited on its
 /// `token.icons.sizes` fact in `docs/facts/kde/tokens.toml`.
-pub(super) struct IconDefaults {
+#[cfg_attr(
+    not(all(target_os = "linux", feature = "kde")),
+    allow(
+        dead_code,
+        reason = "the KDE reader's: it reads the icon theme's sizes"
+    )
+)]
+pub(crate) struct IconDefaults {
     /// `Desktop`, 32 (`:161`, `tokens.toml:8777`, `large`).
-    pub(super) desktop: u16,
+    pub(crate) desktop: u16,
     /// `Toolbar`, 22 (`:162`, `tokens.toml:8185`, `toolbar`).
-    pub(super) toolbar: u16,
+    pub(crate) toolbar: u16,
     /// `MainToolbar`, 22 (`:163`, `tokens.toml:8385`, `keyed.main_toolbar`).
-    pub(super) main_toolbar: u16,
+    pub(crate) main_toolbar: u16,
     /// `Small`, 16 (`:164`, `tokens.toml:8581`, `small`).
-    pub(super) small: u16,
+    pub(crate) small: u16,
     /// `Panel`, 48 (`:165`, `tokens.toml:8973`, `panel`).
-    pub(super) panel: u16,
+    pub(crate) panel: u16,
     /// `Dialog`, 32 (`:166`, `tokens.toml:9169`, `dialog`).
-    pub(super) dialog: u16,
+    pub(crate) dialog: u16,
 }
 
 /// [`IconDefaults`]' values, each row its group's.
-pub(super) const ICON_SIZES: IconDefaults = IconDefaults {
+#[cfg_attr(
+    not(all(target_os = "linux", feature = "kde")),
+    allow(
+        dead_code,
+        reason = "the KDE reader's: it reads the icon theme's sizes"
+    )
+)]
+pub(crate) const ICON_SIZES: IconDefaults = IconDefaults {
     desktop: 32,      // :161
     toolbar: 22,      // :162
     main_toolbar: 22, // :163

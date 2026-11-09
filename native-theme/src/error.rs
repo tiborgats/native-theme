@@ -179,6 +179,30 @@ impl std::error::Error for ReaderFailure {
     }
 }
 
+/// Why [`Palette::from_port`](crate::Palette::from_port) refused a KDE
+/// colour scheme file (S1, S14). A group or key the file lacks and a line
+/// KConfig skips are no error: Plasma applies such a file, and so does the
+/// conversion (S9.1, S9.3).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PortError {
+    /// The file has no colour group of a set `kde-breeze` declares,
+    /// `[Colors:<Set>]` or a subgroup of one such as
+    /// `[Colors:Header][Inactive]`: it would convert to KColorScheme's
+    /// defaults, Breeze Light's colours, under whichever scheme it is named
+    /// for (ADD-A142).
+    NoColorGroup,
+}
+
+impl fmt::Display for PortError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PortError::NoColorGroup => f.write_str("the colour scheme file has no colour group"),
+        }
+    }
+}
+
+impl std::error::Error for PortError {}
+
 /// One problem a layer has: where, and what.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
