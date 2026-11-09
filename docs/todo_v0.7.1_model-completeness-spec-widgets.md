@@ -3477,9 +3477,11 @@ spaces:
     today's `min_diameter_px`), `opacity`
     (disabled, GN-1.231); the container of Material's contained loading indicator: `fill`, `corners` (its colour
     and shape), `padding` (its size round the indicator) (MAT-N24).
-  - `track` — the full circle under the arc (AdwSpinner, Material, WinUI's background ring), a band along the circle
-    that stays still (Entry format): `fill` (it paints the band, its width `values.stroke_width`; GN-1.226, MAT-SN1,
-    W1-130).
+  - `track` — the circle under the arc (AdwSpinner, Material, WinUI's background ring), a band along the circle
+    (Entry format): `fill` (it paints the band, its width `values.stroke_width`, its ends' cap `values.cap`;
+    GN-1.226, MAT-SN1, W1-130). It is the full circle and stays still, except where `indicator_track_gap_px` is
+    stated: there it is the circle less the arc and the gap on each side of the arc, and moves with the arc
+    (Compose's, `ProgressIndicator.kt:548-553`, the indeterminate form `:660-673`; ADD-A146).
   - `indicator` — the arc (`{indeterminate}`), the value arc or pie (`!{indeterminate}`, the determinate spinner), or
     Material's loading indicator: `glyph` (the arc, as the core states a spinner's arc, S2.7, S2.9: a stroked circle
     path, `GlyphSource::Path`; its `stroke`, a `GlyphStroke`, the arc's paint, width and cap, GN-1.227, MAT-SN1,
@@ -3513,13 +3515,22 @@ spaces:
   <fraction>)`, the widget value's data declared under `values`, `data = { values = ["width", "height"] }`, GN-1.227,
   and the arc's width, `indicator.glyph.stroke.width`, refers to it (`= values.stroke_width`), AdwSpinner drawing both
   at one width; the arc's width is otherwise its glyph's, `indicator.glyph.stroke.width`, Q1.121, MAT-SN3);
+  `cap: Value<LineCap>` (the cap of the track's ends where a gap cuts it, the track drawn with the indicator's
+  stroke and cap, `ProgressIndicator.kt:527`, MAT-SN1; the Entry format's name for a still band's cap on every
+  widget, which this entry lacked; ADD-A146);
   `stroke_weight: Value<u16>` (the icon weight GTK scales the
   stroke by; GN-1.227, GN-1.232); `indicator_track_gap_px: Value<Px>`
-  (MAT-SN1, MAT-SN3); `spoke_count: Value<u32>`
+  (between the drawn ends of the arc and of the track, caps included: Compose adds the stroke's width to the gap
+  between the two paths under a round cap, `ProgressIndicator.kt:540-545`; MAT-SN1, MAT-SN3); `spoke_count: Value<u32>`
   (SP-1a, MAC-SN01); `spoke_inner_radius_px`, `spoke_length_px`, `spoke_width_px: Value<Px>` (SP-1a, MAC-SN01);
   `spoke_cap: Value<LineCap>` (the spokes' end rounding, ADD-A34; SP-1a, MAC-SN01);
   `spoke_opacity_ramp: Vec<Value<Fraction>>` (per spoke behind the leading one; SP-1a, MAC-SN01); `wave_amplitude_px`,
-  `wavelength_px: Value<Px>` (under `@wavy`, MAT-SN2); `loop: Value<Loop>` (S2.7: the motion while `{indeterminate}`;
+  `wavelength_px: Value<Px>` (under `@wavy`, MAT-SN2); `wave_speed: Value<f32>` (under `@wavy`: the wave's travel
+  along the indicator, in logical pixels a second, which Compose defaults to one wavelength a second,
+  `WavyProgressIndicator.kt:109`, `:179`, the tokens stating amplitude and wavelength only, R1.6; no keyframe can
+  hold it, the wave being two widget values and a keyframe patching a part's style; stated by the Material lane's
+  facts with the indicators unit, which also state the amplitude's rule over the progress, `:490-497`; ADD-A146);
+  `loop: Value<Loop>` (S2.7: the motion while `{indeterminate}`;
   a widget value's loop is on no part, so every keyframe names its part, `Keyframe.part` stated; its keyframes on
   part `indicator`: the arc's extension and contraction, `glyph.draw_start` and `glyph.draw_extent`; its rotation,
   `transform`; steps; the four-colour cycle, the paint of `glyph.stroke`; the loading indicator's keyframes naming
@@ -3528,10 +3539,12 @@ spaces:
   `@ !{indeterminate}`; GN-1.229, MAT-SN5, MAT-SN6, SP-2a, MAC-SN02, K1.230, Q1.119, Q1.120, W1-130, GN-P3-19†);
   `presentations:
   Vec<PresentationTransition>`: events `Appear`, `Disappear` (fade in on start, out on stop; SP-5a, MAC-SN05, Q1.120).
-- **Variants:** none typed (the determinate spinner, macOS's, WinUI's, Material's and iOS's C-31, is the state
-  `!{indeterminate}`, R3: whether the progress is known changes at run time, as on `progress_bar`). Keyed: `adwaita` `@gtk_spinner` (GtkSpinner,
-  GN-1.230); `material-3` `@wavy`, `@thick`, `@four_color`, `@loading_indicator` (the Expressive loading indicator,
-  MAT-N24), `@contained` (its contained form, MAT-N24); the last two are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.spinner]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
+- **Variants:**
+  - on the widget, keyed, `adwaita`: `@gtk_spinner` (GtkSpinner, GN-1.230).
+  - on the widget, keyed, `material-3`: `@wavy`, `@thick`, `@four_color`, `@loading_indicator` (the Expressive loading indicator,
+    MAT-N24), `@contained` (its contained form, MAT-N24); the last two are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.spinner]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
+  - No typed variant: the determinate spinner, macOS's, WinUI's, Material's and iOS's C-31, is the state
+    `!{indeterminate}`, R3: whether the progress is known changes at run time, as on `progress_bar`.
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular` (MAC-SN03). `ios-*`: `regular` (UIKit's medium),
   `large` (SP-3a). Others: none (sizes are the body's limits and `diameter`).
 - **Flags:** none of its own; state flags used: indeterminate (set by the connector while no progress is known, on
@@ -3565,11 +3578,13 @@ spaces:
   SP-4a), `spoke.transform` (all but `macos-*`, `ios-*`: only the spoke wheels step round, SP-2a, MAC-SN02); values:
   `stroke_width_px` (all but `adwaita`, `material-3`, `windows-11`, `macos-*`: the track's width, absent with the
   track; `macos-*` by a rule under `{indeterminate}`, as for `track`; on `ios-*` provisional on C-31, Open items),
+  `cap` (all but `material-3`: only its track has ends, the others' a full circle, MAT-SN1),
   `stroke_weight` (all but `adwaita`), `indicator_track_gap_px` (all
   but `material-3`), `spoke_count` (all but `macos-*`, `ios-*`), `spoke_inner_radius_px` (all but `macos-*`,
   `ios-*`), `spoke_length_px` (all but `macos-*`, `ios-*`), `spoke_width_px` (all but `macos-*`, `ios-*`),
   `spoke_cap` (all but `macos-*`, `ios-*`),
   `wave_amplitude_px` (all but `material-3`; `material-3` by a rule outside `@wavy`, MAT-SN2), `wavelength_px` (all
+  but `material-3`; `material-3` by a rule outside `@wavy`, MAT-SN2), `wave_speed` (all
   but `material-3`; `material-3` by a rule outside `@wavy`, MAT-SN2), `loop` (every preset, by rules under `cond
   animations_off` and under `!{indeterminate}`, whose arc follows the progress and runs no loop: Q1.120, Q3.25).
   The lists (`spoke_opacity_ramp`, `presentations`) are empty, not absent, where the platform has none. The body's
@@ -3596,8 +3611,8 @@ spaces:
   keyframes (ADD-B03), replaced by the shape mechanism (R25.5); group 6 proposed iOS's determinate circular progress
   (C-31) as a progress bar variant; the stroke ratio GTK derives from the size is the stroke width's expression
   (R25.3). The eleventh check gave the arc one route, its glyph's stroke (the arc's width and cap were also the
-  widget values `stroke_width` and `cap`; `stroke_width` is now the track's, `cap` the spokes' `spoke_cap`, and
-  Material's `track_stroke_width` merged into `stroke_width`), and made the determinate spinner, a typed variant
+  widget values `stroke_width` and `cap`; `stroke_width` and `cap` are now the track's, the spokes' cap `spoke_cap`,
+  and Material's `track_stroke_width` merged into `stroke_width`), and made the determinate spinner, a typed variant
   `determinate`, the state `!{indeterminate}`.
 
 ### progress_bar
@@ -3614,7 +3629,9 @@ spaces:
   - `track` — the trough: `fill`, `stroke` (today's frame; the high-contrast borders GN-1.115, W1-079; MAC-P05†),
     `corners` (GN-1.109, W1-077, MAC-P02), `shadow` (today's `shadow_enabled`), `min_height`, `max_height`,
     `min_width`, `max_width` (its thickness across the axis, today's `track_height_px`: the height when horizontal,
-    the width under `vertical`, GN-1.111).
+    the width under `vertical`, GN-1.111). Where `indicator_track_gap_px` is stated the drawn track is the trough
+    beyond the indicator and the gap after it, moving with the indicator (Compose's, `ProgressIndicator.kt:166-180`;
+    ADD-A146).
   - `indicator` — the value fill, and the moving indicator when indeterminate: `fill` (KDE's busy stripes, K1.110, a
     repeating gradient the `loop` moves, below), `stroke` (KDE's outline of the fill, K1.111), `corners` (PB-2,
     GN-1.109, MAC-P02, MAT-P5), `min_height`,
@@ -3629,18 +3646,24 @@ spaces:
     change, PB-3, MAC-P04, W1-078, MAT-P6).
   - `secondary_indicator` — the second moving indicator of an indeterminate bar (WinUI, Material): `fill`, `corners`,
     `transform` (as the indicator's: its position and length, which the `loop`'s keyframes set, over the root's box,
-    `data = { secondary_indicator = ["width", "height"] }`; W1-075, MAT-P6).
+    `data = { secondary_indicator = ["width", "height"] }`; W1-075, MAT-P6). It lists no thickness: it is drawn as
+    thick as the `indicator`, whose second instance it is (ADD-A146).
   - `stop_indicator` — Material's end dot (MAT-P3): `fill`, `corners`, `min_width`, `min_height`.
-  - `buffer` — Material's buffer (secondary progress) bar (MAT-P7): `fill`, `corners`.
+  - `buffer` — Material's buffer (secondary progress) bar (MAT-P7): `fill`, `corners`. It lists no thickness: it is
+    drawn as thick as the `track`, whose buffered part it is (ADD-A146); a fact that shows either part another
+    thickness adds the limits to its list.
   - `buffer_dots` — the dots of Material's buffer track (MAT-P7): `fill`, `corners`, `min_width`, `min_height` (each
     dot's shape and size).
-  - `label` — a title label (SwiftUI's label, PB-4†): `text`.
+  - `label` — a title label above the bar, `label_gap_px` from it (SwiftUI's label, PB-4†, MAC-P3-4†): `text`.
   - `value_label` — the value text (GTK's shown text, KDE's percentage, SwiftUI's current value label): `text`
     (K1.113, PB-4†), `opacity` (GTK's dimmed text, GN-1.110).
 - **Widget values:** `min_indicator_length_px: Value<Px>` (the least fill a non-zero value shows, K1.114; `auto` where
   the platform sets no minimum, never `Absent`);
-  `indicator_track_gap_px: Value<Px>` (MAT-P2); `stop_indicator_gap_px: Value<Px>` (MAT-P3); `wave_amplitude_px`,
-  `wavelength_px: Value<Px>` (under `@wavy`, MAT-P1); `pulse_block_fraction`, `pulse_step: Value<Fraction>` (GTK's pulse
+  `indicator_track_gap_px: Value<Px>` (between the drawn ends of the indicator and of the track, caps included, as
+  `spinner`'s, `ProgressIndicator.kt:167-172`; MAT-P2); `stop_indicator_gap_px: Value<Px>` (MAT-P3); `wave_amplitude_px`,
+  `wavelength_px: Value<Px>` (under `@wavy`, MAT-P1); `wave_speed: Value<f32>` (under `@wavy`, the wave's travel in
+  logical pixels a second, as `spinner`'s, `WavyProgressIndicator.kt:291`, `:362`; stated by the Material lane's
+  facts with the indicators unit; ADD-A146); `pulse_block_fraction`, `pulse_step: Value<Fraction>` (GTK's pulse
   block and step, GN-1.113); `loop: Value<Loop>` (the indeterminate motion, a widget value's loop, on no part, so every
   keyframe names its part, `Keyframe.part` stated: W1-075's keyframes on parts `indicator` and `secondary_indicator`,
   each setting the part's `transform.translate_x` (its position, WinUI's keyframes over the start and end positions
@@ -3655,8 +3678,12 @@ spaces:
   `animations/breezeanimations.cpp:81`; reversed in right-to-left, `breezehelper.cpp:1245-1247`): the shift is the
   gradient's `offset` (S2.3), from zero to one pattern period over the loop, and a `dir rtl` rule states the
   reversed loop, a paint not being mirrored (S2.3); GN-1.113, K1.110,
-  MAC-P01, W1-075, MAT-P6); `label_position: Value<ValueLabelPosition>` (K1.115, PB-4, MAC-P3-4, K1.113); `label_gap_px: Value<Px>`,
-  `label_alignment: Value<Alignment>` (K1.113, PB-4, MAC-P3-4); `warning_threshold: Value<Fraction>` (the value
+  MAC-P01, W1-075, MAT-P6); `value_label_position: Value<ValueLabelPosition>` (where `value_label` lies against the
+  bar, named as `slider`'s: K1.115, PB-4, MAC-P3-4, K1.113); `value_label_gap_px: Value<Px>`,
+  `value_label_alignment: Value<Alignment>` (K1.113, PB-4, MAC-P3-4); `label_gap_px: Value<Px>` (between `label`,
+  which lies above the bar, and the bar: SwiftUI's, PB-4†, MAC-P3-4†; ADD-A146: the three `value_label_*` values
+  place the value label and this one the title, where one position could not place both, which SwiftUI draws at
+  once); `warning_threshold: Value<Fraction>` (the value
   above which KDE's places panel recolours its capacity bar, K1.142†: the progress is element data, so the recolouring
   is an expression, not a flag the connector sets: under `@capacity`, `indicator.fill = pick(floor(min(add(element.progress,
   sub(1, values.warning_threshold)), 1)), <normal>, <warning>)`, with `data = { indicator = ["progress"] }`; the
@@ -3664,10 +3691,14 @@ spaces:
   to the normal colour), so its floor is 1 exactly from the threshold on, 0 below it: the expression switches at the
   threshold itself, so
   the value phase checks the source's comparison, "above" or "at least", and states the threshold to match).
-- **Variants:** typed `vertical` (GNOME's vertical bar, GN-1.111; KDE's QProgressBar in `Qt::Vertical`, which Breeze
-  draws in its vertical branches, `breezestyle.cpp:205`, `breezehelper.cpp:1254-1266`; WinUI's ProgressBar and
-  Compose's linear indicator have no orientation). Keyed: `adwaita` `@osd`; `kde-breeze` `@capacity`,
-  `@capacity_inline`; `ios-*` `@bar`; `material-3` `@wavy`, `@thick`, `@four_color`.
+- **Variants:**
+  - on the widget, typed: `vertical` (GNOME's vertical bar, GN-1.111; KDE's QProgressBar in `Qt::Vertical`, which Breeze
+    draws in its vertical branches, `breezestyle.cpp:205`, `breezehelper.cpp:1254-1266`; WinUI's ProgressBar and
+    Compose's linear indicator have no orientation).
+  - on the widget, keyed, `adwaita`: `@osd`.
+  - on the widget, keyed, `kde-breeze`: `@capacity`, `@capacity_inline`.
+  - on the widget, keyed, `ios-*`: `@bar`.
+  - on the widget, keyed, `material-3`: `@wavy`, `@thick`, `@four_color`.
 - **Sizes and densities:** `macos-*`: the control sizes AppKit draws for a bar (`regular`, `small`, `mini`). Others:
   none.
 - **Flags:** shared `empty` (value zero: GTK hides the fill node); keyed `windows-11` `@paused`, `@error`; state
@@ -3684,9 +3715,11 @@ spaces:
   values: `indicator_track_gap_px` (all but `material-3`),
   `stop_indicator_gap_px` (all but `material-3`), `wave_amplitude_px` (all but `material-3`; `material-3` by a rule
   outside `@wavy`, MAT-P1), `wavelength_px` (all but `material-3`; `material-3` by a rule outside `@wavy`, MAT-P1),
-  `pulse_block_fraction` (all but `adwaita`), `pulse_step` (all but `adwaita`), `label_position` (`windows-11`,
-  `material-3`: their bars draw neither a label nor a value label), `label_gap_px` (`windows-11`, `material-3`: no
-  label), `label_alignment` (`windows-11`, `material-3`: no label), `warning_threshold` (all but `kde-breeze`), `loop`
+  `wave_speed` (all but `material-3`; `material-3` by a rule outside `@wavy`, MAT-P1),
+  `pulse_block_fraction` (all but `adwaita`), `pulse_step` (all but `adwaita`), `value_label_position` (`windows-11`,
+  `material-3`: their bars draw no value label), `value_label_gap_px` (`windows-11`, `material-3`: no
+  value label), `value_label_alignment` (`windows-11`, `material-3`: no value label), `label_gap_px` (all but
+  `macos-*`, `ios-*`: SwiftUI's label alone, PB-4†), `warning_threshold` (all but `kde-breeze`), `loop`
   (every preset, by rules outside `{indeterminate}` and under `cond animations_off`: the loop is the indeterminate
   motion only).
 - **State-model source:** `windows-11` `ProgressBar/ProgressBar.xaml` states; `adwaita` `_progress-bar.scss` (osd,
@@ -3719,9 +3752,15 @@ spaces:
   - `thumb` *(element)* — the knob or indicator: `fill`, `stroke` (outline, knob-style border), `corners`,
     `min_width`, `min_height` (today's `thumb_width_px`, `min_thumb_length_px`), `opacity` (GN-1.89, K1.91, Q1.41),
     `transitions` (its size and colour changes: GN-1.90, K1.95, Q1.40, W1-064, MAC-S01).
-  - `arrow_button` *(element)* — an arrow button (KDE's optional ones, WinUI's, the annotated bar's scroll buttons
+  - `arrow_button` *(element)* — one arrow button, its identity a variant, `decrement` (the arrow toward the start
+    of the bar's axis) or `increment` (toward its end) (KDE's optional ones, WinUI's, the annotated bar's scroll buttons
     W2-28): `glyph`, `fill`, `stroke`, `transform` (the pressed scale), `transitions` (that scale's animation,
-    W1-061), `min_width`, `min_height` (KDE's button length, K1.94), `padding` (WinUI's margins, W1-061).
+    W1-061), `min_width`, `min_height` (KDE's button length, K1.94), `padding` (WinUI's margins, W1-061). The
+    identities carry what differs by direction, the glyph and WinUI's margin, four of each with `vertical`
+    (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ScrollBar_themeresources.xaml:258`, `:301`, `:344`,
+    `:387`, `:195-198`), and position cannot stand for them: Breeze's double buttons draw both directions at one end
+    (`breeze@6.8.2 kstyle/breezestyle.cpp:6520-6547`). ADD-A146; rejected: two parts, as `stepper`'s `increment` and
+    `decrement`, which state every state rule twice.
   - `annotation_labels` — the labelled rail of WinUI's annotated scroll bar (W2-28): `text`, `min_width`.
 - **Widget values:** `auto_hide_delay_ms: Value<Ms>` (a duration: WinUI's contract delay, the overlay scroller's hide
   delay and Material's scroll-indicator fade delay; GN-1.91, SB-3, MAT-SC1, MAT-SC3, Q1.41, W1-064, MAC-X12, MAT-X25);
@@ -3731,7 +3770,10 @@ spaces:
   under `vertical`, MAT-SC3†); `overscroll_shrink: Value<bool>` (the thumb
   shortens by
   the overshoot; SB-7, MAC-P3-3, K-P4-13); `arrow_buttons_start`, `arrow_buttons_end: Value<ArrowButtons>` with
-  `ArrowButtons { None, Single, Double }` (read on KDE, K1.94); `trough_click: Value<TroughClick>` (Shared value types; read
+  `ArrowButtons { None, Single, Double }` (the arrow buttons the connector draws at each end of the bar: none; one,
+  the `decrement` at the start and the `increment` at the end; or both there, the `decrement` first; read on KDE,
+  K1.94; `windows-11` states `Single` at each end, its template's one button there,
+  `ScrollBar_themeresources.xaml:681-711`; ADD-A146); `trough_click: Value<TroughClick>` (Shared value types; read
   on KDE and macOS; K-RV1, MAC-P3-2, Q1.39, W-P4-16, GN-P4-5†); `repeat_delay_ms`, `repeat_interval_ms: Value<Ms>` (the
   arrows' and trough's repeat; Q1.42, MAC-P3-2, W-P4-16, MAC-X12, K-P3-17†, GN-3.69†: one home per fact, as
   `drag_hover_delay_ms`: their base on `adwaita` and `macos-*` is `= token.params.pointer_repeat.delay` and
@@ -3740,9 +3782,13 @@ spaces:
   states another: Qt's scroll bar, K-P3-17†, the Quick scroll bar, Q1.42, WinUI's RepeatButtons, W-P4-16†);
   `presentations: Vec<PresentationTransition>`: events `Appear`, `Disappear` (fade out, slide in), `@flash` (iOS's
   `flashScrollIndicators()`, the flash the application triggers; the bar's own appearance is `Appear`) (GN-1.91, SB-3, MAT-SC1, MAT-SC3, Q1.41, MAT-X25).
-- **Variants:** typed `vertical` (the base is horizontal), `dark`, `light` (a knob style for light or dark content:
-  macOS's knob style dark and light, iOS's indicator style black and white; the default adapts by the
-  over-dark-content state). Keyed: `windows-11` `@annotated` (W2-28).
+- **Variants:**
+  - on the widget, typed: `vertical` (the base is horizontal), `dark`, `light` (a knob style for light or dark content:
+    macOS's knob style dark and light, iOS's indicator style black and white; the default adapts by the
+    over-dark-content state).
+  - on the widget, keyed, `windows-11`: `@annotated` (W2-28).
+  - on `arrow_button`, typed (its identity, the content variants, set by the connector for each arrow it draws;
+    ADD-A146): `decrement`, `increment`.
 - **Sizes and densities:** `macos-*`: `regular`, `small`, `mini` (MAC-S07). Others: none.
 - **Flags:** keyed `adwaita` `@fine_tune`; state flags used: hover (of the bar, and of the thumb), pressed, disabled,
   over_dark_content.
@@ -3760,8 +3806,9 @@ spaces:
   `track.fill` (`ios-*`: no track, SB-1–SB-7; `windows-11` by a rule under `cond overlay_scrollbars !{hover}`,
   W1-060; `macos-*`, `adwaita` by a rule outside `{hover}` under `cond overlay_scrollbars`, MAC-S02, GN-1.87);
   values: `hide_after_leave_ms` (all but `adwaita`: GTK's, GN-1.91), `always_visible` (all but `material-3`:
-  Compose's, MAT-SC3†), `thumb_max_fraction` (all but `material-3`: Compose's, MAT-SC3†), `arrow_buttons_start` (all
-  but `kde-breeze`: read on KDE, K1.94), `arrow_buttons_end` (all but `kde-breeze`: read on KDE, K1.94),
+  Compose's, MAT-SC3†), `thumb_max_fraction` (all but `material-3`: Compose's, MAT-SC3†), `arrow_buttons_start`
+  (`adwaita`, `macos-*`, `ios-*`, `material-3`: no arrow buttons, as the part), `arrow_buttons_end` (`adwaita`,
+  `macos-*`, `ios-*`, `material-3`: no arrow buttons, as the part),
   `repeat_delay_ms` (`ios-*`, `material-3`: their scroll indicators are not interactive), `repeat_interval_ms`
   (`ios-*`, `material-3`: their scroll indicators are not interactive), `trough_click` (`ios-*`, `material-3`: their
   scroll indicators are not interactive, so a trough click does nothing), `auto_hide_delay_ms` (`adwaita`,

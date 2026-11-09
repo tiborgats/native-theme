@@ -200,7 +200,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-S11 | `slider.{track,value_fill}.{min_height,corners}, slider.thumb.{min_height,corners}, slider.inset_icon.{icon,padding} @ size extra_small / size small / size regular / size large / size extra_large (ADD-A62)` | rule |
 | MAT-S11 | `slider.inset_icon.{icon,padding}` | field |
 | MAT-S12 | `slider.{track,value_fill,thumb}.* @ variant range / variant centered / variant vertical` | rule |
-| MAT-P1 | `progress_bar.values.{wave_amplitude,wavelength} @ variant @wavy / {indeterminate} variant @wavy` | rule |
+| MAT-P1 | `progress_bar.values.{wave_amplitude,wavelength,wave_speed} @ variant @wavy / {indeterminate} variant @wavy` (the speed Compose's, `material3/…/WavyProgressIndicator.kt:291`, `:362`; ADD-A146) | rule |
 | MAT-P1 | `progress_bar.{indicator,body}.min_height @ variant @wavy` | rule |
 | MAT-P2 | `progress_bar.values.indicator_track_gap` | field |
 | MAT-P3 | `progress_bar.stop_indicator.{fill,min_width,min_height,corners}` | field |
@@ -432,8 +432,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-DG9 | `dialog.{title,message}.text.{letter_spacing,line_height}` | field |
 | MAT-DG10† | `dialog.values.action_layout (alignment, stack_rule WhenOverflowing, stacked_order, gap, stacked_gap)` | field |
 | MAT-SN1 | `spinner.track.fill` | field |
-| MAT-SN1 | `spinner.values.{stroke_width,indicator_track_gap}; spinner.indicator.glyph` (the track's thickness; the indicator's, its glyph's stroke) | field |
-| MAT-SN2 | `spinner.values.{wave_amplitude,wavelength} @ variant @wavy` | rule |
+| MAT-SN1 | `spinner.values.{stroke_width,cap,indicator_track_gap}; spinner.indicator.glyph` (the track's thickness and its ends' cap, the track cut by the gap on each side of the arc, `material3/…/ProgressIndicator.kt:527`, `:540-553`, ADD-A146; the indicator's, its glyph's stroke) | field |
+| MAT-SN2 | `spinner.values.{wave_amplitude,wavelength,wave_speed} @ variant @wavy` (the speed Compose's, one wavelength a second, `material3/…/WavyProgressIndicator.kt:109`, `:179`, the tokens stating none, R1.6; ADD-A146) | rule |
 | MAT-SN2 | `spinner.body.{min_width,min_height} @ variant @wavy` | rule |
 | MAT-SN3 | `spinner.{body.min_width,body.min_height,values.stroke_width,values.indicator_track_gap,indicator.glyph} @ variant @thick` (the track's and the indicator's thickness) | rule |
 | MAT-SN4 | `spinner.indicator.glyph` (its stroke's cap) | field |

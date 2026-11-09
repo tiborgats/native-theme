@@ -332,7 +332,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | PB-2 | `progress_bar.indicator.corners` | field |
 | PB-3 | `progress_bar.indicator.transitions` (`PropertyGroup::Geometry`: the animated progress change) | field |
 | PB-4† | `progress_bar.label.text; progress_bar.value_label.text` | field |
-| PB-4† | `progress_bar.values.label_position; progress_bar.values.label_gap` | field |
+| PB-4† | `progress_bar.values.label_gap; progress_bar.values.value_label_position; progress_bar.values.value_label_gap` (the title above the bar, the current-value label by its own position, ADD-A146) | field |
 | T-1 | `bottom_tab_bar.bar.fill (material)` | field |
 | T-1 | `bottom_tab_bar.bar.fill @ {scrolled} / !{scrolled}` (the standard and scroll-edge appearances) | rule |
 | T-1 | `reader:ios:UITabBarAppearance backgroundEffect` | readers (R18) |

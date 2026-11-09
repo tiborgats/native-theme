@@ -924,7 +924,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P3-3† | `scrollbar.thumb.{min_width,min_height} @ cond overlay_scrollbars` | rule |
 | MAC-P3-3† | `scrollbar.values.overscroll_shrink` | field |
 | MAC-P3-4† | `progress_bar.label.text; progress_bar.value_label.text` | field |
-| MAC-P3-4† | `progress_bar.values.label_position; progress_bar.values.label_gap` | field |
+| MAC-P3-4† | `progress_bar.values.label_gap; progress_bar.values.value_label_position; progress_bar.values.value_label_gap` (the title above the bar, the current-value label by its own position, ADD-A146) | field |
 | MAC-P3-5† | `segmented_control.values.segment_width (Fill default)` | field |
 | MAC-P3-5† | `segmented_control.segment.padding` | field |
 | MAC-P3-5† | - (how segments compress: `activeCompressionOptions` reports what the system has applied to a view in the Touch Bar, the protocol "only applicable to views in the Touch Bar", `xcode@26.6 AppKit/NSUserInterfaceCompression.h:90-93`, `:113-117`, so a segmented control in a window has no such value; the Touch Bar's own items are `component.touch_bar`'s, MAC-N26; ADD-A146) | out (R1.1) |

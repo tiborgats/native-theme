@@ -195,6 +195,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-060 | `scrollbar.track.fill (Absent) @ cond overlay_scrollbars !{hover} (no track)` | rule |
 | W1-060 | `scrollbar.body.{min_width,min_height}; scrollbar.thumb.{stroke,min_width} (the expanded bar)` | field |
 | W1-061 | `scrollbar.arrow_button.{glyph,fill,stroke,padding}` | field |
+| W1-061 | `scrollbar.arrow_button.{glyph,padding} @ variant decrement / variant increment / variants {decrement,vertical} / variants {increment,vertical}` (the four glyphs and margins, `src/controls/dev/CommonStyles/ScrollBar_themeresources.xaml:258`, `:301`, `:344`, `:387`, `:195-198`; ADD-A146) | rule |
+| W1-061 | `scrollbar.values.arrow_buttons_start; scrollbar.values.arrow_buttons_end` (Single at each end, the template's one button there, `:681-711`; ADD-A146) | field |
 | W1-061 | `scrollbar.arrow_button.{fill,stroke,glyph.fill} @ {hover} / {pressed} / {disabled}` | rule |
 | W1-061 | `scrollbar.arrow_button.transform @ {pressed}` | rule |
 | W1-061 | `scrollbar.arrow_button.transitions (Transform: the press scale's animation)` | field |

@@ -226,6 +226,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.93 | `scrollbar.track.stroke @ variant vertical / variant vertical dir rtl` | rule |
 | K1.94 | `scrollbar.arrow_button.{glyph,fill,min_width,min_height}` (the button's extent, `ScrollBar_SingleButtonHeight`) | field |
 | K1.94 | `scrollbar.arrow_button.glyph.fill @ {hover} / {pressed} / {disabled}` | rule |
+| K1.94 | `scrollbar.arrow_button.glyph @ variant decrement / variant increment / variants {decrement,vertical} / variants {increment,vertical}` (the arrow each identity draws, both at one end under Double, `breeze@6.8.2 kstyle/breezestyle.cpp:6520-6547`; ADD-A146) | rule |
 | K1.94 | `scrollbar.values.arrow_buttons_start; scrollbar.values.arrow_buttons_end` | field |
 | K1.94 | `reader:kde:breezerc [Style] ScrollBarAddLineButtons, ScrollBarSubLineButtons -> scrollbar.values.arrow_buttons_*` | reader |
 | K1.95 | `scrollbar.thumb.transitions; scrollbar.track.transitions` | field |
@@ -252,11 +253,11 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.112 | `progress_bar.indicator.fill @ context list.row {selected}` | rule |
 | K1.113 | `progress_bar.value_label.text` | field |
 | K1.113 | `progress_bar.value_label.text.fill @ context list.row {selected}` | rule |
-| K1.113 | `progress_bar.values.label_gap, progress_bar.values.label_alignment, progress_bar.values.label_position` | field |
+| K1.113 | `progress_bar.values.value_label_gap, progress_bar.values.value_label_alignment, progress_bar.values.value_label_position` | field |
 | K1.114 | `progress_bar.values.min_indicator_length` | field |
 | K1.115† | `progress_bar.track.min_height, progress_bar.track.max_height @ variant @capacity / variant @capacity_inline` | rule |
 | K1.115† | `progress_bar.track.corners, progress_bar.indicator.corners @ variant @capacity_inline (its round margin)` | rule |
-| K1.115† | `progress_bar.values.label_position (below) @ variant @capacity / (inline) @ variant @capacity_inline` | rule |
+| K1.115† | `progress_bar.values.value_label_position (below) @ variant @capacity / (inline) @ variant @capacity_inline` | rule |
 | K1.120 | `tab.values.indicator_edge, tab.indicator.min_width, tab.indicator.min_height @ variant left / variant right` | rule |
 | K1.121 | `tab.tab.fill, tab.tab.corners (bar side) @ !{selected}` | rule |
 | K1.122 | `tab.tab.fill @ {selected} / {selected} variant document` | rule |
