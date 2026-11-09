@@ -398,6 +398,7 @@ activeBackground=140,141,142
 pub(crate) fn data(kdeglobals: &str, scheme_file: SchemeFile) -> KdeData {
     KdeData {
         kdeglobals: ini(kdeglobals),
+        colors: None,
         scheme_file,
         font_dpi: None,
         icon_index: None,
@@ -1436,6 +1437,130 @@ fn the_scheme_file_is_located_by_existence() {
         }
     }
     std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o644)).unwrap();
+}
+
+/// The colours the palette is built from: none read where kdeglobals has a
+/// `[Colors:View]` group; else the look-and-feel package's colours, the
+/// default package's where kdeglobals names none or an empty one, else the
+/// scheme file, else Breeze Light's, each in the first data directory
+/// holding it, a name that is not one path component naming no file; an
+/// empty file where none is found (S9.3).
+#[test]
+fn the_palette_colours_follow_plasma_integration() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = temp_config_dir("palette-colors");
+    let (first, second) = (dir.join("first"), dir.join("second"));
+    let write = |path: std::path::PathBuf, red: u8| -> std::io::Result<()> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(
+            path,
+            format!("[Colors:Window]\nBackgroundNormal={red},0,0\n"),
+        )
+    };
+    write(
+        second.join("plasma/look-and-feel/synthetic.lnf/contents/colors"),
+        1,
+    )?;
+    write(
+        first.join("plasma/look-and-feel/org.kde.breeze.desktop/contents/colors"),
+        2,
+    )?;
+    write(second.join("color-schemes/Synthetic.colors"), 3)?;
+    write(second.join("color-schemes/BreezeLight.colors"), 4)?;
+    let both = [first.clone(), second];
+    let window = |kdeglobals: &str, dirs: &[std::path::PathBuf]| {
+        palette_colors(&ini(kdeglobals), dirs)
+            .map(|colors| colors.get("Colors:Window", "BackgroundNormal"))
+    };
+    let red = |value: &str| Some(Some(format!("{value},0,0")));
+
+    assert_eq!(
+        window("[Colors:View]\nBackgroundNormal=9,9,9\n", &both),
+        None
+    );
+    assert_eq!(
+        window(
+            "[KDE]\nLookAndFeelPackage=synthetic.lnf\n[General]\nColorScheme=Synthetic\n",
+            &both
+        ),
+        red("1")
+    );
+    assert_eq!(
+        window("[General]\nColorScheme=Synthetic\n", &both),
+        red("2")
+    );
+    assert_eq!(window("[KDE]\nLookAndFeelPackage=\n", &both), red("2"));
+    assert_eq!(
+        window(
+            "[KDE]\nLookAndFeelPackage=missing\n[General]\nColorScheme=Synthetic\n",
+            &both
+        ),
+        red("3")
+    );
+    assert_eq!(
+        window(
+            "[KDE]\nLookAndFeelPackage=../synthetic.lnf\n[General]\nColorScheme=Missing\n",
+            &both
+        ),
+        red("4")
+    );
+    let none = palette_colors(&ini("[KDE]\nLookAndFeelPackage=missing\n"), &[first])
+        .ok_or("no `[Colors:View]` group: the palette's colours are read")?;
+    assert!(none.get_map_ref().is_empty());
+    Ok(())
+}
+
+/// Where kdeglobals has no `[Colors:View]` group, the scheme, the results,
+/// the inactive results and the accent's `Selection` background are the
+/// palette's colours, not kdeglobals' colour groups; the colour effects
+/// stay kdeglobals' (S9.3).
+#[test]
+fn without_a_view_group_the_colours_are_the_palettes() -> Result<(), Box<dyn std::error::Error>> {
+    let mut data = data(
+        "[Colors:Window]\nBackgroundNormal=20,21,22\n\
+         [Colors:Selection]\nBackgroundNormal=40,41,42\n\
+         [ColorEffects:Disabled]\nIntensityAmount=0.15\n",
+        SchemeFile::Unnamed,
+    );
+    data.colors = Some(ini("[Colors:Window]\nBackgroundNormal=240,241,242\n\
+         [Colors:Window][Inactive]\nBackgroundNormal=230,231,232\n\
+         [Colors:Selection]\nBackgroundNormal=1,2,3\n"));
+    let reading = reading(&data);
+    assert_eq!(reading.state.scheme, Scheme::Light);
+    assert_eq!(
+        input_color(&reading.layer.bases, "accent", Scheme::Light),
+        Some(rgb(1, 2, 3))
+    );
+    let bases = own(&reading.layer);
+    assert_eq!(
+        input_color(bases, "inactive.window.background_normal", Scheme::Light),
+        Some(rgb(230, 231, 232))
+    );
+    let surfaces = bases
+        .colors
+        .get(Scheme::Light)
+        .and_then(|colors| colors.surfaces.as_ref())
+        .ok_or("the results under the scheme read")?;
+    match surfaces.get(SurfaceSet::Window) {
+        Some(BlockPatch::Fields(window)) => {
+            assert_eq!(window.background, Some(Value::Stated(rgb(240, 241, 242))))
+        }
+        other => return Err(format!("the window's results: {other:?}").into()),
+    }
+    let RuleBody::Tokens(tokens) = &reading.layer.rules.first().ok_or("a rule")?.body else {
+        return Err("a tokens rule".into());
+    };
+    let Some(BlockPatch::Fields(kde)) = &tokens.kde else {
+        return Err("token.kde's fields".into());
+    };
+    assert_eq!(
+        kde.disabled
+            .as_ref()
+            .and_then(|disabled| disabled.intensity_amount.clone()),
+        Some(Value::Stated(0.15))
+    );
+    Ok(())
 }
 
 /// The font DPI is the one Qt's xcb plugin forces from the X resources:

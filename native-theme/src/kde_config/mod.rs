@@ -103,7 +103,7 @@ pub(crate) fn color(ini: &Ini, section: &str, key: &str) -> Option<Color> {
 }
 
 /// Whether `ini` has the group `section`.
-fn has_group(ini: &Ini, section: &str) -> bool {
+pub(crate) fn has_group(ini: &Ini, section: &str) -> bool {
     ini.get_map_ref().contains_key(section)
 }
 
