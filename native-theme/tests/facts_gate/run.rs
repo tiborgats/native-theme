@@ -6,6 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use native_theme::gate::{
@@ -3009,6 +3010,7 @@ fn check_widgets(
 fn compare_widgets(run: &Run<'_, '_>, probed: &Probed, alike: bool, report: &mut Report) -> bool {
     let threads = run.threads.each();
     let size = PROBED_BY_THREAD.saturating_mul(threads);
+    let memo = Memo::default();
     for (chunk_at, chunk) in probed.queried.chunks(size).enumerate() {
         let items: Vec<(usize, &Combination)> = chunk
             .iter()
@@ -3024,7 +3026,7 @@ fn compare_widgets(run: &Run<'_, '_>, probed: &Probed, alike: bool, report: &mut
             let mut report = Report::default();
             let expected = alike.then_some((probed, *at));
             let compared = timed(Step::Compare, || {
-                compare_widget(run, combination, expected, &mut report)
+                compare_widget(run, combination, expected, &memo, &mut report)
             });
             (compared, report)
         });
@@ -3113,13 +3115,16 @@ fn signature(
 }
 
 /// Every widget key of `combination`, queried, compared with the fact that
-/// applies; where `expected` names it, `probed`'s distinct combination at
-/// its place, only once it probes in `run` with the signature `probed`
-/// holds for it. `false` where it does not, nothing compared.
+/// applies, what its session's queries answer read from `memo` where an
+/// earlier distinct combination's session asked them; where `expected`
+/// names it, `probed`'s distinct combination at its place, only once it
+/// probes in `run` with the signature `probed` holds for it. `false` where
+/// it does not, nothing compared.
 fn compare_widget(
     run: &Run<'_, '_>,
     combination: &Combination,
     expected: Option<(&Probed, usize)>,
+    memo: &Memo,
     report: &mut Report,
 ) -> bool {
     let (resolved, vector, pass) = (run.resolved, run.vector, run.pass);
@@ -3139,6 +3144,7 @@ fn compare_widget(
         return false;
     }
     report.queried += 1;
+    let asked = memo.of(combination, &session);
     let widget_keys = &applying.widget.keys;
     let facts = &applying.facts();
     for (index, (key, fact)) in widget_keys.iter().zip(facts.iter().copied()).enumerate() {
@@ -3168,7 +3174,12 @@ fn compare_widget(
                 ..
             }) = fact
             && (!session.drawn(&key.key)
-                || listed_or_failed(session.listed(&key.key), &key.name, report, &describe))
+                || listed_or_failed(
+                    asked.answer(Asked::Listed(index), || session.listed(&key.key)),
+                    &key.name,
+                    report,
+                    &describe,
+                ))
         {
             found_listed(report, run.preset, key, None, id);
         }
@@ -3212,11 +3223,29 @@ fn compare_widget(
         ) {
             Verdict::Compare(value, tolerance) => {
                 let except = stated_below(widget_keys, facts, index, fact);
-                match session.synthetic(&key.key, Some(value), &except) {
+                // A fact's own value is the same wherever it applies; a
+                // value composed from leaves is read anew.
+                let own = fact
+                    .and_then(|fact| fact.value.as_ref())
+                    .is_some_and(|own| std::ptr::eq(own, value));
+                let at = std::ptr::from_ref(value).addr();
+                let synthetic = || session.synthetic(&key.key, Some(value), &except);
+                let synthetic = if own {
+                    asked.answer(Asked::Synthetic(index, at, except.clone()), synthetic)
+                } else {
+                    synthetic()
+                };
+                match synthetic {
                     Ok(true) => synthetic_skip(report, &place, &key.name, pass),
                     Ok(false) => {
                         let tolerance = tolerance.drawn_by(run.drawing);
-                        let outcome = session.compare_except(&key.key, value, &tolerance, &except);
+                        let compare =
+                            || session.compare_except(&key.key, value, &tolerance, &except);
+                        let outcome = if own {
+                            asked.answer(Asked::Compared(index, at, except.clone()), compare)
+                        } else {
+                            compare()
+                        };
                         record(outcome, &key.name, &place, report, &describe, pass);
                     }
                     Err(unread) => {
@@ -3225,7 +3254,9 @@ fn compare_widget(
                 }
             }
             Verdict::Drawn if pass == Pass::Normal => {
-                let outcome = session.compare(&key.key, None, &Tolerance::quote());
+                let outcome = asked.answer(Asked::Drawn(index), || {
+                    session.compare(&key.key, None, &Tolerance::quote())
+                });
                 record(
                     outcome,
                     &key.name,
@@ -3239,6 +3270,90 @@ fn compare_widget(
         }
     }
     true
+}
+
+/// What the sessions of a condition vector's distinct combinations
+/// answered in one pass ([`compare_widgets`]), by their element and the
+/// steps that apply to it with each part's answer
+/// ([`Session::signature`]): two such sessions resolve every key alike
+/// (S17: "reusing what the set's rules share"), so each question is asked
+/// once for each, whichever facts apply to the other keys.
+///
+/// [`Session::signature`]: native_theme::gate::Session::signature
+#[derive(Default)]
+struct Memo {
+    sessions: Mutex<HashMap<Alike, Arc<Answers>>>,
+}
+
+/// A session's element and the steps that apply to it with each part's
+/// answer ([`Memo`]).
+type Alike = (String, Vec<u32>);
+
+impl Memo {
+    /// The answers of the sessions alike with `session`, `combination`'s.
+    fn of(
+        &self,
+        combination: &Combination,
+        session: &native_theme::gate::Session<'_>,
+    ) -> Arc<Answers> {
+        let element = format!(
+            "{} {:?} {:?}",
+            combination.widget, combination.context, combination.direction
+        );
+        let mut sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
+        Arc::clone(sessions.entry((element, session.signature())).or_default())
+    }
+}
+
+/// A question [`compare_widget`] asks a session about the key at its
+/// index among its widget's keys: whether it is a listed path; whether a
+/// fact's own value (by its address) reaches a synthetic value there, and
+/// its comparison, each but at the places below the key a later fact
+/// states; the whole part's comparison with none.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum Asked {
+    Listed(usize),
+    Synthetic(usize, usize, Vec<Vec<String>>),
+    Compared(usize, usize, Vec<Vec<String>>),
+    Drawn(usize),
+}
+
+/// What one session answered ([`Memo`]).
+#[derive(Default)]
+struct Answers {
+    listed: Mutex<HashMap<Asked, Result<bool, Unread>>>,
+    compared: Mutex<HashMap<Asked, Result<Outcome, Unread>>>,
+}
+
+/// An answer [`Answers`] holds, of its kind.
+trait Answer: Clone {
+    fn held(answers: &Answers) -> &Mutex<HashMap<Asked, Self>>;
+}
+
+impl Answer for Result<bool, Unread> {
+    fn held(answers: &Answers) -> &Mutex<HashMap<Asked, Self>> {
+        &answers.listed
+    }
+}
+
+impl Answer for Result<Outcome, Unread> {
+    fn held(answers: &Answers) -> &Mutex<HashMap<Asked, Self>> {
+        &answers.compared
+    }
+}
+
+impl Answers {
+    /// The answer to `asked`, `ask`ed where none is held yet; asked
+    /// outside the lock, so two threads may ask it at once, alike.
+    fn answer<A: Answer>(&self, asked: Asked, ask: impl FnOnce() -> A) -> A {
+        let lock = || A::held(self).lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(held) = lock().get(&asked) {
+            return held.clone();
+        }
+        let answer = ask();
+        lock().insert(asked, answer.clone());
+        answer
+    }
 }
 
 /// Whether a key below `block` among `keys` has a fact that applies, as
