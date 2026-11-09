@@ -278,79 +278,17 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
 #[cfg(target_os = "windows")]
 static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-/// Whether COM's multithreaded apartment is kept for the process, from the
-/// first stock icon load to the process's end: `CoIncrementMTAUsage`, once,
-/// on a thread of its own, its cookie never given back; the failure noted
-/// where it failed.
-///
-/// SHGetStockIconInfo runs code of a COM server of the shell's
-/// (`thumbcache.dll`, loaded through COM's DLL cache), and COM must be
-/// initialized for each thread that uses it ("CoInitializeEx must be called
-/// at least once, and is usually called only once, for each thread that
-/// uses the COM library",
-/// <https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coinitializeex>).
-/// A load runs on the caller's thread, which this crate does not own. A
-/// thread that has not initialized COM is a member of the MTA while
-/// another thread keeps one ("A thread has an implicit MTA apartment type
-/// if it does not initialize the COM apartment itself, and if another
-/// thread has already initialized the MTA in the process",
-/// <https://learn.microsoft.com/en-us/windows/win32/api/objidlbase/ne-objidlbase-apttypequalifier>),
-/// and when the last thread uninitializes COM in the process, COM unloads
-/// the servers it loaded (`ProcessUninitialize`, `CleanUpDllsForProcess`),
-/// one a load is running in among them: an access violation (CI run
-/// 42554706381, the Windows watcher's thread uninitializing). Initializing
-/// COM around each load would not do: its own uninitialization, the last in
-/// the process, then fails another thread's starting COM work (0x8000000E,
-/// "the application is exiting", and 0x80080008, `CO_E_SERVER_STOPPING`,
-/// to the Windows watcher's start; CI run 42556588847).
-/// `CoIncrementMTAUsage` is COM's call for an API that "requires COM to be
-/// initialized, but has no information about whether the current thread is
-/// already in an apartment, and does not need the current thread to go into
-/// a particular apartment"; it "ensures that the system doesn't free
-/// resources related to MTA support, even if the MTA thread count goes to
-/// 0"
-/// (<https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coincrementmtausage>).
-/// Kept for the process, COM is never uninitialized under a load.
-#[cfg(target_os = "windows")]
-fn mta_kept() -> bool {
-    static KEPT: std::sync::OnceLock<Result<(), String>> = std::sync::OnceLock::new();
-    let kept = KEPT.get_or_init(|| {
-        // On a thread of its own: the call puts a thread in no apartment
-        // into the MTA, and the caller's thread is left as it is. The usage
-        // outlives the thread (its cookie may be given back from any other).
-        let keeper = std::thread::Builder::new()
-            .spawn(|| {
-                // SAFETY: CoIncrementMTAUsage writes its cookie into a value
-                // the binding owns and returns; it is not called during
-                // process shutdown or from DllMain, which its documentation
-                // rules out. The cookie is dropped without
-                // CoDecrementMTAUsage: the usage is kept for the process, on
-                // purpose.
-                unsafe { windows::Win32::System::Com::CoIncrementMTAUsage() }
-                    .map(|_kept_for_the_process| ())
-                    .map_err(|err| err.to_string())
-            })
-            .map_err(|err| format!("no thread to call it on: {err}"))?;
-        keeper
-            .join()
-            .map_err(|_| "its thread panicked".to_owned())?
-    });
-    if let Err(err) = kept {
-        note_failure(format_args!("CoIncrementMTAUsage: {err}"));
-    }
-    kept.is_ok()
-}
-
 /// Load a stock system icon by its SIID_ name.
 ///
 /// Maps the name to a SHSTOCKICONID, calls SHGetStockIconInfo to get
 /// an HICON, extracts RGBA pixels, and cleans up the icon handle, one load
 /// at a time ([`STOCK_ICON_LOCK`]), with COM's MTA kept for the process
-/// ([`mta_kept`]).
+/// ([`crate::windows::mta_kept`]).
 #[cfg(target_os = "windows")]
 fn load_stock_icon(name: &str) -> Option<IconData> {
     let siid = siid_from_name(name)?;
-    if !mta_kept() {
+    if let Err(err) = crate::windows::mta_kept() {
+        note_failure(format_args!("CoIncrementMTAUsage: {err}"));
         return None;
     }
     // The lock guards no data, so a load that panicked leaves nothing to
@@ -1063,50 +1001,24 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn stock_icons_load_while_another_thread_leaves_the_mta() {
-        use std::sync::atomic::{AtomicBool, Ordering};
-        use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize};
-
-        /// Sets its flag when dropped: the loads' end, or their unwinding.
-        struct SetOnDrop<'a>(&'a AtomicBool);
-        impl Drop for SetOnDrop<'_> {
-            fn drop(&mut self) {
-                self.0.store(true, Ordering::Relaxed);
-            }
-        }
-
         let first = load_role(IconRole::DialogWarning);
         assert!(
             matches!(first, Some(IconData::Rgba(_))),
             "DialogWarning should load as RGBA; failed at: {}",
             last_failure()
         );
-        let done = AtomicBool::new(false);
-        std::thread::scope(|scope| {
-            scope.spawn(|| {
-                while !done.load(Ordering::Relaxed) {
-                    // SAFETY: a successful CoInitializeEx, S_FALSE included,
-                    // is balanced by one CoUninitialize on this thread, with
-                    // no COM object created between them.
-                    unsafe {
-                        if CoInitializeEx(None, COINIT_MULTITHREADED).is_ok() {
-                            CoUninitialize();
-                        }
-                    }
-                }
-            });
-            let loading = SetOnDrop(&done);
-            let loads: Vec<_> = (0..200)
+        let loads: Vec<_> = crate::windows::while_another_thread_leaves_the_mta(|| {
+            (0..200)
                 .flat_map(|_| stock_roles())
                 .map(|role| (role, load_role(role), last_failure()))
-                .collect();
-            drop(loading);
-            for (role, icon, failure) in loads {
-                assert!(
-                    matches!(icon, Some(IconData::Rgba(_))),
-                    "{role:?} should load as RGBA; failed at: {failure}"
-                );
-            }
+                .collect()
         });
+        for (role, icon, failure) in loads {
+            assert!(
+                matches!(icon, Some(IconData::Rgba(_))),
+                "{role:?} should load as RGBA; failed at: {failure}"
+            );
+        }
     }
 
     #[cfg(target_os = "windows")]
