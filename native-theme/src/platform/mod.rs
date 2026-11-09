@@ -1,17 +1,21 @@
 //! S2.2's platform functions, one file each; public for their vector tests
 //! (`tests/platform_vectors.rs`). `adw_standalone`, `kde_shade`,
-//! `kirigami_lerp` and the seven KDE colour functions (`kcu_mix`, `kcu_tint`,
+//! `kirigami_lerp`, the seven KDE colour functions (`kcu_mix`, `kcu_tint`,
 //! `kcu_shade`, `kcu_overlay`, `kirigami_tint`, `kde_effects`,
-//! `kde_selection_inactive`, their shared arithmetic in `kde_color_common`)
-//! were written in a clean room, from behavioural descriptions and the vector
-//! tables alone (the plan's D10); `sf_tracking` reads Apple's published
+//! `kde_selection_inactive`, their shared arithmetic in `kde_color_common`),
+//! Plasma's accent derivation (`kde_accent`, `kde_accent_wm`) and Kirigami's
+//! label-sized icon step (`kirigami_label_icon_size`) were written in a
+//! clean room, from behavioural descriptions and the vector tables alone
+//! (the plan's D10), `kde_accent_operands` mapping the model's operands
+//! onto the accent derivation's; `sf_tracking` reads Apple's published
 //! tables, `gen_sf_tracking` generated from them; `m3_role` ports
 //! material-color-utilities under that code's Apache-2.0 licence (D10). S9.4's
 //! scaling curves live here too: `android_non_linear` ports the Android Open
 //! Source Project's `FontScaleConverter` under its Apache-2.0 licence, and
 //! `dynamic_type` reads Apple's published Dynamic Type table,
-//! `gen_dynamic_type` generated from it. The model's names for their operands
-//! are here.
+//! `gen_dynamic_type` generated from it, and `win_ui` ports WinUI's
+//! `TextFormatting::GetScaledFontSize` under its MIT licence. The model's
+//! names for their operands are here.
 
 pub mod adw_standalone;
 pub mod android_non_linear;
@@ -22,14 +26,22 @@ pub mod kcu_mix;
 pub mod kcu_overlay;
 pub mod kcu_shade;
 pub mod kcu_tint;
+pub mod kde_accent;
+pub(crate) mod kde_accent_operands;
 mod kde_color_common;
 pub mod kde_effects;
 pub mod kde_selection_inactive;
 pub mod kde_shade;
+// The clean room's file stays as written (D10): its range check, two
+// comparisons, is what clippy's `manual_range_contains` would have spelled
+// `(-LIMIT..LIMIT).contains(&whole)`.
+#[allow(clippy::manual_range_contains)]
+pub mod kirigami_label_icon_size;
 pub mod kirigami_lerp;
 pub mod kirigami_tint;
 pub mod m3_role;
 pub mod sf_tracking;
+pub mod win_ui;
 
 use kde_shade::KdeShadeRole;
 use sf_tracking::TrackingDesign;

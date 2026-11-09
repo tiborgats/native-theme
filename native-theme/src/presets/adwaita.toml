@@ -7,7 +7,7 @@
 [preset]
 id = "adwaita"
 # hand-written: begin preset
-# docs/facts/sources.toml:569
+# docs/facts/sources.toml:571 (libadwaita@1.10.0)
 generation = "libadwaita-1.10"
 # hand-written: end preset
 
@@ -32,45 +32,45 @@ color_roles = [
     "overview_foreground",  # docs/facts/gnome/roles.toml:2178
 ]
 text_styles = [
-    "tab_counter",  # docs/facts/gnome/tokens.toml:2314
-    "smaller",  # docs/facts/gnome/tokens.toml:2587
-    "title_1",  # docs/facts/gnome/tokens.toml:2882
-    "title_2",  # docs/facts/gnome/tokens.toml:3162
-    "title_3",  # docs/facts/gnome/tokens.toml:3442
-    "title_4",  # docs/facts/gnome/tokens.toml:3722
-    "heading",  # docs/facts/gnome/tokens.toml:4002
-    "body",  # docs/facts/gnome/tokens.toml:4280
-    "caption_heading",  # docs/facts/gnome/tokens.toml:4551
-    "caption",  # docs/facts/gnome/tokens.toml:4831
-    "document",  # docs/facts/gnome/tokens.toml:5105
-    "monospace",  # docs/facts/gnome/tokens.toml:5387
-    "numeric",  # docs/facts/gnome/tokens.toml:5669
-    "narrow_switcher_label",  # docs/facts/gnome/tokens.toml:5953
-    "badge_label",  # docs/facts/gnome/tokens.toml:6256
+    "tab_counter",  # docs/facts/gnome/tokens.toml:2317
+    "smaller",  # docs/facts/gnome/tokens.toml:2590
+    "title_1",  # docs/facts/gnome/tokens.toml:2885
+    "title_2",  # docs/facts/gnome/tokens.toml:3165
+    "title_3",  # docs/facts/gnome/tokens.toml:3445
+    "title_4",  # docs/facts/gnome/tokens.toml:3725
+    "heading",  # docs/facts/gnome/tokens.toml:4005
+    "body",  # docs/facts/gnome/tokens.toml:4283
+    "caption_heading",  # docs/facts/gnome/tokens.toml:4554
+    "caption",  # docs/facts/gnome/tokens.toml:4834
+    "document",  # docs/facts/gnome/tokens.toml:5108
+    "monospace",  # docs/facts/gnome/tokens.toml:5393
+    "numeric",  # docs/facts/gnome/tokens.toml:5702
+    "narrow_switcher_label",  # docs/facts/gnome/tokens.toml:5986
+    "badge_label",  # docs/facts/gnome/tokens.toml:6301
 ]
 timings = [
     "ease_out_quad",  # docs/facts/gnome/tokens.toml:5
-    "linear",  # docs/facts/gnome/tokens.toml:179
-    "ease_in_out",  # docs/facts/gnome/tokens.toml:199
-    "ease_in",  # docs/facts/gnome/tokens.toml:214
-    "ease_out",  # docs/facts/gnome/tokens.toml:224
-    "ease",  # docs/facts/gnome/tokens.toml:234
-    "ease_in_cubic",  # docs/facts/gnome/tokens.toml:251
-    "ease_out_cubic",  # docs/facts/gnome/tokens.toml:277
-    "ease_in_out_sine",  # docs/facts/gnome/tokens.toml:298
-    "ease_in_expo",  # docs/facts/gnome/tokens.toml:324
-    "ease_out_expo",  # docs/facts/gnome/tokens.toml:345
-    "floating_sheet_open",  # docs/facts/gnome/tokens.toml:710
-    "floating_sheet_close",  # docs/facts/gnome/tokens.toml:797
-    "bottom_sheet_open",  # docs/facts/gnome/tokens.toml:886
-    "bottom_sheet_close",  # docs/facts/gnome/tokens.toml:967
-    "navigation_view_push",  # docs/facts/gnome/tokens.toml:1050
-    "navigation_view_pop",  # docs/facts/gnome/tokens.toml:1090
-    "overlay_split_view_show",  # docs/facts/gnome/tokens.toml:1131
-    "overlay_split_view_hide",  # docs/facts/gnome/tokens.toml:1166
-    "carousel",  # docs/facts/gnome/tokens.toml:1202
-    "flap_reveal",  # docs/facts/gnome/tokens.toml:1234
-    "leaflet_child",  # docs/facts/gnome/tokens.toml:1264
+    "linear",  # docs/facts/gnome/tokens.toml:181
+    "ease_in_out",  # docs/facts/gnome/tokens.toml:201
+    "ease_in",  # docs/facts/gnome/tokens.toml:216
+    "ease_out",  # docs/facts/gnome/tokens.toml:226
+    "ease",  # docs/facts/gnome/tokens.toml:236
+    "ease_in_cubic",  # docs/facts/gnome/tokens.toml:253
+    "ease_out_cubic",  # docs/facts/gnome/tokens.toml:279
+    "ease_in_out_sine",  # docs/facts/gnome/tokens.toml:300
+    "ease_in_expo",  # docs/facts/gnome/tokens.toml:326
+    "ease_out_expo",  # docs/facts/gnome/tokens.toml:347
+    "floating_sheet_open",  # docs/facts/gnome/tokens.toml:712
+    "floating_sheet_close",  # docs/facts/gnome/tokens.toml:799
+    "bottom_sheet_open",  # docs/facts/gnome/tokens.toml:888
+    "bottom_sheet_close",  # docs/facts/gnome/tokens.toml:969
+    "navigation_view_push",  # docs/facts/gnome/tokens.toml:1052
+    "navigation_view_pop",  # docs/facts/gnome/tokens.toml:1092
+    "overlay_split_view_show",  # docs/facts/gnome/tokens.toml:1133
+    "overlay_split_view_hide",  # docs/facts/gnome/tokens.toml:1168
+    "carousel",  # docs/facts/gnome/tokens.toml:1204
+    "flap_reveal",  # docs/facts/gnome/tokens.toml:1236
+    "leaflet_child",  # docs/facts/gnome/tokens.toml:1266
 ]
 durations = [
     "backdrop",  # docs/facts/gnome/tokens.toml:15
@@ -85,50 +85,50 @@ durations = [
     "places_view",  # docs/facts/gnome/tokens.toml:117
     "expander_row",  # docs/facts/gnome/tokens.toml:128
     "tab_bar",  # docs/facts/gnome/tokens.toml:139
-    "tab_thumbnail",  # docs/facts/gnome/tokens.toml:157
-    "toggle_group",  # docs/facts/gnome/tokens.toml:168
-    "revealer",  # docs/facts/gnome/tokens.toml:370
-    "stack",  # docs/facts/gnome/tokens.toml:380
-    "scrolled_window",  # docs/facts/gnome/tokens.toml:390
-    "entry_row",  # docs/facts/gnome/tokens.toml:407
-    "flap_fold",  # docs/facts/gnome/tokens.toml:418
-    "leaflet_mode",  # docs/facts/gnome/tokens.toml:429
-    "tab_close_btn",  # docs/facts/gnome/tokens.toml:440
-    "tab_attention_indicator",  # docs/facts/gnome/tokens.toml:450
-    "tab_box_open",  # docs/facts/gnome/tokens.toml:461
-    "tab_box_close",  # docs/facts/gnome/tokens.toml:471
-    "tab_box_focus",  # docs/facts/gnome/tokens.toml:481
-    "tab_box_scroll",  # docs/facts/gnome/tokens.toml:491
-    "tab_box_resize",  # docs/facts/gnome/tokens.toml:501
-    "tab_box_reorder",  # docs/facts/gnome/tokens.toml:511
-    "tab_box_icon_resize",  # docs/facts/gnome/tokens.toml:521
-    "tab_grid_open",  # docs/facts/gnome/tokens.toml:532
-    "tab_grid_close",  # docs/facts/gnome/tokens.toml:542
-    "tab_grid_focus",  # docs/facts/gnome/tokens.toml:552
-    "tab_grid_resize",  # docs/facts/gnome/tokens.toml:562
-    "tab_grid_reorder",  # docs/facts/gnome/tokens.toml:572
-    "tab_grid_icon_resize",  # docs/facts/gnome/tokens.toml:582
-    "tab_overview_scroll",  # docs/facts/gnome/tokens.toml:593
-    "tab_overview",  # docs/facts/gnome/tokens.toml:603
-    "toast_overlay_show",  # docs/facts/gnome/tokens.toml:614
-    "toast_overlay_hide",  # docs/facts/gnome/tokens.toml:624
-    "toast_overlay_replace",  # docs/facts/gnome/tokens.toml:634
-    "view_stack",  # docs/facts/gnome/tokens.toml:645
+    "tab_thumbnail_box_shadow",  # docs/facts/gnome/tokens.toml:159
+    "toggle_group",  # docs/facts/gnome/tokens.toml:170
+    "revealer",  # docs/facts/gnome/tokens.toml:372
+    "stack",  # docs/facts/gnome/tokens.toml:382
+    "scrolled_window",  # docs/facts/gnome/tokens.toml:392
+    "entry_row",  # docs/facts/gnome/tokens.toml:409
+    "flap_fold",  # docs/facts/gnome/tokens.toml:420
+    "leaflet_mode",  # docs/facts/gnome/tokens.toml:431
+    "tab_close_btn",  # docs/facts/gnome/tokens.toml:442
+    "tab_attention_indicator",  # docs/facts/gnome/tokens.toml:452
+    "tab_box_open",  # docs/facts/gnome/tokens.toml:463
+    "tab_box_close",  # docs/facts/gnome/tokens.toml:473
+    "tab_box_focus",  # docs/facts/gnome/tokens.toml:483
+    "tab_box_scroll",  # docs/facts/gnome/tokens.toml:493
+    "tab_box_resize",  # docs/facts/gnome/tokens.toml:503
+    "tab_box_reorder",  # docs/facts/gnome/tokens.toml:513
+    "tab_box_icon_resize",  # docs/facts/gnome/tokens.toml:523
+    "tab_grid_open",  # docs/facts/gnome/tokens.toml:534
+    "tab_grid_close",  # docs/facts/gnome/tokens.toml:544
+    "tab_grid_focus",  # docs/facts/gnome/tokens.toml:554
+    "tab_grid_resize",  # docs/facts/gnome/tokens.toml:564
+    "tab_grid_reorder",  # docs/facts/gnome/tokens.toml:574
+    "tab_grid_icon_resize",  # docs/facts/gnome/tokens.toml:584
+    "tab_overview_scroll",  # docs/facts/gnome/tokens.toml:595
+    "tab_overview",  # docs/facts/gnome/tokens.toml:605
+    "toast_overlay_show",  # docs/facts/gnome/tokens.toml:616
+    "toast_overlay_hide",  # docs/facts/gnome/tokens.toml:626
+    "toast_overlay_replace",  # docs/facts/gnome/tokens.toml:636
+    "view_stack",  # docs/facts/gnome/tokens.toml:647
 ]
 icon_contexts = [
-    "status_page",  # docs/facts/gnome/tokens.toml:6980
-    "status_page_compact",  # docs/facts/gnome/tokens.toml:7000
-    "about",  # docs/facts/gnome/tokens.toml:7020
-    "check",  # docs/facts/gnome/tokens.toml:7030
+    "status_page",  # docs/facts/gnome/tokens.toml:7025
+    "status_page_compact",  # docs/facts/gnome/tokens.toml:7045
+    "about",  # docs/facts/gnome/tokens.toml:7065
+    "check",  # docs/facts/gnome/tokens.toml:7075
 ]
 symbolic_colors = [
-    "success",  # docs/facts/gnome/tokens.toml:7042
-    "warning",  # docs/facts/gnome/tokens.toml:7042
-    "error",  # docs/facts/gnome/tokens.toml:7042
-    "accent",  # docs/facts/gnome/tokens.toml:7042
+    "success",  # docs/facts/gnome/tokens.toml:7087
+    "warning",  # docs/facts/gnome/tokens.toml:7087
+    "error",  # docs/facts/gnome/tokens.toml:7087
+    "accent",  # docs/facts/gnome/tokens.toml:7087
 ]
 rendering_engines = [
-    "automatic",  # docs/facts/gnome/tokens.toml:6794
+    "automatic",  # docs/facts/gnome/tokens.toml:6839
 ]
 inputs = [
     "accent",  # docs/facts/gnome/roles.toml:5565
@@ -141,20 +141,20 @@ accent_inputs = ["accent"]
 # state fractions, each converted from its quote's percent (percent_to_fraction, docs/facts/gnome/tokens.toml:1303)
 unit = "fraction"
 keys = [
-    "border",  # docs/facts/gnome/tokens.toml:1294
-    "focus_border",  # docs/facts/gnome/tokens.toml:1310
-    "dimmer",  # docs/facts/gnome/tokens.toml:1343
-    "strong_disabled",  # docs/facts/gnome/tokens.toml:1366
-    "dim",  # docs/facts/gnome/tokens.toml:1377
-    "disabled",  # docs/facts/gnome/tokens.toml:1388
+    "border",  # docs/facts/gnome/tokens.toml:1296
+    "focus_border",  # docs/facts/gnome/tokens.toml:1312
+    "dimmer",  # docs/facts/gnome/tokens.toml:1345
+    "strong_disabled",  # docs/facts/gnome/tokens.toml:1368
+    "dim",  # docs/facts/gnome/tokens.toml:1379
+    "disabled",  # docs/facts/gnome/tokens.toml:1390
 ]
 
 [declare.params.pointer_repeat]
 # S4.6: one unit per group, the pointer repeat's delay and interval in ms
 unit = "ms"
 keys = [
-    "delay",  # docs/facts/gnome/tokens.toml:2291
-    "interval",  # docs/facts/gnome/tokens.toml:2301
+    "delay",  # docs/facts/gnome/tokens.toml:2294
+    "interval",  # docs/facts/gnome/tokens.toml:2304
 ]
 # hand-written: end declare
 

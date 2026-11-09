@@ -13,13 +13,18 @@ use native_theme::platform::kcu_mix::kcu_mix;
 use native_theme::platform::kcu_overlay::kcu_overlay;
 use native_theme::platform::kcu_shade::kcu_shade;
 use native_theme::platform::kcu_tint::kcu_tint;
+use native_theme::platform::kde_accent::{
+    AccentGroup, AccentKey, AccentSet, AccentWmKey, KdeAccentInput, kde_accent, kde_accent_wm,
+};
 use native_theme::platform::kde_effects::{KdeGroupEffects, kde_effects};
 use native_theme::platform::kde_selection_inactive::kde_selection_inactive;
 use native_theme::platform::kde_shade::{KdeShadeRole, kde_shade};
+use native_theme::platform::kirigami_label_icon_size::kirigami_label_icon_size;
 use native_theme::platform::kirigami_lerp::kirigami_lerp;
 use native_theme::platform::kirigami_tint::kirigami_tint;
 use native_theme::platform::m3_role::m3_role;
 use native_theme::platform::sf_tracking::{TrackingDesign, sf_tracking};
+use native_theme::platform::win_ui::win_ui;
 use native_theme::{
     Color, ContentSizeCategory, KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect,
     KdeRoleKind, MaterialVariant, Scheme, TextRole,
@@ -135,6 +140,17 @@ fn vectors_kirigami_lerp() {
         )
         .expect("a colour in 16-bit storage");
         assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+/// Every row exact: each size is a whole number of pixels.
+#[test]
+fn vectors_kirigami_label_icon_size() {
+    let rows = rows("kirigami_label_icon_size");
+    assert_eq!(rows.len(), 49);
+    for row in rows {
+        let got = kirigami_label_icon_size(size_px(&row["font_height"]));
+        assert_eq!(got, size_px(&row["size"]), "{row:?}");
     }
 }
 
@@ -290,6 +306,136 @@ fn scheme(cell: &str) -> Scheme {
     }
 }
 
+/// A table's set name, the clean room's set.
+fn accent_set(name: &str) -> AccentSet {
+    match name {
+        "window" => AccentSet::Window,
+        "view" => AccentSet::View,
+        "button" => AccentSet::Button,
+        "selection" => AccentSet::Selection,
+        "tooltip" => AccentSet::Tooltip,
+        "complementary" => AccentSet::Complementary,
+        "header" => AccentSet::Header,
+        other => panic!("no set `{other}`"),
+    }
+}
+
+/// A table's key name, the clean room's key.
+fn accent_key(name: &str) -> AccentKey {
+    AccentKey::ALL
+        .into_iter()
+        .zip([
+            "background_normal",
+            "background_alternate",
+            "foreground_normal",
+            "foreground_inactive",
+            "foreground_active",
+            "foreground_link",
+            "foreground_visited",
+            "foreground_negative",
+            "foreground_neutral",
+            "foreground_positive",
+            "decoration_focus",
+            "decoration_hover",
+        ])
+        .find(|(_, held)| *held == name)
+        .unwrap_or_else(|| panic!("no key `{name}`"))
+        .0
+}
+
+/// A list cell's names: a JSON string of names separated by commas.
+fn names(cell: &str) -> Vec<&str> {
+    let inner = cell
+        .strip_prefix('"')
+        .and_then(|rest| rest.strip_suffix('"'))
+        .expect(cell);
+    inner.split(',').filter(|name| !name.is_empty()).collect()
+}
+
+/// A row's accent, options and lists: the groups, the `[Inactive]` groups
+/// and the unset keys, `<set>.<key>` and `<set>.inactive.<key>`.
+fn accent_input(row: &HashMap<String, String>, inactive_groups: &str) -> KdeAccentInput {
+    let mut input = KdeAccentInput {
+        accent: channels(color(&row["accent"])),
+        tint_factor: match row["tint_factor"].as_str() {
+            "none" => None,
+            factor => Some(number(factor)),
+        },
+        titlebar_is_accent_colored: boolean(&row["titlebar_is_accent_colored"]),
+        ..KdeAccentInput::default()
+    };
+    for set in names(&row["groups"]) {
+        input.sets.get_mut(accent_set(set)).has_group = true;
+    }
+    for set in names(inactive_groups) {
+        input.sets.get_mut(accent_set(set)).has_inactive_group = true;
+    }
+    for name in names(&row["unset_keys"]) {
+        let parts: Vec<&str> = name.split('.').collect();
+        let (set, key, inactive) = match parts.as_slice() {
+            [set, "inactive", key] => (*set, *key, true),
+            [set, key] => (*set, *key, false),
+            _ => panic!("no unset key `{name}`"),
+        };
+        let own = input.sets.get_mut(accent_set(set));
+        let unset = if inactive {
+            &mut own.inactive_unset
+        } else {
+            &mut own.active_unset
+        };
+        *unset.get_mut(accent_key(key)) = true;
+    }
+    input
+}
+
+#[test]
+fn vectors_kde_accent() {
+    let rows = rows("kde_accent");
+    assert_eq!(rows.len(), 3259);
+    for row in rows {
+        let (set, key) = (accent_set(&row["set"]), accent_key(&row["key"]));
+        let group = match row["group"].as_str() {
+            "active" => AccentGroup::Active,
+            "inactive" => AccentGroup::Inactive,
+            other => panic!("no group `{other}`"),
+        };
+        let mut input = accent_input(&row, &row["inactive_groups"]);
+        input.sets.view.active.background_normal = channels(color(&row["view_background"]));
+        input.sets.window.active.background_normal = channels(color(&row["window_background"]));
+        *input.sets.window.active.get_mut(key) = channels(color(&row["window_value"]));
+        let own = input.sets.get_mut(set);
+        own.active.background_normal = channels(color(&row["background"]));
+        *own.active.get_mut(key) = channels(color(&row["value"]));
+        *own.inactive.get_mut(key) = channels(color(&row["inactive_value"]));
+        let got = kde_accent(&input, set, key, group);
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+#[test]
+fn vectors_kde_accent_wm() {
+    let rows = rows("kde_accent_wm");
+    assert_eq!(rows.len(), 211);
+    for row in rows {
+        let key = match row["key"].as_str() {
+            "active_background" => AccentWmKey::ActiveBackground,
+            "active_foreground" => AccentWmKey::ActiveForeground,
+            "inactive_background" => AccentWmKey::InactiveBackground,
+            "inactive_foreground" => AccentWmKey::InactiveForeground,
+            other => panic!("no [WM] key `{other}`"),
+        };
+        let mut input = accent_input(&row, "\"\"");
+        let value = channels(color(&row["value"]));
+        input.wm.active_background = value;
+        input.wm.active_foreground = value;
+        input.wm.inactive_background = value;
+        input.wm.inactive_foreground = value;
+        input.sets.window.active.background_normal = channels(color(&row["window_background"]));
+        let got = kde_accent_wm(&input, key);
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
 #[test]
 fn vectors_adw_standalone() {
     let rows = rows("adw_standalone");
@@ -373,6 +519,16 @@ fn vectors_android_non_linear_inverse() {
     assert_eq!(rows.len(), 1425);
     for row in rows {
         let got = android_non_linear_inverse(size_px(&row["size"]), number(&row["font_scale"]));
+        assert_eq!(got, size_px(&row["result"]), "{row:?}");
+    }
+}
+
+#[test]
+fn vectors_win_ui() {
+    let rows = rows("win_ui");
+    assert_eq!(rows.len(), 1434);
+    for row in rows {
+        let got = win_ui(size_px(&row["size"]), number(&row["factor"]));
         assert_eq!(got, size_px(&row["result"]), "{row:?}");
     }
 }

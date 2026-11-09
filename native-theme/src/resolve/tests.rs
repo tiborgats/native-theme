@@ -32,6 +32,7 @@ pub(super) fn stack(
         preset: None,
         declarations: Declarations::default(),
         preset_layer: Arc::new(preset),
+        derivation: None,
         reader: reader.map(|(state, layer)| super::Reader::StandIn {
             state,
             layer: Arc::new(layer),
@@ -588,4 +589,101 @@ fn window_record_shares_the_layers() {
     let mut now = last.clone();
     now.accent_left_out = !last.accent_left_out;
     assert_eq!(super::classify(last, &now), Change::ThemeChange);
+}
+
+/// The layers' places in the stack's order (S8; ADD-A132): on `kde-breeze`
+/// the accent-derivation layer lies directly above the preset, beneath the
+/// reader or stand-in, so every layer above it lies one place higher, with
+/// a reader, a stand-in or neither; on every other preset there is none.
+/// The synthetic route's places, a window's record and the resolution's
+/// synthetic places follow them.
+#[test]
+fn accent_derivation_layer_places() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::validate::LayerKind as K;
+    let kinds = |stack: &Stack| stack.stacked().iter().map(|s| s.kind).collect::<Vec<_>>();
+    // The synthetic route's stack of the bundled preset `id`, with the
+    // number of layers it adds.
+    let synthetic = |id: PresetId| -> Result<(Stack, usize), Box<dyn std::error::Error>> {
+        let file = read_preset(id.source())?;
+        let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+        let count = layers.len();
+        let stack = Stack::synthetic(
+            Some(id),
+            file.declarations,
+            file.layer,
+            Scheme::Light,
+            file.pending,
+            layers,
+        )?;
+        Ok((stack, count))
+    };
+    // The stack's order as `stacked`, a window's record and the resolution
+    // see it, with the synthetic route's places `places`.
+    let pinned = |stack: &Stack, expected: &[K], places: &[usize]| {
+        assert_eq!(kinds(stack), expected);
+        assert_eq!(stack.synthetic_places(), places);
+        let recorded = stack.recorded(&window()).layers;
+        let stacked = stack.stacked();
+        assert_eq!(recorded.len(), stacked.len());
+        for (shared, stacked) in recorded.iter().zip(&stacked) {
+            assert!(std::ptr::eq(Arc::as_ptr(shared), stacked.layer));
+        }
+        assert_eq!(stack.resolved(&window()).synthetic, places);
+    };
+    let applications = |count: usize| vec![K::Application; count];
+    let stand_in = || ReaderState::new(Scheme::Dark, 1.0);
+
+    let (mut breeze, count) = synthetic(PresetId::KdeBreeze)?;
+    assert!(count > 0);
+    let after = |first: usize| (first..first + count).collect::<Vec<_>>();
+    let order = |below: &[K], above: usize| {
+        let mut order = below.to_vec();
+        order.extend(applications(count + above));
+        order.push(K::Accent);
+        order
+    };
+    pinned(
+        &breeze,
+        &order(&[K::Preset, K::AccentDerivation], 0),
+        &after(2),
+    );
+    let mut read = breeze.clone();
+    read.set_reader(stand_in(), Layer::default(), Some(PresetId::KdeBreeze))?;
+    pinned(
+        &read,
+        &order(&[K::Preset, K::AccentDerivation, K::Reader], 0),
+        &after(3),
+    );
+    breeze.set_reader_stand_in(stand_in(), Layer::default())?;
+    assert_eq!(breeze.reader_place(), 2);
+    breeze.add_layer(Layer::default())?;
+    pinned(
+        &breeze,
+        &order(&[K::Preset, K::AccentDerivation, K::Reader], 1),
+        &after(3),
+    );
+
+    let (mut adwaita, count) = synthetic(PresetId::Adwaita)?;
+    let after = |first: usize| (first..first + count).collect::<Vec<_>>();
+    let order = |below: &[K]| {
+        let mut order = below.to_vec();
+        order.extend(applications(count));
+        order.push(K::Accent);
+        order
+    };
+    pinned(&adwaita, &order(&[K::Preset]), &after(1));
+    adwaita.set_reader_stand_in(stand_in(), Layer::default())?;
+    assert_eq!(adwaita.reader_place(), 1);
+    pinned(&adwaita, &order(&[K::Preset, K::Reader]), &after(2));
+
+    // Off the synthetic route and with no preset id: no derivation.
+    let mut plain = stack(body(0.1), None, vec![body(0.2)]);
+    pinned(&plain, &[K::Preset, K::Application, K::Accent], &[]);
+    plain.set_reader_stand_in(stand_in(), Layer::default())?;
+    pinned(
+        &plain,
+        &[K::Preset, K::Reader, K::Application, K::Accent],
+        &[],
+    );
+    Ok(())
 }

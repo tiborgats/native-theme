@@ -1581,7 +1581,9 @@ fn a_gnome_reading_over_adwaita() {
     );
     let body = tokens.text.roles.body.as_ref().unwrap().font.clone();
     assert_eq!(body.family.as_deref(), Some("Adwaita Sans"));
-    assert_eq!(body.weight, Some(700));
+    // GTK 4 takes only the family and size from `gtk-font-name` (S9.3,
+    // ADD-A141), so the string's `Bold` leaves the preset's weight.
+    assert_eq!(body.weight, Some(400));
     // 12 pt at 96 DPI is 16 px, scaled by 1.25.
     assert_eq!(body.size, Some(crate::units::Px(20.0)));
 }
@@ -1639,6 +1641,147 @@ fn root_role(theme: &super::Theme, role: crate::blocks::part_style::RoleRef) -> 
     resolved
         .role(&scope, role)
         .map(crate::color::Color::to_srgb8_clamped)
+}
+
+/// `kde_accent` and `kde_accent_wm` resolved over `kde-breeze`'s own scheme
+/// inputs at light with the accent `#e5a50a` give what Plasma wrote for
+/// that pair (`docs/facts/kde/accent.toml`'s light-e5a50a facts:
+/// `role.view.link` `#a77807`, `role.selection.background` `#ecbf53`,
+/// `role.@wm_active_background` `#e3e5e7`), stated by an application layer
+/// until the accent-derivation layer states them (S9.2, M1b). The group
+/// `active` is written bare (S2.2, ADD-A143). The layer states
+/// `token.kde.tint_factor` `none` itself, Breeze Light's (no `TintFactor`):
+/// an operand both calls read, which S12's absent-operand check passes, as
+/// `None` is a stated value, not an absent one (S4.8).
+#[test]
+fn kde_accent_over_kde_breeze() {
+    use crate::blocks::part_style::RoleRef;
+    use crate::color::Color;
+    use crate::inputs::{Accent, InputValue};
+    use crate::roles::{SurfaceRole, SurfaceSet};
+    use crate::value::{SchemeMap, Value};
+
+    let mut theme = synthetic_theme(PresetId::KdeBreeze);
+    let accent = Color::parse("#e5a50a").unwrap();
+    let accent = InputValue::new(SchemeMap::one(Scheme::Light, Value::Stated(accent)));
+    theme.set_accent(Some(Accent::new(accent))).unwrap();
+    let view_link = || RoleRef::Set(SurfaceSet::View, SurfaceRole::Link);
+    assert_eq!(
+        root_role(&theme, view_link()),
+        Some([0x29, 0x80, 0xb9, 0xff]),
+        "the preset's own link, no accent derived"
+    );
+    theme
+        .add_layer(
+            Layer::from_toml(
+                "[colors.light.surfaces.view]\n\
+                 link = \"= kde_accent(view, foreground_link, active)\"\n\
+                 [colors.light.surfaces.selection]\n\
+                 background = \"= kde_accent(selection, background_normal, active)\"\n\
+                 [colors.light.keyed]\n\
+                 wm_active_background = \"= kde_accent_wm(active_background)\"\n\
+                 [tokens.kde]\n\
+                 tint_factor = \"none\"\n",
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    assert_eq!(
+        root_role(&theme, view_link()),
+        Some([0xa7, 0x78, 0x07, 0xff])
+    );
+    assert_eq!(
+        root_role(
+            &theme,
+            RoleRef::Set(SurfaceSet::Selection, SurfaceRole::Background)
+        ),
+        Some([0xec, 0xbf, 0x53, 0xff])
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Keyed(crate::key!("wm_active_background"))),
+        Some([0xe3, 0xe5, 0xe7, 0xff])
+    );
+}
+
+/// `kirigami_label_icon_size(body_font_height)` over `kde-breeze`'s own
+/// body font, Noto Sans 10 pt at its 96 DPI, measured as Qt measures it
+/// (17.6875 px, `tests/vectors/kirigami_label_icon_size.tsv`'s first row;
+/// ADD-A141), gives the KDE facts' 16 px (`docs/facts/kde/button.toml`'s
+/// three `sizeForLabels` icons). The preset does not state those facts:
+/// they draw in the search field, the input and the chip, whose units are
+/// not enabled yet, so the call and the icon's `body_font_height` datum
+/// (S10) are stated here, on the plain button's icon.
+#[test]
+fn kirigami_label_icon_size_over_kde_breeze() {
+    /// Qt's height of Noto Sans at 10 pt and 96 DPI (the vector table's);
+    /// every other metric, and any other font's height, zero.
+    struct QtHeight;
+    impl FontMetrics for QtHeight {
+        fn char_width(&self, _: &ResolvedFont) -> Px {
+            Px(0.0)
+        }
+        fn max_char_width(&self, _: &ResolvedFont) -> Px {
+            Px(0.0)
+        }
+        fn x_height(&self, _: &ResolvedFont) -> Px {
+            Px(0.0)
+        }
+        fn height(&self, font: &ResolvedFont) -> Px {
+            let size = font.size.map_or(f32::NAN, |Px(size)| size);
+            let noto_10pt = font.family.as_deref() == Some("Noto Sans")
+                && (size - 10.0 * 96.0 / 72.0).abs() < 1e-4;
+            Px(if noto_10pt { 17.6875 } else { 0.0 })
+        }
+        fn line_spacing(&self, _: &ResolvedFont) -> Px {
+            Px(0.0)
+        }
+        fn underline_offset(&self, _: &ResolvedFont) -> Px {
+            Px(0.0)
+        }
+        fn underline_thickness(&self, _: &ResolvedFont) -> Px {
+            Px(0.0)
+        }
+        fn strikeout_offset(&self, _: &ResolvedFont) -> Px {
+            Px(0.0)
+        }
+        fn strikeout_thickness(&self, _: &ResolvedFont) -> Px {
+            Px(0.0)
+        }
+    }
+
+    let declared = "[declare.widget.button]\navailable = true\n";
+    let source = PresetId::KdeBreeze.source();
+    assert!(source.contains(declared));
+    let text = format!(
+        "{}\n[[rules]]\ntarget = \"button.icon\"\n\
+         set = {{ icon.size_px = \"= kirigami_label_icon_size(body_font_height)\" }}\n",
+        source.replace(
+            declared,
+            "[declare.widget.button]\navailable = true\ndata = { icon = [\"body_font_height\"] }\n",
+        )
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    let theme = synthetic_stack(None, &text, Scheme::Light, layers)
+        .unwrap()
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = theme.root_scope(&root());
+    // The icon's size, `None` where the icon is not drawn.
+    let size = |metrics: &dyn FontMetrics| {
+        let icon = PartRef::Typed(TypedPart::Button(ButtonPart::Icon));
+        match theme.style(&Element::new(icon, &scope, metrics)) {
+            Styled::Style((style, _)) => style.icon.and_then(|icon| icon.size),
+            _ => None,
+        }
+    };
+    assert_eq!(size(&QtHeight), Some(Px(16.0)));
+    // The call, not a size beneath it, gives the icon: a font of no
+    // height gives none.
+    assert_eq!(size(&NoMetrics), Some(Px(0.0)));
 }
 
 /// A macOS reading over `macos-tahoe` (S9.3, S9.5): it validates as the

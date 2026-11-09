@@ -75,10 +75,10 @@ pub enum FocusVisibleWhen {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
 #[parts(toml)]
 pub enum FocusKind {
-    /// A ring around the part.
+    /// A ring around the part: the band `width` wide outward from its inner
+    /// outline, whether the platform strokes it or fills between two
+    /// outlines (S2.10's *One ring*).
     Ring,
-    /// A filled ring.
-    FilledRing,
     /// An underline.
     Underline,
     /// A platform's own indicator (WinUI's Reveal).

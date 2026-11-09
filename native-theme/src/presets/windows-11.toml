@@ -147,22 +147,21 @@ color_roles = [
     "system_control_transparent",  # docs/facts/windows/roles.toml:4921
 ]
 text_styles = [
-    "caption",  # docs/facts/windows/tokens.toml:608
-    "body",  # docs/facts/windows/tokens.toml:794
-    "body_strong",  # docs/facts/windows/tokens.toml:980
-    "body_large",  # docs/facts/windows/tokens.toml:1171
-    "body_large_strong",  # docs/facts/windows/tokens.toml:1357
-    "subtitle",  # docs/facts/windows/tokens.toml:1548
-    "title",  # docs/facts/windows/tokens.toml:1739
-    "title_large",  # docs/facts/windows/tokens.toml:1930
-    "display",  # docs/facts/windows/tokens.toml:2121
+    "caption",  # docs/facts/windows/tokens.toml:603
+    "body",  # docs/facts/windows/tokens.toml:789
+    "body_strong",  # docs/facts/windows/tokens.toml:975
+    "body_large",  # docs/facts/windows/tokens.toml:1166
+    "body_large_strong",  # docs/facts/windows/tokens.toml:1352
+    "subtitle",  # docs/facts/windows/tokens.toml:1543
+    "title",  # docs/facts/windows/tokens.toml:1734
+    "title_large",  # docs/facts/windows/tokens.toml:1925
+    "display",  # docs/facts/windows/tokens.toml:2116
 ]
 timings = [
     "control_fast_out_slow_in",  # docs/facts/windows/tokens.toml:64
     "fast_out_slow_in",  # docs/facts/windows/tokens.toml:74
     "slow_out_fast_in",  # docs/facts/windows/tokens.toml:84
     "connected_service",  # docs/facts/windows/tokens.toml:111
-    "scroll_into_view",  # docs/facts/windows/tokens.toml:140
 ]
 durations = [
     "control_normal",  # docs/facts/windows/tokens.toml:9
@@ -183,13 +182,13 @@ accent_ramp = [
 # docs/facts/windows/button.toml:15797, :15813, :15835 (WinUI AnimatedIcon states, no parameters)
 transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }
 inputs = [
-    "accent",  # docs/facts/windows/roles.toml:7450
-    "accent_ramp.dark1",  # docs/facts/windows/roles.toml:7460
-    "accent_ramp.dark2",  # docs/facts/windows/roles.toml:7470
-    "accent_ramp.dark3",  # docs/facts/windows/roles.toml:7480
-    "accent_ramp.light1",  # docs/facts/windows/roles.toml:7490
-    "accent_ramp.light2",  # docs/facts/windows/roles.toml:7500
-    "accent_ramp.light3",  # docs/facts/windows/roles.toml:7510
+    "accent",  # docs/facts/windows/roles.toml:7479
+    "accent_ramp.dark1",  # docs/facts/windows/roles.toml:7489
+    "accent_ramp.dark2",  # docs/facts/windows/roles.toml:7499
+    "accent_ramp.dark3",  # docs/facts/windows/roles.toml:7509
+    "accent_ramp.light1",  # docs/facts/windows/roles.toml:7519
+    "accent_ramp.light2",  # docs/facts/windows/roles.toml:7529
+    "accent_ramp.light3",  # docs/facts/windows/roles.toml:7539
 ]
 # S9.1: every declared input but on kde-breeze
 accent_inputs = ["accent", "accent_ramp.dark1", "accent_ramp.dark2", "accent_ramp.dark3", "accent_ramp.light1", "accent_ramp.light2", "accent_ramp.light3"]
@@ -198,16 +197,16 @@ accent_inputs = ["accent", "accent_ramp.dark1", "accent_ramp.dark2", "accent_ram
 # S4.6: one unit per group, the control and overlay corner radii in px
 unit = "px"
 keys = [
-    "control_corner_radius",  # docs/facts/windows/tokens.toml:247
-    "overlay_corner_radius",  # docs/facts/windows/tokens.toml:267
+    "control_corner_radius",  # docs/facts/windows/tokens.toml:242
+    "overlay_corner_radius",  # docs/facts/windows/tokens.toml:262
 ]
 
 [declare.params.pointer_repeat]
 # S4.6: one unit per group, the pointer repeat's delay and interval in ms
 unit = "ms"
 keys = [
-    "delay",  # docs/facts/windows/tokens.toml:2946
-    "interval",  # docs/facts/windows/tokens.toml:2956
+    "delay",  # docs/facts/windows/tokens.toml:2941
+    "interval",  # docs/facts/windows/tokens.toml:2951
 ]
 # hand-written: end declare
 

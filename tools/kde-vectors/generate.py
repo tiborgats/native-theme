@@ -39,8 +39,15 @@ Writes these tables under `native-theme/tests/vectors/`:
 - `kde_accent.tsv` and `kde_accent_wm.tsv`, by the `compiled_source` route: Plasma's colour scheme applier
   (`plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp` and `.h`, compiled unchanged with `accent.cpp`) applied to
   generated scheme files and accents, each case's kdeglobals read back through the system's KColorScheme 6.31 as the
-  KDE reader reads kdeglobals; the nine measured (scheme file, accent) pairs of `docs/facts/kde/accent.toml` re-run
+  KDE reader reads kdeglobals; the measured (scheme file, accent) pairs of `docs/facts/kde/accent.toml` re-run
   first, the run stopping on any fact that differs.
+- `kirigami_label_icon_size.tsv`, by the `compiled_source` route: Kirigami's `IconSizes::sizeForLabels` and
+  `roundedIconSize` (`kirigami@6.31.0 src/platform/units.cpp:297-326`, compiled unchanged with `icon.cpp` and the
+  moc output of `units.h`, under Kirigami's static-build define), on the offscreen platform: the application font set
+  to Noto Sans or Hack (Plasma's default and fixed-width fonts, which must be installed) at swept, Plasma's and seeded
+  random point sizes, each height that font's `QFontMetricsF` height in the system's Qt 6.12.0, and integer heights
+  called directly; the facts' input, Noto Sans 10 at 96 DPI, 17.6875 px giving 16 (ADD-A141), checked first, and each
+  font's result checked against `roundedIconSize` of its truncated height.
 
 The functions' inputs: the Breeze 6.8.2 colour schemes' colours (`breeze@6.8.2 colors/BreezeLight.colors`,
 `BreezeDark.colors`, read from the source cache) at the arguments the facts pass (`docs/facts/kde/`), the branches'
@@ -62,9 +69,10 @@ development headers (private ones included) and `moc`, and the KF6 Config 6.31 h
 another Qt or KConfig. The readers' two tables also need the KF6 ColorScheme 6.31 headers and library, the
 plasma-integration platform theme, Qt's xcb plugin, Xvfb and xrdb; the accent's two the KF6 GuiAddons and ColorScheme
 6.31 headers and libraries and QtDBus's headers. Run from the repository root, the source cache's folder optional
-(`--only-readers`: the readers' two tables alone; `--only-accent`: the accent's two alone):
+(`--only-readers`: the readers' two tables alone; `--only-accent`: the accent's two alone; `--only-icon`:
+`kirigami_label_icon_size.tsv` alone, which needs Qt's QML headers and the Noto Sans and Hack fonts):
 
-    python3 -I tools/kde-vectors/generate.py [--only-readers | --only-accent] [source cache]
+    python3 -I tools/kde-vectors/generate.py [--only-readers | --only-accent | --only-icon] [source cache]
 """
 
 import json
@@ -1510,8 +1518,8 @@ def accent_rows(case, accent, r, sets, wm):
 
 
 def accent_facts_check(cache: Path, exe: Path):
-    """The nine measured (scheme file, accent) pairs re-run: each fact's value equals the harness's (8-bit), or the
-    run stops naming the differences. Returns the number of facts compared."""
+    """The measured (scheme file, accent) pairs of accent.toml re-run: each fact's value equals the harness's (8-bit),
+    or the run stops naming the differences. Returns the numbers of pairs, facts and comparisons."""
     facts = tomllib.loads(ACCENT_FACTS.read_text(encoding="utf-8"))["fact"]
     pairs = {}
     for f in facts:
@@ -1611,8 +1619,8 @@ def accent_tables(source_cache: Path, work: Path, rng):
              f"KGuiAddons {kguiaddons_version()} and KColorScheme {kcolorscheme_version()}; do not edit. Each case:",
              "a scheme file and an accent, applyScheme(file, a fresh kdeglobals, KConfig::Normal, accent)",
              "(colorsapplicator.cpp compiled unchanged), the kdeglobals synced and opened afresh."]
-    cases_text = ["A row already listed is not repeated; no two rows with the same inputs differ. The nine",
-                  f"measured (file, accent) pairs of docs/facts/kde/accent.toml ({n_facts} facts; the pair with no",
+    cases_text = ["A row already listed is not repeated; no two rows with the same inputs differ. The",
+                  f"{pairs} measured (file, accent) pairs of docs/facts/kde/accent.toml ({n_facts} facts; the pairs with no",
                   "AccentColor run both as measured, with no accent argument, and with #00000000) were re-run",
                   "and equal it; SUSE-Cafe's file (GPL-2.0) is read for that check alone. The cases:",
                   *names,
@@ -1662,6 +1670,148 @@ def accent_tables(source_cache: Path, work: Path, rng):
           f"{n_facts} facts equal ({compared} comparisons)")
 
 
+KIRIGAMI = "kirigami@6.31.0"
+UNITS = ["src/platform/units.cpp", "src/platform/units.h", "src/platform/platformpluginfactory.h"]
+ICON_LIBS = ["-lQt6Qml", "-lQt6Gui", "-lQt6Core"]
+ICON_SEED = 20261109
+# The step boundaries of roundedIconSize (units.cpp:297-320): a truncated height below 16 is kept, 16 to 63 steps
+# down to 16, 22, 32 or 48, 64 and above is kept.
+ICON_STEPS = [16, 22, 32, 48, 64]
+# The integers called directly (sizeForLabels passes roundedIconSize the truncated height, which for an integer
+# height is that integer): each boundary, one below and one above, zero, negatives, and large heights up to 2^24, the
+# largest integer from which every smaller one is an f32.
+ICON_INTEGERS = sorted({0, 1, -1, -17, 8, 100, 128, 1000, 16_777_216} |
+                       {b + d for b in ICON_STEPS for d in (-1, 0, 1)})
+# The facts' input: Plasma's default font, Noto Sans 10 (plasma-integration@6.8.2
+# qt6/src/platformtheme/kfontsettingsdata.cpp:44, :47), at 96 DPI, whose height the KDE render host read as 17.6875 px
+# (U400; ADD-A141); then Plasma's smallest readable font, Noto Sans 8 (:53), its fixed font, Hack 10 (:48), and nearby
+# sizes.
+NOTO = "Noto Sans"
+HACK = "Hack"
+ICON_FACT = ((10.0, NOTO), 17.6875, 16)
+ICON_FONTS = [(10.0, NOTO), (8.0, NOTO), (9.0, NOTO), (11.0, NOTO), (12.0, NOTO), (10.0, HACK)]
+# The sweep for each boundary's both sides: Noto Sans and Hack from 1 pt to 48 pt in 1/8 pt steps. Qt sizes a font
+# in whole pixels, so one family's heights lie about 1.36 px (Noto Sans) or 1.16 px (Hack) apart; Hack's fall in each
+# boundary's first pixel, which Noto Sans's miss.
+ICON_SWEEP = [(k / 8, family) for family in (NOTO, HACK) for k in range(8, 385)]
+RANDOM_ICON = 12
+
+
+def icon_build(cache: Path, work: Path):
+    """The harness with Kirigami's units.cpp compiled unchanged (and its moc output), sandboxed. KIRIGAMI_BUILD_TYPE_STATIC
+    is Kirigami's own static build's define (its CMakeLists.txt), under which Units::create builds the default units
+    instead of asking a platform plugin; the harness never calls create."""
+    platform = cache / KIRIGAMI / "src" / "platform"
+    moc = pinned.sandboxed([MOC, platform / "units.h"], readable=[cache], capture_output=True, text=True,
+                           check=True).stdout
+    (work / "moc_units.cpp").write_text(moc, encoding="utf-8")
+    qt = [QT_INCLUDE, QT_INCLUDE / "QtCore", QT_INCLUDE / "QtGui", QT_INCLUDE / "QtQml", QT_INCLUDE / "QtQuick",
+          QT_INCLUDE / "QtQuickControls2"]
+    includes = [f"-I{p}" for p in [HERE / "stubs", work, platform, *qt]]
+    common = ["g++", "-std=c++20", "-fPIC", *REFERENCE_FLAGS, "-DQT_NO_DEBUG", "-DKIRIGAMI_BUILD_TYPE_STATIC",
+              *includes]
+    objects = []
+    for source in [platform / "units.cpp", HERE / "icon.cpp"]:
+        obj = work / f"icon-{source.stem}.o"
+        pinned.sandboxed([*common, "-c", source, "-o", obj], writable=[work], check=True)
+        objects.append(obj)
+    exe = work / "icon"
+    pinned.sandboxed(["g++", *REFERENCE_FLAGS, "-o", exe, *objects, *ICON_LIBS], writable=[work], check=True)
+    return exe
+
+
+def icon_run(exe: Path, calls):
+    """The harness's output line for each call, sandboxed (its HOME in the sandbox's own /tmp)."""
+    out = pinned.sandboxed([exe, "/tmp"], readable=[exe.parent], input="".join(c + "\n" for c in calls),
+                           capture_output=True, text=True, check=False)
+    if out.returncode != 0:
+        sys.exit(f"{exe.name}: exit {out.returncode}: {out.stderr.strip()[-2000:]}")
+    lines = out.stdout.splitlines()
+    if len(lines) != len(calls):
+        sys.exit(f"{exe.name}: {len(lines)} results for {len(calls)} calls")
+    return lines
+
+
+def icon_table(source_cache: Path, work: Path, rng):
+    cache = work / "icon-sources"
+    pinned.materialise(source_cache, [(KIRIGAMI, p) for p in UNITS], cache)
+    exe = icon_build(cache, work)
+    sweep = [f for f in ICON_SWEEP if f not in ICON_FONTS]
+    random_fonts = []
+    while len(random_fonts) < RANDOM_ICON:
+        f = (rng.randrange(5 * 64, 40 * 64) / 64, rng.choice([NOTO, HACK]))
+        if f not in ICON_FONTS and f not in ICON_SWEEP and f not in random_fonts:
+            random_fonts.append(f)
+    calls = ICON_FONTS + sweep + random_fonts
+    fonts = {}
+    for f, line in zip(calls, icon_run(exe, [f"f {pt!r} {family}" for pt, family in calls])):
+        height, size = line.split()
+        fonts[f] = (float(height), int(size))
+    for (pt, family), (height, _) in fonts.items():
+        if f32(height) != height:
+            sys.exit(f"{family} {pt} pt: the height {height!r} is no f32, which the model's length is")
+    f, height, size = ICON_FACT
+    if fonts[f] != (height, size):
+        sys.exit(f"{f[1]} {f[0]} pt at 96 DPI: height {fonts[f][0]!r}, size {fonts[f][1]}; the facts' input is "
+                 f"{height!r} giving {size}")
+    # Each font's result against roundedIconSize of its truncated height: a differing one would mean the units did
+    # not follow the font (or the conversion is not the truncation the description states).
+    truncated = sorted({int(h) for h, _ in fonts.values()} | set(ICON_INTEGERS))
+    integer = dict(zip(truncated, (int(x) for x in icon_run(exe, [f"i {n}" for n in truncated]))))
+    for (pt, family), (h, s) in fonts.items():
+        if integer[int(h)] != s:
+            sys.exit(f"{family} {pt} pt: sizeForLabels {s}, roundedIconSize({int(h)}) {integer[int(h)]}")
+    # Each boundary's both sides among the sweep's heights: the largest below it, the smallest at or above it, and
+    # the largest below the next integer (a fraction above the boundary truncated back to it).
+    heights = sorted({h for h, _ in fonts.values()})
+    boundary = []
+    for b in ICON_STEPS:
+        below = [h for h in heights if h < b]
+        above = [h for h in heights if h >= b]
+        if not below or not above:
+            sys.exit(f"the sweep's heights do not reach both sides of {b}")
+        boundary += [max(below), min(above), max(h for h in heights if h < b + 1)]
+    by_height = {h: s for h, s in fonts.values()}
+    rows, seen = [], set()
+
+    def add(h, s):
+        if h not in seen:
+            seen.add(h)
+            rows.append([f"{int(h) if h.is_integer() else repr(h)}px", f"{s}px"])
+
+    for f in ICON_FONTS:
+        add(*fonts[f])
+    for n in ICON_INTEGERS:
+        add(float(n), integer[n])
+    for h in boundary:
+        add(h, by_height[h])
+    for f in random_fonts:
+        add(*fonts[f])
+    write_table(
+        VECTORS / "kirigami_label_icon_size.tsv",
+        ["# function: kirigami_label_icon_size",
+         "# route: compiled_source",
+         f"# source: {KIRIGAMI}",
+         "# generations: kde-breeze",
+         "# generator: tools/kde-vectors",
+         "# inputs: font_height:length",
+         "# outputs: size:length",
+         "# written by tools/kde-vectors/generate.py; do not edit. Kirigami's units.cpp compiled unchanged. A",
+         "# fractional height is IconSizes::sizeForLabels() with the application font set to Noto Sans or Hack at",
+         "# some point size, the height that font's QFontMetricsF height (the system's Qt 6.12.0, offscreen, 96 DPI);",
+         "# an integer height calls IconSizes::roundedIconSize with it, which is what sizeForLabels passes for an",
+         "# integer height. First the facts' input (Noto Sans 10 pt, 17.6875 px), Noto Sans 8, 9, 11 and 12 pt and",
+         "# Hack 10 pt, then the integers at each step boundary (16, 22, 32, 48, 64) and beside it, zero, negatives",
+         "# and large heights, then each boundary's both sides from a sweep of both families, 1 pt to 48 pt by",
+         "# 1/8 pt (the largest height below it, the smallest at or above it, the largest below the next integer),",
+         f"# then {RANDOM_ICON} seeded random fonts (either family, a multiple of 1/64 pt from 5 pt to 40 pt)."],
+        ["font_height", "size"],
+        rows,
+    )
+    print(f"kirigami_label_icon_size.tsv: {len(rows)} rows; {ICON_FACT[0][1]} {ICON_FACT[0][0]} pt is "
+          f"{ICON_FACT[1]} px, giving {ICON_FACT[2]}")
+
+
 def kguiaddons_version():
     """The KF6 GuiAddons headers' `KGUIADDONS_VERSION_STRING`; empty where they are missing."""
     try:
@@ -1677,10 +1827,10 @@ def main():
         sys.exit(f"Qt {qt_version() or '(none)'} found; the pin is Qt {QT_VERSION}")
     if not kconfig_version().startswith(KCONFIG_MINOR + "."):
         sys.exit(f"KF6 Config {kconfig_version() or '(none)'} found; the pin is KConfig {KCONFIG_MINOR}")
-    only = {a for a in sys.argv[1:] if a in ("--only-readers", "--only-accent")}
+    only = {a for a in sys.argv[1:] if a in ("--only-readers", "--only-accent", "--only-icon")}
     args = [a for a in sys.argv[1:] if a not in only]
     if len(only) > 1:
-        sys.exit("--only-readers and --only-accent exclude each other")
+        sys.exit("--only-readers, --only-accent and --only-icon exclude each other")
     source_cache = citations.cache_dir(args[0] if args else None)
     rng = random.Random(SEED)
     with tempfile.TemporaryDirectory() as tmp:
@@ -1690,6 +1840,9 @@ def main():
             return
         if "--only-accent" in only:
             accent_tables(source_cache, tmp, random.Random(ACCENT_SEED))
+            return
+        if "--only-icon" in only:
+            icon_table(source_cache, tmp, random.Random(ICON_SEED))
             return
         cache = tmp / "sources"
         pinned.materialise(source_cache, [(sid, path) for sid, paths in FILES.items() for path in paths], cache)
@@ -1757,6 +1910,7 @@ def main():
         qfont_table(source_cache, tmp)
         readers_tables(source_cache, tmp, random.Random(SEED + 1))
         accent_tables(source_cache, tmp, random.Random(ACCENT_SEED))
+        icon_table(source_cache, tmp, random.Random(ICON_SEED))
 
 if __name__ == "__main__":
     main()

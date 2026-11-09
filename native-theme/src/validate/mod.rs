@@ -34,6 +34,10 @@ pub(crate) use stack::Stacked;
 pub(crate) enum LayerKind {
     /// A preset's own layer: its bases state whole blocks.
     Preset,
+    /// The accent-derivation layer `Theme` derives directly above a preset
+    /// that derives its accent-dependent roles (S8, S9.2; ADD-A132): its
+    /// bases state those roles, no accent input.
+    AccentDerivation,
     /// A reader's layer, or its stand-in (S9).
     Reader,
     /// A palette (S14).

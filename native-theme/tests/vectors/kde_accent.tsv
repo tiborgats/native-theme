@@ -25,8 +25,8 @@
 # unset_keys the scheme inputs below input.kde_scheme, `<set>.<key>`, `<set>.inactive.<key>`);
 # tint_factor token.kde.tint_factor (none: the file has no TintFactor), titlebar_is_accent_colored
 # the token. Every operand is read over the scheme file as the KDE reader reads it.
-# A row already listed is not repeated; no two rows with the same inputs differ. The nine
-# measured (file, accent) pairs of docs/facts/kde/accent.toml (1548 facts; the pair with no
+# A row already listed is not repeated; no two rows with the same inputs differ. The
+# 10 measured (file, accent) pairs of docs/facts/kde/accent.toml (1720 facts; the pairs with no
 # AccentColor run both as measured, with no accent argument, and with #00000000) were re-run
 # and equal it; SUSE-Cafe's file (GPL-2.0) is read for that check alone. The cases:
 #   BreezeLight

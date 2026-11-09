@@ -4,13 +4,17 @@
 use super::arith;
 use super::ty::{Bound, Node, Ty, TypedExpr};
 use super::{
-    Func, KDE_EFFECT_FIELDS, Name, Ref, kde_group_tokens, kde_selection_tokens, m3_role_operands,
+    Func, KDE_EFFECT_FIELDS, Name, Ref, kde_accent_operands, kde_accent_wm_operands,
+    kde_group_tokens, kde_selection_tokens, m3_role_operands, scheme_key, wm_key,
 };
 use crate::blocks::paint::{BlendMode, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer};
 use crate::color::Color;
+use crate::platform::kde_accent_operands::{KdeAccentKeyInputs, KdeAccentScheme};
 use crate::platform::kde_effects::KdeGroupEffects;
 use crate::platform::kde_shade::KdeShadeRole;
 use crate::platform::sf_tracking::TrackingDesign;
+use crate::resolve::KdeLists;
+use crate::roles::SurfaceSet;
 use crate::selector::Scheme;
 use crate::tokens::{
     KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect, MaterialVariant,
@@ -85,6 +89,11 @@ pub(crate) trait Env {
     /// `token.text.font_dpi`; `None` where neither is stated, which
     /// validation refuses.
     fn font_dpi(&self) -> Option<f32>;
+
+    /// KDE's three scheme lists under the scheme in force (S9.1), which
+    /// `kde_accent` and `kde_accent_wm` read themselves; each empty where
+    /// no layer states it.
+    fn kde_lists(&self) -> &KdeLists;
 }
 
 /// A platform function implemented to its source (S2.2), the only kind a
@@ -105,6 +114,11 @@ pub(super) enum Platform {
     KcuShade,
     /// `kcu_tint(a, b, amount)`.
     KcuTint,
+    /// `kde_accent(set, key, group)`, which reads the accent, its scheme
+    /// inputs, KDE's lists and two `token.kde` options itself.
+    KdeAccent,
+    /// `kde_accent_wm(key)`, which reads the same of its own itself.
+    KdeAccentWm,
     /// `kde_effects(c, background, group, role_kind)`, which reads the
     /// group's `token.kde` effects itself.
     KdeEffects,
@@ -114,6 +128,8 @@ pub(super) enum Platform {
     KdeSelectionInactive,
     /// `kde_shade(c, role, contrast)`.
     KdeShade,
+    /// `kirigami_label_icon_size(font_height)`.
+    KirigamiLabelIconSize,
     /// `kirigami_lerp(a, b, balance)`.
     KirigamiLerp,
     /// `kirigami_tint(c, tint, alpha)`.
@@ -135,9 +151,12 @@ impl Platform {
             Func::KcuOverlay => Some(Platform::KcuOverlay),
             Func::KcuShade => Some(Platform::KcuShade),
             Func::KcuTint => Some(Platform::KcuTint),
+            Func::KdeAccent => Some(Platform::KdeAccent),
+            Func::KdeAccentWm => Some(Platform::KdeAccentWm),
             Func::KdeEffects => Some(Platform::KdeEffects),
             Func::KdeSelectionInactive => Some(Platform::KdeSelectionInactive),
             Func::KdeShade => Some(Platform::KdeShade),
+            Func::KirigamiLabelIconSize => Some(Platform::KirigamiLabelIconSize),
             Func::KirigamiLerp => Some(Platform::KirigamiLerp),
             Func::KirigamiTint => Some(Platform::KirigamiTint),
             Func::M3Role => Some(Platform::M3Role),
@@ -196,6 +215,12 @@ impl Platform {
                     number_arg(2),
                 ),
             )),
+            Platform::KdeAccent => {
+                Val::Color(kde_accent(arg(0), arg(1), arg(2), env).unwrap_or_else(transparent))
+            }
+            Platform::KdeAccentWm => {
+                Val::Color(kde_accent_wm(arg(0), env).unwrap_or_else(transparent))
+            }
             // A group or kind of no variant (validation refuses it) leaves the
             // colour as it is, as `kde_shade` does an unknown role.
             Platform::KdeEffects => match (named::<KdeGroup>(arg(2)), named(arg(3))) {
@@ -247,6 +272,7 @@ impl Platform {
                     None => Val::Color(c),
                 }
             }
+            Platform::KirigamiLabelIconSize => Val::Length(Px(label_icon_size(number_arg(0)))),
             Platform::KirigamiLerp => {
                 let (a, b, balance) = (arg(0), arg(1), arg(2));
                 // A colour outside sRGB's gamut enters as Qt's extended RGB;
@@ -285,6 +311,23 @@ impl Platform {
     }
 }
 
+/// `kirigami_label_icon_size`'s value for the font height `height`, kept in
+/// the clean room's domain, a finite, non-negative height whose truncation
+/// fits Qt's `int`, so its undefined inputs (−2147483648, its open
+/// questions) are out of reach: a non-finite height is zero, as S2.2's
+/// *Totality* reads a non-finite operand, and a negative one, which no font
+/// has, is zero too; a height past `int`'s range is the largest single
+/// below 2³¹, where the function is the truncated height itself.
+fn label_icon_size(height: f32) -> f32 {
+    let largest = 2.0_f32.powi(31).next_down();
+    let height = if height.is_finite() {
+        height.clamp(0.0, largest)
+    } else {
+        0.0
+    };
+    crate::platform::kirigami_label_icon_size::kirigami_label_icon_size(height)
+}
+
 /// `m3_role`'s value for its `role` operand, from the operands it reads
 /// itself ([`m3_role_operands`]): `None`, which evaluates to transparent as
 /// S2.2's *Totality* has it, for a role, variant or version the port does
@@ -318,6 +361,90 @@ fn m3_role(role: Option<Val>, env: &dyn Env) -> Option<[f32; 4]> {
         contrast_level,
         scheme,
     )
+}
+
+/// `kde_accent`'s value for its arguments, from the operands it reads
+/// itself ([`kde_accent_operands`], in that order): `None`, which evaluates
+/// to transparent as S2.2's *Totality* has it, for an argument of no
+/// variant, a set outside KDE's seven and the group `disabled` (validation
+/// refuses each, S12).
+fn kde_accent(
+    set: Option<Val>,
+    key: Option<Val>,
+    group: Option<Val>,
+    env: &dyn Env,
+) -> Option<Color> {
+    let set = SurfaceSet::from_name(variant(set.as_ref())?)?;
+    let key = scheme_key(variant(key.as_ref())?)?;
+    let group: KdeGroup = named(group)?;
+    let operands = kde_accent_operands(set, key);
+    let input = |index: usize| operand_color(operands, index, env);
+    let inputs = KdeAccentKeyInputs {
+        value: input(1),
+        inactive_value: input(2),
+        background: input(3),
+        window_value: input(4),
+        window_background: input(5),
+        view_background: input(6),
+    };
+    let lists = env.kde_lists();
+    let scheme = KdeAccentScheme {
+        accent: input(0),
+        groups: &lists.groups,
+        inactive_groups: &lists.inactive_groups,
+        unset_keys: &lists.unset_keys,
+        tint_factor: tint_factor(operands.get(10), env),
+        titlebar_is_accent_colored: operands
+            .get(11)
+            .is_some_and(|token| env.get(token) == Val::Bool(true)),
+    };
+    scheme.kde_accent(set, key, group, &inputs)
+}
+
+/// `kde_accent_wm`'s value for its key, from the operands it reads itself
+/// ([`kde_accent_wm_operands`], in that order): `None`, which evaluates to
+/// transparent, for a key of no variant.
+fn kde_accent_wm(key: Option<Val>, env: &dyn Env) -> Option<Color> {
+    let key = wm_key(variant(key.as_ref())?)?;
+    let operands = kde_accent_wm_operands(key);
+    let input = |index: usize| operand_color(operands, index, env);
+    let lists = env.kde_lists();
+    let scheme = KdeAccentScheme {
+        accent: input(0),
+        groups: &lists.groups,
+        inactive_groups: &lists.inactive_groups,
+        unset_keys: &lists.unset_keys,
+        tint_factor: tint_factor(operands.get(5), env),
+        titlebar_is_accent_colored: operands
+            .get(6)
+            .is_some_and(|token| env.get(token) == Val::Bool(true)),
+    };
+    Some(scheme.kde_accent_wm(key, input(1), input(2)))
+}
+
+/// The colour operand `operands[index]` reads; transparent for one of no
+/// colour (validation refuses an absent one, S12).
+fn operand_color(operands: &[Ref], index: usize, env: &dyn Env) -> Color {
+    operands
+        .get(index)
+        .map_or_else(transparent, |reference| color(&env.get(reference)))
+}
+
+/// `token.kde.tint_factor`: `None` where the scheme does not tint, the
+/// token's `None`, which reads as no number.
+fn tint_factor(token: Option<&Ref>, env: &dyn Env) -> Option<f32> {
+    match token.map(|token| env.get(token)) {
+        Some(Val::Number(factor)) => Some(factor),
+        _ => None,
+    }
+}
+
+/// The name of a variant operand.
+fn variant(value: Option<&Val>) -> Option<&str> {
+    match value {
+        Some(Val::Name(Name::Variant(name))) => Some(name.as_str()),
+        _ => None,
+    }
 }
 
 /// The variant an enum operand names; `None` for another value.
@@ -582,6 +709,10 @@ mod tests {
         fn font_dpi(&self) -> Option<f32> {
             Some(144.0)
         }
+
+        fn kde_lists(&self) -> &crate::resolve::KdeLists {
+            &crate::resolve::NO_KDE_LISTS
+        }
     }
 
     fn eval_as(text: &str, ty: Ty, bound: Bound) -> Val {
@@ -637,6 +768,27 @@ mod tests {
                 "{text}"
             );
         }
+    }
+
+    /// `kirigami_label_icon_size` over a length is a length: the height
+    /// truncated and stepped (`tests/vectors/kirigami_label_icon_size.tsv`'s
+    /// first row, the facts' 17.6875 px giving 16). A height outside the
+    /// clean room's domain is kept in it: a negative or non-finite one is
+    /// zero, one past `int`'s range the largest single below 2³¹, never the
+    /// clean room's −2147483648.
+    #[test]
+    fn evaluates_kirigami_label_icon_size() {
+        let size = |text: &str| value(&format!("kirigami_label_icon_size({text})"), Ty::Length);
+        assert_eq!(size("17.6875px"), Val::Length(Px(16.0)));
+        assert_eq!(size("add(token.gap, 60px)"), Val::Length(Px(66.0)));
+        assert_eq!(size("sub(0px, 30px)"), Val::Length(Px(0.0)));
+        assert_eq!(size("element.width"), Val::Length(Px(0.0)));
+        let largest = 2.0_f32.powi(31).next_down();
+        assert_eq!(size("mul(1000000px, 3000)"), Val::Length(Px(largest)));
+        for height in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, -0.9, -1e9] {
+            assert_eq!(label_icon_size(height), 0.0, "{height}");
+        }
+        assert_eq!(label_icon_size(f32::MAX), largest);
     }
 
     #[test]

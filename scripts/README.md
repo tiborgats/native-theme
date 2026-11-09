@@ -1506,9 +1506,13 @@ the fact that applies there, a map compared as a map (a `Value`'s too,
 `Font.axes`), a fact's list of pairs as its table, each `when`'s minimal
 combination at the size its element holds by S10's rule (ADD-A131). A
 pending default size of a state model is listed in `[pending]` by its
-declaration's path, never written in `[declare]`. Exits 1 on a round-trip mismatch, 2 on an
-input it cannot read. `--self-test` compares a fixture's draft with the
-expected one and runs each rule. Offline; not in `check_release.sh`.
+declaration's path, never written in `[declare]`. `--write` points each
+stale citation of the hand-written blocks (a `[declare]` entry's, a `read`
+value's, the generation's source) at the fact naming its subject and lists
+one it cannot find; `--check` fails on either. Exits 1 on a round-trip
+mismatch or such a citation, 2 on an input it cannot read. `--self-test`
+compares a fixture's draft with the expected one and runs each rule.
+Offline; not in `check_release.sh`; about four minutes for an iOS preset.
 
 Requires Python 3.11.
 

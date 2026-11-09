@@ -6,7 +6,7 @@ edition.workspace = true
 # code) and `src/platform/m3_role.rs` (a port of material-color-utilities) stay
 # under their own Apache-2.0 licence (the 0.8.0 plan's D10), whatever licence a
 # user picks for the rest.
-license = "(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0"
+license = "(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT"
 rust-version.workspace = true
 repository.workspace = true
 homepage.workspace = true

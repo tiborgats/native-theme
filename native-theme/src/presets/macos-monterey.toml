@@ -7,75 +7,75 @@
 [preset]
 id = "macos-monterey"
 # hand-written: begin preset
-# docs/facts/sources.toml:1046
+# docs/facts/sources.toml:1049 (xcode@16.4)
 generation = "macos-15"
 # hand-written: end preset
 
 [declare]
 # hand-written: begin declare
 surface_sets = [
-    "window",  # docs/facts/macos/roles.toml:4048
-    "view",  # docs/facts/macos/roles.toml:4360
-    "selection",  # docs/facts/macos/roles.toml:4409
+    "window",  # docs/facts/macos/roles.toml:4070
+    "view",  # docs/facts/macos/roles.toml:4382
+    "selection",  # docs/facts/macos/roles.toml:4431
 ]
 color_roles = [
-    "label_tertiary",  # docs/facts/macos/roles.toml:4744
-    "label_quaternary",  # docs/facts/macos/roles.toml:4799
-    "label_quinary",  # docs/facts/macos/roles.toml:4854
-    "system_fill",  # docs/facts/macos/roles.toml:4909
-    "system_fill_secondary",  # docs/facts/macos/roles.toml:4964
-    "system_fill_tertiary",  # docs/facts/macos/roles.toml:5019
-    "system_fill_quaternary",  # docs/facts/macos/roles.toml:5074
-    "system_fill_quinary",  # docs/facts/macos/roles.toml:5129
-    "system_red",  # docs/facts/macos/roles.toml:5184
-    "system_orange",  # docs/facts/macos/roles.toml:5239
-    "system_green",  # docs/facts/macos/roles.toml:5294
-    "system_blue",  # docs/facts/macos/roles.toml:5349
-    "system_yellow",  # docs/facts/macos/roles.toml:5404
-    "system_purple",  # docs/facts/macos/roles.toml:5459
-    "system_pink",  # docs/facts/macos/roles.toml:5514
-    "system_teal",  # docs/facts/macos/roles.toml:5569
-    "system_indigo",  # docs/facts/macos/roles.toml:5624
-    "system_cyan",  # docs/facts/macos/roles.toml:5679
-    "system_mint",  # docs/facts/macos/roles.toml:5734
-    "system_brown",  # docs/facts/macos/roles.toml:5783
-    "system_gray",  # docs/facts/macos/roles.toml:5838
-    "under_page_background",  # docs/facts/macos/roles.toml:5887
-    "text_background",  # docs/facts/macos/roles.toml:5936
-    "selected_control_secondary",  # docs/facts/macos/roles.toml:5985
-    "selected_control_text",  # docs/facts/macos/roles.toml:6028
-    "selected_control",  # docs/facts/macos/roles.toml:6362
-    "highlight",  # docs/facts/macos/roles.toml:6374
+    "label_tertiary",  # docs/facts/macos/roles.toml:4766
+    "label_quaternary",  # docs/facts/macos/roles.toml:4821
+    "label_quinary",  # docs/facts/macos/roles.toml:4876
+    "system_fill",  # docs/facts/macos/roles.toml:4931
+    "system_fill_secondary",  # docs/facts/macos/roles.toml:4986
+    "system_fill_tertiary",  # docs/facts/macos/roles.toml:5041
+    "system_fill_quaternary",  # docs/facts/macos/roles.toml:5096
+    "system_fill_quinary",  # docs/facts/macos/roles.toml:5151
+    "system_red",  # docs/facts/macos/roles.toml:5206
+    "system_orange",  # docs/facts/macos/roles.toml:5261
+    "system_green",  # docs/facts/macos/roles.toml:5316
+    "system_blue",  # docs/facts/macos/roles.toml:5371
+    "system_yellow",  # docs/facts/macos/roles.toml:5426
+    "system_purple",  # docs/facts/macos/roles.toml:5481
+    "system_pink",  # docs/facts/macos/roles.toml:5536
+    "system_teal",  # docs/facts/macos/roles.toml:5591
+    "system_indigo",  # docs/facts/macos/roles.toml:5646
+    "system_cyan",  # docs/facts/macos/roles.toml:5701
+    "system_mint",  # docs/facts/macos/roles.toml:5756
+    "system_brown",  # docs/facts/macos/roles.toml:5805
+    "system_gray",  # docs/facts/macos/roles.toml:5860
+    "under_page_background",  # docs/facts/macos/roles.toml:5909
+    "text_background",  # docs/facts/macos/roles.toml:5958
+    "selected_control_secondary",  # docs/facts/macos/roles.toml:6007
+    "selected_control_text",  # docs/facts/macos/roles.toml:6050
+    "selected_control",  # docs/facts/macos/roles.toml:6384
+    "highlight",  # docs/facts/macos/roles.toml:6398
 ]
 text_styles = [
-    "large_title",  # docs/facts/macos/tokens.toml:1941
-    "title_1",  # docs/facts/macos/tokens.toml:1962
-    "title_2",  # docs/facts/macos/tokens.toml:1983
-    "title_3",  # docs/facts/macos/tokens.toml:2004
-    "headline",  # docs/facts/macos/tokens.toml:2025
-    "subheadline",  # docs/facts/macos/tokens.toml:2046
-    "body",  # docs/facts/macos/tokens.toml:2067
-    "callout",  # docs/facts/macos/tokens.toml:2088
-    "footnote",  # docs/facts/macos/tokens.toml:2109
-    "caption_1",  # docs/facts/macos/tokens.toml:2130
-    "caption_2",  # docs/facts/macos/tokens.toml:2151
-    "label",  # docs/facts/macos/tokens.toml:2172
-    "message",  # docs/facts/macos/tokens.toml:2193
-    "palette",  # docs/facts/macos/tokens.toml:2214
-    "menu_bar",  # docs/facts/macos/tokens.toml:2235
-    "control_content",  # docs/facts/macos/tokens.toml:2256
-    "small_system",  # docs/facts/macos/tokens.toml:2277
-    "large_title_emphasized",  # docs/facts/macos/tokens.toml:3096
-    "title_1_emphasized",  # docs/facts/macos/tokens.toml:3142
-    "title_2_emphasized",  # docs/facts/macos/tokens.toml:3188
-    "title_3_emphasized",  # docs/facts/macos/tokens.toml:3234
-    "headline_emphasized",  # docs/facts/macos/tokens.toml:3263
-    "subheadline_emphasized",  # docs/facts/macos/tokens.toml:3292
-    "body_emphasized",  # docs/facts/macos/tokens.toml:3338
-    "callout_emphasized",  # docs/facts/macos/tokens.toml:3384
-    "footnote_emphasized",  # docs/facts/macos/tokens.toml:3430
-    "caption_1_emphasized",  # docs/facts/macos/tokens.toml:3476
-    "caption_2_emphasized",  # docs/facts/macos/tokens.toml:3505
+    "large_title",  # docs/facts/macos/tokens.toml:2044
+    "title_1",  # docs/facts/macos/tokens.toml:2065
+    "title_2",  # docs/facts/macos/tokens.toml:2086
+    "title_3",  # docs/facts/macos/tokens.toml:2107
+    "headline",  # docs/facts/macos/tokens.toml:2128
+    "subheadline",  # docs/facts/macos/tokens.toml:2149
+    "body",  # docs/facts/macos/tokens.toml:2170
+    "callout",  # docs/facts/macos/tokens.toml:2191
+    "footnote",  # docs/facts/macos/tokens.toml:2212
+    "caption_1",  # docs/facts/macos/tokens.toml:2233
+    "caption_2",  # docs/facts/macos/tokens.toml:2254
+    "label",  # docs/facts/macos/tokens.toml:2275
+    "message",  # docs/facts/macos/tokens.toml:2296
+    "palette",  # docs/facts/macos/tokens.toml:2317
+    "menu_bar",  # docs/facts/macos/tokens.toml:2338
+    "control_content",  # docs/facts/macos/tokens.toml:2359
+    "small_system",  # docs/facts/macos/tokens.toml:2380
+    "large_title_emphasized",  # docs/facts/macos/tokens.toml:3168
+    "title_1_emphasized",  # docs/facts/macos/tokens.toml:3211
+    "title_2_emphasized",  # docs/facts/macos/tokens.toml:3254
+    "title_3_emphasized",  # docs/facts/macos/tokens.toml:3297
+    "headline_emphasized",  # docs/facts/macos/tokens.toml:3340
+    "subheadline_emphasized",  # docs/facts/macos/tokens.toml:3383
+    "body_emphasized",  # docs/facts/macos/tokens.toml:3426
+    "callout_emphasized",  # docs/facts/macos/tokens.toml:3469
+    "footnote_emphasized",  # docs/facts/macos/tokens.toml:3512
+    "caption_1_emphasized",  # docs/facts/macos/tokens.toml:3555
+    "caption_2_emphasized",  # docs/facts/macos/tokens.toml:3598
     "large_title_tight",  # docs/facts/macos/tokens.toml:46378
     "large_title_loose",  # docs/facts/macos/tokens.toml:46869
     "title_1_tight",  # docs/facts/macos/tokens.toml:47330
@@ -100,35 +100,35 @@ text_styles = [
     "caption_2_loose",  # docs/facts/macos/tokens.toml:56359
 ]
 durations = [
-    "context_default",  # docs/facts/macos/tokens.toml:3084
+    "context_default",  # docs/facts/macos/tokens.toml:3156
 ]
 icon_contexts = [
-    "button",  # docs/facts/macos/tokens.toml:40814
-    "list_row",  # docs/facts/macos/tokens.toml:40838
-    "tab",  # docs/facts/macos/tokens.toml:40862
-    "status_item",  # docs/facts/macos/tokens.toml:40886
-    "sidebar",  # docs/facts/macos/tokens.toml:40910
+    "button",  # docs/facts/macos/tokens.toml:45349
+    "list_row",  # docs/facts/macos/tokens.toml:45373
+    "tab",  # docs/facts/macos/tokens.toml:45397
+    "status_item",  # docs/facts/macos/tokens.toml:45421
+    "sidebar",  # docs/facts/macos/tokens.toml:45445
 ]
 inputs = [
-    "accent",  # docs/facts/macos/roles.toml:6077
-    "selected_content_background",  # docs/facts/macos/roles.toml:4667
-    "highlight",  # docs/facts/macos/roles.toml:6132
-    "keyboard_focus_indicator",  # docs/facts/macos/roles.toml:6241
-    "selected_control",  # docs/facts/macos/roles.toml:6307
+    "accent",  # docs/facts/macos/roles.toml:6099
+    "selected_content_background",  # docs/facts/macos/roles.toml:4689
+    "highlight",  # docs/facts/macos/roles.toml:6154
+    "keyboard_focus_indicator",  # docs/facts/macos/roles.toml:6263
+    "selected_control",  # docs/facts/macos/roles.toml:6329
 ]
 # S9.1: every declared input but on kde-breeze
 accent_inputs = ["accent", "selected_content_background", "highlight", "keyboard_focus_indicator", "selected_control"]
 # S10: SF Symbols' named scales the facts state (IconStyle.scale)
 symbol_scales = [
-    "medium",  # docs/facts/macos/tokens.toml:45988
+    "medium",  # docs/facts/macos/tokens.toml:45927
 ]
 
 [declare.params.pointer_repeat]
 # S4.6: one unit per group, the pointer repeat's delay and interval in ms
 unit = "ms"
 keys = [
-    "delay",  # docs/facts/macos/tokens.toml:3037
-    "interval",  # docs/facts/macos/tokens.toml:3055
+    "delay",  # docs/facts/macos/tokens.toml:3109
+    "interval",  # docs/facts/macos/tokens.toml:3127
 ]
 # hand-written: end declare
 
@@ -911,7 +911,7 @@ contrast.increased.dark = "#466280"
 
 [colors.light.surfaces.window]
 # hand-written: begin bases colors.light.surfaces.window
-# docs/facts/macos/roles.toml:6296
+# docs/facts/macos/roles.toml:6318
 decoration_focus = "= input.keyboard_focus_indicator"
 # hand-written: end bases colors.light.surfaces.window
 # docs/facts/macos/roles.toml:4520
@@ -1085,7 +1085,7 @@ positive = "absent"
 
 [colors.light.surfaces.selection]
 # hand-written: begin bases colors.light.surfaces.selection
-# docs/facts/macos/roles.toml:4722
+# docs/facts/macos/roles.toml:4744
 background = "= input.selected_content_background"
 # hand-written: end bases colors.light.surfaces.selection
 # docs/facts/macos/roles.toml:5091
@@ -1173,9 +1173,9 @@ disabled.foreground = "#ffffff59"
 
 [colors.light.global]
 # hand-written: begin bases colors.light.global
-# docs/facts/macos/roles.toml:6187
+# docs/facts/macos/roles.toml:6209
 accent = "= input.accent"
-# docs/facts/macos/roles.toml:6426
+# docs/facts/macos/roles.toml:6470
 selection_text_background = "= input.highlight"
 # hand-written: end bases colors.light.global
 # docs/facts/macos/roles.toml:5164
@@ -1259,7 +1259,7 @@ scrim = "absent"
 
 [colors.light.keyed]
 # hand-written: begin bases colors.light.keyed
-# docs/facts/macos/roles.toml:6362
+# docs/facts/macos/roles.toml:6384
 selected_control = "= input.selected_control"
 # hand-written: end bases colors.light.keyed
 # docs/facts/macos/roles.toml:5636
@@ -1317,7 +1317,7 @@ highlight = "#ffffff"
 
 [colors.dark.surfaces.window]
 # hand-written: begin bases colors.dark.surfaces.window
-# docs/facts/macos/roles.toml:6296
+# docs/facts/macos/roles.toml:6318
 decoration_focus = "= input.keyboard_focus_indicator"
 # hand-written: end bases colors.dark.surfaces.window
 # docs/facts/macos/roles.toml:4563
@@ -1491,7 +1491,7 @@ positive = "absent"
 
 [colors.dark.surfaces.selection]
 # hand-written: begin bases colors.dark.surfaces.selection
-# docs/facts/macos/roles.toml:4722
+# docs/facts/macos/roles.toml:4744
 background = "= input.selected_content_background"
 # hand-written: end bases colors.dark.surfaces.selection
 # docs/facts/macos/roles.toml:5128
@@ -1579,9 +1579,9 @@ disabled.foreground = "#ffffff59"
 
 [colors.dark.global]
 # hand-written: begin bases colors.dark.global
-# docs/facts/macos/roles.toml:6187
+# docs/facts/macos/roles.toml:6209
 accent = "= input.accent"
-# docs/facts/macos/roles.toml:6426
+# docs/facts/macos/roles.toml:6470
 selection_text_background = "= input.highlight"
 # hand-written: end bases colors.dark.global
 # docs/facts/macos/roles.toml:5201
@@ -1665,7 +1665,7 @@ scrim = "absent"
 
 [colors.dark.keyed]
 # hand-written: begin bases colors.dark.keyed
-# docs/facts/macos/roles.toml:6362
+# docs/facts/macos/roles.toml:6384
 selected_control = "= input.selected_control"
 # hand-written: end bases colors.dark.keyed
 # docs/facts/macos/roles.toml:5679
@@ -3341,7 +3341,7 @@ material = "absent"
 
 [tokens.focus]
 # hand-written: begin bases tokens.focus
-# docs/facts/macos/tokens.toml:3710
+# docs/facts/macos/tokens.toml:3800
 paint = "= input.keyboard_focus_indicator"
 # hand-written: end bases tokens.focus
 

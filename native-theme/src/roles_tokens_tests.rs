@@ -1259,7 +1259,7 @@ fn status_roles_created_by_their_place_marks() {
 fn value_map_creating_entry_takes_stated_map() {
     let fields = "font = { family = \"Synthetic\", size_px = 10, weight = 400, style = \"normal\", \
                   width = \"absent\", axes = {}, features = {} }\nscaling_role = \"none\"\n\
-                  letter_spacing = \"absent\"\nword_spacing = \"absent\"\nline_height = \"auto\"\n\
+                  letter_spacing_px = 0\nword_spacing_px = 0\nline_height = \"auto\"\n\
                   decoration = \"absent\"\nmnemonic_decoration = \"absent\"\ncase = \"mixed\"\n\
                   elision = \"end\"\nwrap = \"word\"\nmax_lines = \"none\"\nfill = \"absent\"\n";
     let created = |fields: &str| {
@@ -1332,7 +1332,7 @@ fn creating_an_entry_honours_its_place_mark() {
     };
     let style = "font = { family = \"Synthetic\", size_px = 10, weight = 400, style = \"normal\", \
                  width = \"absent\", axes = {}, features = {} }\nscaling_role = \"none\"\n\
-                 letter_spacing = \"absent\"\nword_spacing = \"absent\"\nline_height = \"auto\"\n\
+                 letter_spacing_px = 0\nword_spacing_px = 0\nline_height = \"auto\"\n\
                  decoration = \"absent\"\nmnemonic_decoration = \"absent\"\n";
     let caption = key!("caption");
     let created = text_applied(&format!(

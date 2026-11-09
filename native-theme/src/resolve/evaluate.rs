@@ -19,7 +19,7 @@ use std::any::{Any, TypeId};
 use std::cell::Cell;
 
 use super::compose::{self, Fold, Found, Locate, Target};
-use super::{ContentSizeCategory, Pos, ResolvedTheme};
+use super::{ContentSizeCategory, KdeLists, Pos, ResolvedTheme};
 use crate::IconSet;
 use crate::blocks::motion::Loop;
 use crate::blocks::outline::{DashPattern, Radius, ShapeKind, full};
@@ -42,6 +42,7 @@ use crate::platform::android_non_linear::{
     PROPORTIONAL_LINE_HEIGHT_ABOVE, android_non_linear, android_non_linear_inverse,
 };
 use crate::platform::dynamic_type::{DEFAULT_CATEGORY, DynamicTypeSize, dynamic_type};
+use crate::platform::win_ui::win_ui;
 use crate::query::{Element, Scope, ScopeEntry, instance_entries, own_entries};
 use crate::roles::SurfaceSet;
 use crate::selector::{PartRef, Selector};
@@ -509,6 +510,8 @@ enum Scaling {
     AndroidNonLinear(f32),
     /// Apple's table at the category; the factor is not read.
     DynamicType(ContentSizeCategory),
+    /// WinUI's curve at the factor, on a font size alone.
+    WinUi(f32),
 }
 
 /// What a font size scaled lies in (S9.4): each kind follows its own rule.
@@ -659,11 +662,15 @@ enum Literals {
     /// No rule read yet (`DynamicType` away from the default category):
     /// the expression gives no value.
     NoRule,
+    /// WinUI's curve at the factor (`WinUi`, at a `Font.size`).
+    WinUi(f32),
 }
 
 /// An evaluated expression's operands, which typed evaluation reads.
-struct Operands {
+struct Operands<'l> {
     values: Vec<(Ref, Val)>,
+    /// KDE's lists under the scheme in force (S9.1).
+    kde_lists: &'l KdeLists,
     dpi: Option<f32>,
     literals: Literals,
     /// A font size literal was converted, or `round_pt` read the DPI.
@@ -672,7 +679,7 @@ struct Operands {
     no_rule: Cell<bool>,
 }
 
-impl Env for Operands {
+impl Env for Operands<'_> {
     fn get(&self, reference: &Ref) -> Val {
         match self.values.iter().find(|(held, _)| held == reference) {
             Some((_, value)) => value.clone(),
@@ -689,6 +696,7 @@ impl Env for Operands {
             (Some(px), Literals::Unscaled) => px,
             (Some(px), Literals::Factor(factor)) => Px(px.0 * factor),
             (Some(px), Literals::AndroidNonLinear(scale)) => Px(android_non_linear(px.0, scale)),
+            (Some(px), Literals::WinUi(factor)) => Px(win_ui(px.0, factor)),
             (Some(_), Literals::NoRule) => {
                 self.no_rule.set(true);
                 Px(f32::NAN)
@@ -700,6 +708,10 @@ impl Env for Operands {
     fn font_dpi(&self) -> Option<f32> {
         self.converted.set(true);
         self.dpi
+    }
+
+    fn kde_lists(&self) -> &KdeLists {
+        self.kde_lists
     }
 }
 
@@ -1072,7 +1084,9 @@ impl<'t> Cx<'t> {
                 })
                 .flatten()
             }),
-            Some(Scaling::Linear(_) | Scaling::AndroidNonLinear(_)) | None => (None, false),
+            Some(Scaling::Linear(_) | Scaling::AndroidNonLinear(_) | Scaling::WinUi(_)) | None => {
+                (None, false)
+            }
         };
         self.roles.push(role);
         let (font, font_reached) = self.noting(|cx| {
@@ -1868,6 +1882,7 @@ impl<'t> Cx<'t> {
             TextScaling::DynamicType => {
                 Scaling::DynamicType(self.theme.content_size_category.unwrap_or(DEFAULT_CATEGORY))
             }
+            TextScaling::WinUi => Scaling::WinUi(factor),
         });
         self.visiting = saved;
         self.bases_only = saved_bases;
@@ -1904,7 +1919,10 @@ impl<'t> Cx<'t> {
     /// under `DynamicType` nothing at the default category, else a size by
     /// its style's row's ratio of the category's size to the default's, a
     /// line height equal to the row's leading at the default category the
-    /// row's leading at the category. `None` where the kind's rule gives
+    /// row's leading at the category; under `WinUi` a font size through
+    /// WinUI's curve, a line height and a spacing as they are (S9.4: a
+    /// spacing on `font_size` follows the scaled size through its operand).
+    /// `None` where the kind's rule gives
     /// none: a role without a row, and, until the value phase reads UIKit's
     /// rule from its fonts per category (D-5), a line height other than the
     /// row's and a spacing stated in points or pixels under `DynamicType`.
@@ -1933,6 +1951,8 @@ impl<'t> Cx<'t> {
                 (px.0 == default.line_height).then_some(Px(at.line_height))
             }
             (Scaling::DynamicType(_), Scaled::Spacing) => None,
+            (Scaling::WinUi(factor), Scaled::Size) => Some(Px(win_ui(px.0, factor))),
+            (Scaling::WinUi(_), Scaled::LineHeight | Scaled::Spacing) => Some(px),
         }
     }
 
@@ -2110,9 +2130,14 @@ impl<'t> Cx<'t> {
                 Literals::Unscaled
             }
             Some(Scaling::DynamicType(_)) => Literals::NoRule,
+            Some(Scaling::WinUi(factor)) => match self.scaled_kind(false) {
+                Scaled::Size => Literals::WinUi(factor),
+                Scaled::LineHeight | Scaled::Spacing => Literals::Unscaled,
+            },
         };
         let operands = Operands {
             values,
+            kde_lists: &theme.kde_lists,
             dpi,
             literals,
             converted: Cell::new(false),
@@ -3253,7 +3278,8 @@ impl ResolvedTheme {
         let px = convert(FontSize::Pt(1.0), dpi)?;
         Some(match scaling {
             Some(Scaling::Linear(factor)) => px.0 * factor,
-            Some(Scaling::AndroidNonLinear(_) | Scaling::DynamicType(_)) | None => px.0,
+            Some(Scaling::AndroidNonLinear(_) | Scaling::DynamicType(_) | Scaling::WinUi(_))
+            | None => px.0,
         })
     }
 

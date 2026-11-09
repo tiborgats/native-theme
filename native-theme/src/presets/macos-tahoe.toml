@@ -7,7 +7,7 @@
 [preset]
 id = "macos-tahoe"
 # hand-written: begin preset
-# docs/facts/sources.toml:1048
+# docs/facts/sources.toml:1066 (xcode@26.6)
 generation = "macos-26"
 # hand-written: end preset
 
@@ -45,69 +45,69 @@ color_roles = [
     "selected_control_secondary",  # docs/facts/macos/roles.toml:2703
     "selected_control_text",  # docs/facts/macos/roles.toml:2766
     "selected_control",  # docs/facts/macos/roles.toml:3195
-    "highlight",  # docs/facts/macos/roles.toml:3207
+    "highlight",  # docs/facts/macos/roles.toml:3209
 ]
 text_styles = [
-    "large_title",  # docs/facts/macos/tokens.toml:14
-    "title_1",  # docs/facts/macos/tokens.toml:35
-    "title_2",  # docs/facts/macos/tokens.toml:56
-    "title_3",  # docs/facts/macos/tokens.toml:77
-    "headline",  # docs/facts/macos/tokens.toml:98
-    "subheadline",  # docs/facts/macos/tokens.toml:119
-    "body",  # docs/facts/macos/tokens.toml:140
-    "callout",  # docs/facts/macos/tokens.toml:161
-    "footnote",  # docs/facts/macos/tokens.toml:182
-    "caption_1",  # docs/facts/macos/tokens.toml:203
-    "caption_2",  # docs/facts/macos/tokens.toml:224
-    "label",  # docs/facts/macos/tokens.toml:245
-    "message",  # docs/facts/macos/tokens.toml:266
-    "palette",  # docs/facts/macos/tokens.toml:287
-    "menu_bar",  # docs/facts/macos/tokens.toml:308
-    "control_content",  # docs/facts/macos/tokens.toml:329
-    "small_system",  # docs/facts/macos/tokens.toml:350
-    "large_title_emphasized",  # docs/facts/macos/tokens.toml:1224
-    "title_1_emphasized",  # docs/facts/macos/tokens.toml:1264
-    "title_2_emphasized",  # docs/facts/macos/tokens.toml:1304
-    "title_3_emphasized",  # docs/facts/macos/tokens.toml:1344
-    "headline_emphasized",  # docs/facts/macos/tokens.toml:1373
-    "subheadline_emphasized",  # docs/facts/macos/tokens.toml:1402
-    "body_emphasized",  # docs/facts/macos/tokens.toml:1442
-    "callout_emphasized",  # docs/facts/macos/tokens.toml:1482
-    "footnote_emphasized",  # docs/facts/macos/tokens.toml:1522
-    "caption_1_emphasized",  # docs/facts/macos/tokens.toml:1562
-    "caption_2_emphasized",  # docs/facts/macos/tokens.toml:1591
-    "large_title_tight",  # docs/facts/macos/tokens.toml:29064
-    "large_title_loose",  # docs/facts/macos/tokens.toml:29557
-    "title_1_tight",  # docs/facts/macos/tokens.toml:30018
-    "title_1_loose",  # docs/facts/macos/tokens.toml:30511
-    "title_2_tight",  # docs/facts/macos/tokens.toml:30972
-    "title_2_loose",  # docs/facts/macos/tokens.toml:31465
-    "title_3_tight",  # docs/facts/macos/tokens.toml:31926
-    "title_3_loose",  # docs/facts/macos/tokens.toml:32387
-    "headline_tight",  # docs/facts/macos/tokens.toml:32848
-    "headline_loose",  # docs/facts/macos/tokens.toml:33341
-    "subheadline_tight",  # docs/facts/macos/tokens.toml:33802
-    "subheadline_loose",  # docs/facts/macos/tokens.toml:34295
-    "body_tight",  # docs/facts/macos/tokens.toml:34756
-    "body_loose",  # docs/facts/macos/tokens.toml:35249
-    "callout_tight",  # docs/facts/macos/tokens.toml:35710
-    "callout_loose",  # docs/facts/macos/tokens.toml:36203
-    "footnote_tight",  # docs/facts/macos/tokens.toml:36664
-    "footnote_loose",  # docs/facts/macos/tokens.toml:37157
-    "caption_1_tight",  # docs/facts/macos/tokens.toml:37618
-    "caption_1_loose",  # docs/facts/macos/tokens.toml:38111
-    "caption_2_tight",  # docs/facts/macos/tokens.toml:38572
-    "caption_2_loose",  # docs/facts/macos/tokens.toml:39065
+    "large_title",  # docs/facts/macos/tokens.toml:15
+    "title_1",  # docs/facts/macos/tokens.toml:36
+    "title_2",  # docs/facts/macos/tokens.toml:57
+    "title_3",  # docs/facts/macos/tokens.toml:78
+    "headline",  # docs/facts/macos/tokens.toml:99
+    "subheadline",  # docs/facts/macos/tokens.toml:120
+    "body",  # docs/facts/macos/tokens.toml:141
+    "callout",  # docs/facts/macos/tokens.toml:162
+    "footnote",  # docs/facts/macos/tokens.toml:183
+    "caption_1",  # docs/facts/macos/tokens.toml:204
+    "caption_2",  # docs/facts/macos/tokens.toml:225
+    "label",  # docs/facts/macos/tokens.toml:246
+    "message",  # docs/facts/macos/tokens.toml:267
+    "palette",  # docs/facts/macos/tokens.toml:288
+    "menu_bar",  # docs/facts/macos/tokens.toml:309
+    "control_content",  # docs/facts/macos/tokens.toml:330
+    "small_system",  # docs/facts/macos/tokens.toml:351
+    "large_title_emphasized",  # docs/facts/macos/tokens.toml:1194
+    "title_1_emphasized",  # docs/facts/macos/tokens.toml:1237
+    "title_2_emphasized",  # docs/facts/macos/tokens.toml:1280
+    "title_3_emphasized",  # docs/facts/macos/tokens.toml:1323
+    "headline_emphasized",  # docs/facts/macos/tokens.toml:1366
+    "subheadline_emphasized",  # docs/facts/macos/tokens.toml:1409
+    "body_emphasized",  # docs/facts/macos/tokens.toml:1452
+    "callout_emphasized",  # docs/facts/macos/tokens.toml:1495
+    "footnote_emphasized",  # docs/facts/macos/tokens.toml:1538
+    "caption_1_emphasized",  # docs/facts/macos/tokens.toml:1581
+    "caption_2_emphasized",  # docs/facts/macos/tokens.toml:1624
+    "large_title_tight",  # docs/facts/macos/tokens.toml:32523
+    "large_title_loose",  # docs/facts/macos/tokens.toml:33061
+    "title_1_tight",  # docs/facts/macos/tokens.toml:33567
+    "title_1_loose",  # docs/facts/macos/tokens.toml:34105
+    "title_2_tight",  # docs/facts/macos/tokens.toml:34611
+    "title_2_loose",  # docs/facts/macos/tokens.toml:35149
+    "title_3_tight",  # docs/facts/macos/tokens.toml:35655
+    "title_3_loose",  # docs/facts/macos/tokens.toml:36161
+    "headline_tight",  # docs/facts/macos/tokens.toml:36667
+    "headline_loose",  # docs/facts/macos/tokens.toml:37205
+    "subheadline_tight",  # docs/facts/macos/tokens.toml:37711
+    "subheadline_loose",  # docs/facts/macos/tokens.toml:38249
+    "body_tight",  # docs/facts/macos/tokens.toml:38755
+    "body_loose",  # docs/facts/macos/tokens.toml:39293
+    "callout_tight",  # docs/facts/macos/tokens.toml:39799
+    "callout_loose",  # docs/facts/macos/tokens.toml:40337
+    "footnote_tight",  # docs/facts/macos/tokens.toml:40843
+    "footnote_loose",  # docs/facts/macos/tokens.toml:41381
+    "caption_1_tight",  # docs/facts/macos/tokens.toml:41887
+    "caption_1_loose",  # docs/facts/macos/tokens.toml:42425
+    "caption_2_tight",  # docs/facts/macos/tokens.toml:42931
+    "caption_2_loose",  # docs/facts/macos/tokens.toml:43469
 ]
 durations = [
-    "context_default",  # docs/facts/macos/tokens.toml:1211
+    "context_default",  # docs/facts/macos/tokens.toml:1181
 ]
 icon_contexts = [
-    "button",  # docs/facts/macos/tokens.toml:39528
-    "list_row",  # docs/facts/macos/tokens.toml:39552
-    "tab",  # docs/facts/macos/tokens.toml:39576
-    "status_item",  # docs/facts/macos/tokens.toml:39600
-    "sidebar",  # docs/facts/macos/tokens.toml:39624
+    "button",  # docs/facts/macos/tokens.toml:43977
+    "list_row",  # docs/facts/macos/tokens.toml:44001
+    "tab",  # docs/facts/macos/tokens.toml:44025
+    "status_item",  # docs/facts/macos/tokens.toml:44049
+    "sidebar",  # docs/facts/macos/tokens.toml:44073
 ]
 inputs = [
     "accent",  # docs/facts/macos/roles.toml:2837
@@ -120,15 +120,15 @@ inputs = [
 accent_inputs = ["accent", "selected_content_background", "highlight", "keyboard_focus_indicator", "selected_control"]
 # S10: SF Symbols' named scales the facts state (IconStyle.scale)
 symbol_scales = [
-    "medium",  # docs/facts/macos/tokens.toml:44847
+    "medium",  # docs/facts/macos/tokens.toml:44784
 ]
 
 [declare.params.pointer_repeat]
 # S4.6: one unit per group, the pointer repeat's delay and interval in ms
 unit = "ms"
 keys = [
-    "delay",  # docs/facts/macos/tokens.toml:1114
-    "interval",  # docs/facts/macos/tokens.toml:1133
+    "delay",  # docs/facts/macos/tokens.toml:1084
+    "interval",  # docs/facts/macos/tokens.toml:1103
 ]
 # hand-written: end declare
 
@@ -901,7 +901,7 @@ disabled.foreground = "#ffffff59"
 # hand-written: begin bases colors.light.global
 # docs/facts/macos/roles.toml:2969
 accent = "= input.accent"
-# docs/facts/macos/roles.toml:3279
+# docs/facts/macos/roles.toml:3301
 selection_text_background = "= input.highlight"
 # hand-written: end bases colors.light.global
 # docs/facts/macos/roles.toml:659
@@ -1307,7 +1307,7 @@ disabled.foreground = "#ffffff59"
 # hand-written: begin bases colors.dark.global
 # docs/facts/macos/roles.toml:2969
 accent = "= input.accent"
-# docs/facts/macos/roles.toml:3279
+# docs/facts/macos/roles.toml:3301
 selection_text_background = "= input.highlight"
 # hand-written: end bases colors.dark.global
 # docs/facts/macos/roles.toml:696
@@ -3333,7 +3333,7 @@ material = "absent"
 
 [tokens.focus]
 # hand-written: begin bases tokens.focus
-# docs/facts/macos/tokens.toml:1756
+# docs/facts/macos/tokens.toml:1792
 paint = "= input.keyboard_focus_indicator"
 # hand-written: end bases tokens.focus
 

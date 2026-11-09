@@ -1,0 +1,66 @@
+# function: kirigami_label_icon_size
+# route: compiled_source
+# source: kirigami@6.31.0
+# generations: kde-breeze
+# generator: tools/kde-vectors
+# inputs: font_height:length
+# outputs: size:length
+# written by tools/kde-vectors/generate.py; do not edit. Kirigami's units.cpp compiled unchanged. A
+# fractional height is IconSizes::sizeForLabels() with the application font set to Noto Sans or Hack at
+# some point size, the height that font's QFontMetricsF height (the system's Qt 6.12.0, offscreen, 96 DPI);
+# an integer height calls IconSizes::roundedIconSize with it, which is what sizeForLabels passes for an
+# integer height. First the facts' input (Noto Sans 10 pt, 17.6875 px), Noto Sans 8, 9, 11 and 12 pt and
+# Hack 10 pt, then the integers at each step boundary (16, 22, 32, 48, 64) and beside it, zero, negatives
+# and large heights, then each boundary's both sides from a sweep of both families, 1 pt to 48 pt by
+# 1/8 pt (the largest height below it, the smallest at or above it, the largest below the next integer),
+# then 12 seeded random fonts (either family, a multiple of 1/64 pt from 5 pt to 40 pt).
+font_height	size
+17.6875px	16px
+14.96875px	14px
+16.328125px	16px
+20.421875px	16px
+21.78125px	16px
+15.125px	15px
+-17px	-17px
+-1px	-1px
+0px	0px
+1px	1px
+8px	8px
+15px	15px
+16px	16px
+17px	16px
+21px	16px
+22px	22px
+23px	22px
+31px	22px
+32px	32px
+33px	32px
+47px	32px
+48px	48px
+49px	48px
+63px	48px
+64px	64px
+65px	65px
+100px	100px
+128px	128px
+1000px	1000px
+16777216px	16777216px
+16.28125px	16px
+22.09375px	22px
+31.40625px	22px
+32.578125px	32px
+32.671875px	32px
+47.703125px	32px
+48.875px	48px
+62.84375px	48px
+64.015625px	64px
+55.859375px	48px
+20.9375px	16px
+51.734375px	48px
+8.125px	8px
+66.71875px	66px
+23.265625px	22px
+50.046875px	48px
+29.09375px	22px
+19.046875px	16px
+25.59375px	22px
