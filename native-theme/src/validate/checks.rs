@@ -23,6 +23,7 @@ use crate::declare::{
 use crate::error::{Problem, ProblemKind};
 use crate::expr::{
     Bound, ElementDatum, Expr, FieldType, Func, Literal, MAX_DEPTH, Name, Ref, Ty, TypeEnv,
+    is_kde_list,
 };
 use crate::inputs::{InputBases, InputName, InputValue};
 use crate::key::Key;
@@ -1215,8 +1216,23 @@ impl<'a> Checker<'a> {
                 {
                     self.surface_set(set, at);
                 }
+                self.own_operands(func, args, at);
             }
+            Func::KdeAccentWm => self.own_operands(func, args, at),
             _ => {}
+        }
+    }
+
+    /// The inputs and tokens a KDE accent call reads itself, checked as its
+    /// operands (S2.2): each input declared, each once; KDE's three lists
+    /// are S9.1's own, no declared input.
+    fn own_operands(&mut self, func: Func, args: &[Expr], at: &str) {
+        let operands = func.token_operands(args);
+        for (index, reference) in operands.iter().enumerate() {
+            let earlier = operands.get(..index).unwrap_or_default();
+            if !is_kde_list(reference) && !earlier.contains(reference) {
+                self.reference_names(reference, at);
+            }
         }
     }
 

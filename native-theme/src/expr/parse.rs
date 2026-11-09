@@ -363,7 +363,10 @@ impl<'a> Parser<'a> {
                     "text_scale" => Ref::TextScale,
                     "true" => return Ok(Expr::Lit(Literal::Bool(true))),
                     "false" => return Ok(Expr::Lit(Literal::Bool(false))),
-                    "active" | "srgb" | "display_p3" => {
+                    // `active` not followed by `(` is the name `active`,
+                    // which typing takes only where an enum expects it
+                    // (`KdeGroup`'s; S2.2, ADD-A143).
+                    "srgb" | "display_p3" => {
                         return Err(refused(ParseErrorKind::ReservedWord(word)));
                     }
                     _ => {
@@ -790,9 +793,36 @@ mod tests {
         assert_eq!(parse(" role . @x "), parse("role.@x"));
     }
 
+    /// A bare `active`, not followed by `(`, is the name `active` (S2.2,
+    /// ADD-A143): told apart from `active(…)` by the `(`, as a call is from
+    /// a name; typing takes it only where an enum expects it.
+    #[test]
+    fn bare_active_is_a_name() {
+        let active = || Expr::Lit(Literal::Name(Name::Variant(key!("active"))));
+        assert_eq!(parse("active"), active());
+        assert_eq!(
+            parse("kde_accent(view, foreground_link, active)"),
+            Expr::Call(
+                Func::KdeAccent,
+                vec![
+                    Expr::Lit(Literal::Name(Name::Variant(key!("view")))),
+                    Expr::Lit(Literal::Name(Name::Variant(key!("foreground_link")))),
+                    active(),
+                ]
+            )
+        );
+        assert_eq!(
+            parse("active (role.window.background)"),
+            Expr::Ref(Ref::Active(Box::new(Ref::Role {
+                set: SurfaceSet::Window,
+                path: vec![key!("background")],
+            })))
+        );
+    }
+
     #[test]
     fn reserved_words_refused() {
-        for word in ["active", "srgb", "display_p3"] {
+        for word in ["srgb", "display_p3"] {
             assert_eq!(
                 refused(word),
                 ParseErrorKind::ReservedWord(word.to_owned()),

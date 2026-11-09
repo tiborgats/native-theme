@@ -1641,6 +1641,66 @@ fn root_role(theme: &super::Theme, role: crate::blocks::part_style::RoleRef) -> 
         .map(crate::color::Color::to_srgb8_clamped)
 }
 
+/// `kde_accent` and `kde_accent_wm` resolved over `kde-breeze`'s own scheme
+/// inputs at light with the accent `#e5a50a` give what Plasma wrote for
+/// that pair (`docs/facts/kde/accent.toml`'s light-e5a50a facts:
+/// `role.view.link` `#a77807`, `role.selection.background` `#ecbf53`,
+/// `role.@wm_active_background` `#e3e5e7`), stated by an application layer
+/// until the accent-derivation layer states them (S9.2, M1b). The group
+/// `active` is written bare (S2.2, ADD-A143). The layer states
+/// `token.kde.tint_factor` `none` itself, Breeze Light's (no `TintFactor`):
+/// an operand both calls read, which S12's absent-operand check passes, as
+/// `None` is a stated value, not an absent one (S4.8).
+#[test]
+fn kde_accent_over_kde_breeze() {
+    use crate::blocks::part_style::RoleRef;
+    use crate::color::Color;
+    use crate::inputs::{Accent, InputValue};
+    use crate::roles::{SurfaceRole, SurfaceSet};
+    use crate::value::{SchemeMap, Value};
+
+    let mut theme = synthetic_theme(PresetId::KdeBreeze);
+    let accent = Color::parse("#e5a50a").unwrap();
+    let accent = InputValue::new(SchemeMap::one(Scheme::Light, Value::Stated(accent)));
+    theme.set_accent(Some(Accent::new(accent))).unwrap();
+    let view_link = || RoleRef::Set(SurfaceSet::View, SurfaceRole::Link);
+    assert_eq!(
+        root_role(&theme, view_link()),
+        Some([0x29, 0x80, 0xb9, 0xff]),
+        "the preset's own link, no accent derived"
+    );
+    theme
+        .add_layer(
+            Layer::from_toml(
+                "[colors.light.surfaces.view]\n\
+                 link = \"= kde_accent(view, foreground_link, active)\"\n\
+                 [colors.light.surfaces.selection]\n\
+                 background = \"= kde_accent(selection, background_normal, active)\"\n\
+                 [colors.light.keyed]\n\
+                 wm_active_background = \"= kde_accent_wm(active_background)\"\n\
+                 [tokens.kde]\n\
+                 tint_factor = \"none\"\n",
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    assert_eq!(
+        root_role(&theme, view_link()),
+        Some([0xa7, 0x78, 0x07, 0xff])
+    );
+    assert_eq!(
+        root_role(
+            &theme,
+            RoleRef::Set(SurfaceSet::Selection, SurfaceRole::Background)
+        ),
+        Some([0xec, 0xbf, 0x53, 0xff])
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Keyed(crate::key!("wm_active_background"))),
+        Some([0xe3, 0xe5, 0xe7, 0xff])
+    );
+}
+
 /// A macOS reading over `macos-tahoe` (S9.3, S9.5): it validates as the
 /// reader layer, its state is the system's, and the resolved theme shows
 /// what it read under the scheme in force: the accent, a role it read, a

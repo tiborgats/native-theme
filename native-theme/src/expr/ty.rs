@@ -1601,16 +1601,6 @@ mod tests {
             ("uifm_scaled(4px, caption2)", Ty::Length, Func::UifmScaled),
             ("uifm_scaled(4px, @body)", Ty::Length, Func::UifmScaled),
             (
-                "kde_accent(header, foreground_link, inactive)",
-                Ty::Color,
-                Func::KdeAccent,
-            ),
-            (
-                "kde_accent_wm(active_background)",
-                Ty::Color,
-                Func::KdeAccentWm,
-            ),
-            (
                 "name_index(element.text, 8, adwaita)",
                 Ty::Number,
                 Func::NameIndex,
@@ -1622,6 +1612,13 @@ mod tests {
             ),
         ] {
             assert_eq!(refused(text, ty), TypeError::NotImplemented(func), "{text}");
+        }
+        // `kde_accent` and `kde_accent_wm` are implemented: a colour.
+        for text in [
+            "kde_accent(header, foreground_link, inactive)",
+            "kde_accent_wm(active_background)",
+        ] {
+            assert_eq!(typed(text, Ty::Color), Ty::Color, "{text}");
         }
     }
 
@@ -1792,6 +1789,41 @@ mod tests {
         );
     }
 
+    /// A bare `active` is `KdeGroup`'s variant where the group operand
+    /// expects it, `kde_accent`'s and `kde_effects`'; refused by typing
+    /// where no enum operand takes it (S2.2, ADD-A143).
+    #[test]
+    fn bare_active_types_as_the_kde_group() {
+        for text in [
+            "kde_accent(view, foreground_link, active)",
+            "kde_effects(surface.foreground, role.window.background, active, foreground)",
+        ] {
+            assert_eq!(typed(text, Ty::Color), Ty::Color, "{text}");
+        }
+        let active = || Name::Variant(key!("active"));
+        assert_eq!(
+            refused("alpha(active, 0.5)", Ty::Color),
+            TypeError::UnexpectedName {
+                name: active(),
+                expected: Some(Ty::Color)
+            }
+        );
+        assert_eq!(
+            refused("active", Ty::Color),
+            TypeError::UnexpectedName {
+                name: active(),
+                expected: Some(Ty::Color)
+            }
+        );
+        assert_eq!(
+            refused("uikit_prominence(#000000, active)", Ty::Color),
+            TypeError::UnknownVariant {
+                ty: "Prominence",
+                name: key!("active")
+            }
+        );
+    }
+
     #[test]
     fn kde_selection_inactive_is_implemented() {
         assert_eq!(
@@ -1871,6 +1903,10 @@ mod tests {
 
         fn font_dpi(&self) -> Option<f32> {
             None
+        }
+
+        fn kde_lists(&self) -> &crate::resolve::KdeLists {
+            &crate::resolve::NO_KDE_LISTS
         }
     }
 
@@ -2039,6 +2075,10 @@ mod tests {
 
             fn font_dpi(&self) -> Option<f32> {
                 self.0.font_dpi()
+            }
+
+            fn kde_lists(&self) -> &crate::resolve::KdeLists {
+                self.0.kde_lists()
             }
         }
 

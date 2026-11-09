@@ -1,10 +1,12 @@
 //! S2.2's platform functions, one file each; public for their vector tests
 //! (`tests/platform_vectors.rs`). `adw_standalone`, `kde_shade`,
-//! `kirigami_lerp` and the seven KDE colour functions (`kcu_mix`, `kcu_tint`,
+//! `kirigami_lerp`, the seven KDE colour functions (`kcu_mix`, `kcu_tint`,
 //! `kcu_shade`, `kcu_overlay`, `kirigami_tint`, `kde_effects`,
 //! `kde_selection_inactive`, their shared arithmetic in `kde_color_common`)
-//! were written in a clean room, from behavioural descriptions and the vector
-//! tables alone (the plan's D10); `sf_tracking` reads Apple's published
+//! and Plasma's accent derivation (`kde_accent`, `kde_accent_wm`) were
+//! written in a clean room, from behavioural descriptions and the vector
+//! tables alone (the plan's D10), `kde_accent_operands` mapping the model's
+//! operands onto the last; `sf_tracking` reads Apple's published
 //! tables, `gen_sf_tracking` generated from them; `m3_role` ports
 //! material-color-utilities under that code's Apache-2.0 licence (D10). S9.4's
 //! scaling curves live here too: `android_non_linear` ports the Android Open
@@ -22,6 +24,8 @@ pub mod kcu_mix;
 pub mod kcu_overlay;
 pub mod kcu_shade;
 pub mod kcu_tint;
+pub mod kde_accent;
+pub(crate) mod kde_accent_operands;
 mod kde_color_common;
 pub mod kde_effects;
 pub mod kde_selection_inactive;

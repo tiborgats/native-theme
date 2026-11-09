@@ -38,6 +38,7 @@ use std::fmt;
 use std::sync::LazyLock;
 
 use super::color::Color;
+use super::inputs::{KdeSchemeKey, KdeWmKey};
 use super::key::Key;
 use super::roles::SurfaceSet;
 use super::tokens::KdeGroup;
@@ -478,7 +479,11 @@ impl Func {
     /// `kde_effects`' group's ([`kde_group_tokens`]; both groups' where its
     /// `group` is no literal), `kde_selection_inactive`'s
     /// `token.kde.inactive_change_selection_color`, `m3_role`'s
-    /// ([`m3_role_operands`]); none for any other.
+    /// ([`m3_role_operands`]), `kde_accent`'s for its set and key
+    /// ([`kde_accent_operands`]; every set's and key's where either is no
+    /// literal, none for a set outside KDE's seven) and `kde_accent_wm`'s
+    /// for its key ([`kde_accent_wm_operands`]; every key's where it is no
+    /// literal); none for any other.
     pub(crate) fn token_operands(self, args: &[Expr]) -> &'static [Ref] {
         let groups = KDE_EFFECT_FIELDS.len().saturating_mul(2).saturating_add(1);
         match self {
@@ -491,9 +496,171 @@ impl Func {
             },
             Func::KdeSelectionInactive => kde_selection_tokens(),
             Func::M3Role => m3_role_operands(),
+            Func::KdeAccent => match (variant(args.first()), variant(args.get(1))) {
+                (Some(set), Some(key)) => SurfaceSet::from_name(set)
+                    .zip(scheme_key(key))
+                    .map_or(&[], |(set, key)| kde_accent_operands(set, key)),
+                _ => KDE_ACCENT_OPERANDS.every.as_slice(),
+            },
+            Func::KdeAccentWm => match variant(args.first()) {
+                Some(key) => wm_key(key).map_or(&[], kde_accent_wm_operands),
+                None => KDE_ACCENT_WM_OPERANDS.every.as_slice(),
+            },
             _ => &[],
         }
     }
+}
+
+/// A literal variant argument's name.
+fn variant(arg: Option<&Expr>) -> Option<&str> {
+    match arg {
+        Some(Expr::Lit(Literal::Name(Name::Variant(name)))) => Some(name.as_str()),
+        _ => None,
+    }
+}
+
+/// The scheme key `name` names.
+pub(crate) fn scheme_key(name: &str) -> Option<KdeSchemeKey> {
+    KdeSchemeKey::ALL.into_iter().find(|key| key.name() == name)
+}
+
+/// The `[WM]` key `name` names.
+pub(crate) fn wm_key(name: &str) -> Option<KdeWmKey> {
+    KdeWmKey::ALL.into_iter().find(|key| key.name() == name)
+}
+
+/// KDE's seven colour sets, `kde_accent`'s `set` (S2.2).
+pub(crate) const KDE_ACCENT_SETS: [SurfaceSet; 7] = [
+    SurfaceSet::Window,
+    SurfaceSet::View,
+    SurfaceSet::Button,
+    SurfaceSet::Selection,
+    SurfaceSet::Tooltip,
+    SurfaceSet::Complementary,
+    SurfaceSet::Header,
+];
+
+/// The operands of a KDE accent function: each call's, and every call's
+/// together, each once.
+struct AccentOperands {
+    calls: Vec<Vec<Ref>>,
+    every: Vec<Ref>,
+}
+
+impl AccentOperands {
+    fn of(calls: Vec<Vec<Ref>>) -> AccentOperands {
+        let mut every: Vec<Ref> = Vec::new();
+        for reference in calls.iter().flatten() {
+            if !every.contains(reference) {
+                every.push(reference.clone());
+            }
+        }
+        AccentOperands { calls, every }
+    }
+}
+
+/// `input.kde_scheme.<path>`.
+fn scheme_input(path: &[&'static str]) -> Ref {
+    let mut segments = vec![key!("kde_scheme")];
+    segments.extend(path.iter().copied().filter_map(Key::from_static));
+    Ref::Input(segments)
+}
+
+/// What both KDE accent functions read besides a key's scheme inputs
+/// (S2.2), in this order: the accent `input.accent` first, then the lists
+/// `input.kde_scheme.groups`, `.inactive_groups` (`kde_accent`'s alone) and
+/// `.unset_keys`, `token.kde.tint_factor` and
+/// `token.kde.titlebar_is_accent_colored` last.
+fn accent_operands(inputs: Vec<Ref>, inactive_groups: bool) -> Vec<Ref> {
+    let kde = |field: Key| Ref::Token(vec![key!("kde"), field]);
+    let mut out = vec![Ref::Input(vec![key!("accent")])];
+    out.extend(inputs);
+    out.push(scheme_input(&["groups"]));
+    if inactive_groups {
+        out.push(scheme_input(&["inactive_groups"]));
+    }
+    out.push(scheme_input(&["unset_keys"]));
+    out.push(kde(key!("tint_factor")));
+    out.push(kde(key!("titlebar_is_accent_colored")));
+    out
+}
+
+/// What `kde_accent` reads itself, per set of [`KDE_ACCENT_SETS`] and key
+/// of [`KdeSchemeKey::ALL`] in their order.
+static KDE_ACCENT_OPERANDS: LazyLock<AccentOperands> = LazyLock::new(|| {
+    let mut calls = Vec::new();
+    for set in KDE_ACCENT_SETS {
+        for key in KdeSchemeKey::ALL {
+            let (set, key) = (set.name(), key.name());
+            let inputs = vec![
+                scheme_input(&[set, key]),
+                scheme_input(&[set, "inactive", key]),
+                scheme_input(&[set, "background_normal"]),
+                scheme_input(&["window", key]),
+                scheme_input(&["window", "background_normal"]),
+                scheme_input(&["view", "background_normal"]),
+            ];
+            calls.push(accent_operands(inputs, true));
+        }
+    }
+    AccentOperands::of(calls)
+});
+
+/// What `kde_accent(set, key, …)` reads itself (S2.2), its group reading
+/// the same, in this order: `input.accent`; the scheme inputs
+/// `input.kde_scheme.<set>.<key>`, `.<set>.inactive.<key>`,
+/// `.<set>.background_normal`, `.window.<key>`, `.window.background_normal`
+/// and `.view.background_normal`; the lists `input.kde_scheme.groups`,
+/// `.inactive_groups` and `.unset_keys`; `token.kde.tint_factor` and
+/// `.titlebar_is_accent_colored`. None for a set outside KDE's seven.
+pub(crate) fn kde_accent_operands(set: SurfaceSet, key: KdeSchemeKey) -> &'static [Ref] {
+    let set = KDE_ACCENT_SETS.iter().position(|held| *held == set);
+    let key = KdeSchemeKey::ALL.iter().position(|held| *held == key);
+    set.zip(key)
+        .and_then(|(set, key)| {
+            set.checked_mul(KdeSchemeKey::ALL.len())
+                .and_then(|at| at.checked_add(key))
+        })
+        .and_then(|at| KDE_ACCENT_OPERANDS.calls.get(at))
+        .map_or(&[], Vec::as_slice)
+}
+
+/// What `kde_accent_wm` reads itself, per key of [`KdeWmKey::ALL`] in its
+/// order.
+static KDE_ACCENT_WM_OPERANDS: LazyLock<AccentOperands> = LazyLock::new(|| {
+    let calls = KdeWmKey::ALL
+        .into_iter()
+        .map(|key| {
+            let inputs = vec![
+                scheme_input(&["wm", key.name()]),
+                scheme_input(&["window", "background_normal"]),
+            ];
+            accent_operands(inputs, false)
+        })
+        .collect();
+    AccentOperands::of(calls)
+});
+
+/// What `kde_accent_wm(key)` reads itself (S2.2), in this order:
+/// `input.accent`; the scheme inputs `input.kde_scheme.wm.<key>` and
+/// `.window.background_normal`; the lists `input.kde_scheme.groups` and
+/// `.unset_keys`; `token.kde.tint_factor` and `.titlebar_is_accent_colored`.
+pub(crate) fn kde_accent_wm_operands(key: KdeWmKey) -> &'static [Ref] {
+    KdeWmKey::ALL
+        .iter()
+        .position(|held| *held == key)
+        .and_then(|at| KDE_ACCENT_WM_OPERANDS.calls.get(at))
+        .map_or(&[], Vec::as_slice)
+}
+
+/// Whether `reference` is one of KDE's three scheme lists (S9.1), which a
+/// KDE accent function reads itself: no input a preset declares.
+pub(crate) fn is_kde_list(reference: &Ref) -> bool {
+    matches!(reference, Ref::Input(path) if matches!(
+        path.as_slice(),
+        [scheme, list] if scheme.as_str() == "kde_scheme"
+            && matches!(list.as_str(), "groups" | "inactive_groups" | "unset_keys")
+    ))
 }
 
 /// What `m3_role` reads itself (S2.2), in this order: the seed

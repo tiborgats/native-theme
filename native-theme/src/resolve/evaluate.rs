@@ -19,7 +19,7 @@ use std::any::{Any, TypeId};
 use std::cell::Cell;
 
 use super::compose::{self, Fold, Found, Locate, Target};
-use super::{ContentSizeCategory, Pos, ResolvedTheme};
+use super::{ContentSizeCategory, KdeLists, Pos, ResolvedTheme};
 use crate::IconSet;
 use crate::blocks::motion::Loop;
 use crate::blocks::outline::{DashPattern, Radius, ShapeKind, full};
@@ -662,8 +662,10 @@ enum Literals {
 }
 
 /// An evaluated expression's operands, which typed evaluation reads.
-struct Operands {
+struct Operands<'l> {
     values: Vec<(Ref, Val)>,
+    /// KDE's lists under the scheme in force (S9.1).
+    kde_lists: &'l KdeLists,
     dpi: Option<f32>,
     literals: Literals,
     /// A font size literal was converted, or `round_pt` read the DPI.
@@ -672,7 +674,7 @@ struct Operands {
     no_rule: Cell<bool>,
 }
 
-impl Env for Operands {
+impl Env for Operands<'_> {
     fn get(&self, reference: &Ref) -> Val {
         match self.values.iter().find(|(held, _)| held == reference) {
             Some((_, value)) => value.clone(),
@@ -700,6 +702,10 @@ impl Env for Operands {
     fn font_dpi(&self) -> Option<f32> {
         self.converted.set(true);
         self.dpi
+    }
+
+    fn kde_lists(&self) -> &KdeLists {
+        self.kde_lists
     }
 }
 
@@ -2113,6 +2119,7 @@ impl<'t> Cx<'t> {
         };
         let operands = Operands {
             values,
+            kde_lists: &theme.kde_lists,
             dpi,
             literals,
             converted: Cell::new(false),
