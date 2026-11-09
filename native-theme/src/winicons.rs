@@ -300,8 +300,9 @@ static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 /// one a load is running in among them: an access violation (CI run
 /// 42554706381, the Windows watcher's thread uninitializing). Initializing
 /// COM around each load would not do: its own uninitialization, the last in
-/// the process, then fails another thread's starting COM work ("the
-/// application is exiting", `CO_E_SERVER_STOPPING`; CI run 42556588847).
+/// the process, then fails another thread's starting COM work (0x8000000E,
+/// "the application is exiting", and 0x80080008, `CO_E_SERVER_STOPPING`,
+/// to the Windows watcher's start; CI run 42556588847).
 /// `CoIncrementMTAUsage` is COM's call for an API that "requires COM to be
 /// initialized, but has no information about whether the current thread is
 /// already in an apartment, and does not need the current thread to go into
