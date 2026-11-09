@@ -530,7 +530,7 @@ Value types several entries use, defined once (an entry defines the types only i
 
 | Type | Variants or fields |
 |---|---|
-| `Alignment` | `Start`, `Center`, `End` (mirrored in RTL) |
+| `Alignment` | `Start`, `Center`, `End` (mirrored in RTL, but in the `vertical` member of an `Axes`, S2.4) |
 | `Side` | `Start`, `End` |
 | `ShowWhen` | `Never`, `Always`, `WhileEditing`, `UnlessEditing`, `WhenNotEmpty`, `WhenFocusedAndNotEmpty` |
 | `ValueLabelPosition` | `Above`, `Below`, `Inline`, `Leading`, `Trailing` (a value label against its bar or slider) |
