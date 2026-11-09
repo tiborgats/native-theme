@@ -20,7 +20,7 @@ use super::blocks::part_style::PartStylePatch;
 use super::declare::{DefaultSize, WidgetDecl};
 use super::error::{LayerError, Problem, ProblemKind};
 use super::expr::{Expr, Ref, Ty};
-use super::inputs::{Contrast, InputBases, InputName};
+use super::inputs::{Accent, Contrast, InputBases, InputName, InputValue};
 use super::key::Key;
 use super::layer::Layer;
 use super::presets::PresetId;
@@ -43,6 +43,7 @@ use super::tokens::Tokens;
 use super::toml::layer::{read_inputs_table, read_preset, read_rule_body};
 use super::toml::read::{Named, Reader};
 use super::toml::when;
+use super::value::{SchemeMap, Value};
 use super::widgets::{
     ButtonValues, PartPatch, PartPresence, TypedPart, WidgetKind, WidgetValuesPatch,
 };
@@ -391,15 +392,49 @@ impl Preset {
         stack
             .set_reader_stand_in_carrying(conditions.state.clone(), stand_in, carried)
             .map_err(|error| refused(&error))?;
-        let theme = stack
-            .resolve(&mut WindowState::default(), &conditions.window)
-            .theme;
-        Ok(Resolved {
-            theme,
-            stack,
-            window: conditions.window.clone(),
-            contexts: Arc::default(),
-        })
+        Ok(Resolved::of(stack, conditions))
+    }
+
+    /// The preset resolved for the accent run (S17 *The accent run*) in
+    /// `conditions`, the stand-in stating nothing: where `port` holds a
+    /// scheme file's bytes, the palette [`Palette::from_port`] converts from
+    /// it under the scheme in force applied over the stand-in (S14); where
+    /// `accent` names a colour, that accent set through `set_accent` at
+    /// every scheme (S9.2), which gives the accent-derivation layer its
+    /// roles. The scheme is set first, so the palette is applied under it.
+    ///
+    /// [`Palette::from_port`]: crate::Palette::from_port
+    pub fn resolve_accent(
+        &self,
+        conditions: &Conditions,
+        port: Option<&[u8]>,
+        accent: Option<&str>,
+    ) -> Result<Resolved, String> {
+        let mut stack = self.stack.clone();
+        if let Some(flavor) = &conditions.flavor {
+            stack
+                .set_flavor(flavor.clone())
+                .map_err(|error| refused(&error))?;
+        }
+        stack
+            .set_reader_stand_in(conditions.state.clone(), Layer::default())
+            .map_err(|error| refused(&error))?;
+        if let Some(file) = port {
+            let palette = crate::Palette::from_port(file, stack.scheme())
+                .map_err(|error| format!("from_port: {error}"))?;
+            stack
+                .apply_palette(Some(palette))
+                .map_err(|error| refused(&error))?;
+        }
+        if let Some(accent) = accent {
+            let color = super::color::Color::parse(accent)
+                .ok_or_else(|| format!("the accent `{accent}` is no colour"))?;
+            let value = InputValue::new(SchemeMap::new(Value::Stated(color), Value::Stated(color)));
+            stack
+                .set_accent(Some(Accent::new(value)))
+                .map_err(|error| refused(&error))?;
+        }
+        Ok(Resolved::of(stack, conditions))
     }
 }
 
@@ -1961,6 +1996,19 @@ fn extra_step(body: &RuleBody) -> Option<Fold<'_>> {
 }
 
 impl Resolved {
+    /// `stack` resolved in the window `conditions` names.
+    fn of(stack: Stack, conditions: &Conditions) -> Resolved {
+        let theme = stack
+            .resolve(&mut WindowState::default(), &conditions.window)
+            .theme;
+        Resolved {
+            theme,
+            stack,
+            window: conditions.window.clone(),
+            contexts: Arc::default(),
+        }
+    }
+
     /// Whether `when`'s conditions hold, as resolution decided them.
     #[must_use]
     pub fn conditions_hold(&self, when: &When) -> bool {
