@@ -205,8 +205,9 @@ NAME_RX = re.compile(r"^@?[a-z_][a-z0-9_]*$")
 SNAKE_RX = re.compile(r"^[a-z_][a-z0-9_]*$")
 VALUE_PATH_RX = re.compile(r"^[a-z_][a-z0-9_]*\.values\.[a-z_][a-z0-9_]*$")
 GENERATOR_RX = re.compile(r"^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*/?$")
-PUB_FN_RX = re.compile(r"\bpub(?:\(crate\))?\s+(?:const\s+)?(?:async\s+)?(?:unsafe\s+)?(?:extern\s+\"[^\"]*\"\s+)?"
-                       r"fn\s+([A-Za-z_][A-Za-z0-9_]*)")
+# a module's own function: an item at the start of its line, not a method indented in an `impl` or a `trait`
+PUB_FN_RX = re.compile(r"^pub(?:\(crate\))?\s+(?:const\s+)?(?:async\s+)?(?:unsafe\s+)?(?:extern\s+\"[^\"]*\"\s+)?"
+                       r"fn\s+([A-Za-z_][A-Za-z0-9_]*)", re.M)
 FN_RX = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)\s*[(<]")
 
 
@@ -669,7 +670,7 @@ def without_cfg_test(text: str) -> str:
 
 def pub_functions(root: Path, dirs) -> dict:
     """{name: (file, line)} of every `pub` and `pub(crate)` fn in the .rs files of dirs (a folder's, or a module
-    file's own)."""
+    file's own), a module's own item: no method of an `impl` or a `trait` (a clean room's accessors)."""
     out = {}
     for d in dirs:
         if (root / d).is_file() and d.suffix == ".rs":
@@ -1189,6 +1190,13 @@ pub fn adw_standalone(c: Color, scheme: Scheme) -> Color {
 
 fn to_oklab(c: Color) -> Color {
     c
+}
+
+impl Oklab {
+    /// A method is no function of the module.
+    pub fn get(&self) -> f32 {
+        self.l
+    }
 }
 
 #[cfg(test)]
