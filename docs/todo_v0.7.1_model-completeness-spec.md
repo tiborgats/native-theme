@@ -2839,7 +2839,8 @@ contrast of that antialiasing, and `subpixel_order` and `lcd_filter`, which only
 whatever ClearType's settings (the WinUI host's TextBlocks draw no coloured pixel, run 42308526155, `read_host.py`'s
 `[text_rendering]`), so `windows-11` states `contrast` as DirectWrite's greyscale enhanced contrast, which the host
 read as 1 (`grayscale_enhanced_contrast`), not ClearType's 0.5, and its subpixel order and LCD filter `Absent`; a
-reader on such a platform reads the same parameter. Rejected: ClearType's parameters, the system's (a contrast and an
+reader on such a platform states the parameters the toolkit draws with (on Windows DirectWrite's greyscale enhanced
+contrast), not ClearType's settings. Rejected: ClearType's parameters, the system's (a contrast and an
 order the toolkit's text never takes); a contrast field per antialiasing (two fields of which the toolkit uses one).
 
 ### S4.1 Motion
