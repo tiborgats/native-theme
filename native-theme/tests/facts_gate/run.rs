@@ -2852,22 +2852,22 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
     let metrics = StubMetrics;
     let probe = |combination: &Combination| {
         let describe = || format!("{vector:?} {combination:?}");
+        // A combination a `not_drawn` entry names is not the state
+        // model's (S17), its parts never queried.
+        let not_drawn = run
+            .not_drawn
+            .get(&combination.widget)
+            .map_or(&[][..], Vec::as_slice);
         let session = match timed(Step::Session, || {
-            resolved.session(combination, run.root, &metrics)
+            resolved.session_drawn(combination, run.root, &metrics, not_drawn)
         }) {
-            Ok(session) => session,
+            Ok(Some(session)) => session,
+            Ok(None) => return Probe::NotDrawn,
             Err(Unread::NotHeld(_)) => return Probe::Skipped,
             Err(Unread::Refused(why)) => {
                 return Probe::Failed(format!("{pass:?}: {why} under {}", describe()));
             }
         };
-        if timed(Step::NotDrawn, || {
-            run.not_drawn
-                .get(&combination.widget)
-                .is_some_and(|whens| whens.iter().any(|when| session.root_holds(when)))
-        }) {
-            return Probe::NotDrawn;
-        }
         if let Some(why) = session.unavailable() {
             return Probe::Failed(format!(
                 "{pass:?}: not available ({why}) under {}",

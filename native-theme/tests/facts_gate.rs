@@ -1578,6 +1578,25 @@ fn gate_fixture_not_drawn_sizes() {
     );
 }
 
+/// A `not_drawn` entry naming a combination that is not available leaves
+/// it failed as not available (S8, S17): the entry is matched against the
+/// root's element as the query reads it, which a size the preset does not
+/// declare never is, so asking the entries before the parts are queried
+/// changes no verdict.
+#[test]
+fn gate_fixture_not_drawn_unavailable() {
+    let report = fixture_report("not_drawn_unavailable");
+    assert!(report.queried > 0, "{report:?}");
+    let unavailable = failing(&report, "not available (Size)");
+    assert!(!unavailable.is_empty(), "{:?}", report.failures);
+    assert!(
+        unavailable
+            .iter()
+            .all(|failure| failure.contains("size: Some(\"small\")")),
+        "{unavailable:?}"
+    );
+}
+
 /// A `not_drawn` entry with a key the count does not evaluate, and an
 /// entry with more flags than the gate enumerates, are refused, never
 /// evaluated without it (S17).

@@ -2188,6 +2188,55 @@ impl Resolved {
         root: &RootInputs,
         metrics: &'r dyn FontMetrics,
     ) -> Result<Session<'r>, Unread> {
+        let (mut session, scope, info) = self.element(combination, root, metrics)?;
+        session.query_parts(info, &scope);
+        Ok(session)
+    }
+
+    /// [`Resolved::session`], but `None` where one of `not_drawn`, a state
+    /// model's `not_drawn` entries (S17), holds for the element of the
+    /// widget's root as [`Session::root_holds`] matches it: its parts are
+    /// then never queried, as the root's element and scope come before
+    /// them.
+    pub fn session_drawn<'r>(
+        &'r self,
+        combination: &Combination,
+        root: &RootInputs,
+        metrics: &'r dyn FontMetrics,
+        not_drawn: &[When],
+    ) -> Result<Option<Session<'r>>, Unread> {
+        let (mut session, scope, info) = self.element(combination, root, metrics)?;
+        if !not_drawn.is_empty()
+            && let Some(part) = info
+                .parts
+                .iter()
+                .find_map(|part| TypedPart::from_names(session.widget, part.name))
+        {
+            let theme = &self.theme;
+            let named = session.with_element(part, &scope, |element| {
+                Matched::new(theme, element).is_ok_and(|matched| {
+                    not_drawn
+                        .iter()
+                        .any(|when| self.conditions_hold(when) && matched.matches(&when.0))
+                })
+            });
+            if named {
+                return Ok(None);
+            }
+        }
+        session.query_parts(info, &scope);
+        Ok(Some(session))
+    }
+
+    /// The combination's element read, its parts not yet queried: the
+    /// session, the scope its context gives its root, and its widget's
+    /// registry entry.
+    fn element<'r>(
+        &'r self,
+        combination: &Combination,
+        root: &RootInputs,
+        metrics: &'r dyn FontMetrics,
+    ) -> Result<(Session<'r>, Scope, &'static registry::WidgetInfo), Unread> {
         let widget = widget_kind(&combination.widget)?;
         let parsed = Parsed::of(combination)?;
         let ancestors = match &combination.context {
@@ -2198,7 +2247,7 @@ impl Resolved {
         for ancestor in &ancestors {
             scope = self.context_scope(ancestor, scope, metrics)?;
         }
-        let mut session = Session {
+        let session = Session {
             resolved: self,
             metrics,
             parsed,
@@ -2213,37 +2262,7 @@ impl Resolved {
             .ok_or_else(|| {
                 Unread::NotHeld(format!("the model holds no `{}` yet", combination.widget))
             })?;
-        for part_info in info.parts {
-            let Some(part) = TypedPart::from_names(widget, part_info.name) else {
-                continue;
-            };
-            let queried_in = match part.parent() {
-                None => scope.clone(),
-                Some(parent) => session
-                    .parts
-                    .iter()
-                    .find(|held| held.part == parent)
-                    .map_or_else(|| scope.clone(), Queried::children_scope),
-            };
-            let answer =
-                session.with_element(part, &queried_in, |element| self.theme.style(element));
-            let (answer, returned) = match answer {
-                Styled::Style((_, returned)) => (Answer::Drawn, Some(returned)),
-                Styled::NotDrawn => (Answer::NotDrawn, None),
-                Styled::DrawnAs { target, variants } => {
-                    (Answer::DrawnAs { target, variants }, None)
-                }
-                Styled::NotAvailable(unavailable) => (Answer::NotAvailable(unavailable), None),
-            };
-            session.parts.push(Queried {
-                part,
-                scope: queried_in,
-                returned,
-                answer,
-                actual: OnceCell::new(),
-            });
-        }
-        Ok(session)
+        Ok((session, scope, info))
     }
 
     /// [`context_chain`] of `context`, read once for every combination in
@@ -2550,6 +2569,42 @@ pub struct Session<'r> {
 }
 
 impl Session<'_> {
+    /// Each of `info`'s parts queried in turn, the root's in `scope`, each
+    /// other's in the scope the query of the part enclosing it returns (S8).
+    fn query_parts(&mut self, info: &registry::WidgetInfo, scope: &Scope) {
+        let resolved = self.resolved;
+        let theme = &resolved.theme;
+        for part_info in info.parts {
+            let Some(part) = TypedPart::from_names(self.widget, part_info.name) else {
+                continue;
+            };
+            let queried_in = match part.parent() {
+                None => scope.clone(),
+                Some(parent) => self
+                    .parts
+                    .iter()
+                    .find(|held| held.part == parent)
+                    .map_or_else(|| scope.clone(), Queried::children_scope),
+            };
+            let answer = self.with_element(part, &queried_in, |element| theme.style(element));
+            let (answer, returned) = match answer {
+                Styled::Style((_, returned)) => (Answer::Drawn, Some(returned)),
+                Styled::NotDrawn => (Answer::NotDrawn, None),
+                Styled::DrawnAs { target, variants } => {
+                    (Answer::DrawnAs { target, variants }, None)
+                }
+                Styled::NotAvailable(unavailable) => (Answer::NotAvailable(unavailable), None),
+            };
+            self.parts.push(Queried {
+                part,
+                scope: queried_in,
+                returned,
+                answer,
+                actual: OnceCell::new(),
+            });
+        }
+    }
+
     /// `f` over the element of `part` in `scope`, holding the combination.
     fn with_element<R>(
         &self,

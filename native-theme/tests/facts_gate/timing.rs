@@ -18,10 +18,9 @@ pub enum Step {
     Resolve,
     /// A combination probed, all of what follows.
     Probe,
-    /// The probe's session: the names read, the scopes, the parts queried.
+    /// The probe's session: the names read, the scopes, the `not_drawn`
+    /// entries matched, the parts queried.
     Session,
-    /// The probe's `not_drawn` entries matched.
-    NotDrawn,
     /// The probe's facts that hold and those that apply.
     Applying,
     /// The probe's signature.
@@ -31,11 +30,10 @@ pub enum Step {
 }
 
 /// Every step, each at its own place, in the order the timing prints them.
-const STEPS: [Step; 7] = [
+const STEPS: [Step; 6] = [
     Step::Resolve,
     Step::Probe,
     Step::Session,
-    Step::NotDrawn,
     Step::Applying,
     Step::Signature,
     Step::Compare,
