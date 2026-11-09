@@ -70,7 +70,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W09 | `tab.separator.stroke @ context window.title_bar` | rule |
 | MAC-W09 | `tab.label.text @ context window.title_bar / {selected} context window.title_bar` | rule |
 | MAC-W09 | `button.body, button.icon @ variant close context tab.tab` | rule |
-| MAC-W09 | `tab.values.close_button_shown @ variant document context window.title_bar (OnHover)` | rule |
+| MAC-W09 | `tab.values.close_button_visibility @ variant document context window.title_bar (OnHover)` | rule |
 | MAC-W09 | `button.body, button.icon @ variant add context tab.bar` | rule |
 | MAC-W09 | `tab.bar.fill, tab.tab.fill, tab.label.text.fill @ variant document context window.title_bar cond window_inactive` | rule |
 | MAC-W09 | `tab.tab.{opacity,shadow} @ {dragged} context window.title_bar` | rule |
@@ -308,7 +308,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-L09 | `list.values.section_headers_sticky (floating group rows)` | field |
 | MAC-L10 | `list.values.indent_per_level` | field |
 | MAC-L10 | `list.disclosure.glyph (SystemControl AppKitDisclosure)` | system-control |
-| MAC-L10 | `list.disclosure.glyph.fill @ {pressed}; list.disclosure.transform @ {open}` | rule |
+| MAC-L10 | `list.disclosure.glyph.fill @ {pressed}; list.disclosure.transform @ context list.row {open}` (its own press; the row's `open`, read by context, ADD-A146) | rule |
 | MAC-L10 | `list.disclosure.transitions (transform)` | field |
 | MAC-L10 | `reader:macos:NSOutlineView.indentationPerLevel` | reader |
 | MAC-L11 | `list.row_background.stroke, list.row_background.corners @ {drop_target}` | rule |

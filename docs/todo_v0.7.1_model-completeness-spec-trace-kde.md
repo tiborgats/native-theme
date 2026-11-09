@@ -357,7 +357,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.183 | `list.cell.fill @ {@sort_column}` | rule |
 | K1.183 | `reader:kde:kdeglobals [General] shadeSortColumn` | reader |
 | K1.184† | `list.disclosure.glyph (the column view's triangle: fill = role.@shade_mid, stroke = role.@shade_dark) @ variant @column_view` | rule |
-| K1.184† | `list.disclosure.glyph.fill @ {selected} variant @column_view / {selected} variant @column_view cond window_inactive` | rule |
+| K1.184† | `list.disclosure.glyph.fill @ variant @column_view context list.row {selected} / variant @column_view context list.row {selected} cond window_inactive` (the row's `selected`, read by context, ADD-A146) | rule |
 | K1.184† | `role.@shade_mid, role.@shade_dark (KDE's 3-D shades, K3.53)` | role |
 | K1.185† | `list.values.presentations (@expand, @collapse: Slide; = token.motion.durations.variant, QVariantAnimation's own default, 250, unscaled, S4.1's rule, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`; = token.motion.timings.in_out_quad, `src/widgets/itemviews/qtreeview_p.h:89`; drawn only while the style hint, `token.motion.durations.animations`, is above 0 when the view is made, `qtreeview.cpp:3148`)` | field |
 | K1.190 | `popover.body.shadow (Shadow::Elevation of Breeze's popup entry, K3.2)` | field |
@@ -1273,7 +1273,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-RL01† | `component.command_bar.frame.{min_width,max_width} (= max(div(element.window_width, <divisor>), <minimum width>)), component.command_bar.frame.{min_height,max_height} (= max(div(element.window_height, <divisor>), <minimum height>))` (its width and height follow the space it opens in, with a floor: one home in the frame's fields) | component |
 | K-RL01† | `component.command_bar.values.placement (KCommandBar; the top offset its edge_margin.top)` | placement |
 | K-RL01† | `role.@shade_dark, role.@shade_shadow` | role |
-| K-RL02† | `list.disclosure.glyph @ context shortcuts_dialog / context shortcuts_dialog dir rtl / {open} context shortcuts_dialog (the in-row extender's arrow on the item panel, open: its own state)` | rule |
+| K-RL02† | `list.disclosure.glyph @ context shortcuts_dialog / context shortcuts_dialog dir rtl / context list.row {open} context shortcuts_dialog (the in-row extender's arrow on the item panel; the extended row's open, read by context, ADD-A146)` | rule |
 | K-RL02† | `list.row_background @ context shortcuts_dialog (the item panel)` | rule |
 | K-RL02† | `button.icon.glyph (ThemeIcon configure), button.label.text (the native shortcut text) @ variant @key_sequence context shortcuts_dialog` (while it records, only the string changes, to "Input" or the partial sequence and " …", the button keeping its usual states: its click starts the recorder, `kxmlgui@6.31.0 src/kkeysequencewidget.cpp:416`, `:526-530`, and the private `startRecording()` that would hold it pressed, `:373-377`, has no caller; ADD-A139) | rule |
 | K-RL02† | `button.icon.glyph (ThemeIcon by direction) @ variants {tool,clear_field} context shortcuts_dialog / variants {tool,clear_field} context shortcuts_dialog dir rtl` | rule |

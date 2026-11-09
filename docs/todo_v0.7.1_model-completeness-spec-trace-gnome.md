@@ -332,7 +332,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.129 | `tab.values.pinned_width @ variant @pinned` | rule |
 | GN-1.129 | `tab.label.text.elision` (`Elision::Fade` at both edges: `start` and `end` each a `FadeLength`, the row's two fade lengths; `under: FadeUnder::Element { widget: button, variant: close }`, the close button, ADD-A89) | field |
 | GN-1.130 | `button.body.{fill,min_width,min_height,corners,padding} @ variant close context tab.tab variant document` | rule |
-| GN-1.130 | `tab.values.close_button_shown @ variant document` | rule |
+| GN-1.130 | `tab.values.close_button_visibility @ variant document` | rule |
 | GN-1.130 | `button.values.presentations @ variant close context tab.tab variant document (Appear, Disappear: fade)` | rule |
 | GN-1.131 | `tab.values.presentations events Appear (open), Disappear (close), Move (a reordered tab), @scroll, @resize` | field |
 | GN-1.131 | `tab.tab.transitions (fill)` | field |
@@ -409,7 +409,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.170 | `list.cell.padding @ variant @data_table` | rule |
 | GN-1.171 | `list.header_section.fill, list.header_section.text.fill @ {dragged}` | rule |
 | GN-1.172 | `list.cell.stroke @ {focus_visible} / {editing}` | rule |
-| GN-1.173 | `list.disclosure.glyph @ {open} / !{open}` | rule |
+| GN-1.173 | `list.disclosure.glyph @ context list.row {open} / context list.row !{open}` (the row's `open`, read by context: a flag is set on the element whose state it is, ADD-A146) | rule |
 | GN-1.173 | `list.values.disclosure_gap, list.values.indent_per_level` | field |
 | GN-1.174 | `list.row.padding, list.row_background.corners @ variant grid` | rule |
 | GN-1.174 | `list.row_background.fill.append @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} variant grid` | rule |
@@ -597,7 +597,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.260 | `form.row_nested.fill @ variant expander; list.nested.fill @ variant inset` | rule |
 | GN-1.261 | `expander.header.corners, expander.header.focus` | field |
 | GN-1.261 | `expander.arrow.{glyph,opacity}` | field |
-| GN-1.261 | `expander.arrow.glyph @ {open}` | rule |
+| GN-1.261 | `expander.arrow.glyph @ context expander.body {open}` (the expander's `open`, read by context, ADD-A146) | rule |
 | GN-1.261 | `expander.arrow.opacity @ context expander.header {hover} / context expander.header {pressed}` (the title's hover and press raise the arrow's opacity: the arrow nests in the header) | rule |
 | GN-1.262 | `expander.values.drag_hover_delay` | field |
 | GN-1.263 | `expander.arrow.opacity @ {disabled}` | rule |

@@ -567,7 +567,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CD-1 | `list.row_background.shadow` (its `shadowProperties`, layers S2.5; `card` is unavailable on `ios-*`, and GroupBox is `group_box`) | field |
 | CD-1 | `reader:ios:UIBackgroundConfiguration and UIShadowProperties` | readers (R18) |
 | EX-1 | `list.disclosure.glyph` (iOS's outline disclosure is a list row's `disclosure`; `expander` is unavailable on `ios-*`) | field |
-| EX-1 | `list.disclosure.transform @ {open}` | rule |
+| EX-1 | `list.disclosure.transform @ context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
 | EX-1 | `reader:ios:UICellAccessory.outlineDisclosure options` | readers (R18) |
 | EX-2 | `list.disclosure.transitions (Transform)` | field |
 | EX-2 | `list.values.presentations events @expand, @collapse` (the child rows' insertion) | field |

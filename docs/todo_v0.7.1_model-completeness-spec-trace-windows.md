@@ -245,7 +245,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-082 | `button.{body.min_width,body.min_height,icon.glyph} @ variant close context tab.tab (the button size, the glyph and its size)` | rule |
 | W1-082 | `button.{body.fill,icon.glyph.fill,body.stroke} @ {hover} / {pressed} / {disabled} variant close context tab.tab` | rule |
 | W1-082 | `button.{body.fill,icon.glyph.fill,body.stroke} @ variant close context tab.tab {selected} / variant close context tab.tab {hover} / variant close context tab.tab {pressed}` | rule |
-| W1-082 | `tab.values.close_button_shown` | field |
+| W1-082 | `tab.values.close_button_visibility` | field |
 | W1-082 | `tab.tab.padding @ variant closable` (CloseIconStates: the padding with and without the button) | rule |
 | W1-082 | `button.body.margin @ variant close context tab.tab` (`TabViewItemHeaderCloseMargin`: the gap to the label) | rule |
 | W1-083 | `button.{body.min_width,body.min_height,icon.glyph,body.fill} @ variant add context tab.bar` | rule |
@@ -275,7 +275,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-093 | `separator.line.{stroke,margin} @ context sidebar.pane (the colour, height and margin)` | rule |
 | W1-093 | `list.disclosure.glyph @ variant sidebar` | rule |
 | W1-093 | `list.values.disclosure_gap @ variant sidebar (the chevron margin)` | rule |
-| W1-093 | `list.disclosure.transform @ {open} variant sidebar` | rule |
+| W1-093 | `list.disclosure.transform @ variant sidebar context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
 | W1-093 | `list.disclosure.transitions (Transform: the rotation)` | field |
 | W1-094 | `sidebar.values.width, sidebar.values.collapsed_width` | field |
 | W1-094 | `sidebar.* @ variant compact / variant @left_minimal (LeftCompact, LeftMinimal; Left is the base)` | rule |
@@ -502,7 +502,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-12 | `list.{row_background.fill,row_background.stroke,row.text.fill} @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {disabled}` | rule |
 | W2-12 | `list.values.indent_per_level` | field |
 | W2-12 | `list.disclosure.glyph; list.disclosure.transitions` | field |
-| W2-12 | `list.disclosure.transform @ {open}` | rule |
+| W2-12 | `list.disclosure.transform @ context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
 | W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill `shown` under `{selected}`, its fade and scale W1-107's, S2.7, ADD-A126) | field |
 | W2-12 | `checkbox.* @ context list.row (the multi-select check box)` | rule |
 | W2-12 | `list.row.min_height` | field |
