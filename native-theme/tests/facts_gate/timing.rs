@@ -90,6 +90,33 @@ pub fn note(step: Step) {
     }
 }
 
+/// Whether the timing is on, so a caller measures what [`sizes`] prints
+/// only then.
+pub fn measuring() -> bool {
+    on()
+}
+
+/// The sizes `sizes` names, in bytes or counts, and the process's resident
+/// memory (Linux's `/proc/self/status`, else unread), printed for `what`
+/// where the timing is on.
+pub fn sizes(what: &str, sizes: &[(&str, usize)]) {
+    if !on() {
+        return;
+    }
+    let resident = std::fs::read_to_string("/proc/self/status")
+        .ok()
+        .and_then(|status| {
+            let line = status.lines().find(|line| line.starts_with("VmRSS:"))?;
+            line.split_whitespace().nth(1)?.parse::<u64>().ok()
+        })
+        .map_or_else(|| "unread".to_owned(), |kb| format!("{} MB", kb >> 10));
+    let mut line = format!("sizes {what}: resident {resident}");
+    for (name, size) in sizes {
+        line.push_str(&format!("; {name} {size}"));
+    }
+    eprintln!("{line}");
+}
+
 /// Each step's time and count since the last print, printed for `what`
 /// where the timing is on, then started over.
 pub fn print(what: &str, wall: std::time::Duration) {

@@ -2890,6 +2890,12 @@ fn check(
                                 super::timing::note(Step::Unlike);
                             }
                             let found = widgets_checked(&run, &combinations, &mut report);
+                            if super::timing::measuring() {
+                                super::timing::sizes(
+                                    &format!("{pass:?} {vector:?} probed"),
+                                    &found.sizes(),
+                                );
+                            }
                             if pass == Pass::Normal {
                                 probed = Some((found, holding));
                             }
@@ -2899,6 +2905,23 @@ fn check(
             }
         }
         threads.checking.fetch_sub(1, Ordering::Relaxed);
+        if super::timing::measuring() {
+            super::timing::sizes(
+                &format!("{:?} report", vectors.get(*at)),
+                &[
+                    ("failures", report.failures.len()),
+                    (
+                        "failures bytes",
+                        report.failures.iter().map(String::capacity).sum(),
+                    ),
+                    ("pending", report.pending.len()),
+                    ("listed", report.listed.len()),
+                    ("synthetic", report.synthetic.len()),
+                    ("unchecked", report.unchecked.len()),
+                    ("groups", report.groups.len()),
+                ],
+            );
+        }
         (*at, report)
     });
     found.sort_by_key(|(at, _)| *at);
@@ -3312,6 +3335,56 @@ impl Probed {
         places.push(self.failures.len());
         self.failures.push(failure);
     }
+
+    /// What it holds, in counts and bytes ([`super::timing::sizes`]).
+    fn sizes(&self) -> Vec<(&'static str, usize)> {
+        let combinations: usize = self.queried.iter().map(combination_bytes).sum();
+        let (mut element, mut steps, mut facts, mut steps_len) = (0, 0, 0, 0);
+        let mut distinct: HashSet<&Vec<u32>> = HashSet::new();
+        for (key, _) in &self.signatures {
+            element += key.0.capacity();
+            steps += key.1.capacity() * 4;
+            facts += key.2.capacity() * 4;
+            steps_len += key.1.len();
+            distinct.insert(&key.1);
+        }
+        vec![
+            ("queried", self.queried.len()),
+            ("queried bytes", combinations),
+            ("signature elements bytes", element),
+            ("signature steps bytes", steps),
+            ("signature steps distinct", distinct.len()),
+            ("signature steps len", steps_len),
+            ("signature facts bytes", facts),
+            (
+                "signatures table bytes",
+                self.signatures.capacity() * (std::mem::size_of::<(Signature, usize)>() + 1),
+            ),
+            ("failures", self.failures.len()),
+        ]
+    }
+}
+
+/// The heap bytes `combination` holds, about ([`Probed::sizes`]).
+fn combination_bytes(combination: &Combination) -> usize {
+    let strings = |strings: &[String]| {
+        strings
+            .iter()
+            .map(|string| string.capacity() + std::mem::size_of::<String>())
+            .sum::<usize>()
+    };
+    std::mem::size_of::<Combination>()
+        + combination.widget.capacity()
+        + strings(&combination.variants)
+        + strings(&combination.states)
+        + strings(&combination.order)
+        + combination.size.as_ref().map_or(0, String::capacity)
+        + combination.density.as_ref().map_or(0, String::capacity)
+        + combination.direction.as_ref().map_or(0, String::capacity)
+        + combination
+            .context
+            .as_ref()
+            .map_or(0, |context| format!("{context:?}").len())
 }
 
 /// How many combinations [`check_widgets`] probes, or compares, at once
@@ -3790,7 +3863,7 @@ fn check_widgets(
 fn compare_widgets(run: &Run<'_, '_>, probed: &Probed, alike: bool, report: &mut Report) -> bool {
     let threads = run.threads.each();
     let size = PROBED_BY_THREAD.saturating_mul(threads);
-    let memo = Memo::default();
+    let memo = Memo::of_probed(probed);
     for (chunk_at, chunk) in probed.queried.chunks(size).enumerate() {
         let items: Vec<(usize, &Combination)> = chunk
             .iter()
@@ -3813,9 +3886,13 @@ fn compare_widgets(run: &Run<'_, '_>, probed: &Probed, alike: bool, report: &mut
         if found.iter().any(|(compared, _)| !compared) {
             return false;
         }
+        memo.compared(chunk_at.saturating_add(1).saturating_mul(size));
         for (_, found) in found {
             report.merge(found);
         }
+    }
+    if super::timing::measuring() {
+        super::timing::sizes(&format!("{:?} {:?}", run.pass, run.vector), &memo.sizes());
     }
     true
 }
@@ -3940,7 +4017,7 @@ fn compare_widget(
     run: &Run<'_, '_>,
     combination: &Combination,
     expected: Option<(&Probed, usize)>,
-    memo: &Memo,
+    memo: &Memo<'_>,
     report: &mut Report,
 ) -> bool {
     let (resolved, vector, pass) = (run.resolved, run.vector, run.pass);
@@ -3992,7 +4069,7 @@ fn compare_widget(
             }) = fact
             && session.drawn(&key.key)
             && listed_or_failed(
-                asked.answer(Asked::Listed(index), || session.listed(&key.key)),
+                asked.answer(|| Asked::Listed(index), || session.listed(&key.key)),
                 &key.name,
                 report,
                 &describe,
@@ -4048,7 +4125,7 @@ fn compare_widget(
                 let at = std::ptr::from_ref(value).addr();
                 let synthetic = || session.synthetic(&key.key, Some(value), &except);
                 let synthetic = if own {
-                    asked.answer(Asked::Synthetic(index, at, except.clone()), synthetic)
+                    asked.answer(|| Asked::Synthetic(index, at, except.clone()), synthetic)
                 } else {
                     synthetic()
                 };
@@ -4059,7 +4136,7 @@ fn compare_widget(
                         let compare =
                             || session.compare_except(&key.key, value, &tolerance, &except);
                         let outcome = if own {
-                            asked.answer(Asked::Compared(index, at, except.clone()), compare)
+                            asked.answer(|| Asked::Compared(index, at, except.clone()), compare)
                         } else {
                             compare()
                         };
@@ -4071,9 +4148,10 @@ fn compare_widget(
                 }
             }
             Verdict::Drawn if pass == Pass::Normal => {
-                let outcome = asked.answer(Asked::Drawn(index), || {
-                    session.compare(&key.key, None, &Tolerance::quote())
-                });
+                let outcome = asked.answer(
+                    || Asked::Drawn(index),
+                    || session.compare(&key.key, None, &Tolerance::quote()),
+                );
                 record(
                     outcome,
                     &key.name,
@@ -4094,31 +4172,137 @@ fn compare_widget(
 /// steps that apply to it with each part's answer
 /// ([`Session::signature`]): two such sessions resolve every key alike
 /// (S17: "reusing what the set's rules share"), so each question is asked
-/// once for each, whichever facts apply to the other keys.
+/// once for each, whichever facts apply to the other keys. Only the
+/// sessions of an element and steps the pass's probes hold for more than
+/// one distinct combination are held, each until the last of them is
+/// compared ([`Memo::compared`]): a session no later one is alike with
+/// asks each question once anyway.
 ///
 /// [`Session::signature`]: native_theme::gate::Session::signature
+struct Memo<'p> {
+    /// Each element and steps `probed` holds for more than one distinct
+    /// combination, by a hash of both ([`alike_hash`]), with its place in
+    /// `last`.
+    shared: HashMap<u64, Vec<(Alike<'p>, usize)>>,
+    /// The place in `probed` of the last distinct combination of each of
+    /// `shared`.
+    last: Vec<usize>,
+    sessions: Mutex<Sessions>,
+}
+
+/// The sessions a [`Memo`] holds, by their place in its `last`, and the
+/// most it held at once.
 #[derive(Default)]
-struct Memo {
-    sessions: Mutex<HashMap<Alike, Arc<Answers>>>,
+struct Sessions {
+    held: HashMap<usize, Arc<Answers>>,
+    most: usize,
 }
 
 /// A session's element and the steps that apply to it with each part's
 /// answer ([`Memo`]).
-type Alike = (String, Vec<u32>);
+type Alike<'p> = (&'p str, &'p [u32]);
 
-impl Memo {
-    /// The answers of the sessions alike with `session`, `combination`'s.
-    fn of(
-        &self,
-        combination: &Combination,
-        session: &native_theme::gate::Session<'_>,
-    ) -> Arc<Answers> {
+/// A hash of an element and its steps, by which [`Memo`] finds them.
+fn alike_hash(element: &str, steps: &[u32]) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    element.hash(&mut hasher);
+    steps.hash(&mut hasher);
+    hasher.finish()
+}
+
+impl<'p> Memo<'p> {
+    /// The memo of the distinct combinations `probed` holds.
+    fn of_probed(probed: &'p Probed) -> Memo<'p> {
+        let mut uses: HashMap<Alike<'p>, (usize, usize)> = HashMap::new();
+        for ((element, steps, _), at) in &probed.signatures {
+            let (count, last) = uses
+                .entry((element.as_str(), steps.as_slice()))
+                .or_insert((0, 0));
+            *count += 1;
+            *last = (*last).max(*at);
+        }
+        let mut memo = Memo {
+            shared: HashMap::new(),
+            last: Vec::new(),
+            sessions: Mutex::default(),
+        };
+        for (alike, (count, last)) in uses {
+            if count > 1 {
+                memo.shared
+                    .entry(alike_hash(alike.0, alike.1))
+                    .or_default()
+                    .push((alike, memo.last.len()));
+                memo.last.push(last);
+            }
+        }
+        memo
+    }
+
+    /// The answers of the sessions alike with `session`, `combination`'s;
+    /// none held where no later distinct combination is alike with it.
+    fn of(&self, combination: &Combination, session: &native_theme::gate::Session<'_>) -> Asking {
+        if self.shared.is_empty() {
+            return Asking(None);
+        }
         let element = format!(
             "{} {:?} {:?}",
             combination.widget, combination.context, combination.direction
         );
+        let steps = session.signature();
+        let Some(place) = self
+            .shared
+            .get(&alike_hash(&element, &steps))
+            .and_then(|held| {
+                held.iter()
+                    .find(|((held_element, held_steps), _)| {
+                        *held_element == element && *held_steps == steps.as_slice()
+                    })
+                    .map(|(_, place)| *place)
+            })
+        else {
+            return Asking(None);
+        };
         let mut sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
-        Arc::clone(sessions.entry((element, session.signature())).or_default())
+        let answers = Arc::clone(sessions.held.entry(place).or_default());
+        sessions.most = sessions.most.max(sessions.held.len());
+        Asking(Some(answers))
+    }
+
+    /// Every distinct combination before the place `before` compared: the
+    /// sessions none after it is alike with let go.
+    fn compared(&self, before: usize) {
+        let mut sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
+        let last = &self.last;
+        sessions
+            .held
+            .retain(|place, _| last.get(*place).is_some_and(|last| *last >= before));
+    }
+
+    /// How many elements and steps it holds sessions for, and the most
+    /// sessions it held at once ([`super::timing::sizes`]).
+    fn sizes(&self) -> Vec<(&'static str, usize)> {
+        let sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
+        vec![
+            ("memo shared", self.last.len()),
+            ("memo held", sessions.held.len()),
+            ("memo most", sessions.most),
+        ]
+    }
+}
+
+/// What [`Memo::of`] gives a session: the answers of the sessions alike
+/// with it, or none held, each question asked.
+struct Asking(Option<Arc<Answers>>);
+
+impl Asking {
+    /// The answer to the question `asked` gives, `ask`ed where none is
+    /// held.
+    fn answer<A: Answer>(&self, asked: impl FnOnce() -> Asked, ask: impl FnOnce() -> A) -> A {
+        match &self.0 {
+            Some(answers) => answers.answer(asked(), ask),
+            None => ask(),
+        }
     }
 }
 
