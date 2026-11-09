@@ -569,7 +569,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N04 | `calendar.weekday_label.text, calendar.day, calendar.day_label.text @ context any date_picker variant inline` | rule |
 | MAC-N04 | `calendar.day.fill, calendar.day_label.text.fill @ {selected} / {today} / {other_month}` | rule |
 | MAC-N04 | `calendar.today_marker.{stroke,corners}` | field |
-| MAC-N04 | `calendar.clock_face.{fill,stroke}, calendar.clock_hand.stroke` | field |
+| MAC-N04 | `time_picker.dial.{fill,stroke}, time_picker.dial_track.fill @ variant inline context date_picker` (the clock face and hands of the clockAndCalendar style: a `time_picker` element beside the `calendar`, one structure with Material's clock dial) | rule |
 | MAC-N04 | `calendar.* @ context date_picker.popup (the calendar overlay, presentsCalendarOverlay)` | rule |
 | MAC-N04 | `date_picker.popup.{fill,corners,shadow,padding} @ variant text_field` | rule |
 | MAC-N04 | `date_picker.values.placement (AppKitPopover, to verify; the calendar overlay)` | placement |
@@ -684,6 +684,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N36† | `teaching_tip.values.placement (AppKitPopover)` | placement |
 | MAC-N37† | `chart.grid_line_major.stroke, chart.grid_line_minor.stroke, chart.axis_tick.stroke, chart.axis_label.text` | field |
 | MAC-N37† | `chart.series.fill = pick(element.item_index, <c0>, …) in Swift Charts' default order (data declared on series; R25.3)` | field |
+| MAC-N37† | `chart.series.stroke @ variant line` (a `LineMark` series' line, its paint the series colour; absent outside `line`) | rule |
 | MAC-N37† | `chart.legend_label.text, chart.legend_swatch.fill` (the legend's one text style) | field |
 | MAC-N37† | `chart.selection_mark.stroke` | field |
 | MAC-X01 | `window.frame.shadow @ cond window_inactive / variant utility / variant @hud` | rule |

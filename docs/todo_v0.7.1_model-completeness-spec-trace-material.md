@@ -257,6 +257,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TA8† | `menu.* @ context button variant overflow; button.values.menu_placement @ variant overflow context toolbar.bar` | rule |
 | MAT-L1 | `list.row.min_height @ variant with_subtitle / variant three_line` | rule |
 | MAT-L1 | `list.secondary_text.text, list.overline_text.text, list.trailing_text.text` | field |
+| MAT-L1 | `form.row.*, form.row_title.text, form.row_subtitle.text, form.row_value.text` (a settings row is a list item with a trailing control, the cross-check's "preference rows": the item's heights and texts stated on the form's own parts, as on `list`, R20) | field |
 | MAT-L2 | `list.leading_icon.icon` | field |
 | MAT-L2 | `list.leading_icon.{corners,min_width,min_height} @ variant with_image / variant with_video` (under `with_avatar` the leading element is an `avatar`, the next line) | rule |
 | MAT-L2 | `avatar.body.{fill,min_width,min_height,corners}, avatar.initials.text @ context list.row (the leading avatar and its label)` | rule |
@@ -273,6 +274,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-L6 | `list.row_separator.{stroke,margin}, list.values.row_gap` | field |
 | MAT-L7 | `list.values.leading_gap` | field |
 | MAT-L8 | `list.row_background.fill, list.values.row_gap @ variant separated cond flavor:expressive` | rule |
+| MAT-L8 | `form.row.{fill,corners}, form.values.row_gap @ cond flavor:expressive` (the segmented list as the form's boxed look: each row a rounded item, the gap between them; no `card`) | rule |
 | MAT-L8 | `list.row_background.corners @ cond flavor:expressive (the rest shape)` | rule |
 | MAT-L8 | `list.row_background.corners @ {hover} / {focus_visible} / {pressed} / {dragged} / {disabled} / {selected} / {selected,hover} / {selected,focus_visible} / {selected,pressed} / {selected,dragged} / {selected,disabled}, each cond flavor:expressive` (Compose's fixed precedence, pressed over dragged over selected over focused over hovered, `ListItemDefaults.kt:1144-1152`: the rules written hover, focus_visible, selected, dragged, pressed, the later winning; no recency set) | rule |
 | MAT-L8 | `list.row_background.transitions (Corners) @ cond flavor:expressive` | rule |
@@ -590,7 +592,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N26 | `dialog.header.{fill,stroke,shadow} @ {scrolled} variant full_size` (the on-scroll colour and elevation) | rule |
 | MAT-N26 | `button.icon.icon @ variant close context dialog.header; button.body.interaction.state_layer.alpha @ latest state_layer:hover / latest state_layer:focus_visible, each context dialog.header; button.label.text @ {hover} / {focus_visible} / {pressed}, each context dialog.header (the header's action)` | rule |
 | MAT-N27 | `menu.{body,item,item_label,item_icon}.* @ context autocomplete` | rule |
-| MAT-N27 | `input.* @ context autocomplete / variant @filled context autocomplete (the field: outlined the base)` | rule |
+| MAT-N27 | `input.* / input.* @ variant @filled` (the field's own values, outlined the base: the field is the autocomplete's ancestor, so no rule selects it by `context autocomplete`; whether the autocomplete tokens' field values, `md.comp.outlined-autocomplete.text-field.*` and the filled file's, differ from the text field's is the value phase's comparison, and a difference needs the content variant the `autocomplete` entry names, ADD-A146) | rule |
 | MAT-N27 | `autocomplete.values.placement (MaterialMenu)` | placement |
 | MAT-N28 | `pull_to_refresh.indicator.{fill,corners,shadow,min_width,min_height}; pull_to_refresh.values.trigger_distance` | field |
 | MAT-N28 | `spinner.* @ context pull_to_refresh (its spinner or loading shape); pull_to_refresh.values.progress_sweep (the arc following the pull, element.progress)` | rule |
@@ -778,4 +780,5 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-P4-7† | `toolbar.bar.transitions (Shadow; Geometry: the main content's balancing padding) @ variant floating` | rule |
 | MAT-P4-8† | `drag_image.values.presentations (events @drop_not_consumed: the shadow flies back fading; @cancel: it shrinks and fades out)` | field |
 | MAT-P4-8† | `drag_image.values.presentations @ {@source_hidden} (both outcomes only fade in place)` | rule |
+| MAT-P4-8† | `drag_image.values.hotspot (Center)` (the default drag shadow is held at its centre, `frameworks-base@android-17.0.0_r1 core/java/android/view/View.java:29724-29728`) | field |
 | MAT-P4-9† | `tooltip.values.placement (MaterialTooltip: side, flip, clamped into the window)` | placement |

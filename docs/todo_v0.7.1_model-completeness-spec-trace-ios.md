@@ -464,6 +464,9 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | L-22† | `list.sort_indicator.glyph @ {sorted} variant table / {sorted,descending} variant table` | rule |
 | L-22† | `list.row_background.fill @ {selected} variant table` (the row selection) | rule |
 | L-22† | `list.header @ variant table h_size_class compact` (`absent = true`: the header hidden in a compact width; ADD-A20); `list.values.max_columns @ variant table h_size_class compact` (only the first column shown) | rule |
+| L-23† | `form.card.*, form.row.*, form.row_separator.*, form.group_title.*` (SwiftUI's `Form`, drawn through the inset-grouped list: its platter, cells, separators and section header, L-1, L-2, L-7, stated on the form's own parts as `adwaita` states its boxed list on `form` and on `list`, R20) | field |
+| L-23† | `form.row_value.text, form.values.control_alignment` (the value in secondary text, `LabeledContent`'s and a picker row's; the control's alignment in the row) | field |
+| L-23† | `combo_box.label.text, combo_box.arrow.glyph @ context form.row; switch.*, stepper.* @ context form.row` (the menu-style picker, the switch and stepper rows, in a form) | rule |
 | L-23† | `list.trailing_text.text @ variant @grouped / variant inset` (the value in secondary text) | rule |
 | L-23† | `combo_box.label.text, combo_box.arrow.glyph @ context list.row` (the menu-style picker: its value and indicator) | rule |
 | L-23† | `list.accessory.glyph @ variant @disclosure_indicator / variant @checkmark` (the navigation-link picker's chevron, the inline picker's checkmark rows) | rule |
@@ -624,7 +627,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-5 | `time_picker.field.fill, time_picker.field_label.text.fill @ {pressed} variant with_popup` | rule |
 | C-5 | `time_picker.values.placement (UiKitPopover)` | placement |
 | C-5 | - | readers (R18) |
-| C-6 | `calendar.header.padding, calendar.weekday_label.text, calendar.time_row.{text,padding}, calendar.decoration.{fill,corners,icon,min_width,min_height}` | field |
+| C-6 | `calendar.header.padding, calendar.weekday_label.text, calendar.decoration.{fill,corners,icon,min_width,min_height}` | field |
+| C-6 | `date_picker.time_row.{text,padding} @ variant inline` (the time row under the inline calendar, the picker's own part) | rule |
 | C-6 | `button.icon.glyph @ variant previous context calendar.header / variant next context calendar.header` (the navigation chevrons) | rule |
 | C-6 | `button.label.text, button.icon.glyph @ !variants {previous,next} context calendar.header` (the month-year toggle; `!variants` keeps out the navigation buttons, which the same context matches) | rule |
 | C-6 | `picker_wheel.* @ context calendar.frame variant @wheels` (the month-year wheels) | rule |
@@ -794,7 +798,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-44† | - | readers (R18) |
 | C-45† | `chart.grid_line_major.stroke, chart.axis_tick.stroke, chart.axis_label.text, chart.legend_label.text, chart.plot_area.padding` | field |
 | C-45† | `chart.series.fill = pick(element.item_index, …)` (the default series colour order; ADD-B15) | field |
-| C-45† | `chart.series.stroke` (a `LineMark` series' line, its width and paint per series) | field |
+| C-45† | `chart.series.stroke @ variant line` (a `LineMark` series' line, its width and paint per series; absent outside `line`, the filled marks the base) | rule |
 | C-45† | `chart.values.grid_lines` (`AxisMarks`' defaults) | field |
 | C-45† | - | readers (R18) |
 | C-46† | `component.activity_rings.ring.fill @ variant @move / variant @exercise / variant @stand` (each ring's paint, flat or a gradient); `component.activity_rings.values.stroke_width`, `component.activity_rings.values.cap` (the rings' width and ends) | component |
@@ -1049,6 +1053,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-10† | - (the system's drop-progress indicator) | out (R1.1) |
 | P3-11† | `token.behavior.spring_loading (ADD-A45)` | token |
 | P3-11† | `button.values.presentations, list.values.presentations, segmented_control.values.presentations, bottom_tab_bar.values.presentations event @spring_load` (the visual effect while a drag hovers) | field |
+| P3-11† | `bottom_tab_bar.values.drag_hover_delay (= token.behavior.spring_loading)` | field |
 | P3-11† | `button.body.fill, list.row_background.fill, segmented_control.segment.fill, bottom_tab_bar.item.fill @ {drop_target}` (the activating states) | rule |
 | P3-12† | - (the pointer itself and its Color, Pointer Size, Increase Contrast and Automatically Hide Pointer settings, which the system draws, X-PH-2) | out (R1.1) |
 | P3-12† | `cond system_setting:pointer_animations (ADD-A04)` | condition |

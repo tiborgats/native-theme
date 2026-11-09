@@ -4729,7 +4729,10 @@ spaces:
 
 - **Kind:** typed widget: GNOME's AdwAboutDialog (GN-2.39), KDE's KAboutApplicationDialog (K-P3-8†), Kirigami's
   About page (Q2.57†) and kirigami-addons' About page (K-KA-44†), macOS's standard About panel (MAC-N32†). Its
-  window is a `dialog` element.
+  window is a `dialog` element, its ancestor: the `about_dialog` is queried in `context dialog.body`, and the
+  connector sets the dialog's content variant `about` (the `dialog` entry), by which rules select the dialog's own
+  parts, its action area and Close button among them; `context about_dialog` matches only what lies inside the about
+  content (ADD-A146).
 - **Available:** every preset but `windows-11`, `ios-*`, `material-3` (`available = false`: no about dialog the
   toolkit draws; Windows' `ShellAbout` is out, R1.1).
 - **Parts:**
@@ -4737,8 +4740,13 @@ spaces:
   - `icon` — the application icon: `icon` (its size: GN-2.39, K-P3-8†, Q2.57†, MAC-N32†), `shadow` (GNOME's drop
     shadow), `margin` (the space round it where the panel's gaps differ, MAC-N32†).
   - `name` — the application name: `text`, `margin` (MAC-N32†).
-  - `version` — the version line: `text`, `fill`, `padding`, `corners` (GNOME's pill: accent text, padding, corners;
-    plain text elsewhere), `margin` (GNOME's space above the pill, GN-2.39; MAC-N32†).
+  - `version` — the version line, plain text: `text`, `margin` (MAC-N32†). On `adwaita` it is `drawn_as = { widget =
+    "button", variants = ["@app_version"] }` (ADD-A146): AdwAboutDialog's version is a `GtkButton` of the class
+    `app-version`, which copies the version when clicked (`libadwaita@1.10.0 src/adw-about-dialog.ui:80-89`), so its
+    hover, pressed and focus looks are `button`'s, and the pill's padding, radius, accent text and top margin are
+    `button` rules under that keyed variant in `context about_dialog` (`src/stylesheet/widgets/_misc.scss:101-106`,
+    GN-2.39; Nested controls). Rejected: the pill as this part's `fill`, `corners` and `padding`, a part of a widget
+    with no flags, which can state none of the button's states.
   - `description` — the short description: `text`.
   - `section_title` — a credits or legal section's heading: `text`, `padding`.
   - `credits` — the credits text (macOS's credits text view): `text`, `margin` (MAC-N32†).
@@ -4752,9 +4760,11 @@ spaces:
   `_misc.scss:91-97`); `groups_margin: Sides<Value<Px>>` (that inner box's margins above and below it, GN-2.39); `subpage_margins: Sides<Value<Px>>`
   (GN-2.39); `width_px: Value<Px>` (macOS's panel, MAC-N32†); `release_gap_px: Value<Px>` (the
   space between releases in kirigami-addons' release history, K-KA-44†).
-- **Variants:** keyed `kde-breeze` `@ka_about` (kirigami-addons' AboutPage, K-KA-44†). KDE's two forms are the
-  flavour condition, not variants: `cond flavor:widgets` (KAboutApplicationDialog with tabs, K-P3-8†) and
-  `cond flavor:kirigami` (the About page on form cards, Q2.57†, K-KA-44†).
+- **Variants:**
+  - on the widget, keyed, `kde-breeze`: `@ka_about` (kirigami-addons' AboutPage, K-KA-44†).
+  - KDE's two forms are the flavour condition, not variants: `cond flavor:widgets` (KAboutApplicationDialog with
+    tabs, K-P3-8†) and `cond flavor:kirigami` (the About page on form cards, Q2.57†, K-KA-44†). The version pill's
+    `@app_version` is `button`'s, declared by `adwaita` (the `version` part).
 - **Sizes and densities:** none (no row states sizes).
 - **Flags:** none of its own (its link buttons are `button` elements with their own states).
 - **Exclusive groups:** none (the presets that draw it, GNOME, KDE and macOS, combine states); precedence: state
@@ -4764,13 +4774,10 @@ spaces:
   (`macos-*`: the panel's credits are one text view, MAC-N32†), `person_task` (`macos-*`: the panel's credits are one
   text view, MAC-N32†), `description` (`macos-*`: the standard About panel draws the icon, name, version, credits and
   copyright only, MAC-N32†), `credits` (`adwaita`; `kde-breeze` by a rule under `cond flavor:kirigami`: the credits text
-  is KAboutApplicationDialog's, K-P3-8†, and the macOS panel's, MAC-N32†); fields (the parts' margins are the core's
-  may-be-absent `margin`, S6.3, stated by `macos-*`, which places them by margins; GNOME's version pill is `version`'s
-  fill, corners and padding): `icon.shadow` (all but `adwaita`: GNOME's drop shadow, GN-2.39, GN-3.07), `version.fill`
-  (all but `adwaita`: GNOME's version pill, GN-2.39; a preset drawing the version as plain text states no pill box),
-  `version.corners` (all but `adwaita`: GNOME's version pill, GN-2.39; a preset drawing the version as plain text states
-  no pill box), and the `version.padding` is not listed: a preset drawing the version as plain text states its zero
-  inset; values: `icon_max_width_fraction` (`adwaita`, `macos-*`), `gap_px` (`macos-*`: the panel's unequal gaps are the
+  is KAboutApplicationDialog's, K-P3-8†, and the macOS panel's, MAC-N32†); fields (the parts' margins are stated by
+  `macos-*`, which places them by margins, and are a zero length elsewhere, Entry format; GNOME's version pill is the
+  `button` the part is drawn as, above): `icon.shadow` (all but `adwaita`: GNOME's drop shadow, GN-2.39, GN-3.07);
+  values: `icon_max_width_fraction` (`adwaita`, `macos-*`), `gap_px` (`macos-*`: the panel's unequal gaps are the
   parts' margins, MAC-N32†), `subpage_margins` (`kde-breeze`, `macos-*`), `group_gap_px` (`kde-breeze`, `macos-*`),
   `groups_margin` (`kde-breeze`, `macos-*`), `width_px` (`adwaita`, `kde-breeze`), `release_gap_px` (`adwaita`,
   `macos-*`).
@@ -4781,7 +4788,9 @@ spaces:
 - **Notes:** in `cond flavor:kirigami` the page's sections are `form` elements in `context about_dialog` (Q2.57†;
   K-KA-44†'s link rows are `form` variant `@ka_info_card`), the authors' pictures `avatar` elements, the "What's
   new" badge a `badge`; K-KA-44†'s release history is a `dialog` (keyed `@ka_dialog`) in `context about_dialog`.
-  In `cond flavor:widgets` the pages are `tab` elements and the Close button a `button` (K-P3-8†). Nested controls: the
+  In `cond flavor:widgets` the pages are `tab` elements in `context about_dialog`, and the Close button a `button`
+  in the hosting dialog's action area, outside the about content, so selected by the dialog's content variant
+  (`button @ variant close context dialog.action_area variant about`, K-P3-8†). Nested controls: the
   icon-only link and mail buttons are `button @ variant icon_only context about_dialog` (KDE's
   `internet-services-symbolic` and mail buttons, K-P3-8†); K-KA-44†'s link rows are `form` rows.
 
@@ -4801,7 +4810,8 @@ spaces:
   - `body` — the completion's host (the root): `bindings`; it draws nothing of its own, its list being the `menu`,
     which `place()` sets against the field by `values.placement` (its distance from the field the placement's `gap`,
     S13), so the host has no inset of its own.
-  - `token` — a chosen suggestion inserted into rich text (W-P3-17†): `fill`, `text`, `corners`, `padding`.
+  - `token` — a chosen suggestion inserted into rich text, a run of the text with its own foreground and background
+    (W-P3-17†, which states those two and no box): `fill`, `text`.
   - `details_pane` — the code editors' details pane beside the list (GN-SF13†, K-P3-13†): `fill`, `stroke`,
     `corners`, `padding`, `text`.
 - **Widget values:** `filter_delay_ms: Value<Ms>` (GN-2.56†); `mode: Value<AutocompleteMode>`, `AutocompleteMode {
@@ -4814,8 +4824,17 @@ spaces:
   field's: `AnchorWidth`, GN-2.56†, K2.29†, K-KA-13†, and its row limit `max_visible_items` among its parameters).
   RichSuggestBox's prefix that opens its list (W-P3-17†) is the application's setting, not a look, so no value
   carries it.
-- **Variants:** keyed `ios-*` `@menu` (the inline bar placement), `@list` (the stacked placement) (C-38†). Material's
-  filled and outlined fields (MAT-N27) are the field's own (`input @filled`).
+- **Variants:**
+  - on the widget, keyed, `ios-*`: `@menu` (the inline bar placement), `@list` (the stacked placement) (C-38†).
+  - Material's filled and outlined fields (MAT-N27) are the field's own (`input @filled`): the field is the
+    autocomplete's ancestor, so no rule selects it by `context autocomplete`. Material's autocomplete tokens carry
+    values for the field (`md.comp.outlined-autocomplete.text-field.*`, `material-web@2.5.0
+    tokens/versions/latest/sass/_md-comp-outlined-autocomplete.scss:34-40`, and the filled file's); the value phase
+    compares them with the text field's. Until it has, the entry holds that they are equal and the field takes no
+    rule for its completion; if they differ, `input` gains a typed content variant the connector sets on a field
+    that has a completion (Entry format's list), and MAT-N27's field values are rules under it, a class 2 change
+    made with that fact (ADD-A146; rejected: a keyed `material-3` variant on `input`, which a connector could not
+    set by one rule on every platform).
 - **Sizes and densities:** none (no row states sizes).
 - **Flags:** none of its own; the list's rows carry `menu`'s states, and `placed_above`, `placed_below` are `menu`'s
   (Windows: the attached corners square off on the side touching the field, W2-15).
@@ -4930,7 +4949,8 @@ spaces:
 - **Parts:**
   - `body` — the dot or the pill (the root): `fill`, `stroke` (Kirigami's border of a badge with an application-chosen
     colour, an expression on `element.color`, which it declares, `data = { body = ["color"] }`, ADD-B16, Q2.26),
-    `corners`, `padding`, `min_width`, `min_height`.
+    `corners`, `shadow` (the needs-attention dot on a tab overview's thumbnail, GN-2.35, `libadwaita@1.10.0
+    src/stylesheet/widgets/_tab-view.scss:211`; ADD-A146), `padding`, `min_width`, `min_height`.
   - `label` — the count or string: `text`.
   - `icon` — Windows' icon form, Kirigami's icon (Q2.27): `icon` (Kirigami's size `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100)),
     `opacity` (PersonPicture's image badge, W2-24).
@@ -4939,8 +4959,8 @@ spaces:
   `Disappear` (the needs-attention dot's appearance, GN-1.41); `anchor_corner: Value<BadgeAnchor>`,
   `BadgeAnchor { TopEnd, TopStart,
   TrailingInline }` (C-15's list-row badge is trailing inline); `cutout_px: Value<Px>` (the gap libadwaita's
-  indicator bin masks out of the anchor around the badge, GN-2.36); `max_count: Option<Value<u32>>` (where a count is
-  capped; `None`, `"none"`: no cap).
+  indicator bin masks out of the anchor around the badge, GN-2.36). No row states a cap on the count shown, so no
+  value carries one (ADD-A146: a `max_count` no survey found would be a value every preset had to invent).
 - **Variants:** typed form `dot` (GN-2.36, MAT-N10, W2-08, C-15), `count` (GN-2.36, MAT-N10, W2-08, C-15), `icon`
   (W2-08, Q2.27); typed severity `info`, `success`, `warning`, `error` (Q2.25's Information, Positive, Warning,
   Error; W2-08's Informational, Success, Caution, Critical), `attention` (Windows' Attention and libadwaita's
@@ -4957,7 +4977,9 @@ spaces:
 - **may_be_absent:** parts: `icon` (`adwaita`, `macos-*`, `material-3`, `ios-*`: the icon form is Windows' and
   Kirigami's, W2-08, Q2.27); fields: `body.stroke` (`adwaita`, `macos-*`, `material-3`, `ios-*`; `windows-11` by a
   rule outside `context avatar`, where PersonPicture's badge has its stroke, W2-24; Kirigami's border is drawn in
-  every type, Q2.25, Q2.26), `icon.opacity` (`kde-breeze`; `windows-11` by a rule outside `context avatar`: only
+  every type, Q2.25, Q2.26), `body.shadow` (all but `adwaita`; `adwaita` by a rule outside `context
+  component.tab_overview.thumbnail`, the one place libadwaita gives the dot a shadow, GN-2.35), `icon.opacity`
+  (`kde-breeze`; `windows-11` by a rule outside `context avatar`: only
   PersonPicture's image badge is translucent, W2-24); values: `cutout_px` (all but `adwaita`: GN-2.36),
   `anchor_offset_x_px` (`kde-breeze`: Kirigami's Badge is an inline control, Q2.25–Q2.27; `windows-11` by a rule
   outside `context avatar`, where PersonPicture's badge margin places it, W2-24, W2-08 stating no offset; the value
@@ -5141,6 +5163,10 @@ spaces:
   GN-2.15), `@minimize` (T-10), `@customize` (T-17†, P3-2†), `@tab_sidebar_morph` (iPad's tab bar becoming a sidebar, C-22; one occasion with `sidebar`'s),
   `@spring_load` (an item a drag hovers switching to it, P3-11†), `@accessory_environment` (the bottom accessory
   morphing between its environments, C-21);
+  `drag_hover_delay_ms: Value<Ms>` (how long a drag rests on an item before the bar switches to it: the switcher
+  button's own timeout, which AdwViewSwitcherBar's buttons share with the header-bar switcher's, GN-2.15,
+  `libadwaita@1.10.0 src/adw-view-switcher-button.c:14`, `:86`, the bar built from an `AdwViewSwitcher`,
+  `src/adw-view-switcher-bar.ui:8`; on `ios-*` `= token.behavior.spring_loading`, P3-11†; Entry format; ADD-A146);
   `focus_visible_when` (type `FocusVisibleWhen`; Q2.36, ADD-A16).
 - **Variants:** typed `floating` (iOS 26's capsule, T-9); typed item layouts, the application's choice, `stacked`
   (the icon above the label: Kirigami's `TextUnderIcon`, Q2.34; Material Expressive's vertical items, MAT-N12) and
@@ -5170,7 +5196,9 @@ spaces:
   `ios-26`: iOS 26's bottom accessory, C-21, T-12), `accessory_content` (all but `ios-26`: iOS 26's bottom
   accessory, C-21, T-12); fields: `bar.stroke` (`ios-26` by a rule under `floating`: T-2's top hairline is the
   iOS 13–18 bar's), `bar.shadow` (`kde-breeze`, `ios-13`: their bars are flat); values: `max_items` (all but `ios-*`: P3-2†), `item_positioning` (all but `ios-*`: the keys are
-  `UITabBar.ItemPositioning`'s, T-3), `icon_text_gap_px` (the value phase names the presets from the facts). The
+  `UITabBar.ItemPositioning`'s, T-3), `icon_text_gap_px` (the value phase names the presets from the facts),
+  `drag_hover_delay_ms` (the presets where a drag hovering an item switches to nothing; the value phase names them
+  from the facts). The
   `equal_width_items` is a `Value<bool>`, stated on every preset, and the `max_content_width_px` a length or `auto`
   (above).
 - **State-model source:** iOS `UITabBarItemAppearance` (normal, selected, disabled, focused) per layout appearance
@@ -5282,17 +5310,20 @@ spaces:
   - `year` *(element: Material's year cells, Windows' year and decade items, K-KA-21†'s year view)*: `fill`, `stroke`,
     `corners`, `text`, `min_width`, `min_height` (MAT-N16), `opacity` (years outside the decade, K-KA-21†), `focus`, `transitions` (Material's container and text colours, MAT-N16), `interaction` (Material's state layer and press ripple, S2.12).
   - `month` *(element: Windows' month items, K-KA-21†'s month view)*: `fill`, `stroke`, `corners`, `text`, `focus`.
-  - `clock_face` — macOS's clockAndCalendar style: `fill`, `stroke`.
-  - `clock_hand` — macOS's clockAndCalendar style: `stroke`.
-  - `time_row` — iOS's time row: `text`, `padding`.
-- **Widget values:** `cell_gap_px: Value<Px>`; `grid_padding: Sides<Value<Px>>` (GN-2.25); `presentations:
+- **Widget values:** `grid_padding: Sides<Value<Px>>` (GN-2.25); `presentations:
   Vec<PresentationTransition>`: event `@view_switch` (Windows' zoom between the day, month and year views, W2-02;
-  kirigami-addons' view switch, K-KA-20†); `first_weekday_from_locale: Value<bool>`; `scroll_physics:
+  kirigami-addons' view switch, K-KA-20†); `scroll_physics:
   Value<ScrollPhysics>` (S4.2's record, absent as a whole: kirigami-addons' endless views, deceleration, snap to a page, K-KA-20†).
-- **Variants:** keyed `ios-*` `@wheels` (the month-year wheel, C-6); `kde-breeze` `@ka_date_popup` (K-KA-20†,
-  K-KA-21†). The view shown (Windows' month, year and decade views, W2-02; kirigami-addons' day, month and year views,
-  K-KA-21†) is no variant: it is which element parts the connector queries, `day`, `month` or `year`, each styled the
-  same way on every platform, and the switch between them is the `@view_switch` presentation.
+  No row states a gap between the cells (their insets are `day.padding`, GN-2.25, W2-02) and every toolkit takes the
+  first day of the week from the locale, which is no look, so no value carries either (ADD-A146). A clock or a time
+  row drawn beside the grid is no part of it: macOS's clock is a `time_picker` element and iOS's time row
+  `date_picker.time_row` (Notes; ADD-A146).
+- **Variants:**
+  - on the widget, keyed, `ios-*`: `@wheels` (the month-year wheel, C-6).
+  - on the widget, keyed, `kde-breeze`: `@ka_date_popup` (K-KA-20†, K-KA-21†).
+  - The view shown (Windows' month, year and decade views, W2-02; kirigami-addons' day, month and year views,
+    K-KA-21†) is no variant: it is which element parts the connector queries, `day`, `month` or `year`, each styled
+    the same way on every platform, and the switch between them is the `@view_switch` presentation.
 - **Sizes and densities:** `macos-*`: the control sizes AppKit draws the graphical style in (MAC-N04; which: value
   phase).
 - **Flags:** shared `today` (all six: GN-2.25, C-6, K2.23†, K-KA-21†, W2-02, MAT-N16, MAC-N04), `other_month`
@@ -5307,12 +5338,12 @@ spaces:
   states show); others none (states combine; `material-3`'s state layers are a recency set, below); precedence: state
   models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (the date cells' state layers;
   Material's recency sets, above: a `Surface`'s ripple, `DatePicker.kt:2254-2256`; `pressed` combines).
-- **may_be_absent:** parts: `title` (`adwaita`, `kde-breeze`, `windows-11`, `ios-*`: the month and year there are
-  `button` elements in `context calendar.header`, GN-2.25, K2.4, W2-02, iOS's month-year toggle, C-6, or
-  kirigami-addons' segmented button, K-KA-20†),
-  `week_number` (all but `kde-breeze`: K2.4), `decoration` (all but `ios-*`: C-6), `time_row` (all but `ios-*`:
-  C-6), `range_band` (all but `material-3`: MAT-N16), `clock_face` (all but `macos-*`: MAC-N04), `clock_hand` (all
-  but `macos-*`: MAC-N04), `today_marker` (`kde-breeze`, `windows-11`, `ios-*`: today is the day's fill or text,
+- **may_be_absent:** parts: `title` (`kde-breeze`, `windows-11`, `ios-*`: the month and year there are
+  `button` elements in `context calendar.header`, K2.4, W2-02, iOS's month-year toggle, C-6, or
+  kirigami-addons' segmented button, K-KA-20†; `adwaita` draws it, GtkCalendar's month and year being labels
+  between its four arrow buttons, `gtk@4.24.1 gtk/gtkcalendar.c:597-600`, `:616-621`, GN-2.25),
+  `week_number` (all but `kde-breeze`: K2.4), `decoration` (all but `ios-*`: C-6), `range_band` (all but
+  `material-3`: MAT-N16), `today_marker` (`kde-breeze`, `windows-11`, `ios-*`: today is the day's fill or text,
   K2.23†, K-KA-21†, W2-02, C-6), `month` (`adwaita`, `ios-*`, `material-3`, `macos-*`: the month view is Windows'
   and kirigami-addons', W2-02, K-KA-21†), `year` (`adwaita`, `ios-*`, `macos-*`: the year view is Windows',
   kirigami-addons' and Material's, W2-02, K-KA-21†, MAT-N16); fields: `weekday_label.fill` (all but `kde-breeze`:
@@ -5330,7 +5361,9 @@ spaces:
   {previous,next} context calendar.header` (W2-02, C-6; the `!variants` term keeps the navigation buttons out, which
   the same context also matches; iOS's `fontDesign` on its label is `button.label.text.font` under that selector).
   A date picker's grid is this widget in `context date_picker`: Material's (MAT-N16), macOS's
-  clockAndCalendar (`context any date_picker variant inline`, MAC-N04), and MAC-N04's calendar overlay
+  clockAndCalendar (`context any date_picker variant inline`, MAC-N04; the clock beside the grid is a `time_picker`
+  element there, its face and hands `time_picker.dial` and `dial_track`, one structure with Material's clock dial),
+  and MAC-N04's calendar overlay
   (`presentsCalendarOverlay`), which is a `calendar` in `context date_picker.popup`, placed by
   `date_picker.values.placement`. kirigami-addons' day, month and year switch is a `segmented_control`
   (`@ka_segmented_button`) in the popup `dialog`'s body, `context dialog.body context date_picker` (K-KA-20†). K2.23†'s hard-coded holiday colours are
@@ -5405,8 +5438,9 @@ spaces:
   - `legend_swatch` — the entry's colour mark, its colour as the series': `fill`, `min_width` (K-P3-10†).
   - `legend_label` — the entry's label, the legend's one text style (the legend font, C-45†, MAC-N37†): `text`.
   - `series` *(element)*, in `plot_area` — a series' mark: `stroke` (a line series' stroked path, its width and
-    paint per series by the same expressions as the fill: KQuickCharts' line chart under `@line`, K-P3-10†; Swift
-    Charts' `LineMark`, C-45†, MAC-N37†; `Absent` where the series is drawn filled only, S6.3), `fill` per series,
+    paint per series by the same expressions as the fill, stated under `line`: KQuickCharts' line chart, K-P3-10†;
+    Swift Charts' `LineMark`, C-45†, MAC-N37†; `"absent"` outside `line`, a series drawn filled only, S6.3), `fill`
+    per series,
     `= pick(element.item_index, <c0>, …)` in Swift Charts' default order (C-45†, MAC-N37†) or `=
     kqc_series_color(<seed>, element.item_count, element.item_index)` from the highlight colour on KDE (ADD-A57,
     ADD-B15, K-P3-10†), the parts declaring `data = { series = ["item_index", "item_count"], legend_swatch =
@@ -5417,13 +5451,24 @@ spaces:
   Value<u32> }` (KQuickCharts' grid: every n-th value line, or n lines, major and minor, K-P3-10†; Swift Charts'
   `AxisMarks` defaults, C-45†); `labels_per_axis: Value<u32>` (K-P3-10†); `legend_gap_px: Value<Px>` (K-P3-10†);
   `default_size_px: Value<Px>` (KQuickCharts' pie control, K-P3-10†).
-- **Variants:** keyed `kde-breeze` `@line`, `@pie` (K-P3-10†).
+- **Variants:**
+  - on the widget, typed: `line` (a series drawn as a stroked path: KQuickCharts' `LineChartControl`, K-P3-10†;
+    Swift Charts' `LineMark`, C-45†, MAC-N37†; declared by `kde-breeze`, `macos-*` and `ios-*`, three platforms
+    sharing the meaning, R15; ADD-A146).
+  - on the widget, keyed, `kde-breeze`: `@pie` (KQuickCharts' `PieChartControl`, K-P3-10†).
+  - `kde-breeze` draws a chart only as one of KQuickCharts' two controls (`kquickcharts@6.31.0 controls/`:
+    `LineChartControl.qml`, `PieChartControl.qml`): `requires_variants = [line, @pie]`, the two one
+    `exclusive_variants` group (S10). On `macos-*` and `ios-*` the base is Swift Charts' filled marks (bars and
+    areas) and `line` the stroked series. `@pie` becomes typed if the value phase finds `SectorMark`'s defaults in
+    the Apple facts (R15). Rejected: `@line` keyed to KDE, under which the Apple presets' `series.stroke` was a base
+    field, drawn on a bar or area series too, and a portable application had no one name for a line chart.
 - **Sizes and densities:** none.
 - **Flags:** none (the rows state no interaction states; Swift Charts' selection is the `selection_mark` part).
 - **Exclusive groups:** none; precedence: state models (S17).
 - **may_be_absent:** parts: `selection_mark` (`kde-breeze`: the selection mark is Swift Charts', MAC-N37†; KQuickCharts'
   controls, K-P3-10†, have none); fields: `grid_line_minor.stroke` (`ios-*`: C-45† names one grid line, `AxisGridLine`;
-  MAC-N37† traces the minor lines on `macos-*`); values: `labels_per_axis` (`macos-*`, `ios-*`: KQuickCharts' label
+  MAC-N37† traces the minor lines on `macos-*`), `series.stroke` (every preset by a rule outside `line`, a series
+  drawn filled only); values: `labels_per_axis` (`macos-*`, `ios-*`: KQuickCharts' label
   count, K-P3-10†), `default_size_px` (`macos-*`, `ios-*`: KQuickCharts' pie control, K-P3-10†), `grid_lines` (each
   member the platform's grid has no counterpart for: KQuickCharts' grid takes a frequency or a count, K-P3-10†, Swift
   Charts' `AxisMarks` a count, C-45†; the value phase names the presets from the facts).
@@ -5684,45 +5729,50 @@ spaces:
   - `plane` *(element)* — the saturation and value field (Windows' box or ring spectrum), the focusable control with
     states of its own (GTK's `GtkColorPlane` takes the focus, `gtkcolorplane.c:352`, `:387`, GN-2.53†): `stroke`
     (W2-05), `focus` (GNOME's plane focus ring, GN-2.53†), `cursor` (crosshair, ADD-A59), `min_width`, `min_height`
-    (GN-2.53†). `crosshair_line_horizontal`, `crosshair_line_vertical`, `crosshair_band_horizontal`,
-    `crosshair_band_vertical` and `selection_ellipse` belong to `plane`, nest in it and are queried with it.
-  - `crosshair_band_horizontal`, `crosshair_band_vertical` — GNOME's band under each line while the plane shows
-    focus, drawn first (`gtkcolorplane.c:95-104`): `fill`, `min_width`, `min_height` (the band's thickness across
-    its axis).
-  - `crosshair_line_horizontal`, `crosshair_line_vertical` — the line through the chosen point along each axis
-    (GNOME's lines, over the bands while the plane shows focus and alone otherwise, `gtkcolorplane.c:95-122`; KDE's
-    cross, K2.25†): `fill`, `min_width`, `min_height` (its thickness across its axis, and its length along it
-    where the lines do not span the plane, `values.crosshair_spans_plane`).
-  - `selection_ellipse` — Windows' selection ellipse at the chosen point (W2-05): `stroke`, `corners`, `min_width`,
-    `min_height`.
+    (GN-2.53†).
+  - `crosshair_band`, in `plane` — GNOME's band under each line while the plane shows focus, drawn first
+    (`gtkcolorplane.c:95-104`), one part for both axes: `fill`.
+  - `crosshair_line`, in `plane` — the line through the chosen point along each axis (GNOME's lines, over the bands
+    while the plane shows focus and alone otherwise, `gtkcolorplane.c:95-122`; KDE's cross, K2.25†), one part for
+    both axes, as `chart`'s grid lines are: GTK draws the two in one colour and one thickness (`gtk@4.24.1
+    gtk/gtkcolorplane.c:101-122`), so their thickness and length are the widget's values (ADD-A146; rejected: a
+    horizontal and a vertical part of each, which stated every fact twice with the axes swapped): `fill`.
+  - `selection_ellipse`, in `plane` — Windows' selection ellipse at the chosen point (W2-05): `stroke`, `corners`,
+    `min_width`, `min_height`.
   - `value_strip` — KDE's value strip (K2.25†): `stroke`.
   - `checkerboard` — under translucent colours: `fill`.
   - `preview` — Windows' previous and current colours, GNOME's sample: `corners`.
   - `swatch` *(element: the chooser's swatches, KDE's colour wells)* — `corners` (GNOME's per-edge radii are
-    `swatch.corners` under `pos` rules, GN-2.27), `stroke` (KDE's well frame, K2.25†), `focus`. `swatch_ring` belongs
-    to `swatch` and is queried with it.
-  - `swatch_ring` — GNOME's drop-target and high-contrast ring: `stroke`.
+    `swatch.corners` under `pos` rules, GN-2.27), `stroke` (KDE's well frame, K2.25†), `focus`.
+  - `swatch_ring`, in `swatch` — GNOME's drop-target and high-contrast ring: `stroke`.
 - **Widget values:** `grid_gap_px: Value<Px>` (GN-2.53†); `crosshair_spans_plane: Value<bool>` (`true`: each
   crosshair line and band runs across the whole plane through the point, GNOME's, `gtkcolorplane.c:101-122`;
   `false` where the lines are a cross of their own lengths centred on the point, KDE's, K2.25†, or where the
-  platform draws no lines, `windows-11`).
-- **Variants:** keyed `windows-11` `@box`, `@ring` (the spectrum's shape, W2-05); `kde-breeze` `@qt_dialog`
-  (K2.25†).
+  platform draws no lines, `windows-11`); `crosshair_line_width_px: Value<Px>`, `crosshair_band_width_px:
+  Value<Px>` (the thickness of a line and of a band across its axis, the same for both axes,
+  `gtkcolorplane.c:101-122`); `crosshair_length_px: Value<Px>` (a line's length along its axis where the lines do
+  not span the plane, KDE's cross, K2.25†).
+- **Variants:**
+  - on the widget, keyed, `windows-11`: `@box`, `@ring` (the spectrum's shape, W2-05; one `exclusive_variants`
+    group, a spectrum having one shape).
+  - on the widget, keyed, `kde-breeze`: `@qt_dialog` (K2.25†).
 - **Sizes and densities:** none.
 - **Flags:** none of its own; state flags used: focus_visible on `plane` (GNOME's focus ring and its focused
   crosshair, drawn while `gtk_widget_has_visible_focus`, `gtkcolorplane.c:95`) and on `swatch`, drop_target (on
   `swatch`, GN-2.27), selected, hover, pressed, disabled.
 - **Exclusive groups:** none (W2-05 states no visual-state groups for the spectrum; GNOME's and KDE's states
   combine); precedence: state models (S17).
-- **may_be_absent:** parts: `crosshair_band_horizontal` (`kde-breeze`, `windows-11`: the bands are GTK's,
+- **may_be_absent:** parts: `crosshair_band` (`kde-breeze`, `windows-11`: the bands are GTK's,
   GN-2.53†; `adwaita` by a rule under `!{focus_visible}`, its unfocused crosshair being the lines alone,
-  `gtkcolorplane.c:112-122`), `crosshair_band_vertical` (`kde-breeze`, `windows-11`; `adwaita` by a rule under
-  `!{focus_visible}`: as `crosshair_band_horizontal`), `crosshair_line_horizontal` (`windows-11`: its marker is the
-  selection ellipse, W2-05), `crosshair_line_vertical` (`windows-11`: as `crosshair_line_horizontal`, W2-05),
+  `gtkcolorplane.c:112-122`), `crosshair_line` (`windows-11`: its marker is the
+  selection ellipse, W2-05),
   `selection_ellipse` (`adwaita`, `kde-breeze`: their markers are lines, GN-2.53†,
   K2.25†), `value_strip` (`adwaita`, `windows-11`: the value strip is QColorDialog's, K2.25†), `swatch`
   (`windows-11`: W2-05 names no palette of swatches, its preview swatch being `preview`), `swatch_ring` (`kde-breeze`,
-  `windows-11`: the ring is GNOME's swatch ring, GN-2.27). A drawn plane always has a size, so every preset states the
+  `windows-11`: the ring is GNOME's swatch ring, GN-2.27); values: `crosshair_line_width_px` (`windows-11`: as
+  `crosshair_line`), `crosshair_band_width_px` (`kde-breeze`, `windows-11`: as `crosshair_band`),
+  `crosshair_length_px` (`adwaita`, whose lines span the plane, GN-2.53†; `windows-11`: as `crosshair_line`). A
+  drawn plane always has a size, so every preset states the
   `plane.min_width` and the `plane.min_height` (measured where no source states them, S17).
 - **State-model source:** GNOME `gtkcolorplane.c`, `gtkcolorscale.c`, `_color-chooser.scss`; KDE
   `qcolordialog.cpp` frames; Windows ColorPicker and ColorSpectrum states.
@@ -5814,18 +5864,35 @@ spaces:
     `headline` and `supporting_text` nest in it.
   - `headline`, `supporting_text`, in `popup_header` — Material's: `text`.
   - `divider`, in `popup` — Material's: `stroke`.
+  - `time_row` — iOS's row under the inline calendar that holds the time (C-6), the picker's own part, the
+    `calendar` being the month grid alone (ADD-A146): `text`, `padding`.
 - **Widget values:** `placement: Placement` (the popup against the field, its gap the placement's `gap`: W2-03's
   flyout, K2.23†'s menu, C-5's popover, MAC-N04's calendar overlay; strategies: value phase). The popup's opening and
   closing are ADD-A129's (queue #118), at once meanwhile where it is drawn as itself (S2.7).
-- **Variants:** typed `text_field` (a segmented text-field date: macOS textField and KDE QDateEdit, which open no
-  popup; Windows DatePicker, whose field opens its looping-selector flyout, W2-04),
-  `with_popup` (Windows CalendarDatePicker, KDE KDateComboBox and kirigami-addons' date row, iOS compact, Material
-  docked), `inline` (macOS clockAndCalendar, iOS inline); keyed `macos-*` `@text_field_and_stepper` (MAC-N04),
-  `material-3` `@modal`, `@input` (MAT-N16). On `kde-breeze` the flavour, not a variant, tells KDateComboBox from
-  kirigami-addons' picker: both are `with_popup` (the field opens the popup), the substitutions are rules under
-  `cond flavor:widgets` and `cond flavor:kirigami`, and an application asking for `with_popup` gets its flavour's
-  picker with no keyed name of KDE's; `[declare.flavor.kirigami.widget.date_picker]` declares `with_popup` alone of
-  the typed forms (`text_field` is QDateEdit's, K2.23†; kirigami-addons draws no text-field date, K-KA-22†).
+- **Variants:**
+  - on the widget, typed: `text_field` (a segmented text-field date: KDE's QDateEdit, which opens no popup; macOS's
+    textField, which opens none but its calendar overlay where `presentsCalendarOverlay` is set, MAC-N04; Windows'
+    DatePicker, whose field opens its looping-selector flyout, W2-04), `with_popup` (Windows' CalendarDatePicker,
+    KDE's KDateComboBox and kirigami-addons' date row, iOS's compact picker, Material's docked picker), `inline`
+    (macOS's clockAndCalendar, iOS's inline picker).
+  - on the widget, keyed, `macos-*`: `@text_field_and_stepper` (MAC-N04).
+  - on the widget, keyed, `material-3`: `@modal`, `@input` (MAT-N16).
+  - Every form a platform draws is a variant, and an element holds exactly one of them (ADD-A146). Each preset lists
+    its forms in `requires_variants`, so an element holding none is answered `NotAvailable(Variant)`, and as one
+    `exclusive_variants` group, so no two combine (S10): `windows-11` `[with_popup, text_field]` (CalendarDatePicker
+    and DatePicker, two controls); `kde-breeze` `[with_popup, text_field]` (KDateComboBox, QDateEdit), its flavour
+    `kirigami` `[with_popup]`; `macos-*` `[text_field, @text_field_and_stepper, inline]` (`NSDatePicker.Style`);
+    `ios-*` `[with_popup, inline]` (`UIDatePickerStyle`'s compact and inline; its wheels are `picker_wheel`s, C-7);
+    `material-3` `[with_popup, @modal, @input]`. Rejected: a default form as each preset's base, the other forms
+    variants, which makes an element with no variant a different control on every platform (a popup field on
+    Windows, a stepper field on macOS) and leaves the absence rules below, written against the forms, no coherent
+    look for it; and no rule at all, under which `variants {text_field, with_popup}` drew `kde-breeze`'s `field` as a
+    combo box and as a spin box at once.
+  - On `kde-breeze` the flavour, not a variant, tells KDateComboBox from kirigami-addons' picker: both are
+    `with_popup` (the field opens the popup), the substitutions are rules under `cond flavor:widgets` and `cond
+    flavor:kirigami`, and an application asking for `with_popup` gets its flavour's picker with no keyed name of
+    KDE's; `[declare.flavor.kirigami.widget.date_picker]` declares `with_popup` alone of the typed forms
+    (`text_field` is QDateEdit's, K2.23†; kirigami-addons draws no text-field date, K-KA-22†).
 - **Sizes and densities:** `macos-*`: `NSControl.ControlSize` as AppKit draws it per style (MAC-N04). `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39).
 - **Flags:** shared `empty` (Windows: no date chosen, the placeholder against the selected text colours, W2-03);
   state flags used: hover, pressed, focused, disabled (W2-03, W2-04), selected (on `field_segment`, MAC-N04), read_only
@@ -5859,7 +5926,8 @@ spaces:
   `!{open}`, as the `popup` it nests in, a part nested in an undrawn part being drawn unless absent itself, Nesting),
   `headline` (all but `material-3`: MAT-N16; `material-3` by the rules that make `popup_header` absent, the same
   selectors), `supporting_text` (all but `material-3`: MAT-N16; `material-3` as `headline`), `divider` (all but
-  `material-3`: MAT-N16; `material-3` by a rule `!{open}`, as `popup_header`); fields: `popup.stroke` (`macos-*`,
+  `material-3`: MAT-N16; `material-3` by a rule `!{open}`, as `popup_header`), `time_row` (all but `ios-*`: the
+  time row is the inline `UIDatePicker`'s, C-6; `ios-*` by a rule outside `inline`); fields: `popup.stroke` (`macos-*`,
   `ios-*`, `material-3`: their popups state a fill, corners and shadow and no outline, MAC-N04, C-5, MAT-N16; W2-04's
   flyout draws one), `field.fill` (`kde-breeze` by a rule `{read_only} context form.row`: kirigami-addons' row hides
   each half's background while read-only, K-KA-22†). The `body.padding` is stated on every preset (the platform's inset, cited, zero where it is
@@ -5869,7 +5937,10 @@ spaces:
   `FormDateTimeDelegate.qml`, `DatePopup.qml`; Material date-picker token files; iOS `UIDatePickerStyle`.
 - **Today's fields:** none (W2-03 and C-5 point at `combo_box.*`, which keeps its own).
 - **Notes:** MAC-N04's calendar overlay (`presentsCalendarOverlay`) is a `calendar` in `context date_picker.popup`,
-  placed by this widget's `placement`. W2-04's looping selectors are `picker_wheel` elements in `context
+  placed by this widget's `placement`. Under `inline` on `macos-*` the picker holds a `calendar` and, where it has
+  time elements, a `time_picker` element (`inline`) in `context date_picker`, the analogue clock, whose face and
+  hands are `time_picker.dial` and `dial_track` (MAC-N04; ADD-A146), as kirigami-addons' date and time row holds
+  both halves. W2-04's looping selectors are `picker_wheel` elements in `context
   date_picker.popup` (its band `picker_wheel.selection_band`, its item height `picker_wheel.item.min_height`); macOS's
   stepper is a `stepper` in context (MAC-N04); K2.23†'s popup is the `menu` element `popup` is drawn as, in `context
   date_picker`, holding the `calendar` and the word items (Today, Next Week …) as `menu.item` elements.
@@ -5894,9 +5965,14 @@ spaces:
   - `tick` — macOS's ticks: `fill`, `min_width`, `min_height`.
 - **Widget values:** `stroke_width_px: Value<Px>` (the width of the groove and value arc, Breeze's
   `Slider_ControlThickness`, K2.5; the handle's size is `handle.min_width`); `cap: Value<LineCap>` (the value arc's
-  ends); `start_angle_deg: Value<Deg>`, `end_angle_deg: Value<Deg>`; `default_size_px: Value<Px>` (Q2.2).
-- **Variants:** none (a `dial` element on `macos-*` is always the circular slider, `NSSlider`'s circular type, so
-  MAC-N15's look is that preset's base, not a variant).
+  ends); `start_angle_deg: Value<Deg>`, `end_angle_deg: Value<Deg>` (the angles of the least and the greatest
+  value: Breeze computes the handle's angle between them, `breeze@6.8.2 kstyle/breezestyle.cpp:8423-8427`, K2.5;
+  ADD-A146); `default_size_px: Value<Px>` (Q2.2).
+- **Variants:**
+  - on the widget, keyed, `kde-breeze`: `@wrapping` (QDial's `wrapping`, the application's choice: the value runs
+    round the full circle, so a rule under it restates the two angles, `breezestyle.cpp:8423-8425`; ADD-A146).
+  - A `dial` element on `macos-*` is always the circular slider, `NSSlider`'s circular type, so MAC-N15's look is
+    that preset's base, not a variant.
 - **Sizes and densities:** `macos-*`: the control sizes (MAC-N15).
 - **Flags:** none of its own; state flags used: hover (on `handle`, K2.5), pressed, focus_visible, disabled.
 - **Exclusive groups:** none (states combine); precedence: state models (S17).
@@ -5925,19 +6001,21 @@ spaces:
     `bindings` (GNOME's window colours, GN-2.49).
   - `lift_preview` — iOS's lift (C-24): `transform` (scale), `shadow`, `corners`.
   - `caption` — Windows' `DragUIOverride` caption (W3-49†): `text`.
-  - `glyph` — Windows' drop glyph, one per operation by rules on the drop flags (copy, move, link; W3-49†): `glyph`.
-  - `drop_badge` — iOS's drop-operation badge, one per operation by rules on the drop flags (P3-10†): `fill`,
-    `glyph`.
+  - `drop_badge` — the mark of the operation a drop would perform, one per operation by rules on the drop flags:
+    Windows' `DragUIOverride` glyph (copy, move, link; W3-49†) and iOS's drop-operation badge (P3-10†), one part for
+    the one thing the shared flags select on both (ADD-A146; rejected: Windows' `glyph` beside iOS's `drop_badge`,
+    two parts no preset draws together, which a portable connector had to query both of): `fill`, `glyph`.
   - `drop_description` — Windows' shell drop-description label (W3-49†): `text`.
-- **Widget values:** `lift_delay_ms: Value<Ms>` (C-24); `hotspot: Value<DragHotspot>`, `DragHotspot { PressPoint
-  }` (where the pointer holds the image: at the press point, K-RL06†, the one hotspot the rows state; a further one a
-  fact states is added as a member); `presentations: Vec<PresentationTransition>`: events `@lift`, `@drop`, `@cancel`
+- **Widget values:** `lift_delay_ms: Value<Ms>` (C-24); `hotspot: Value<DragHotspot>`, `DragHotspot { PressPoint,
+  Center }` (where the pointer holds the image: at the press point, K-RL06†, W1-110; at the image's centre, Android's
+  default drag shadow, `frameworks-base@android-17.0.0_r1 core/java/android/view/View.java:29724-29728`, MAT-P4-8†;
+  a further one a fact states is added as a member; ADD-A146); `presentations: Vec<PresentationTransition>`: events `@lift`, `@drop`, `@cancel`
   (C-24; MAT-P4-8†'s cancelled drag shrinks and fades), `@drop_not_consumed` (MAT-P4-8†: the shadow flies back
   while fading).
 - **Variants:** none (the rows state none).
 - **Sizes and densities:** none.
-- **Flags:** shared `drop_copy`, `drop_move` (Windows' `DataPackageOperation`, which selects the `glyph`, W3-49†;
-  iOS's `UIDropOperation`, which selects the `drop_badge`, P3-10†; the connector sets one at a time from the drag's
+- **Flags:** shared `drop_copy`, `drop_move` (Windows' `DataPackageOperation`, W3-49†, and iOS's
+  `UIDropOperation`, P3-10†, each selecting the `drop_badge`; the connector sets one at a time from the drag's
   current operation); keyed `windows-11` `@drop_link` (W3-49†), `ios-*` `@drop_forbidden`, `@drop_cancel` (P3-10†),
   set the same way; `material-3` `@source_hidden` (the drag hid its source task: both outcomes only fade in place,
   MAT-P4-8†); state flags used: none
@@ -5945,12 +6023,13 @@ spaces:
   the target `drop_target` (MAC-X21, C-24, W3-49†).
 - **Exclusive groups:** none; precedence: state models (S17).
 - **may_be_absent:** parts: `lift_preview` (all but `ios-*`: iOS's lift, C-24), `caption` (all but `windows-11`:
-  W3-49†'s caption), `glyph` (all but `windows-11`: W3-49†'s drop glyphs), `drop_description` (all but
-  `windows-11`: W3-49†'s shell label), `drop_badge` (all but `ios-*`: iOS's drop badges, P3-10†; Material draws
-  none, MAT-P4-8†); fields: `image.fill` (all but `windows-11`: W1-110's drag fill), `image.shadow` (the value phase
-  names the presets from the facts; MAC-X01 draws one); values: `lift_delay_ms` (all but `ios-*`: C-24), `hotspot`
-  (the value phase names the presets from the facts, the platforms that position the drag image by no hotspot;
-  K-RL06† and W1-110 state one).
+  W3-49†'s caption), `drop_description` (all but
+  `windows-11`: W3-49†'s shell label), `drop_badge` (all but `windows-11`, `ios-*`: Windows' drop glyphs, W3-49†,
+  and iOS's drop badges, P3-10†; Material draws none, MAT-P4-8†); fields: `image.fill` (all but `windows-11`:
+  W1-110's drag fill), `image.shadow` (the value phase names the presets from the facts; MAC-X01 draws one),
+  `drop_badge.fill` (`windows-11`: its mark is a glyph alone, W3-49†); values: `lift_delay_ms` (all but `ios-*`:
+  C-24), `hotspot` (the presets whose toolkit takes the hot spot from the application and states no default; the
+  value phase names them from the facts; K-RL06†, W1-110 and Android's default shadow state one).
 - **State-model source:** UIKit `UIDragInteraction`, `UIDragPreviewParameters`, `UIDropOperation` (iOS); AppKit
   `NSDraggingSession` (macOS); WinUI `DragUIOverride` and the shell's `DROPDESCRIPTION` (Windows);
   `qabstractitemview.cpp` (KDE); libadwaita's `dnd` node (GNOME); Android `DragState` (Material).
@@ -5961,6 +6040,9 @@ spaces:
   `role.global.drop_highlight`;
   the drag cursors per operation are `token.pointer.drag_cursors` (P3-10†). The drag-count badge is
   `badge @ context drag_image` (MAC-X21, C-24; Windows' multi-drag count, W1-110: one badge, rename row 100).
+  Whether iOS's `lift_preview` is the `image` the drag then carries (C-24) and whether Windows' `caption` and
+  `drop_description` are one label (both W3-49†'s) is the value phase's to say from the facts; until then each is
+  the part its row names (ADD-A146).
 
 ### edit_menu
 
@@ -5978,7 +6060,11 @@ spaces:
   - `primary_commands` — the row of commands (Windows', W2-23): `padding`.
 - **Widget values:** `placement: Placement` (above the selection start, below its end without room:
   `UiKitEditMenu` C-14, `KirigamiTextActions` Q2.53†, `AndroidTextToolbar` MAT-N30†, `GtkPopover` with
-  `anchor_grow` GN-1.286†, `WinUiFlyout` W2-23); `gap_to_selection_px: Value<Px>` (Q2.53†); `presentations:
+  `anchor_grow` GN-1.286†, `WinUiFlyout` W2-23; its distance from the selection is the placement's `gap`, S13, the
+  one home of the distance between an anchor and its popup on every widget: Kirigami's is no gap above the
+  selection's start and an offset below the top of its end, `qqc2-desktop-style@6.31.0
+  org.kde.desktop/private/MobileTextActionsToolBarImpl.qml:42-48`, Q2.53†, the strategy's own; ADD-A146, rejected: a
+  widget value `gap_to_selection_px` beside it, a second home every other preset had to state too); `presentations:
   Vec<PresentationTransition>`: events `Appear`, `Disappear` (the menu shown and dismissed), `@expand`, `@collapse`
   (W2-23).
 - **Variants:** typed `vertical` (the commands stacked: iOS's pointer style, C-14; Android's overflow list, MAT-N30†;
@@ -6018,15 +6104,15 @@ spaces:
   - `body` — the chooser (the root): `padding`, `bindings`
   - `frame` — GNOME's line below the chooser, outside its box (GN-P3-23†): `stroke`
   - `preview_pane` — KDE's preview (K2.26†): `fill`
-- **Widget values:** `icon_size_slider: Value<bool>` (KDE: a `slider` in context, K2.26†). No row states a gap of the
-  chooser's own (GN-2.48, GN-P3-22†, GN-P3-23†, K2.26†), so it has no gap value.
+- **Widget values:** none. No row states a gap of the chooser's own (GN-2.48, GN-P3-22†, GN-P3-23†, K2.26†), so it
+  has no gap value; which controls a chooser contains is its content, not a look, so no value says that KDE's holds
+  an icon-size slider, a `slider` in context as its combos and buttons are (K2.26†; ADD-A146).
 - **Variants:** none (its rows' variants are the `sidebar`'s and `list`'s in context).
 - **Sizes and densities:** none.
 - **Flags:** none (its elements are other widgets', each with its own states).
 - **Exclusive groups:** none; precedence: state models (S17).
 - **may_be_absent:** parts: `preview_pane` (`adwaita`: the preview is KFileWidget's, K2.26†), `frame`
-  (`kde-breeze`: the line below the chooser is GTK's, GN-P3-23†). The `icon_size_slider` is a `Value<bool>`, stated
-  on every preset (`false` where the chooser has no such slider).
+  (`kde-breeze`: the line below the chooser is GTK's, GN-P3-23†).
 - **State-model source:** GNOME `_file-chooser.scss`, `gtkplacessidebar.c`, `gtksidebarrow.ui`; KDE
   `kfilewidget.cpp` and Breeze.
 - **Today's fields:** none.
@@ -6074,54 +6160,80 @@ spaces:
   (C-25, MAC-N18; the current match `{current}`), `code_editor.find_match` on `kde-breeze` (K-SF08†), with the global
   `role.global.find_highlight`.
 
+### font_button
+
+*Split from `font_chooser` (ADD-A146).*
+
+- **Kind:** typed widget: the control that shows the chosen font and opens the font dialog. GNOME's
+  GtkFontDialogButton (GN-2.28), KDE's KFontRequester (K2.28†). The panel the dialog holds is `font_chooser`: the
+  button and the panel are never one element on either platform (the panel lies in the dialog's window), as
+  `color_button` and `color_picker` are two widgets (ADD-A146; rejected: one `font_chooser` widget with the button
+  as an *(element)* part, whose root's `padding` and `bindings` had to serve a lone button and a whole panel alike
+  and whose context rules for one matched the other; and one widget with `date_picker`'s field-and-popup structure,
+  which the chooser is not: it opens in a dialog's window, not as the button's own popup).
+- **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: no font
+  button the toolkit draws; macOS's font panel is MAC-N25's row); `kde-breeze` flavour `widgets` only
+  (KFontRequester).
+- **Parts:**
+  - `body` — the control (the root): GtkFontDialogButton's `.font` button node, with its states and focus indicator
+    (GN-2.28; `gtkfontdialogbutton.c:126-152`); on `kde-breeze` the box of KFontRequester's label and push button,
+    a plain widget that draws nothing itself and passes its focus to the button (`kwidgetsaddons@6.31.0
+    src/kfontrequester.cpp:46-63`, K2.28†): `fill`, `stroke`, `corners`, `padding`, `focus`, `bindings`.
+  - `label` — the font's name inside the button (`gtkfontdialogbutton.c:128-129`; in the chosen font where the
+    button uses it): `text`.
+  - `size_label` — the font's size beside the name, in its own text style (`_buttons.scss:309`, GN-2.28): `text`.
+  - `font_label` — KDE's sunken styled-panel label showing the font's name in that font, its frame forced on Breeze
+    (K2.28†): `fill`, `stroke`, `corners`, `padding`, `text`.
+- **Widget values:** `gap_px: Value<Px>` (the spacing between the name and the size, GtkFontDialogButton's,
+  GN-2.28).
+- **Variants:** none (KDE's requester label is always the sunken panel, K2.28†).
+- **Sizes and densities:** none.
+- **Flags:** none of its own; state flags used: hover, pressed, focus_visible, disabled.
+- **Exclusive groups:** none (states combine); precedence: state models (S17).
+- **may_be_absent:** parts: `label` (`kde-breeze`: KFontRequester is a label beside a push button, K2.28†, its
+  label `font_label` and its button a `button` element), `size_label` (`kde-breeze`: as `label`, K2.28†),
+  `font_label` (`adwaita`: GtkFontDialogButton shows the name inside its button, GN-2.28); fields: `body.fill`
+  (`kde-breeze`: KFontRequester's own box draws nothing, K2.28†), `body.stroke` (`kde-breeze`: as `body.fill`),
+  `body.focus` (`kde-breeze`: the focus indicator is its push button's, a `button` element); values: `gap_px`
+  (`kde-breeze`: the gap inside GtkFontDialogButton, GN-2.28).
+- **State-model source:** GNOME `_buttons.scss` (the `button` node with class `.font`); KDE `kfontrequester.cpp`.
+- **Today's fields:** none (GN-2.28's stand-in `button.*` stays `button`'s).
+- **Notes:** Nested controls: KDE's requester button, with its `document-edit` icon, is `button @ context
+  font_button` (K2.28†). GNOME's GtkFontDialogButton, though a GtkButton, is this widget and no `button` element:
+  its content, the name and beside it the size in its own text style with the gap between them (GN-2.28's spacing
+  and inner label), has no counterpart among `button`'s parts, whose `subtitle` is a line under the title. GTK hides
+  the button's separator between the name and the size (`_buttons.scss:307`, GN-2.28), so no part carries it. The
+  dialog it opens holds a `font_chooser`.
+
 ### font_chooser
 
 *From group 6's catalogue.*
 
-- **Kind:** typed widget: GNOME's GtkFontDialogButton (GN-2.28) and GtkFontChooserWidget (GN-P3-20†), KDE's
-  KFontRequester and KFontChooser (K2.28†).
+- **Kind:** typed widget: the font chooser panel a font dialog holds. GNOME's GtkFontChooserWidget (GN-P3-20†),
+  KDE's KFontChooser (K2.28†). The button that opens the dialog is `font_button` (ADD-A146).
 - **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: no font
   chooser the toolkit draws; Win32's `ChooseFont` is another toolkit's, R1.3, W-P4-7†; macOS's font panel is MAC-N25's row); `kde-breeze`
-  flavour `widgets` only (KFontRequester, KFontChooser).
+  flavour `widgets` only (KFontChooser).
 - **Parts:**
-  - `body` — the chooser (the root): `padding`, `bindings`
-  - `requester` *(element: GNOME's font dialog button)* — GtkFontDialogButton's `.font` button node, with its states
-    and focus indicator (GN-2.28; `gtkfontdialogbutton.c:126-152`): `fill`, `stroke`, `corners`, `padding`,
-    `focus`. `requester_label` and `requester_size_label` belong to it and are queried with it.
-  - `requester_label` — the font's name (`gtkfontdialogbutton.c:128-129`; in the chosen font where the button uses
-    it): `text`
-  - `requester_size_label` — the font's size beside the name, in its own text style (`_buttons.scss:309`,
-    GN-2.28): `text`
-  - `font_label` — KDE's sunken styled-panel label showing the font's name in that font, its frame forced on Breeze
-    (K2.28†): `fill`, `stroke`, `corners`, `padding`, `text`
-  - `family_row_label` — a family row's name, drawn in its own face (GN-P3-20†): `text`
-  - `preview` — the preview text (K2.28†, GN-P3-20†): `text`
-  - `filter_title` — the "Filter by" title (GN-P3-20†): `text`
-- **Widget values:** `grid_gap_px: Value<Px>` (GN-P3-20†); `row_margins: Sides<Value<Px>>` (GN-P3-20†);
-  `preview_min_lines: Value<u32>` (K2.28†); `requester_gap_px: Value<Px>` (the spacing between the requester's
-  name and size, GtkFontDialogButton's, GN-2.28).
-- **Variants:** none (KDE's requester label is always the sunken panel, K2.28†).
+  - `body` — the chooser (the root): `padding`, `bindings`.
+  - `preview` — the preview text (K2.28†, GN-P3-20†): `text`.
+  - `filter_title` — the "Filter by" title (GN-P3-20†): `text`.
+- **Widget values:** `grid_gap_px: Value<Px>` (GN-P3-20†); `preview_min_lines: Value<u32>` (K2.28†). The family
+  rows' text and insets are the nested `list`'s (`list.row.text`, `list.row.padding @ context font_chooser.body`:
+  GtkFontChooserWidget's family list is a `GtkListView` whose item is a label with margins, `gtk@4.24.1
+  gtk/ui/gtkfontchooserwidget.ui:162-180`, GN-P3-20†; the face each row is drawn in is the row's content, which the
+  connector supplies), so the host has no part or value for them (Nested controls; ADD-A146).
+- **Variants:** none.
 - **Sizes and densities:** none.
-- **Flags:** none of its own; state flags used: hover, pressed, focus_visible, disabled (on `requester`).
-- **Exclusive groups:** none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `requester` (`kde-breeze`: KFontRequester is a label beside a push button, K2.28†, its
-  label `font_label` and its button a `button` element), `requester_label` (`kde-breeze`: as `requester`, K2.28†),
-  `requester_size_label` (`kde-breeze`: as `requester`, K2.28†), `font_label`
-  (`adwaita`: GtkFontDialogButton shows the name inside its button, GN-2.28), `filter_title` (`kde-breeze`: the
-  "Filter by" title is GtkFontChooserWidget's, GN-P3-20†); values: `preview_min_lines` (`adwaita`: KFontChooser's
-  preview height, K2.28†), `row_margins` (`kde-breeze`: GtkFontChooserWidget's rows, GN-P3-20†),
-  `requester_gap_px` (`kde-breeze`: the gap inside GtkFontDialogButton, GN-2.28).
-- **State-model source:** GNOME `_buttons.scss` (the `button` node with class `.font`), `gtkfontchooserwidget.ui`;
-  KDE `kfontrequester.cpp`, `kfontchooser.cpp`.
+- **Flags:** none (its elements are other widgets', each with its own states).
+- **Exclusive groups:** none; precedence: state models (S17).
+- **may_be_absent:** parts: `filter_title` (`kde-breeze`: the "Filter by" title is GtkFontChooserWidget's,
+  GN-P3-20†); values: `preview_min_lines` (`adwaita`: KFontChooser's preview height, K2.28†).
+- **State-model source:** GNOME `gtkfontchooserwidget.ui`; KDE `kfontchooser.cpp`.
 - **Today's fields:** none.
 - **Notes:** the family, style and size lists are `list` elements, the size controls `slider` and `stepper`, the
   search entry `search_field`, the filters button a `button` (variant `menu`) with a `popover`, all in `context
-  font_chooser` (GN-P3-20†, K2.28†). Nested controls: KDE's requester button, with its `document-edit` icon, is
-  `button @ context font_chooser` (K2.28†). GNOME's GtkFontDialogButton, though a GtkButton, stays the host's
-  `requester` element: its content, the name and beside it the size in its own text style with the gap between
-  them (GN-2.28's spacing and inner label), has no counterpart among `button`'s parts, whose `subtitle` is a line
-  under the title. GTK hides the button's separator between the name and the size (`_buttons.scss:307`, GN-2.28), so
-  no part carries it.
+  font_chooser` (GN-P3-20†, K2.28†).
 
 ### form
 
@@ -6131,13 +6243,23 @@ spaces:
   (GN-2.01–GN-2.10), KDE's FormLayout (Q2.45–Q2.47), Kirigami Forms (Q2.55†, Q2.56†) and kirigami-addons' form
   cards (K-KA-1†–K-KA-9†, K-KA-15†), Qt Widgets' form layout (`QFormLayout` as Breeze styles it, K1.210), macOS's
   SwiftUI grouped form (MAC-N21) and columns form (MAC-LY02†), Windows' Toolkit SettingsCard and
-  SettingsExpander (W2-40†) and the clickable card (W1-139). GNOME's preference rows are this widget's in one place:
+  SettingsExpander (W2-40†) and the clickable card (W1-139), iOS's SwiftUI `Form`, its settings rows on the
+  inset-grouped list (L-23†; the platter, cells and row content of L-1, L-2, L-7, L-12, L-19), and Material's
+  settings rows, list items with trailing controls, with the Expressive segmented list (MAT-L1–MAT-L3, MAT-L8).
+  GNOME's preference rows are this widget's in one place:
   an AdwPreferencesGroup's boxed list is `card` and its rows `row`, which state the boxed list's frame, row hover and
   pressed fills, outer corners, focus ring and separators (GN-1.165) on these parts; a plain `.boxed-list` that is not
   a preferences group is `list @ variant inset`, which states the same source on its own parts (R20: each widget its
-  own parts). A row's switch, entry, combo and buttons are those widgets' elements in context. It is the one home
+  own parts). `ios-*` and `material-3` draw a form through the platform's list too and state it the same way: a
+  form's section is `card` and its rows `row`, stating the inset-grouped list's platter, cells and separators (L-1,
+  L-2, L-7) and the segmented list's items (MAT-L8) on these parts, and a list that is no form is `list` (`inset`,
+  `separated`), which states the same sources on its own parts. A row's switch, entry, combo and buttons are those
+  widgets' elements in context. It is the one home
   of a label–field form: Qt's form layout and SwiftUI's columns form are this widget, not a `layout` variant.
-- **Available:** every preset but `ios-*`, `material-3` (`available = false`: no form in their rows); `kde-breeze`
+- **Available:** every preset (ADD-A146; rejected: `ios-*` and `material-3` unavailable, their settings rows left
+  to `list`, under which a portable application's preferences page was `form` on five presets and had to be `list`
+  on three, principle 4, while SwiftUI's grouped `Form` was `form` on `macos-*` and GNOME's rows, drawn through its
+  list as iOS's are, were `form`); `kde-breeze`
   in both flavours: Qt Widgets' `QFormLayout` under `cond flavor:widgets` (K1.210: labels and fields, no cards,
   titles or separators, so the parts it does not draw are absent by rules under that condition, below), Kirigami's
   FormLayout and Forms and kirigami-addons' form cards under `cond flavor:kirigami`. Both macOS presets declare it:
@@ -6146,50 +6268,59 @@ spaces:
 - **Parts:**
   - `page` — the form's page (the root; kirigami-addons' page fill, K-KA-6†): `fill`, `padding` (the page's margins,
     GN-2.10), `bindings`
-  - `group_title` — a group's title (Q2.55†; kirigami-addons' title in the View set with its own insets, K-KA-5†;
-    GNOME's single-line header height, GN-2.10): `text`, `padding`, `min_height`, `bindings`
+  - `group_title` — the title of a group or section of rows (Kirigami Forms' group title, Q2.55†; kirigami-addons'
+    title in the View set with its own insets, K-KA-5†; GNOME's single-line header height, GN-2.10; Kirigami's
+    FormLayout's section title, Q2.47, Q2.56†, the same role under the base and `flat`, where the other is under
+    `@cards` and `@ka_form_card`: one part, ADD-A146, the two never drawn under one selector): `text`, `padding`,
+    `min_height`, `bindings`.
   - `group_description` — the explanatory text between groups (kirigami-addons' `FormSectionText`, K-KA-5†): `text`,
-    `max_width`, `margin` (its margins above, below and at the sides, K-KA-5†)
-  - `section_title` — a section title (Q2.47): `text`
-  - `field_label` — a field's label (Q2.47; kirigami-addons' label above the field, K-KA-9†): `text`, `padding`
-    (K-KA-22†)
+    `max_width`, `margin` (its margins above, below and at the sides, K-KA-5†).
   - `card` *(element)* — the boxed group's background, one element per card, hovered and pressed on its own
     (GNOME's preferences group boxed list, GN-1.165; Kirigami's cards, kirigami-addons' card with its border and
     shadow in the View set, Q1.129, K-KA-1†, SwiftUI's section card, Windows' settings card: fill, stroke, padding
     and min sizes per state, W2-40†, W1-139; the outer corners rounded by position rules): `fill`, `stroke`,
-    `corners`, `shadow`, `padding`, `min_width`, `min_height`, `bindings`. The rows and row separators of a card nest
-    in it and are queried in its scope.
+    `corners`, `shadow`, `padding`, `min_width`, `min_height`, `bindings`.
   - `row` *(element)*, in `card` (on every preset: where the form draws no card the rows are queried in the page's
     scope, Nesting) — a row (GN-2.01, GN-2.08; Q2.55†,
     K-KA-3†; the expander items' top line, W2-40†): `fill`,
     `stroke`, `corners`, `padding`, `min_width`, `min_height`, `focus`, `bindings` (AdwEntryRow's `.error`, `.warning`
     and `.success` rebinding the accent to the status colour, GN-2.03), `transitions` (the hover and pressed fills
     and their fade, Q2.55†, K-KA-2†, GN-1.165; the first and last rows' outer corners; GNOME's focus ring, GN-2.03,
-    GN-1.165). `row_title_box`, `row_title`, `row_subtitle`, `row_prefix`, `row_suffix`, `row_icon`, `row_edit_icon`,
-    `row_indicator`, `row_arrow`, `row_nested` belong to `row`, nest in it and are queried with it.
-  - `row_title_box` — the box holding the row's title and subtitle (AdwActionRow's `box.title`, GN-2.01): `margin`
-    (its margins; a preset whose row has no such box states them absent).
+    GN-1.165).
+  - `field_label`, in `row` — the row's field's label (Q2.47; kirigami-addons' label above the field, K-KA-9†; Qt's
+    and SwiftUI's label column, K1.210, MAC-LY02†), its row's part on every platform: each toolkit draws it per
+    row and dims it with its own row's field (`kirigami-addons@1.15.0 src/formcard/FormTextFieldDelegate.qml:308-320`,
+    `kirigami@6.31.0 src/layouts/FormLayout.qml:404-410`), so a rule on it selects the row's states and variants
+    (ADD-A146; rejected: a part of the form's own element, which only the whole form's `disabled` could dim and no
+    row's variant reached): `text`, `padding` (K-KA-22†).
+  - `row_title_box`, in `row` — the box holding the row's title and subtitle (AdwActionRow's `box.title`, GN-2.01):
+    `margin` (its margins; a zero length where the row has no such box).
   - `row_title`, in `row_title_box` — the row's title (wrapped, then elided, K-KA-3†; dimmed in property rows,
     GN-2.02): `text`,
-    `opacity`, `transitions` (AdwEntryRow's title shrinking to a caption, GN-2.04)
+    `opacity`, `transitions` (AdwEntryRow's title shrinking to a caption, GN-2.04).
   - `row_subtitle`, in `row_title_box` — the row's subtitle, dimmed (GN-2.01, Q2.55†, K-KA-15†): `text`, `opacity`,
     `padding` (its inset,
-    K-KA-3†, K-KA-22†)
-  - `row_prefix`, `row_suffix` — the boxes of leading and trailing items (GN-2.01, K-KA-3†): `padding`, `icon` (the
-    chosen icon an icon row shows, K-KA-14†)
-  - `row_icon` — the row's icon (K-KA-3†; GNOME's icon margin and disabled icon, GN-2.01; Windows' header icon with
-    its largest size and margin, a disabled bitmap icon dimmed, W2-40†): `icon`, `padding`, `max_width`,
-    `max_height`, `opacity`
-  - `row_edit_icon` — the edit icon in its box (AdwEntryRow, GN-2.03; kirigami-addons' mobile rows, K-KA-9†):
-    `icon`, `padding`, `min_width`, `min_height`
-  - `row_indicator` — AdwEntryRow's indicator in its box, dimmed (GN-2.03): `icon`, `opacity`, `padding`,
-    `min_width`, `min_height`
-  - `row_arrow` — the trailing arrow (combo row, action entry, expander, GN-2.06, Q2.56†, K-KA-7†; Windows' action
-    icon with its margin, W2-40†; the expander row's arrow turning and recoloured while `open`, GN-1.257, GN-1.258):
+    K-KA-3†, K-KA-22†).
+  - `row_value`, in `row` — the row's value text at its trailing side (SwiftUI's `LabeledContent` and a picker
+    row's current value, in secondary text, L-23†; Material's trailing supporting text, MAT-L1; ADD-A146): `text`.
+  - `row_suffix`, in `row` — the chosen icon an icon row shows among its trailing items (K-KA-14†): `icon`. The
+    boxes of a row's leading and trailing items have no look of their own: their gaps are `leading_gap`,
+    `trailing_gap` and `affix_gap` (GN-2.01, K-KA-3†), and no row states an inset of theirs, so no `row_prefix` part
+    and no `padding` here (ADD-A146).
+  - `row_icon`, in `row` — the row's icon (K-KA-3†; GNOME's icon margin and disabled icon, GN-2.01; Windows' header
+    icon with its largest size and margin, a disabled bitmap icon dimmed, W2-40†): `icon`, `padding`, `max_width`,
+    `max_height`, `opacity`.
+  - `row_edit_icon`, in `row` — the edit icon in its box (AdwEntryRow, GN-2.03; kirigami-addons' mobile rows,
+    K-KA-9†): `icon`, `padding`, `min_width`, `min_height`.
+  - `row_indicator`, in `row` — AdwEntryRow's indicator in its box, dimmed (GN-2.03): `icon`, `opacity`, `padding`,
+    `min_width`, `min_height`.
+  - `row_arrow`, in `row` — the trailing arrow (combo row, action entry, expander, GN-2.06, Q2.56†, K-KA-7†;
+    Windows' action icon with its margin, W2-40†; the expander row's arrow turning and recoloured while `open`,
+    GN-1.257, GN-1.258):
     `icon`, `glyph` (an arrow drawn as a glyph: GNOME's expander arrow, stated with the same field kind as
-    `list.disclosure.glyph`, GN-1.257), `padding`, `opacity`, `transform`, `transitions`
-  - `row_nested` — the box holding an expander row's nested rows (GNOME's `list.nested` fill, GN-1.260; Windows'
-    SettingsExpander items, W2-40†): `fill`, `padding`
+    `list.disclosure.glyph`, GN-1.257), `padding`, `opacity`, `transform`, `transitions`.
+  - `row_nested`, in `row` — the box holding an expander row's nested rows (GNOME's `list.nested` fill, GN-1.260;
+    Windows' SettingsExpander items, W2-40†): `fill`, `padding`.
   - `row_separator` *(element)*, in `card` — the line between two rows, an element whose previous and next siblings
     are rows (GN-1.165; Kirigami's separator, dimmed, Q2.56†, K-KA-4†): `stroke` (the line, its top edge), `opacity`,
     `margin` (its insets from the card's sides, Q2.56†, K-KA-4†: a line's insets are its `margin`, as a stroke lies
@@ -6214,7 +6345,9 @@ spaces:
   Windows' wrap thresholds, W2-40†, by `breakpoints`; Qt's form layout never wraps its rows under Breeze,
   `SH_FormLayoutWrapPolicy` `DontWrapRows`, K1.210, `breezestyle.cpp:954-955`, so `collapse` is absent under `cond
   flavor:widgets`);
-  `breakpoints: Vec<Breakpoint>` (Shared value types: Windows' SettingsCard wrap thresholds, W2-40†, measured
+  `breakpoints: Vec<Breakpoint>` (Shared value types; the variants they set are the form's, so the connector
+  evaluates them on the form's own element, whose allocation the cards fill, the same width each platform compares,
+  ADD-A146: Windows' SettingsCard wrap thresholds, W2-40†, measured
   `Allocation` (the card's stretched root grid), width `Below` each ("less than", `SettingsCard.xaml:312-333`): the
   wrap threshold setting `collapsed` (RightWrapped), the no-icon threshold setting `@right_wrapped_no_icon`, whose
   rules come after `collapsed`'s and win in the lower band, both under the `@right` layout; kirigami-addons' card
@@ -6225,34 +6358,40 @@ spaces:
   `trailing_gap_px: Value<Px>` (between the row's leading items and its title, and its title and its trailing items:
   K-KA-3†, K-KA-8†; AdwActionRow's header spacing between its prefix box, title box and suffix box, GN-2.01);
   `arrow_gap_px: Value<Px>`
-  (K-KA-7†); `field_label_gap_px: Value<Px>` (K-KA-9†); `grid_columns: Value<u32>`,
+  (K-KA-7†); `field_label_gap_px: Value<Px>` (K-KA-9†); `control_alignment: Value<Alignment>` (where a control
+  nested in a row sits, the settings row's trailing value and control, L-23†: `list`'s value of the same name, stated
+  here on the form's own values, R20; ADD-A146); `grid_columns: Value<u32>`,
   `grid_min_cell_width_px: Value<Px>`, `grid_gap_px: Value<Px>` (K-KA-15†);
   `presentations: Vec<PresentationTransition>` (queried with the row): events `@expand`, `@collapse` (an expander
   row's height and opacity, K-KA-7†).
-- **Variants:** typed row kinds `action`, `entry`, `combo`, `switch`, `button`, `expander`, `spin`, `property`
-  (GN-2.01–GN-2.10, Q2.56†, K-KA-3†); typed `columns` (a column of labels beside a column of fields: SwiftUI's
-  `.formStyle(.columns)`, MAC-LY02†, against macOS's grouped base; Qt's form layout, K1.210, and Kirigami's
-  FormLayout, Q2.45, which are `kde-breeze`'s base under each flavour, so it selects no rule there; declared by
-  `macos-*` and `kde-breeze`); typed `primary`, `destructive` (button rows, GN-2.08); typed `check`, `radio`
-  (rows holding a check box or radio, K-KA-3†, K-KA-8†: `menu.item`'s and `list`'s meaning); typed `warning`,
-  `error`, `success` (GNOME's entry rows' `.warning`, `.error`, `.success`; KDE's neutral highlight is `warning`);
-  keyed `adwaita` `@monospace` (property and entry rows); typed `flat` (Kirigami Forms' flat style, no card: Q2.56†;
-  the meaning `button`'s `flat` shares); typed `collapsed` (the narrow, stacked layout: KDE, Q2.45, Q2.56†; Windows'
-  wrapped layout, RightWrapped, W2-40†; set by the connector as `collapse` says, R16: on `windows-11` by
-  `breakpoints`, on `kde-breeze` from the connector's own measurement of the content when the wide layout does not
-  fit, no breakpoint and no request of the application's, so it is a connector-set variant, as the content variants
-  are, Entry format, ignored where undeclared, S8); keyed
-  `kde-breeze` `@cards` (Kirigami Forms' card style, Q2.55†), `@ka_form_card` (on the form: a
-  kirigami-addons FormCard page, whose rows and nested controls match `context form variant @ka_form_card`,
-  K-KA-1†–K-KA-9†), `@width_limited` (set by `breakpoints`, R16; K-KA-1†), `@ka_info_card`
-  (K-KA-15†), `@date_time` (K-KA-22†), `@icon_row` (K-KA-14†), `@link` (K-KA-7†), `@ka_radio_selector` (K-KA-25†: a row holding
-  kirigami-addons' radio selector, which draws no row background); `windows-11` `@right`,
-  `@right_wrapped_no_icon` (set by `breakpoints`), `@left` (the content
-  layouts, W2-40†; RightWrapped is `collapsed`), and its vertical layout the typed `vertical` (orientation); the content variant `bitmap_icon`
-  (on `row`: its icon is a bitmap, which WinUI dims when disabled where it recolours a glyph icon, W2-40†, W3-51†;
-  set by the connector from the content, ADD-A61); the content variant `activatable` (on `row`: the row has an
-  activation action, from which the connector sets it on every platform, ADD-A61: Kirigami's hover and pressed fills
-  only on clickable entries, Q2.55†; AdwActionRow's `.activatable`; the meaning `card`'s `activatable` shares).
+- **Variants:**
+  - on the widget, typed: `columns` (a column of labels beside a column of fields: SwiftUI's
+    `.formStyle(.columns)`, MAC-LY02†, against macOS's grouped base; Qt's form layout, K1.210, and Kirigami's
+    FormLayout, Q2.45, which are `kde-breeze`'s base under each flavour, so it selects no rule there; declared by
+    `macos-*` and `kde-breeze`), `flat` (Kirigami Forms' flat style, no card: Q2.56†; the meaning `button`'s `flat`
+    shares), `vertical` (Windows' vertical content layout, W2-40†; the orientation many widgets share), `collapsed`
+    (the content variant: the narrow, stacked layout: KDE, Q2.45, Q2.56†; Windows' wrapped layout, RightWrapped,
+    W2-40†; set by the connector as `collapse` says, R16: on `windows-11` by `breakpoints`, on `kde-breeze` from
+    the connector's own measurement of the content when the wide layout does not fit, no breakpoint and no request
+    of the application's, so it is a connector-set variant, as the content variants are, Entry format, ignored where
+    undeclared, S8).
+  - on the widget, keyed, `kde-breeze`: `@cards` (Kirigami Forms' card style, Q2.55†), `@ka_form_card` (a
+    kirigami-addons FormCard page, whose rows and nested controls match `context form variant @ka_form_card`,
+    K-KA-1†–K-KA-9†), `@width_limited` (set by `breakpoints`, R16; K-KA-1†), `@ka_info_card` (K-KA-15†).
+  - on the widget, keyed, `windows-11`: `@right`, `@right_wrapped_no_icon` (set by `breakpoints`), `@left` (the
+    content layouts, W2-40†; RightWrapped is `collapsed`).
+  - on `row`, typed: `action`, `entry`, `combo`, `switch`, `button`, `expander`, `spin`, `property` (the row kinds,
+    GN-2.01–GN-2.10, Q2.56†, K-KA-3†), `primary`, `destructive` (button rows, GN-2.08), `check`, `radio` (rows
+    holding a check box or radio, K-KA-3†, K-KA-8†: `menu.item`'s and `list`'s meaning), `warning`, `error`,
+    `success` (GNOME's entry rows' `.warning`, `.error`, `.success`; KDE's neutral highlight is `warning`),
+    `bitmap_icon` (the content variant: its icon is a bitmap, which WinUI dims when disabled where it recolours a
+    glyph icon, W2-40†, W3-51†; set by the connector from the content, ADD-A61), `activatable` (the content variant:
+    the row has an activation action, from which the connector sets it on every platform, ADD-A61: Kirigami's hover
+    and pressed fills only on clickable entries, Q2.55†; AdwActionRow's `.activatable`; the meaning `card`'s
+    `activatable` shares).
+  - on `row`, keyed, `adwaita`: `@monospace` (property and entry rows).
+  - on `row`, keyed, `kde-breeze`: `@date_time` (K-KA-22†), `@icon_row` (K-KA-14†), `@link` (K-KA-7†),
+    `@ka_radio_selector` (K-KA-25†: a row holding kirigami-addons' radio selector, which draws no row background).
 - **Sizes and densities:** `macos-*`: the control sizes (`mini`, `small`, `regular`, `large`): the columns form's
   label gap, `column_gap_px` under `columns`, is the label-to-control gap per control size (MAC-LY02†, MAC-LY01).
 - **Flags:** shared `empty` (GNOME: AdwEntryRow's title not shrunk while the row is empty, GN-2.04); state flags
@@ -6266,13 +6405,15 @@ spaces:
   so its rules there state absent every part `QFormLayout` does not draw, K1.210): `group_title` (`windows-11`: the
   Toolkit's SettingsCard and SettingsExpander, W2-40†, have no group heading; `kde-breeze` by a rule under `cond
   flavor:widgets`), `group_description` (`windows-11`: W2-40†'s cards have no text between groups; `kde-breeze` by
-  a rule under `cond flavor:widgets`), `section_title` (`adwaita`, `macos-*`, `windows-11`: the section title is
-  Kirigami's FormLayout's, Q2.47, Q2.56†; `kde-breeze` by a rule under `cond flavor:widgets`), `field_label`
-  (`adwaita`, `windows-11`: the label beside or above a field is KDE's and SwiftUI's columns form's, Q2.47,
-  K-KA-9†, K1.210, MAC-LY02†; `macos-*` by a rule outside `columns`), `card` (`kde-breeze` by a rule outside
+  a rule under `cond flavor:widgets`), `field_label`
+  (`adwaita`, `windows-11`, `ios-*`, `material-3`: the label beside or above a field is KDE's and SwiftUI's columns
+  form's, Q2.47, K-KA-9†, K1.210, MAC-LY02†, their rows' label being `row_title`; `macos-*` by a rule outside
+  `columns`), `row_value` (all but `ios-*`, `material-3`: L-23†, MAT-L1, unless the value phase finds a trailing
+  value text in another platform's facts), `card` (`kde-breeze` by a rule outside
   `@cards` and `@ka_form_card`, and by a rule under `flat`: Qt's form layout, K1.210, Kirigami's plain FormLayout,
   Q2.45–Q2.47, and its flat Forms draw no card; `macos-*` by a rule under `columns` where the value phase's
-  measurement shows its sections draw none, MAC-LY02†; the rows are then queried in the page's scope, Nesting),
+  measurement shows its sections draw none, MAC-LY02†; `material-3`: its settings rows lie on the page, the
+  Expressive segmented list rounding each row, MAT-L8; the rows are then queried in the page's scope, Nesting),
   `row_edit_icon` (all but `adwaita`, `kde-breeze`: AdwEntryRow's and kirigami-addons' mobile rows' edit icon,
   GN-2.03, K-KA-9†; `kde-breeze` by a rule under `cond flavor:widgets`), `row_indicator` (all but `adwaita`:
   AdwEntryRow's indicator, GN-2.03), `row_nested` (every preset by a rule outside `expander`), `row_arrow` (every
@@ -6290,8 +6431,9 @@ spaces:
   (`kde-breeze`, `windows-11`: their arrows are icons, K-KA-7†, Q2.56†, W2-40†; `adwaita` by a rule outside
   `expander`, its other arrows being icons, GN-2.06), and the `row_separator.margin` is stated wherever the
   separator is drawn (its insets, MAC-N21, Q2.56†, K-KA-4†, zero where the line spans the card); values:
-  `label_alignment` (`adwaita`, `windows-11`, each member: the label against its field is KDE's and SwiftUI's
-  columns form's, Q2.45–Q2.47, K1.210, MAC-LY02†, as `field_label`; `macos-*` by a rule outside `columns`, and its
+  `label_alignment` (`adwaita`, `windows-11`, `ios-*`, `material-3`, each member: the label against its field is
+  KDE's and SwiftUI's columns form's, Q2.45–Q2.47, K1.210, MAC-LY02†, as `field_label`; `macos-*` by a rule outside
+  `columns`, and its
   `vertical` member under `columns` too, the label sitting on its control's baseline, `baseline_alignment`,
   MAC-LY02†), `field_growth` (all but `kde-breeze`: Qt's `FieldGrowthPolicy`, K1.210, unless the value phase finds
   one in another platform's facts; `kde-breeze` by a rule under `cond flavor:kirigami` unless the value phase finds
@@ -6301,8 +6443,10 @@ spaces:
   Kirigami's facts), `icon_text_gap_px` (all
   but `kde-breeze`: K-KA-3†), `arrow_gap_px` (all but `kde-breeze`: K-KA-7†), `field_label_gap_px` (all but
   `kde-breeze`: K-KA-9†, Q2.47), `grid_columns` (all but `kde-breeze`: K-KA-15†), `grid_min_cell_width_px` (all but
-  `kde-breeze`: K-KA-15†), `grid_gap_px` (all but `kde-breeze`: K-KA-15†), `narrow_max_width_px` (`adwaita`,
-  `macos-*`: their forms never collapse, so there is no collapsed width to cap; `kde-breeze` by a rule under `cond
+  `kde-breeze`: K-KA-15†), `grid_gap_px` (all but `kde-breeze`: K-KA-15†), `control_alignment` (all but `ios-*`: L-23†, unless the value phase
+  finds it in another platform's facts), `narrow_max_width_px` (`adwaita`,
+  `macos-*`: their forms never collapse, so there is no collapsed width to cap; `ios-*`, `material-3`: no row
+  states a collapsed form's width cap, L-23†, MAT-L1; `kde-breeze` by a rule under `cond
   flavor:widgets`, whose rows never wrap, K1.210; `windows-11`'s wrapped layout states its cap from W2-40†'s facts,
   `auto` where they show none, as the value says), `leading_gap_px` (all but `kde-breeze`, `adwaita`: K-KA-3†,
   GN-2.01), `trailing_gap_px` (all but `kde-breeze`, `adwaita`: K-KA-3†, GN-2.01), `title_subtitle_gap_px` (all but
@@ -6315,7 +6459,8 @@ spaces:
 - **State-model source:** GNOME `_lists.scss`, `_preferences.scss`, `adw-entry-row.c`; KDE `FormLayout.qml`,
   `forms/cards/*.qml`, `forms/flat/*.qml`, kirigami-addons `formcard/*.qml`, and Qt's `QFormLayout` (no states of
   its own; Breeze's form-layout hints, `breezestyle.cpp:953-960`); macOS SwiftUI `GroupedFormStyle`,
-  `ColumnsFormStyle`; Windows SettingsCard and SettingsExpander states.
+  `ColumnsFormStyle`; Windows SettingsCard and SettingsExpander states; iOS SwiftUI `Form` on the inset-grouped
+  list's cell states (L-1, L-23†); Material the list-item tokens (MAT-L1–MAT-L3, MAT-L8).
 - **Today's fields:** none (`list.*`, today's `expander` field `header_height` and `layout.*` stand-ins stay
   theirs).
 - **Notes:** Windows' SettingsCard has one home, `form.card` (W2-40† and W1-139's clickable card), each card its
@@ -6326,7 +6471,7 @@ spaces:
   (`@ka_inline_message`, K-KA-10†). Group 6's `title_shrink` and `separator_hide` values are the `row_title` and
   `row_separator` transitions (GN-2.04, Q2.56†); `has_text` is `!{empty}`. Qt's form layout (K1.210) and SwiftUI's
   columns form (MAC-LY02†) were `layout`'s `form` variant and `form_*` values, moved here so that a label–field form
-  has one home: its labels are `field_label`, its fields the nested widgets in `context form.row`, and
+  has one home: its labels are the rows' `field_label`, its fields the nested widgets in `context form.row`, and
   `form_label_alignment`, `form_baseline_alignment`, `form_field_growth`, `form_alignment` are `label_alignment`
   (its `horizontal` member), `baseline_alignment`, `field_growth`, `contents_alignment`, Qt's row wrapping
   (`form_wraps`) being `collapse`.
@@ -7783,7 +7928,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `NSDatePicker` with time elements only, a text field with or without a stepper (MAC-N04; gap map macOS "time
   picker"), iOS's `UIDatePicker` in its `.time` mode, the compact pill with its popover of wheels or the inline
   wheels (C-5, C-7; gap map iOS "time picker"). A picker showing a date and a time together (macOS's date and time
-  elements, iOS's `.dateAndTime` mode) stays a `date_picker`.
+  elements, iOS's `.dateAndTime` mode) stays a `date_picker`; the analogue clock macOS's clockAndCalendar style draws
+  beside the calendar is a `time_picker` element (`inline`) in that date picker's context (MAC-N04; gap map macOS
+  "time picker": "clock face").
 - **Available:** every preset but `adwaita` (`available = false`: no time picker in GNOME's rows); `kde-breeze`
   in both flavours, each its own toolkit's picker: Qt Widgets' KTimeComboBox and QTimeEdit under `cond
   flavor:widgets` (K2.24†), kirigami-addons' time row and popup under `cond flavor:kirigami` (K-KA-22†, K-KA-23†),
@@ -7819,9 +7966,14 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     `kde-breeze` draws kirigami-addons' popup with another widget: under `variant with_popup cond flavor:kirigami`
     `popup` is `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }` (K-KA-23†, which presents
     as the dialog, Q1.105's fade, S2.7), so one box is drawn, as on `date_picker`.
-  - `dial`, in `popup` — MAT-N17's clock dial: `fill`, `corners`, `min_width`, `min_height`.
+  - `dial`, in `popup` — the clock face: MAT-N17's clock dial, and the clock of macOS's clockAndCalendar style
+    (MAC-N04), one structure for an analogue clock (ADD-A146; rejected: macOS's clock as parts of `calendar`, a
+    month grid no other platform's calendar draws a clock in, which gave one kind of thing two structures): `fill`,
+    `stroke` (macOS's rim), `corners`, `min_width`, `min_height`. On `macos-*`, whose picker opens no popup, the
+    `popup` it nests in answers `NotDrawn` and the dial is drawn in the body's scope (Nesting).
   - `dial_selector`, in `popup` — the selector handle, MAT-N17: `fill`, `corners`, `min_width`, `min_height`.
-  - `dial_track`, in `popup` — the selector track, MAT-N17: `fill`, `min_width`.
+  - `dial_track`, in `popup` — the bar from the centre to the time: Material's selector track, MAT-N17, and macOS's
+    clock hands, MAC-N04: `fill`, `min_width`.
   - `dial_center`, in `popup` — the selector centre, MAT-N17: `fill`, `corners`, `min_width`, `min_height`.
   - `dial_label` *(element)*, in `popup` — MAT-N17's dial labels; the one under the selector is `selected`: `text`.
   - `selector_cell` *(element)*, in `popup` — MAT-N17's time selector cells (the dial picker's hour and minute):
@@ -7839,19 +7991,30 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `placement: Value<Placement>` (the popup against the field, one name with `date_picker.values.placement`: C-5's
   popover, `UiKitPopover`; W2-04's flyout, its strategy the value phase's).
   The popup's opening and closing are ADD-A129's (queue #118), at once meanwhile where it is drawn as itself (S2.7).
-- **Variants:** typed `vertical` (Material's vertical layout; horizontal is the base, R25.14, MAT-N17), `with_popup`
-  (a field that opens a popup: KTimeComboBox's popup list, K2.24†; kirigami-addons' time row and its time popup,
-  K-KA-22†, K-KA-23†; iOS's compact pill, C-5), `text_field` (QTimeEdit, macOS's text field: a segmented text field
-  that opens none) and `inline` (iOS's inline wheels, C-7), the meanings `date_picker` declares, set by the
-  application's choice of control (K2.24†); keyed `material-3` `@dial`, `@input` (MAT-N17); `macos-*`
-  `@text_field_and_stepper` (MAC-N04, as on `date_picker`). On `kde-breeze` the flavour, not a variant, tells
-  KTimeComboBox from kirigami-addons' picker, as on `date_picker`: both are `with_popup` (the field opens the
-  popup), the substitutions are rules under `cond flavor:widgets` and `cond flavor:kirigami`, and an application
-  asking for `with_popup` gets its flavour's picker with no keyed name of KDE's;
-  `[declare.flavor.kirigami.widget.time_picker]` declares `with_popup` alone of the typed forms (`text_field` is
-  QTimeEdit's, K2.24†; kirigami-addons draws no text-field time and no inline time, K-KA-22†, K-KA-23†).
-  Whether macOS's graphical style with time elements alone draws its clock face alone (MAC-N04) is the value
-  phase's (Open items); until then `macos-*` declares no `inline`.
+- **Variants:**
+  - on the widget, typed: `vertical` (Material's vertical layout; horizontal is the base, R25.14, MAT-N17),
+    `with_popup` (a field that opens a popup: KTimeComboBox's popup list, K2.24†; kirigami-addons' time row and its
+    time popup, K-KA-22†, K-KA-23†; iOS's compact pill, C-5), `text_field` (QTimeEdit, macOS's text field: a
+    segmented text field that opens none), `inline` (iOS's inline wheels, C-7; the clock of macOS's clockAndCalendar
+    style, MAC-N04). The three forms are the meanings `date_picker` declares, set by the application's choice of
+    control (K2.24†).
+  - on the widget, keyed, `material-3`: `@dial`, `@input` (MAT-N17).
+  - on the widget, keyed, `macos-*`: `@text_field_and_stepper` (MAC-N04, as on `date_picker`).
+  - The forms exclude each other and, where the platform has more than one, an element holds one, as on
+    `date_picker` (ADD-A146): each such preset lists its forms in `requires_variants` and as one
+    `exclusive_variants` group (S10): `kde-breeze` `[with_popup, text_field]`, its flavour `kirigami` `[with_popup]`;
+    `macos-*` `[text_field, @text_field_and_stepper, inline]`; `ios-*` `[with_popup, inline]`; `material-3` `[@dial,
+    @input]`. `windows-11` draws one form, TimePicker, its base, and requires none. `vertical` is in no group.
+  - On `kde-breeze` the flavour, not a variant, tells KTimeComboBox from kirigami-addons' picker, as on
+    `date_picker`: both are `with_popup` (the field opens the popup), the substitutions are rules under `cond
+    flavor:widgets` and `cond flavor:kirigami`, and an application asking for `with_popup` gets its flavour's picker
+    with no keyed name of KDE's; `[declare.flavor.kirigami.widget.time_picker]` declares `with_popup` alone of the
+    typed forms (`text_field` is QTimeEdit's, K2.24†; kirigami-addons draws no text-field time and no inline time,
+    K-KA-22†, K-KA-23†).
+  - `macos-*` declares `inline` for the clock of the clockAndCalendar style, a `time_picker` element in `context
+    date_picker` beside the `calendar`, its face `dial` and its hands `dial_track` (MAC-N04; ADD-A146). Whether the
+    graphical style with time elements alone draws that clock alone, outside a date picker, is the value phase's
+    (Open items).
 - **Sizes and densities:** no sizes (no row states one); `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39): the field's padding.
 - **Flags:** none of its own; state flags used: selected (`selector_cell`, `period_selector`, `dial_label`;
   `field_segment` on `macos-*`, MAC-N04), hover, pressed (iOS's pill, C-5), focused, disabled, open (Windows' flyout,
@@ -7861,11 +8024,14 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `material-3`: `state_layer = [focus_visible, hover]` on `selector_cell` and `period_selector` (state layers;
   Material's recency sets, above: a `Surface`'s ripple, `TimePicker.kt:3089-3095`, and a `TextButton`'s, `:3018`;
   `pressed` combines).
-- **may_be_absent:** parts: `dial` (every preset but `material-3`: the clock dial is Material's, MAT-N17;
-  `material-3` by a rule under `variant @input`, the time input drawing no dial, MAT-N17), `dial_selector` (every
-  preset but `material-3`, as for `dial`; `material-3` by a rule under `variant @input`, as for `dial`),
-  `dial_track` (every preset but `material-3`, as for `dial`; `material-3` by a rule under `variant @input`, as for
-  `dial`), `dial_center` (every preset but `material-3`, as for `dial`; `material-3` by a rule under
+- **may_be_absent:** parts: `dial` (every preset but `material-3`, `macos-*`: the clock is Material's dial, MAT-N17,
+  and macOS's clock face, MAC-N04; `material-3` by a rule under `variant @input`, the time input drawing no dial,
+  MAT-N17; `macos-*` by a rule outside `variant inline`), `dial_selector` (every
+  preset but `material-3`: the selector handle is Material's, MAT-N17; `material-3` by a rule under `variant
+  @input`, as for `dial`),
+  `dial_track` (every preset but `material-3`, `macos-*`, as for `dial`; `material-3` by a rule under `variant
+  @input`, as for `dial`; `macos-*` by a rule outside `variant inline`), `dial_center` (every preset but
+  `material-3`: the selector centre is Material's, MAT-N17; `material-3` by a rule under
   `variant @input`, as for `dial`), `dial_label` (every preset but `material-3`, as for `dial`; `material-3` by a
   rule under `variant @input`, as for `dial`), `selector_cell` (every preset but `material-3`: Material's time
   selector cells, MAT-N17; `material-3` by a rule under `variant @input`, whose hour and minute are the `input`
@@ -7877,18 +8043,21 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `windows-11` and `ios-*` by a rule `!{open}`, the flyout and the popover being drawn while open, W2-04, C-5;
   `ios-*` also by a rule under `variant inline`, whose wheels lie in the body, C-7),
   `field` (`material-3`: its time picker has no trigger, its dial or input lying in the popup, MAT-N17; `ios-*` by
-  a rule under `variant inline`, which has no trigger, C-7), `field_label` (`kde-breeze` by the rules that draw the
+  a rule under `variant inline`, which has no trigger, C-7; `macos-*` by a rule under `variant inline`, the clock
+  having none, MAC-N04), `field_label` (`kde-breeze` by the rules that draw the
   field as a combo box or a spin box, under `variant with_popup cond flavor:widgets` and `variant text_field cond
   flavor:widgets`, whose own text takes its place, K2.24†; `material-3`, as for `field`; `ios-*` by a rule under
   `variant inline`, as for `field`), `glyph` (`windows-11`, `macos-*`, `ios-*`, `material-3`: the clock glyph is
   kirigami-addons', K-KA-22†; `kde-breeze` by a rule outside `context form.row`, where kirigami-addons' row draws
   it, K-KA-22†),
   `field_segment` (all but `windows-11`, `macos-*`: the segmented trigger is WinUI's and `NSDatePicker`'s, W2-04,
-  MAC-N04), `segment_separator` (all but `windows-11`: TimePicker's spacer lines, W2-04), `header` (all but
+  MAC-N04; `macos-*` by a rule under `variant inline`, as for `field`), `segment_separator` (all but `windows-11`:
+  TimePicker's spacer lines, W2-04), `header` (all but
   `windows-11`: TimePicker's header label, W2-04), `time_separator` (`windows-11`, whose columns are separated by
   its spacer lines, W2-04; `kde-breeze` by a rule under `cond flavor:widgets`, the separator being
   kirigami-addons' popup's, K-KA-23†; `macos-*`, `ios-*` where their facts show none, value phase); fields:
-  `popup.stroke` (`material-3`: its container draws no outline, MAT-N17), `field.fill` (`kde-breeze` by a rule
+  `popup.stroke` (`material-3`: its container draws no outline, MAT-N17), `dial.stroke` (`material-3`: the rim is
+  macOS's clock face's, MAC-N04, Material's dial a filled circle, MAT-N17), `field.fill` (`kde-breeze` by a rule
   `{read_only} context form.row`, as `date_picker.field.fill`, K-KA-22†); the body's padding is stated on every
   preset, a zero inset where the picker has none, and the field's minimum and maximum widths are `"auto"` where the
   platform sets none (no limit beyond the content, S2.11; W2-04 states TimePicker's), never `Absent`;
@@ -8211,7 +8380,9 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   the indicator button is not wider, `PINNED_MARGIN`, `A/c/adw-tab-thumbnail.c:19`, `:317-357`), `presentations:
   Vec<PresentationTransition>` (queried with the overview: `Appear`, `Disappear`, the overview shown and hidden,
   the current page morphing between the whole view and its thumbnail's place, a crossfade under `cond
-  reduced_motion`; queried with a thumbnail: `Move`, a thumbnail moved to its new place).
+  reduced_motion`; queried with a thumbnail: `Appear`, `Disappear`, a thumbnail entering and leaving the grid as a
+  page is attached or closed, `A/c/adw-tab-grid.c:29-30`, `:1904-1909`, `:2033-2037`, and `Move`, a thumbnail moved
+  to its new place; ADD-A146).
 - **Transitions:** the thumbnail's controls fading back in after the morph (GN-2.35) follow a state, so they are no
   event (Entry format): the connector sets `@morph_target` on the current page's thumbnail from the start of the
   open or close animation that morphs the page into or out of its place to that animation's end (never under
@@ -10261,7 +10432,7 @@ and the owning group's name where the kinds are the same.
 | edit menu | KDE, Material, iOS, Windows (CommandBarFlyout, W2-23), GNOME (the touch-selection bubble, GN-1.286†, GN-1.184) | typed `edit_menu` |
 | file chooser | GNOME, KDE (GTK's own chooser, KFileWidget); GNOME's portal chooser is out (R1.1); Windows' Common Item Dialog is another toolkit's (R1.3) | typed `file_chooser` |
 | find bar | macOS, KDE, iOS | typed `find_bar` |
-| font chooser | GNOME, KDE (Win32 `ChooseFont`: another toolkit's, R1.3) | typed `font_chooser` |
+| font chooser | GNOME, KDE (Win32 `ChooseFont`: another toolkit's, R1.3) | typed `font_chooser` (the panel) and `font_button` (the button that opens its dialog; ADD-A146) |
 | group box/frame, image frame | GNOME, iOS, KDE, macOS | typed `group_box` (group 6 wrote `frame`; a frame with an optional title); the image view's frame and shadow styles are the typed `image` (macOS's MAC-N12, GNOME's GN-3.07: the third check) |
 | menu button | macOS, Windows, Material | drawn inside `button` (the typed variant `menu` and its `menu_indicator`); a toolbar's tool buttons are `button` variant `tool` in `context toolbar.bar` |
 | rubber band | macOS, KDE, iOS, GNOME (GN-1.175, GN-1.280†, GN-SF14†) | typed `rubber_band` |

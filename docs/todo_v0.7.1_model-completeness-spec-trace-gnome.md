@@ -694,7 +694,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.15 | `view_switcher.bar.padding @ variant @title` | rule |
 | GN-2.15 | `bottom_tab_bar.bar.padding; bottom_tab_bar.item.{padding,min_height}, bottom_tab_bar.item_label.text` (AdwViewSwitcherBar, the bottom bar of a narrow window: its padding and narrow buttons) | field |
 | GN-2.15 | `badge.body.{min_width,min_height,corners,padding} @ variant count context any view_switcher variant @sidebar / variant dot context any view_switcher variant @sidebar` | rule |
-| GN-2.15 | `view_switcher.values.drag_hover_delay; bottom_tab_bar.values.presentations (Appear, Disappear)` (AdwViewSwitcherBar's reveal) | field |
+| GN-2.15 | `view_switcher.values.drag_hover_delay, bottom_tab_bar.values.drag_hover_delay` (the switcher button's own timeout, the bar's buttons the same class, `adw-view-switcher-button.c:14`, `:86`); `bottom_tab_bar.values.presentations (Appear, Disappear)` (AdwViewSwitcherBar's reveal) | field |
 | GN-2.16 | `view_switcher.{bar,item} @ variant @inline (the toggle group's look restated, GN-1.239–GN-1.251)` | rule |
 | GN-2.16 | `view_switcher.item_label.padding, view_switcher.values.icon_text_gap @ variant @inline` (the label padding, the image-text spacing) | rule |
 | GN-2.16 | `badge.values.{anchor_offset_x,anchor_offset_y} @ context any view_switcher variant @inline; view_switcher.values.drag_hover_delay @ variant @inline` | rule |
@@ -747,7 +747,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.27 | `color_picker.swatch.focus @ {focus_visible}` | rule |
 | GN-2.27 | `color_picker.swatch_ring.stroke @ context color_picker.swatch {drop_target} / cond contrast_high` | rule |
 | GN-2.27 | `color_picker.preview.corners (the editor's sample)` | field |
-| GN-2.28 | `font_chooser.requester.{fill,stroke,corners,padding,focus}, font_chooser.requester_label.text, font_chooser.requester_size_label.text (the label of the font's size, in its own text style, `_buttons.scss:309`), font_chooser.values.requester_gap` (GtkFontDialogButton's hidden separator is drawn by no part) | field |
+| GN-2.28 | `font_button.body.{fill,stroke,corners,padding,focus}, font_button.label.text, font_button.size_label.text (the label of the font's size, in its own text style, `_buttons.scss:309`), font_button.values.gap` (GtkFontDialogButton's hidden separator is drawn by no part) | field |
 | GN-2.29 | `split_button.primary.{corners,padding}, split_button.secondary.{corners,padding}, split_button.values.part_gap (negative overlap), split_button.divider.{stroke,margin} (the separator's insets its margin)` | field |
 | GN-2.29 | `split_button.divider.stroke @ variant flat / variant flat cond contrast_high; split_button.divider.opacity @ {hover} variant flat / {focus_visible} variant flat` | rule |
 | GN-2.29 | `split_button.primary.fill, split_button.secondary.fill, split_button.divider.stroke @ variant primary / variant destructive / variant @opaque (the inset separator)` | rule |
@@ -768,14 +768,14 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.34 | `badge.body.{fill,min_width,min_height,corners} @ variants {dot,attention} context list.row context any list variant @stack_sidebar` (the needs-attention dot; the connector draws it while the page needs attention) | rule |
 | GN-2.35 | `component.tab_overview.grid.{fill,padding}` | component |
 | GN-2.35 | `component.tab_overview.thumbnail.{fill,corners,shadow,stroke,margin,transitions}; component.tab_overview.thumbnail.{fill,stroke} @ variant @pinned` (the pinned thumbnail's colours) | component |
-| GN-2.35 | `badge.body.{fill,corners,min_width,min_height} @ variants {dot,attention} context component.tab_overview.thumbnail` (a thumbnail's needs-attention dot) | rule |
+| GN-2.35 | `badge.body.{fill,corners,shadow,min_width,min_height} @ variants {dot,attention} context component.tab_overview.thumbnail` (a thumbnail's needs-attention dot and its shadow, `_tab-view.scss:204-212`) | rule |
 | GN-2.35 | `button.body.{fill,margin,min_width,min_height,corners} @ context component.tab_overview.thumbnail / {hover} context component.tab_overview.thumbnail / {pressed} context component.tab_overview.thumbnail` (the close button, `variant close`, and the indicator button over the card: libadwaita's `tabthumbnail button` rules, `A/w/_tab-view.scss:256-288`; a pinned thumbnail's unpin icon is an image, no button) | rule |
 | GN-2.35 | `component.tab_overview.thumbnail_icon.icon, component.tab_overview.thumbnail_title.text, component.tab_overview.unpin_icon.{icon,margin,min_width,min_height}, component.tab_overview.values.{icon_title_gap,pinned_title_margin}` (the page's icon and title, below the card or, on a pinned thumbnail, inside it; the unpin icon, `.tab-unpin-icon`; `A/w/_tab-view.scss:246-254`, `A/c/adw-tab-thumbnail.c:19`, `:317-393`) | component |
 | GN-2.35 | `component.tab_overview.unpin_icon (Absent) @ !variant @pinned` (shown on a pinned thumbnail only, `A/c/adw-tab-thumbnail.c:368`) | component |
-| GN-2.35 | `button.body.padding @ variant add context component.tab_overview (the new-tab button's margin)` | rule |
+| GN-2.35 | `button.body.margin @ variant add context component.tab_overview` (the new-tab button's margin, the `.new-tab-button` rule's `margin`, `_tab-view.scss:295-297`: a nested button's margin in its host, not its padding) | rule |
 | GN-2.35 | `component.tab_overview.thumbnail.{fill,shadow} @ {drop_target}; component.tab_overview.grid.shadow (Absent) @ {drop_target}` (a drop over a thumbnail: its tinted fill and its inset ring, a shadow layer as GN-1.25's; the grid's own drop ring switched off, `A/w/_tab-view.scss:194-197`, `:300-304`) | component |
 | GN-2.35 | `component.tab_overview.values.{grid_gap,columns_min,columns_max}, component.tab_overview.thumbnail.{min_width,max_width}` (the thumbnail width bounds, the part's fields) | component |
-| GN-2.35 | `component.tab_overview.values.presentations events Appear, Disappear, Move / @ cond reduced_motion (crossfade)` (the overview shown and hidden, the current page morphing between the whole view and its thumbnail's place; a thumbnail moved) | component |
+| GN-2.35 | `component.tab_overview.values.presentations events Appear, Disappear, Move / @ cond reduced_motion (crossfade)` (queried with the overview: the overview shown and hidden, the current page morphing between the whole view and its thumbnail's place; queried with a thumbnail: `Appear`, `Disappear`, a page opened or closed in the grid, `adw-tab-grid.c:29-30`, `:1904-1909`, `:2033-2037`, and `Move`, a thumbnail moved) | component |
 | GN-2.35 | `component.tab_overview.controls.{opacity,transitions} @ {@morph_target}; component.tab_overview.thumbnail_icon.{opacity,transitions} @ variant @pinned {@morph_target}; component.tab_overview.thumbnail_title.{opacity,transitions} @ variant @pinned {@morph_target}; component.tab_overview.controls.transitions, component.tab_overview.thumbnail_icon.transitions, component.tab_overview.thumbnail_title.transitions (Opacity)` (the current page's thumbnail's controls, hidden at once while the open or close animation morphs the page into its place and faded back in when it ends: a state, so no event; `A/c/adw-tab-thumbnail.c:18`, `:258-270`, `:722-739`; `A/c/adw-tab-overview.c:1045-1051`, `:2217-2227`) | component |
 | GN-2.36 | `badge.body.{fill,min_width,min_height,corners,padding} @ variant dot / variants {dot,attention}` | rule |
 | GN-2.36 | `badge.body.{fill,min_height,padding,corners}, badge.label.text @ variant count; badge.values.cutout` | rule |
@@ -786,8 +786,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.38 | `page_indicator.dot.transitions, page_indicator.line.transitions` | field |
 | GN-2.39 | `about_dialog.icon.icon.size` | field |
 | GN-2.39 | `about_dialog.icon.shadow` | field |
-| GN-2.39 | `about_dialog.version.text, about_dialog.version.padding, about_dialog.version.corners` | field |
-| GN-2.39 | `about_dialog.body.padding (its margins), about_dialog.values.gap (the main page's box spacing), about_dialog.values.group_gap (the inner box's spacing between the groups), about_dialog.values.groups_margin (the inner box's top and bottom margins), about_dialog.version.margin (the pill's top margin), about_dialog.values.subpage_margins` (`_misc.scss:88-104`) | field |
+| GN-2.39 | `about_dialog.version` (`drawn_as = { widget = "button", variants = ["@app_version"] }`: the version is a `GtkButton` of the class `app-version`, `adw-about-dialog.ui:80-89`); `button.label.text, button.body.padding, button.body.corners, button.body.margin (the pill's top margin) @ variant @app_version context about_dialog` (`_misc.scss:101-106`) | rule |
+| GN-2.39 | `about_dialog.body.padding (its margins), about_dialog.values.gap (the main page's box spacing), about_dialog.values.group_gap (the inner box's spacing between the groups), about_dialog.values.groups_margin (the inner box's top and bottom margins), about_dialog.values.subpage_margins` (`_misc.scss:88-99`, `:109-113`; the pill's top margin is the `button`'s, above) | field |
 | GN-2.40 | `keycap.key.fill` | field |
 | GN-2.40 | `keycap.key.shadow` | field |
 | GN-2.40 | `keycap.key.stroke @ cond contrast_high` | rule |
@@ -831,9 +831,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.52† | `scroll_view @ context breadcrumb.bar` (the row of crumbs in a scrolled window that shows no scroll bar: horizontal policy `GTK_POLICY_EXTERNAL`, vertical `GTK_POLICY_NEVER`, `gtkpathbar.c:195-198`, so no `scrollbar` element is queried; it overflows without animation) | rule |
 | GN-2.52† | `breadcrumb.values.presentations` (`[]` on `adwaita`: GtkPathBar animates no scroll, `gtkpathbar.c:195-203`; `@scroll` is Kirigami's, Q2.44) | field |
 | GN-2.53† | `color_picker.values.grid_gap; color_picker.plane.{min_width,min_height,focus,cursor}; color_picker.preview.corners` | field |
-| GN-2.53† | `color_picker.{crosshair_line_horizontal,crosshair_line_vertical}.{fill,min_width,min_height} @ {focus_visible} / !{focus_visible}` (on the `plane` element: the lines through the point over the bands while the plane shows focus, alone otherwise, `gtkcolorplane.c:95-122`) | rule |
-| GN-2.53† | `color_picker.{crosshair_band_horizontal,crosshair_band_vertical}.{fill,min_width,min_height} @ {focus_visible}; color_picker.{crosshair_band_horizontal,crosshair_band_vertical} (absent = true) @ !{focus_visible}` (the bands under the lines, `gtkcolorplane.c:95-104`) | rule |
-| GN-2.53† | `color_picker.values.crosshair_spans_plane` (`true`: each line and band runs across the whole plane through the point, `gtkcolorplane.c:101-122`) | field |
+| GN-2.53† | `color_picker.crosshair_line.fill @ {focus_visible} / !{focus_visible}` (on the `plane` element: the lines through the point over the bands while the plane shows focus, alone otherwise, both axes one colour, `gtkcolorplane.c:95-122`) | rule |
+| GN-2.53† | `color_picker.crosshair_band.fill @ {focus_visible}; color_picker.crosshair_band (absent = true) @ !{focus_visible}` (the bands under the lines, `gtkcolorplane.c:95-104`) | rule |
+| GN-2.53† | `color_picker.values.crosshair_spans_plane, color_picker.values.crosshair_line_width, color_picker.values.crosshair_band_width` (`true`: each line and band runs across the whole plane through the point; their thickness, the same on both axes, `gtkcolorplane.c:101-122`) | field |
 | GN-2.53† | `button.body.corners @ variant circular context color_picker.body (the eyedropper); input @ context color_picker.body (the hex entry)` | rule |
 | GN-2.53† | `slider @ variant hue context any color_picker / variant alpha context any color_picker (the slider rules, GN-1.94–GN-1.108)` | rule |
 | GN-2.53† | `slider.track.fill @ variant hue context any color_picker (the hue gradient) / variant alpha context any color_picker (a Pattern::Checkerboard layer under a linear gradient, ADD-B01)` | rule |
@@ -1102,7 +1102,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-18† | - | newest (R1.5) |
 | GN-P3-19† | `button.icon.transitions` (PropertyGroup::Icon, TransitionKind::Keyed per GtkSvg state transition; at gtk@4.24.1 none: `sliders.gpa`, the font dialog's toggle, has one state, only `process-working.gpa`, the spinner's, animates, so the fact is `[]`; ADD-A27, R25.12, ledger queue #152) | field |
 | GN-P3-19† | `spinner.icon.glyph, spinner.values.loop (the looping process-working.gpa, R25.12)` | field |
-| GN-P3-20† | `font_chooser.filter_title.text, font_chooser.family_row_label.text, font_chooser.preview.text, font_chooser.values.row_margins, font_chooser.values.grid_gap` | field |
+| GN-P3-20† | `font_chooser.filter_title.text, font_chooser.preview.text, font_chooser.values.grid_gap` | field |
+| GN-P3-20† | `list.row.text, list.row.padding @ context font_chooser.body` (the family rows, a `GtkListView` whose item is a label with its own margins, `gtkfontchooserwidget.ui:162-180`; the face each row is drawn in is the row's content, which the connector supplies) | rule |
 | GN-P3-20† | `input @ context any layout variant @linked context font_chooser.body (the search entry)` | rule |
 | GN-P3-20† | `button @ variant menu context font_chooser.body (Filters)` | rule |
 | GN-P3-20† | `popover @ context font_chooser.body; checkbox @ context any popover context font_chooser.body` | rule |

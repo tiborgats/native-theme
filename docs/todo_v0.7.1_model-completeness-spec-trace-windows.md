@@ -718,7 +718,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-48† | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
 | W3-49† | `drag_image.image.{fill,opacity}` | field |
 | W3-49† | `drag_image.caption.text` | field |
-| W3-49† | `drag_image.glyph.glyph @ {drop_copy} / {drop_move} / {@drop_link}` (the glyph per drop operation) | rule |
+| W3-49† | `drag_image.drop_badge.glyph @ {drop_copy} / {drop_move} / {@drop_link}` (the glyph per drop operation, the one mark iOS's badge is too) | rule |
 | W3-49† | `drag_image.drop_description.text` | field |
 | W3-49† | `role.global.drop_highlight` | role |
 | W3-49† | `list.row_background.fill @ {drop_target}` | rule |
