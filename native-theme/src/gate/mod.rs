@@ -2811,6 +2811,80 @@ impl Session<'_> {
         out
     }
 
+    /// [`Session::holds_each`] of `whens` and [`Session::signature`] at once,
+    /// each part's element matched once for both (S17's probe), where each
+    /// of `whens` is one whose conditions hold in the session's resolution
+    /// ([`Resolved::conditions_hold`]), as the caller found them: those are
+    /// not asked again.
+    #[must_use]
+    pub fn probed(&self, whens: &[(&When, &FactKey)]) -> (Vec<bool>, Vec<u32>) {
+        let theme = &self.resolved.theme;
+        let root = self.root().map(|root| root.part);
+        let index = |at: usize| u32::try_from(at).unwrap_or(u32::MAX);
+        let mut holds: Vec<bool> = whens
+            .iter()
+            .map(|(_, key)| match &key.place {
+                Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => true,
+                Place::WholePart(_) | Place::Part(..) | Place::Values(..) => false,
+            })
+            .collect();
+        let mut signature = Vec::new();
+        let mut values = Vec::new();
+        for queried in &self.parts {
+            signature.push(u32::MAX);
+            signature.push(match &queried.answer {
+                Answer::Drawn => 0,
+                Answer::NotDrawn => 1,
+                Answer::DrawnAs { .. } => 2,
+                Answer::NotAvailable(_) => 3,
+            });
+            let of_part = |key: &FactKey| match &key.place {
+                Place::WholePart(part) | Place::Part(part, _) => *part == queried.part,
+                Place::Values(..) => root == Some(queried.part),
+                Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => false,
+            };
+            let steps = theme.part_steps(queried.part);
+            self.with_element(queried.part, &queried.scope, |element| {
+                let matched = Matched::new(theme, element).ok();
+                for (slot, (when, key)) in holds.iter_mut().zip(whens) {
+                    if of_part(key) {
+                        *slot = matched
+                            .as_ref()
+                            .is_some_and(|matched| matched.matches(&when.0));
+                    }
+                }
+                let Some(matched) = matched else {
+                    return;
+                };
+                let applies = |selector: &Option<Selector>| {
+                    selector
+                        .as_ref()
+                        .is_none_or(|selector| matched.matches(selector))
+                };
+                for (at, step) in steps.iter().enumerate() {
+                    if applies(&step.selector) {
+                        signature.push(index(at));
+                    }
+                }
+                if root == Some(queried.part) {
+                    let steps = theme
+                        .values
+                        .iter()
+                        .filter(|(held, _)| *held == self.widget)
+                        .flat_map(|(_, steps)| steps);
+                    for (at, step) in steps.enumerate() {
+                        if applies(&step.selector) {
+                            values.push(index(at));
+                        }
+                    }
+                }
+            });
+        }
+        signature.push(u32::MAX);
+        signature.extend(values);
+        (holds, signature)
+    }
+
     /// The key's value for the element compared with the fact's `value`
     /// evaluated in its place; for a whole part, the query's answer with
     /// the fact's absence or substitution, and with none (no fact of the

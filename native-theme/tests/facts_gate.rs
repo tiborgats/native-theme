@@ -765,7 +765,8 @@ fn gate_probes_alike_reads_the_steps() {
 /// passes on, never a value): on every fixture's preset, under each
 /// scheme, for each set of the button's flags, with no variant or one the
 /// preset declares, at the default size and each one it declares, the
-/// two sessions' signatures agree.
+/// two sessions' signatures agree, and the shapes' `probed` gives what
+/// the styles' `holds_each` and `signature` give.
 #[test]
 fn gate_shapes_probe_as_styles() {
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
@@ -778,6 +779,28 @@ fn gate_shapes_probe_as_styles() {
         .collect();
     cases.sort();
     let flags = ["hover", "pressed", "disabled", "checked", "focus_visible"];
+    // `when`s with no conditions, so each holds in every resolution, on a
+    // part's field, a whole part and a token (`Session::probed`).
+    let read = |text: &str| -> native_theme::gate::When {
+        native_theme::gate::parse_when(&toml::from_str::<toml::Value>(text).unwrap()).unwrap()
+    };
+    let parsed: Vec<(native_theme::gate::When, native_theme::gate::FactKey)> = [
+        ("states = [\"hover\"]", "button.body.fill"),
+        (
+            "states = [\"pressed\"]\nnot_states = [\"disabled\"]",
+            "button.body.min_width",
+        ),
+        ("variants = [\"flat\"]", "button.body.fill"),
+        ("sizes = [\"small\"]", "button.label"),
+        ("context = [{ widget = \"button\" }]", "button.body.fill"),
+        ("states = [\"focus_visible\"]", "button.icon"),
+        ("states = [\"checked\"]", "token.focus.width"),
+    ]
+    .into_iter()
+    .map(|(when, key)| (read(when), native_theme::gate::parse_key(key).unwrap()))
+    .collect();
+    let whens: Vec<(&native_theme::gate::When, &native_theme::gate::FactKey)> =
+        parsed.iter().map(|(when, key)| (when, key)).collect();
     let root = run::root_inputs();
     let metrics = run::StubMetrics;
     let mut sessions = 0_usize;
@@ -826,6 +849,11 @@ fn gate_shapes_probe_as_styles() {
                         assert_eq!(
                             (styles.unavailable(), styles.signature()),
                             (shapes.unavailable(), shapes.signature()),
+                            "{case:?} {scheme} {combination:?}"
+                        );
+                        assert_eq!(
+                            shapes.probed(&whens),
+                            (styles.holds_each(&whens), styles.signature()),
                             "{case:?} {scheme} {combination:?}"
                         );
                         sessions += 1;

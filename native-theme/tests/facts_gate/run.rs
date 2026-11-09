@@ -2346,6 +2346,38 @@ impl<'a, 'f> Run<'a, 'f> {
         let holding = self.holding.get(widget).unwrap_or(&NO_WHENS);
         applying_in(keys, holding, session, report, describe)
     }
+
+    /// [`Run::applying`] and the session's step signature
+    /// ([`Session::signature`]) at once, each part's element matched once
+    /// ([`Session::probed`]): what a probe of shapes alone asks.
+    ///
+    /// [`Session::signature`]: native_theme::gate::Session::signature
+    /// [`Session::probed`]: native_theme::gate::Session::probed
+    fn probed(
+        &self,
+        widget: &str,
+        session: &native_theme::gate::Session<'_>,
+        report: &mut Report,
+        describe: &dyn Fn() -> String,
+    ) -> (Applying<'_, 'f>, Vec<u32>) {
+        static NO_KEYS: WidgetKeys<'static, 'static> = WidgetKeys {
+            keys: Vec::new(),
+            whens: Vec::new(),
+            starts: Vec::new(),
+            classes: Vec::new(),
+        };
+        static NO_WHENS: Holding<'static> = Holding {
+            whens: Vec::new(),
+            at: Vec::new(),
+        };
+        let keys = self.widgets.get(widget).unwrap_or(&NO_KEYS);
+        let holding = self.holding.get(widget).unwrap_or(&NO_WHENS);
+        let (holds, steps) = session.probed(&holding.whens);
+        (
+            applying_from(keys, holding, &holds, report, describe),
+            steps,
+        )
+    }
 }
 
 /// Every token, colour-role and input key under one condition vector.
@@ -2699,7 +2731,24 @@ fn applying_in<'w, 'f>(
     report: &mut Report,
     describe: &dyn Fn() -> String,
 ) -> Applying<'w, 'f> {
-    let holds = session.holds_each(&holding.whens);
+    applying_from(
+        widget,
+        holding,
+        &session.holds_each(&holding.whens),
+        report,
+        describe,
+    )
+}
+
+/// [`applying_in`], whether each of `holding`'s `when`s holds given in
+/// `holds`.
+fn applying_from<'w, 'f>(
+    widget: &'w WidgetKeys<'w, 'f>,
+    holding: &Holding<'_>,
+    holds: &[bool],
+    report: &mut Report,
+    describe: &dyn Fn() -> String,
+) -> Applying<'w, 'f> {
     let mut held = vec![false; widget.whens.len()];
     for (at, place) in &holding.at {
         if let (Some(slot), Some(holds)) = (held.get_mut(*at), holds.get(*place)) {
@@ -2941,14 +2990,25 @@ fn check_widgets(
             return Probe::Failed(format!("not available ({why}) under {}", describe()));
         }
         let mut probe = Report::default();
-        let applying = timed(Step::Applying, || {
-            run.applying(&combination.widget, &session, &mut probe, &describe)
-        });
+        let signature = match query {
+            Query::Styles => {
+                let applying = timed(Step::Applying, || {
+                    run.applying(&combination.widget, &session, &mut probe, &describe)
+                });
+                timed(Step::Signature, || {
+                    signature(combination, &session, &applying)
+                })
+            }
+            Query::Shapes => {
+                let (applying, steps) = timed(Step::Applying, || {
+                    run.probed(&combination.widget, &session, &mut probe, &describe)
+                });
+                signature_of(combination, steps, &applying)
+            }
+        };
         Probe::Queried {
             failures: probe.failures,
-            signature: timed(Step::Signature, || {
-                signature(combination, &session, &applying)
-            }),
+            signature,
         }
     };
     // Probed in chunks as they are given, each chunk's findings recorded in
@@ -3128,6 +3188,16 @@ fn signature(
     session: &native_theme::gate::Session<'_>,
     applying: &Applying<'_, '_>,
 ) -> Signature {
+    signature_of(combination, session.signature(), applying)
+}
+
+/// [`signature`], the steps that apply with each part's answer given in
+/// `steps`.
+fn signature_of(
+    combination: &Combination,
+    steps: Vec<u32>,
+    applying: &Applying<'_, '_>,
+) -> Signature {
     let facts: Vec<u32> = applying
         .at
         .iter()
@@ -3137,7 +3207,7 @@ fn signature(
         "{} {:?} {:?}",
         combination.widget, combination.context, combination.direction
     );
-    (element, session.signature(), facts)
+    (element, steps, facts)
 }
 
 /// Every widget key of `combination`, queried, compared with the fact that
