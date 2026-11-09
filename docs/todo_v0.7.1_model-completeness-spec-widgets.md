@@ -7002,7 +7002,8 @@ spaces:
     keyed kinds of one `@push`, a `PresentationTransition` being one event whose steps run together, S2.7, so five
     kinds in it would run at once and one kind could state only the default). The base is the transition of a
     navigation given no choice: on `windows-11` Frame's default and on `material-3` its default pattern, which the
-    value phase names from the facts.
+    value phase names from the facts; the variant that names the same transition is declared with the base's
+    values, so an application's explicit choice of it is available.
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** none (no row states a widget flag).
 - **Exclusive groups:** none (no interaction states); precedence: state models (S17).
@@ -8143,8 +8144,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `dial`, in `popup` — the clock face: MAT-N17's clock dial, and the clock of macOS's clockAndCalendar style
     (MAC-N04), one structure for an analogue clock (ADD-A146; rejected: macOS's clock as parts of `calendar`, a
     month grid no other platform's calendar draws a clock in, which gave one kind of thing two structures): `fill`,
-    `stroke` (macOS's rim), `corners`, `min_width`, `min_height`. On `macos-*`, whose picker opens no popup, the
-    `popup` it nests in answers `NotDrawn` and the dial is drawn in the body's scope (Nesting).
+    `stroke` (macOS's rim), `corners`, `min_width`, `min_height`. On `macos-*`, whose picker opens no popup,
+    `popup` answers `NotDrawn` and the dial is drawn in the body's scope (Nesting).
   - `dial_selector`, in `popup` — the selector handle, MAT-N17: `fill`, `corners`, `min_width`, `min_height`.
   - `dial_track`, in `popup` — the bar from the centre to the time: Material's selector track, MAT-N17, and macOS's
     clock hands, MAC-N04: `fill`, `min_width`.
@@ -8157,7 +8158,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     `min_height`, `text`, `transitions` (the `interaction` block's fades, MAT-N17), `interaction` (Material's state layer and press ripple, S2.12).
   - `headline`, in `popup` — MAT-N17: `text`.
   - `time_separator`, in `popup` — Material's separator, MAT-N17; kirigami-addons' ":", K-KA-23†: `text`. The parts
-    in `popup` are its content: they nest in it on every preset, so the popup's entering and leaving carry them, and
+    in `popup` are its content, on every preset, so the popup's entering and leaving carry them, and
     under `variant with_popup cond flavor:kirigami`, where `popup` is drawn as a `dialog`, they are queried in the
     dialog's scope (`context dialog` matches them, Nesting).
 - **Widget values:** `invalid_entry: Value<bool>` (an invalid entry answered with a message box, K2.24†, K1.224†;
