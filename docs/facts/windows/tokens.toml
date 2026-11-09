@@ -2985,11 +2985,13 @@ pending = "U512"
 rows = []
 
 # Text: WinUI scales a font size by UISettings.TextScaleFactor where IsTextScaleFactorEnabled, by its own curve,
-# TextFormatting::GetScaledFontSize (`TextScaling::WinUi`, S9.4, ADD-A141). Checked against the WinUI host's
+# TextFormatting::GetScaledFontSize (`TextScaling::WinUi`, S9.4, ADD-A141). Measured on the WinUI host's
 # text-scale run (run 42308526155, text-scale/frames.toml, at UISettings.TextScaleFactor 1.5, against run 1's
 # frames.toml at 1): each of the nine TextBlocks' (10 to 68 px) height and width grow by the curve's factor, 1.587 at
-# 10 px to 1.048 at 68 px, the size each implies within 3e-6 px of the curve's and of the vector table
-# native-theme/tests/vectors/win_ui.tsv at factor 1.5 (`linear` would put the 68 px height 40.9 px off). The rendering
+# 10 px to 1.048 at 68 px; read_host.py's [text_scale] takes the size each drew from its height and fits every
+# TextScaling member to it: `win_ui` (the vector table native-theme/tests/vectors/win_ui.tsv at factor 1.5) within
+# 1.55e-06 px, where `linear` misses by 30.7 px (the 68 px height 40.9 px off), `dynamic_type` by 5.87 px and
+# `android_non_linear` by 3.99 px; both captures' text lies inside the TextBlocks' bounds (U701, ADD-A145). The rendering
 # settings (W3-22): WinUI draws its text with greyscale antialiasing (no coloured pixel, read_host.py's
 # [text_rendering]); DirectWrite's default and monitor parameters on the runner image are ClearType's: gamma 1.8,
 # enhanced contrast 0.5, pixel geometry RGB. Its grid-fit and rendering modes read DEFAULT, which names no hinting
@@ -3008,6 +3010,11 @@ rows = ["W3-36"]
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/common/TextFormatting.cpp:181-204"
 quote = "return (XFLOAT)(inputFontSize + std::max(-exp(1) * log(inputFontSize) + 18, 0.0) * (fontScale - 1));"
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#text_scale.curve"
+tolerance = 0
 
 [[fact]]
 key = "token.text.rendering.antialiasing"

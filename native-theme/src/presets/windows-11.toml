@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 4cf4067443a34a4049af02fbb3d5d75750c200d26e238bcec405ad0d9ce2118f
+# generated lines: sha256 2b782f2c7d5aebfb33a10e65c89f0535750e332d12d7ca8d7972e9f1474de00e
 
 [preset]
 id = "windows-11"
@@ -364,73 +364,73 @@ data = { body = ["widget.label.line_height"] }
 "tokens.elevation" = "U511"
 # docs/facts/windows/tokens.toml:2982
 "tokens.size_classes" = "U512"
-# docs/facts/windows/tokens.toml:3022
+# docs/facts/windows/tokens.toml:3029
 "tokens.text.rendering.hinting" = "U508"
-# docs/facts/windows/tokens.toml:3027
+# docs/facts/windows/tokens.toml:3034
 "tokens.text.rendering.subpixel_order" = "U508"
-# docs/facts/windows/tokens.toml:3032
+# docs/facts/windows/tokens.toml:3039
 "tokens.text.rendering.engine" = "U508"
-# docs/facts/windows/tokens.toml:3037
+# docs/facts/windows/tokens.toml:3044
 "tokens.text.rendering.lcd_filter" = "U508"
-# docs/facts/windows/tokens.toml:3064
+# docs/facts/windows/tokens.toml:3071
 "tokens.text.roles.monospace" = "U509"
-# docs/facts/windows/tokens.toml:3073
+# docs/facts/windows/tokens.toml:3080
 "tokens.text.fallbacks.families" = "U520"
-# docs/facts/windows/tokens.toml:3078
+# docs/facts/windows/tokens.toml:3085
 "tokens.text.fallbacks.emoji_family" = "U520"
-# docs/facts/windows/tokens.toml:3124
+# docs/facts/windows/tokens.toml:3131
 "tokens.text.keyed.caption.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3129
+# docs/facts/windows/tokens.toml:3136
 "tokens.text.keyed.caption.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3134
+# docs/facts/windows/tokens.toml:3141
 "tokens.text.keyed.caption.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3161
+# docs/facts/windows/tokens.toml:3168
 "tokens.text.keyed.body.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3166
+# docs/facts/windows/tokens.toml:3173
 "tokens.text.keyed.body.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3171
+# docs/facts/windows/tokens.toml:3178
 "tokens.text.keyed.body.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3198
+# docs/facts/windows/tokens.toml:3205
 "tokens.text.keyed.body_strong.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3203
+# docs/facts/windows/tokens.toml:3210
 "tokens.text.keyed.body_strong.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3208
+# docs/facts/windows/tokens.toml:3215
 "tokens.text.keyed.body_strong.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3235
+# docs/facts/windows/tokens.toml:3242
 "tokens.text.keyed.body_large.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3240
+# docs/facts/windows/tokens.toml:3247
 "tokens.text.keyed.body_large.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3245
+# docs/facts/windows/tokens.toml:3252
 "tokens.text.keyed.body_large.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3272
+# docs/facts/windows/tokens.toml:3279
 "tokens.text.keyed.body_large_strong.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3277
+# docs/facts/windows/tokens.toml:3284
 "tokens.text.keyed.body_large_strong.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3282
+# docs/facts/windows/tokens.toml:3289
 "tokens.text.keyed.body_large_strong.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3309
+# docs/facts/windows/tokens.toml:3316
 "tokens.text.keyed.subtitle.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3314
+# docs/facts/windows/tokens.toml:3321
 "tokens.text.keyed.subtitle.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3319
+# docs/facts/windows/tokens.toml:3326
 "tokens.text.keyed.subtitle.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3346
+# docs/facts/windows/tokens.toml:3353
 "tokens.text.keyed.title.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3351
+# docs/facts/windows/tokens.toml:3358
 "tokens.text.keyed.title.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3356
+# docs/facts/windows/tokens.toml:3363
 "tokens.text.keyed.title.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3383
+# docs/facts/windows/tokens.toml:3390
 "tokens.text.keyed.title_large.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3388
+# docs/facts/windows/tokens.toml:3395
 "tokens.text.keyed.title_large.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3393
+# docs/facts/windows/tokens.toml:3400
 "tokens.text.keyed.title_large.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3420
+# docs/facts/windows/tokens.toml:3427
 "tokens.text.keyed.display.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3425
+# docs/facts/windows/tokens.toml:3432
 "tokens.text.keyed.display.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3430
+# docs/facts/windows/tokens.toml:3437
 "tokens.text.keyed.display.scaling_role" = "U518"
 
 [inputs.accent]
@@ -1884,51 +1884,51 @@ roles.numeric = "= token.text.roles.body"
 font_dpi = 96
 # docs/facts/windows/tokens.toml:2555
 fallbacks.per_family."Segoe Fluent Icons" = ["Segoe MDL2 Assets"]
-# docs/facts/windows/tokens.toml:3002
+# docs/facts/windows/tokens.toml:3004
 scaling = "win_ui"
-# docs/facts/windows/tokens.toml:3012
+# docs/facts/windows/tokens.toml:3019
 rendering.antialiasing = "grayscale"
-# docs/facts/windows/tokens.toml:3042
+# docs/facts/windows/tokens.toml:3049
 rendering.gamma = 1.8
-# docs/facts/windows/tokens.toml:3052
+# docs/facts/windows/tokens.toml:3059
 rendering.contrast = 1.0
-# docs/facts/windows/tokens.toml:3088
+# docs/facts/windows/tokens.toml:3095
 fallbacks.per_language = { en-US = ["Segoe UI"], el-GR = ["Segoe UI"], ru-RU = ["Segoe UI"], ar-SA = ["Segoe UI"], fa-IR = ["Segoe UI"], he-IL = ["Segoe UI"], hi-IN = ["Nirmala UI"], bn-IN = ["Nirmala UI"], ta-IN = ["Nirmala UI"], th-TH = ["Leelawadee UI"], lo-LA = ["Leelawadee UI"], km-KH = ["Leelawadee UI"], my-MM = ["Myanmar Text"], si-LK = ["Nirmala UI"], hy-AM = ["Segoe UI"], ka-GE = ["Segoe UI"], am-ET = ["Ebrima"], ja-JP = ["Yu Gothic UI"], zh-CN = ["Microsoft YaHei UI"], zh-TW = ["Microsoft JhengHei UI"], zh-HK = ["Microsoft JhengHei UI"], ko-KR = ["Malgun Gothic"] }
-# docs/facts/windows/tokens.toml:3102
+# docs/facts/windows/tokens.toml:3109
 keyed.caption.case = "mixed"
-# docs/facts/windows/tokens.toml:3113
+# docs/facts/windows/tokens.toml:3120
 keyed.caption.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3139
+# docs/facts/windows/tokens.toml:3146
 keyed.body.case = "mixed"
-# docs/facts/windows/tokens.toml:3150
+# docs/facts/windows/tokens.toml:3157
 keyed.body.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3176
+# docs/facts/windows/tokens.toml:3183
 keyed.body_strong.case = "mixed"
-# docs/facts/windows/tokens.toml:3187
+# docs/facts/windows/tokens.toml:3194
 keyed.body_strong.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3213
+# docs/facts/windows/tokens.toml:3220
 keyed.body_large.case = "mixed"
-# docs/facts/windows/tokens.toml:3224
+# docs/facts/windows/tokens.toml:3231
 keyed.body_large.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3250
+# docs/facts/windows/tokens.toml:3257
 keyed.body_large_strong.case = "mixed"
-# docs/facts/windows/tokens.toml:3261
+# docs/facts/windows/tokens.toml:3268
 keyed.body_large_strong.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3287
+# docs/facts/windows/tokens.toml:3294
 keyed.subtitle.case = "mixed"
-# docs/facts/windows/tokens.toml:3298
+# docs/facts/windows/tokens.toml:3305
 keyed.subtitle.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3324
+# docs/facts/windows/tokens.toml:3331
 keyed.title.case = "mixed"
-# docs/facts/windows/tokens.toml:3335
+# docs/facts/windows/tokens.toml:3342
 keyed.title.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3361
+# docs/facts/windows/tokens.toml:3368
 keyed.title_large.case = "mixed"
-# docs/facts/windows/tokens.toml:3372
+# docs/facts/windows/tokens.toml:3379
 keyed.title_large.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3398
+# docs/facts/windows/tokens.toml:3405
 keyed.display.case = "mixed"
-# docs/facts/windows/tokens.toml:3409
+# docs/facts/windows/tokens.toml:3416
 keyed.display.word_spacing_px = 0
 
 [tokens.icons]
@@ -1956,9 +1956,9 @@ secondary = "absent"
 shown_in_read_only = false
 
 [tokens]
-# docs/facts/windows/tokens.toml:3440
+# docs/facts/windows/tokens.toml:3447
 kde = "absent"
-# docs/facts/windows/tokens.toml:3457
+# docs/facts/windows/tokens.toml:3464
 material = "absent"
 
 [widgets.button.body]
