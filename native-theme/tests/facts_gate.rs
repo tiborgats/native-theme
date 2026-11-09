@@ -1761,6 +1761,32 @@ fn gate_fixture_not_drawn_unavailable() {
     );
 }
 
+/// A fact naming a size and no style, where only the styles take the size
+/// (`sizes_by_variant`), is completed once with each style whose sizes hold
+/// it (S17, ADD-A141): checked on the flat style, the primary style's
+/// completion, which `not_drawn` names, no failure, and none failed as not
+/// available. The wrong twin's value fails on the flat style alone.
+#[test]
+fn gate_fixture_own_size_completed_by_styles() -> Result<(), String> {
+    let report = fixture_report("own_size_styles");
+    if report.queried == 0 || !report.failures.is_empty() {
+        return Err(format!("{report:?}"));
+    }
+    let wrong = fixture_report_with("own_size_styles", "wrong.toml");
+    let failures = failing(&wrong, "button.body.min_width");
+    if failures.is_empty()
+        || wrong.failures.len() != failures.len()
+        || !failures.iter().all(|failure| {
+            failure.contains("size: Some(\"small\")")
+                && failure.contains("\"flat\"")
+                && !failure.contains("\"primary\"")
+        })
+    {
+        return Err(format!("{:?}", wrong.failures));
+    }
+    Ok(())
+}
+
 /// A `not_drawn` entry with a key the count does not evaluate, and an
 /// entry with more flags than the gate enumerates, are refused, never
 /// evaluated without it (S17).
