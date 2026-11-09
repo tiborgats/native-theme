@@ -6857,17 +6857,22 @@ For each KDE scheme the facts hold (the scheme files the preset's inputs come fr
 `.colors` files the facts pin as sources) and each accent the facts were measured with, the gate resolves `kde-breeze`
 with that scheme's inputs in force (the preset's own for its own files; for every other file the palette
 `Palette::from_port` converts from it, applied; each under the scheme its facts name, below) and the accent set through `set_accent`, which gives the accent-derivation layer its roles (S9.2; a port's roles left
-out under it, S8), and compares every accent-dependent role, every inactive input
-role and the four `wm_*` keyed roles with the facts recorded from Plasma with that scheme and accent applied (kind
-`measured`: `applyScheme()`'s output in kdeglobals, read back as the KDE reader reads kdeglobals). Each such fact names, beside
+out under it, S8), and compares every key the pair's facts state with them, the facts recorded from Plasma with
+that scheme and accent applied (kind `measured`: `applyScheme()`'s output in kdeglobals, read back as the KDE reader
+reads kdeglobals), which hold every accent-dependent role, every inactive input role and the four `wm_*` keyed roles
+(at the pins every colour key kdeglobals holds, 172 per pair, so the roles no accent changes are compared too;
+ADD-A145, task T7's reading of the roles compared). Each such fact names, beside
 its `when`, the scheme file and the accent it was measured with (fact-level `scheme_file = "<entry> <path>"` and
 `accent = "<colour>"`, both or neither, in the `kde` directory only). The
 schemes include at least one that tints, one with the accent-coloured title bar option and a `Header` group, one with
 that option and no `Header` group, and one that lacks a colour group the others have; the value phase chooses the
-files and the accents and records them as sources. Beside the measured accents, the run sets Breeze's own `#00000000` (`plasma-workspace@6.8.2
-kcms/colors/colorssettings.kcfg:12-15`) on each of the preset's own scheme files and compares the same roles with the
-facts that apply without `scheme_file` and `accent`, the preset's no-accent facts, in the same scope, and on the
-tinting file (SUSE-Cafe's) with the facts measured with no `AccentColor` (`accent = "#00000000"`): so `kde_accent`'s
+files and the accents and records them as sources. Beside the measured accents, the run sets the preset's own
+no-accent accent, the literal of its `input.accent` fact that applies under the file's scheme (Breeze's own
+`#00000000`, `plasma-workspace@6.8.2 kcms/colors/colorssettings.kcfg:12-15`, which that fact states; the run fails
+where none applies or it states no colour literal), on each of the preset's own scheme files and compares the keys
+the pairs state, all pairs' together, with the facts that apply without `scheme_file` and `accent`, the preset's
+no-accent facts, in the same scope, and on the tinting file (SUSE-Cafe's) with the facts measured with no
+`AccentColor` (`accent = "#00000000"`, that literal): so `kde_accent`'s
 and `kde_accent_wm`'s no-accent branch, which a stated `#00000000` reaches (S9.2, S9.3), is compared, its tinted
 `[Inactive]` groups included (ADD-A132).
 
@@ -6930,7 +6935,11 @@ the Material facts name (fact-level `accent = "<colour>"`, alone), under each sc
 facts cover, the gate resolves `material-3` with that accent set through `set_accent` and compares every
 accent-dependent role (S9.1) with the facts that apply for that accent: the dynamic scheme's roles for that seed as material-color-utilities gives them at its pin (generated, or
 published by its own tests), so the layer's statements and the variant, version and contrast level `m3_role` reads
-are compared, while `m3_role`'s own rows are its vector table's (S2.2).
+are compared, while `m3_role`'s own rows are its vector table's (S2.2). Until this run is built (the plan's M2.4,
+ledger queue #185), a Material fact naming `accent` fails the gate, as `check_facts.py` refuses it, since no run
+compares it (R4: a fact compared nowhere would pass a wrong value); none exists, the Material lane recording them
+with the run (ADD-A145, task T7's reading). Rejected: such a fact listed and skipped as a pending one is (it states
+a value, which a skip would leave unchecked with no register row naming why).
 
 ## S18. Documents and scripts
 
