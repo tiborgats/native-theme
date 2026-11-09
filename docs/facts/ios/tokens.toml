@@ -3,8 +3,9 @@
 # fonts (`preferredFont(forTextStyle:compatibleWith:)`) at the default content size category (L), regular and bold
 # legibility weight alike in family and size (the weight differs; not stated: the lane's report); each text-role slot
 # references its keyed style, the style UIKit names for it (UIFontDescriptor.h's `UIFontTextStyle` constants);
-# each style's weight (its weight trait through S17's `ns_font_weight`), its line height (ascender less descender
-# plus leading, analysis.toml `[text_styles]`) and its `scaling_role` (its own slot: each is a Dynamic Type text style);
+# each style's weight (the drawn face's `wght`, ADD-A136: run 42275185017's fonts_read.toml `[styles]`), its line
+# height (ascender less descender plus leading, analysis.toml `[text_styles]`) and its `scaling_role` (its own slot:
+# each is a Dynamic Type text style);
 # `token.text.scaling` Dynamic Type (UIFont.h); the motion durations the run reads, named by S4.1's rule;
 # `UILongPressGestureRecognizer`'s default minimum duration; the caret's width (`caretRect(for:)` of a UITextView and a
 # UITextField in every font the host tried). Each fact holds for both presets: the two runtimes read the same.
@@ -562,21 +563,20 @@ evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/
 tolerance = 0
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.large_title.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.large_title.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.large_title.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.large_title.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.large_title.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -642,21 +642,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.title_1.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title1.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.title1.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title1.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.title1.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -722,21 +721,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.title_2.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title2.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.title2.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title2.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.title2.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -802,21 +800,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.title_3.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title3.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.title3.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title3.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.title3.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -882,21 +879,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.headline.font.weight"
-value = 600
+value = 590
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.headline.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.headline.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.headline.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.headline.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -962,21 +958,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.subheadline.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.subheadline.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.subheadline.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.subheadline.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.subheadline.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -1042,21 +1037,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.body.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.body.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.body.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.body.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.body.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -1122,21 +1116,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.callout.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.callout.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.callout.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.callout.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.callout.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -1202,21 +1195,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.footnote.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.footnote.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.footnote.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.footnote.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.footnote.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -1282,21 +1274,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.caption_1.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.caption1.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.caption1.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.caption1.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.caption1.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
@@ -1362,21 +1353,20 @@ quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
 absent = []
 
 [[fact]]
+# the drawn face's wght (S2.8, ADD-A136): the style's font's variation `wght`, else the axis's default
 key = "token.text.keyed.caption_2.font.weight"
 value = 400
 rows = ["TS-1"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.caption2.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-15/fonts_read.toml#styles.caption2.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.caption2.regular.weight"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275185017/ios-host-macos-26/fonts_read.toml#styles.caption2.regular.weight"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
