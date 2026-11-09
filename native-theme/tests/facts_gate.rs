@@ -40,7 +40,9 @@
 //! 4 GB on 16 threads, 6 GB on 32 (`run::thread_count`).
 //! `NT_FACTS_GATE_TIMING=1` prints, after each preset's and flavour's
 //! widget checks, the time their steps took over every thread
-//! (`timing::Step`); the report holds none of it.
+//! (`timing::Step`), and after each condition vector's passes what their
+//! probes, memo and report held, with the resident memory
+//! (`timing::sizes`); the report holds none of it.
 //!
 //! The citations' evidence is read under the evidence root (S17 *The
 //! evidence root*, `facts::evidence_root`): the evidence repository checked

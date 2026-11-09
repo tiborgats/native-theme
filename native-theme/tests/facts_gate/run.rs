@@ -3341,7 +3341,7 @@ impl Probed {
         let combinations: usize = self.queried.iter().map(combination_bytes).sum();
         let (mut element, mut steps, mut facts, mut steps_len) = (0, 0, 0, 0);
         let mut distinct: HashSet<&Vec<u32>> = HashSet::new();
-        for (key, _) in &self.signatures {
+        for key in self.signatures.keys() {
             element += key.0.capacity();
             steps += key.1.capacity() * 4;
             facts += key.2.capacity() * 4;
