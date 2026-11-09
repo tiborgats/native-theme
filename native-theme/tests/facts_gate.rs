@@ -2578,6 +2578,20 @@ fn gate_fixture_listed_part_absent() -> Result<(), String> {
     expected(report.failures.is_empty() && ids == ["U61"], &report)
 }
 
+/// A pending fact two later pending facts shadow between them (S17 *Where
+/// a listed path is found*, ADD-A144): each holds in some of its
+/// combinations, so the hover fact, U70, applies nowhere and its id is on
+/// no path; the path is listed under the three others.
+#[test]
+fn gate_fixture_listed_shadowed_between() -> Result<(), String> {
+    let report = fixture_report("listed_shadowed_between");
+    let ids = listed_ids(&report, "button.body.opacity")?;
+    expected(
+        report.failures.is_empty() && ids == ["U71", "U72", "U73"],
+        &report,
+    )
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the
