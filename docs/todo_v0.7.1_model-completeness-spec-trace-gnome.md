@@ -524,8 +524,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.221 | `dialog.values.presentations @ cond reduced_motion` | rule |
 | GN-1.222 | `dialog.body.{padding,stroke,corners} @ variant bottom_sheet` | rule |
 | GN-1.222 | `dialog.values.window_margin @ variant bottom_sheet (the side margins)` | rule |
-| GN-1.223 | `dialog.message.{corners,padding} @ variant alert {overflowing} (ADD-A13)` | rule |
-| GN-1.223 | `scrollbar.body.padding @ context dialog.message variant alert` | rule |
+| GN-1.223 | `dialog.content.corners, dialog.message.padding @ variant alert {overflowing} (ADD-A13, ADD-A146)` | rule |
+| GN-1.223 | `scrollbar.body.padding @ context dialog.content variant alert` | rule |
 | GN-1.224 | `window.title_bar.{min_height,fill,shadow} @ variant dialog (GtkMessageDialog's window)` | rule |
 | GN-1.224 | `dialog.action_area.padding, dialog.values.action_layout.gap @ variant @message_dialog` (the gap between the responses in the row, the action area's `border-spacing`, `_message-dialog.scss:34-38`; ADD-A146) | rule |
 | GN-1.224 | `button.body.{min_height,padding,corners} @ context dialog.action_area variant @message_dialog` | rule |
@@ -651,7 +651,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.03 | `form.row_indicator.opacity @ variant entry cond contrast_high` | rule |
 | GN-2.03 | `input.text.text.fill @ {disabled} context form.row variant entry (the text at the disabled opacity)` | rule |
 | GN-2.03 | `form.row.{focus,transitions} @ {focus_within} variant entry / {focus_within} variant spin (offset inset, with the row transition)` | rule |
-| GN-2.03 | `form.row.bindings, form.row_title.text.fill, form.row_subtitle.opacity @ variants {entry,error} / variants {entry,warning} / variants {entry,success}` (the accent rebound to the status colour) | rule |
+| GN-2.03 | `form.row.bindings, form.row_title.text.fill, form.row_subtitle.opacity @ {invalid} variant entry / variants {entry,warning} / variants {entry,success}` (the accent rebound to the status colour) | rule |
 | GN-2.03 | `input.text.text @ context form.row variants {entry,@monospace}` | rule |
 | GN-2.04 | `form.row_title.text @ variant entry !{empty} / variant entry {focus_within}` | rule |
 | GN-2.04 | `form.row_title.transitions (Geometry: the title shrinking and both labels moved by `title_offset`, lerped by the progress, `libadwaita@1.10.0 src/adw-entry-row.c:383-387`, `:395`, its scale and cross-fade the row below; engine AdwAnimation, replays: AdwEntryRow plays it again on each change of its text and of its text's state, its end unchanged included, `libadwaita@1.10.0 src/adw-entry-row.c:141-163`, `:166-189`; S2.7, ADD-A126)` | field |

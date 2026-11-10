@@ -261,17 +261,20 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
   type with a plain member (`Transform`'s `origin`, `Corners`' `curve`) is declared `Value<T>` wherever it may be
   absent. **may_be_absent** lists a compound once, by its own name, never a member alone: its parentheses give the
   presets, after `every member:` where the members share them, else per member (`` `<member>`: <presets> ``, the
-  members separated by `;`) (ADD-A146; rejected: a dotted member as a name of its own in the list, a second kind of
-  name where the mark is the compound's, S6.3).
+  members separated by `;`), and a bare preset list is every member's (ADD-A146; rejected: a dotted member as a name
+  of its own in the list, a second kind of name where the mark is the compound's, S6.3).
 - **Variants:** the item is `none`, or one sub-bullet per element the variants are on and per kind, the widget's own
   element first (ADD-A146): `on the widget, typed: …`, then `on the widget, keyed, <preset>: …` for each preset that
   declares keyed ones, then the same for each *(element)* part that has variants of its own (`` on `<part>`, typed:
   … ``, `` on `<part>`, keyed, <preset>: … ``; an identity is a variant of the part it names). A note in parentheses
-  may stand before the colon. The sub-bullet's first sentence lists the variants, each with its note in parentheses;
-  what follows it is prose and lists none. A content variant (below) is listed with its element, a typed one in the
-  typed sub-bullet and a keyed one in its preset's, and is marked "the content variant". A sub-bullet that does
-  not start with the word `on` is a note (the flavour that declares a variant, the variants of a nested widget) and
-  lists nothing. The generator reads the typed sub-bullets. Rejected: the forms the entries had (an inline list, `typed …;
+  may stand before the colon. An element's typed identities (Nested controls) may stand in a second typed
+  sub-bullet of their own, after its other typed variants, as `button`'s do. The sub-bullet's first sentence lists
+  the variants, each with its note in parentheses; what follows it is prose and lists none. A content variant
+  (below) is listed with its element, a typed one in the typed sub-bullet and a keyed one in its preset's, and is
+  marked "the content variant". A note (the flavour that declares a variant, the variants of a nested widget) is a
+  sub-bullet whose head, before its first colon, holds neither `typed` nor `keyed`, and lists nothing; a sub-bullet
+  whose head holds one of them is in the form `on the widget, typed[ (note)]: …` or `` on `<part>`, typed[ (note)]:
+  … ``, with `keyed, <preset>` in the place of `typed` alike, or the checker refuses it (ADD-A146). The generator reads the typed sub-bullets. Rejected: the forms the entries had (an inline list, `typed …;
   keyed …`, `on the <widget>, typed: …`, `typed on <part> …`), four spellings no reader could take alike.
   A variant is typed when two or more platforms share its meaning anywhere in the catalogue (R15; the
   typed variants are one `Variant` enum, and a widget declares the ones it has), keyed (`@name`) otherwise. A typed
@@ -313,8 +316,10 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
 - **Flags:** the element's widget-specific flags: shared (`SharedFlag`, below), keyed (`@name`,
   `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2). A flag is set on the
   element whose state it is and on no other element of the widget (ADD-A146): `open` on the element that opens (an
-  expander's own element, a tree row, a combo box), `selected` and `checked` on the item, `hover`, `pressed` and the
-  focus flags on the element the pointer or the focus is on (S7.2). `disabled` alone is also held from outside:
+  expander's own element, a tree row, a combo box), `selected` and `checked` on the item, `hover` on the element under the
+  pointer and on every element of the widget it nests in (a hovered caption button's group, a hovered arrow's
+  header), as the toolkits hold it (`gtk@4.24.1 gtk/gtkmain.c:1158-1191`), `pressed` and the focus flags on the one
+  element that takes the press or holds the focus (S7.2). `disabled` alone is also held from outside:
   every element of a disabled widget, and every element nested in a disabled *(element)* part, is disabled, as the
   toolkits propagate it. A nested *(element)* part, and the plain parts that belong to it, read any other flag of
   their host by `context` (`expander.arrow.glyph @ context expander.body {open}`, `list.disclosure.transform @
@@ -1091,7 +1096,7 @@ spaces:
     `formcard/FormComboBoxDelegate.qml:309`).
   - on the widget, keyed, `macos-*`: `@sheet`, `@picture_taker` (ImageKit's picture taker panel, MAC-P4-12†).
   - on the widget, keyed, `ios-*`: `@action_sheet` (C-11).
-  - The responses are `button` elements in `context dialog.action_area`, with `button`'s typed `primary` (GNOME's
+  - The responses: `button` elements in `context dialog.action_area`, with `button`'s typed `primary` (GNOME's
     suggested response) and `destructive` and keyed `ios-*` `@cancel`; the default response is the state `default`.
 - **Sizes and densities:** none; AdwDialog's breakpoint classes are the variants `narrow`, `@short`, set by
   `breakpoints` (R16); the
@@ -1796,23 +1801,22 @@ spaces:
     (kirigami-addons' FloatingButton, K-KA-26†), `@key_sequence` (KDE's key-sequence button in a shortcuts editor,
     K-RL02†, K-KA-43†), `@float` (a dock widget's float button, K2.10), `@ka_download` (kirigami-addons' download
     button over a media item not yet downloaded, a Button with a `large` icon in `context media_controls`, K-KA-35†).
-  - on the widget, keyed, `macos-*`: the bezel styles `@flexible_push`, `@small_square`, `@accessory_bar`, `@accessory_bar_action`,
-    `@badge`, `@shadowless_square`, one variant per `NSButton.BezelStyle` raw value: the SDK's old names `recessed`,
-    `roundRect`, `inline` and `texturedRounded` are `accessoryBar`, `accessoryBarAction`, `badge` and `toolbar` renamed,
-    the same raw values (the macOS probe; Apple's `NSButton.BezelStyle` documentation names each old case renamed to the
-    new one, deprecated in macOS 27.0, read 2026-10-30), so they are no variants of their own (push is the base: the
-    style an application asks for by no variant; `automatic`, the initialisers' default since macOS 14, raw value 0,
-    "determined based on the button's contents and position within the window" with no rule stated,
-    `NSButtonCell.h:29-31` in the Xcode 26.6 SDK, is no variant of its own: what it draws for a button's contents and placement is a
-    look the probe measures per placement before a fact rests on it (the probe's open item), stated then as the
-    variant it matches or, drawing none of them, as a keyed variant; ADD-A123;
-    the route button's `@bordered`, `isRoutePickerButtonBordered`, MAC-P3-9†;
-    `@menu_on_hold`, with `menu` an NSComboButton whose `action` is set, its menu opening on a click and hold,
-    `menu` alone one whose `action` is nil, its menu opening on a click (`NSComboButton.h:18`, MAC-N29†; named as
-    iOS's `@menu_on_hold`, the same trigger; ledger queue #166 (1), ADD-A135);
-    borderless is `flat`, circular `circular`, glass `glass`, help `help`, toolbar `tool`; the disclosure bezels are
-    `expander`'s, MAC-B01, MAC-EX01); the 26 border shape `@rounded_rectangle` (capsule is `pill`, circle
-    `circular`, automatic the base). The fills that follow the accent other than the accent itself are measured
+  - on the widget, keyed, `macos-*`: `@flexible_push`, `@small_square`, `@accessory_bar`, `@accessory_bar_action`,
+    `@badge`, `@shadowless_square` (the bezel styles, one variant per `NSButton.BezelStyle` raw value: the SDK's old
+    names `recessed`, `roundRect`, `inline` and `texturedRounded` are `accessoryBar`, `accessoryBarAction`, `badge`
+    and `toolbar` renamed, the same raw values (the macOS probe; Apple's `NSButton.BezelStyle` documentation names
+    each old case renamed to the new one, deprecated in macOS 27.0, read 2026-10-30), so they are no variants of their
+    own; push is the base, the style an application asks for by no variant; `automatic`, the initialisers' default
+    since macOS 14, raw value 0, "determined based on the button's contents and position within the window" with no
+    rule stated, `NSButtonCell.h:29-31` in the Xcode 26.6 SDK, is no variant of its own: what it draws for a button's
+    contents and placement is a look the probe measures per placement before a fact rests on it (the probe's open
+    item), stated then as the variant it matches or, drawing none of them, as a keyed variant; ADD-A123; borderless
+    is `flat`, circular `circular`, glass `glass`, help `help`, toolbar `tool`; the disclosure bezels are
+    `expander`'s, MAC-B01, MAC-EX01), `@bordered` (the route button's, `isRoutePickerButtonBordered`, MAC-P3-9†),
+    `@menu_on_hold` (with `menu` an NSComboButton whose `action` is set, its menu opening on a click and hold, `menu`
+    alone one whose `action` is nil, its menu opening on a click, `NSComboButton.h:18`, MAC-N29†; named as iOS's
+    `@menu_on_hold`, the same trigger; ledger queue #166 (1), ADD-A135), `@rounded_rectangle` (the 26 border shape;
+    capsule is `pill`, circle `circular`, automatic the base). The fills that follow the accent other than the accent itself are measured
     derivations over `input.accent` (S2.2, S17, `inputs = ["input.accent"]`), no function of their own, of two forms:
     the opaque ones (a default or `primary` button's pressed fill, a checked toggle's, at rest and pressed) `mix`
     toward black under `scheme:light` and white under `scheme:dark`, a pressed default button
@@ -1873,12 +1877,12 @@ spaces:
     model's `variant_sets` or `variant_products` give the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
     corner style or with `toggle`, S17, never every combination of the declared variants), the corner
-    styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`),
-    one `exclusive_variants` group with `pill`, `[@corner_fixed, @corner_small, @corner_medium, @corner_large,
-    @corner_dynamic, pill]` (`@corner_dynamic` on `ios-26` only, below), as a configuration holds one `cornerStyle` (B-4, `UIButtonConfigurationCornerStyle`: fixed,
-    dynamic, small, medium, large and capsule in both pinned SDKs, `UIButtonConfiguration.h:39-52` in Xcode 16.4,
-    `:40-53` in 26.6, the iOS lane's citations; ADD-A122, confirmed in ADD-A125),
-    `@corner_dynamic` declared on `ios-26` only (the non-glass styles' default, which they draw as the style alone,
+    styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large` (capsule is `pill`; with
+    `@corner_dynamic`, one `exclusive_variants` group with `pill`, `[@corner_fixed, @corner_small, @corner_medium,
+    @corner_large, @corner_dynamic, pill]`, `@corner_dynamic` on `ios-26` only, below, as a configuration holds one
+    `cornerStyle` (B-4, `UIButtonConfigurationCornerStyle`: fixed, dynamic, small, medium, large and capsule in both
+    pinned SDKs, `UIButtonConfiguration.h:39-52` in Xcode 16.4, `:40-53` in 26.6, the iOS lane's citations; ADD-A122,
+    confirmed in ADD-A125)), `@corner_dynamic` (declared on `ios-26` only: the non-glass styles' default, which they draw as the style alone,
     so on `ios-13`, which has no glass style, it is the base under another name; on `ios-26` the glass styles, whose
     default is capsule, `pill` there, draw it otherwise; the iOS host's `cells.<scheme>.<style>__corner_style_dynamic`,
     run 41020880059; so the connector sets `@corner_dynamic` only with `glass` or `clear` and `pill` only with the
@@ -1890,10 +1894,10 @@ spaces:
     draw as normal on a standalone button and are variants for the hosts that draw them otherwise (above), their
     facts there; iOS 26 adds no further bar-item role: `UIBarButtonItem.h` in the Xcode 26.6 SDK makes the
     prominent style (`:31`, `primary` in `context toolbar.bar`, above), the fixed space item (`:113`), the shared
-    background (`:157`, `:166`, the toolbar's TB-5) and `identifier` (`:180`) iOS 26's, none a role; ADD-A125); the button types `@info`, `@contact_add`; `@share` the system Action bar item (`UIBarButtonSystemItemAction`,
-    `forms.<scheme>.bar_system_action`), in `context toolbar.bar` as `add` is (the share button, its glyph UIKit's,
-    X-IC-5; the close type is the typed `close`; the add bar item the typed `add`); done is the typed `done`;
-    `@indicator_popup` (the pop-up indicator, `UIButtonConfigurationIndicatorPopup`, on a pull-down button; automatic is the base, and `none`, which draws as automatic in every
+    background (`:157`, `:166`, the toolbar's TB-5) and `identifier` (`:180`) iOS 26's, none a role; ADD-A125); the button types `@info`, `@contact_add`; `@share` (the system Action bar item,
+    `UIBarButtonSystemItemAction`, `forms.<scheme>.bar_system_action`, in `context toolbar.bar` as `add` is: the share
+    button, its glyph UIKit's, X-IC-5; the close type is the typed `close`; the add bar item the typed `add`; done is
+    the typed `done`); `@indicator_popup` (the pop-up indicator, `UIButtonConfigurationIndicatorPopup`, on a pull-down button; automatic is the base, and `none`, which draws as automatic in every
     style, state and scheme the host captured, is the base under another name, the connector mapping it; ADD-A125);
     `@menu_on_hold`; the
     pointer effects `@pointer_highlight`, `@pointer_lift`, `@pointer_hover` (`UIPointerEffect`'s styles, X-PH-1);
@@ -3560,8 +3564,8 @@ spaces:
 - **Variants:**
   - on the widget, keyed, `adwaita`: `@gtk_spinner` (GtkSpinner, GN-1.230).
   - on the widget, keyed, `material-3`: `@wavy`, `@thick`, `@four_color`, `@loading_indicator` (the Expressive loading indicator,
-    MAT-N24), `@contained` (its contained form, MAT-N24); the last two are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.spinner]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
-  - No typed variant: the determinate spinner, macOS's, WinUI's, Material's and iOS's C-31, is the state
+    MAT-N24), `@contained` (its contained form, MAT-N24). The last two are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.spinner]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
+  - The determinate spinner (macOS's, WinUI's, Material's and iOS's C-31) is no variant: it is the state
     `!{indeterminate}`, R3: whether the progress is known changes at run time, as on `progress_bar`.
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular` (MAC-SN03). `ios-*`: `regular` (UIKit's medium),
   `large` (SP-3a). Others: none (sizes are the body's limits and `diameter`).
@@ -4682,11 +4686,11 @@ spaces:
     W1-103).
   - on `separator`, keyed, `macos-*`: `@tracking` (the tracking separator aligned with the split view's divider,
     MAC-TL08).
-  - Under `macos-*` the window's toolbar style is the window's keyed variant, one window property with one name: the
+  - Under `macos-*`: the window's toolbar style is the window's keyed variant, one window property with one name: the
     toolbar's look under each style is a rule `@ context window variant @toolbar_unified / @toolbar_unified_compact /
     @toolbar_expanded / @toolbar_preference` (MAC-TL01).
-  - Under `material-3` the Expressive toolbars' variants, typed `floating`, `vertical` and keyed `@docked`,
-    `@vibrant`, `@collapsed` (MAT-N25, MAT-P4-7†), are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.toolbar]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
+  - Under `material-3` the Expressive toolbars' variants are flavour `expressive`'s: typed `floating`, `vertical`
+    and keyed `@docked`, `@vibrant`, `@collapsed` (MAT-N25, MAT-P4-7†), declared under `[declare.flavor.expressive.widget.toolbar]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
 - **Sizes and densities:** `ios-*`: the compact height `@ v_size_class compact` (TB-3, ADD-A20); others by variant.
 - **Flags:** none of its own; state flags used: scrolled (on the toolbar: content beneath it is scrolled away from
   its edge, set by the connector; TB-1, MAT-TA1, C-1; the scroll view's own edge effects carry theirs, `scroll_view`),
@@ -7211,7 +7215,7 @@ spaces:
     meaning `toolbar`'s and `sheet`'s share, a bar detached over the content).
   - on the widget, keyed, `macos-*`: `@inline`, `@minimal` (`AVPlayerViewControlsStyle`, MAC-N30†).
   - on the widget, keyed, `kde-breeze`: `@ka_album` (K-KA-35†).
-  - The buttons' identities are `button`'s typed `play`, `volume`, `full_screen`, `frame_step`, `route` (GN-2.54†,
+  - The buttons' identities: `button`'s typed `play`, `volume`, `full_screen`, `frame_step`, `route` (GN-2.54†,
     W2-35, MAC-N30†, K-KA-35†, C-42†, W-P4-18†), variants of `button`, not of this widget.
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** none of its own (an active output route is the `route` button's `route_active`; the buttons are
@@ -8055,7 +8059,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - on the widget, keyed, `kde-breeze`: `@overlay` (the centred OverlaySheet, Q2.37), `@ka_bottom_drawer` (the name
     `menu`'s substitution passes beside `bottom` where the convergent context menu is drawn as the drawer, under
     which only what that drawer adds is stated, K-KA-31†).
-  - The form of an element with no variant, and of one with the typed `bottom` alone, per preset (ADD-A146: a
+  - The form of an element with no variant, and of one with `bottom` alone, per preset (ADD-A146: a
     portable application asks for `bottom` by that name alone). `adwaita` draws one sheet, AdwBottomSheet:
     `requires_variants = [bottom]` (S10), its look under `bottom` and its motion, which no variant changes, in the
     base. `ios-*` requires none: the base is the sheet `UISheetPresentationController` presents, `bottom` restates
