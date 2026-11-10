@@ -319,7 +319,7 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
   expander's own element, a tree row, a combo box), `selected` and `checked` on the item, `hover` on the element under the
   pointer and on every element of the widget it nests in (a hovered caption button's group, a hovered arrow's
   header), as the toolkits hold it (`gtk@4.24.1 gtk/gtkmain.c:1158-1191`), `pressed`, `focused` and `focus_visible` on
-  the one element that takes the press or holds the focus, `focus_within` on every element the focused one nests in
+  the one element that takes the press or holds the focus, `focus_within` on that element and on every element it nests in
   (S7.2). `disabled` alone is also held from outside:
   every element of a disabled widget, and every element nested in a disabled *(element)* part, is disabled, as the
   toolkits propagate it. A nested *(element)* part, and the plain parts that belong to it, read any other flag of

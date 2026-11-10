@@ -1393,7 +1393,7 @@ caller's build, and a default would hide it.
 - *0.8.0 at today's coverage, then the rest by units* (added by the maintainer's decision D13 of the 0.8.0 plan,
   2026-11-06): 0.8.0 holds every widget, colour role, token and value today's model holds, the catalogue's other
   units following in later releases. For: users lose no widget, colour role, token or value of 0.7.0's model but the
-  status colours on `macos-*` (R25.17), the invented light variants (R19) and, until D6 decides it (W3-3), the
+  status colours on `macos-*` (R25.17), the invented light variants (R19) and, until D6 decides it (the plan's D6 question W3-3), the
   widgets a preset declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`)
   (ADD-A146), what 0.7.0's API holds beyond them and 0.8.0 does not keep being the plan's *Not kept*, and get the
   new model weeks earlier; each
@@ -1690,7 +1690,7 @@ of that day:
   a KDE port the reader's accent stays in force, as the specification's S14 recorded.
 - R21: the error, diagnostic and status enums, which no connector maps, are `#[non_exhaustive]`; what 0.8.0 keeps
   of 0.7.0 is its model's widgets, roles, tokens and values but the status colours on `macos-*` (R25.17), the
-  invented light variants (R19) and, until D6 decides it (W3-3), the widgets a preset declares unavailable where
+  invented light variants (R19) and, until D6 decides it (the plan's D6 question W3-3), the widgets a preset declares unavailable where
   0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`), the plan listing what its API does not keep.
 - R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
   none (the specification's S15).
