@@ -68,13 +68,16 @@ What it reads from an entry
 - **Variants** (spec_catalogue.variant_bullets): the sub-bullets starting with the word `on`, their head the text up
   to the first colon outside parentheses: `on the widget, typed` gives the widget's typed variants, `` on `<part>`,
   typed `` an *(element)* part's own, each the names outside parentheses of the first sentence after the colon; the
-  keyed ones (`` keyed, `<preset>` ``) are the presets' (S10), and a sub-bullet not starting with `on` is a note. A
-  head of another form, or a part that is no *(element)* part of the entry, is refused, and so, for now, is an
-  enabled widget with a part's own typed variants (`WidgetInfo` lists the widget's only).
+  keyed ones (`` keyed, `<preset>` ``) are the presets' (S10), and a sub-bullet not starting with `on` is a note. An
+  item not in the Entry format's form (spec_catalogue.variants_form: neither `none` nor sub-bullets alone, or a
+  sub-bullet starting `typed`, `keyed` or `On`), a head of another form, or a part that is no *(element)* part of the
+  entry, is refused, never read in part, and so, for now, is an enabled widget with a part's own typed variants
+  (`WidgetInfo` lists the widget's only).
 - **Mirroring** (S2.4, ADD-A146): an enum of the entry or of *Shared value types* whose variant's name holds the word
   `Start`, `End`, `Leading` or `Trailing` (alone or as a word of its `UpperCamelCase` name) gets a `Mirror` that swaps
   it with its counterpart, each such word swapped (`TopEnd` and `TopStart`), and a widget value of such an enum is
-  mirrored with the widget's values. An enum lacking a counterpart is refused, in every mode. `Axes<…>` is a type the
+  mirrored with the widget's values. An enum lacking a counterpart is refused, in every mode, whether or not an
+  enabled unit uses it: every typed entry's own enums and every type of the table are checked. `Axes<…>` is a type the
   generator does not handle yet (its `vertical` member is not mirrored, S2.4).
 - **Content variants** (spec_catalogue.content_variants, from *Entry format*'s list of pairs, not from the entry):
   the widget's own and its *(element)* parts' (a `<widget>.<part>` pair), typed and keyed (`@custom_child`) as the
@@ -382,6 +385,19 @@ def split_type(ty: str):
     return (m.group(1), m.group(2)) if m else (None, ty)
 
 
+def entry_enums(entry) -> list:
+    """The enums the entry's **Widget values** item defines (`IconPlacement { Leading, Trailing, Top, Bottom }`), each
+    refused where a variant naming an end of the layout lacks its counterpart (S2.4)."""
+    item = entry.item("Widget values")
+    enums = []
+    for start, _, span in spec_catalogue.depth0_tokens(item.text)[0] if item else []:
+        m = ENUM_DEF.fullmatch(span.strip())
+        if m:
+            enums.append(EnumDecl(m.group(1), m.group(2).split(", "), "", item.line_at(start)))
+            mirror_pairs(enums[-1])
+    return enums
+
+
 def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
     w = entry.name
     where = f"catalogue line {entry.line}, `{w}`"
@@ -410,18 +426,13 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
     # values and their enums
     item = entry.item("Widget values")
     bullets = sub_bullets(item) if item else []
-    enums, values = [], []
+    values = []
     declared = list(entry.values)
     added = None
     if not any(v.name == FOCUS_VISIBLE_WHEN[0] for v in declared):
         added = spec_catalogue.Value(FOCUS_VISIBLE_WHEN[0], FOCUS_VISIBLE_WHEN[1], entry.line)
         declared.append(added)
-    if item:
-        for start, _, span in spec_catalogue.depth0_tokens(item.text)[0]:
-            m = ENUM_DEF.fullmatch(span.strip())
-            if m:
-                enums.append(EnumDecl(m.group(1), m.group(2).split(", "), "", item.line_at(start)))
-                mirror_pairs(enums[-1])
+    enums = entry_enums(entry)
     enum_names = {e.name for e in enums}
     for v in declared:
         ty = v.type
@@ -528,6 +539,9 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
     # typed variants, the widget's own and its *(element)* parts'
     variants, part_variants = [], {}
     item = entry.item("Variants")
+    form = spec_catalogue.variants_form(item) if item else []
+    if form:
+        raise InputError(f"{where}: {form[0]}")
     for bullet in spec_catalogue.variant_bullets(item) if item else []:
         if not bullet.form:
             raise InputError(f"{where}: the Variants sub-bullet at line {bullet.line} starts with `on` but its head "
@@ -883,7 +897,8 @@ def generate(root: Path) -> dict:
         text = (root / spec_catalogue.CATALOGUE).read_text(encoding="utf-8")
     except OSError as err:
         raise InputError(str(err)) from err
-    entries = {e.name: e for e in spec_catalogue.entries(text) if e.kind == "typed"}
+    typed = [e for e in spec_catalogue.entries(text) if e.kind == "typed"]
+    entries = {e.name: e for e in typed}
     shared_table = spec_catalogue.shared_types(text)
     pairs = spec_catalogue.content_variants(text)
     shared, widgets = {}, []
@@ -899,6 +914,8 @@ def generate(root: Path) -> dict:
         names = depth0_names(cell)
         if cell.startswith("`") and names and all(CAMEL.fullmatch(n) for n in names):
             mirror_pairs(EnumDecl(name, names, "", line))
+    for entry in typed:
+        entry_enums(entry)
     out = {f"gen_{w.name}.rs": rustfmt(widget_file(w, set(shared)), f"gen_{w.name}.rs") for w in widgets}
     out[INDEX] = rustfmt(index_file(widgets, shared), INDEX)
     return out
@@ -991,6 +1008,23 @@ def self_test() -> int:
             u = parse_units(units)
             e = spec_catalogue.entries(catalogue)[0]
             read_widget(e, u, spec_catalogue.shared_types(catalogue), {})
+        except InputError as err:
+            if needle not in str(err):
+                failures.append(f"{label}: refused with {err}, want {needle!r}")
+            return
+        failures.append(f"{label}: not refused")
+
+    def generated(units, catalogue):
+        """generate() over a scratch root holding `units` and `catalogue`."""
+        with tempfile.TemporaryDirectory() as tmp:
+            for path, content in [(UNITS, units), (spec_catalogue.CATALOGUE, catalogue)]:
+                (Path(tmp) / path).parent.mkdir(parents=True, exist_ok=True)
+                (Path(tmp) / path).write_text(content, encoding="utf-8")
+            return generate(Path(tmp))
+
+    def generate_refused(label, units, catalogue, needle):
+        try:
+            generated(units, catalogue)
         except InputError as err:
             if needle not in str(err):
                 failures.append(f"{label}: refused with {err}, want {needle!r}")
@@ -1163,6 +1197,33 @@ def self_test() -> int:
     refused("an end without its counterpart", SELF_TEST_UNITS,
             SELF_TEST_CATALOGUE.replace("`Edge { Start, End }`", "`Edge { Start, Middle }`"),
             "`Edge` lacks its counterpart `End`")
+    for label, old, new, needle in [
+        ("a Variants sub-bullet starting `typed`", "  - on the widget, typed: `sharp`.", "  - typed: `sharp`.",
+         "the Variants sub-bullet at line 35 starts with `typed`, a form the Entry format rejects"),
+        ("a Variants sub-bullet starting `On`", "  - on the widget, typed: `sharp`.",
+         "  - On the widget, typed: `sharp`.", "the Variants sub-bullet at line 35 starts with `On`"),
+        ("Variants inline", "- **Variants:**\n", "- **Variants:** typed `sharp`.\n",
+         "the Variants item at line 31 has text after its label and sub-bullets"),
+    ]:
+        if old not in SELF_TEST_CATALOGUE:
+            failures.append(f"fixture: {old!r} not found")
+        refused(label, SELF_TEST_UNITS, SELF_TEST_CATALOGUE.replace(old, new), needle)
+
+    try:
+        expect("generate", sorted(generated(SELF_TEST_UNITS, SELF_TEST_CATALOGUE)), ["gen_index.rs", "gen_knob.rs"])
+    except InputError as err:
+        failures.append(f"generate: refused with {err}")
+    generate_refused("an entry no unit holds, its enum without its counterpart", SELF_TEST_UNITS,
+                     SELF_TEST_CATALOGUE + "\n### dial\n\n- **Kind:** typed widget.\n- **Widget values:**\n"
+                     "  - `column: Value<Column>`, `Column { EndColumn, Middle }` — which column.\n",
+                     "catalogue line 43: `Column::EndColumn` names an end of the layout and `Column` lacks its "
+                     "counterpart `StartColumn`")
+    generate_refused("a shared type no unit uses, without its counterpart", SELF_TEST_UNITS,
+                     SELF_TEST_CATALOGUE.replace("| `Corner` |", "| `Lone` | `Inline`, `TopEnd` |\n| `Corner` |"),
+                     "catalogue line 9: `Lone::TopEnd` names an end of the layout and `Lone` lacks its counterpart "
+                     "`TopStart`")
+    generate_refused("an enabled widget's part's own variants", SELF_TEST_UNITS, parted,
+                     "the typed variants on `label` are a part's own, which are not generated yet")
 
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp) / OUT_DIR
