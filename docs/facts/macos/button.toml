@@ -15016,67 +15016,61 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_a.toml#contrast.styles_a.aqua.normal.extraLarge-small_square.fill"
 tolerance = 1
 
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `@shadowless_square`, `@small_square`, `flat`, `glass`, `primary`, `tinted`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], states = ["default"] }
-value = "#1774daff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default"], not_states = ["disabled", "pressed"], not_variants = ["flat", "glass", "tinted", "tool", "@badge"] }
+pending = "U750"
 rows = ["MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.mini-default.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.small-default.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.regular-default.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.large-default.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.extraLarge-default.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], states = ["default"] }
-value = "#0040ddff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default"], not_states = ["disabled", "pressed"], not_variants = ["flat", "glass", "tinted", "tool", "@badge"] }
+pending = "U750"
 rows = ["MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.mini-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default"], not_states = ["disabled", "pressed"], variants = ["@badge"], not_variants = ["flat", "glass", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.small-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default"], not_states = ["disabled", "pressed"], variants = ["@badge"], not_variants = ["flat", "glass", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.regular-default.fill"
-tolerance = 1
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `@shadowless_square`, `@small_square`, `flat`, `glass`, `primary`, `tinted`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default"], not_states = ["disabled", "pressed"], not_variants = ["flat", "glass", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.large-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default"], not_states = ["disabled", "pressed"], not_variants = ["flat", "glass", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.extraLarge-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default"], not_states = ["disabled", "pressed"], variants = ["@badge"], not_variants = ["flat", "glass", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default"], not_states = ["disabled", "pressed"], variants = ["@badge"], not_variants = ["flat", "glass", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B02"]
 
 [[fact]]
 key = "button.body.fill"
@@ -15370,67 +15364,301 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.extraLarge-glass.fill"
 tolerance = 1
 
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `@shadowless_square`, `@small_square`, `flat`, `glass`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], variants = ["primary"] }
-value = "#1774daff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["primary"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square", "@small_square", "glass"] }
+pending = "U750"
 rows = ["MAC-B07"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.mini-primary.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.small-primary.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.regular-primary.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.large-primary.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.extraLarge-primary.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], variants = ["primary"] }
-value = "#0040ddff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["primary"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square", "@small_square", "glass"] }
+pending = "U750"
 rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.mini-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["pressed", "disabled"], variants = ["primary", "glass"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.small-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["pressed", "disabled"], variants = ["primary", "glass"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.regular-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["primary", "@small_square"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.large-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["primary", "@small_square"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.extraLarge-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["primary", "@shadowless_square"], not_variants = ["tool", "toggle", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["primary", "@shadowless_square"], not_variants = ["tool", "toggle", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled", "pressed"], variants = ["primary", "@badge"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled", "pressed"], variants = ["primary", "@badge"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge", "@shadowless_square", "@small_square", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge", "@shadowless_square", "@small_square", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "pressed", "disabled"], variants = ["primary", "toggle", "glass"], not_variants = ["tool", "@badge", "@shadowless_square", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "pressed", "disabled"], variants = ["primary", "toggle", "glass"], not_variants = ["tool", "@badge", "@shadowless_square", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["primary", "toggle", "@small_square"], not_variants = ["tool", "@badge", "@shadowless_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["primary", "toggle", "@small_square"], not_variants = ["tool", "@badge", "@shadowless_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["primary", "toggle", "@shadowless_square"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["primary", "toggle", "@shadowless_square"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled", "pressed"], variants = ["primary", "toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled", "pressed"], variants = ["primary", "toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["primary", "toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["primary", "toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `@shadowless_square`, `@small_square`, `flat`, `glass`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["primary"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square", "@small_square", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["primary"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square", "@small_square", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["pressed", "disabled"], variants = ["primary", "glass"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["pressed", "disabled"], variants = ["primary", "glass"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["primary", "@small_square"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["primary", "@small_square"], not_variants = ["tool", "toggle", "@badge", "@shadowless_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["primary", "@shadowless_square"], not_variants = ["tool", "toggle", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["primary", "@shadowless_square"], not_variants = ["tool", "toggle", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled", "pressed"], variants = ["primary", "@badge"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled", "pressed"], variants = ["primary", "@badge"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge", "@shadowless_square", "@small_square", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge", "@shadowless_square", "@small_square", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "pressed", "disabled"], variants = ["primary", "toggle", "glass"], not_variants = ["tool", "@badge", "@shadowless_square", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "pressed", "disabled"], variants = ["primary", "toggle", "glass"], not_variants = ["tool", "@badge", "@shadowless_square", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["primary", "toggle", "@small_square"], not_variants = ["tool", "@badge", "@shadowless_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["primary", "toggle", "@small_square"], not_variants = ["tool", "@badge", "@shadowless_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["primary", "toggle", "@shadowless_square"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["primary", "toggle", "@shadowless_square"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled", "pressed"], variants = ["primary", "toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled", "pressed"], variants = ["primary", "toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["primary", "toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["primary", "toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
 [[fact]]
 key = "button.body.fill"
@@ -15919,67 +16147,205 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_a.toml#contrast.styles_a.aqua.disabled.extraLarge-small_square.fill"
 tolerance = 1
 
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `glass`, `primary`, `tinted`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], states = ["default", "pressed"] }
-value = "#5c9ee5ff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_variants = ["glass", "primary", "tinted", "tool", "@badge", "toggle"] }
+pending = "U750"
 rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.mini-default.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.small-default.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.regular-default.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.large-default.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.extraLarge-default.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], states = ["default", "pressed"] }
-value = "#002a90ff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_states = ["checked"], variants = ["toggle"], not_variants = ["glass", "primary", "tinted", "tool", "@badge"] }
+pending = "U750"
 rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.mini-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed", "checked"], not_states = ["disabled"], variants = ["toggle"], not_variants = ["glass", "primary", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.small-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_variants = ["glass", "primary", "tinted", "tool", "@badge", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.regular-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_states = ["checked"], variants = ["toggle"], not_variants = ["glass", "primary", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.large-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed", "checked"], not_states = ["disabled"], variants = ["toggle"], not_variants = ["glass", "primary", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.extraLarge-default.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], variants = ["@badge"], not_variants = ["glass", "primary", "tinted", "tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_states = ["checked"], variants = ["@badge", "toggle"], not_variants = ["glass", "primary", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed", "checked"], not_states = ["disabled"], variants = ["@badge", "toggle"], not_variants = ["glass", "primary", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], variants = ["@badge"], not_variants = ["glass", "primary", "tinted", "tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_states = ["checked"], variants = ["@badge", "toggle"], not_variants = ["glass", "primary", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed", "checked"], not_states = ["disabled"], variants = ["@badge", "toggle"], not_variants = ["glass", "primary", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_states = ["disabled"], variants = ["primary"], not_variants = ["glass", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_states = ["disabled"], variants = ["primary"], not_variants = ["glass", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_states = ["disabled"], variants = ["primary", "@badge"], not_variants = ["glass", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_states = ["disabled"], variants = ["primary", "@badge"], not_variants = ["glass", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `glass`, `primary`, `tinted`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_variants = ["glass", "primary", "tinted", "tool", "@badge", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_states = ["checked"], variants = ["toggle"], not_variants = ["glass", "primary", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed", "checked"], not_states = ["disabled"], variants = ["toggle"], not_variants = ["glass", "primary", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_variants = ["glass", "primary", "tinted", "tool", "@badge", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_states = ["checked"], variants = ["toggle"], not_variants = ["glass", "primary", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed", "checked"], not_states = ["disabled"], variants = ["toggle"], not_variants = ["glass", "primary", "tinted", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], variants = ["@badge"], not_variants = ["glass", "primary", "tinted", "tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_states = ["checked"], variants = ["@badge", "toggle"], not_variants = ["glass", "primary", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed", "checked"], not_states = ["disabled"], variants = ["@badge", "toggle"], not_variants = ["glass", "primary", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], variants = ["@badge"], not_variants = ["glass", "primary", "tinted", "tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_states = ["checked"], variants = ["@badge", "toggle"], not_variants = ["glass", "primary", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed", "checked"], not_states = ["disabled"], variants = ["@badge", "toggle"], not_variants = ["glass", "primary", "tinted", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_states = ["disabled"], variants = ["primary"], not_variants = ["glass", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_states = ["disabled"], variants = ["primary"], not_variants = ["glass", "tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["default", "pressed"], not_states = ["disabled"], variants = ["primary", "@badge"], not_variants = ["glass", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["default", "pressed"], not_states = ["disabled"], variants = ["primary", "@badge"], not_variants = ["glass", "tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
@@ -16074,67 +16440,157 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.disabled.extraLarge-primary.fill"
 tolerance = 2
 
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `@shadowless_square`, `@small_square`, `flat`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], states = ["pressed"], variants = ["primary"] }
-value = "#5c9ee5ff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed"], variants = ["primary"], not_variants = ["tool", "@badge", "toggle"] }
+pending = "U750"
 rows = ["MAC-B01", "MAC-B07"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.pressed.mini-primary.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.pressed.small-primary.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.pressed.regular-primary.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.pressed.large-primary.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.pressed.extraLarge-primary.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], states = ["pressed"], variants = ["primary"] }
-value = "#002a90ff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed"], not_states = ["checked"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
 rows = ["MAC-B01", "MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.pressed.mini-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed", "checked"], not_states = ["disabled"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.pressed.small-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed"], variants = ["primary"], not_variants = ["tool", "@badge", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.pressed.regular-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed"], not_states = ["checked"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.pressed.large-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed", "checked"], not_states = ["disabled"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.pressed.extraLarge-primary.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed"], variants = ["primary", "@badge"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed"], not_states = ["checked"], variants = ["primary", "@badge", "toggle"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed", "checked"], not_states = ["disabled"], variants = ["primary", "@badge", "toggle"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed"], variants = ["primary", "@badge"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed"], not_states = ["checked"], variants = ["primary", "@badge", "toggle"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed", "checked"], not_states = ["disabled"], variants = ["primary", "@badge", "toggle"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `@small_square`, `flat`, `glass`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed"], variants = ["primary"], not_variants = ["tool", "@badge", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed"], not_states = ["checked"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed", "checked"], not_states = ["disabled"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed"], variants = ["primary"], not_variants = ["tool", "@badge", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed"], not_states = ["checked"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed", "checked"], not_states = ["disabled"], variants = ["primary", "toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed"], variants = ["primary", "@badge"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed"], not_states = ["checked"], variants = ["primary", "@badge", "toggle"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["pressed", "checked"], not_states = ["disabled"], variants = ["primary", "@badge", "toggle"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed"], variants = ["primary", "@badge"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed"], not_states = ["checked"], variants = ["primary", "@badge", "toggle"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["pressed", "checked"], not_states = ["disabled"], variants = ["primary", "@badge", "toggle"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B07"]
 
 [[fact]]
 key = "button.body.fill"
@@ -16260,67 +16716,85 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.pressed.extraLarge-tinted.fill"
 tolerance = 2
 
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `primary`, `tinted`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], states = ["checked"], variants = ["toggle"] }
-value = "#297fddff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled"], variants = ["toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
 rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.mini-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.small-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.regular-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.large-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.normal.extraLarge-toggle_on.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], states = ["checked"], variants = ["toggle"] }
-value = "#003bcaff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled"], variants = ["toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
 rows = []
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.mini-toggle_on.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled"], variants = ["toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = []
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.small-toggle_on.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled"], variants = ["toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = []
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.regular-toggle_on.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["pressed", "disabled"], variants = ["toggle", "tool"] }
+pending = "U750"
+rows = []
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.large-toggle_on.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["pressed", "disabled"], variants = ["toggle", "tool"] }
+pending = "U750"
+rows = []
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.normal.extraLarge-toggle_on.fill"
-tolerance = 1
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `glass`, `primary`, `tinted`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled"], variants = ["toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled"], variants = ["toggle"], not_variants = ["tool", "@badge"] }
+pending = "U750"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled"], variants = ["toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled"], variants = ["toggle", "@badge"], not_variants = ["tool"] }
+pending = "U750"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["pressed", "disabled"], variants = ["toggle", "tool"] }
+pending = "U750"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["pressed", "disabled"], variants = ["toggle", "tool"] }
+pending = "U750"
+rows = []
 
 [[fact]]
 key = "button.body.fill"
@@ -16904,67 +17378,37 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.disabled.extraLarge-toggle_on.fill"
 tolerance = 2
 
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `primary`, `tinted` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], states = ["checked", "pressed"], variants = ["toggle"] }
-value = "#69a5e7ff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked", "pressed"], variants = ["toggle"] }
+pending = "U750"
 rows = ["MAC-B01", "MAC-B10"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.mini-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.small-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.regular-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.large-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.darkAqua.pressed.extraLarge-toggle_on.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], states = ["checked", "pressed"], variants = ["toggle"] }
-value = "#002683ff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked", "pressed"], variants = ["toggle"] }
+pending = "U750"
 rows = ["MAC-B01", "MAC-B10"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.mini-toggle_on.fill"
-tolerance = 1
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `glass`, `primary`, `tinted` below hold in some of its
+# combinations, so it and the pending facts after it state the others
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked", "pressed"], variants = ["toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B10"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.small-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.regular-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.large-toggle_on.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-push.toml#contrast.push.aqua.pressed.extraLarge-toggle_on.fill"
-tolerance = 1
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked", "pressed"], variants = ["toggle"] }
+pending = "U750"
+rows = ["MAC-B01", "MAC-B10"]
 
 [[fact]]
 key = "button.body.fill"
@@ -19574,67 +20018,301 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.extraLarge-primary.label"
 tolerance = 1
 
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `@shadowless_square`, `flat`, `glass`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.label.text.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], variants = ["tinted"] }
-value = "#1774daff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["tinted"], not_variants = ["tool", "toggle", "flat", "glass", "@badge"] }
+pending = "U750"
 rows = ["MAC-B07"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.mini-tinted.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.small-tinted.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.regular-tinted.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.large-tinted.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.darkAqua.normal.extraLarge-tinted.label"
-tolerance = 1
 
 [[fact]]
 key = "button.label.text.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], variants = ["tinted"] }
-value = "#0040ddff"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["tinted"], not_variants = ["tool", "toggle", "flat", "glass", "@badge"] }
+pending = "U750"
 rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.mini-tinted.label"
-tolerance = 1
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["tinted", "@badge"], not_variants = ["tool", "toggle", "flat", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.small-tinted.label"
-tolerance = 1
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["tinted", "@badge"], not_variants = ["tool", "toggle", "flat", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.regular-tinted.label"
-tolerance = 1
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["tinted", "glass"], not_variants = ["tool", "toggle", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.large-tinted.label"
-tolerance = 1
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["tinted", "glass"], not_variants = ["tool", "toggle", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-contrast-styles_b.toml#contrast.styles_b.aqua.normal.extraLarge-tinted.label"
-tolerance = 1
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled", "pressed"], variants = ["tinted", "flat"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled", "pressed"], variants = ["tinted", "flat"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle"], not_variants = ["tool", "flat", "glass", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle"], not_variants = ["tool", "flat", "glass", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "@badge"], not_variants = ["tool", "flat", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "@badge"], not_variants = ["tool", "flat", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "glass"], not_variants = ["tool", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "glass"], not_variants = ["tool", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled", "pressed"], variants = ["tinted", "toggle", "flat"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled", "pressed"], variants = ["tinted", "toggle", "flat"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled"], variants = ["tinted", "toggle"], not_variants = ["tool", "flat", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled"], variants = ["tinted", "toggle"], not_variants = ["tool", "flat", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled"], variants = ["tinted", "toggle", "@badge"], not_variants = ["tool", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled"], variants = ["tinted", "toggle", "@badge"], not_variants = ["tool", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["tinted", "toggle", "flat"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["tinted", "toggle", "flat"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+# an accent look under Increase Contrast, read in run 41006842699's contrast pass under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `@badge`, `@small_square`, `flat`, `glass`, `toggle`, `tool` below hold in some of its
+# combinations, so it and the pending facts after it state the others
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["tinted"], not_variants = ["tool", "toggle", "@small_square", "flat", "glass", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["tinted"], not_variants = ["tool", "toggle", "@small_square", "flat", "glass", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["tinted", "@badge"], not_variants = ["tool", "toggle", "@small_square", "flat", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["tinted", "@badge"], not_variants = ["tool", "toggle", "@small_square", "flat", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["tinted", "glass"], not_variants = ["tool", "toggle", "@small_square", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["tinted", "glass"], not_variants = ["tool", "toggle", "@small_square", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled", "pressed"], variants = ["tinted", "flat"], not_variants = ["tool", "toggle", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled", "pressed"], variants = ["tinted", "flat"], not_variants = ["tool", "toggle", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["disabled"], variants = ["tinted", "@small_square"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["disabled"], variants = ["tinted", "@small_square"], not_variants = ["tool", "toggle"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle"], not_variants = ["tool", "@small_square", "flat", "glass", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle"], not_variants = ["tool", "@small_square", "flat", "glass", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "@badge"], not_variants = ["tool", "@small_square", "flat", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "@badge"], not_variants = ["tool", "@small_square", "flat", "glass"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "glass"], not_variants = ["tool", "@small_square", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "glass"], not_variants = ["tool", "@small_square", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled", "pressed"], variants = ["tinted", "toggle", "flat"], not_variants = ["tool", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled", "pressed"], variants = ["tinted", "toggle", "flat"], not_variants = ["tool", "@small_square"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "@small_square"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], not_states = ["checked", "disabled"], variants = ["tinted", "toggle", "@small_square"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled"], variants = ["tinted", "toggle"], not_variants = ["tool", "flat", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled"], variants = ["tinted", "toggle"], not_variants = ["tool", "flat", "@badge"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled"], variants = ["tinted", "toggle", "@badge"], not_variants = ["tool", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled"], variants = ["tinted", "toggle", "@badge"], not_variants = ["tool", "flat"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["tinted", "toggle", "flat"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased", "not_main"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["disabled", "pressed"], variants = ["tinted", "toggle", "flat"], not_variants = ["tool"] }
+pending = "U750"
+rows = ["MAC-B07"]
 
 [[fact]]
 key = "button.label.text.fill"
@@ -197657,101 +198335,53 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.large-flexible_push.label"
 tolerance = 1
 
+# the default flexible bezel's label, read in run 42272240639's default sheet as its mix with the accent fill beneath
+# under the image's accent alone: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#ddeafaff"
+pending = "U750"
 rows = ["MAC-B01", "MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.normal.mini-flexible_push.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.normal.large-flexible_push.label"
-tolerance = 1
-
+# the default flexible bezel's label, read in run 42272240639's default sheet as its mix with the accent fill beneath
+# under the image's accent alone: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#ddebfaff"
+pending = "U750"
 rows = ["MAC-B01", "MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.normal.small-flexible_push.label"
-tolerance = 1
-
+# the default flexible bezel's label, read in run 42272240639's default sheet as its mix with the accent fill beneath
+# under the image's accent alone: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["@flexible_push"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#ddebf9ff"
+pending = "U750"
 rows = ["MAC-B01", "MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.normal.regular-flexible_push.label"
-tolerance = 1
-
+# the default flexible bezel's label, read in run 42272240639's default sheet as its mix with the accent fill beneath
+# under the image's accent alone: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#d9eafcff"
+pending = "U750"
 rows = ["MAC-B01", "MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.small-flexible_push.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.regular-flexible_push.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.large-flexible_push.label"
-tolerance = 1
-
+# the default flexible bezel's label, read in run 42272240639's default sheet as its mix with the accent fill beneath
+# under the image's accent alone: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#d9e9fcff"
+pending = "U750"
 rows = ["MAC-B01", "MAC-B02"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.mini-flexible_push.label"
-tolerance = 1
-
+# the default flexible bezel's label, read in run 42272240639's default sheet as its mix with the accent fill beneath
+# under the image's accent alone: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#deebfdff"
+pending = "U750"
 rows = ["MAC-B01", "MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.pressed.mini-flexible_push.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.pressed.small-flexible_push.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.pressed.regular-flexible_push.label"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.pressed.large-flexible_push.label"
-tolerance = 1
 
 [[fact]]
 key = "button.label.text.fill"
