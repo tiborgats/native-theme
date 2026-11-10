@@ -1371,9 +1371,9 @@ spaces:
     its position among the menu's groups, `pos first` the leading, `pos last` the trailing and `pos only` the
     standalone shape (`MenuDefaults.kt:196-207`, `Menu.kt:253-256`), and by its own `hover`, the shape after a hover
     has ended differing from the one before any (`hasBeenHovered`, `Menu.kt:2296-2301`), a latched state the
-    connector sets as a keyed flag (Flags). `item`, `separator` and `section_header` nest in it; a menu without
-    groups (every other preset, and Expressive's ungrouped menus) has no `group` element, and they are queried in
-    `body`'s scope (Nesting). Rejected: a plain part with its fields in a note, which no rule could shape by
+    connector sets as a keyed flag (Flags). A menu without
+    groups (every other preset, and Expressive's ungrouped menus) has no `group` element, and the parts whose
+    bullets name it as their parent are then queried in `body`'s scope (Nesting). Rejected: a plain part with its fields in a note, which no rule could shape by
     position or hover, and whose fields the reader did not read.
   - `section_header` *(element)*, in `group` — KDE's section item, macOS's section header, iOS's menu title, Material
     Expressive's section label, an element of its own among the items (as `list.section_header`): `text`, `stroke`
@@ -5127,9 +5127,9 @@ spaces:
   (`macos-*`: the panel's credits are one text view, MAC-N32†), `person_task` (`macos-*`: the panel's credits are one
   text view, MAC-N32†), `description` (`macos-*`: the standard About panel draws the icon, name, version, credits and
   copyright only, MAC-N32†), `credits` (`adwaita`; `kde-breeze` by a rule under `cond flavor:kirigami`: the credits text
-  is KAboutApplicationDialog's, K-P3-8†, and the macOS panel's, MAC-N32†); fields (the parts' margins are stated by
-  `macos-*`, which places them by margins, and are a zero length elsewhere, Entry format; GNOME's version pill is the
-  `button` the part is drawn as, above): `icon.shadow` (all but `adwaita`: GNOME's drop shadow, GN-2.39, GN-3.07);
+  is KAboutApplicationDialog's, K-P3-8†, and the macOS panel's, MAC-N32†); fields: `icon.shadow` (all but `adwaita`: GNOME's drop shadow, GN-2.39,
+  GN-3.07; no margin is listed: the parts' margins are stated by `macos-*`, which places them by margins, and are a
+  zero length elsewhere, Entry format, and GNOME's version pill is the `button` the part is drawn as, above);
   values: `icon_max_width_fraction` (`adwaita`, `macos-*`), `gap_px` (`macos-*`: the panel's unequal gaps are the
   parts' margins, MAC-N32†), `subpage_margins` (every member: `kde-breeze`, `macos-*`), `group_gap_px`
   (`kde-breeze`, `macos-*`), `groups_margin` (every member: `kde-breeze`, `macos-*`), `width_px` (`adwaita`, `kde-breeze`), `release_gap_px` (`adwaita`,
@@ -7556,9 +7556,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   CommonStates), `selected` combining; others none (states combine); precedence: state models (S17).
 - **may_be_absent:** fields: `container.fill` (every preset but `material-3`: the container is Material's,
   MAT-N31†; the others' wheels draw no container), `container.corners` (every preset but `material-3`, as for
-  `container.fill`); the container's minimum height is `"auto"` on every preset but `material-3` (the others' height
-  is their items', C-7, W2-04, K-KA-23†: no minimum beyond the content, S2.11), never `Absent`, and its padding is
-  stated on every preset, a zero inset where the wheel has none. values: `curvature` (every preset but `ios-*`:
+  `container.fill`; the container's minimum height is no entry of this list: it is `"auto"` on every preset but
+  `material-3`, the others' height being their items', C-7, W2-04, K-KA-23†, no minimum beyond the content, S2.11,
+  never `Absent`, and its padding is stated on every preset, a zero inset where the wheel has none). values: `curvature` (every preset but `ios-*`:
   UIPickerView's perspective, C-7),
   `component_gap_px` (`material-3`: its scroll field is one column standing alone, MAT-N31†).
 - **State-model source:** iOS `UIPickerView`; Material `ScrollField.kt`; Windows `LoopingSelector` visual states; KDE
@@ -7682,7 +7682,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   MarkdownTextBlock is Toolkit Labs, out by R1.2).
 - **Parts:**
   - `body` — the text's box (the root): `padding`, `bindings`
-  - `paragraph`, `heading_1` … `heading_6` (the headings: K-SF12†, K-P4-14†, MAT-P3-20†): `text`, `margin` (each
+  - `paragraph`, `heading_1`, `heading_2`, `heading_3`, `heading_4`, `heading_5`, `heading_6` (the headings:
+    K-SF12†, K-P4-14†, MAT-P3-20†): `text`, `margin` (each
     block's margins, as Qt's HTML and Markdown defaults state them, K-SF14†, K-SF17†, K-P4-14†)
   - `emphasis`, `strong`, `underline`, `strikethrough`, `subscript`, `superscript` (Compose's HTML underline,
     MAT-P3-20†): `text`. The underline's and the strike line's `text.decoration` follow the run's font where the
@@ -8270,7 +8271,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **may_be_absent:** parts: none (a page with no actions has no action area queried). fields: `body.fill`
   (`adwaita`, `kde-breeze`: AdwStatusPage and Kirigami's placeholders draw no background of their own, GN-2.13,
   Q2.30, K-KA-16†, where iOS's configuration states one, C-16; `macos-*` where its facts show none, value phase,
-  MAC-N35†); the body's maximum width is `"auto"` where the platform sets no maximum (S2.11), never `Absent`.
+  MAC-N35†; the body's maximum width is no entry of this list: it is `"auto"` where the platform sets no maximum,
+  S2.11, never `Absent`).
 - **State-model source:** GNOME `_misc.scss` (`statuspage`); iOS `UIContentUnavailableConfiguration`; KDE
   `PlaceholderMessage.qml`, `LoadingPlaceholder.qml`, kirigami-addons `FormPlaceholderMessageDelegate.qml`; macOS
   `ContentUnavailableView`.
@@ -8586,9 +8588,10 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   kirigami-addons' popup's, K-KA-23†; `macos-*`, `ios-*` where their facts show none, value phase); fields:
   `popup.stroke` (`material-3`: its container draws no outline, MAT-N17), `dial.stroke` (`material-3`: the rim is
   macOS's clock face's, MAC-N04, Material's dial a filled circle, MAT-N17), `field.fill` (`kde-breeze` by a rule
-  `{read_only} context form.row`, as `date_picker.field.fill`, K-KA-22†); the body's padding is stated on every
-  preset, a zero inset where the picker has none, and the field's minimum and maximum widths are `"auto"` where the
-  platform sets none (no limit beyond the content, S2.11; W2-04 states TimePicker's), never `Absent`;
+  `{read_only} context form.row`, as `date_picker.field.fill`, K-KA-22†; no other field is listed: the body's
+  padding is stated on every preset, a zero inset where the picker has none, and the field's minimum and maximum
+  widths are `"auto"` where the platform sets none, no limit beyond the content, S2.11, W2-04 stating TimePicker's,
+  never `Absent`);
   values: `placement` (`kde-breeze`: its popups are the combo box's list and the dialog the popup is drawn as,
   placed by those widgets, K2.24†, K-KA-23†; `macos-*`: `NSDatePicker` with time elements opens no popup, MAC-N04).
   On `material-3` the placement is stated: the time picker's dialog container, its popup, is placed
@@ -8653,8 +8656,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `stack_gap_px` (every preset but `kde-breeze`: the stacking is Kirigami's notification manager's, Q2.50);
   `stack_max_height_px` (every preset but `kde-breeze`, as for `stack_gap_px`); `content_gap_px` (every preset but
   `kde-breeze`, `adwaita`: GNOME's and
-  Kirigami's spacing between the text and the action, GN-2.12, Q2.50); the body's maximum width is `"auto"` where the
-  platform sets no maximum (S2.11), never `Absent`.
+  Kirigami's spacing between the text and the action, GN-2.12, Q2.50; the body's maximum width is no entry of this
+  list: it is `"auto"` where the platform sets no maximum, S2.11, never `Absent`).
 - **State-model source:** GNOME `_misc.scss` (`toast`), `adw-toast-overlay.c`; KDE `PassiveNotificationsManager.qml`;
   Material snackbar tokens and `SnackbarHost.kt`.
 - **Today's fields:** none.
