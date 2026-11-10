@@ -264,6 +264,67 @@ fn rtl_mirrors_sides_not_corners() {
     );
 }
 
+/// `rtl_mirrors_indicator_anchor_corner` (S2.4, ADD-A146): a variant whose
+/// name holds `End` is swapped for its counterpart, so a menu indicator
+/// anchored at the bottom end lies at the bottom start, the physical left,
+/// under right-to-left.
+#[test]
+fn rtl_mirrors_indicator_anchor_corner() -> Result<(), String> {
+    let theme = fixture(&["[widgets.button.values]\nmenu_indicator_anchor = \"bottom_end\""]);
+    let anchor = |direction| match theme.values::<ButtonValues>(&Element::new(
+        BODY,
+        &root(&theme, direction),
+        &Metrics,
+    )) {
+        Styled::Style(values) => Ok(values.menu_indicator_anchor),
+        other => Err(format!("the values do not resolve: {other:?}")),
+    };
+    assert_eq!(
+        anchor(Direction::Ltr)?,
+        Some(crate::widgets::IndicatorAnchor::BottomEnd)
+    );
+    assert_eq!(
+        anchor(Direction::Rtl)?,
+        Some(crate::widgets::IndicatorAnchor::BottomStart)
+    );
+    Ok(())
+}
+
+/// `rtl_mirrors_indicator_anchor_start` (S2.4, ADD-A146): the start
+/// corners read from TOML, `top_start` and `bottom_start`, are swapped for
+/// their end counterparts under right-to-left and kept under left-to-right.
+#[test]
+fn rtl_mirrors_indicator_anchor_start() -> Result<(), String> {
+    use crate::widgets::IndicatorAnchor;
+    for (stated, ltr, rtl) in [
+        (
+            "top_start",
+            IndicatorAnchor::TopStart,
+            IndicatorAnchor::TopEnd,
+        ),
+        (
+            "bottom_start",
+            IndicatorAnchor::BottomStart,
+            IndicatorAnchor::BottomEnd,
+        ),
+    ] {
+        let theme = fixture(&[&format!(
+            "[widgets.button.values]\nmenu_indicator_anchor = \"{stated}\""
+        )]);
+        let anchor = |direction| match theme.values::<ButtonValues>(&Element::new(
+            BODY,
+            &root(&theme, direction),
+            &Metrics,
+        )) {
+            Styled::Style(values) => Ok(values.menu_indicator_anchor),
+            other => Err(format!("`{stated}`: the values do not resolve: {other:?}")),
+        };
+        assert_eq!(anchor(Direction::Ltr)?, Some(ltr), "`{stated}`");
+        assert_eq!(anchor(Direction::Rtl)?, Some(rtl), "`{stated}`");
+    }
+    Ok(())
+}
+
 /// `undeclared_variant_not_available` (S8): a variant the application asks
 /// for that the widget does not declare is not available; a content
 /// variant the connector sets, typed or keyed, is ignored where undeclared,

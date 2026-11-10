@@ -475,7 +475,8 @@ fn button_content_variants_match_catalogue() {
             (None, "with_icon"),
             (None, "@custom_child"),
             (None, "@arrow_only"),
-            (None, "@with_arrow")
+            (None, "@with_arrow"),
+            (None, "@tab_overflow")
         ]
     );
 }

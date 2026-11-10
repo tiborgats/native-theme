@@ -229,10 +229,11 @@ impl Widget for ButtonValues {
 }
 
 /// `button`'s values mirrored for a right-to-left layout (S2.4): its `Sides`, presentations,
-/// placements and alignments.
+/// placements and the values naming a start or an end.
 impl Mirror for ResolvedButtonValues {
     fn mirror(&mut self) {
         self.icon_placement.mirror();
+        self.menu_indicator_anchor.mirror();
         self.hit_extension.mirror();
         self.presentations.mirror();
     }
@@ -330,5 +331,6 @@ pub(crate) const WIDGETS: &[WidgetInfo] = &[WidgetInfo {
         (None, "@custom_child"),
         (None, "@arrow_only"),
         (None, "@with_arrow"),
+        (None, "@tab_overflow"),
     ],
 }];
