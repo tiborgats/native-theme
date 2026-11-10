@@ -1063,7 +1063,6 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-13† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | P3-14† | `token.icons.mirroring` (S2.9) | token |
 | P3-14† | `Element.language`, `Element.direction` (the icon lookup's inputs, S2.9, S8; ADD-B05) | field |
-| P3-14† | `reader:ios:semanticContentAttribute` | readers (R18) |
 | P4-1† | - | out (R1.1) |
 | P4-2† | - | out (R1.1) |
 | P4-3† | `toolbar.values.presentations events Appear, Disappear` (the bars hidden on a swipe and shown again) | field |
