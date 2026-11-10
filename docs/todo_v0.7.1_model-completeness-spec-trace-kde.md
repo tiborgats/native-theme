@@ -725,7 +725,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q1.130 | `card.body.padding @ cond flavor:kirigami` | rule |
 | Q1.130 | `card.values.section_gap` | field |
 | Q1.131 | `card.banner_title.text (leaf by leaf: token.text.keyed.heading_1; its fill over images), card.banner_title.icon.size (= token.icons.sizes.keyed.large.size) @ variant @banner` | rule |
-| Q1.131 | `card.banner_band.fill, card.banner.padding @ variant @banner / card.banner.padding (with the icon) @ variant @banner` | rule |
+| Q1.131 | `card.banner_band.fill, card.banner.padding @ variant @banner / card.banner.padding @ variants {@banner,with_icon}` | rule |
 | Q1.131 | `card.values.banner_band_height_factor` | field |
 | Q1.131 | `checkbox @ context card.banner (the optional check box)` | rule |
 | Q1.132 | `toolbar.bar @ variant bottom context card.body cond flavor:kirigami` | rule |

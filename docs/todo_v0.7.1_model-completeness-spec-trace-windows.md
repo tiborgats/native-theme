@@ -638,7 +638,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-43† | `button.{icon.glyph,body.corners} @ variant remove context chip.body (round)` | rule |
 | W2-43† | `button.{body.fill,icon.glyph.fill} @ variant remove context chip.body {selected}` | rule |
 | W2-43† | `layout.values.{item_gap,line_gap} @ variant flow context any input (the token spacing)` | rule |
-| W2-43† | `input.body.padding (the box's padding)` | field |
+| W2-43† | `input.body.padding @ variant with_chips` (the token box's own padding) | rule |
 | W3-01 | `token.elevation (one entry per WinUI elevation step, keys declared: each entry's ShadowLayer x, y, blur, spread, color, inset; the ambient layer only)` | token |
 | W3-01 | `token.elevation @ cond scheme:dark (the shadows' intensity per theme)` | rule |
 | W3-02 | `PartStyle.shadow (Shadow::Elevation of each control's root part) @ {hover} / {pressed}` | rule |

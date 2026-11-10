@@ -145,15 +145,16 @@ where every preset that exists then states it from verified facts, or declares i
 added later states every field the model then holds. So S12 stays strict, and S19.1's build test and the facts gate run
 over the whole model at every commit. Generated declarations are staged by the generator's list of enabled units
 (`scripts/generate_widgets.py`); hand-written ones (S3's roles, S4's tokens) are written in their unit's commit. The
-facts gate skips a fact while one of its units is not enabled (the lanes run ahead; S17 gives a fact its key's unit and
-the unit of every widget its `when`'s positive lists name), reading the units from `scripts/widget_units.toml` as
+facts gate skips a fact while one of its units is not enabled (the lanes run ahead; S17 gives a fact its key's unit,
+the unit of every widget its `when`'s positive lists name and of the widget a `drawn_as` value names, ADD-A146), reading the units from `scripts/widget_units.toml` as
 `check_facts_trace.py` does (`tests/facts_gate/units.rs`). A fact *of the enabled units* is one whose units are all
 enabled. From M4 the gate fails on a skipped fact of the enabled units and on a fact whose key lies in no unit, and
 reports the other skipped facts by unit; so that it can tell a later unit's fact from a stray one, `widget_units.toml`
 lists every unit with an enabled flag (*M3*). M4 requires every unit of 0.8.0's scope enabled (D13); each follow-up
 release requires its own units enabled; after the last one no fact is skipped. A unit enters whole, its catalogue
 entries whole, less the values S6.1 lets it defer to a later unit (the `Placement` values, to the placement unit); a
-rule under a context of a widget a later unit holds waits for that unit, as `check_facts_trace.py` states.
+rule under a context of a widget a later unit holds, or drawing a part as one (`drawn_as`), waits for that unit, as
+`check_facts_trace.py` states.
 
 Rejected: declaring unwritten widgets `available = false` (the presets would state that the platform does not draw
 them, which is false); a lenient validation mode (it hides the gaps the gate exists to find); placeholder preset values
@@ -599,7 +600,11 @@ the facts tooling reads it.
     check that an enabled unit's facts were verified (*M3*, *M4*); the gate's release mode and the drift run's
     record (*M4*); M5's two comparisons; the package's exclusion and size check (*M2*); the readers unit's scope and
     where a condition key is declared (*The units 0.8.0 enables*); the generated presets' steps and the scripts
-    table; the corrected rows of *0.8.0's scope* and of *The module inventory*.
+    table; the corrected rows of *0.8.0's scope* and of *The module inventory*; and what follows the same batch's
+    changes of the specification: a fact's units including the widget a `drawn_as` value names (*Global
+    constraints*); the runtime task's Compose spring evaluator and `ComposeShapeMorph`, the contract tables'
+    supplied side, and task 4's mapping check on every preset, followed-scheme rule and palette run (*M2*); the
+    catalogue's 87 typed widgets, `font_button` the new one (*The units 0.8.0 enables*).
 
 ### Settled by logic (recorded)
 
@@ -729,7 +734,7 @@ is the slice's slots.
    slice's staged `token.behavior.scroll` ends here), `list`, `tab`,
    `sidebar`, `toolbar`, `status_bar`, `splitter`, `separator`, `card`, `expander`, `layout`.
 
-30 of the catalogue's 86 typed widgets. Their 15 `Placement` values are deferred to the placement unit (S6.1, as the
+30 of the catalogue's 87 typed widgets. Their 15 `Placement` values are deferred to the placement unit (S6.1, as the
 slice defers the button's; the M1a design's decision 1): `window.values.{caption_button_menu_placement,
 window_menu_placement, title_menu_placement, keyboard_avoidance}`, `dialog.values.{placement, keyboard_avoidance}`,
 `popover.values.placement`, `tooltip.values.placement`, `menu.values.{placement, submenu_placement}`,
@@ -738,7 +743,7 @@ window_menu_placement, title_menu_placement, keyboard_avoidance}`, `dialog.value
 0.7.0 places nothing, and S13's strategies each need a vector table from their reference (the GTK and Qt containers,
 Compose's code, the WinUI host) or measured AppKit and UIKit frames.
 
-**After 0.8.0 (M3b):** placement (ending those deferrals); the 56 typed widgets the model lacks today, in alphabetical
+**After 0.8.0 (M3b):** placement (ending those deferrals); the 57 typed widgets the model lacks today, in alphabetical
 batches of about ten; the 28 keyed components.
 
 ### Widgets 0.7.0 styles through stand-ins
@@ -968,8 +973,10 @@ placement unit, spec ADD-A120); S7; S8 without
    - the 0.8.0 API: how an application gets a part's style, who builds the element tree and the window's
      conditions, where the states and the transitions runtime enter, and what the toolkit's theme object still
      carries;
-   - the contract table's format, with its `pending` and stand-in entries, and where a stand-in entry first appears
-     (*Widgets 0.7.0 styles through stand-ins*);
+   - the contract table's format, with its `pending` and stand-in entries, where a stand-in entry first appears
+     (*Widgets 0.7.0 styles through stand-ins*), and the side S21.3 adds, what the connector supplies (its flags and
+     their order, content variants, element data, root inputs, font metrics, the presences it reports, a row per
+     declared keyed component), which the tables hold from the connectors' port on (ADD-A146);
    - one linked example per toolkit, `slice-<toolkit>`, an `[[example]]` of its connector crate (egui-widgets'
      widgets in egui's), which draws the slice's button in its states and which each unit's connector task extends
      with the unit's widgets, kept until M5 links the showcases again; its screenshots are compared at M2.1, and at
@@ -981,9 +988,12 @@ placement unit, spec ADD-A120); S7; S8 without
    an application calls; the three toolkit crates hold some hundreds of `pub fn` lines with no stated fate, and two
    implementers would build different crates). Second, `native_theme::transitions`' runtime (spec
    S2.7, ADD-A131), which starts once the spec batch closing the ledger's queue #98 (how an engine runs a spring) and
-   #137 (Compose's corner morph) is applied (ADD-A146): `interpolate_color` with a vector table per `ColorInterpolation` member, and `Motion`, `Places`,
+   #137 (Compose's corner morph) is applied (ADD-A146): `interpolate_color` with a vector table per `ColorInterpolation` member, Compose's spring in
+   `native_theme::timing` with its vector table beside libadwaita's (S2.7's *How a spring runs*), and `Motion`, `Places`,
    `Presence`, `Drawn` and `MotionUpdate` with the engines the slice's presets state (at the facts'
-   state on 2026-11-02 `GtkCss`, `Breeze`, `ComposeAnimatable`, `WinUi` and `WinUiAnimatedIcon`; the facts decide), each to its source (D10's
+   state on 2026-11-02 `GtkCss`, `Breeze`, `ComposeAnimatable`, `WinUi` and `WinUiAnimatedIcon`, and
+   `ComposeShapeMorph` once the Material facts' corner transitions name it, that batch's facts follow-up, made before
+   this task; the facts decide), each to its source (D10's
    clean room for the LGPL and GPL ones) with a test per clause of S2.7; an engine no slice preset states comes with
    the M3 unit whose facts first state it. S4.3's theme change is not here: `token.theme_change` (staged by the M1a
    design's decision 9), `Resolution.suspends`, `MotionUpdate.theme_change` and `suspended_until`, the engines'
@@ -1004,12 +1014,15 @@ placement unit, spec ADD-A120); S7; S8 without
    them (M1b, M3), each with its vector table.
 3. S12 complete.
 4. S14 complete, with what M1b's accent run left of it (task T6b built `apply_palette` for a port alone; ADD-A145): the
-   mapping source (`Palette::from_toml`), `Palette::with_port` and `ResolvedTheme::palette_status()`; then the bundled
+   mapping source (`Palette::from_toml`), `Palette::with_port` and `ResolvedTheme::palette_status()`, S12's mapping
+   check on every preset and `apply_palette` accepting and suspending a palette under a followed scheme it lacks
+   (S12, S14; ADD-A146); then the bundled
    palettes, one for each of the ten schemes 0.7.0 ships of the seven projects, a variant as R19 defines it (four
    for Catppuccin, each with the accent 0.7.0's preset states and that accent's KDE port; S19.1, ADD-A146), as mappings with their labelled
    picks (the guide's own example value where it gives one, else the middle of the stated range; the picks listed in
    the ledger for the maintainer's veto); the KDE ports, with their measured facts added to the accent run; the
-   projects' published colours as facts (a palette lane and its verifier); the gate's palette run (each pick skipped).
+   projects' published colours as facts (a palette lane and its verifier); the gate's palette run, by S17's *The
+   palette run* (each pick skipped).
    Beside it, `material-3`'s accent-derivation layer (its `m3_role` statements and S8's leave-out, S9.2), the gate's
    perturbed stand-in stating no `accent` there and the `material-3` accent run (S17; ADD-A134, ADD-A142; ledger queue
    #185), after the Material lane restates the preset's baseline (its roles Compose's sourced literals, its
