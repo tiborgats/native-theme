@@ -1,8 +1,9 @@
 # v0.7.1 — Model completeness: Rationale
 
 **Status:** design, drafted 2026-10-28 from the gap map; checked eight times independently (§5), then amended
-in place during the specification's thirteen checks (each amendment noted under R25.13); done with the
-specification, 2026-10-29. Input: [`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)
+in place during the specification's thirteen checks; done with the specification, 2026-10-29, and amended in place
+since by the 0.8.0 plan's decisions D12 and D13 and by the specification's batches, the last ADD-A146 (2026-11-09).
+Every amendment is noted under R25.13, in the order made. Input: [`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)
 and its six platform files ("the map"; a row is identified by its file and ID, and cited here by ID,
 with its file where the prefix does not say it). Next: the specification,
 `todo_v0.7.1_model-completeness-spec.md`, which states every type, field and rule decided here and
@@ -279,7 +280,9 @@ may also be negated (*not* these); the rule matches when every stated part holds
 - *Conditions,* window- or theme-wide, each with the source that supplies it:
   - from the system, by the reader: increased contrast, high contrast, reduced transparency, reduced
     motion, animations off (GNOME has both settings, `reduced-motion` and `enable-animations`; KDE's
-    speed factor 0 sets animations off, so the factor and the condition are not two routes to one job),
+    speed factor 0 sets both, the one setting standing for both, as KDE's portal and plasma-integration
+    report it, the specification's S9.3, so the factor and the conditions are not two routes to one job;
+    ADD-A146),
     bold text, button shapes, differentiate without colour, tablet mode (KDE, K3.83, Q3.31), the
     mobile form factor where a platform styles by it (Kirigami's `isMobile`, which turns menu hover off
     on Plasma Mobile), battery saver (Windows turns Acrylic off under it, W3-07), the user settings that choose a size for one kind
@@ -373,7 +376,15 @@ input's base for it. The inputs:
   from `UISettings`, and an application or palette changing the accent states the ramp too, or the API
   refuses it. On the `macos-*` presets the accent, the colours AppKit derives from it by a derivation Apple
   does not publish (the selection, focus and accent-tinted colours, read through `NSColor`), and the
-  separate highlight colour setting; on the `ios-*` presets the tint-dependent roles likewise. On
+  separate highlight colour setting. On the `ios-*` presets the accent alone, UIKit's tint (ADD-A146, awaiting
+  the maintainer's confirmation at D6): what
+  UIKit draws in the tint is stated as derivations over it, measured under the default tint and a second one, as
+  the accent-following values of `macos-*` are measured under a second accent; until the host pass under the
+  second tint is run, the facts hold the default tint's measured literals and their derivations are pending (the
+  unmeasured register's U706). Rejected: the tint-dependent values as declared inputs, as this bullet had it (they
+  are per style and state: 555 facts of the slice's button alone hold a measured default tint as a literal, values
+  every application setting a tint would have to supply); the default tint's literals kept and the accent refused on `ios-*` (it
+  removes the application's tint on the platform where every application chooses one). On
   `kde-breeze` the accent alone: Plasma derives the accent-dependent roles when the accent or scheme is
   applied and writes them into kdeglobals, so the reader reads them as stated values; the preset states Breeze's scheme
   values as Plasma's default ("Accent color from color scheme") writes them, with no accent derivation, and an
@@ -416,7 +427,7 @@ colours.
 **R2.7 — Declarations.** A preset declares, per widget, its variants, sizes and densities (per flavour where
 they differ, and per container where the platform draws a size only in some, such as a large button outside a
 navigation bar), its widget-specific state flags, exclusive state groups with their precedence and recency sets (R3), its
-keyed components' availability, sizes, variants, flags and value types (their parts and fields come from the
+keyed components' declarations, the same keys as a widget's with their values' types (their parts and fields come from the
 catalogue, as typed widgets' do, R14), its keyed colour roles, text styles and elevation entries, its
 flavours, and its inputs (R2.6). Adding a layer checks every rule and reference against the declarations: a typo
 is an error, not a silent miss. A query for a size or variant the element's widget does not declare in its
@@ -531,10 +542,24 @@ so the preset must state {checked, hover}.
 - **Derivations:** where a platform states a derivation, the fact is the derivation. The gate resolves each
   preset twice, with its own inputs and base colours and with perturbed ones (another accent, foreground and
   background), and
-  compares both with the facts evaluated the same way, so a literal stated where the platform derives fails.
+  compares both with the facts evaluated the same way, so a literal stated in a preset where the facts derive fails.
   On macOS the reader reads the system's colours under the user's accent, so the facts there are
-  measurements under each appearance; iOS's are measured under each appearance and the default tint until
-  its reader exists, its tint-dependent roles being inputs (R2.6).
+  measurements under each appearance; iOS's are measured under each appearance, under the default tint and a
+  second one, so that what UIKit draws in the tint is a measured derivation over the accent (R2.6), as macOS's
+  accent-following values are from its second-accent pass; until the host pass under the second tint is run,
+  the facts hold the default tint's literals and their derivations are pending (the unmeasured register's U706;
+  ADD-A146, awaiting the maintainer's confirmation at D6). Rejected: the default tint alone until a reader exists, as this bullet had it: on iOS the
+  application supplies the accent itself, reader or not (R1.5), and the measuring host reads these values under
+  any tint now; and under one tint the facts hold the default tint as literals, which an application's accent
+  leaves in place and the perturbed run cannot tell from a derivation.
+- **What the gate proves** (ADD-A146): the presets are generated from the facts (the plan's D6 item), so the gate
+  proves that every key has a fact under every listed combination, that the model resolves to it, and that a
+  measured derivation holds over each of its passes. It cannot prove that the facts hold every combination and
+  every derivation the platform has: a fact is a selector, as a rule is, so a look the lane never wrote is covered
+  by a broader fact, and a literal written where the platform derives is the generated preset's literal too. That
+  is the work of the facts' independent verification, whose verifier derives each unit's state model from the
+  sources without the lane's (the plan's *How values are checked*), and, on a measured platform, of a pass per
+  input that derived values follow.
 
 - **Parts not drawn** (ADD-A130): where the preset does not draw a part, the gate compares none of its fields and
   fails no field's fact that holds there; whether the part is drawn is checked once, by the part's own key (R25.17).
@@ -673,8 +698,9 @@ A paint is a stack of layers, bottom first: a colour, a linear or radial gradien
 macOS 12–15's checkbox box, MAC-X09, bezels to verify, MAC-B05; WinUI's elevation strokes, W3-04), or a
 material, each with a blend mode (macOS's vibrant foregrounds blend with what is beneath, MAC-X03). Paint fills
 parts, strokes, text, icons and glyphs. A rule sets a part's paint or appends layers over `base`: libadwaita's
-stacked fills (GN-1.30, GN-3.06) and its and the tokens' state layers are appended layers; Material's state layer
-and press ripple are the part's `interaction` block (R3).
+stacked fills (GN-1.30, GN-3.06) and GTK's and libadwaita's state layers are appended layers; Material's state layer
+and press ripple, a layer the tokens state and Compose does not draw included (R1.6), are the part's `interaction`
+block (R3; ADD-A146).
 
 **Materials** (MAC-X02, MAC-X03; Liquid Glass, MAC-X04–MAC-X06, X-MT-5–X-MT-13; Mica, Mica Alt, Acrylic,
 W3-06–W3-10; KWin's blur, K3.11):
@@ -746,7 +772,9 @@ MAT-X13–MAT-X15, X-MO-1).
   WinUI's pressed knob stretching (W1-120) and its chevron (W1-132).
 - **Timing:** a cubic Bézier, linear, steps, or a spring stated physically (mass, stiffness, damping, with the
   initial velocity, rest threshold and clamping libadwaita's `AdwSpringAnimation` states), as libadwaita and
-  Material state springs; Apple's response and damping fraction convert to it exactly; the identity, however a source
+  Material state springs; a spring Apple states by response and damping fraction, or by duration and bounce, has
+  no conversion to these a pinned source states (the unmeasured register's U128, UIKit's default spring: a source
+  to pin, or a spring form by duration and bounce; ADD-A146); the identity, however a source
   writes it, is `Linear` (ADD-A125); any other curve the toolkit computes
   by a function of its own is one of a closed set of platform curves, each implemented once in native-theme to its
   cited source (`Timing::Platform`, R25.6): a curve is code, as a placement strategy is (R16). The set holds
@@ -765,7 +793,8 @@ MAT-X13–MAT-X15, X-MO-1).
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
   input), except during a theme change, which the theme-change token governs, and except under Breeze's engines,
   which start on their own test, GtkSwitch's slide, which starts on an activation, ButtonGroup's press, which starts
-  as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
+  as `pressed` becomes kept, WinUI's AnimatedIcon, which starts on a change of its key (below), and a CSS animation,
+  which starts as its block or part becomes drawn (ADD-A146); the transition of
   the style after the change governs, in both directions, as in CSS and GTK
   (`gtkcssanimatedstyle.c`); a part hidden at rest is a `shown` part exactly when its source animates its entrance or
   exit (an unmeasured motion `Absent` meanwhile; a `popup` part's opening and closing queue #118's, its presence ordinary state; an expander's collapsed content (its presence, layout and query scope) and its reveal wholly #118's, a layout and presentation question for ADD-A129's survey; one rule for every interim of #118: a deferred subject whose motion needs machinery the model lacks, or whose row states no presentation, appears and leaves at once until ADD-A129; so a `popup` part drawn as itself opens and closes at once, one drawn as another widget presents as that widget, and every other stated presentation runs, R25.6, but an expander's reveal, a layout change no presentation kind makes; rejected: deciding the expanders here, where `shown` keeps a layout box every source collapses and an `Absent` box leaves its rows and controls drawn or unqueried (checks 18 to 23); counting the overlays as popups, whose line read either way (their parts, a substitute); and no presentation until ADD-A129, which would undo R25.6 for a deferral), styled
@@ -863,8 +892,9 @@ MAT-X13–MAT-X15, X-MO-1).
   - *Stated limitations*: Breeze's differ for at most its duration (100 ms by default, `kstyle/breeze.kcfg:53-55`),
     but native fidelity and cover-everything-visible admit none where the source states the rule.
   - **Decision**: *the engine*, `Transition.engine`, a closed set of the toolkits' engines (`GtkCss`, `AdwAnimation`,
-    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `ComposeHeld`, `WinUi`,
-    `WinUiAnimatedIcon`, `GtkSwitch`), each implemented once in
+    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `ComposeShapeMorph`,
+    `ComposeHeld`, `WinUi`, `WinUiAnimatedIcon`, `GtkSwitch`, `CssAnimation`; the specification's S2.7 holds the
+    list, ADD-A146), each implemented once in
     native-theme to its source, as the platform curves, the ripple effect and the scroll decelerations are: a curve's,
     an effect's and a deceleration's rules are code, and so are an engine's. Its data is only what the code takes per
     transition: Breeze's test, quoted from its `updateState` call, whether AdwEntryRow's title replays, and the
@@ -990,7 +1020,10 @@ MAT-X13–MAT-X15, X-MO-1).
   (Qt's own 250 ms tab move is not scaled). At a factor of zero a spring jumps to its end, as a curve does.
 - **Theme changes:** what the platform does when the colour scheme, the accent or another input, a contrast
   setting, a palette or the preset changes (Appendix B's kind K57; GN-3.23, W-P3-16†) is the theme-change
-  token: one of a crossfade of the window with its duration; property transitions suspended for a duration
+  token: one of a crossfade of the window with its duration (no source read states one: it is the answer the
+  map's rows on the platforms whose code is not read may get, whether the switch changes at once or cross-fades,
+  MAC-P4-9†, X-MO-11†, W-P3-16†, MAT-P3-18†, so a preset states it only from the measurement that finds it;
+  ADD-A146); property transitions suspended for a duration
   (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:236-239`,
   `:296-299`, with no crossfade; it reaches the `GtkCss` engine's transitions only, so the tab's 150 ms close-button
   fade, an `AdwAnimation`, still runs, `adw-tab.c:854-862`, and a CSS transition running when the suspension starts
@@ -1042,8 +1075,9 @@ non-linear font scaling (MAT-X19) are not a single factor: those platforms' read
 **Points.** A size stated in points becomes logical pixels before any of this, at the platform's font DPI, which is not
 one constant across the platforms (today's `ResolutionContext::font_dpi`): the preset states its platform's DPI as a
 token, from its facts, or 72 where the platform's point is the logical pixel, the model's own value (Apple's; the
-specification's S9.4, ADD-A125), and the reader reports the system's where the platform has a setting (KDE's forced font DPI on
-X11, then `Xft.dpi`, as the facts record them); a change of it is a theme change (R9). Folding the DPI into the
+specification's S9.4, ADD-A125), and a reader reports the system's where the platform has a setting its toolkit's
+scale factor does not already carry (on an X11 session the font DPI reaches the application through that scale, so
+no reader of 0.8.0's reports one, the specification's S9.4; ADD-A146); a change of it is a theme change (R9). Folding the DPI into the
 text-scaling factor was rejected: that factor also scales sizes stated in pixels and is 1 where the platform scales by
 the font size itself, so it would scale pixel-stated fonts wrongly; a fixed DPI in the code was rejected as false on
 some platforms and as dropping the user's KDE setting.
@@ -1070,7 +1104,9 @@ look). For MAC-C06, MAC-CB01, MAC-EX02 and MAC-L10 the part's look is therefore 
 (`NSButton` with its checkbox or disclosure bezel, `NSPopUpButton`), in the state, size and appearance asked for,
 rendered by native-theme at run time through AppKit, on the main thread as AppKit requires, at the display's
 backing scale and the control's pixel size, with the window's key state, and cached per control, state, size,
-appearance, key state and scale, as the SF Symbols loader renders symbols today. Called off the main thread, or
+appearance, key state, layout direction and scale, as the SF Symbols loader renders symbols today; the cache is emptied at every
+theme change the reader reports (R2.5), as AppKit's drawing follows settings the key does not hold (the accent;
+ADD-A146). Called off the main thread, or
 off macOS (a `macos-*` preset used on another platform), the rendering is absent and the modelled parts stand;
 a toolkit that cannot use the rendering records that limit (R23). For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
 together, the rendering stated on the box, drawn in every state, ADD-A126); the modelled box (its measured fill,
@@ -1084,10 +1120,11 @@ still measured. Elsewhere a glyph's size, stroke width and fill are its values.
 
 ### R12 — Focus, caret, selection and highlights (C15, C16, C17)
 
-**Focus indicator:** a block (R2.1) every focusable part's style carries: a kind (ring, filled ring, underline,
-none), stroke, offset, corners (concentric with its part unless stated), shadow and transition, shown in the
-focus-visible state. The base states it, by reference to the platform's token where the platform has one
-indicator, or its own where a part differs (KDE's focus line under tab labels, K3.21). A focus that only changes a
+**Focus indicator:** a block (R2.1) every focusable part's style carries: a kind (a ring, an underline, or a
+platform's own keyed kind, WinUI's Reveal; a part with no indicator states the block absent, and a filled ring is
+the ring, no kind of its own: the specification's S2.10, ADD-A141, ADD-A146), stroke, offset, corners (concentric
+with its part unless stated), shadow and transition, shown in the focus-visible state. The base states it, by
+reference to the platform's token where the platform has one indicator, or its own where a part differs (KDE's focus line under tab labels, K3.21). A focus that only changes a
 fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields become the token; when focus
 becomes visible is a widget behaviour (R17). The indicator is drawn while focus is visible and while its transition out runs; its other end is the
 indicator of the style without the flag under the element's other flags after the change, its paint and shadow
@@ -1175,8 +1212,10 @@ at the root, and a container with its own (an iPad split view's column) passes i
 on it (R2.3). A breakpoint one widget owns is its value: AdwDialog becomes a bottom sheet at a width of 450 or a
 height of 360 or less, and the bottom sheet is then a variant of its presentation that rules select on.
 
-**Right-to-left:** the toolkit mirrors the layout; the model states what the platform does not mirror or does
-differently (Material keeps time-based content left to right and mirrors question-mark icons in Arabic and Farsi but
+**Right-to-left:** the query mirrors the layout: values are stated for a left-to-right layout, and the query
+returns them physical for the element's direction, so no connector mirrors again (the thirteenth check's amendment,
+the specification's S2.4; ADD-A146); the model states what the platform does not mirror or does differently
+(Material keeps time-based content left to right and mirrors question-mark icons in Arabic and Farsi but
 not Hebrew, MAT-FM03†; libadwaita's `:dir()` rules, GN-FM03†), as icon-role properties (R11) and rules selecting on
 the direction (R2.3). What mirrors is the layout's own geometry (padding and margins per side, alignments, placement)
 and a part's translation, a displacement in that layout; a part's drawing (its corners, stroke edges, shadow offsets
@@ -1254,22 +1293,38 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   the mapping records the value it picks and labels it as its pick;
 - leaves every role it does not cover to the platform's value and derivation (a libadwaita hover is the foreground at an
   opacity, whatever the foreground is);
-- is one palette per variant the project publishes (Catppuccin's Mocha with its Mauve accent is one); it offers only the
+- is one palette per variant the project publishes. A variant is a set of the project's base colours under one
+  name with one of the accents the project publishes for it, in the schemes the project defines under that name:
+  Catppuccin's 4 flavours × 14 accents are 56 variants (ADD-A146). 0.8.0 bundles the ten schemes 0.7.0 ships (the
+  plan's D13), each as the variant whose accent 0.7.0's preset states (at `v0.7.0` Catppuccin Latte `#1e66f5`,
+  Frappé `#8caaee`, Macchiato `#8aadf4`, Mocha `#89b4fa`), which the palette's facts check against the project's
+  published colours; another accent's variant is another palette, not bundled. Rejected: bundling every variant, 56
+  Catppuccin palettes and as many KDE ports, where D13 asks for what 0.7.0 has. It offers only the
   schemes the project defines (Catppuccin Latte is light, the other three flavours dark; Dracula dark), and today's
   invented light variants of the dark flavours go;
 - is an application layer (R2.4) of colour-role bases, input bases and colour tokens, marked as replacing the reader's
-  colour scheme: the reader's colour values (its scheme, its effect parameters, the user's accent) are not applied, and
-  the platform's condition rules (KDE's inactive effects) apply over it;
+  colour scheme: the reader's colour values (its scheme, its effect parameters, and under a mapping the user's accent)
+  are not applied; under a KDE port, which states no accent, the reader's accent stays in force and Plasma's
+  derivation applies over the port's scheme (R2.6; the specification's S14 recorded the choice; ADD-A146); the
+  platform's condition rules (KDE's inactive effects) apply over it;
 - is suspended while either contrast condition holds, unless its project states colours for it (R2.4);
-- is refused by the API under a scheme it lacks; an application that wants a dark-only palette in a light system sets
-  the colour scheme itself (R2.3); when the system's scheme changes under it, the API reports that it no longer applies
-  and the theme is the preset with the reader's values, and the palette applies again when the scheme returns (it
-  stays chosen, so the application need not watch the scheme to re-apply it);
+- applies only under the schemes it has (ADD-A146, awaiting the maintainer's confirmation at D6). Where the application follows the system's scheme and that
+  scheme is one the palette lacks, the API accepts the palette and suspends it: it reports that the palette does
+  not apply, the theme is the preset with the reader's values, and the palette applies when the scheme returns,
+  whichever came first, the palette or the scheme (it stays chosen, so the application need not watch the scheme to
+  apply it or to re-apply it). The API refuses the palette only where the application itself picked a scheme the
+  palette lacks (R2.3), two choices of the application's that contradict each other, as it refuses that pick under
+  the palette; an application that wants a dark-only palette in a light system sets the colour scheme itself.
+  Rejected: refusing it under a followed scheme too, the earlier rule, under which the same state (a dark-only
+  palette chosen, the system light) was an error or a suspension by which came first, and an application restoring
+  its saved palette at start-up in a light session had to watch the scheme to apply it later;
 - carries no icon set (today's `icon_set = "lucide"` goes, as no project's colours state one);
-- on `windows-11`, `macos-*` and `ios-*`, whose accent-dependent colours follow derivations their makers do not
+- on `windows-11` and `macos-*`, whose accent-dependent colours follow derivations their makers do not
   publish (R2.6), states those derived inputs too, mapped to the project's colours in a per-preset section and
   labelled as native-theme's picks like any other (the alternatives: leaving the platform's own accent in place under
-  the palette, which mixes two colour schemes, or refusing the palette on those presets, which drops it there);
+  the palette, which mixes two colour schemes, or refusing the palette on those presets, which drops it there); on
+  `ios-*` the accent is the one accent input, and what UIKit draws in the tint follows the palette's accent by the
+  measured derivations (R2.6; ADD-A146);
 - skips a role or surface set the current preset does not have, so one file serves every preset.
 
 The facts gate checks a palette's colours against the project's published colours; its labelled picks are recorded as
@@ -1307,6 +1362,12 @@ struct from `default()` and field assignment (the connectors, showcases and exam
 connector must map in full do not get it, and `IconRole` loses it: state flags, conditions, value kinds, icon roles,
 blend modes, timing kinds, glyph sources, placement strategies, transition kinds, theme-change kinds. A new variant then
 breaks the connectors' builds, which before 1.0 is the check that they map it, rather than a wildcard arm that hides it.
+The enums no connector maps, the error, diagnostic and status enums (a refused layer's problems, a reader's failure
+and status, the platform diagnostics), get it (ADD-A146): an exhaustive match checks nothing where nothing is mapped,
+and a new member of an exhaustive public enum makes its release a breaking one (the plan's D14), so one new
+validation problem would turn a follow-up release that adds only keyed components or placement into a breaking one.
+Rejected: every public enum exhaustive, the error enums included, the specification's wider reading, made for
+simplicity before D14 gave it that price.
 Enums with keyed counterparts are typed sets whose keyed side carries what is platform-specific (material identities are
 keyed per platform, R6), so they need no wildcard either. Structs their caller fills in full (a window's conditions, the
 root's inputs, a sibling, a placement's input, which a connector fills; the reader's state, which a reader or a
@@ -1331,7 +1392,10 @@ caller's build, and a default would hide it.
 - *One release.* Against: a long branch.
 - *0.8.0 at today's coverage, then the rest by units* (added by the maintainer's decision D13 of the 0.8.0 plan,
   2026-11-06): 0.8.0 holds every widget, colour role, token and value today's model holds, the catalogue's other
-  units following in later releases. For: users lose nothing 0.7.0 has and get the new model weeks earlier; each
+  units following in later releases. For: users lose no widget, colour role, token or value of 0.7.0's model but two
+  (the status colours on `macos-*`, absent by R25.17, and the community presets' invented light variants, which go by
+  R19; ADD-A146), what 0.7.0's API holds beyond them and 0.8.0 does not keep being the plan's *Not kept*, and get the
+  new model weeks earlier; each
   release's units are whole, every capability filled on them but placement, which 0.8.0's widgets defer to the
   placement unit (their menus, popovers and dialogs open where the toolkit puts them, as in 0.7.0), so no widget
   shows a mixed look. Against: several releases, each with its gate run; a later widget that adds members to an
@@ -1369,9 +1433,10 @@ that carry it, or to the decision that places it elsewhere: out of scope (R1.1�
 release (R1.5), a look the chosen reference does not draw (R1.6), the readers' milestone (R18). The rows are the platform files' gap rows; withdrawn rows and the 42
 pointer rows are excluded, and the cross-check and pass decision tables are decisions, not rows. A script checks that
 every row maps to at least one target. This proves the model carries everything the map found; what the map, a survey,
-did not find is caught by R4's gate, whose lists come from the platforms' own state models.
+did not find is caught by R4's lists, which come from the platforms' own state models, and by the facts' independent
+verification (R4's *What the gate proves*; ADD-A146).
 
-### R25 — Decisions the specification's work required (2026-10-28)
+### R25 — Decisions the specification's work required (2026-10-28; R25.16 and R25.17 by the specification's batches ADD-A127 and ADD-A130)
 
 Writing the widget catalogue and mapping every row found mechanisms no decision above carried, and facts that
 refine decisions above. Each is decided here, with the decision it extends.
@@ -1495,6 +1560,8 @@ surface set's roles while selected text has its own roles, which a platform that
 references to that set (R12). One refines R2.4: the application's accent is a setting applied after its layers and a palette,
 derived again on every change of the stack, so the accent shown never depends on the order of the calls.
 
+The amendments made in place, in the order made (R25.14 to R25.17 follow this list).
+
 Amended in place after the specification's eighth check:
 
 - R5.1: the Selection set's disabled and inactive groups start from Window's colours, as `kcolorscheme.cpp:304-319`
@@ -1590,6 +1657,42 @@ Amended by the maintainer's decision D13 of the 0.8.0 plan (2026-11-06):
   to a later one, 0.8.0's placement) and passing the gate. "Everything
   visible" stays the goal; only when each part is released changes.
 
+Amended in place by the specification's batch ADD-A146 (2026-11-09), the fixes of the independent document check
+of that day:
+
+- R2.3: KDE's speed factor of zero sets both motion conditions, reduced motion and animations off, as the
+  specification's S9.3 and the reader have it.
+- R2.6, R4, R19: `ios-*` declares the accent alone; what UIKit draws in the tint is a measured derivation over it,
+  pending the host pass under a second tint (the unmeasured register's U706), so `ios-*` leaves the presets whose
+  derived accent inputs a palette or an application states (a recorded decision reversed, awaiting the maintainer's
+  confirmation at D6).
+- R4, R24: what the gate proves now that the presets are generated from the facts; that the facts hold every
+  combination and derivation is the independent verification's work.
+- R6: GTK's and libadwaita's state layers are the appended paint layers; a layer Material's tokens state is the
+  `interaction` block's, as R1.6 and the specification's S2.12 have it.
+- R2.7: a keyed component's declaration has the keys a widget's has, with its values' types.
+- R9: a spring Apple states by response and damping fraction or by duration and bounce has no pinned conversion
+  (U128); no source read states a theme change's crossfade, which a preset states only from a measurement; a CSS
+  animation among the starts that are no value change, and the engines' list brought to the specification's
+  (`ComposeShapeMorph`, `CssAnimation`).
+- R10: a reader reports a font DPI only where its toolkit's scale factor does not already carry the setting, so none
+  does on an X11 session; points still convert at the platform's DPI, and the user's setting reaches the application
+  through that scale.
+- R11: the AppKit rendering's cache is emptied at every theme change the reader reports, and its key holds the
+  layout direction.
+- R12: the focus indicator's kinds are the specification's three (a ring, an underline, a keyed kind).
+- R16: the section's opening follows the thirteenth check's amendment: the query mirrors, not the toolkit.
+- R19: a variant defined, a set of the project's base colours under one name with one of the accents the project
+  publishes for it, so Catppuccin's are 56 and its four bundled palettes the variants with 0.7.0's accents; a
+  palette under a followed scheme it lacks is accepted and suspended, and refused only under a scheme the
+  application picked (a recorded decision reversed, awaiting the maintainer's confirmation at D6); under
+  a KDE port the reader's accent stays in force, as the specification's S14 recorded.
+- R21: the error, diagnostic and status enums, which no connector maps, are `#[non_exhaustive]`; what 0.8.0 keeps
+  of 0.7.0 is its model's widgets, roles, tokens and values but `macos-*`'s status colours (R25.17) and the
+  community presets' invented light variants (R19), the plan listing what its API does not keep.
+- R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
+  none (the specification's S15).
+
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
 
@@ -1619,7 +1722,8 @@ its own margin, not centred in the 30 px overlay that is its editable arrow area
 2 px into the arrow's square rather than ending before it. So the arrow area, where drawn, is a box at the body's end
 by its own `margin`, `min_width` and `max_height`, taking no layout space (each platform's arrow column is already
 the gap, the arrow's margin box and the padding), and the arrow is placed by the row whether or not an area is drawn;
-on `macos-*`, where the rendering replaces the arrow, its `ControlImage.arrow` is the end part.
+on `macos-*`, where the rendering replaces the arrow, its arrow area, placed from the resolved values (the
+specification's S15; ADD-A146), is the end part.
 
 *The cross axis.* WinUI centres its chevron on the whole row under an uneven padding (`12,5,0,7`), Compose its
 trailing box on the field's height; `Inline` centres on the content box. Options: `Inline`'s with WinUI's chevron

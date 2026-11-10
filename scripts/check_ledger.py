@@ -67,9 +67,13 @@ follow-up release of the plan's D13, so never one of them.)
 
 The Unmeasured register (every run)
 -----------------------------------
-The ledger's `## Unmeasured register` table (`| Id | Key and combination |
-Attempts and evidence | Options | Decision |`): a missing section or table,
-an Id not `U` and a number, and an Id two rows share are findings. Every S17
+The ledger's `## Unmeasured register` table (`| Id | Kind | Key and
+combination | Attempts and evidence | Options | Decision |`): a missing
+section or table, an Id not `U` and a number, an Id two rows share, and a
+Kind that is neither `b` (a measurement to make: a harness or probe pass, an
+analysis of committed evidence, a source read; its lane's queue) nor `d` (a
+decision: a value with no route, or a choice; the maintainer's) are findings
+(the plan's *How values are checked*, ADD-A146). Every S17
 pending fact (a `[[fact]]` with `pending` of `docs/facts/<platform>/*.toml`,
 the folders of NOT_PLATFORMS left out) and every pending declaration (a
 state model's `default_size = { pending = "U<n>" }`, the widget's or a
@@ -98,10 +102,11 @@ Also:
   enabled units where its key lies in one; a state model's pending entry
   (S10's pending default size) where its widget does (S17: it counts as a
   pending fact of its widget's unit).
-- The Unmeasured register: a row of the enabled units with an empty Decision
-  is a finding. A row is of a unit not enabled where every pending fact or
-  entry naming it is, and at least one does; a row none names is the
-  enabled units'.
+- The Unmeasured register: a `b` row of the enabled units is a finding, a
+  measurement not made; a `d` row of them with an empty Decision is a
+  finding. A row is of a unit not enabled where every pending fact or entry
+  naming it is, and at least one does; a row none names is the enabled
+  units'.
 - No S17 pending fact or declaration of the enabled units: each is a
   finding, whether or not its id names a row (each release is made with
   none).
@@ -167,7 +172,8 @@ DESTINATIONS = {
     *NEEDS_REASON,
 }
 TRIAGE_HEADER = ["Source", "Heading", "Item", "Destination", "Reason"]
-UNMEASURED_HEADER = ["Id", "Key and combination", "Attempts and evidence", "Options", "Decision"]
+UNMEASURED_HEADER = ["Id", "Kind", "Key and combination", "Attempts and evidence", "Options", "Decision"]
+KINDS = ("b", "d")   # a measurement to make (the lane's backlog); a decision (the maintainer's)
 
 IMPORTED = DOCS / "facts" / "imported"
 FACTS = DOCS / "facts"
@@ -440,18 +446,26 @@ def register_rows(ledger: str, ledger_text: str) -> tuple[list[tuple[int, list[s
 
 def unmeasured_problems(ledger: str, ledger_text: str, final: bool = True,
                         outside: frozenset | set = frozenset()) -> list[tuple[str, int, str]]:
-    """The register's Ids (every run): `U` and a number, no two rows sharing one; with `final`, also each row's
-    Decision but a row of a unit not enabled (its Id in `outside`: outside_ids())."""
+    """The register's Ids and Kinds (every run): `U` and a number, no two rows sharing one, each Kind `b` or `d`;
+    with `final`, also every `b` row (a measurement not made) and every `d` row with an empty Decision, but a row of
+    a unit not enabled (its Id in `outside`: outside_ids())."""
     rows, found = register_rows(ledger, ledger_text)
     seen = set()
     for n, c in rows or []:
-        if not ID.fullmatch(c[0]):
-            found.append((ledger, n, f"unmeasured id {c[0]!r} is not U and a number"))
-        elif c[0] in seen:
-            found.append((ledger, n, f"unmeasured id {c[0]} is used twice"))
-        seen.add(c[0])
-        if final and not c[4] and c[0] not in outside:
-            found.append((ledger, n, f"unmeasured {c[1]!r} has no decision"))
+        rid, kind, key, decision = c[0], c[1], c[2], c[5]
+        if not ID.fullmatch(rid):
+            found.append((ledger, n, f"unmeasured id {rid!r} is not U and a number"))
+        elif rid in seen:
+            found.append((ledger, n, f"unmeasured id {rid} is used twice"))
+        seen.add(rid)
+        if kind not in KINDS:
+            found.append((ledger, n, f"unmeasured {rid}: kind {kind!r} is neither b (a measurement to make) nor d "
+                                     f"(a decision)"))
+        elif final and rid not in outside:
+            if kind == "b":
+                found.append((ledger, n, f"unmeasured {key!r} is a measurement not made"))
+            elif not decision:
+                found.append((ledger, n, f"unmeasured {key!r} has no decision"))
     return found
 
 
@@ -677,10 +691,10 @@ and more.
     ledger = """# Ledger
 ## Unmeasured register
 
-| Id | Key and combination | Attempts and evidence | Options | Decision |
-|---|---|---|---|---|
-| U1 | `button.body.fill` {hover} | run 1 | real hardware | catalogue correction |
-| U2 | `menu.body.shadow` | run 2 | another image | |
+| Id | Kind | Key and combination | Attempts and evidence | Options | Decision |
+|---|---|---|---|---|---|
+| U1 | d | `button.body.fill` {hover} | run 1 | real hardware | catalogue correction |
+| U2 | d | `menu.body.shadow` | run 2 | another image | |
 
 ## Spikes and drift runs
 
@@ -797,9 +811,10 @@ After the table.
     got_unmeasured = unmeasured_problems("L", ledger)
     if got_unmeasured != [("L", 7, "unmeasured '`menu.body.shadow`' has no decision")]:
         failures.append(f"unmeasured: got {got_unmeasured}")
-    ids = ("## Unmeasured register\n\n| Id | Key and combination | Attempts and evidence | Options | Decision |\n"
-           "|---|---|---|---|---|\n| U1 | a | run 1 | none | kept |\n| U1 | b | run 2 | none | kept |\n"
-           "| V3 | c | run 3 | none | kept |\n")
+    head = ("## Unmeasured register\n\n| Id | Kind | Key and combination | Attempts and evidence | Options | "
+            "Decision |\n|---|---|---|---|---|---|\n")
+    ids = (head + "| U1 | d | a | run 1 | none | kept |\n| U1 | d | b | run 2 | none | kept |\n"
+           "| V3 | d | c | run 3 | none | kept |\n")
     if unmeasured_problems("L", ids) != [("L", 6, "unmeasured id U1 is used twice"),
                                          ("L", 7, "unmeasured id 'V3' is not U and a number")]:
         failures.append(f"unmeasured ids: got {unmeasured_problems('L', ids)}")
@@ -811,6 +826,29 @@ After the table.
         failures.append(f"unmeasured ids, every run: got {unmeasured_problems('L', ids, False)}")
     if unmeasured_problems("L", "# Ledger\n", final=False) != [("L", 1, "no `## Unmeasured register` section")]:
         failures.append("unmeasured, every run: a ledger without the section passed")
+    # the two kinds of row (the plan's *How values are checked*, ADD-A146): a Kind neither `b` nor `d` on every run;
+    # with --final a `b` row is a measurement not made, a `d` row needs its Decision, a row of a unit not enabled
+    # neither
+    kinds = (head + "| U1 | b | a | run 1 | a probe pass | |\n| U2 | d | b | run 2 | a choice | kept |\n"
+             "| U3 | d | c | run 3 | a choice | |\n| U4 | x | e | run 4 | none | kept |\n| U5 | | f | run 5 | none | |\n"
+             "| U6 | b | g | run 6 | a source read | measured since |\n")
+    bad_kinds = [("L", 8, "unmeasured U4: kind 'x' is neither b (a measurement to make) nor d (a decision)"),
+                 ("L", 9, "unmeasured U5: kind '' is neither b (a measurement to make) nor d (a decision)")]
+    if unmeasured_problems("L", kinds, final=False) != bad_kinds:
+        failures.append(f"unmeasured kinds, every run: got {unmeasured_problems('L', kinds, False)}")
+    want_kinds = [("L", 5, "unmeasured 'a' is a measurement not made"), ("L", 7, "unmeasured 'c' has no decision"),
+                  *bad_kinds, ("L", 10, "unmeasured 'g' is a measurement not made")]
+    if unmeasured_problems("L", kinds) != want_kinds:
+        failures.append(f"unmeasured kinds, --final: got {unmeasured_problems('L', kinds)}")
+    if unmeasured_problems("L", kinds, True, {"U1", "U3", "U6"}) != bad_kinds:
+        failures.append(f"unmeasured kinds, --final, units not enabled: got "
+                        f"{unmeasured_problems('L', kinds, True, {'U1', 'U3', 'U6'})}")
+    if unmeasured_problems("L", ledger.replace("| U2 | d |", "| U2 | b |"), True, {"U1"}) != [
+            ("L", 7, "unmeasured '`menu.body.shadow`' is a measurement not made")]:
+        failures.append("unmeasured kinds, --final: a b row of the enabled units passed")
+    if unmeasured_problems("L", ids.replace("| Id | Kind |", "| Id |")) != [
+            ("L", 1, "the unmeasured register has no table")]:
+        failures.append("unmeasured kinds: a table whose header lacks the Kind column was taken for the register's")
     # S17's pending facts against the register: every run, an id naming no row; --final, every pending fact
     pending_text = """[[fact]]
 key = "button.body.fill"
