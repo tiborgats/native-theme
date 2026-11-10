@@ -121951,28 +121951,13 @@ when = { conditions = ["preset:macos-tahoe"], states = ["disabled"], not_states 
 pending = "U99"
 rows = ["MAC-B09"]
 
-# kept (the macOS tie-break round 8): each cited reading is a fully covered pixel of opaque paint (black over a
-# lighter opaque fill: no mix of the fill and a paint reaches it at less than full coverage), so it is the paint
+# `glass` without `with_icon`: this fact's readings were [glass, with_icon]'s, that set's own fact now; no pass drew
+# the bezel without the image for this key (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#000000ff"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["glass"], not_variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.regular-glass.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.large-glass.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.extraLarge-glass.icon"
-tolerance = 1
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
 # image rect, over an opaque fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
@@ -122014,33 +121999,13 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U751"
 rows = ["MAC-B09"]
 
-# kept (the macOS tie-break round 8): each cited reading is a fully covered pixel of opaque paint (black over a
-# lighter opaque fill: no mix of the fill and a paint reaches it at less than full coverage), so it is the paint
+# `glass` without `with_icon`: this fact's readings were [glass, with_icon]'s, that set's own fact now; no pass drew
+# the bezel without the image for this key (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#000000ff"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["glass"], not_variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.small-glass.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.regular-glass.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.large-glass.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.extraLarge-glass.icon"
-tolerance = 1
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
 # image rect, over an opaque fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
@@ -181816,26 +181781,6 @@ tolerance = 1
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-styles_a.toml#key.styles_a.aqua.disabled_pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-styles_a.toml#key.styles_a.aqua.disabled_pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-styles_a.toml#key.styles_a.aqua.disabled_pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-styles_a.toml#key.styles_a.aqua.disabled_pressed.large-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-styles_b.toml#key.styles_b.aqua.disabled_pressed.mini-help.fill"
 tolerance = 1
 
@@ -182500,26 +182445,6 @@ tolerance = 1
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.large-flexible_push.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.large-circular.fill"
 tolerance = 1
 
 [[fact.cite]]
@@ -183192,26 +183117,6 @@ tolerance = 1
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled_pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled_pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled_pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled_pressed.large-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_b.toml#main_not_key.styles_b.aqua.disabled_pressed.mini-help.fill"
 tolerance = 1
 
@@ -183880,26 +183785,6 @@ tolerance = 1
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.large-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_b.toml#inactive_contrast.styles_b.aqua.disabled_pressed.mini-help.fill"
 tolerance = 1
 
@@ -184526,26 +184411,6 @@ tolerance = 1
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.large-flexible_push.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.large-circular.fill"
 tolerance = 1
 
 [[fact.cite]]
@@ -186691,31 +186556,13 @@ when = { conditions = ["preset:macos-monterey", "contrast_increased"], not_condi
 pending = "U132"
 rows = ["MAC-B01", "MAC-B02"]
 
+# `circular` without `icon_only`: this fact's readings were [circular, icon_only]'s, that set's own fact now; no pass drew
+# the bezel without the image alone for this key (U752; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#ffffffff"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["circular"], not_variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U752"
 rows = ["MAC-B01", "MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.large-circular.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
@@ -186743,31 +186590,13 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.darkAqua.normal.large-circular.fill"
 tolerance = 2
 
+# `circular` without `icon_only`: this fact's readings were [circular, icon_only]'s, that set's own fact now; no pass drew
+# the bezel without the image alone for this key (U752; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#f0f0f0ff"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U752"
 rows = ["MAC-B01", "MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.large-circular.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
@@ -186813,31 +186642,15 @@ when = { conditions = ["preset:macos-monterey", "contrast_increased"], not_condi
 pending = "U132"
 rows = ["MAC-B01", "MAC-B02"]
 
+# `circular` without `icon_only`: this fact's readings were [circular, icon_only]'s, that set's own fact now; no pass drew
+# the bezel without the image alone for this key (U752; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `destructive`, `with_icon` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#ffffff80"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["circular"], not_variants = ["icon_only", "destructive", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U752"
 rows = ["MAC-B01", "MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled.large-circular.fill"
-tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
@@ -187535,9 +187348,47 @@ when = { conditions = ["preset:macos-monterey", "contrast_increased"], not_condi
 pending = "U132"
 rows = ["MAC-B01", "MAC-B02"]
 
+# narrowed (the macOS tie-break round 8): the measured facts of `circular` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-monterey"], states = ["default"], not_states = ["disabled"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey"], states = ["default"], not_states = ["disabled"], variants = ["icon_only"], not_variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U132"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey"], states = ["default"], not_states = ["disabled"], variants = ["icon_only", "circular", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U132"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey"], states = ["default"], not_states = ["disabled"], variants = ["icon_only", "circular", "destructive"], not_variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U132"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], states = ["default"], not_states = ["disabled"], variants = ["icon_only", "circular"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U132"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "window_inactive"], states = ["default"], not_states = ["disabled"], variants = ["icon_only", "circular"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U132"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "not_main"], not_conditions = ["window_inactive"], states = ["default"], not_states = ["disabled"], variants = ["icon_only", "circular"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U132"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"], not_conditions = ["window_inactive", "not_main"], states = ["default"], not_states = ["disabled"], variants = ["icon_only", "circular"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U132"
 rows = ["MAC-B01", "MAC-B02"]
 
@@ -187751,26 +187602,6 @@ tolerance = 1
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.large-flexible_push.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.large-circular.fill"
 tolerance = 1
 
 [[fact.cite]]
@@ -188408,26 +188239,6 @@ tolerance = 1
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.large-flexible_push.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.large-circular.fill"
 tolerance = 1
 
 [[fact.cite]]
@@ -189236,26 +189047,6 @@ tolerance = 1
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled.large-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_b.toml#main_not_key.styles_b.aqua.disabled.mini-help.fill"
 tolerance = 1
 
@@ -190040,26 +189831,6 @@ tolerance = 1
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.normal.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.normal.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.normal.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.normal.large-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_b.toml#key_not_main.styles_b.aqua.normal.mini-help.fill"
 tolerance = 1
 
@@ -190697,26 +190468,6 @@ tolerance = 1
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.pressed.large-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_b.toml#key_not_main.styles_b.aqua.pressed.mini-help.fill"
 tolerance = 1
 
@@ -191321,26 +191072,6 @@ tolerance = 1
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.large-flexible_push.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.large-circular.fill"
 tolerance = 1
 
 [[fact.cite]]
@@ -192129,26 +191860,6 @@ tolerance = 1
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.normal.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.normal.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.normal.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.normal.large-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_b.toml#inactive_contrast.styles_b.aqua.normal.mini-help.fill"
 tolerance = 1
 
@@ -192764,26 +192475,6 @@ tolerance = 1
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.large-flexible_push.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.large-circular.fill"
 tolerance = 1
 
 [[fact.cite]]
@@ -193558,26 +193249,6 @@ tolerance = 1
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.large-flexible_push.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.mini-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.small-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.regular-circular.fill"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.large-circular.fill"
 tolerance = 1
 
 [[fact.cite]]
@@ -209344,33 +209015,13 @@ when = { conditions = ["preset:macos-monterey", "not_main", "window_inactive"], 
 pending = "U139"
 rows = ["MAC-B09", "MAC-B01", "MAC-X16"]
 
-# kept (the macOS tie-break round 8): each cited reading is a fully covered pixel of opaque paint (black over a
-# lighter opaque fill: no mix of the fill and a paint reaches it at less than full coverage), so it is the paint
+# `help` without `icon_only`: this fact's readings were [help, icon_only]'s, that set's own fact now; no pass drew
+# the bezel without the image alone for this key (U139; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#000000ff"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["help"], not_variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U139"
 rows = ["MAC-B09", "MAC-B01"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.normal.mini-help.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.normal.small-help.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.normal.regular-help.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.normal.large-help.icon"
-tolerance = 1
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
 # image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
@@ -209404,33 +209055,13 @@ when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions =
 pending = "U751"
 rows = ["MAC-B09", "MAC-B01"]
 
-# kept (the macOS tie-break round 8): each cited reading is a fully covered pixel of opaque paint (black over a
-# lighter opaque fill: no mix of the fill and a paint reaches it at less than full coverage), so it is the paint
+# `help` without `icon_only`: this fact's readings were [help, icon_only]'s, that set's own fact now; no pass drew
+# the bezel without the image alone for this key (U139; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#000000ff"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["help"], not_variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U139"
 rows = ["MAC-B09", "MAC-B01"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.pressed.mini-help.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.pressed.small-help.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.pressed.regular-help.icon"
-tolerance = 1
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.pressed.large-help.icon"
-tolerance = 1
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
 # image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
@@ -319918,17 +319549,531 @@ rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 # narrowed (ADD-A141): the image-sheet readings below state this pair in the key pass; it stays pending (U695)
 # in every other combination
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-monterey", "window_inactive"], variants = ["circular", "icon_only"] }
+when = { conditions = ["preset:macos-monterey", "window_inactive"], variants = ["circular", "icon_only", "toggle"] }
 pending = "U695"
 rows = []
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-monterey", "not_main"], not_conditions = ["window_inactive"], variants = ["circular", "icon_only"] }
+when = { conditions = ["preset:macos-monterey", "window_inactive"], variants = ["circular", "icon_only", "destructive"], not_variants = ["toggle"] }
 pending = "U695"
 rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:dark"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main"], not_conditions = ["contrast_increased"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main", "contrast_increased"], not_conditions = ["app_inactive"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main", "contrast_increased", "app_inactive"], states = ["default"], not_states = ["disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main", "contrast_increased", "app_inactive"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "default", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main", "contrast_increased", "app_inactive"], states = ["disabled", "default"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main", "contrast_increased", "app_inactive"], states = ["disabled", "pressed", "default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "not_main", "contrast_increased", "app_inactive"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light", "contrast_increased"], not_conditions = ["not_main"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["default"], not_states = ["disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "default", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled", "default"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled", "pressed", "default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff80"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled_pressed.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled_pressed.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled_pressed.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled_pressed.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff80"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffffff"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.normal.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#f0f0f0ff"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.pressed.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["default", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff80"
+rows = ["MAC-B01", "MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-main_not_key-styles_a.toml#main_not_key.styles_a.aqua.disabled.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "not_main", "window_inactive", "app_inactive", "scheme:light"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffffff"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.normal.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.normal.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.normal.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.normal.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "not_main", "window_inactive", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#d9d9d9ff"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.pressed.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "not_main", "window_inactive", "app_inactive", "scheme:light"], states = ["disabled"], not_states = ["default", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff80"
+rows = ["MAC-B01", "MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled.large-circular.fill"
+tolerance = 1
+
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main"], not_conditions = ["window_inactive"], variants = ["circular", "icon_only", "toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main"], not_conditions = ["window_inactive"], variants = ["circular", "icon_only", "destructive"], not_variants = ["toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:dark"], not_conditions = ["window_inactive"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light", "contrast_increased"], not_conditions = ["window_inactive"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["default"], not_states = ["disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], not_states = ["disabled", "default", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled", "default"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled", "pressed", "default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff80"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled_pressed.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffffff"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.normal.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.normal.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.normal.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.normal.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#f0f0f0ff"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.pressed.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.pressed.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.pressed.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.pressed.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled"], not_states = ["default", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff80"
+rows = ["MAC-B01", "MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key_not_main-styles_a.toml#key_not_main.styles_a.aqua.disabled.large-circular.fill"
+tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
@@ -319936,11 +320081,161 @@ when = { conditions = ["preset:macos-monterey", "contrast_increased"], not_condi
 pending = "U695"
 rows = []
 
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-monterey"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"] }
+when = { conditions = ["preset:macos-monterey"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "toggle"] }
 pending = "U695"
 rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "destructive"], not_variants = ["toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "disabled", "pressed"], not_states = ["checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff80"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled_pressed.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffffff"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.normal.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#f0f0f0ff"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.pressed.large-circular.fill"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([circular, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff80"
+rows = ["MAC-B01", "MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled.mini-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled.small-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled.regular-circular.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-default_a.toml#key.default_a.aqua.disabled.large-circular.fill"
+tolerance = 1
 
 [[fact]]
 key = "button.body.fill"
@@ -321432,11 +321727,123 @@ when = { conditions = ["preset:macos-monterey"], variants = ["help", "icon_only"
 pending = "U695"
 rows = []
 
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey"], variants = ["help", "icon_only"] }
+when = { conditions = ["preset:macos-monterey"], variants = ["help", "icon_only", "toggle"] }
 pending = "U695"
 rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey"], variants = ["help", "icon_only", "destructive"], not_variants = ["toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "not_main"], not_conditions = ["contrast_increased"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "window_inactive"], not_conditions = ["contrast_increased", "not_main"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["default"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["default"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([help, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], not_states = ["default", "disabled", "pressed", "checked"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#000000ff"
+rows = ["MAC-B09", "MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.normal.mini-help.icon"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.normal.small-help.icon"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.normal.regular-help.icon"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.normal.large-help.icon"
+tolerance = 1
+
+# the pair's own fact (the macOS tie-break round 8): the readings are of the image-only button
+# ([help, icon_only], `imagePosition` read back and an empty title rect)
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["help", "icon_only"], not_variants = ["toggle", "destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#000000ff"
+rows = ["MAC-B09", "MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.pressed.mini-help.icon"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.pressed.small-help.icon"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.pressed.regular-help.icon"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/layers-key-image_b.toml#key.image_b.aqua.pressed.large-help.icon"
+tolerance = 1
 
 [[fact]]
 key = "button.label.text.fill"
