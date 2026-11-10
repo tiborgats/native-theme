@@ -591,22 +591,27 @@ nextest_filter_of() {
 }
 
 # Under nextest, the other test steps' filter (GATE_SKIP through
-# nextest_filter_of) lists the facts gate's fixtures and not `facts_gate`: a
-# filter that stopped skipping it would run the whole gate, hours of it,
-# inside a step that does not name it.
+# nextest_filter_of) leaves out the facts gate and nothing else: the gate's
+# test file lists the test GATE_SKIP names, and under the filter every other
+# test of it. A filter that stopped skipping the gate, or a gate renamed away
+# from GATE_SKIP, would run the whole gate, hours of it, inside a step that
+# does not name it.
 gate_skipped_under_nextest() {
-    local listed
+    local gate="native-theme::facts_gate ${GATE_SKIP[2]}"
+    local list=(cargo nextest list --color never -p native-theme --test facts_gate)
+    local all listed expected
+    all=$("${list[@]}") || return
     nextest_filter_of "${GATE_SKIP[@]}" || return
-    listed=$(cargo nextest list -p native-theme --test facts_gate "${NEXTEST_FILTER[@]}" 2>&1) || {
-        printf "%s\n" "$listed" >&2
-        return 1
-    }
-    if ! grep -qx "native-theme::facts_gate gate_fixture_passes" <<<"$listed"; then
-        printf "the listing does not name the facts gate's fixture gate_fixture_passes\n" >&2
+    listed=$("${list[@]}" "${NEXTEST_FILTER[@]}") || return
+    if ! grep -qxF "$gate" <<<"$all"; then
+        printf "nextest lists no test \"%s\": GATE_SKIP names a test the gate's file does not hold, or the listing's format changed\n" "$gate" >&2
         return 1
     fi
-    if grep -qx "native-theme::facts_gate facts_gate" <<<"$listed"; then
-        printf "nextest lists facts_gate: the filter does not skip it\n" >&2
+    expected=$(grep -vxF "$gate" <<<"$all" || true)
+    if [ "$expected" != "$listed" ]; then
+        printf "under %s nextest does not list every test but \"%s\" (< expected, > listed):\n" \
+            "${NEXTEST_FILTER[*]}" "$gate" >&2
+        diff <(printf "%s\n" "$expected") <(printf "%s\n" "$listed") >&2 || true
         return 1
     fi
 }

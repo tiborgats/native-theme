@@ -335,9 +335,11 @@ unchanged since it last passed; the summary lists each as
 
 The facts gate (`native-theme/tests/facts_gate.rs`'s `facts_gate`) is a step
 of its own; the other test steps skip it (`-- --skip facts_gate --exact`), since no `cfg` reaches it and
-one run gates every target and feature set. `cargo nextest` does not act on that libtest form (0.9.138
-runs the test all the same), so `cargo_tests` hands it the filter `-E 'not test(=facts_gate)'`, and the
-step `nextest leaves the facts gate to its own steps` fails if the filter stops skipping the gate. The full run gates every preset
+one run gates every target and feature set. `cargo nextest` does not act on
+that libtest form (0.9.138 runs the test all the same), so `cargo_tests` hands
+it the filter `-E 'not test(=facts_gate)'`, and the step `nextest leaves the
+facts gate to its own steps` fails unless that filter leaves out the gate and
+nothing else. The full run gates every preset
 in one step. `--commit` and `--quick` gate it in parts the cache skips one by
 one: `facts gate (the facts, no preset)` (`NT_FACTS_GATE_PRESETS=none`),
 cached on every facts directory, then `facts gate (<preset>)` for each
