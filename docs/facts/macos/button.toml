@@ -35,8 +35,18 @@
 # pending (U97), one whose readings partly miss it keeps the others and pends their combinations; and every reading
 # of the run that contradicted the fact in force for its combination (the verifier's coverage check) has a fact of
 # its own after it, measured and cited, or pending where the reading gives no value (U93: a non-uniform fill or a
-# failing corner fit in those windows; U97; U98: a drawn shadow). An image sheet's bezel with an image is read as
-# the bezel's variant for its icon only: the state model declares no [style, with_icon] set (below).
+# failing corner fit in those windows; U97; U98: a drawn shadow). An image sheet's button is its bezel's set with
+# the image, [style, with_icon], or [circular, icon_only] for the circular bezel and the circle border shape, whose
+# button is the image alone in every sheet: the state model's `variant_products` draw those sets, and the image
+# sheets' readings are their facts (ADD-A141), each `when` exact in its set, state, size, scheme and window.
+# The tie-break round 8 (the second measured verifier): the image's colour (`button.icon.icon.fill`) is stated only
+# where the layer shows a fully covered pixel of opaque paint; any other reading is the symbol's rasterised peak, the
+# paint's alpha times the glyph's coverage, and the fact is pending (U751). A chromatic colour the image sheets read
+# under the image's accent alone is no literal (U750). A colour's tolerance is at most its method's bound,
+# floor(1/alpha) levels (S17 *Fields*; measure_button_layers.py's docstring), and readings 2 levels apart at an alpha
+# of 128 and up are facts of their own. A reading belongs to its own variant set: a fact naming a bezel alone keeps
+# no reading of the set with the image (U99, U752). A stroke the layer shows drawn is pending, never absent (U95; U97
+# where its edge pixels miss the grey check).
 # The variants: the bezel styles `@flexible_push` (2), `@small_square` (10), `@shadowless_square` (6), `@accessory_bar`
 # (13, the SDK's old `recessed`), `@accessory_bar_action` (12, old `roundRect`), `@badge` (15, old `inline`),
 # `circular` (7, and the 26 border shape circle, which draws the same), `help` (9), `tool` (11, old

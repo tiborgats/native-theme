@@ -23,7 +23,7 @@
 # one border shape, one tint prominence, one image position. The context: a button in a toolbar (`NSToolbarItem`,
 # the probe's toolbar window, which gives its item views control size extra_large, `view_*_controlSize_raw` 4: their
 # min_height and font are stated, the rest pending U94). Each variant was measured alone; the sets AppKit draws are
-# the products below (the tie-break of MC-C1), their looks pending.
+# the products below (the tie-break of MC-C1), their looks pending but for the image sheets' sets (below).
 # The output-route button (MAC-P3-9†, the facts lane t16b): `route` is AVKit's AVRoutePickerView, an NSView
 # (AVRoutePickerView.h:31, :83), not an NSButton bezel, so it holds none of the bezel variants; its four button states
 # (:62-67) are rest, pressed (highlighted), `route_active` (AirPlay active) and both, so it draws no `disabled`
@@ -39,8 +39,10 @@
 # U694; `menu_trigger` stated); NSComboButton is no NSButton and declares no key equivalent, and the window's default
 # button is an NSButtonCell, so `menu` draws no `default`. One NSButton holds a bezel style (or none), a border shape,
 # a tint prominence, a button type, a destructive action and an image position at once, and an NSComboButton a title,
-# an image or both: `variant_products` states those sets (AppKit draws each; no pass measured one, U695's pending
-# facts in button.toml), trimmed by `exclusive_variants`.
+# an image or both: `variant_products` states those sets (AppKit draws each; run 42272240639's image sheets measured
+# a bezel, border shape, tint or destructive button with the image, [style, with_icon], and [circular, icon_only],
+# the image-only circular button's, in the key window: their facts in button.toml; no pass measured another set:
+# U695's pending facts there), trimmed by `exclusive_variants`.
 widget = "button"
 when = { conditions = ["preset:macos-tahoe"] }
 available = true
@@ -366,8 +368,10 @@ tolerance = 0
 # U694; `menu_trigger` stated); NSComboButton is no NSButton and declares no key equivalent, and the window's default
 # button is an NSButtonCell, so `menu` draws no `default`. One NSButton holds a bezel style (or none), a border shape,
 # a tint prominence, a button type, a destructive action and an image position at once, and an NSComboButton a title,
-# an image or both: `variant_products` states those sets (AppKit draws each; no pass measured one, U695's pending
-# facts in button.toml), trimmed by `exclusive_variants`.
+# an image or both: `variant_products` states those sets (AppKit draws each; run 42272240639's image sheets measured
+# a bezel or destructive button with the image, [style, with_icon], and [circular, icon_only], the image-only
+# circular button's, in the key window: their facts in button.toml; no pass measured another set: U695's pending
+# facts there), trimmed by `exclusive_variants`.
 # As on macos-tahoe, the output-route button: AVRoutePickerView is in the 15.5 SDK (macos(10.15)), with its four
 # button states, its border (default YES) and no enabled state, key equivalent or control size, so `route`, `@bordered`
 # and `route_active` are declared as there, every look pending on macOS 15 (U692: no macOS 15 pass reads the view).
