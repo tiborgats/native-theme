@@ -6027,7 +6027,7 @@ source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gsc
 quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
 
 # the rule sets no weight: the label inherits its view switcher button's (AdwViewSwitcherButton, a GtkToggleButton,
-# node `button`), libadwaita's bold for every button (the tie-break of GN-C1)
+# node `button`), libadwaita's bold for every button (the tie-break of GN-C1); its whole `button.toggle` block cited
 [[fact]]
 key = "token.text.keyed.narrow_switcher_label.font.weight"
 value = 700
@@ -6035,7 +6035,7 @@ rows = ["GN-1.194"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_view-switcher.scss:11-16"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_view-switcher.scss:11-32"
 quote = "button.toggle { padding: 0; > stack > box { &.narrow { font-size: 0.75rem;"
 absent = ["font-weight"]
 

@@ -100278,8 +100278,10 @@ evidence = "docs/evidence/ios-host/2026-11-06-run-42276668803/ios-host-macos-15/
 tolerance = 0
 
 # the base, UIButton(type: .system) with no configuration, draws no subtitle (ADD-A141, U255 narrowed): UIButton
-# sets a title per state and no subtitle (its interface and its deprecated category name no subtitle
-# setter), its read-only subtitleLabel is there "when present", and a subtitle is set only through
+# sets a title per state and no subtitle (its interface and its four categories, the deprecated one, SpringLoading,
+# UIAccessibilityContentSizeCategoryImageAdjusting and UIBehavioralStyle, name no subtitle setter, one citation per
+# range: the second verification round's citation-form finding on IO-C1 added the last three), its read-only
+# subtitleLabel is there "when present", and a subtitle is set only through
 # UIButtonConfiguration's `subtitle`; so no gap between a title and a subtitle
 [[fact]]
 key = "button.values.subtitle_gap"
@@ -100297,6 +100299,24 @@ absent = ["setSubtitle", "setAttributedSubtitle"]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
 quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
 absent = ["setSubtitle", "setAttributedSubtitle"]
 
 [[fact.cite]]
@@ -103510,8 +103530,10 @@ evidence = "docs/evidence/ios-host/2026-11-06-run-42276668803/ios-host-macos-15/
 tolerance = 0
 
 # the base, UIButton(type: .system) with no configuration, draws no subtitle (ADD-A141, U255 narrowed): UIButton
-# sets a title per state and no subtitle (its interface and its deprecated category name no subtitle
-# setter), its read-only subtitleLabel is there "when present", and a subtitle is set only through
+# sets a title per state and no subtitle (its interface and its four categories, the deprecated one, SpringLoading,
+# UIAccessibilityContentSizeCategoryImageAdjusting and UIBehavioralStyle, name no subtitle setter, one citation per
+# range: the second verification round's citation-form finding on IO-C1 added the last three), its read-only
+# subtitleLabel is there "when present", and a subtitle is set only through
 # UIButtonConfiguration's `subtitle`; a whole part's absence
 [[fact]]
 key = "button.subtitle"
@@ -103529,6 +103551,24 @@ absent = ["setSubtitle", "setAttributedSubtitle"]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
 quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
 absent = ["setSubtitle", "setAttributedSubtitle"]
 
 [[fact.cite]]
@@ -257228,8 +257268,10 @@ evidence = "docs/evidence/ios-host/2026-11-06-run-42276668803/ios-host-macos-26/
 tolerance = 0
 
 # the base, UIButton(type: .system) with no configuration, draws no subtitle (ADD-A141, U255 narrowed): UIButton
-# sets a title per state and no subtitle (its interface and its deprecated category name no subtitle
-# setter), its read-only subtitleLabel is there "when present", and a subtitle is set only through
+# sets a title per state and no subtitle (its interface and its four categories, the deprecated one, SpringLoading,
+# UIAccessibilityContentSizeCategoryImageAdjusting and UIBehavioralStyle, name no subtitle setter, one citation per
+# range: the second verification round's citation-form finding on IO-C1 added the last three), its read-only
+# subtitleLabel is there "when present", and a subtitle is set only through
 # UIButtonConfiguration's `subtitle`; so no gap between a title and a subtitle
 [[fact]]
 key = "button.values.subtitle_gap"
@@ -257247,6 +257289,24 @@ absent = ["setSubtitle", "setAttributedSubtitle"]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
 quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
 absent = ["setSubtitle", "setAttributedSubtitle"]
 
 [[fact.cite]]
@@ -260530,8 +260590,10 @@ evidence = "docs/evidence/ios-host/2026-11-06-run-42276668803/ios-host-macos-26/
 tolerance = 0
 
 # the base, UIButton(type: .system) with no configuration, draws no subtitle (ADD-A141, U255 narrowed): UIButton
-# sets a title per state and no subtitle (its interface and its deprecated category name no subtitle
-# setter), its read-only subtitleLabel is there "when present", and a subtitle is set only through
+# sets a title per state and no subtitle (its interface and its four categories, the deprecated one, SpringLoading,
+# UIAccessibilityContentSizeCategoryImageAdjusting and UIBehavioralStyle, name no subtitle setter, one citation per
+# range: the second verification round's citation-form finding on IO-C1 added the last three), its read-only
+# subtitleLabel is there "when present", and a subtitle is set only through
 # UIButtonConfiguration's `subtitle`; a whole part's absence
 [[fact]]
 key = "button.subtitle"
@@ -260549,6 +260611,24 @@ absent = ["setSubtitle", "setAttributedSubtitle"]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
 quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["setSubtitle", "setAttributedSubtitle"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
 absent = ["setSubtitle", "setAttributedSubtitle"]
 
 [[fact.cite]]
