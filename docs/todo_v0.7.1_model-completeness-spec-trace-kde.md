@@ -910,7 +910,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q2.19 | `banner.body.padding` | field |
 | Q2.19 | `banner.icon.icon.size (= token.icons.sizes.keyed.small_medium.size), banner.icon.glyph (ThemeIcon) @ variant info / variant success / variant warning / variant error` | rule |
 | Q2.19 | `banner.values.content_gap (the text's leading margin)` | field |
-| Q2.19 | `banner.values.icon_alignment (Start: the icon top-aligned) @ {multiline}` | rule |
+| Q2.19 | `banner.values.icon_alignment (Top: the icon top-aligned) @ {multiline}` | rule |
 | Q2.20 | `banner.action_area.opacity; toolbar @ context banner (the non-flat action toolbar)` | rule |
 | Q2.20 | `banner.values.actions_wrap` | field |
 | Q2.20 | `button.icon.glyph (ThemeIcon dialog-close) @ variant close context banner` | rule |
@@ -952,12 +952,13 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q2.35 | `bottom_tab_bar.item.transitions (Fill, Stroke; = token.motion.durations.short)` | field |
 | Q2.36 | `bottom_tab_bar.item.focus (Ring: its width, offset outside, paint, corners) @ {focus_visible}` | rule |
 | Q2.37 | `sheet.body.fill (= the card's background, Q1.126) @ variant @overlay` | rule |
-| Q2.38 | `sheet.scrim.fill, sheet.scrim.transitions (Opacity; = token.motion.durations.long, its timing) @ variant @overlay` | rule |
+| Q2.38 | `sheet.scrim.fill, sheet.values.presentations (Appear, Disappear: a Fade step on scrim; ADD-A146) @ variant @overlay` | rule |
 | Q2.38 | `sheet.title.text (leaf by leaf: token.text.keyed.heading_2), sheet.header.padding @ variant @overlay` | rule |
 | Q2.38 | `sheet.header_separator.stroke, sheet.footer_separator.stroke, sheet.footer.padding @ variant @overlay` | rule |
 | Q2.39 | `sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.min_width, sheet.handle.min_height @ cond input:touch` (the bar is drawn by Kirigami's transient-touch setting, `kirigami@6.31.0 src/templates/OverlaySheet.qml:264-275`, not by `isMobile`) | rule |
 | Q2.40 | `sheet.values.presentations (Appear, Disappear: Fade and Slide together, its distance = mul(token.params.layout.grid_unit, <n>); = token.motion.durations.long, its timing; ADD-B10, ADD-A25)` | field |
-| Q2.40 | `sheet.values.placement (its edge_margin.top the sheet's top floor), sheet.values.swipe_to_close` | field |
+| Q2.40 | `sheet.values.placement (its edge_margin.top the sheet's top floor) @ variant @overlay` | rule |
+| Q2.40 | `sheet.values.swipe_to_close` | field |
 | Q2.41 | `list.section_header.text (leaf by leaf: token.text.keyed.heading_5_primary, its weight restated; fill at reduced alpha), list.section_header.icon.size (= token.icons.sizes.keyed.small_medium.size), list.section_header.padding @ cond flavor:kirigami` | rule |
 | Q2.41 | `list.section_header_line.stroke (filling the rest of the row)` | field |
 | Q2.41 | `list.section_header.fill (Absent: no hover or background) @ cond flavor:kirigami` | rule |
@@ -1190,7 +1191,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q3.21 | `PartStyle.shadow Elevation(key) per surface part: menu.body.shadow, popover.body.shadow, tooltip.body.shadow, dialog.body.shadow, menu.body.shadow @ context autocomplete, card.body.shadow (with its lift layer, Q1.128), toast.body.shadow, button.body.shadow @ variant circular, slider.thumb.shadow @ variant range, sidebar.edge_shadow.fill, list.swipe_area.shadow` | field |
 | Q3.22 | `role.global.scrim` | role |
 | Q3.22 | `dialog.scrim.fill @ cond flavor:kirigami; sidebar.scrim.fill @ variant overlay; sheet.scrim.fill @ variant @overlay` | rule |
-| Q3.22 | `dialog.values.presentations (Appear, Disappear: a Fade step on scrim; ADD-A146), sidebar.scrim.transitions, sheet.scrim.transitions (Opacity; = token.motion.durations.long, its timing)` | field |
+| Q3.22 | `dialog.values.presentations (Appear, Disappear: a Fade step on scrim; ADD-A146), sidebar.scrim.transitions (Opacity; = token.motion.durations.long, its timing), sheet.values.presentations (Appear, Disappear: a Fade step on scrim)` | field |
 | Q3.23 | `token.motion.durations.very_short, token.motion.durations.short, token.motion.durations.long, token.motion.durations.very_long` | token |
 | Q3.24 | `token.motion.durations.long (= max(round(mul(<the read longDuration>, token.motion.speed_factor)), <floor>): `qRound`, then `qMax`, `qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:45`, `:49`; ADD-A56, ADD-A122)` | token |
 | Q3.24 | `token.motion.durations.very_short, token.motion.durations.short (= floor(div(token.motion.durations.long, <divisor>)): C++'s integer division, `plasmadesktopunits.cpp:51-52`; ADD-A122), token.motion.durations.very_long (= mul(token.motion.durations.long, <factor>), `:54`)` | token |
@@ -1561,6 +1562,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-KA-30† | `sheet.body.max_height (its height limit, a fraction of element.window_height), sheet.body.corners, sheet.header.corners, sheet.body.shadow @ variant bottom` (the BottomDrawer is `kde-breeze`'s `bottom`, the one bottom sheet KDE's rows hold) | rule |
 | K-KA-30† | `sheet.handle.min_width, sheet.handle.min_height, sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.padding @ variant bottom` | rule |
 | K-KA-30† | `sheet.header.bindings (Surface(Window)), sheet.header_separator.stroke, sheet.body.bindings (Surface(View)), sheet.body.padding (the bottom safe area) @ variant bottom` | rule |
+| K-KA-30† | `sheet.values.placement (BottomSheet) @ variant bottom` (the drawer at the window's bottom edge, its full width, `kirigami-addons@1.15.0 src/components/BottomDrawer.qml:80-81`; ADD-A146) | placement |
 | K-KA-31† | `menu.body, menu.item (the qqc2 Menu, Q1.23-Q1.32) @ cond flavor:kirigami` | rule |
 | K-KA-31† | `menu.values.convergent_variant` (`"none"`; `ka_bottom_drawer` `@ cond mobile_form_factor cond flavor:kirigami`: the variant the connector sets where the application states no display mode, `displayMode`'s default; else the connector sets `@ka_bottom_drawer` or `@ka_dialog` from the application's mode; both declared under `[declare.flavor.kirigami.widget.menu]` only) | rule |
 | K-KA-31† | `sheet @ variant @ka_bottom_drawer context menu (K-KA-30†)` | rule |

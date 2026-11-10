@@ -703,8 +703,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.17 | `sheet.handle.{fill,opacity,min_width,min_height,padding,corners} @ variant bottom` | rule |
 | GN-2.17 | `sheet.bottom_bar.{fill,shadow}` | field |
 | GN-2.17 | `sheet.body.transitions (Corners, Shadow)` | field |
-| GN-2.17 | `sheet.values.presentations events Appear (spring), Disappear, @bottom_bar_show, @bottom_bar_hide; sheet.values.window_margin (its vertical member = floor(max(<margin>, add(<margin>, mul(sub(element.window_height, <height>), <slope>)))): AdwBottomSheet's top padding, interpolated by the window's height, adw-bottom-sheet.c:27-30, :617-621, as dialog.values.window_margin under bottom_sheet, GN-SF19†)` | field |
-| GN-2.17 | `sheet.values.placement (BottomSheet)` (the strategy `dialog`'s `bottom_sheet` uses, AdwDialog's bottom sheet being an AdwBottomSheet, `adw-dialog.c:511-522`) | placement |
+| GN-2.17 | `sheet.values.presentations events Appear (spring), Disappear, @bottom_bar_show, @bottom_bar_hide` | field |
+| GN-2.17 | `sheet.values.placement (BottomSheet, its edge_margin.top = floor(max(<margin>, add(<margin>, mul(sub(element.window_height, <height>), <slope>)))): AdwBottomSheet's top padding, interpolated by the window's height, adw-bottom-sheet.c:27-30, :617-621, the value dialog.values.window_margin states under bottom_sheet, GN-SF19†; ADD-A146)` (the strategy `dialog`'s `bottom_sheet` uses, AdwDialog's bottom sheet being an AdwBottomSheet, `adw-dialog.c:511-522`) | placement |
 | GN-2.18 | `navigation_view.values.presentations events @push, @pop (spring), navigation_view.incoming_page.{transform,opacity}, navigation_view.outgoing_page.{transform,opacity}, navigation_view.edge_shadow.{fill,min_width,opacity}, navigation_view.scrim.{fill,opacity}, navigation_view.values.swipe_back, navigation_view.values.swipe_duration_min, navigation_view.values.swipe_duration_max` | field |
 | GN-2.18 | `navigation_view.values.presentations @ cond reduced_motion` | rule |
 | GN-2.19 | `sidebar.scrim.{fill,opacity}, sidebar.edge_shadow.fill, sidebar.pane.bindings @ variant overlay` | rule |
@@ -1021,7 +1021,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.61 | `cond contrast_high` | condition |
 | GN-3.63 | `text_scale (the S2.2 operand, ADD-A55)` | field |
 | GN-3.63 | `length bases in sp: = mul(<length>, text_scale)` | field |
-| GN-3.63 | `token.text.font_dpi` (96, the DPI a font's points convert by before text scaling, S9.4: GTK's `-gtk-dpi` initial value, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:880-885`, which the `gtk-xft-dpi` setting replaces only where it is set, `gtk/gtkcssinitialvalue.c:49-60`, the reader's `ReaderState.font_dpi`; the fact `docs/facts/gnome/tokens.toml:5558-5566`; ADD-A103, ADD-A125) | token |
+| GN-3.63 | `token.text.font_dpi` (96, the DPI a font's points convert by before text scaling, S9.4: GTK's `-gtk-dpi` initial value, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:880-885`, which the `gtk-xft-dpi` setting replaces only where it is set, `gtk/gtkcssinitialvalue.c:49-60`, which no reader reports (S9.4, ADD-A146); the fact `docs/facts/gnome/tokens.toml:5558-5566`; ADD-A103, ADD-A125) | token |
 | GN-3.70† | - | out (R1.1) |
 | GN-SF01† | `code_editor.* bases: the Adwaita and Adwaita-dark schemes the adwaita preset carries (ADD-A64)` | field |
 | GN-SF01† | `code_editor.* @ variant @classic (GtkSourceView's default scheme when the application sets none; ADD-A64, R25.11)` | rule |

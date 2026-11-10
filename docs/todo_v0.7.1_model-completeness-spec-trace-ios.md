@@ -962,7 +962,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SV-2 | `declare.widget.*.sizes (UIButton.Configuration.Size and others)` | field |
 | X-SV-3 | `Selector.direction Rtl` | rule |
 | X-SV-3 | `token.icons.mirroring` (S2.9) | token |
-| X-SV-3 | `reader:ios:layoutDirection` | readers (R18) |
+| X-SV-3 | `RootInputs.direction, Element.direction (the layout direction, S8)` | field |
 | X-A11-1 | `cond contrast_increased` | condition |
 | X-A11-1 | `role.* and PartStyle.stroke @ cond contrast_increased` | rule |
 | X-A11-1 | `InputValue.per_contrast` | input |
@@ -1063,7 +1063,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-13† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | P3-14† | `token.icons.mirroring` (S2.9) | token |
 | P3-14† | `Element.language`, `Element.direction` (the icon lookup's inputs, S2.9, S8; ADD-B05) | field |
-| P3-14† | `reader:ios:semanticContentAttribute, layoutDirection` | readers (R18) |
+| P3-14† | `reader:ios:semanticContentAttribute` | readers (R18) |
 | P4-1† | - | out (R1.1) |
 | P4-2† | - | out (R1.1) |
 | P4-3† | `toolbar.values.presentations events Appear, Disappear` (the bars hidden on a swipe and shown again) | field |

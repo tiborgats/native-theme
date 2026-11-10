@@ -728,7 +728,6 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-FM03† | `slider.{track,value_fill,thumb}.* @ dir rtl (the active track's clip, the thumb's offset, the inside and outside corners); progress_bar.{indicator,stop_indicator}.* @ dir rtl; tab.indicator.* @ dir rtl; calendar.range_band.* @ dir rtl` | rule |
 | MAT-FM03† | - (the outlined text area's resize handle under right-to-left: material-web's textarea; Compose's multi-line TextField draws no resize handle) | reference (R1.6) |
 | MAT-FM03† | `sidebar.values.presentations @ dir rtl (the drawer's swipe and predictive-back origin); search_field.values.presentations @ dir rtl (its predictive-back offset); menu.values.placement (PlacementParams.align, mirrored in RTL, S13)` | rule |
-| MAT-FM03† | `reader:android:Configuration.getLayoutDirection` | readers (R18) |
 | MAT-FM04† | `token.icons.mirroring` (per IconRole: the arrows, undo, redo and the rest of Google's list `Mirroring::Always`; the question-mark icons `Mirroring::ExceptLanguages([he])`, mirrored in Arabic and Farsi, not in Hebrew; S2.9) | token |
 | MAT-FM04† | `Element.language, Element.direction (icon lookup per language and script, S2.9, S8; ADD-B05)` | field |
 | MAT-P3-1† | - | out (R1.1) |

@@ -5422,9 +5422,10 @@ spaces:
   `vertical` it centres it, GN-2.11, `adw-banner.c:342-347`); `centered_title_gap_px: Value<Px>` (that gap,
   GN-2.11); `inner_corner_factor: Value<f32>` (Kirigami's inner radius as a fraction of the outer, read by
   `inner.corners`, Q2.17; KMessageWidget's own radius is `body.corners`, K2.13); `icon_alignment:
-  Value<Alignment>` (the icon's alignment against the text across the banner, `Start` the top: Kirigami's
-  InlineMessage and kirigami-addons' messages top-align it under `{multiline}`, Q2.19, K-KA-10†, K-KA-29†, by a rule
-  on this value).
+  Value<BannerIconAlignment>`, `BannerIconAlignment { Top, Center, Bottom }` (the icon's alignment against the text
+  across the banner, a vertical place that no right-to-left layout mirrors: Kirigami's InlineMessage and
+  kirigami-addons' messages top-align it under `{multiline}`, Q2.19, K-KA-10†, K-KA-29†, by a rule on this value;
+  ADD-A146; rejected: `Alignment`, whose `Start` S2.4 reserves for a horizontal end).
 - **Variants:**
   - on the widget, typed: `info`, `success`, `warning`, `error` (the severity: GN-2.31, K2.13, Q2.16, K-KA-10†,
     K-KA-29†, W2-07), `vertical` (the content variant: the actions stacked below the text: InfoBar's vertical layout
@@ -7999,8 +8000,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `header_separator`, in `header` — Q2.38, K-KA-30†: `stroke` (the line, its top edge).
   - `footer`, in `body` — `padding` (Q2.38).
   - `footer_separator`, in `body` — Q2.38: `stroke` (the line, its top edge).
-  - `scrim` — the dim (GN-2.17, GN-3.04, Q2.38, X-SC-1, MAT-X23): `fill`, `opacity` (per detent, C-12, X-SC-1),
-    `transitions` (Q2.38).
+  - `scrim` — the dim (GN-2.17, GN-3.04, Q2.38, X-SC-1, MAT-X23): `fill`, `opacity` (per detent, C-12, X-SC-1); its
+    fade is a step of the sheet's `presentations` (Q2.38; ADD-A146).
   - `bottom_bar` — AdwBottomSheet's bar, beside the sheet's box, GN-2.17: `fill`, `shadow`.
   - `presenter_backdrop` — the black behind the presenter that iOS 13–18's stacked-card effect scales down (C-12,
     X-SC-1): `fill`.
@@ -8012,24 +8013,25 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `undimmed_up_to: Value<Key>` (iOS's largest undimmed detent, C-12: one of `detents`' keys, `medium` or `large`);
   `placement: Placement` (where the platform places the sheet, S13: `adwaita` `BottomSheet`, the strategy `dialog`'s
   `bottom_sheet` uses for the same libadwaita widget, AdwDialog's bottom sheet being an AdwBottomSheet,
-  `libadwaita@1.10.0 src/adw-dialog.c:511-522`, GN-2.17, GN-SF19†; `kde-breeze` `CenteredInHost` under `@overlay`,
-  its top floor the placement's `edge_margin`, Q2.40, K-SF23†; `material-3` and `ios-*` the strategies the placement
+  `libadwaita@1.10.0 src/adw-dialog.c:511-522`, GN-2.17, GN-SF19†, its top floor the placement's `edge_margin.top`,
+  the least space AdwBottomSheet leaves above the sheet, growing with the window's height, GN-2.17: `adwaita` states
+  `edge_margin.top = "= floor(max(<margin>, add(<margin>, mul(sub(element.window_height, <height>), <slope>))))"`,
+  the source's interpolation from one margin at one window height toward another at a larger height, clamped below
+  only and truncated to whole pixels, the slope the margins' difference over the heights' (`src/adw-bottom-sheet.c:27-30`,
+  `:617-621`), the form AdwDialog's floating sheet has (`src/adw-floating-sheet.c:196-205`), `element.window_height`
+  coming from the root's inputs through the scope, S8, so the value declares no element data; `kde-breeze`
+  `CenteredInHost` under `@overlay`, its top floor the placement's `edge_margin.top`, Q2.40, K-SF23†, and
+  `BottomSheet` under `bottom` (BottomDrawer, K-KA-30†); `material-3` and `ios-*` the strategies the placement
   unit states from MAT-SF03†, MAT-N20 and SF-7†, for the bottom-centred sheet, Material's side sheet, docked over
   the window's full height or detached and inset by `body.margin`, iOS's sheet centred in a regular width, and its
   page and form sheets filling the window in a compact height, a strategy S13 lacks being added with that unit as a
   class 2 change; stated by rules under the variants and restated by
   rules `@ h_size_class c` and `@ v_size_class c`, SF-7†, ADD-A20. ADD-A146; rejected: an `anchor` enum of four
   places each connector turned into a rectangle, placement being parameters and a named strategy implemented once,
-  R16, with `BottomSheet` in S13 already, and a top-floor value beside the placement's own margin);
-  `window_margin: Axes<Value<Px>>` (`dialog`'s value of that name and type: the least space AdwBottomSheet leaves
-  above the sheet, growing with the window's height, GN-2.17: `adwaita` states `vertical = "= floor(max(<margin>,
-  add(<margin>, mul(sub(element.window_height, <height>), <slope>))))"`, the source's interpolation from one margin
-  at one window height toward another at a larger height, clamped below only and truncated to whole pixels, the
-  slope the margins' difference over the heights' (`src/adw-bottom-sheet.c:27-30`, `:617-621`), the form AdwDialog's
-  floating sheet has (`src/adw-floating-sheet.c:196-205`); `element.window_height` comes from the root's inputs
-  through the scope, S8, so the value declares no element data. ADD-A146; rejected: a `top_padding` value with its
-  four parameters as values of their own, five values every other preset stated absent for the fact `dialog` states
-  in one expression, R20);
+  R16, with `BottomSheet` in S13 already; a top-floor value beside the placement's own margin, `dialog`'s
+  `window_margin` on `sheet` among them, a second home for `adwaita`'s top floor with a `horizontal` member no preset
+  states; a `top_padding` value with its four parameters as values of their own, five values every other preset
+  stated absent for one fact, R20);
   `edge_attached_width: Value<SheetWidth>`,
   `SheetWidth { SafeArea, PreferredContent }` (an edge-attached sheet's width: the container's safe-area width, or
   the content's preferred width under `@width_follows_content`, SF-7†). The placement is
@@ -8101,9 +8103,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   values: `presenter_transform` (every preset but `ios-*`, as for `presenter_backdrop`); `presenter_corners`
   (every preset but `ios-*`, as for `presenter_backdrop`); `undimmed_up_to` (every preset but `ios-*`: iOS's
   largest undimmed detent, C-12); `keyboard_avoidance` (every preset but `ios-*`: P3-6†); `edge_attached_width`
-  (every preset but `ios-*`: iOS's edge-attached sheet, SF-7†); `window_margin` (`vertical`: every preset but
-  `adwaita`, AdwBottomSheet's space above the sheet, GN-2.17; `horizontal`: every preset, no row stating a side
-  margin of the sheet's own); fields: `body.stroke` (all but `adwaita`: GNOME's inner
+  (every preset but `ios-*`: iOS's edge-attached sheet, SF-7†); fields: `body.stroke` (all but `adwaita`: GNOME's inner
   outline, GN-2.17). The `placement` is stated on every preset (each platform places its sheet somewhere), its
   `Value` members absent where the strategy takes none (S6.3).
 - **State-model source:** GNOME `_bottom-sheet.scss`, `adw-bottom-sheet.c`; iOS `UISheetPresentationController`; KDE
@@ -8324,8 +8324,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     popup root has a corner radius and a padding of its own, `microsoft-ui-xaml@2.5.1
     src/controls/dev/NumberBox/NumberBox.xaml:116`; ADD-A146; drawn while the stepper is `{focused}`,
     W2-01; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7). Under `@compact` the
-    `increment` and `decrement` are drawn in it (NumberBox's only spin buttons there, `NumberBox.xaml:115-166`, the
-    inline ones shown only by `SpinButtonsVisible`, `:26-40`), absent with it. Its indicator glyph, shown whenever it is compact (`NumberBox.cpp:659-679`),
+    connector lays `buttons` out inside the popup instead of beside the text (NumberBox's only spin buttons there,
+    `NumberBox.xaml:115-166`, the inline ones shown only by `SpinButtonsVisible`, `:26-40`): a placement, not a
+    nesting; the halves stay `buttons`' parts and are absent with the popup (ADD-A146). Its indicator glyph, shown whenever it is compact (`NumberBox.cpp:659-679`),
     and the popup buttons' layout are ADD-A129's (queue #118).
   - `header` — Windows' header label, W2-01: `text`.
 - **Widget values:** `button_layout: Value<StepperButtonLayout>`,
@@ -10702,7 +10703,7 @@ S9.3 over both for the reads it states.
   `src/keyboard_input.cpp:196-209`): K3.64, K-P3-16†.
 - `org.kde.KWin.TabletModeManager` D-Bus property (to verify) into `cond tablet_mode`: K3.83.
 - Kirigami's `Settings.isMobile` (what it reads, to verify) into `cond mobile_form_factor`: Q3.31, K3.83 (the rules
-  under it: Q1.6, Q2.39, Q2.58†, K-KA-9†).
+  under it: Q1.6, Q2.58†, K-KA-9†).
 - breezerc and kwinrc menu opacity and blur (K3.10, K3.11): K3.92.
 - `fc-match` for the emoji family and per language: K-FM01†, K-FM02†.
 - breezerc `[Style] DockWidgetDrawFrame` into `cond system_setting:dock_widget_draw_frame`: K2.10; breezerc
@@ -10794,7 +10795,7 @@ S9.3 over both for the reads it states.
   `cond system_setting:pointer_animations` (none found yet): P3-12†.
 - Dynamic Type size per style per content size category (`preferredContentSizeCategory` into
   `ReaderState.content_size_category`, a `ContentSizeCategory`, S8): X-DT-1.
-- `UITraitCollection` size classes and idiom, `layoutDirection`: X-SV-1, X-SV-3, P3-14†.
+- `UITraitCollection` size classes and idiom: X-SV-1; `semanticContentAttribute`: P3-14†.
 - `UIScrollView.DecelerationRate`, `minimumPressDuration`, `UIBackgroundConfiguration.shadowProperties`,
   `UIBarAppearance.backgroundEffect`, `UICornerConfiguration`: X-MO-8, X-BT-1, X-SH-2, X-MT-2, X-CR-2.
 - `CTFontCreateForString`, `CTFontCopyDefaultCascadeListForLanguages`: FM-1†, FM-2†. The user's Liquid Glass look
@@ -10812,7 +10813,7 @@ S9.3 over both for the reads it states.
   `getScrollFriction`, `getScaledMinimumFlingVelocity`, `getScaledMaximumFlingVelocity` (MAT-P3-16†).
 - `android:ambientShadowAlpha`, `android:spotShadowAlpha` and framework light dimensions: MAT-X3.
 - `Typeface.DEFAULT`, `Typeface.MONOSPACE`: MAT-X36†. `AFontMatcher_match` (emoji, per locale):
-  MAT-FM01†, MAT-FM02†. `Configuration.getLayoutDirection()`: MAT-FM03†. `softInputMode`, `WindowInsetsAnimation`:
+  MAT-FM01†, MAT-FM02†. `softInputMode`, `WindowInsetsAnimation`:
   MAT-P4-2†.
 
 Fixes of today's reads that these rows contain: GNOME's dropped font list (GN-FM02†), the raw portal accent
