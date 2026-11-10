@@ -538,12 +538,12 @@ the facts tooling reads it.
   The document check of 2026-11-09 (spec batch ADD-A146) adds these, each a choice the plan's rules leave as they
   are until the maintainer makes it:
   - **The slice's pending facts:** whether they are closed before the scale-up. At M1b's close the facts hold
-    44,143 pending of 74,178 (gnome 4, kde 30, windows 119, material 75, macos 15,158, ios 28,757), the eight
-    presets' `[pending]` tables 1,506 paths (`adwaita` 4, `kde-breeze` 16, `material-3` 48, `windows-11` 105,
-    `macos-tahoe` 220, `macos-monterey` 357, `ios-13` 375, `ios-26` 381) and the register 229 rows, none decided:
+    45,766 pending of 74,029 (gnome 4, kde 30, windows 119, material 75, macos 16,781, ios 28,757), the eight
+    presets' `[pending]` tables 1,508 paths (`adwaita` 4, `kde-breeze` 16, `material-3` 48, `windows-11` 105,
+    `macos-tahoe` 221, `macos-monterey` 358, `ios-13` 375, `ios-26` 381) and the register 235 rows, none decided:
     for one widget, the roles and the slice's tokens. Each unit's pending condition (*M3*) reaches the slice's
     `button` only with the buttons and toggles unit, and its roles and tokens only at M4. The four small tables are
-    M2's task 0 either way. For the Apple presets, which hold 43,915 of the pending facts: (a) their measurement
+    M2's task 0 either way. For the Apple presets, which hold 45,538 of the pending facts: (a) their measurement
     rows closed first, so that the cost above holds a whole widget's measuring and the
     pipeline's last stage is proven where it is largest; or (b) the scale-up approved on the debt stated as a number
     (pending facts per platform, the rounds they need) with the cost of closing a measured sample of it.
@@ -614,8 +614,8 @@ the facts tooling reads it.
     refused, under a followed scheme it lacks (R19); the bundled palettes' accents, each the variant whose accent
     0.7.0's preset states (R19); `#[non_exhaustive]` error enums (R21); no font DPI read (R10).
   - **The rationale's open questions** the same check left to the maintainer, none decided:
-    - R-1, R21's release condition and R4's Apple list against the slice's numbers (the Apple presets hold 43,915
-      of the 44,143 pending facts, `ios-26`, which 0.7.0 does not ship, about a third of them): (a) as decided;
+    - R-1, R21's release condition and R4's Apple list against the slice's numbers (the Apple presets hold 45,538
+      of the 45,766 pending facts, `ios-26`, which 0.7.0 does not ship, about a third of them): (a) as decided;
       (b) a unit staged by its variant sets, sizes, contexts and conditions as by widget (*The depth of a unit*,
       above); (c) `ios-26` to the first follow-up release; (d) (b) and (c). The check recommends (d), or at least
       (c), with the cost argument stated in R4 and R21 and the reason of the choice recorded.
@@ -1366,7 +1366,7 @@ dev-dependencies and modules linked again.
 
   Either kind, while open, blocks the release that enables its unit, since R21 releases no unit with a gap (D13);
   *M3* states when a unit's rows are due. Rejected: every row the maintainer's decision, the rule from when the
-  register held only values with no route (since spec ADD-A122 it also holds what is not measured yet: 229 rows at
+  register held only values with no route (since spec ADD-A122 it also holds what is not measured yet: 235 rows at
   M1b's close, most of them, by the D6 package's classing, a pass, an analysis or a source read a lane makes
   without a decision).
 - **Evidence** is committed to the evidence repository (GitHub's artifacts expire), images losslessly compressed
