@@ -426,7 +426,7 @@ colours.
 **R2.7 — Declarations.** A preset declares, per widget, its variants, sizes and densities (per flavour where
 they differ, and per container where the platform draws a size only in some, such as a large button outside a
 navigation bar), its widget-specific state flags, exclusive state groups with their precedence and recency sets (R3), its
-keyed components' availability, sizes, variants, flags and value types (their parts and fields come from the
+keyed components' declarations, the same keys as a widget's with their values' types (their parts and fields come from the
 catalogue, as typed widgets' do, R14), its keyed colour roles, text styles and elevation entries, its
 flavours, and its inputs (R2.6). Adding a layer checks every rule and reference against the declarations: a typo
 is an error, not a silent miss. A query for a size or variant the element's widget does not declare in its
@@ -792,7 +792,8 @@ MAT-X13–MAT-X15, X-MO-1).
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
   input), except during a theme change, which the theme-change token governs, and except under Breeze's engines,
   which start on their own test, GtkSwitch's slide, which starts on an activation, ButtonGroup's press, which starts
-  as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
+  as `pressed` becomes kept, WinUI's AnimatedIcon, which starts on a change of its key (below), and a CSS animation,
+  which starts as its block or part becomes drawn (ADD-A146); the transition of
   the style after the change governs, in both directions, as in CSS and GTK
   (`gtkcssanimatedstyle.c`); a part hidden at rest is a `shown` part exactly when its source animates its entrance or
   exit (an unmeasured motion `Absent` meanwhile; a `popup` part's opening and closing queue #118's, its presence ordinary state; an expander's collapsed content (its presence, layout and query scope) and its reveal wholly #118's, a layout and presentation question for ADD-A129's survey; one rule for every interim of #118: a deferred subject whose motion needs machinery the model lacks, or whose row states no presentation, appears and leaves at once until ADD-A129; so a `popup` part drawn as itself opens and closes at once, one drawn as another widget presents as that widget, and every other stated presentation runs, R25.6, but an expander's reveal, a layout change no presentation kind makes; rejected: deciding the expanders here, where `shown` keeps a layout box every source collapses and an `Absent` box leaves its rows and controls drawn or unqueried (checks 18 to 23); counting the overlays as popups, whose line read either way (their parts, a substitute); and no presentation until ADD-A129, which would undo R25.6 for a deferral), styled
@@ -890,8 +891,9 @@ MAT-X13–MAT-X15, X-MO-1).
   - *Stated limitations*: Breeze's differ for at most its duration (100 ms by default, `kstyle/breeze.kcfg:53-55`),
     but native fidelity and cover-everything-visible admit none where the source states the rule.
   - **Decision**: *the engine*, `Transition.engine`, a closed set of the toolkits' engines (`GtkCss`, `AdwAnimation`,
-    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `ComposeHeld`, `WinUi`,
-    `WinUiAnimatedIcon`, `GtkSwitch`), each implemented once in
+    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `ComposeShapeMorph`,
+    `ComposeHeld`, `WinUi`, `WinUiAnimatedIcon`, `GtkSwitch`, `CssAnimation`; the specification's S2.7 holds the
+    list, ADD-A146), each implemented once in
     native-theme to its source, as the platform curves, the ripple effect and the scroll decelerations are: a curve's,
     an effect's and a deceleration's rules are code, and so are an engine's. Its data is only what the code takes per
     transition: Breeze's test, quoted from its `updateState` call, whether AdwEntryRow's title replays, and the
@@ -1072,8 +1074,9 @@ non-linear font scaling (MAT-X19) are not a single factor: those platforms' read
 **Points.** A size stated in points becomes logical pixels before any of this, at the platform's font DPI, which is not
 one constant across the platforms (today's `ResolutionContext::font_dpi`): the preset states its platform's DPI as a
 token, from its facts, or 72 where the platform's point is the logical pixel, the model's own value (Apple's; the
-specification's S9.4, ADD-A125), and the reader reports the system's where the platform has a setting (KDE's forced font DPI on
-X11, then `Xft.dpi`, as the facts record them); a change of it is a theme change (R9). Folding the DPI into the
+specification's S9.4, ADD-A125), and a reader reports the system's where the platform has a setting its toolkit's
+scale factor does not already carry (on an X11 session the font DPI reaches the application through that scale, so
+no reader of 0.8.0's reports one, the specification's S9.4; ADD-A146); a change of it is a theme change (R9). Folding the DPI into the
 text-scaling factor was rejected: that factor also scales sizes stated in pixels and is 1 where the platform scales by
 the font size itself, so it would scale pixel-stated fonts wrongly; a fixed DPI in the code was rejected as false on
 some platforms and as dropping the user's KDE setting.
@@ -1100,7 +1103,7 @@ look). For MAC-C06, MAC-CB01, MAC-EX02 and MAC-L10 the part's look is therefore 
 (`NSButton` with its checkbox or disclosure bezel, `NSPopUpButton`), in the state, size and appearance asked for,
 rendered by native-theme at run time through AppKit, on the main thread as AppKit requires, at the display's
 backing scale and the control's pixel size, with the window's key state, and cached per control, state, size,
-appearance, key state and scale, as the SF Symbols loader renders symbols today; the cache is emptied at every
+appearance, key state, layout direction and scale, as the SF Symbols loader renders symbols today; the cache is emptied at every
 theme change the reader reports (R2.5), as AppKit's drawing follows settings the key does not hold (the accent;
 ADD-A146). Called off the main thread, or
 off macOS (a `macos-*` preset used on another platform), the rendering is absent and the modelled parts stand;
@@ -1667,9 +1670,16 @@ of that day:
   combination and derivation is the independent verification's work.
 - R6: GTK's and libadwaita's state layers are the appended paint layers; a layer Material's tokens state is the
   `interaction` block's, as R1.6 and the specification's S2.12 have it.
+- R2.7: a keyed component's declaration has the keys a widget's has, with its values' types.
 - R9: a spring Apple states by response and damping fraction or by duration and bounce has no pinned conversion
-  (U128); no source read states a theme change's crossfade, which a preset states only from a measurement.
-- R11: the AppKit rendering's cache is emptied at every theme change the reader reports.
+  (U128); no source read states a theme change's crossfade, which a preset states only from a measurement; a CSS
+  animation among the starts that are no value change, and the engines' list brought to the specification's
+  (`ComposeShapeMorph`, `CssAnimation`).
+- R10: a reader reports a font DPI only where its toolkit's scale factor does not already carry the setting, so none
+  does on an X11 session; points still convert at the platform's DPI, and the user's setting reaches the application
+  through that scale.
+- R11: the AppKit rendering's cache is emptied at every theme change the reader reports, and its key holds the
+  layout direction.
 - R12: the focus indicator's kinds are the specification's three (a ring, an underline, a keyed kind).
 - R16: the section's opening follows the thirteenth check's amendment: the query mirrors, not the toolkit.
 - R19: a variant defined, so Catppuccin's flavours are four palettes, as 0.7.0's presets; a palette under a
@@ -1677,6 +1687,8 @@ of that day:
   a KDE port the reader's accent stays in force, as the specification's S14 recorded.
 - R21: the error, diagnostic and status enums, which no connector maps, are `#[non_exhaustive]`; what 0.8.0 keeps
   of 0.7.0 is its model's widgets, roles, tokens and values, the plan listing what its API does not keep.
+- R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
+  none (the specification's S15).
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
@@ -1707,7 +1719,8 @@ its own margin, not centred in the 30 px overlay that is its editable arrow area
 2 px into the arrow's square rather than ending before it. So the arrow area, where drawn, is a box at the body's end
 by its own `margin`, `min_width` and `max_height`, taking no layout space (each platform's arrow column is already
 the gap, the arrow's margin box and the padding), and the arrow is placed by the row whether or not an area is drawn;
-on `macos-*`, where the rendering replaces the arrow, its `ControlImage.arrow` is the end part.
+on `macos-*`, where the rendering replaces the arrow, its arrow area, placed from the resolved values (the
+specification's S15; ADD-A146), is the end part.
 
 *The cross axis.* WinUI centres its chevron on the whole row under an uneven padding (`12,5,0,7`), Compose its
 trailing box on the field's height; `Inline` centres on the content box. Options: `Inline`'s with WinUI's chevron
