@@ -6647,7 +6647,7 @@ loop.
   system, which is not a theme value; today's `Theme::preset(name)`, which loads a whole theme by name as
   today's `Theme::from_toml` does, goes with it (below, R21), replaced by `Theme::from_preset(id, scheme)` and `Palette::bundled(id)`; the KDE reader's tests
   are its unit tests (`src/kde/tests.rs`, over `tests/fixtures/kde/`): `kde` is `pub(crate)` and no hidden test
-  entry is kept (ADD-A146: the text follows the code, which holds no `kde::from_kde_content_pure`).
+  entry is kept (ADD-A146: the text follows the code, which holds none).
 - *`crate::Error` and `crate::Result`:* kept for the APIs that are not theme values, with the variants they return:
   `PlatformUnsupported`, `WatchUnavailable` and `ReaderFailed` (`watch::on_theme_change` and its backends,
   `rasterize::rasterize_svg`; the `icons` loaders return `Option`). The variants the theme's APIs returned go with
