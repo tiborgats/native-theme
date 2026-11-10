@@ -1418,7 +1418,7 @@ tasks; the generator's drift check makes the code follow.
 - [x] M0 setup (2026-10-30)
 - [x] Spikes M · G · K · I · W · A (2026-10-30, all yes)
 - [x] M1a slice core (2026-11-06)
-- [ ] M1b slice complete
+- [x] M1b slice complete (2026-11-10)
 - [ ] D6 checkpoint
 - [x] D6's evidence item: the evidence repository (the maintainer, 2026-11-08)
 - [x] The evidence repository's switch (the tooling task, then *The evidence repository*'s steps; 2026-11-08)
