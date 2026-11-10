@@ -68,11 +68,12 @@ the lanes (11 of them on rows traced `out`); one reaches the catalogue (queue #1
 ## Units
 
 Per unit and platform: facts (`—` none, `L` lane writing, `F` written), verification (`V` agreed, `T` at the
-tie-breaker, `A` audited), presets (`P`), gate (`G`), connectors (`C`).
+tie-breaker, `A` audited), presets (`P` bundled; `P(n)` bundled with n listed paths in its `[pending]` table, a
+preset loading through `Theme::from_preset` only with none, S17), gate (`G`), connectors (`C`).
 
 | Unit | adwaita | kde-breeze | macos-monterey | macos-tahoe | ios-13 | ios-26 | windows-11 | material-3 | Connectors |
 |---|---|---|---|---|---|---|---|---|---|
-| slice (`button`, colour roles, slice tokens) | F V A (lane c43c85f3, verifier, tie-break f34baa5b; reconciled to ADD-A122 at 5dc0b4bc) P G | F V A (lane ceff2785, verifier, tie-break; reconciled to ADD-A122 at 8c155f13) P G | F V A (lane f7b1aab4, verifier, tie-break 5d48e80f) P G | F V A (second pass 30f8f129, verifier, tie-break babb5470) P G | F V A (second pass 54e40d48, verifier, tie-break d2178ac2) P G | F V A (second pass 54e40d48, verifier, tie-break d2178ac2) P G | F V A (lane c0256bf1, verifier, tie-break; reconciled at f50c8186) P G | F V A (lane d53d245a, verifier, tie-break; reconciled at 01ef6603) P G | — |
+| slice (`button`, colour roles, slice tokens) | F V A (lane c43c85f3, verifier, tie-break f34baa5b; reconciled to ADD-A122 at 5dc0b4bc) P(4) G | F V A (lane ceff2785, verifier, tie-break; reconciled to ADD-A122 at 8c155f13) P(16) G | F V A (lane f7b1aab4, verifier, tie-break 5d48e80f) P(357) G | F V A (second pass 30f8f129, verifier, tie-break babb5470) P(220) G | F V A (second pass 54e40d48, verifier, tie-break d2178ac2) P(375) G | F V A (second pass 54e40d48, verifier, tie-break d2178ac2) P(381) G | F V A (lane c0256bf1, verifier, tie-break; reconciled at f50c8186) P(105) G | F V A (lane d53d245a, verifier, tie-break; reconciled at 01ef6603) P(48) G | — |
 
 ## Module inventory
 
@@ -734,25 +735,38 @@ Per lane and unit: the verifier's agreement rate and the audit sample's rate of 
 | W — microsoft-ui-xaml coverage and WinUI host | **yes** (2026-10-30): of 1,018 keys (the button in full, the colour roles, the slice's tokens, resources of ten sample widgets), the XAML at `winui3/release/2.5.1` states 326 and chains 571 to a literal (51 to the OS accent); 121 not stated (focus ring widths, RepeatButton timing and tooltip delays in C++; animation timings, the accent ramp and high-contrast colours from the OS; line heights and placement as rendered results). `tools/winui-host` (Windows App SDK 2.5.1, self-contained, its `Microsoft.UI.Xaml.dll` from the pinned commit) runs on `windows-11-arm` and records a MenuFlyout's and a ToolTip's frames reproducibly. For the lanes: cite `controls/dev/**/<Control>_themeresources.xaml`, not the opt-in `_perf2026` copies or the framework's pre-Fluent `generic.xaml`; the runner measures RepeatButton 500/33 against gap-map row W2-19's 250/250 (a gap-map correction); the runner's screen starts behind a Windows setup screen the host closes | [40979612808](https://github.com/tiborgats/native-theme/actions/runs/40979612808) | merged into `v0.8.0-tools`; the coverage report is [`todo_v0.7.1_model-completeness-spike-w-coverage.md`](todo_v0.7.1_model-completeness-spike-w-coverage.md), lane input |
 | A — Android host | **yes** (2026-10-30): the emulator image is API 37.1 rev 9 (Android 17's stable release, 16 KB pages; `android-system-image@37.1-r9` in `sources.toml`), booting under KVM on `ubuntu-24.04` in 25–35 s; `tools/android-host` (Gradle 9.8.2, AGP 9.5.0, Kotlin 2.4.21, Compose Material 3 1.5.0-beta02 with the Compose BOM's 1.13.0-beta02) renders five button styles × five states × light and dark with `captureToImage()`, byte-identical across runs and CPUs. For the lanes: the pressed state is Android's own ripple, measured, not computed from the 0.10 token; one activity per capture (a reused ripple drawer draws nothing); PNGs carry a 16 dp margin, the index gives the bounds; 1 dp = 2 px on the 320-dpi screen; the Compose foundation and UI the app runs (1.13.0-beta02) are one step past the source cache's tree (1.13.0-beta01): cite them at the runtime's release | [40983911425](https://github.com/tiborgats/native-theme/actions/runs/40983911425) | merged into `v0.8.0-tools` |
 
-`scripts/check_ledger.py --final` (M4) needs two things the plan leaves open, to be settled before M4: the path of
-S19.2's staged inheritance file (`docs/facts/staged/inheritance-bases.toml`, written by
-`scripts/convert_inheritance_rules.py` at M1a; passed as `--staged-file`),
-and a per-fact table of drift comparisons in this ledger, which the script then reads (until then `--final` reports
-the drift rule as a finding).
+`scripts/check_ledger.py --final` (M4) takes S19.2's staged inheritance file as `--staged-file
+docs/facts/staged/inheritance-bases.toml` (written by `scripts/convert_inheritance_rules.py` at M1a), and reads the
+drift comparison from `docs/facts/drift/<release>.tsv`, which the drift run's `check_fact_citations.py --drift`
+writes, one line per measured fact of the enabled units (the plan's M4, *The drift run*); this section records each
+drift run's URL and counts, and holds no per-fact table. Until M4's tooling task builds the file and its reader
+(queue #213), `--final` reports the drift rule as a finding.
 
 ## Evidence size
 
 | Date | `docs/evidence/` size | Change | Notes |
 |---|---|---|---|
 | 2026-11-08 | 141 MB (`v0.8.0-rc1`) | (the first row) | `.git` 388 MB; the unmerged iOS and macOS facts branches hold 353 MB and 175 MB of evidence more; D6's evidence item decided early on these figures: the evidence repository (queue #177); from the switch the column is the evidence repository's `docs/evidence/` |
+| 2026-11-09 | 431 MB (the evidence repository at 5889635; M1b, not closed) | +290 MB | 382 MB in distinct blobs, a pack of 46.27 MiB, which is what CI's depth-1 checkout transfers (median 4 s); the repository began at 132.5 MB (5146132, `v0.8.0-rc1`'s tree at 4ee2b529, apparent bytes) and took the open branches' evidence after the switch: facts-macos-m1b4 to 183.5 MB, facts-hosts-m1b and facts-ios-m1b3 to 421.2 MB, facts-macos-tb7 to 431.4 MB; ios-host 298.9 MB in 12 runs, os-probe 132.3 MB in 13; no figure was taken at M1a's close (the runs dated to 2026-11-03 hold 132.5 MB of it) |
+
+From M1b on the D6 package's tables are the record (its section 2, *The evidence's size*: per harness, per run and
+per commit of the evidence repository, generated from the checkout); this table gains one row at each milestone's
+close.
 
 ## Tokens
 
-The sum of the agents' reported usage per milestone, against D7's cap (+15,000k for M0–M1b).
+Per milestone, in two measures (the D6 package's section 1, generated 2026-11-10 at b254a561). **Reported:** the sum
+of the agents' reported usage, which is each agent's final context size and not what its responses used; D7's cap
+(+15,000k for M0–M1b) and M0's row are in this measure. **Used:** the transcripts' sum over every response, input,
+cache writes and output without cache reads, the one measure that sums what was used. From M1b on the D6 package's
+tables are the record (*Tokens (the project's transcripts)*, per milestone, model and day); this table gains one row
+at each milestone's close.
 
 | Milestone | Tokens | Cap | Notes |
 |---|---|---|---|
-| M0 and the six spikes | about 7,230k (the agents' reported usage: research and inventory 528k, scripts and their fixes about 2,350k, the spec amendments' sixteen checks about 2,110k, the re-pin and its re-read 765k, the spikes 1,320k, hook tests 84k) | 15,000k for M0–M1b (D7); lifted by the maintainer on 2026-10-30 ("don't limit usage tokens, just do the job") | the spec checks cost about three times what one plan review did: each round found narrower format gaps until the closed lists moved into the checkers |
+| M0 and the six spikes | about 7,230k (the agents' reported usage: research and inventory 528k, scripts and their fixes about 2,350k, the spec amendments' sixteen checks about 2,110k, the re-pin and its re-read 765k, the spikes 1,320k, hook tests 84k) | 15,000k for M0–M1b (D7); lifted by the maintainer on 2026-10-30 ("don't limit usage tokens, just do the job") | the spec checks cost about three times what one plan review did: each round found narrower format gaps until the closed lists moved into the checkers; the D6 package counts M0 at 8,107k reported (42 notifications) and 12,067k used |
+| M1a slice core | reported 122,823k (465 notifications); used 296,990k (10,766,895k with cache reads) | none since 2026-10-30 | to its close at e4d269be (2026-11-06 18:43); 21,025 facts written by then; M1b's facts lanes began that morning, which moves about half a day of their work into this row |
+| M1b slice complete (to 2026-11-10, not closed) | reported 51,997k (156 notifications); used 118,974k (5,832,258k with cache reads) | none | 53,153 facts added (74,178 in all, 44,143 of them pending); M0 to M1b reported 182,927k against D7's estimate of 15,000k, about 12.2 times it, which is the one calibration the project has for its own estimates |
 
 ## Triage
 
