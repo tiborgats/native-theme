@@ -4,7 +4,8 @@
 below); draft 12. Eleven independent reviews; draft 11 consolidated
 their fixes into one text, and draft 12 applies the eleventh review's. Draft 13 (2026-11-06) applies the maintainer's
 scope decision D13 (0.8.0 covers what 0.7.0 covers, the rest of the catalogue follows in later releases) and D14,
-settled by logic (the follow-up releases numbered by SemVer), with an independent check's fixes.
+settled by logic (the follow-up releases numbered by SemVer), with an independent check's fixes. Draft 14
+(2026-11-09) applies the document check's fixes (spec batch ADD-A146), its amendments awaiting D6.
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
 facts and passing the facts gate; the bundled palettes checked against their projects' published colours; the four
@@ -492,9 +493,10 @@ the facts tooling reads it.
   release timing changes. Within each unit a release enables, the rigor stays as it is: verified facts, the facts
   gate, one rule for every field.
   - **(A)** the whole catalogue in 0.8.0, as R21 had it. Against: users wait for the widgets 0.7.0 never had.
-  - **(B)** 0.8.0 at 0.7.0's coverage, then the other units. For: users lose nothing of 0.7.0's model (what its API
-    does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks earlier (the maintainer's
-    estimate: about 3–4 weeks against 5–7). Against: several releases, each with its own gate run; D14 (*Settled by
+  - **(B)** 0.8.0 at 0.7.0's coverage, then the other units. For: users lose nothing of 0.7.0's model but two things
+    (the status colours on `macos-*`, absent by R25.17, and the community presets' invented light variants, which go
+    by R19; what its API does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks
+    earlier (the maintainer's estimate: about 3–4 weeks against 5–7). Against: several releases, each with its own gate run; D14 (*Settled by
     logic*).
   - **(C)** releases by capability (rules, then shadows, …), R21's rejected stages: each would break the connectors
     again and show mixed looks.
@@ -605,6 +607,43 @@ the facts tooling reads it.
     constraints*); the runtime task's Compose spring evaluator and `ComposeShapeMorph`, the contract tables'
     supplied side, and task 4's mapping check on every preset, followed-scheme rule and palette run (*M2*); the
     catalogue's 87 typed widgets, `font_button` the new one (*The units 0.8.0 enables*).
+  - **The rationale's amendments** of the same check, for the maintainer's confirmation (a change to a rationale
+    decision is the maintainer's, *Spec changes*; each is marked in the rationale as awaiting it): `ios-*`'s accent
+    alone, with measured tint derivations after a second-tint pass (R2.6, R4, R19; U706); a palette suspended, not
+    refused, under a followed scheme it lacks (R19); the bundled palettes' accents, each the variant whose accent
+    0.7.0's preset states (R19); `#[non_exhaustive]` error enums (R21); no font DPI read (R10).
+  - **The rationale's open questions** the same check left to the maintainer, none decided:
+    - R-1, R21's release condition and R4's Apple list against the slice's numbers (the Apple presets hold 43,915
+      of the 44,143 pending facts, `ios-26`, which 0.7.0 does not ship, about a third of them): (a) as decided;
+      (b) a unit staged by its variant sets, sizes, contexts and conditions as by widget (*The depth of a unit*,
+      above); (c) `ios-26` to the first follow-up release; (d) (b) and (c). The check recommends (d), or at least
+      (c), with the cost argument stated in R4 and R21 and the reason of the choice recorded.
+    - R-3 with R-12, a typed role the platform names no counterpart for (the status roles absent on `macos-*` by
+      R25.17, against D13 and the connectors' need at M2.1; U456 leaves `ios-*` open for the same reason): (a)
+      absent, R23 gaining what a connector puts in a toolkit field the model leaves absent; (b) one rule: such a
+      role is native-theme's mapping, labelled as R19's picks are, outside the gate's platform comparison, never
+      absent and never a `published` fact, the status roles on `macos-*` and `ios-*` referencing the keyed system
+      colours as 0.7.0 drew them and R10's text-slot mappings labelled alike; (c) per-preset connector code reading
+      the keyed roles. The check recommends (b); R-12 holds under any: R25.17 names `ios-*` too, or the source that
+      makes iOS differ.
+    - R-9, motion not weighed for deferral as placement was: (a) as decided, motion in 0.8.0; (b) a motion unit
+      after 0.8.0 (the runtime, the connectors' use and the Apple measurements), 0.8.0's widgets changing state at
+      once as 0.7.0's do, the model's types and the written facts staying. The check recommends weighing (b), and
+      if (a) stays, an Apple motion spike before M2.1.
+    - K4-2, what a mapping states for the keyed roles a preset's values read (S14, open): (A) per preset section,
+      the keyed colour roles that preset's values read and that follow nothing the mapping states, each a published
+      colour, a derivation or a labelled pick, S12 refusing a mapping that leaves an opaque one to the preset; (B)
+      typed roles and inputs only, S14 and R19 recording what that leaves on each preset. The check recommends (A)
+      on `windows-11`, (B) with S9.2's seed derivation on `material-3`, and the measured literals of `macos-*` and
+      `ios-*` a recorded limit.
+    - W3-3 with W5-15, what a connector draws on `NotAvailable(Widget)`, where a preset declares unavailable a
+      widget 0.7.0 resolved there (`tab`, `card`, `expander`, `status_bar`) or a stand-in widget whose unit is
+      enabled (`group_box`, `stepper`, `menu_bar`, `redaction`): (a) the *Available* lines stay, as true of the
+      platforms, D13's sentence restated to the presets whose platform draws the widget, the stand-in table gaining
+      `bottom_tab_bar` and `group_box` (M3b), and S21.3 one rule: the contract lists per preset the entry the
+      connector draws its toolkit's widget from, or the toolkit's own look where the catalogue names none, the
+      contract test checking the list complete; (b) `bottom_tab_bar` and `group_box` moved into M3a, the rule still
+      missing. The check recommends (a), the stand-in widgets under the same rule.
 
 ### Settled by logic (recorded)
 
@@ -1104,8 +1143,7 @@ A ledger destination `M3 unit <name>` names the unit in whichever part it runs. 
 kinds (*How values are checked*). A measurement to make is the lane's queue: the lane's next round on that platform
 measures it, or records why it could not, which makes it a row with no route. A row with no route waits for the
 maintainer's decision, and the series queue moves on to the next unit meanwhile. The unit closes when no pending fact
-of the unit names a measurement row older than one lane round (a row the lane's last closed round on its platform
-already held) and every row of the unit with no route is decided; so M4 meets stragglers, not every unit's whole
+of the unit names a measurement row opened before the lane's last closed round on its platform began, and every row of the unit with no route is decided; so M4 meets stragglers, not every unit's whole
 debt. Rejected: the unit waiting for the maintainer's decision on every open row, the rule from before the register
 held measurements to make (every unit has such rows, so every M3a unit would wait on decisions that are lane work);
 no condition before M4 (every pending fact of M3a would arrive at M4, which holds a tooling task, a drift run and a
@@ -1177,8 +1215,8 @@ dev-dependencies and modules linked again.
   `docs/showcase-elements.toml` at `v0.7.0` has its counterpart in the new element lists, or the ledger records why
   it goes (S19.3's animated icons); the showcase parity gates; the screenshots regenerated and compared side by side,
   twice (ADD-A146): with each other, per preset, as the showcases' parity rule asks, and, for each widget of
-  0.8.0's units, with the platform host's capture under the same preset, scheme and state, the pairs recorded in the
-  ledger (the first shows that the connectors agree, only the second that the look is the platform's);
+  0.8.0's units, with the platform host's capture under the same preset, scheme and state where the evidence
+  repository holds one; a widget with none listed as not compared; the pairs in a generated index (the first shows that the connectors agree, only the second that the look is the platform's);
   `PLAN_EXCLUDED` empty and no `# PLAN_EXCLUDED` mark left in `ci.yml`.
 
 ## M6 — Release 0.8.0
@@ -1313,14 +1351,17 @@ dev-dependencies and modules linked again.
 - **Values not measured yet, and values that cannot be measured** (ADD-A146), each have a row in the unmeasured
   register in the ledger, which the pending facts name (spec S17, *A pending measurement*): the key and
   combination, the attempts and their evidence, and the options. A row is of one of two kinds, which the register
-  states with the lane round that opened it (two columns `check_ledger.py` reads, from the task at M3a's start,
-  *M3*; until then the D6 package classes the rows):
-  - a **measurement to make**: a harness or probe pass on a pinned runner, an analysis of committed evidence, or a
-    source read. It is the lane's queue, needs no decision, and is closed by the lane's next round, the measured or
-    cited fact replacing the pending one;
-  - a **value with no route**: no pinned source states it and no supported runner can measure it. It is the
-    maintainer's decision, among another setup (real hardware, another image), a catalogue or model correction, and a
-    release blocker.
+  states in its Kind column (`check_ledger.py` checks it), and from the task at M3a's start with the lane round that
+  opened it (*M3*):
+  - a **measurement to make** (`b`): a harness or probe pass on a pinned runner, an analysis of committed evidence,
+    or a source read. It is the lane's queue, needs no decision, and is closed by the lane's next round, the measured
+    or cited fact replacing the pending one;
+  - a **decision** (`d`): a value with no route (no pinned source states it and no supported runner can measure
+    it), or a choice between a measurement, a model form and a catalogue correction. It is the maintainer's
+    decision, among another setup (real hardware, another image), a catalogue or model correction, and a release
+    blocker.
+
+  A row that waits on a class 1 or 2 change (*Spec changes*) is the orchestrator's to apply, whatever its kind.
 
   Either kind, while open, blocks the release that enables its unit, since R21 releases no unit with a gap (D13);
   *M3* states when a unit's rows are due. Rejected: every row the maintainer's decision, the rule from when the

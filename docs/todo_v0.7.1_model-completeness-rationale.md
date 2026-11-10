@@ -376,7 +376,8 @@ input's base for it. The inputs:
   from `UISettings`, and an application or palette changing the accent states the ramp too, or the API
   refuses it. On the `macos-*` presets the accent, the colours AppKit derives from it by a derivation Apple
   does not publish (the selection, focus and accent-tinted colours, read through `NSColor`), and the
-  separate highlight colour setting. On the `ios-*` presets the accent alone, UIKit's tint (ADD-A146): what
+  separate highlight colour setting. On the `ios-*` presets the accent alone, UIKit's tint (ADD-A146, awaiting
+  the maintainer's confirmation at D6): what
   UIKit draws in the tint is stated as derivations over it, measured under the default tint and a second one, as
   the accent-following values of `macos-*` are measured under a second accent; until the host pass under the
   second tint is run, the facts hold the default tint's measured literals and their derivations are pending (the
@@ -541,13 +542,13 @@ so the preset must state {checked, hover}.
 - **Derivations:** where a platform states a derivation, the fact is the derivation. The gate resolves each
   preset twice, with its own inputs and base colours and with perturbed ones (another accent, foreground and
   background), and
-  compares both with the facts evaluated the same way, so a literal stated where the platform derives fails.
+  compares both with the facts evaluated the same way, so a literal stated in a preset where the facts derive fails.
   On macOS the reader reads the system's colours under the user's accent, so the facts there are
   measurements under each appearance; iOS's are measured under each appearance, under the default tint and a
   second one, so that what UIKit draws in the tint is a measured derivation over the accent (R2.6), as macOS's
   accent-following values are from its second-accent pass; until the host pass under the second tint is run,
   the facts hold the default tint's literals and their derivations are pending (the unmeasured register's U706;
-  ADD-A146). Rejected: the default tint alone until a reader exists, as this bullet had it: on iOS the
+  ADD-A146, awaiting the maintainer's confirmation at D6). Rejected: the default tint alone until a reader exists, as this bullet had it: on iOS the
   application supplies the accent itself, reader or not (R1.5), and the measuring host reads these values under
   any tint now; and under one tint the facts hold the default tint as literals, which an application's accent
   leaves in place and the perturbed run cannot tell from a derivation.
@@ -1293,15 +1294,12 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
 - leaves every role it does not cover to the platform's value and derivation (a libadwaita hover is the foreground at an
   opacity, whatever the foreground is);
 - is one palette per variant the project publishes. A variant is a set of the project's base colours under one
-  name (a Catppuccin flavour), in the schemes the project defines under that name, with the project's default
-  accent for it (ADD-A146); where the project names no default, the palette states one of the accents the project
-  publishes, labelled as native-theme's pick. The project's other accents are values an application sets on the
-  palette (R2.6), not variants, so Catppuccin's 4 flavours × 14 accents are four palettes. 0.8.0 bundles the ten
-  schemes 0.7.0 ships (the plan's D13), each with the accent 0.7.0's preset states (at `v0.7.0` Catppuccin Latte
-  `#1e66f5`, Frappé `#8caaee`, Macchiato `#8aadf4`, Mocha `#89b4fa`), which the palette's facts check against the
-  project's published colours and label a pick where it is not the project's default; a project's further variants
-  are further palettes, not bundled. Rejected: a variant per flavour and accent, 56 Catppuccin palettes and as many
-  bundled KDE ports for colours an accent setting already gives. It offers only the
+  name with one of the accents the project publishes for it, in the schemes the project defines under that name:
+  Catppuccin's 4 flavours × 14 accents are 56 variants (ADD-A146). 0.8.0 bundles the ten schemes 0.7.0 ships (the
+  plan's D13), each as the variant whose accent 0.7.0's preset states (at `v0.7.0` Catppuccin Latte `#1e66f5`,
+  Frappé `#8caaee`, Macchiato `#8aadf4`, Mocha `#89b4fa`), which the palette's facts check against the project's
+  published colours; another accent's variant is another palette, not bundled. Rejected: bundling every variant, 56
+  Catppuccin palettes and as many KDE ports, where D13 asks for what 0.7.0 has. It offers only the
   schemes the project defines (Catppuccin Latte is light, the other three flavours dark; Dracula dark), and today's
   invented light variants of the dark flavours go;
 - is an application layer (R2.4) of colour-role bases, input bases and colour tokens, marked as replacing the reader's
@@ -1310,7 +1308,7 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   derivation applies over the port's scheme (R2.6; the specification's S14 recorded the choice; ADD-A146); the
   platform's condition rules (KDE's inactive effects) apply over it;
 - is suspended while either contrast condition holds, unless its project states colours for it (R2.4);
-- applies only under the schemes it has (ADD-A146). Where the application follows the system's scheme and that
+- applies only under the schemes it has (ADD-A146, awaiting the maintainer's confirmation at D6). Where the application follows the system's scheme and that
   scheme is one the palette lacks, the API accepts the palette and suspends it: it reports that the palette does
   not apply, the theme is the preset with the reader's values, and the palette applies when the scheme returns,
   whichever came first, the palette or the scheme (it stays chosen, so the application need not watch the scheme to
@@ -1394,9 +1392,10 @@ caller's build, and a default would hide it.
 - *One release.* Against: a long branch.
 - *0.8.0 at today's coverage, then the rest by units* (added by the maintainer's decision D13 of the 0.8.0 plan,
   2026-11-06): 0.8.0 holds every widget, colour role, token and value today's model holds, the catalogue's other
-  units following in later releases. For: users lose no widget, colour role, token or value of 0.7.0's model (what
-  0.7.0's API holds beyond them and 0.8.0 does not keep is the plan's *Not kept*) and get the new model weeks
-  earlier; each
+  units following in later releases. For: users lose no widget, colour role, token or value of 0.7.0's model but two
+  (the status colours on `macos-*`, absent by R25.17, and the community presets' invented light variants, which go by
+  R19; ADD-A146), what 0.7.0's API holds beyond them and 0.8.0 does not keep being the plan's *Not kept*, and get the
+  new model weeks earlier; each
   release's units are whole, every capability filled on them but placement, which 0.8.0's widgets defer to the
   placement unit (their menus, popovers and dialogs open where the toolkit puts them, as in 0.7.0), so no widget
   shows a mixed look. Against: several releases, each with its gate run; a later widget that adds members to an
@@ -1665,7 +1664,8 @@ of that day:
   specification's S9.3 and the reader have it.
 - R2.6, R4, R19: `ios-*` declares the accent alone; what UIKit draws in the tint is a measured derivation over it,
   pending the host pass under a second tint (the unmeasured register's U706), so `ios-*` leaves the presets whose
-  derived accent inputs a palette or an application states.
+  derived accent inputs a palette or an application states (a recorded decision reversed, awaiting the maintainer's
+  confirmation at D6).
 - R4, R24: what the gate proves now that the presets are generated from the facts; that the facts hold every
   combination and derivation is the independent verification's work.
 - R6: GTK's and libadwaita's state layers are the appended paint layers; a layer Material's tokens state is the
@@ -1682,11 +1682,14 @@ of that day:
   layout direction.
 - R12: the focus indicator's kinds are the specification's three (a ring, an underline, a keyed kind).
 - R16: the section's opening follows the thirteenth check's amendment: the query mirrors, not the toolkit.
-- R19: a variant defined, so Catppuccin's flavours are four palettes, as 0.7.0's presets; a palette under a
-  followed scheme it lacks is accepted and suspended, and refused only under a scheme the application picked; under
+- R19: a variant defined, a set of the project's base colours under one name with one of the accents the project
+  publishes for it, so Catppuccin's are 56 and its four bundled palettes the variants with 0.7.0's accents; a
+  palette under a followed scheme it lacks is accepted and suspended, and refused only under a scheme the
+  application picked (a recorded decision reversed, awaiting the maintainer's confirmation at D6); under
   a KDE port the reader's accent stays in force, as the specification's S14 recorded.
 - R21: the error, diagnostic and status enums, which no connector maps, are `#[non_exhaustive]`; what 0.8.0 keeps
-  of 0.7.0 is its model's widgets, roles, tokens and values, the plan listing what its API does not keep.
+  of 0.7.0 is its model's widgets, roles, tokens and values but `macos-*`'s status colours (R25.17) and the
+  community presets' invented light variants (R19), the plan listing what its API does not keep.
 - R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
   none (the specification's S15).
 
