@@ -21402,180 +21402,182 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], variants = ["route"
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -21610,36 +21612,36 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -21674,20 +21676,22 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["window_inactive", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["window_inactive", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["window_inactive", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["window_inactive", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -21754,20 +21758,22 @@ when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_con
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -21904,196 +21910,182 @@ when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = [
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], not_variants = ["glass"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], not_variants = ["glass", "with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], not_variants = ["glass"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], not_variants = ["glass", "with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], not_variants = ["glass"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], not_variants = ["glass", "with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], not_variants = ["glass"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], not_variants = ["glass", "with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], not_variants = ["glass"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], not_variants = ["glass", "with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], not_variants = ["glass"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], not_variants = ["glass", "with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["glass"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["glass", "with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["glass"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["glass", "with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22136,44 +22128,36 @@ when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = [
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], not_variants = ["glass"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], not_variants = ["glass", "with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], not_variants = ["glass"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], not_variants = ["glass", "with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["glass"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["glass", "with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
-# narrowed (the macOS tie-break round 8): the measured facts of `glass` below hold in some of its
-# combinations, so it and the pending facts after it state the others
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["glass"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["glass", "with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22216,20 +22200,22 @@ when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = [
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22296,20 +22282,22 @@ when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_co
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22386,108 +22374,109 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22522,12 +22511,13 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22562,12 +22552,13 @@ when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_con
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 2 pixels), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22612,108 +22603,109 @@ when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["disable
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@flexible_push` without `with_icon`: this fact's reading was the image sheet's, [@flexible_push, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@accessory_bar_action` without `with_icon`: this fact's reading was the image sheet's, [@accessory_bar_action, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `destructive` without `with_icon`: this fact's reading was the image sheet's, [destructive, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `pill` without `with_icon`: this fact's reading was the image sheet's, [pill, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["with_icon"], sizes = ["mini"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `@rounded_rectangle` without `with_icon`: this fact's reading was the image sheet's, [@rounded_rectangle, with_icon]'s (its own
+# fact below); the image alone on this bezel was drawn by no pass (U99; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_variants = ["with_icon"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U99"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22748,12 +22740,13 @@ when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = [
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_conditions = ["window_inactive", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -22788,12 +22781,13 @@ when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_co
 pending = "U751"
 rows = ["MAC-B09"]
 
-# the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
-# image rect, over a translucent fill, from 1 pixel), alpha times coverage, not the paint: pending U751 (the macOS tie-break round 8)
+# `circular` without `icon_only`: the probe's circular button is the image alone in every sheet, so this fact's
+# readings were [circular, icon_only]'s; no pass drew the circular bezel with a title (U752; the macOS
+# tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
-pending = "U751"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["circular"], not_variants = ["icon_only"], sizes = ["small"], not_context = [{ part = "bar", scope = "any", widget = "toolbar" }] }
+pending = "U752"
 rows = ["MAC-B09"]
 
 # the image's colour is read here as the symbol's rasterised peak (run 42272240639: the largest alpha in the
@@ -36247,32 +36241,29 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U92"
 rows = ["MAC-B02"]
 
+# `circular` without `icon_only`: the readings this fact cited were the default sheets' image-only circular button's,
+# stated now as the pair's fact; no pass drew the circular bezel with a title (U752; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `destructive`, `primary`, `tinted`, `with_icon` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = { full = { maximum_px = "absent" } }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["icon_only", "primary", "tinted", "destructive", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U752"
 rows = ["MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.large-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.extraLarge-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_c.aqua.pressed.extraLarge-circle.radius"
-tolerance = 0.5
 
 # grey check (the tie-break round 7): this combination's readings miss the capture over grey by up to 2.294 levels
 # (the corners' grey_delta): not read from the layer (U97); the fact above holds its other readings
+# narrowed (the macOS tie-break round 8): the measured facts of `icon_only` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["destructive", "primary", "tinted", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["destructive", "primary", "tinted", "with_icon", "icon_only"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only", "toggle"], not_variants = ["destructive", "primary", "tinted", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
 rows = ["MAC-B02"]
 
@@ -38837,9 +38828,41 @@ tolerance = 0.5
 
 # grey check (the tie-break round 7): its readings' layer over #808080 misses the capture over grey by up to 2.294
 # levels at the value's pixels (the corners' grey_delta): not one linear overlay there, so not read from it (U97)
+# narrowed (the macOS tie-break round 8): the measured facts of `circular` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only"], not_variants = ["circular"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "toggle"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "primary"], not_variants = ["toggle"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "tinted"], not_variants = ["toggle", "primary"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "destructive"], not_variants = ["toggle", "primary", "tinted"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["mini", "regular", "large", "extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
 rows = ["MAC-B02"]
 
@@ -52479,32 +52502,29 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U92"
 rows = ["MAC-B02"]
 
+# `circular` without `icon_only`: the readings this fact cited were the default sheets' image-only circular button's,
+# stated now as the pair's fact; no pass drew the circular bezel with a title (U752; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `destructive`, `primary`, `tinted`, `with_icon` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = { full = { maximum_px = "absent" } }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["icon_only", "primary", "tinted", "destructive", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U752"
 rows = ["MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.large-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.extraLarge-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_c.aqua.pressed.extraLarge-circle.radius"
-tolerance = 0.5
 
 # grey check (the tie-break round 7): this combination's readings miss the capture over grey by up to 2.294 levels
 # (the corners' grey_delta): not read from the layer (U97); the fact above holds its other readings
+# narrowed (the macOS tie-break round 8): the measured facts of `icon_only` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["destructive", "primary", "tinted", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["destructive", "primary", "tinted", "with_icon", "icon_only"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only", "toggle"], not_variants = ["destructive", "primary", "tinted", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
 rows = ["MAC-B02"]
 
@@ -55069,9 +55089,41 @@ tolerance = 0.5
 
 # grey check (the tie-break round 7): its readings' layer over #808080 misses the capture over grey by up to 2.294
 # levels at the value's pixels (the corners' grey_delta): not one linear overlay there, so not read from it (U97)
+# narrowed (the macOS tie-break round 8): the measured facts of `circular` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only"], not_variants = ["circular"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "toggle"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "primary"], not_variants = ["toggle"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "tinted"], not_variants = ["toggle", "primary"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "destructive"], not_variants = ["toggle", "primary", "tinted"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["mini", "regular", "large", "extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
 rows = ["MAC-B02"]
 
@@ -68711,32 +68763,29 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U92"
 rows = ["MAC-B02"]
 
+# `circular` without `icon_only`: the readings this fact cited were the default sheets' image-only circular button's,
+# stated now as the pair's fact; no pass drew the circular bezel with a title (U752; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `destructive`, `primary`, `tinted`, `with_icon` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = { full = { maximum_px = "absent" } }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["icon_only", "primary", "tinted", "destructive", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U752"
 rows = ["MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.large-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.extraLarge-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_c.aqua.pressed.extraLarge-circle.radius"
-tolerance = 0.5
 
 # grey check (the tie-break round 7): this combination's readings miss the capture over grey by up to 2.294 levels
 # (the corners' grey_delta): not read from the layer (U97); the fact above holds its other readings
+# narrowed (the macOS tie-break round 8): the measured facts of `icon_only` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["destructive", "primary", "tinted", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["destructive", "primary", "tinted", "with_icon", "icon_only"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only", "toggle"], not_variants = ["destructive", "primary", "tinted", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
 rows = ["MAC-B02"]
 
@@ -71301,9 +71350,41 @@ tolerance = 0.5
 
 # grey check (the tie-break round 7): its readings' layer over #808080 misses the capture over grey by up to 2.294
 # levels at the value's pixels (the corners' grey_delta): not one linear overlay there, so not read from it (U97)
+# narrowed (the macOS tie-break round 8): the measured facts of `circular` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only"], not_variants = ["circular"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "toggle"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "primary"], not_variants = ["toggle"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "tinted"], not_variants = ["toggle", "primary"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "destructive"], not_variants = ["toggle", "primary", "tinted"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["mini", "regular", "large", "extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
 rows = ["MAC-B02"]
 
@@ -84943,32 +85024,29 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U92"
 rows = ["MAC-B02"]
 
+# `circular` without `icon_only`: the readings this fact cited were the default sheets' image-only circular button's,
+# stated now as the pair's fact; no pass drew the circular bezel with a title (U752; the macOS tie-break round 8)
+# narrowed (the macOS tie-break round 8): the measured facts of `destructive`, `primary`, `tinted`, `with_icon` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = { full = { maximum_px = "absent" } }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["icon_only", "primary", "tinted", "destructive", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U752"
 rows = ["MAC-B02"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.large-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.extraLarge-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_c.aqua.pressed.extraLarge-circle.radius"
-tolerance = 0.5
 
 # grey check (the tie-break round 7): this combination's readings miss the capture over grey by up to 2.294 levels
 # (the corners' grey_delta): not read from the layer (U97); the fact above holds its other readings
+# narrowed (the macOS tie-break round 8): the measured facts of `icon_only` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["destructive", "primary", "tinted", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular"], not_variants = ["destructive", "primary", "tinted", "with_icon", "icon_only"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only", "toggle"], not_variants = ["destructive", "primary", "tinted", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
 rows = ["MAC-B02"]
 
@@ -87533,9 +87611,41 @@ tolerance = 0.5
 
 # grey check (the tie-break round 7): its readings' layer over #808080 misses the capture over grey by up to 2.294
 # levels at the value's pixels (the corners' grey_delta): not one linear overlay there, so not read from it (U97)
+# narrowed (the macOS tie-break round 8): the measured facts of `circular` below hold in some of its
+# combinations, so it and the pending facts after it state the others
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only"], not_variants = ["circular"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "toggle"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "primary"], not_variants = ["toggle"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "tinted"], not_variants = ["toggle", "primary"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular", "destructive"], not_variants = ["toggle", "primary", "tinted"], not_sizes = ["mini", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = ["MAC-B02"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["icon_only", "circular"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["mini", "regular", "large", "extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
 rows = ["MAC-B02"]
 
@@ -94909,26 +95019,6 @@ tolerance = 2
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.regular-circular.fill"
-tolerance = 2
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_c.toml#inactive_contrast.styles_c.aqua.disabled_pressed.regular-circle.fill"
-tolerance = 2
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.large-circular.fill"
-tolerance = 2
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_c.toml#inactive_contrast.styles_c.aqua.disabled_pressed.large-circle.fill"
-tolerance = 2
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_b.toml#inactive_contrast.styles_b.aqua.disabled_pressed.mini-help.fill"
 tolerance = 2
 
@@ -95476,26 +95566,6 @@ tolerance = 2
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.darkAqua.disabled_pressed.large-accessory_bar_action.fill"
-tolerance = 2
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.darkAqua.disabled_pressed.regular-circular.fill"
-tolerance = 2
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_c.toml#inactive_contrast.styles_c.darkAqua.disabled_pressed.regular-circle.fill"
-tolerance = 2
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.darkAqua.disabled_pressed.large-circular.fill"
-tolerance = 2
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_c.toml#inactive_contrast.styles_c.darkAqua.disabled_pressed.large-circle.fill"
 tolerance = 2
 
 [[fact.cite]]
@@ -239784,11 +239854,98 @@ when = { conditions = ["preset:macos-tahoe", "contrast_increased"], not_conditio
 pending = "U695"
 rows = []
 
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"] }
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "toggle"] }
 pending = "U695"
 rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "primary"], not_variants = ["toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "tinted"], not_variants = ["toggle", "primary"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "destructive"], not_variants = ["toggle", "primary", "tinted"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed", "disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["large", "extra_large"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["extra_large"], not_sizes = ["large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the default sheets' circular button is the image alone
+# ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.large-circular.radius"
+tolerance = 0.5
+
+# the pair's own fact (the macOS tie-break round 8): the default sheets' circular button is the image alone
+# ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.extraLarge-circular.radius"
+tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_c.aqua.pressed.extraLarge-circle.radius"
+tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.bottom_left"
@@ -240222,11 +240379,98 @@ when = { conditions = ["preset:macos-tahoe", "contrast_increased"], not_conditio
 pending = "U695"
 rows = []
 
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"] }
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "toggle"] }
 pending = "U695"
 rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "primary"], not_variants = ["toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "tinted"], not_variants = ["toggle", "primary"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "destructive"], not_variants = ["toggle", "primary", "tinted"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed", "disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["large", "extra_large"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["extra_large"], not_sizes = ["large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the default sheets' circular button is the image alone
+# ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.large-circular.radius"
+tolerance = 0.5
+
+# the pair's own fact (the macOS tie-break round 8): the default sheets' circular button is the image alone
+# ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.extraLarge-circular.radius"
+tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_c.aqua.pressed.extraLarge-circle.radius"
+tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.bottom_right"
@@ -240660,11 +240904,98 @@ when = { conditions = ["preset:macos-tahoe", "contrast_increased"], not_conditio
 pending = "U695"
 rows = []
 
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"] }
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "toggle"] }
 pending = "U695"
 rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "primary"], not_variants = ["toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "tinted"], not_variants = ["toggle", "primary"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "destructive"], not_variants = ["toggle", "primary", "tinted"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed", "disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["large", "extra_large"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["extra_large"], not_sizes = ["large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the default sheets' circular button is the image alone
+# ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.large-circular.radius"
+tolerance = 0.5
+
+# the pair's own fact (the macOS tie-break round 8): the default sheets' circular button is the image alone
+# ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.extraLarge-circular.radius"
+tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_c.aqua.pressed.extraLarge-circle.radius"
+tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.top_left"
@@ -241098,11 +241429,98 @@ when = { conditions = ["preset:macos-tahoe", "contrast_increased"], not_conditio
 pending = "U695"
 rows = []
 
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"] }
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "toggle"] }
 pending = "U695"
 rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "primary"], not_variants = ["toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "tinted"], not_variants = ["toggle", "primary"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only", "destructive"], not_variants = ["toggle", "primary", "tinted"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed", "disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["large", "extra_large"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["extra_large"], not_sizes = ["large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the default sheets' circular button is the image alone
+# ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.large-circular.radius"
+tolerance = 0.5
+
+# the pair's own fact (the macOS tie-break round 8): the default sheets' circular button is the image alone
+# ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_a.aqua.pressed.extraLarge-circular.radius"
+tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/tiebreak-corners.toml#key.default_c.aqua.pressed.extraLarge-circle.radius"
+tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.top_right"
@@ -241518,11 +241936,193 @@ rows = ["MAC-B01"]
 
 # narrowed (ADD-A141): the image-sheet readings below state this pair in the key pass; it stays pending (U695)
 # in every other combination
+# split (the macOS tie-break round 8): the measured facts after these state the pair where its own readings give
+# a value; it stays pending (U695) in every other combination
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:macos-tahoe", "window_inactive"], variants = ["circular", "icon_only"] }
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], variants = ["circular", "icon_only", "toggle"] }
 pending = "U695"
 rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], variants = ["circular", "icon_only", "primary"], not_variants = ["toggle"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], variants = ["circular", "icon_only", "tinted"], not_variants = ["toggle", "primary"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], variants = ["circular", "icon_only", "destructive"], not_variants = ["toggle", "primary", "tinted"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main"], not_conditions = ["contrast_increased"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased"], not_conditions = ["app_inactive"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], not_states = ["disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled", "pressed", "default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["regular", "large"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], not_sizes = ["regular"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["regular"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], not_states = ["disabled"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled"], not_states = ["pressed"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled", "pressed", "default"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], not_sizes = ["regular", "large"] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], not_sizes = ["regular"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["regular"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U695"
+rows = []
+
+# the pair's own fact (the macOS tie-break round 8): the plain sheets' circular bezel and circle border shape are
+# the image alone ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#00000017"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.regular-circular.fill"
+tolerance = 2
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_c.toml#inactive_contrast.styles_c.aqua.disabled_pressed.regular-circle.fill"
+tolerance = 2
+
+# the pair's own fact (the macOS tie-break round 8): the plain sheets' circular bezel and circle border shape are
+# the image alone ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#00000017"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.aqua.disabled_pressed.large-circular.fill"
+tolerance = 2
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_c.toml#inactive_contrast.styles_c.aqua.disabled_pressed.large-circle.fill"
+tolerance = 2
+
+# the pair's own fact (the macOS tie-break round 8): the plain sheets' circular bezel and circle border shape are
+# the image alone ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff17"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.darkAqua.disabled_pressed.regular-circular.fill"
+tolerance = 2
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_c.toml#inactive_contrast.styles_c.darkAqua.disabled_pressed.regular-circle.fill"
+tolerance = 2
+
+# the pair's own fact (the macOS tie-break round 8): the plain sheets' circular bezel and circle border shape are
+# the image alone ([circular, icon_only], `imagePosition` read back)
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["circular", "icon_only"], not_variants = ["toggle", "primary", "tinted", "destructive"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff17"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_a.toml#inactive_contrast.styles_a.darkAqua.disabled_pressed.large-circular.fill"
+tolerance = 2
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-inactive_contrast-styles_c.toml#inactive_contrast.styles_c.darkAqua.disabled_pressed.large-circle.fill"
+tolerance = 2
 
 [[fact]]
 key = "button.body.fill"
