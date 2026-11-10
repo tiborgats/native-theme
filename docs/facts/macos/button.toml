@@ -23674,6 +23674,171 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_c.mini-rounded_rectangle.min_height"
 tolerance = 0
 
+# the square bezels and glass at mini (the macOS tie-break round 8, the second measured verifier's coverage): their
+# intrinsic height is not the size's (the facts above, the push bezel's): the small square bezel 15, 18 and 20 px from
+# regular up, the shadowless square 17 px at mini and 22 px from regular up (20 px at small, the size's), glass 13 px
+# at mini (the size's from small up); geometry.toml's `min_height` of run 41006842699 and the same read of run
+# 42272240639's newer build
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["mini"] }
+value = "15px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.mini-small_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-small_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["small"] }
+value = "18px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.small-small_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-small_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["regular"] }
+value = "20px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.regular-small_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-small_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["large"] }
+value = "20px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.large-small_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-small_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["extra_large"] }
+value = "20px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.extraLarge-small_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.extraLarge-small_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], sizes = ["mini"] }
+value = "17px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.mini-shadowless_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-shadowless_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], sizes = ["regular"] }
+value = "22px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.regular-shadowless_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-shadowless_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], sizes = ["large"] }
+value = "22px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.large-shadowless_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-shadowless_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], sizes = ["extra_large"] }
+value = "22px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_a.extraLarge-shadowless_square.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.extraLarge-shadowless_square.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["glass"], sizes = ["mini"] }
+value = "13px"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.styles_b.mini-glass.min_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-glass.intrinsicContentSize_wh.1"
+tolerance = 0
+
 [[fact]]
 key = "button.body.min_width"
 when = { conditions = ["preset:macos-tahoe"], sizes = ["extra_large"] }
@@ -26105,6 +26270,1670 @@ tolerance = 0
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-key-push.toml#key.push.darkAqua.pressed.mini-plain.stroke"
 tolerance = 0
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["checked"], not_states = ["disabled", "pressed", "default"], variants = ["toggle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["checked"], not_states = ["disabled", "pressed", "default"], variants = ["toggle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["checked"], not_states = ["disabled", "pressed", "default"], variants = ["toggle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@rounded_rectangle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["@small_square"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["@small_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["@small_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["@small_square"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["glass"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["glass"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["glass"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["glass"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "default"], not_states = ["pressed", "checked"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "default"], not_states = ["pressed", "checked"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "default"], not_states = ["pressed", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "default"], not_states = ["pressed", "checked"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed", "default"], not_states = ["disabled", "checked"], variants = ["glass"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed", "default"], not_states = ["disabled", "checked"], variants = ["glass"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed", "default"], not_states = ["disabled", "checked"], variants = ["glass"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed", "default"], not_states = ["disabled", "checked"], variants = ["glass"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed", "default"], not_states = ["disabled", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "scheme:dark"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "scheme:dark"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "scheme:dark"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "scheme:dark"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "scheme:light"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "scheme:dark"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's main-not-key pass draws this combination unlike the base above:
+# a stroke is drawn (a width and an edge colour a side at most, `stroke_<side>`), which the layer does not read in full (U95)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U95"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["pill"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["checked"], not_states = ["disabled", "pressed", "default"], variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["checked"], not_states = ["disabled", "pressed", "default"], variants = ["toggle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["checked"], not_states = ["disabled", "pressed", "default"], variants = ["toggle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled", "checked"], not_states = ["pressed", "default"], variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "checked"], not_states = ["disabled", "default"], variants = ["toggle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["default"], not_states = ["disabled", "pressed", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled", "default"], not_states = ["pressed", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed", "default"], not_states = ["disabled", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@accessory_bar_action"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["@rounded_rectangle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["pill"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@accessory_bar_action"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["@flexible_push"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["destructive"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["icon_only"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["pill"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["toggle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's inactive Increase Contrast pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "window_inactive", "not_main", "contrast_increased", "app_inactive", "scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["with_icon"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["glass"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
+
+# coverage (the tie-break round 8): run 42272240639's key pass draws this combination unlike the base above:
+# a stroke is drawn, but its edge pixels miss the capture over grey by more than 2 levels (U97)
+[[fact]]
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed", "default"], not_states = ["disabled", "checked"], variants = ["glass"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U97"
+rows = []
 
 [[fact]]
 key = "button.body.focus.kind"
