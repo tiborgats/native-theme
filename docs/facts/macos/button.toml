@@ -149770,18 +149770,6 @@ rows = ["MAC-B09"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed", "checked"], not_states = ["default", "disabled"], variants = ["help"] }
-pending = "U751"
-rows = ["MAC-B09"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["help"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U751"
-rows = ["MAC-B09"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["checked"], not_states = ["default", "disabled", "pressed"], variants = ["help"] }
 pending = "U751"
 rows = ["MAC-B09"]
@@ -149916,18 +149904,6 @@ rows = ["MAC-B09"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed", "checked"], not_states = ["default", "disabled"], variants = ["help"], sizes = ["mini"] }
-pending = "U751"
-rows = ["MAC-B09"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["help"], sizes = ["mini"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U751"
-rows = ["MAC-B09"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["checked"], not_states = ["default", "disabled", "pressed"], variants = ["help"], sizes = ["mini"] }
 pending = "U751"
 rows = ["MAC-B09"]
@@ -149989,18 +149965,6 @@ rows = ["MAC-B09"]
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["default"], variants = ["help"], sizes = ["small"] }
-pending = "U751"
-rows = ["MAC-B09"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed", "checked"], not_states = ["default", "disabled"], variants = ["help"], sizes = ["small"] }
-pending = "U751"
-rows = ["MAC-B09"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled", "checked"], variants = ["help"], sizes = ["small"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U751"
 rows = ["MAC-B09"]
 
@@ -220906,6 +220870,20 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.extraLarge-with_icon.alignmentRectInsets_tlbr.0"
 tolerance = 0
 
+# the flat button with the symbol and the title, mini (the macOS tie-break round 8): run 42272240639's image sheet
+# reads a top inset of 1 there (its frame 48 x 12, the intrinsic height 11), 0 at every other size and on the flat
+# button without the image
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["flat", "with_icon"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.image_b.buttons.mini-flat.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
 [[fact]]
 key = "button.body.margin.right"
 when = { conditions = ["preset:macos-tahoe"], not_variants = ["circular", "route", "@small_square", "tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
@@ -226477,6 +226455,20 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-flat.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+# the flat button with the symbol and the title, mini (the macOS tie-break round 8): run 42272240639's image sheet
+# reads a top inset of 1 there (its frame 48 x 12, the intrinsic height 11), 0 at every other size and on the flat
+# button without the image
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["flat", "with_icon"], sizes = ["mini"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.image_b.buttons.mini-flat.alignmentRectInsets_tlbr.0"
 tolerance = 0
 
 [[fact]]
