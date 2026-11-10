@@ -354,13 +354,13 @@ def self_test() -> int:
     expect("Variants none with a note", edit(good, "- **Variants:** none.\n", "- **Variants:** none (a note).\n"),
            [])
     old_heads = ("- **Variants:**\n  - typed (shared): `flat`.\n  - On the widget, typed: `pill`.\n"
-                 "  - keyed, `adwaita`: `@dim`.\n")
+                 "  - Keyed, `adwaita`: `@dim`.\n  - On `macos-*` the form is the window's: a note.\n")
     rejects = ("a form the Entry format rejects: a sub-bullet listing variants starts `on the widget` or "
                "`` on `<part>` ``")
     expect("Variants sub-bullets of the old forms", edit(good, "- **Variants:** none.\n", old_heads),
-           [f"good: the Variants sub-bullet at line 12 starts with `typed`, {rejects}",
-            f"good: the Variants sub-bullet at line 13 starts with `On`, {rejects}",
-            f"good: the Variants sub-bullet at line 14 starts with `keyed`, {rejects}"])
+           [f"good: the Variants sub-bullet at line 12 heads variants with 'typed (shared)', {rejects}",
+            f"good: the Variants sub-bullet at line 13 heads variants with 'On the widget, typed', {rejects}",
+            f"good: the Variants sub-bullet at line 14 heads variants with 'Keyed, `adwaita`', {rejects}"])
     expect("Variants inline", edit(good, "- **Variants:** none.\n", "- **Variants:** typed `flat`; keyed `@dim`.\n"),
            ["good: the Variants item at line 11 is neither `none` nor sub-bullets (Entry format): "
             "'typed `flat`; keyed `@dim`.'"])
