@@ -324,9 +324,10 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
 - **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags), written
   in the order of precedence the preset's `exclusive` array states (S10); that order is a fact of the platform's
   state model, which the gate checks (S17), so every entry's groups end "precedence: state models (S17)", its
-  recency sets, where it has any, following. A widget's groups
-  apply to each element of the widget, its *(element)* parts included (S8 drops the excluded flags per element), so
-  "on `item`" names the element whose states the platform's model groups. On `adwaita` every widget's groups
+  recency sets, where it has any, following. A group written without "on" applies to each element of the widget,
+  its *(element)* parts included; one written "on `<part>`, …" applies to those elements alone, the root part
+  standing for the widget's own element, and is declared `{ parts = […], flags = […] }` (S10's *Groups and sets per element*;
+  ADD-A146); recency sets alike. On `adwaita` every widget's groups
   include S10's pairs `[disabled, f]` for each `f` of `hover`, `pressed`, `focused`, `focus_visible` and
   `drop_target` the widget uses, GTK clearing or refusing them on an insensitive widget (`gtk@4.24.1
   gtk/gtkwidget.c:6253-6257`, S10's *A flag the platform clears*); an entry's "others none" speaks of the other
@@ -415,8 +416,7 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
   host's context (Nested controls); the entry states it at the part. `fields:` part fields that may be
   `Absent`, beyond the core's own marks (S6.3: `PartStyle.touch_target` and `shape`, `Glyph.stroke`, …),
   which the entries do not repeat. A `margin` is no such mark: a part with no margin states a zero length, S17's
-  zero by omission cited as an absence, and an entry lists a `margin` here only where the field has no meaning on a
-  preset (a part an AppKit rendering replaces) (S6.3; ADD-A146). Among those marks are a part's drawing fields, `fill`, `stroke`, `shadow`,
+  zero by omission cited as an absence (S2.11, S6.3; ADD-A146). Among those marks are a part's drawing fields, `fill`, `stroke`, `shadow`,
   `text`, `icon`, `glyph`, `focus` and `cursor`, on every part of every widget and component (S6.3: a part that paints
   nothing at rest, a menu item, a flat button's or a tab's fill, states `"absent"`, and so does a preset whose
   platform draws no outline or shadow there); where an entry's `fields:` list still names one of them, the item only
@@ -441,7 +441,10 @@ them):
   its bullet names its parent (`` `title` *(element)*, in `title_bar_content` ``; an item's label `, in item`; each
   part of an overlay's box `, in body`), and nothing else states nesting: no sentence of another bullet nests a part
   or gives it an element (ADD-A146; rejected: a root's bullet naming the box every other part nests in, and a list of
-  the parts belonging to an element, two more spellings the reader did not read). A part's
+  the parts belonging to an element, two more spellings the reader did not read). Sibling elements are drawn in the
+  connector's tree order; an entry whose nested parts of one parent overlap states their order, a later one over an
+  earlier, at the parent's bullet, the order the parts are listed in implying none (S2.11's *Drawing order*;
+  ADD-A146). A part's
   `bindings`, `opacity` and `transform` reach every part nested in it and their elements (the title bar's Header
   binding reaches the title and the caption buttons; the title-bar content's inactive dimming dims them as one
   group). A part nested in a part that answers `NotDrawn` is still queried, in the scope the `NotDrawn` part's
@@ -1993,7 +1996,10 @@ spaces:
   - parts: `subtitle` (all but `ios-*`, `kde-breeze`), `icon` (`ios-*` by a rule under `@loading`: a `spinner` element
     in `context button` in its place, B-10), `menu_indicator` (every preset: stated in the base, absent by a
     rule `@ !variants {menu}` on every preset, which `kde-breeze`'s rule extends with its own declared keyed variants,
-    `@ !variants {menu,@inline_small,@inline_large}`, and `adwaita`'s by one more, `@ variants {menu}
+    `@ !variants {menu,@inline_small,@inline_large}`, and by one more, `@ variants {tool,menu}
+    !variants {@inline_small,@inline_large}` (`!variants {@inline_large}` under `flavor:kirigami`):
+    `ToolButtonMenuArrowStyle::None`, `breeze@6.8.2 kstyle/breezestyle.cpp:244-248` (ADD-A146); `adwaita`'s by one
+    more, `@ variants {menu}
     !variants {@arrow_only,@with_arrow}`: GTK shows a menu button's arrow only where the arrow is its only content or
     the button is `.arrow-button`, hiding it for an icon, a label whose direction is `none`, AdwButtonContent and a
     custom child without `always-show-arrow` (`gtk@4.24.1 gtk/gtkmenubutton.c:631`, `:644-647`, `:658-666`; ADD-A123):
@@ -3312,9 +3318,7 @@ spaces:
   `supporting_text` (all but `material-3`, `windows-11`), `arrow_area` (all but `macos-*`, `kde-breeze`,
   `windows-11`, `adwaita`; the last three by a rule outside `editable`, K1.240, W1-137, GN-1.238); fields:
   `body.fill` (`adwaita` by a rule under `variants {editable,@gtk_combo_box}`, whose body draws no button, its
-  entry and its arrow button drawing themselves, GN-1.238), `body.stroke` (as `body.fill`);
-  `arrow.margin` (`macos-*` outside `editable`, the rendering's arrow, S15), `arrow_area.margin` (`macos-*` outside `editable`, the
-  rendering's arrow area; its `max_height` there `auto`), `icon.margin` (as `icon`), `label.padding` (as
+  entry and its arrow button drawing themselves, GN-1.238), `body.stroke` (as `body.fill`); `label.padding` (as
   `label`); `body.shadow` (`adwaita` by the toolbar rule, GN-1.151, and under `variants {editable,@gtk_combo_box}`, GN-1.238; `kde-breeze`, `macos-*` by a
   rule under `flat`, K1.241, MAC-CB05; the value phase names the others from the facts), `arrow_area.corners`
   (`kde-breeze`, whose arrow area draws no box, K1.240); values: `icon_text_gap_px` (all but `material-3`,
