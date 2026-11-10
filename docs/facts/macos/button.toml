@@ -264622,485 +264622,325 @@ when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive
 pending = "U695"
 rows = []
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0070f5c6"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.mini-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0070f5e0"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.small-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0070f6f2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.regular-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0070f6f2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.large-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0070f6f2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.extraLarge-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#004cd1c6"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.mini-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#004cd2e0"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.small-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#004cd1f2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.regular-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#004cd1f2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.large-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#004cd1f2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.extraLarge-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff45"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.mini-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007cfe4e"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.small-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff55"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.regular-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff55"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.large-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff55"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.extraLarge-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff45"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.mini-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007cfe4e"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.small-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff55"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.regular-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff55"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.large-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff55"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.extraLarge-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0d87ffc6"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.mini-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0e87ffe0"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.small-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0e87fff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.regular-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0e87fff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.large-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0e87fff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.extraLarge-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#3cb7ffc6"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.mini-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#3db7ffe0"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.small-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#3db8fff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.regular-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#3db8fff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.large-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#3db8fff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.extraLarge-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0079ff63"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.mini-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bfe70"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.small-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff79"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.regular-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff79"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.large-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff79"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.extraLarge-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0079ff63"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.mini-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bfe70"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.small-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff79"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.regular-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff79"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.large-toolbar.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff79"
+pending = "U750"
 rows = ["MAC-B01"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.extraLarge-toolbar.icon"
-tolerance = 2
 
 # narrowed (ADD-A141): the image-sheet readings below state this pair in the key pass; it stays pending (U695)
 # in every other combination
@@ -303480,125 +303320,85 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U695"
 rows = []
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.mini-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.small-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.regular-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.large-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.extraLarge-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.mini-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.small-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.regular-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.large-primary.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff6d"
+pending = "U750"
 rows = ["MAC-B01"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.extraLarge-primary.fill"
-tolerance = 2
 
 [[fact]]
 key = "button.body.focus.corners.bottom_left"
@@ -305016,29 +304816,21 @@ when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive
 pending = "U695"
 rows = []
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#cfe6ffff"
+pending = "U750"
 rows = ["MAC-B09", "MAC-X19"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.mini-primary.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#e0efffff"
+pending = "U750"
 rows = ["MAC-B09", "MAC-X19"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.small-primary.icon"
-tolerance = 2
 
 # the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
 [[fact]]
@@ -305076,29 +304868,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.extraLarge-primary.icon"
 tolerance = 2
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#cfe4faff"
+pending = "U750"
 rows = ["MAC-B09", "MAC-X19"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.mini-primary.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#e0edfcff"
+pending = "U750"
 rows = ["MAC-B09", "MAC-X19"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.small-primary.icon"
-tolerance = 2
 
 # the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
 [[fact]]
@@ -305256,29 +305040,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.extraLarge-primary.icon"
 tolerance = 2
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#cfe6ffff"
+pending = "U750"
 rows = ["MAC-B09", "MAC-X19"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.mini-primary.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#e0efffff"
+pending = "U750"
 rows = ["MAC-B09", "MAC-X19"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.small-primary.icon"
-tolerance = 2
 
 # the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
 [[fact]]
@@ -305316,29 +305092,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.extraLarge-primary.icon"
 tolerance = 2
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#d4e8ffff"
+pending = "U750"
 rows = ["MAC-B09", "MAC-X19"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.mini-primary.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#e3f0ffff"
+pending = "U750"
 rows = ["MAC-B09", "MAC-X19"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.small-primary.icon"
-tolerance = 2
 
 # the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
 [[fact]]
@@ -309252,125 +309020,85 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U695"
 rows = []
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.mini-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.small-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.regular-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.large-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.extraLarge-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.mini-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.small-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.regular-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.large-tinted.fill"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0080ff06"
+pending = "U750"
 rows = ["MAC-B01"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.extraLarge-tinted.fill"
-tolerance = 2
 
 [[fact]]
 key = "button.body.focus.corners.bottom_left"
@@ -310764,485 +310492,325 @@ when = { conditions = ["preset:macos-tahoe"], not_conditions = ["window_inactive
 pending = "U695"
 rows = []
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007affcf"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.mini-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007affe0"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.small-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.regular-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.large-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.normal.extraLarge-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007affcf"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.mini-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007affdf"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.small-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.regular-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.large-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.pressed.extraLarge-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff3e"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.mini-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0079ff44"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.small-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.regular-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.large-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled.extraLarge-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff3e"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.mini-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0079ff44"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.small-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.regular-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.large-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.extraLarge-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007affcf"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.mini-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007affe0"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.small-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.regular-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.large-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.normal.extraLarge-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007affcf"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.mini-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007affdf"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.small-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.regular-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.large-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007afff2"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.pressed.extraLarge-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff3e"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.mini-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0079ff44"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.small-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.regular-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.large-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B09"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled.extraLarge-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007aff3e"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.mini-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0079ff44"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.small-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.regular-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.large-tinted.icon"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#007bff49"
+pending = "U750"
 rows = ["MAC-B01"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.extraLarge-tinted.icon"
-tolerance = 2
 
 # narrowed (ADD-A141): the image-sheet readings below state this pair in the key pass; it stays pending (U695)
 # in every other combination
@@ -311546,125 +311114,85 @@ when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["
 pending = "U695"
 rows = []
 
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0076ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.mini-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0077ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.small-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0078ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.regular-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0078ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.large-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0078ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.aqua.disabled_pressed.extraLarge-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0076ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.mini-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0077ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.small-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0078ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.regular-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0078ff13"
+pending = "U750"
 rows = ["MAC-B01"]
 
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.large-tinted.label"
-tolerance = 2
-
-# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set
+# the image-sheet sets (ADD-A141): run 42272240639's key pass reads this set under the image's accent alone, a
+# chromatic colour that would follow the accent: no literal for every accent (U750; the macOS tie-break round 8)
 [[fact]]
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], not_conditions = ["window_inactive", "not_main", "contrast_increased"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "destructive", "pill", "@rounded_rectangle"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-value = "#0078ff13"
+pending = "U750"
 rows = ["MAC-B01"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/layers-key-image_b.toml#key.image_b.darkAqua.disabled_pressed.extraLarge-tinted.label"
-tolerance = 2
 
 [[fact]]
 key = "button.label.text.font.family"
