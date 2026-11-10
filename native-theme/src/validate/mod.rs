@@ -295,7 +295,7 @@ pub(crate) fn check_preset(
 }
 
 /// Every problem keeping the synthetic route's layers `layers`, over the
-/// preset `preset` and its declarations, from the one pass [`check`] makes
+/// preset `preset` and its declarations, from the one pass [`check_stacked`] makes
 /// over them (S17, ADD-A131): a value one states as an expression
 /// ([`ProblemKind::SyntheticExpression`]), and a place one states where an
 /// earlier one states it, or a place above or below it, a list taken whole
