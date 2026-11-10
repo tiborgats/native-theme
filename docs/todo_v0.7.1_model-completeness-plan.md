@@ -493,9 +493,10 @@ the facts tooling reads it.
   release timing changes. Within each unit a release enables, the rigor stays as it is: verified facts, the facts
   gate, one rule for every field.
   - **(A)** the whole catalogue in 0.8.0, as R21 had it. Against: users wait for the widgets 0.7.0 never had.
-  - **(B)** 0.8.0 at 0.7.0's coverage, then the other units. For: users lose nothing of 0.7.0's model but two things
-    (the status colours on `macos-*`, absent by R25.17, and the community presets' invented light variants, which go
-    by R19; what its API does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks
+  - **(B)** 0.8.0 at 0.7.0's coverage, then the other units. For: users lose nothing of 0.7.0's model but the status
+    colours on `macos-*` (R25.17), the invented light variants (R19) and, until D6 decides it (W3-3), the widgets a
+    preset declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`) (what its API
+    does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks
     earlier (the maintainer's estimate: about 3–4 weeks against 5–7). Against: several releases, each with its own gate run; D14 (*Settled by
     logic*).
   - **(C)** releases by capability (rules, then shadows, …), R21's rejected stages: each would break the connectors
@@ -608,7 +609,7 @@ the facts tooling reads it.
     supplied side, and task 4's mapping check on every preset, followed-scheme rule and palette run (*M2*); the
     catalogue's 87 typed widgets, `font_button` the new one (*The units 0.8.0 enables*).
   - **The rationale's amendments** of the same check, for the maintainer's confirmation (a change to a rationale
-    decision is the maintainer's, *Spec changes*; each is marked in the rationale as awaiting it): `ios-*`'s accent
+    decision is the maintainer's, *Spec changes*; the two that reverse a recorded decision are marked in the rationale as awaiting it): `ios-*`'s accent
     alone, with measured tint derivations after a second-tint pass (R2.6, R4, R19; U706); a palette suspended, not
     refused, under a followed scheme it lacks (R19); the bundled palettes' accents, each the variant whose accent
     0.7.0's preset states (R19); `#[non_exhaustive]` error enums (R21); no font DPI read (R10).

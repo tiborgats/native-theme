@@ -318,8 +318,9 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
   element whose state it is and on no other element of the widget (ADD-A146): `open` on the element that opens (an
   expander's own element, a tree row, a combo box), `selected` and `checked` on the item, `hover` on the element under the
   pointer and on every element of the widget it nests in (a hovered caption button's group, a hovered arrow's
-  header), as the toolkits hold it (`gtk@4.24.1 gtk/gtkmain.c:1158-1191`), `pressed` and the focus flags on the one
-  element that takes the press or holds the focus (S7.2). `disabled` alone is also held from outside:
+  header), as the toolkits hold it (`gtk@4.24.1 gtk/gtkmain.c:1158-1191`), `pressed`, `focused` and `focus_visible` on
+  the one element that takes the press or holds the focus, `focus_within` on that element and on every element it nests in
+  (S7.2). `disabled` alone is also held from outside:
   every element of a disabled widget, and every element nested in a disabled *(element)* part, is disabled, as the
   toolkits propagate it. A nested *(element)* part, and the plain parts that belong to it, read any other flag of
   their host by `context` (`expander.arrow.glyph @ context expander.body {open}`, `list.disclosure.transform @
@@ -8558,7 +8559,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **Flags:** none of its own; state flags used: selected (`selector_cell`, `period_selector`, `dial_label`;
   `field_segment` on `macos-*`, MAC-N04), hover, pressed (iOS's pill, C-5), focused, disabled, open (Windows' flyout,
   iOS's popover shown), focus_visible, read_only (kirigami-addons' row drops the field's fill, K-KA-22†).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `field` (CommonStates); others none (states
+- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `body` (CommonStates); others none (states
   combine; `material-3`'s state layers are a recency set, below); precedence: state models (S17). Recency sets:
   `material-3`: `state_layer = [focus_visible, hover]` on `selector_cell` and `period_selector` (state layers;
   Material's recency sets, above: a `Surface`'s ripple, `TimePicker.kt:3089-3095`, and a `TextButton`'s, `:3018`;
@@ -10795,7 +10796,7 @@ S9.3 over both for the reads it states.
   `cond system_setting:pointer_animations` (none found yet): P3-12†.
 - Dynamic Type size per style per content size category (`preferredContentSizeCategory` into
   `ReaderState.content_size_category`, a `ContentSizeCategory`, S8): X-DT-1.
-- `UITraitCollection` size classes and idiom: X-SV-1; `semanticContentAttribute`: P3-14†.
+- `UITraitCollection` size classes and idiom: X-SV-1.
 - `UIScrollView.DecelerationRate`, `minimumPressDuration`, `UIBackgroundConfiguration.shadowProperties`,
   `UIBarAppearance.backgroundEffect`, `UICornerConfiguration`: X-MO-8, X-BT-1, X-SH-2, X-MT-2, X-CR-2.
 - `CTFontCreateForString`, `CTFontCopyDefaultCascadeListForLanguages`: FM-1†, FM-2†. The user's Liquid Glass look
