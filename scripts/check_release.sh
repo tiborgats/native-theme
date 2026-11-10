@@ -550,8 +550,9 @@ run_tests_min()  { _run_tests_impl "$2" "$1" "${@:3}"; }
 # step runs the tests it ran before. `--no-tests=pass` leaves a run of no
 # test to run_tests' minimum, as with `cargo test`; `--status-level fail`
 # lists the failures alone, and the summary line is run_tests' count. The
-# arguments after a `--` go to the test binaries, the doctests' too
-# (`--skip <name> --exact` alone: nextest takes libtest's filters).
+# arguments after a `--` go to the test binaries, the doctests' too; the one
+# form in use is `-- --skip <name> --exact`, which nextest gets as its own
+# filter (nextest_filter_of).
 cargo_tests() {
     if [[ ! $HAVE_NEXTEST ]]; then
         cargo test "$@"
@@ -562,9 +563,51 @@ cargo_tests() {
         cargo_args+=("$1")
         shift
     done
-    cargo nextest run --no-tests=pass --status-level fail --final-status-level fail "${cargo_args[@]}" "$@" || return
+    nextest_filter_of "$@" || return
+    cargo nextest run --no-tests=pass --status-level fail --final-status-level fail \
+        "${cargo_args[@]}" "${NEXTEST_FILTER[@]}" || return
     if doctests_selected "${cargo_args[@]}"; then
         cargo test "${cargo_args[@]}" --doc "$@"
+    fi
+}
+
+# Sets NEXTEST_FILTER to nextest's arguments for the libtest arguments given
+# (`--` first): none for none, and for `-- --skip <name> --exact` the filter
+# `not test(=<name>)`. nextest 0.9.138 takes that libtest form and skips
+# nothing (it lists and runs <name>), which ran the whole facts gate inside
+# the other test steps. Any other form fails: nothing here translates it.
+NEXTEST_FILTER=()
+nextest_filter_of() {
+    NEXTEST_FILTER=()
+    if [ "$#" -eq 0 ]; then
+        return 0
+    fi
+    if [ "$#" -eq 4 ] && [ "$1" = "--" ] && [ "$2" = "--skip" ] && [ "$4" = "--exact" ]; then
+        NEXTEST_FILTER=(-E "not test(=$3)")
+        return 0
+    fi
+    printf "cargo_tests: no nextest form for the test arguments: %s\n" "$*" >&2
+    return 1
+}
+
+# Under nextest, the other test steps' filter (GATE_SKIP through
+# nextest_filter_of) lists the facts gate's fixtures and not `facts_gate`: a
+# filter that stopped skipping it would run the whole gate, hours of it,
+# inside a step that does not name it.
+gate_skipped_under_nextest() {
+    local listed
+    nextest_filter_of "${GATE_SKIP[@]}" || return
+    listed=$(cargo nextest list -p native-theme --test facts_gate "${NEXTEST_FILTER[@]}" 2>&1) || {
+        printf "%s\n" "$listed" >&2
+        return 1
+    }
+    if ! grep -qx "native-theme::facts_gate gate_fixture_passes" <<<"$listed"; then
+        printf "the listing does not name the facts gate's fixture gate_fixture_passes\n" >&2
+        return 1
+    fi
+    if grep -qx "native-theme::facts_gate facts_gate" <<<"$listed"; then
+        printf "nextest lists facts_gate: the filter does not skip it\n" >&2
+        return 1
     fi
 }
 
@@ -977,6 +1020,13 @@ fi
 # which scripts/check_gate_cfg.py checks in every mode.
 FACTS_GATE=(cargo test -p native-theme --test facts_gate -- --exact facts_gate)
 GATE_SKIP=(-- --skip facts_gate --exact)
+# Where the test steps run nextest, the check that its filter skips the gate
+# (gate_skipped_under_nextest), before the first step that relies on it.
+gate_skip_step() {
+    if [[ $HAVE_NEXTEST ]]; then
+        run_check "nextest leaves the facts gate to its own steps" gate_skipped_under_nextest
+    fi
+}
 facts_gate_steps() {
     if [[ ! $COMMIT_MODE && ! $QUICK_MODE ]]; then
         run_tests "facts gate (every preset)" "${FACTS_GATE[@]}"
@@ -1008,6 +1058,7 @@ if [[ $QUICK_MODE ]]; then
         bash scripts/check_strict_panic.sh -p native-theme-derive --lib
     run_tests "test (native-theme-derive)" cargo_tests -p native-theme-derive
     run_tests "test (native-theme, library)" cargo_tests -p native-theme --lib
+    gate_skip_step
     run_tests "test (native-theme, layers, vectors and the facts gate's fixtures)" \
         cargo_tests -p native-theme --test layers --test platform_vectors --test facts_gate "${GATE_SKIP[@]}"
     facts_gate_steps
@@ -1425,6 +1476,7 @@ run_check "strict-panic (native-theme-showcase-support)" \
 # Section: tests
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Tests"
+gate_skip_step
 # The gpui connector with `native` and `watch` on top of its defaults:
 # `on_theme_change`'s tests (they start no OS watcher) and the showcase's
 # `watch` code. Each is additive, so the one leg covers the defaults too.
