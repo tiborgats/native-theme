@@ -12885,6 +12885,28 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
 quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *option)"
 
+# a tool button with a menu and neither inline arrow, the state model's [tool, menu, icon_only, …] sets (an instant
+# popup menu and no text): toolButtonMenuArrowStyle returns None, and the tool button's control draws an arrow only
+# under SubControl, InlineSmall and InlineLarge, so none here. The fact above leaves every set holding `menu` drawn,
+# the push button's arrow, which these sets would take without this fact (the second verification round's finding
+# on KD-C1; the sets came with KDE facts round 6)
+[[fact]]
+key = "button.menu_indicator"
+when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "menu"], not_variants = ["@inline_small", "@inline_large"] }
+value = "absent"
+rows = ["K1.155"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "if (hasInlineIndicator && !iconOnly) { return ToolButtonMenuArrowStyle::InlineLarge; } return ToolButtonMenuArrowStyle::None;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7756-7781"
+quote = "if (menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::SubControl) {"
+absent = ["ToolButtonMenuArrowStyle::None"]
+
 [[fact]]
 key = "button.menu_indicator"
 when = { conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_large"] }
@@ -12900,6 +12922,30 @@ quote = "if (buttonOption->features & QStyleOptionButton::HasMenu) {"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
 quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *option)"
+
+# the same under Kirigami: a QQC2 ToolButton with a menu and no text (the style item sets HasMenu alone, no popup
+# mode and no delay, so Breeze's function returns None where the button is icon only) draws no arrow
+[[fact]]
+key = "button.menu_indicator"
+when = { conditions = ["flavor:kirigami"], variants = ["tool", "menu"], not_variants = ["@inline_large"] }
+value = "absent"
+rows = ["K1.155"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "if (hasInlineIndicator && !iconOnly) { return ToolButtonMenuArrowStyle::InlineLarge; } return ToolButtonMenuArrowStyle::None;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7756-7781"
+quote = "if (menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::SubControl) {"
+absent = ["ToolButtonMenuArrowStyle::None"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:412-414"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
 
 # the arrow is a polyline Helper::renderArrow computes from its size (PenWidth::Symbol, three points), on every
 # arrow Breeze draws: register U420
@@ -13423,9 +13469,13 @@ quote = "onReleased: { toolTip.delay = toolTipVisible ? Platform.Units.toolTipDe
 
 # the button takes clicks in its own rect only: no hit area beyond it, a zero on each side, S17's zero by omission
 # (ADD-A141; `Absent` would mean a platform without the value). Qt Widgets' QAbstractButton::hitButton tests the
-# widget's rect alone; a Qt Quick button (Kirigami's, qqc2's) is hit where QQuickItem::contains holds, its bounding
-# box, no button template setting a containmentMask (qtdeclarative's quicktemplates, qqc2-desktop-style's and
-# Kirigami's button QML name none)
+# widget's rect alone, and neither override reaches further: QToolButton's calls it, and QPushButton's tests the
+# style's SE_PushButtonBevel rect, for which neither Breeze's subElementRect nor KStyle has a case, so
+# QCommonStyle's, the option's whole rect. A Qt Quick button (Kirigami's, qqc2's) is hit where QQuickItem::contains
+# holds, the item's mask where one is set (Qt Quick's name for it: `containmentMask`) and its bounding box
+# otherwise, and no button template sets one: qqc2-desktop-style's Button, ToolButton and RoundButton are each
+# cited whole (qtdeclarative's quicktemplates and Kirigami's button QML name none either). The overrides and the
+# templates' absence by name are the second verification round's citation-form finding on KD-C1
 [[fact]]
 key = "button.values.hit_extension.top"
 value = "0px"
@@ -13439,9 +13489,56 @@ absent = []
 
 [[fact.cite]]
 kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtoolbutton.cpp:609-615"
+quote = "bool QToolButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qpushbutton.cpp:496-502"
+quote = "bool QPushButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:2453-2457"
+quote = "case SE_PushButtonBevel: { r = opt->rect; r = visualRect(opt->direction, opt->rect, r); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:985-1090"
+quote = "QRect Style::subElementRect(SubElement element, const QStyleOption *option, const QWidget *widget) const"
+absent = ["SE_PushButtonBevel"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworkintegration@6.31.0 src/kstyle/kstyle.h:52-159"
+quote = "class KSTYLE_EXPORT KStyle : public QCommonStyle"
+absent = ["subElementRect"]
+
+[[fact.cite]]
+kind = "published"
 source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:8923-8943"
 quote = "bool QQuickItem::contains(const QPointF &point) const"
 absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:14-67"
+quote = "T.Button {"
+absent = ["containmentMask"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:15-95"
+quote = "T.ToolButton {"
+absent = ["containmentMask"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:13-120"
+quote = "T.RoundButton {"
+absent = ["containmentMask"]
 
 [[fact]]
 key = "button.values.hit_extension.right"
@@ -13456,9 +13553,56 @@ absent = []
 
 [[fact.cite]]
 kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtoolbutton.cpp:609-615"
+quote = "bool QToolButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qpushbutton.cpp:496-502"
+quote = "bool QPushButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:2453-2457"
+quote = "case SE_PushButtonBevel: { r = opt->rect; r = visualRect(opt->direction, opt->rect, r); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:985-1090"
+quote = "QRect Style::subElementRect(SubElement element, const QStyleOption *option, const QWidget *widget) const"
+absent = ["SE_PushButtonBevel"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworkintegration@6.31.0 src/kstyle/kstyle.h:52-159"
+quote = "class KSTYLE_EXPORT KStyle : public QCommonStyle"
+absent = ["subElementRect"]
+
+[[fact.cite]]
+kind = "published"
 source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:8923-8943"
 quote = "bool QQuickItem::contains(const QPointF &point) const"
 absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:14-67"
+quote = "T.Button {"
+absent = ["containmentMask"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:15-95"
+quote = "T.ToolButton {"
+absent = ["containmentMask"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:13-120"
+quote = "T.RoundButton {"
+absent = ["containmentMask"]
 
 [[fact]]
 key = "button.values.hit_extension.bottom"
@@ -13473,9 +13617,56 @@ absent = []
 
 [[fact.cite]]
 kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtoolbutton.cpp:609-615"
+quote = "bool QToolButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qpushbutton.cpp:496-502"
+quote = "bool QPushButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:2453-2457"
+quote = "case SE_PushButtonBevel: { r = opt->rect; r = visualRect(opt->direction, opt->rect, r); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:985-1090"
+quote = "QRect Style::subElementRect(SubElement element, const QStyleOption *option, const QWidget *widget) const"
+absent = ["SE_PushButtonBevel"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworkintegration@6.31.0 src/kstyle/kstyle.h:52-159"
+quote = "class KSTYLE_EXPORT KStyle : public QCommonStyle"
+absent = ["subElementRect"]
+
+[[fact.cite]]
+kind = "published"
 source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:8923-8943"
 quote = "bool QQuickItem::contains(const QPointF &point) const"
 absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:14-67"
+quote = "T.Button {"
+absent = ["containmentMask"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:15-95"
+quote = "T.ToolButton {"
+absent = ["containmentMask"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:13-120"
+quote = "T.RoundButton {"
+absent = ["containmentMask"]
 
 [[fact]]
 key = "button.values.hit_extension.left"
@@ -13490,9 +13681,56 @@ absent = []
 
 [[fact.cite]]
 kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtoolbutton.cpp:609-615"
+quote = "bool QToolButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qpushbutton.cpp:496-502"
+quote = "bool QPushButton::hitButton(const QPoint &pos) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:2453-2457"
+quote = "case SE_PushButtonBevel: { r = opt->rect; r = visualRect(opt->direction, opt->rect, r); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:985-1090"
+quote = "QRect Style::subElementRect(SubElement element, const QStyleOption *option, const QWidget *widget) const"
+absent = ["SE_PushButtonBevel"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworkintegration@6.31.0 src/kstyle/kstyle.h:52-159"
+quote = "class KSTYLE_EXPORT KStyle : public QCommonStyle"
+absent = ["subElementRect"]
+
+[[fact.cite]]
+kind = "published"
 source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:8923-8943"
 quote = "bool QQuickItem::contains(const QPointF &point) const"
 absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:14-67"
+quote = "T.Button {"
+absent = ["containmentMask"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:15-95"
+quote = "T.ToolButton {"
+absent = ["containmentMask"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:13-120"
+quote = "T.RoundButton {"
+absent = ["containmentMask"]
 
 # no appear or disappear animation of a button's own
 [[fact]]
