@@ -60,6 +60,8 @@ API (run from the repository root, or pass a path):
     absence_sections(text)                a may_be_absent item's `parts:`, `fields:`, `values:` sections
     shared_types(text) -> dict            the *Shared value types* table: per type name, (line, its second cell)
     variant_bullets(item) -> list         a **Variants** item's `on …` sub-bullets read: [VariantBullet]
+    variants_form(item) -> list           what of a **Variants** item is not the Entry format's form: [message]
+    item_sub_bullets(item) -> list        an item's sub-bullets: [(line, lines)]
     recency_sets(entry) -> list           the entry's recency sets: (name, [flags in the stated order], line)
     state_groups(entry) -> dict           per platform the item names: {"exclusive": [[flags]], "recency": {name:
                                           [flags]}, "line": the item's line}
@@ -505,12 +507,9 @@ class VariantBullet:
     names: list[str]
 
 
-def variant_bullets(item) -> list[VariantBullet]:
-    """The **Variants** item's sub-bullets that start with the word `on` (Entry format; ADD-A146), each with its head
-    read: the text up to its first colon outside parentheses, `on the widget, typed`, `` on `<part>`, typed ``, or
-    the same with `` keyed, `<preset>` ``, a note in parentheses allowed before the colon. `form` is whether the head
-    is so written; `part` is None for the widget's own element; `names` are the backticked names outside parentheses
-    of the first sentence after the colon. A sub-bullet not starting with `on` is a note and is left out."""
+def item_sub_bullets(item) -> list:
+    """An item's sub-bullets: (line, lines) of each `  - ` line, the first without its `  - `, and its continuation
+    lines indented four spaces."""
     bullets, cur = [], None
     for k, raw in enumerate(item.lines[1:], 1):
         if raw.startswith("  - "):
@@ -520,8 +519,57 @@ def variant_bullets(item) -> list[VariantBullet]:
             cur[1].append(raw)
         else:
             cur = None
+    return bullets
+
+
+OLD_VARIANT_START = re.compile(r"(typed|keyed|On)\b")
+
+
+def variants_form(item) -> list[str]:
+    """What of a **Variants** item is not in the Entry format's form (ADD-A146): the item is `none` (a note in
+    parentheses may follow it) or sub-bullets alone, the text after its label empty, every other line of it a
+    sub-bullet or a sub-bullet's continuation; a sub-bullet starting `typed`, `keyed` or `On` is the forms the format
+    rejects (`typed …; keyed …`, `typed on <part> …`), not a note. A message per problem, empty where there is none."""
+    rest = [(item.line + k, raw) for k, raw in enumerate(item.lines[1:], 1) if raw.strip()]
+    if not any(raw.startswith("  - ") for _, raw in rest):
+        text = item.text.strip()
+        after = text[4:] if text.startswith("none") else None
+        if after is not None:
+            groups = depth0_tokens(after)[1]
+            kept, last = [], 0
+            for start, end in groups:
+                kept.append(after[last:start])
+                last = end
+            kept.append(after[last:])
+            if "".join(kept).strip() in ("", "."):
+                return []
+        return [f"the Variants item at line {item.line} is neither `none` nor sub-bullets (Entry format): "
+                f"{text[:60]!r}"]
     out = []
-    for line, lines in bullets:
+    if item.lines[0].strip():
+        out.append(f"the Variants item at line {item.line} has text after its label and sub-bullets: the item is "
+                   "`none` or sub-bullets alone (Entry format)")
+    for line, raw in rest:
+        if not raw.startswith(("  - ", "    ")):
+            out.append(f"the Variants item's line {line} is neither a sub-bullet nor a sub-bullet's continuation "
+                       "(Entry format)")
+    for line, lines in item_sub_bullets(item):
+        m = OLD_VARIANT_START.match(lines[0].strip())
+        if m:
+            out.append(f"the Variants sub-bullet at line {line} starts with `{m.group(1)}`, a form the Entry format "
+                       "rejects: a sub-bullet listing variants starts `on the widget` or `` on `<part>` ``")
+    return out
+
+
+def variant_bullets(item) -> list[VariantBullet]:
+    """The **Variants** item's sub-bullets that start with the word `on` (Entry format; ADD-A146), each with its head
+    read: the text up to its first colon outside parentheses, `on the widget, typed`, `` on `<part>`, typed ``, or
+    the same with `` keyed, `<preset>` ``, a note in parentheses allowed before the colon. `form` is whether the head
+    is so written; `part` is None for the widget's own element; `names` are the backticked names outside parentheses
+    of the first sentence after the colon. A sub-bullet not starting with `on` is a note and is left out (variants_form
+    refuses the ones starting `typed`, `keyed` or `On`)."""
+    out = []
+    for line, lines in item_sub_bullets(item):
         text = " ".join(x.strip() for x in lines)
         if not re.match(r"on\b", text):
             continue
@@ -767,6 +815,30 @@ def self_test() -> int:
         (14, True, "label", False, None, ["bold"]), (17, False, None, False, None, ["bad"]),
         (18, False, None, False, None, ["bad"]), (19, False, None, False, None, []),
     ])
+    expect("variants form, sub-bullets", variants_form(variants), [])
+    for label, lines in [("none", [" none."]), ("none with a note", [" none (a note, `x`;", "  more)."]),
+                         ("none bare", ["none"])]:
+        expect(f"variants form, {label}", variants_form(Item("Variants", 10, lines, True)), [])
+    for label, lines, want in [
+        ("inline", [" typed `flat`; keyed `adwaita` `@osd`."],
+         ["the Variants item at line 10 is neither `none` nor sub-bullets (Entry format): "
+          "'typed `flat`; keyed `adwaita` `@osd`.'"]),
+        ("none and more", [" none typed; keyed: `@x`."],
+         ["the Variants item at line 10 is neither `none` nor sub-bullets (Entry format): 'none typed; keyed: `@x`.'"]),
+        ("empty", [""], ["the Variants item at line 10 is neither `none` nor sub-bullets (Entry format): ''"]),
+        ("text and sub-bullets", [" none.", "  - on the widget, typed: `flat`."],
+         ["the Variants item at line 10 has text after its label and sub-bullets: the item is `none` or sub-bullets "
+          "alone (Entry format)"]),
+        ("a line of neither", ["", "  - on the widget, typed: `flat`.", "  then prose."],
+         ["the Variants item's line 12 is neither a sub-bullet nor a sub-bullet's continuation (Entry format)"]),
+        ("old heads", ["", "  - typed (shared): `flat`.", "  - keyed `adwaita`: `@osd`.",
+                       "  - On the widget, typed: `pill`.", "  - typed on the widget: `round`.",
+                       "  - Only `adwaita` declares it (a note)."],
+         [f"the Variants sub-bullet at line {n} starts with `{w}`, a form the Entry format rejects: a sub-bullet "
+          "listing variants starts `on the widget` or `` on `<part>` ``"
+          for n, w in [(11, "typed"), (12, "keyed"), (13, "On"), (14, "typed")]]),
+    ]:
+        expect(f"variants form, {label}", variants_form(Item("Variants", 10, lines, True)), want)
     expect("recency sets", recency_sets(led), [("glow", ["hover", "focus_visible"], 57),
                                                ("ring", ["pressed", "hover"], 58)])
     expect("state groups", state_groups(led), {
