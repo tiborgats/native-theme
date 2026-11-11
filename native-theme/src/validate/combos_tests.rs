@@ -708,6 +708,70 @@ fn combination_follow_part_offsets_through_references() {
     );
 }
 
+const UNEQUAL_OFFSETS: [&str; 1] = [
+    "widgets.button.body.focus.corners.top_left: `follow_part` on `top_left`, whose sides' offsets can differ",
+];
+
+/// The problems of the button's body's `FollowPart` top-left corner whose
+/// top offset reads `top` and whose left and right ones read `sides`, the
+/// label's font stated 12 in `size` and its line height 12px, the
+/// subtitle's font 12 in `size`, the body's top and left padding 12px.
+fn follow_part_reading(size: &str, top: &str, sides: &str) -> Vec<String> {
+    let decl = declare(
+        "[declare.widget.button]\ndata = { body = [\"widget.label.font_size\", \
+         \"widget.label.line_height\", \"widget.subtitle.font_size\"] }",
+    );
+    alone(
+        &format!(
+            "[widgets.button.body]\npadding.top_px = 12\npadding.left_px = 12\n\
+             [widgets.button.label]\ntext.font.{size} = 12\ntext.line_height_px = 12\n\
+             [widgets.button.subtitle]\ntext.font.{size} = 12\n\
+             [widgets.button.body.focus]\ncorners.top_left = \"follow_part\"\n\
+             offset.top_px = \"= {top}\"\noffset.left_px = \"= {sides}\"\n\
+             offset.right_px = \"= {sides}\""
+        ),
+        &decl,
+    )
+}
+
+/// Offsets reading one stated number in two units differ (S2.4, S9.4,
+/// S12): a font size of 12pt against a line height of 12px, 16px and 12px
+/// at 96 DPI; two font sizes in points still read equal.
+#[test]
+fn combination_follow_part_offsets_through_units() {
+    assert_eq!(
+        follow_part_reading(
+            "size_pt",
+            "widget.label.font_size",
+            "widget.label.line_height"
+        ),
+        UNEQUAL_OFFSETS
+    );
+    assert_eq!(
+        follow_part_reading(
+            "size_pt",
+            "widget.label.font_size",
+            "widget.subtitle.font_size"
+        ),
+        NONE
+    );
+}
+
+/// Offsets reading one stated number of pixels as a font size and as a
+/// length differ (S2.4, S9.4, S12): the text scaling scales only the font
+/// size; two lengths still read equal.
+#[test]
+fn combination_follow_part_offsets_through_text_scaling() {
+    assert_eq!(
+        follow_part_reading("size_px", "widget.label.font_size", "part.padding.top"),
+        UNEQUAL_OFFSETS
+    );
+    assert_eq!(
+        follow_part_reading("size_px", "part.padding.left", "part.padding.top"),
+        NONE
+    );
+}
+
 /// A `Concentric` corner whose two insets can differ, in either direction
 /// (S2.4, S12, ADD-A122): the root's own margins here, its container lying
 /// outside the widget.
