@@ -736,7 +736,8 @@ fn follow_part_reading(size: &str, top: &str, sides: &str) -> Vec<String> {
 
 /// Offsets reading one stated number in two units differ (S2.4, S9.4,
 /// S12): a font size of 12pt against a line height of 12px, 16px and 12px
-/// at 96 DPI; two font sizes in points still read equal.
+/// at 96 DPI, read plainly or inside a call; two font sizes in points
+/// still read equal.
 #[test]
 fn combination_follow_part_offsets_through_units() {
     assert_eq!(
@@ -746,6 +747,22 @@ fn combination_follow_part_offsets_through_units() {
             "widget.label.line_height"
         ),
         UNEQUAL_OFFSETS
+    );
+    assert_eq!(
+        follow_part_reading(
+            "size_pt",
+            "add(widget.label.font_size, 2px)",
+            "add(widget.label.line_height, 2px)"
+        ),
+        UNEQUAL_OFFSETS
+    );
+    assert_eq!(
+        follow_part_reading(
+            "size_pt",
+            "add(widget.label.font_size, 2px)",
+            "add(widget.subtitle.font_size, 2px)"
+        ),
+        NONE
     );
     assert_eq!(
         follow_part_reading(

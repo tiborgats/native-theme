@@ -80,7 +80,8 @@ fn overridden(group: PropertyGroup) -> Vec<PropertyGroup> {
 /// a delay of none), and the step stating it.
 fn zero_at<'s>(source: &'s Source, place: &str) -> Option<&'s Op> {
     source.ops.iter().find(|op| {
-        op.path == place && matches!(op.kind, OpKind::Set(Val::Stated(Fact::Number(n))) if n == 0.0)
+        op.path == place
+            && matches!(op.kind, OpKind::Set(Val::Stated(Fact::Number(n, _))) if n == 0.0)
     })
 }
 
@@ -187,7 +188,7 @@ fn motions<'s>(stack: &'s Stack<'_>) -> Vec<Motion<'s>> {
 /// Whether a found duration is a stated zero (S2.7): the literal zero in
 /// the field, never a reference or an expression.
 fn stated_zero(found: &Found<'_>) -> bool {
-    matches!(found.got, Got::Stated(Fact::Number(n)) if n == 0.0)
+    matches!(found.got, Got::Stated(Fact::Number(n, _)) if n == 0.0)
 }
 
 /// Whether a timing followed through references can be a spring: a
@@ -253,7 +254,7 @@ impl Stack<'_> {
         self.follow(world, found)
             .0
             .iter()
-            .any(|end| matches!(end.got, Got::Stated(Fact::Number(n)) if n != 0.0))
+            .any(|end| matches!(end.got, Got::Stated(Fact::Number(n, _)) if n != 0.0))
     }
 
     /// Whether a found delay is no delay under `world` (S2.7, S12): its
@@ -264,7 +265,7 @@ impl Stack<'_> {
         !ends.is_empty()
             && ends
                 .iter()
-                .all(|end| matches!(end.got, Got::Stated(Fact::Number(n)) if n == 0.0))
+                .all(|end| matches!(end.got, Got::Stated(Fact::Number(n, _)) if n == 0.0))
     }
 
     /// Whether the delay the source `number` states at `place` is no delay

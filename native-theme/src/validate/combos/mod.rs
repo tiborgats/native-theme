@@ -26,8 +26,8 @@ use std::rc::Rc;
 use super::LayerKind;
 use super::outcomes::{Item, Space, scheme_and_flavors};
 use super::stack::{
-    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Stacked, Target, Val, Visual, below,
-    is_above, part_info, tail, widget_of,
+    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Stacked, Target, Unit, Val, Visual,
+    below, is_above, part_info, tail, widget_of,
 };
 use crate::blocks::part_style::RoleRef;
 use crate::declare::{DataName, DataOwner, Declarations};
@@ -2016,7 +2016,7 @@ fn layout_field(target: Target, path: &str) -> bool {
 
 fn stated_number(found: &Found<'_>) -> Option<f32> {
     match found.got {
-        Got::Stated(Fact::Number(n)) => Some(n),
+        Got::Stated(Fact::Number(n, _)) => Some(n),
         _ => None,
     }
 }
@@ -2032,8 +2032,9 @@ fn variant(found: &Found<'_>) -> Option<&'static str> {
 /// S2.10).
 #[derive(Debug)]
 enum SideLen {
-    /// A sum: of stated numbers (an absent side 0), and of expressions,
-    /// each as [`Term`] reads it.
+    /// A sum: of stated lengths in pixels (an absent side 0), and of terms,
+    /// a stated font size's number in its unit or an expression as
+    /// [`Term`] reads it; a plain reference reaches the value it follows.
     Known(f32, Vec<Term>),
     /// No layer states it: missing, the preset's check (S2.2), so it is no
     /// difference.
@@ -2045,13 +2046,15 @@ enum SideLen {
 
 /// An expression with every reference it reads followed, as the query
 /// follows it (S12), to the one value the reference resolves to under a
-/// world: two terms are equal where they are the same under every input.
+/// world: two terms are equal where they are the same under every input,
+/// every DPI and text scaling among them (S9.4).
 #[derive(Debug, PartialEq)]
 enum Term {
     /// A literal.
     Lit(Literal),
-    /// A stated number a reference resolves to.
-    Number(f32),
+    /// A stated number a reference resolves to, in its unit: one number in
+    /// two units is two lengths under some DPI or text scaling.
+    Number(f32, Unit),
     /// A call of its arguments' terms.
     Call(Func, Vec<Term>),
     /// A reference followed no further (element data, an input, a binding,
@@ -2073,7 +2076,8 @@ impl SideLen {
         }
     }
 
-    /// Whether two known lengths are the same under every input.
+    /// Whether two known lengths are the same under every input: the same
+    /// pixels stated, and the same terms as often, each number in its unit.
     fn same(&self, other: &SideLen) -> bool {
         match (self, other) {
             (SideLen::Known(a, x), SideLen::Known(b, y)) => {
@@ -2103,7 +2107,10 @@ impl Stack<'_> {
         let mut out: Option<SideLen> = None;
         for found in founds {
             let one = match found.got {
-                Got::Stated(Fact::Number(n)) => SideLen::Known(n, Vec::new()),
+                Got::Stated(Fact::Number(n, Unit::Plain)) => SideLen::Known(n, Vec::new()),
+                Got::Stated(Fact::Number(n, unit)) => {
+                    SideLen::Known(0.0, vec![Term::Number(n, unit)])
+                }
                 Got::Absent => SideLen::Known(0.0, Vec::new()),
                 Got::Expr(expr) => {
                     SideLen::Known(0.0, vec![self.term(world, expr, found.cx, found.id, 0)])
@@ -2154,7 +2161,7 @@ impl Stack<'_> {
                     .collect();
                 match founds.as_slice() {
                     [found] => match found.got {
-                        Got::Stated(Fact::Number(n)) => Term::Number(n),
+                        Got::Stated(Fact::Number(n, unit)) => Term::Number(n, unit),
                         Got::Expr(inner) => {
                             self.term(world, inner, found.cx, found.id, depth.saturating_add(1))
                         }

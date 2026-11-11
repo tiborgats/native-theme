@@ -2112,7 +2112,9 @@ impl Visit for Checker<'_> {
         let field = path.last_field();
         let expected = match (number, field) {
             (Number::Fraction, _) if !(0.0..=1.0).contains(&n) => Some("0..=1"),
-            (Number::Length | Number::FontSize, _) if n < 0.0 && !signed => Some("at least zero"),
+            (Number::Length | Number::FontPt | Number::FontPx, _) if n < 0.0 && !signed => {
+                Some("at least zero")
+            }
             (Number::Plain, Some(("Material", "saturation") | ("Glyph", "draw_extent")))
                 if n < 0.0 =>
             {

@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use super::combos::{Expanded, Query, Reads, Seed, Stating, World};
-use super::walk::{Form, Marks, Node, Path, Segment, Visit, Walk, Walker};
+use super::walk::{Form, Marks, Node, Number, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::blocks::motion::{
     BreezeTest, Keyframe, PresentationEvent, PresentationTransition, PropertyGroup, Transition,
@@ -78,10 +78,25 @@ pub(super) enum Fact {
     Unknown,
     /// Stated as holding nothing: an `Option` stated `None`, an empty list.
     Nothing,
-    /// A stated number.
-    Number(f32),
+    /// A stated number, in its unit.
+    Number(f32, Unit),
     /// An enum's variant, in snake_case.
     Variant(&'static str),
+}
+
+/// What decides how a stated number resolves to a length (S9.4): one
+/// number in two units resolves to two lengths under some DPI or text
+/// scaling.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Unit {
+    /// As stated: a length in pixels, or a number of another kind.
+    Plain,
+    /// A font size, a line height or a spacing in pixels: scaled by the
+    /// text scaling.
+    FontPx,
+    /// A font size, a line height or a spacing in points: converted at the
+    /// DPI and scaled by the text scaling.
+    FontPt,
 }
 
 /// A place's value as a source states it.
@@ -592,8 +607,19 @@ impl Visit for Flatten {
         self.push(path, place, OpKind::Set(val));
     }
 
-    fn number(&mut self, path: &Path, n: f32, _: super::walk::Number) {
-        self.fact(path, Fact::Number(n));
+    fn number(&mut self, path: &Path, n: f32, number: Number) {
+        let unit = match number {
+            Number::FontPt => Unit::FontPt,
+            Number::FontPx => Unit::FontPx,
+            Number::Length
+            | Number::Duration
+            | Number::Angle
+            | Number::Fraction
+            | Number::Plain
+            | Number::Channel
+            | Number::Keyed => Unit::Plain,
+        };
+        self.fact(path, Fact::Number(n, unit));
     }
 
     fn duplicate(&mut self, _: &Path, _: &str, _: &'static str) {}

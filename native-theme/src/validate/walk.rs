@@ -75,8 +75,10 @@ pub(crate) enum Form<'a> {
 pub(crate) enum Number {
     /// A length.
     Length,
-    /// A font size, a line height or a spacing.
-    FontSize,
+    /// A font size, a line height or a spacing, in points.
+    FontPt,
+    /// A font size, a line height or a spacing, in pixels.
+    FontPx,
     /// A duration.
     Duration,
     /// An angle.
@@ -847,7 +849,8 @@ impl Walk for FontSize {
 
     fn walk(&self, w: &mut Walker<'_>) {
         match self {
-            FontSize::Pt(n) | FontSize::Px(n) => w.number(*n, Number::FontSize),
+            FontSize::Pt(n) => w.number(*n, Number::FontPt),
+            FontSize::Px(n) => w.number(*n, Number::FontPx),
         }
     }
 
