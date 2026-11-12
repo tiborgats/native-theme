@@ -13,7 +13,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -89,10 +89,10 @@ kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
 
-# Absent but on a flat button with an arrow, as GNOME's `button.menu_indicator` is.
+# Absent but on a tool button with an arrow, as GNOME's `button.menu_indicator` is.
 [[fact]]
 key = "button.subtitle"
-when = { not_variants = ["flat"] }
+when = { not_variants = ["tool"] }
 value = "absent"
 rows = []
 
@@ -103,7 +103,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.subtitle"
-when = { variants = ["flat"], not_variants = ["@with_arrow"] }
+when = { variants = ["tool"], not_variants = ["@probe_arrow"] }
 value = "absent"
 rows = []
 

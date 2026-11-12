@@ -1,14 +1,13 @@
-# A synthetic preset (S17, ADD-A128): a whole map listed as pending, as adwaita's U150 lists
-# `tokens.text.fallbacks.per_language`.
-# base without: per_language = {}
+# A synthetic preset (S17, ADD-A128): a whole map listed as pending, the size classes' thresholds.
+# base without: size_classes = {}
 [pending]
-"tokens.text.fallbacks.per_language" = "U150"
+"tokens.size_classes" = "U150"
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }
 

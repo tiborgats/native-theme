@@ -7,7 +7,7 @@ id = "adwaita"
 generation = "probe-1"
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -15,6 +15,6 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

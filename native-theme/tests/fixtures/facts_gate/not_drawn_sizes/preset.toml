@@ -1,9 +1,9 @@
-# A synthetic preset (S17): a button with two sizes whose rules state a wrong value at the small size,
-# pressed (not drawn there) and hover (drawn).
+# A synthetic preset (S17): a button with two sizes whose rules state a wrong value at the small size, its
+# default, pressed (not drawn there) and hover (drawn).
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 sizes = ["small", "regular"]
-default_size = "regular"
+default_size = "small"
 
 # Wrong where the state model draws nothing (pressed, small), and wrong where it draws (hover, small).
 [[rules]]
@@ -17,6 +17,6 @@ target = "button.body"
 set = { min_width_px = 41 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

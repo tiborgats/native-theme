@@ -13,7 +13,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -57,16 +57,6 @@ pending = "U1"
 rows = []
 
 [[fact]]
-key = "button.values.icon_text_gap"
-value = "4px"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "probe@1 probe.css:1"
-quote = "synthetic"
-
-[[fact]]
 key = "button.icon"
 value = "absent"
 rows = []
@@ -98,14 +88,14 @@ source = "probe@1 probe.css:1"
 quote = "synthetic"
 
 [[fact]]
-key = "button.values.menu_indicator_gap"
+key = "button.values.icon_text_gap"
 pending = "U9"
 rows = []
 
 # Reads the listed gap through min: skipped.
 [[fact]]
 key = "button.values.subtitle_gap"
-value = "= min(values.menu_indicator_gap, 0px)"
+value = "= min(values.icon_text_gap, 0px)"
 rows = []
 
 [[fact.cite]]

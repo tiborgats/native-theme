@@ -19,7 +19,7 @@ surface_sets = ["window"]
 dark = "#cc3366"
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [[rules]]
 when = { states = ["pressed"] }

@@ -12,7 +12,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -79,7 +79,7 @@ kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
 
-# The icon part drawn with no glyph, and under `flat` a glyph stated whole by a table, the whole block (S17), over
+# The icon part drawn with no glyph, and under `tool` a glyph stated whole by a table, the whole block (S17), over
 # the base's absent glyph.
 [[fact]]
 key = "button.icon.glyph"
@@ -93,7 +93,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.icon.glyph"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = { source = { theme_icon = { name = "probe-symbolic", fallbacks = [] } }, size_px = 16, fill = "#000000", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
 rows = []
 

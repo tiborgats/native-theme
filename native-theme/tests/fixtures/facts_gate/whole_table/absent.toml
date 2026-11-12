@@ -1,14 +1,13 @@
-# preset.toml's twin with no rule stating the glyph: under `flat` it stays absent, which the fact's whole table
+# preset.toml's twin with no rule stating the glyph: under `tool` it stays absent, which the fact's whole table
 # (S17) is not.
 # base without: [widgets.button.icon]
 # base without: absent = true
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [widgets.button.icon]
-icon = { size_px = 16, fill = "#000000", rendering_mode = "from_icon", weight = 400, symbolic_colors = {}, axes = {}, symbol_variants = [], scale = "absent", state_effect = "absent", animation = "absent" }
+icon = { size_px = 16, fill = "#000000", rendering_mode = "from_icon", weight = 400, symbolic_colors = {}, axes = {}, symbol_variants = [], scale = "absent", state_effect = "absent" }
 glyph = "absent"
-transitions = []
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -16,6 +15,6 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

@@ -1,8 +1,9 @@
-# A synthetic state model (S17): `@raised` is named only by a fact whose `when` names a toolbar, a widget whose unit is not enabled.
+# A synthetic state model (S17): `@raised`, a variant the styles unit holds, not enabled (its one fact names a
+# toolbar too); `flat`, a typed variant the model does not hold, which has no spelling.
 [[model]]
 widget = "button"
 available = true
-variants = ["flat", "@raised"]
+variants = ["tool", "flat", "@raised"]
 sizes = []
 densities = []
 axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }

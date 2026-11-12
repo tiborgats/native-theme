@@ -1,6 +1,7 @@
 # Synthetic facts (S17): every key the preset states, by the combinations it draws; two measured
-# derivations whose passes the derivations run refuses: one where the state model draws no part
-# (`not_drawn`), one whose `when` names no combination the state model draws.
+# derivations whose passes are never evaluated: one whose own combination the state model draws no part in
+# (`not_drawn`), refused by the derivations run, one whose `when` names no combination the state model draws,
+# which S17's predicate places in no unit.
 
 [[fact]]
 key = "button.body.fill"
@@ -81,7 +82,8 @@ kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
 
-# Measured where the state model draws nothing (`not_drawn`): its passes are refused.
+# Measured where pressed, drawn with hover alone: its own combination, pressed, is named by `not_drawn`, so its
+# passes are refused.
 [[fact]]
 key = "button.body.fill"
 when = { states = ["pressed"] }
@@ -94,10 +96,11 @@ evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/derivations.to
 tolerance = 0.5
 inputs = ["input.accent"]
 
-# Measured under a variant the state model's every combination lacks: no combination is drawn.
+# Measured under a variant the state model's every combination lacks: no combination is drawn, so it is of no
+# unit (S17).
 [[fact]]
 key = "button.body.fill"
-when = { not_variants = ["flat"] }
+when = { not_variants = ["tool"] }
 value = "= input.accent"
 rows = []
 

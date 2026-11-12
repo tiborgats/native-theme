@@ -12,7 +12,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -82,6 +82,18 @@ quote = "synthetic"
 [[fact]]
 key = "button.menu_indicator"
 value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# The ripple's indication box (`Option<IndicationBox>`, set whole, S6.1): its outset's fact alone, its part's
+# missing.
+[[fact]]
+key = "button.body.interaction.ripple.indication_box.outset"
+value = "2px"
 rows = []
 
 [[fact.cite]]

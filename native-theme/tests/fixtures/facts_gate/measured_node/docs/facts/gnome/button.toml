@@ -14,7 +14,7 @@ quote = "synthetic"
 # alpha 0.5, read as the toolkit holds it and compared unclamped, on every platform.
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "srgb(-0.17, 0.5, 0.5, 0.5)"
 rows = []
 

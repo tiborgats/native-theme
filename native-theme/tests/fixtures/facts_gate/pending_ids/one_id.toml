@@ -1,10 +1,14 @@
-# A synthetic preset (S17, ADD-A128): preset.toml listing the key repeat with one of its leaves' two ids.
-# base without: key_repeat = "none"
+# A synthetic preset (S17, ADD-A128): preset.toml listing the indication box with one of its leaves' two ids.
+# base without: interaction = "absent"
 [pending]
-"tokens.behavior.key_repeat" = "U3"
+"widgets.button.body.interaction.ripple.indication_box" = "U3"
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
+
+[widgets.button.body.interaction]
+state_layer = { color = "#000000", alpha = 0.1 }
+ripple = { effect = "absent", color = "absent", alpha = "absent", bounded = true, max_radius_px = "absent", padding_px = "absent" }
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -12,6 +16,6 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

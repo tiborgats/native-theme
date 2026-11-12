@@ -1,8 +1,8 @@
-# The flat button's fill out of the gamut (S2.1: a derivation's result may leave it), as a measured colour's
+# The tool button's fill out of the gamut (S2.1: a derivation's result may leave it), as a measured colour's
 # resolved colour can be: GTK, QPainter and Compose draw it as the measured colour, and where no source states the
 # renderer's drawing (macOS here) the comparison fails (S17, ADD-A131).
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -10,6 +10,6 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "srgb(-0.17, 0.5, 0.5, 0.5)" }

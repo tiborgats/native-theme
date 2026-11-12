@@ -2,7 +2,7 @@
 [[model]]
 widget = "button"
 available = true
-variants = ["flat", "@main_only"]
+variants = ["tool", "@main_only"]
 sizes = []
 densities = []
 axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
@@ -13,7 +13,7 @@ rows = []
 widget = "button"
 when = { conditions = ["flavor:alt"] }
 available = true
-variants = ["flat"]
+variants = ["tool"]
 sizes = []
 densities = []
 axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }

@@ -320,24 +320,8 @@ impl Preset {
     /// rules can tell an element apart by (S17).
     #[must_use]
     pub fn mentions(&self, widget: &str) -> (Vec<String>, Vec<String>) {
-        let Ok(kind) = widget_kind(widget) else {
-            return (Vec::new(), Vec::new());
-        };
         let (mut states, mut variants) = (Vec::new(), Vec::new());
-        for rule in &self.stack.preset_layer().rules {
-            let on_widget = match &rule.body {
-                RuleBody::Part(PartRef::Typed(part), _) => part.widget() == kind,
-                RuleBody::Values(ValuesPatch::Typed(values)) => match values {
-                    WidgetValuesPatch::Button(_) => kind == WidgetKind::Button,
-                },
-                RuleBody::Part(PartRef::Component { .. }, _)
-                | RuleBody::Colors(_)
-                | RuleBody::Tokens(_) => false,
-            };
-            if !on_widget {
-                continue;
-            }
-            let selector = &rule.selector;
+        for selector in self.selectors_on(widget) {
             let flags = selector
                 .states
                 .all_of
@@ -353,6 +337,39 @@ impl Preset {
             variants.extend(named.map(variant_name));
         }
         (states, variants)
+    }
+
+    /// The recency sets the `latest` of the preset's rules on the widget
+    /// `widget` names (S7.2, S10).
+    #[must_use]
+    pub fn latest_sets(&self, widget: &str) -> Vec<String> {
+        self.selectors_on(widget)
+            .into_iter()
+            .flat_map(|selector| selector.latest.iter().map(|(set, _)| set.to_string()))
+            .collect()
+    }
+
+    /// The selectors of the preset's rules on the widget `widget`: its
+    /// parts' and its values'.
+    fn selectors_on(&self, widget: &str) -> Vec<&Selector> {
+        let Ok(kind) = widget_kind(widget) else {
+            return Vec::new();
+        };
+        self.stack
+            .preset_layer()
+            .rules
+            .iter()
+            .filter(|rule| match &rule.body {
+                RuleBody::Part(PartRef::Typed(part), _) => part.widget() == kind,
+                RuleBody::Values(ValuesPatch::Typed(values)) => match values {
+                    WidgetValuesPatch::Button(_) => kind == WidgetKind::Button,
+                },
+                RuleBody::Part(PartRef::Component { .. }, _)
+                | RuleBody::Colors(_)
+                | RuleBody::Tokens(_) => false,
+            })
+            .map(|rule| &rule.selector)
+            .collect()
     }
 
     /// The preset resolved with a stand-in stating `stand_in` in
@@ -1742,6 +1759,13 @@ pub fn set_whole(key: &str) -> Option<SetWhole> {
 }
 
 impl SetWhole {
+    /// The block's key, where a value composed from its leaves is read and
+    /// compared: the block's place, not a leaf's.
+    #[must_use]
+    pub fn key(&self) -> &FactKey {
+        &self.key
+    }
+
     /// The block's value composed from each leaf's value as its fact
     /// states it (S17: `"500ms"`, an expression), in the leaves' order.
     pub fn compose(&self, values: &[&Item]) -> Result<FactValue, Unread> {

@@ -1,13 +1,15 @@
 # A synthetic preset (S17): a button whose small size only its two styles take, as `sizes_by_variant`
 # declares, a rule stating its small size's value with no style.
 [declare.widget.button]
-variants = ["flat", "primary"]
+variants = ["tool", "primary"]
 sizes = ["regular"]
 default_size = "regular"
-exclusive_variants = [["flat", "primary"]]
+exclusive_variants = [["tool", "primary"]]
+# The primary style drawn in no combination at depth (its size in force, small, not drawn), so under `later` (S10).
+later = { variants = ["primary"] }
 sizes_by_variant = [
-  { variant = "flat", sizes = ["small", "regular"], default_size = "regular" },
-  { variant = "primary", sizes = ["small", "regular"], default_size = "regular" },
+  { variant = "tool", sizes = ["small", "regular"], default_size = "small" },
+  { variant = "primary", sizes = ["small", "regular"], default_size = "small" },
 ]
 
 [[rules]]
@@ -16,6 +18,6 @@ target = "button.body"
 set = { min_width_px = 41 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

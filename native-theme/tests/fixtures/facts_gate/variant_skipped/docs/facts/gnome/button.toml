@@ -12,7 +12,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -68,7 +68,7 @@ kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
 
-# Skipped: its `when` names a toolbar, whose unit is not enabled (ADD-A128).
+# A later unit's: its `when` names `@raised`, the styles unit's, and a toolbar, whose unit is not enabled (S17).
 [[fact]]
 key = "button.body.fill"
 when = { variants = ["@raised"], context = [{ widget = "toolbar" }] }

@@ -1,5 +1,5 @@
 [declare.widget.button]
-variants = ["flat", "primary"]
+variants = ["tool", "primary"]
 exclusive = [["pressed", "hover"]]
 
 [[rules]]
@@ -8,6 +8,6 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }
