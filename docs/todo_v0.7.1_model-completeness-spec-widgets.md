@@ -163,8 +163,9 @@ breakpoints measure its breakpoint bin, `Measured::Part(dialog.content)` (the `d
 
 ## Entry format
 
-Each `### <widget>` section states these twelve items, in this order (the rules that hold in all of them, *Nesting*,
-*One-edge lines*, *Keys*, *Auto* and *Units*, follow the list):
+Each `### <widget>` section states these twelve items, in this order, and a thirteenth, *Depth*, after *Today's
+fields*, which the spec batch of the entry's unit writes (ADD-A147; `button`'s with the slice) (the rules that hold in
+all of them, *Nesting*, *One-edge lines*, *Keys*, *Auto* and *Units*, follow the list):
 
 - **Kind:** typed widget, and which platforms draw it, with the rows (counting the cross-check decisions that found it
   drawn inside an element, R14).
@@ -437,6 +438,17 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
   draws none.
 - **State-model source** per platform: where the gate's combination list comes from (R4, S17).
 - **Today's fields:** how each field of `docs/property-registry.toml` maps into the new parts.
+- **Depth** (ADD-A147): the names the entry's own unit holds: its typed variants, its state flags, its host
+  contexts, positions and conditions beside the scheme and `contrast_high`, each named by a selector of a *Today's
+  fields* mapping that targets the entry (in any entry's item), required by a state model for one so named, or listed
+  by a preset's `requires_variants`; the state flags under which a 0.7.0 token reaches a part of the entry
+  (`focused` and `focus_visible` where a part lists `focus`, 0.7.0's `focus_ring_*` being `token.focus`); the
+  conditions under which 0.7.0's readers or connectors gave the entry values (`animations_off` and `reduced_motion`
+  for a motion value); the default size in force; less a name a preset's platform draws only under a later unit's
+  name, which is that unit's on that preset (`hover` and `focus_visible` on `ios-*`, the iPad's); and the values that
+  only names of later units read, each with that name. A name at depth that a preset's state model draws in no
+  combination at depth is that preset's `later` (S10). Every other name of the entry's state models and facts is a
+  later unit's (`scripts/widget_units.toml`).
 - **Notes:** where the widget is drawn in another's context, the nested controls it holds (below), and what the merge
   took from other groups (every name a note uses is in the lists above).
 
@@ -2053,15 +2065,36 @@ spaces:
     unselected for toggles) per variant and, Expressive, per size; the FAB and icon-button tokens.
 - **Today's fields:** `background_color` → `body.fill`; `font` → `label.text.font` (its `color` →
   `label.text.fill`); `min_width` → `body.min_width`; `min_height` → `body.min_height`; `icon_text_gap` →
-  `values.icon_text_gap`; `primary_background` → `body.fill @ variant primary` (on `macos-*`: `@ {default}`);
-  `primary_text_color` → `label.text.fill @ variant primary` (and `icon.icon.fill`); `disabled_opacity` →
+  `values.icon_text_gap @ variant with_icon` (the gap of a button holding an icon and a label, which `adwaita` states
+  under that content variant; the base where a preset declares no `with_icon`; ADD-A147); `primary_background` →
+  `body.fill @ variant primary` (on `macos-*` and `kde-breeze`: `@ {default}`, Breeze's default button; ADD-A147);
+  `primary_text_color` → `label.text.fill @ variant primary` (and `icon.icon.fill`; on `macos-*` and `kde-breeze`:
+  `@ {default}`); `disabled_opacity` →
   `body.opacity @ {disabled}`; `hover_background` → `body.fill @ {hover}`; `hover_text_color` → `label.text.fill @
   {hover}`; `active_background` → `body.fill @ {pressed}`; `active_text_color` → `label.text.fill @ {pressed}`;
   `disabled_background` → `body.fill @ {disabled}`; `disabled_text_color` → `label.text.fill @ {disabled}`;
   `checked_background` → `body.fill @ {checked}`; `checked_text_color` → `label.text.fill @ {checked}`;
   `border.color` / `border.line_width` → `body.stroke` (each edge's paint and width); `border.corner_radius` →
   `body.corners`; `border.padding_*` → `body.padding`; `border.shadow_enabled` → `body.shadow` (layers or none; the
-  flag goes, R8).
+  flag goes, R8). On `ios-*` the plain button's mappings are `@ variant @gray` (UIKit's gray configuration, WebKit's
+  iOS button's look, which 0.7.0 drew), and on `material-3` `@ variant tinted` (the filled tonal button, which 0.7.0
+  drew): every mapping but `primary_*`'s takes the variant, beside its own where it has one (`icon_text_gap @ variant
+  @gray, with_icon`; `checked_* @ variant tinted, toggle {checked}`, which `material-3` draws nowhere at depth). An
+  element with no variant draws the platform's default button there, UIKit's system button with no configuration
+  (`xcode@26.6 UIKit/UIButton.h:22-23`) and Compose's `Button`, the filled one (`androidx@e4d933c9
+  …/material3/Button.kt:77-88`): 0.7.0's mapping of its plain button to the look these variants hold is corrected,
+  and 0.7.0's look stays under them (ADD-A147).
+- **Depth** (ADD-A147): variants `primary`, `toggle` (the state models draw `checked` with it alone), `with_icon`,
+  `tool` (the toolbar's mappings), `tinted` (`material-3`'s plain-button mappings), and on `ios-*` `@gray` (`ios-*`'s
+  plain-button mappings); states `hover`, `pressed`, `disabled`, `checked`, `default`, `focused`, `focus_visible` (on
+  `ios-*` not `hover` and `focus_visible`, which are the iPad unit's, U112, U113); the default size in force; no host context
+  (`toolbar.bar` from the containers unit, `toolbar`'s item); the scheme and `contrast_high`. On `material-3`
+  `toggle` is `later` (drawn only with `icon_only` or under `expressive`), and on `ios-*` `tool` (drawn only in the
+  ink toolbar). Values of later names: `help_tooltip_on_click` (styles), `menu_indicator_gap_px`,
+  `menu_indicator_anchor`, `menu_trigger` (`menu`), `back_title_fallback`, `back_display_mode` (`back`),
+  `display_mode` (`@paste_control`). `label_position`, `repeat_delay_ms` and `repeat_interval_ms` are at depth
+  wherever a preset states them with no later name (`kde-breeze` all three, `macos-*` the two repeat values; ledger
+  queue #258). `presentations` and each part's `transitions` are the motion unit's.
 - **Notes:**
   - Toolbar items are `button` elements in `context toolbar.bar` (a toggle item `toggle`, a menu item `menu`, a split
     item a `split_button`); their states are `button` rules there (K1.152, W1-099, W1-100, MAC-TL02, TB-6, P3-3†,
@@ -2937,7 +2970,8 @@ spaces:
   `button`'s presentations), the completion popup an `autocomplete` in `context input` (MAC-P3-7†). The decorations
   of `preedit`, `misspelling`, `grammar_mark` and `correction` follow the font (S2.8): where the platform draws the
   line from the font's own metrics (Pango's, AppKit's `NSFont`, DirectWrite's, Android's `Paint`; Qt draws its own
-  adjustment of them, register U180's, S2.8, ADD-A130), their `thickness` and `offset` are the references the
+  adjustment of them, S2.8, ADD-A130: QPainter's underline in S2.2's arithmetic, its wavy line register U754's,
+  Qt Quick's lines register U753's, ADD-A147), their `thickness` and `offset` are the references the
   parts state, and a number is stated only where the
   platform draws a fixed line (macOS's spelling and grammar dots, MAC-X28); the value phase states which per preset
   from the facts (GN-1.281†, K1.49†, W1-151†, MAT-I18†). Provenance: group
@@ -4726,9 +4760,11 @@ spaces:
   `UIBarAppearance` standard, compact and scroll edge, the navigation item's style; `material-3`: top and bottom app
   bar tokens (rest, on-scroll) and the Expressive toolbar tokens (docked, floating, vibrant); `windows-11`:
   CommandBar's display-mode and open states.
-- **Today's fields:** `font` → `button.label.text @ context toolbar.bar` (and `title.text` where a preset states one);
-  `bar_height_px` → `bar.min_height`; `item_gap_px` → `item_gap`; `background_color` → `bar.fill`; `icon_size_px` →
-  `button.icon.icon.size @ context toolbar.bar`; `border` → `bar.stroke`, `bar.corners`, `bar.padding`, `bar.shadow`.
+- **Today's fields:** `font` → `button.label.text @ variant tool, context toolbar.bar` where the preset declares
+  `tool` (Qt's tool button, WinUI's app-bar buttons, AppKit's toolbar bezel, the note below), else `@ context
+  toolbar.bar` (and `title.text` where a preset states one; ADD-A147); `bar_height_px` → `bar.min_height`;
+  `item_gap_px` → `item_gap`; `background_color` → `bar.fill`; `icon_size_px` → `button.icon.icon.size @ variant tool,
+  context toolbar.bar` where the preset declares `tool`, else `@ context toolbar.bar` (ADD-A147); `border` → `bar.stroke`, `bar.corners`, `bar.padding`, `bar.shadow`.
 - **Notes:** a toolbar's items are the elements they are, in context: a tool or bar button is
   `button @ context toolbar.bar` (Qt's tool button, WinUI's AppBarButton and AppBarToggleButton and AppKit's toolbar
   bezel are the typed `button @ variant tool`), a toggle item `button @ variant toggle`, a menu item
@@ -5977,7 +6013,7 @@ spaces:
     underline: Pango's error underline, GN-P3-27†, drawn from the font, so its decoration's `thickness` and `offset`
     are references to `element.font_underline_thickness` and `element.font_underline_offset`, S2.8; `data = {
     misspelling = ["font_underline_offset", "font_underline_thickness"] }`; KTextEditor's spell-check underline,
-    K-SF11†, Qt's wavy line held within the descent, register U180's, S2.8, ADD-A130).
+    K-SF11†, Qt's wavy line held within the descent, register U754's, S2.8, ADD-A130, ADD-A147).
   - `template_field` (K-SF11†) — `fill`.
   - `template_placeholder` *(element)* (K-SF11†) — `fill`.
   - `inline_annotation` *(element)* — one annotation, its severity its own variant (GN-SF12†): `text`.
@@ -7698,7 +7734,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `emphasis`, `strong`, `underline`, `strikethrough`, `subscript`, `superscript` (Compose's HTML underline,
     MAT-P3-20†): `text`. The underline's and the strike line's `text.decoration` follow the run's font where the
     platform draws them from its metrics (AppKit, Android's `Paint`, S2.8; Qt's drawn underline and strike line,
-    `kde-breeze`'s, are register U180's, S2.8, ADD-A130): `thickness` `=
+    `kde-breeze`'s, are S2.8's, ADD-A130: QPainter's underline in S2.2's arithmetic, its strike line register U754's,
+    Qt Quick's lines register U753's, ADD-A147): `thickness` `=
     element.font_underline_thickness` and `offset` `= element.font_underline_offset` on `underline`,
     `element.font_strikeout_thickness` and `element.font_strikeout_offset` on `strikethrough`, which the parts
     declare, `data = { underline = ["font_underline_offset", "font_underline_thickness"], strikethrough =
@@ -9760,7 +9797,7 @@ platform:
 | `foreground_inactive` | the platform's secondary (muted) text level | required | KDE `ForegroundInactive`; today's `muted_color` |
 | `foreground_active` | KDE `ForegroundActive`, used as the information colour | may_be_absent on every preset but `kde-breeze` (a KColorScheme role no other platform has) | K3.54, Q3.5 |
 | `link`, `link_visited` | link text, visited link text | `link` required; `link_visited` may_be_absent on `macos-*`, `windows-11`, `ios-*`, `material-3` (no visited state: macOS draws no visited link, gap-map-macos's §2.28 note; WinUI's hyperlinks have none, gap-map-windows' `:1695` note; `link`'s state-model sources for `ios-*` and `material-3` name none) | K3.54, GN-1.265 |
-| `negative`, `neutral`, `positive` | the set's status text colours (KDE `ForegroundNegative`, `ForegroundNeutral`, `ForegroundPositive`); a platform without per-set values states `negative = role.global.status.error.standalone`, `neutral = role.global.status.warning.standalone`, `positive = role.global.status.success.standalone` (`windows-11`, which has no standalone status colour, the `fill` instead) (KDE's neutral is a warning, rename row 86; `StatusRoles`' own `neutral` is another colour) | `negative` may_be_absent on `macos-*`; `neutral` may_be_absent on `material-3` and `macos-*`, `positive` may_be_absent on `material-3` and `macos-*` (the status each references is absent there: Material has no warning or success role, below; AppKit declares no status colour, `NSColor.h:77-401`, the macOS status roles absent, below; ADD-A130) | K3.54, Q3.10; gap-map-material's colour-role note (no warning or success role) |
+| `negative`, `neutral`, `positive` | the set's status text colours (KDE `ForegroundNegative`, `ForegroundNeutral`, `ForegroundPositive`); a platform without per-set values states `negative = role.global.status.error.standalone`, `neutral = role.global.status.warning.standalone`, `positive = role.global.status.success.standalone`, the status's `fill` where it has no `standalone` (`windows-11`, which has no standalone status colour) (ADD-A147; rejected: the set's colour absent where the platform draws the status only as a fill, which would leave `windows-11`'s sets without status text colours, `negative` no longer required, and a connector's error-text field to its toolkit; the reference kept on `windows-11` and refused on `macos-*` and `ios-*`, one construction accepted on one preset and refused on another, with egui's error text on `windows-11` its toolkit's red, `egui-0.36.2 src/style.rs:1517`, `:1580`, where iced draws the platform's; the cost of the reference is a fill's colour drawn as text, which 0.7.0 drew and iced draws from its one field in any case, and which the platform itself does not, so a status's own `standalone` stays witness-only) (KDE's neutral is a warning, rename row 86; `StatusRoles`' own `neutral` is another colour) | `negative` required; `neutral` and `positive` may_be_absent on `material-3` (the status each references is absent there: Material has no warning or success role, below); on `macos-*` and `ios-*`, as on `windows-11`, `negative`, `neutral` and `positive` reference the status's `standalone` where one is paired and its `fill` otherwise, and are absent only where the status is; while that status's row is open the set's colour is pending on it (`negative` U757, `neutral` U758, `positive` U759), which of the two it references being the read's outcome; this row then allowing it absent there, `negative` too (*global roles*, `status`; U757–U759; ADD-A130, ADD-A147) | K3.54, Q3.10; gap-map-material's colour-role note (no warning or success role) |
 | `decoration_focus`, `decoration_hover` | KDE's focus and hover decoration colours of the set | `decoration_focus` may_be_absent on every preset but `kde-breeze`, `decoration_hover` may_be_absent on every preset but `kde-breeze` (KColorScheme's decoration roles; the other platforms state focus by `token.focus` and hover per part) | Q3.11, Q3.12, K3.54 |
 | `border` | the set's stroke colour (translucent where the platform's is) | required, but may_be_absent on `macos-*` in the `Selection` set (AppKit declares no colour for a selection's outline, only the selected content's and text's backgrounds and the text on them, `NSColor.h:210-211`, `:221-222`, `:232-235`, `:240-241`: the facts state it absent, or the outline a selected row's capture shows; a part stroking inside a selected row states its own colour, a separator's; ADD-A130), and on `windows-11` in the `Selection` set (WinUI names no selection outline: `ListViewItemPresenter` takes the selected item's backgrounds, its foreground and its selection indicator's brushes and no selected border brush, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ListViewItem_themeresources.xaml:256`; ADD-A141, the WN-C1 tie-break) | all; absorbs today's `border.color` and `border.opacity` as `alpha(...)` |
 | `shade` | the translucent shade line/overlay of the set (libadwaita `*_shade_color`) | may_be_absent on every preset but `adwaita` (libadwaita's shade colours, no other platform's); on `adwaita` a set GN-1.270 names no shade of states `= role.window.shade` (`--shade-color`) | GN-1.270 |
@@ -9929,7 +9966,7 @@ six computed backgrounds (`background_active` …) are KColorScheme's tints of t
 | `accent_foreground` | text/glyph on the accent (today's `accent_text_color`) | required | GN-3.14 |
 | `accent_standalone` | accent used as text or icon colour on the surface, distinct from the fill (libadwaita `accent_color`, OKLab-derived: `adw_standalone`); on `kde-breeze` `= role.window.foreground_active`, where `applyScheme()` writes the plain accent while the Selection set's background, the fill, takes `accentBackground` (`plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:178-181`, `:197-217`, `:229-236`; Kirigami's `activeTextColor`, Q3.5; ADD-A122); elsewhere `= role.global.accent` | required | GN-1.268, GN-3.13, Q3.5 |
 | `accent_ramp` | keyed: WinUI Light1-3, Dark1-3 | a list: empty where the platform has none | W3-12 (other group) |
-| `status` | `StatusRoles`: `success`, `warning`, `error`, `info`, `neutral`, `destructive`, each a `StatusColors` record with `fill`, `foreground`, `standalone`, `background`, `background_solid` (S3, ADD-A48); `destructive` and `error` are separate entries [GN-1.269] | required on every preset but `macos-*`: `error.fill`; on every preset but `windows-11` and `macos-*`: `error.standalone`. On `macos-*` every field of every record may_be_absent: AppKit declares no status colour (`NSColor.h:77-401`; its system palette is `role.@system_*`, which its destructive buttons use, and its level indicator's warning and critical fills are that widget's own, read, MAC-N06), so the facts state them absent (U101, settled; ADD-A130). Elsewhere may_be_absent, each where the platform has no counterpart, with its presets: `success.fill` (`material-3`), `success.foreground` (`material-3`, `ios-*`), `success.standalone` (`material-3`, `windows-11`), `success.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `success.background_solid` (every preset); `warning.fill` (`material-3`), `warning.foreground` (`material-3`, `ios-*`), `warning.standalone` (`material-3`, `windows-11`), `warning.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `warning.background_solid` (every preset); `error.foreground` (`ios-*`), `error.background` (`adwaita`, `macos-*`, `ios-*`), `error.standalone` (`windows-11`), `error.background_solid` (every preset); `info.fill` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.foreground` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.standalone` (`adwaita`, `macos-*`, `ios-*`, `material-3`, `windows-11`), `info.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background_solid` (every preset but `windows-11`); `neutral.fill` (every preset but `windows-11`), `neutral.foreground` (every preset), `neutral.standalone` (every preset), `neutral.background` (every preset but `windows-11`), `neutral.background_solid` (every preset but `windows-11`); `destructive.fill` (every preset but `adwaita`), `destructive.foreground` (every preset but `adwaita`), `destructive.standalone` (every preset but `adwaita`), `destructive.background` (every preset), `destructive.background_solid` (every preset). The reasons, per platform: Material states no warning, success or info role, and no component draws such a state (gap-map-material's colour-role note, `latest/_md-sys-color.scss:20-206`); libadwaita states a triple per status, `fill`, `foreground` and `standalone`, for success, warning, error and destructive, and no status background or info or neutral colour (GN-1.269); iOS has no status background, foreground or container roles beyond D-9…D-13 (gap-map-ios's C05 note), and macOS none at all (above); the solid backgrounds and the neutral status are WinUI's (W3-17, W3-18), its solid backgrounds only the attention and neutral ones (`SystemFillColorSolidAttentionBackground`, `SystemFillColorSolidNeutralBackground`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:176-177`) and its neutral status a fill and backgrounds with no text colour (`:169-170`, `:175`, `:177`; ADD-A122), whose status colours are fills alone (`SystemFillColor{Success,Caution,Critical,Attention}`, which its controls use only as backgrounds, `microsoft-ui-xaml@2.5.1 src/controls/dev/InfoBar/InfoBar_themeresources.xaml:9-12`, with `TextFillColorInverse` on them, W3-46†), so `windows-11` states no `standalone`, the information colour WinUI's attention and KDE's `ForegroundActive` (W3-17, Q3.5), the destructive triple libadwaita's alone (GN-1.269). No part refers to an absent status role: a preset whose platform draws a severity variant without a status colour declares the variant with rules that name none (macOS's critical alert, its icon badge, MAC-D02), and S12's absent-operand check refuses any reference to an absent role; macOS's and iOS's destructive buttons refer to their system red (`role.@system_red`), not to `role.global.status.destructive`, which those presets leave absent; a platform that draws a status keeps stating it | GN-1.269, W3-17/18, K3.52; the gap-map notes named |
+| `status` | `StatusRoles`: `success`, `warning`, `error`, `info`, `neutral`, `destructive`, each a `StatusColors` record with `fill`, `foreground`, `standalone`, `background`, `background_solid` (S3, ADD-A48); `destructive` and `error` are separate entries [GN-1.269] | required on every preset: `error.fill`; on every preset but `windows-11`: `error.standalone`. On `macos-*` and `ios-*` each status's `fill`, `standalone` and `foreground` is native-theme's labelled mapping where its register row pairs it (S3; U757 `error`, U758 `warning`, U759 `success`, U760 `info`; U755, U756 the foregrounds), pending on that row meanwhile and absent where the row closes with no witness, this row then listing it under may_be_absent (for `error`, also among its requirement's exceptions) (ADD-A147; the 0.8.0 plan's D6, outcome 5; veto list items 3 and 57). AppKit and UIKit declare no status colour (`NSColor.h:77-401`; U456), and no pinned Apple source uses the system colours 0.7.0 drew there (systemRed, systemOrange, systemGreen, systemBlue, `v0.7.0:native-theme/src/presets/macos-tahoe.toml:37-47`) for these meanings (U757–U760). On `adwaita` the `info` record's `fill` `= role.global.accent` and `foreground` `= role.global.accent_foreground` are native-theme's labelled mapping, in both schemes: the colour libadwaita's info bar draws info from (`libadwaita@1.10.0 src/stylesheet/widgets/_deprecated.scss:174`, the source 0.7.0's `info_color` cites, `v0.7.0:native-theme/src/presets/adwaita.toml:42-45`; the bar itself a 30 % mix of it over the window background, with the window's text, `:179-180`) and the text libadwaita draws on the accent (`src/adw-style-manager.c:161`); `info.standalone` is absent, libadwaita drawing no info as text (`src/stylesheet/widgets/_labels.scss:21-29` names `error`, `warning`, `success`) (S3; veto list item 56). The other fields of these presets' records may_be_absent (below): no committed source or measurement shows the platform drawing them at 0.8.0's depth (S3); the Apple presets' destructive buttons refer to `role.@system_red` themselves, and macOS's level indicator's fills are that widget's own (MAC-N06), U757's and U758's candidates. Elsewhere may_be_absent, each where the platform has no counterpart, with its presets: `success.fill` (`material-3`), `success.foreground` (`material-3`), `success.standalone` (`material-3`, `windows-11`), `success.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `success.background_solid` (every preset); `warning.fill` (`material-3`), `warning.foreground` (`material-3`), `warning.standalone` (`material-3`, `windows-11`), `warning.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `warning.background_solid` (every preset); `error.background` (`adwaita`, `macos-*`, `ios-*`), `error.standalone` (`windows-11`), `error.background_solid` (every preset); `info.fill` (`material-3`), `info.foreground` (`material-3`), `info.standalone` (`adwaita`, `material-3`, `windows-11`), `info.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background_solid` (every preset but `windows-11`); `neutral.fill` (every preset but `windows-11`), `neutral.foreground` (every preset), `neutral.standalone` (every preset), `neutral.background` (every preset but `windows-11`), `neutral.background_solid` (every preset but `windows-11`); `destructive.fill` (every preset but `adwaita`), `destructive.foreground` (every preset but `adwaita`), `destructive.standalone` (every preset but `adwaita`), `destructive.background` (every preset), `destructive.background_solid` (every preset). The reasons, per platform: Material states no warning, success or info role, and no component draws such a state (gap-map-material's colour-role note, `latest/_md-sys-color.scss:20-206`); libadwaita states a triple per status, `fill`, `foreground` and `standalone`, for success, warning, error and destructive, and no status background or info or neutral colour (GN-1.269), its info's `fill` and `foreground` the labelled mapping's (above); iOS has no status background, foreground or container roles beyond D-9…D-13 (gap-map-ios's C05 note), and macOS none at all (above), their statuses, each `standalone` included, the labelled mapping's where U757–U760 pair them, `destructive` absent, no committed source or measurement showing it (S3); the solid backgrounds and the neutral status are WinUI's (W3-17, W3-18), its solid backgrounds only the attention and neutral ones (`SystemFillColorSolidAttentionBackground`, `SystemFillColorSolidNeutralBackground`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:176-177`) and its neutral status a fill and backgrounds with no text colour (`:169-170`, `:175`, `:177`; ADD-A122), whose status colours are fills alone (`SystemFillColor{Success,Caution,Critical,Attention}`, which its controls use only as backgrounds, `microsoft-ui-xaml@2.5.1 src/controls/dev/InfoBar/InfoBar_themeresources.xaml:9-12`, with `TextFillColorInverse` on them, W3-46†), so `windows-11` states no `standalone`, the information colour WinUI's attention and KDE's `ForegroundActive` (W3-17, Q3.5), the destructive triple libadwaita's alone (GN-1.269). No part refers to an absent status role: a preset whose platform draws a severity variant without a status colour declares the variant with rules that name none (macOS's critical alert, its icon badge, MAC-D02), and S12's absent-operand check refuses any reference to an absent role; macOS's and iOS's destructive buttons refer to their system red (`role.@system_red`), not to `role.global.status.destructive`, which those presets leave absent; a platform that draws a status keeps stating it. A role left absent here because the platform draws its meaning in no colour (`material-3`'s warning, success and info; on `macos-*` and `ios-*` a status whose row closes with no witness) is an exception in the contract of each connector that holds it in a toolkit field (S3, S21.3; ADD-A147, veto list item 56) | GN-1.269, W3-17/18, K3.52; the gap-map notes named |
 | `shadow_reference` | what the platform names as the shadow colour (today's `shadow_color`; macOS `shadowColor`, Material `shadow`) | may_be_absent on `adwaita`, `windows-11`, `ios-*` (no named shadow colour: their shadows state each layer's colour, GN-3.01, W3-01, X-SH-1); `kde-breeze` names one (breezerc `ShadowColor`, K3.1, K3.2) | today's `shadow_color`, MAT-X5, K3.1 |
 | `selection_text_background` | the highlight behind selected text (today's `text_selection_background`) | required on every preset (every platform highlights selected text; a platform that does not distinguish it from selected items states a reference to the `Selection` set, below) | today's fields; GN-3.40, X-SE-1, MAC-X15, W3-25 |
 | `selection_text_foreground` | the selected text's colour (today's `text_selection_color`); absent where the text keeps its own colour | may_be_absent on `adwaita` (GN-3.41), `windows-11` (W3-25), `material-3` (Compose's `TextSelectionColors` holds a handle and a background colour only, gap-map-material's note on `compose/MaterialTheme.kt:279-281`), `ios-*` (X-SE-1 names the highlight colour alone) | today's fields |
@@ -10067,12 +10104,17 @@ twice. Where a platform has fewer styles than slots, neighbouring slots **share*
 one slot per shared style, the unmarked one in the column (its **owner**), references the keyed style, and every slot
 marked "=" references the owner slot, `= token.text.roles.<owner>` (`subheadline = "= token.text.roles.body"`), so a
 patch on the owner (a reader's font, S9.5) reaches every slot that shares it, under any preset; S12 refuses two slots
-that can reference one keyed style directly under one combination (S4.4). The share is a stated fact, never a toolkit
-default.
+that can reference one keyed style directly under one combination (S4.4). The share is a stated fact or a labelled
+mapping (below), never a toolkit default.
 
 The table's platform columns are a **draft of facts**, not structure: which keyed style fills each slot is a fact of
 each platform, and the value phase states it in `docs/facts/` (S17) with its citation; where the facts differ, the
-facts win and this table is not consulted. The structure here is the slots and their uses.
+facts win and this table is not consulted. The structure here is the slots and their uses. **The label** (ADD-A147;
+S3's labelled mapping; the 0.8.0 plan's D6, outcome 5): where a platform names no style for a slot's use (no source
+of its assigns the style to that use), which keyed style fills the slot, or which slot it shares, is native-theme's
+labelled mapping, its fact carrying `mapping` (S17), never a stated fact; where the platform or its reference assigns
+the style (an Apple style to the slot of its name; Compose's assignments on `material-3`, below), it is the
+platform's fact with its citation.
 
 | Slot | Use | Apple (macOS/iOS) | Windows | GNOME | KDE | Material |
 |---|---|---|---|---|---|---|
@@ -10189,7 +10231,7 @@ sets it (WinUI's trimming and wrapping, `TextBlock_themeresources.xaml:10-51`), 
 `BoldText` condition (a token rule on `font.weight`) [TS-3].
 
 **Windows.** The nine Fluent styles: `caption`, `body`, `body_strong`, `body_large`, `body_large_strong`, `subtitle`,
-`title`, `title_large`, `display` [W1-147]; `monospace`, sourced as today's `mono_font` is (W3-47†).
+`title`, `title_large`, `display` [W1-147]; `monospace`, a labelled mapping (W3-47†; U509, ADD-A147).
 
 **GNOME.** libadwaita's classes: `title_1`, `title_2`, `title_3`, `title_4`, `heading`, `body`, `caption_heading`,
 `caption`, `document`, `monospace`, `numeric` [GN-1.189]. `document` takes its family and size from
@@ -10287,8 +10329,8 @@ platform default monospace typeface (MAT-X36†).
 | `defaults.selection_inactive_background` | `role.selection.background` under a colour rule `@ cond window_inactive` |
 | `defaults.text_selection_background`, `text_selection_color` | `role.global.selection_text_background`, `role.global.selection_text_foreground` |
 | `defaults.disabled_text_color` | `role.window.disabled.foreground` (and the other sets') |
-| `defaults.danger_color`, `danger_text_color` | `role.global.status.error.fill`, `.foreground` (and `destructive` where separate); on `macos-*` none, AppKit declaring no status colour (ADD-A130) |
-| `defaults.warning_*`, `success_*`, `info_*` | `role.global.status.<s>.fill`, `.foreground`; on `macos-*` none (ADD-A130) |
+| `defaults.danger_color`, `danger_text_color` | `role.global.status.error.fill`, `.foreground` (and `destructive` where separate); a field for error text on the surface (0.7.0's egui `error_fg_color`, filled from `danger_color`) `role.window.negative` (the sets' `negative`); on `macos-*` and `ios-*` the labelled mapping where U757 pairs it (*global roles*, `status`; 0.7.0's `labelColor` there is `role.window.foreground`, the text beside a status mark; ADD-A130, ADD-A147) |
+| `defaults.warning_*`, `success_*`, `info_*` | `role.global.status.<s>.fill`, `.foreground`; a field for the status's text on the surface (0.7.0's egui `warn_fg_color`) the window set's `neutral` or `positive`; on `macos-*` and `ios-*` the labelled mapping where U758–U760 pair it; on `adwaita` `info_*` the labelled mapping to the accent (*global roles*, `status`; ADD-A130, ADD-A147) |
 | `defaults.focus_ring_color`, `focus_ring_width_px`, `focus_ring_offset_px` | `token.focus` (`paint`, `width`, `offset`) |
 | `defaults.border.color`, `border.opacity` | `<set>.border`, the opacity folded in as `alpha(...)` |
 | `defaults.border.line_width_px`, `corner_radius_px`, `corner_radius_lg_px`, `shadow_enabled`, padding fields | no global: each part states its own `stroke`, `corners`, `shadow`, `padding` (R20, no model inheritance); the preset repeats the number per part |
@@ -10302,6 +10344,12 @@ platform default monospace typeface (MAT-X36†).
 | `TextScaleEntry.size_pt`/`size_px`, `weight` | the keyed style's `font.size` (`FontSize`), `font.weight` |
 | `TextScaleEntry.line_height_pt`/`line_height_px` | the keyed style's `line_height` (ADD-A40) |
 | accessibility flags (§2.1.7) | conditions (S7.1) |
+
+The typed roles enter whole, under the scheme, `contrast_high` and the conditions this table names (`window_inactive`
+for the `selection` set, whole: 0.7.0's `selection_inactive_background`). A token path this table does not name enters by S6.1's rule; every keyed role, text
+style, elevation entry and icon context is declared with the first unit whose value reads it, or with the reader that
+states it. A token at depth is stated under the scheme, `contrast_high` and the preset's default flavour, and the
+speed factor and the tokens the two motion values read also under `animations_off` and `reduced_motion` (ADD-A147).
 
 ## Tokens, conditions, readers, placement
 
@@ -10448,7 +10496,8 @@ factor in its layer where kwinrc states one, the one value no preset can know (A
 `token.params.layout.grid_unit` (Q3.29, a length); `token.params.optics.optical_centering` (MAT-X37†: Material's
 unitless optical-centering coefficient, in a group of unit `number` of its own, since `layout` is a group of lengths:
 a group this section adds to S4.6's, as a preset declares its groups (S10), which `material-3` declares with the first
-unit whose rule reads it, `split_button`'s, after 0.8.0, so the tokens unit's list of groups does not hold it, ADD-A146);
+unit whose rule reads it, `split_button`'s, after 0.8.0, so no unit of 0.8.0 holds it, ADD-A146; a token group enters
+with the first unit whose value reads it, S6.1, ADD-A147);
 `token.params.caret.aspect_ratio` (GN-3.36); `token.params.shape.<step>` for Material's shape scale from `none` to `extra_extra_large` (MAT-X11; its `full`, half
 the height at any size, is no scalar: the parts state it as `Radius::Full { maximum: Absent }`, MAT-X11's trace);
 `token.params.display`'s four corner keys (S4.6, R25.11, W-6, X-CR-4: the absence row above);
@@ -10536,8 +10585,8 @@ Kirigami's elevation entries are (`token.elevation`); Material's `_emphasized` s
 `Typography` holding them under either flavour (`body_emphasized` and `caption_emphasized` reference two of them,
 *Text ramp*; ADD-A134). Group 8 adds
 the per-role line height, letter spacing and optical-size axis (MAC-X18, W3-23, MAT-X16,
-X-DT-5, GN-3.57's weight), the default size category's sizes on `ios-*` (X-DT-1), `monospace` with a source on
-`windows-11` (W3-47†) and the platform default sans and monospace on `material-3` (MAT-X36†). `token.text.fallbacks`
+X-DT-5, GN-3.57's weight), the default size category's sizes on `ios-*` (X-DT-1), `monospace` on
+`windows-11`, a labelled mapping (W3-47†; ADD-A147), and the platform default sans and monospace on `material-3` (MAT-X36†). `token.text.fallbacks`
 (ADD-A41) holds the family fallbacks, emoji family, per-language fallback map (all FM rows) and the per-family
 chains, `per_family` (S4.4, ADD-A122, ADD-A123); `token.text.rendering`
 (ADD-B04) holds `engine` (Qt Quick's render type, Q3.32), `antialiasing`, `hinting`, `subpixel_order`,
@@ -10548,7 +10597,7 @@ TS-2, X-DT-1, R25.15; `WinUi` on `windows-11`, ADD-A141; `Linear` elsewhere; S9.
 each keyed style's `scaling_role` (*keyed text styles per platform*).
 
 **token.icons** (`IconTokens`, S4.5): `set`, `theme`, `theme_fallback`, `sizes`, `animated_visuals` and `mirroring` (per icon role,
-GN-FM03†, MAT-FM04†, W3-54†, X-SV-3). Under `sizes`, contexts beyond the five groups (GN-3.59, K3.63, W3-27) are keys
+GN-FM03†, MAT-FM04†, W3-54†, X-SV-3). Under `sizes`, contexts beyond the five groups (GN-3.59, K3.63; ADD-A147) are keys
 of the same token; weight and scale are `IconStyle` fields (X-IC-2), stated in a context where the platform's context
 sets them (S4.5) and on parts otherwise; a `scale` is a key of `[declare] symbol_scales` (S10). `animated_visuals`
 (ADD-A126): WinUI's AnimatedIcon sources, each an `AnimatedVisual` (its duration and markers, as its source states
@@ -10560,7 +10609,8 @@ operation (`copy`, `move`, `link`, `ask`, `none`, `not_allowed`) for GN-P3-12†
 S4.7's one `color: Value<Color>` does not hold what two rows name, macOS's pointer colours, an outline and a fill
 (MAC-X20, the map's "colours"; no pinned source states them), and Windows' pointer style, white, black, inverted
 or a custom colour (W3-50†), of which `inverted` is no colour and which the trace sends to `theme`, a cursor
-theme's name on GNOME and KDE. The tokens unit decides it with its pointer facts (ADD-A146; the ledger's queue):
+theme's name on GNOME and KDE. The pointer unit (after 0.8.0, ADD-A147) decides it with its pointer facts (ADD-A146;
+the ledger's queue):
 `fill`, `outline` and a keyed `style`, each absent where the platform has none, if the macOS facts confirm two
 colours; else the one `color` kept and S4.7 recording that Windows' style and a second macOS colour are not
 modelled. Until then the entry is S4.7's as it stands, and no fact states a pointer colour.
@@ -10716,7 +10766,7 @@ S9.3 over both for the reads it states.
 **Windows**
 
 - `UISettings.GetColorValue` for `AccentDark1`–`3`, `AccentLight1`–`3`: W3-12.
-- `SPI_GETKEYBOARDCUES`: W3-21, W3-48†.
+- `SPI_GETKEYBOARDCUES`: W3-21 (ADD-A147).
 - no text-rendering read (W3-22): `windows-11` states `token.text.rendering` from its facts alone, the reader
   reading none of ClearType's settings (`SPI_GETCLEARTYPE`, `SPI_GETFONTSMOOTHING`, `SPI_GETFONTSMOOTHINGTYPE`,
   `SPI_GETFONTSMOOTHINGCONTRAST`), which WinUI's greyscale text does not take, and no DirectWrite rendering
@@ -10738,7 +10788,6 @@ S9.3 over both for the reads it states.
   `SM_CYDRAG`, `SPI_GETWHEELSCROLLLINES`, `SPI_GETKEYBOARDDELAY`: W3-41 (its `UISettings.MessageDuration` is out,
   R1.1: the shell's notifications);
   `SM_CXDOUBLECLK`, `SM_CYDOUBLECLK`: W-P3-12†; `SPI_GETWHEELSCROLLCHARS`: W3-52†; `SPI_GETMOUSEVANISH`: W-P3-10†.
-- `HKCU\Console` `FaceName`, `FontSize`, `FontWeight` (host to verify): W3-47†.
 - `SPI_GETMENUFADE`, `SPI_GETTOOLTIPFADE`, `SPI_GETSELECTIONFADE`, `SPI_GETCOMBOBOXANIMATION`,
   `SPI_GETLISTBOXSMOOTHSCROLLING`, `SPI_GETHOTTRACKING`, `SPI_GETDROPSHADOW`, `SPI_GETUIEFFECTS`: W3-53†.
 - `SPI_GETMENUDROPALIGNMENT` into `cond system_setting:menu_drop_alignment`: W3-55†.

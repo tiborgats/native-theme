@@ -290,7 +290,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-096 | `sidebar.pane.{fill,shadow,corners} @ variant overlay (fill PaintKind::Material @acrylic_in_app; shadow Shadow::Elevation)` | rule |
 | W1-097 | `sidebar.content.{fill,stroke,corners}` | field |
 | W1-098 | `sidebar.values.presentations (events Appear, Disappear; @expand, @collapse under variant compact)` (SplitView's open and close durations govern the minimal pane appearing and the compact rail expanding to the full pane, W1-096) | field |
-| W1-099 | `button.body.{min_width,min_height,padding,corners} @ variant tool context toolbar.bar / variants {tool,icon_only} context toolbar.bar (labelled and compact)` | rule |
+| W1-099 | `button.body.{min_width,min_height,padding,corners} @ variant tool context toolbar.bar (compact) / variant tool context toolbar.bar {open} (labelled)` (U1, ADD-A147) | rule |
 | W1-099 | `button.{body.fill,label.text.fill,icon.icon.fill} @ {hover} / {pressed} / {disabled} variant tool context toolbar.bar` | rule |
 | W1-099 | `button.values.label_position @ variant tool context toolbar.bar (TextUnderIcon, TextBesideIcon, IconOnly)` | rule |
 | W1-099 | `button.{label.text,values.icon_text_gap} @ variant tool context toolbar.bar (the label font, the icon and label margins)` | rule |
@@ -715,10 +715,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-29 | `link.body.cursor; input.body.cursor; text_area.body.cursor; splitter.divider.cursor; window.resize_zone.cursor (the hand, the I-beam, the resize cursors)` | field |
 | W3-29 | `token.pointer.size (ADD-A46)` | token |
 | W3-29 | `reader:windows:UISettings.CursorSize, SM_CXCURSOR` | reader |
-| W3-47† | `token.text.roles.monospace` | token |
-| W3-47† | `reader:windows:HKCU\Console FaceName, FontSize, FontWeight` | reader |
-| W3-48† | `token.behavior.mnemonics (ADD-A12)` | token |
-| W3-48† | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
+| W3-47† | `token.text.roles.monospace` (a labelled mapping; no reader: the console host is no WinUI control, R1.3; U509, ADD-A147) | token |
+| W3-48† | `token.behavior.mnemonics (ADD-A12)` (no reader: `SPI_GETKEYBOARDCUES` governs Win32's underline, R1.3; U504, ADD-A147) | token |
 | W3-49† | `drag_image.image.{fill,opacity}` | field |
 | W3-49† | `drag_image.caption.text` | field |
 | W3-49† | `drag_image.drop_badge.glyph @ {drop_copy} / {drop_move} / {@drop_link}` (the glyph per drop operation, the one mark iOS's badge is too) | rule |
