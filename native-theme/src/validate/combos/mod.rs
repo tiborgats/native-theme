@@ -26,8 +26,8 @@ use std::rc::Rc;
 use super::LayerKind;
 use super::outcomes::{Item, Space, scheme_and_flavors};
 use super::stack::{
-    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Stacked, Target, Unit, Val, Visual,
-    below, is_above, part_info, tail, widget_of,
+    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Stacked, Target, Unit, Val, below,
+    is_above, part_info, tail, widget_of,
 };
 use crate::blocks::part_style::RoleRef;
 use crate::declare::{DataName, DataOwner, Declarations};
@@ -481,7 +481,6 @@ pub(super) fn check(stack: &Stack<'_>, reused: Option<&Reused>) -> Vec<(usize, P
     out.focus_corners();
     out.concentric();
     out.entries();
-    out.visuals();
     out.motions();
     out.css_curves();
     out.zeros();
@@ -3691,153 +3690,21 @@ impl Checks<'_, '_> {
             }
         }
     }
-
-    /// A `WinUiAnimatedIcon` transition's `visual` that
-    /// `token.icons.animated_visuals` does not hold under some world in
-    /// which the transition is in effect: its source applies and no later
-    /// item replaces it (S2.7, S4.5, S12). The map's entries are only ever
-    /// added, so an entry is held where a source of the tokens applying
-    /// states it.
-    fn visuals(&mut self) {
-        let stack = self.stack;
-        for (number, source) in stack.sources.iter().enumerate() {
-            for visual in &source.visuals {
-                let entry = format!("icons.animated_visuals.{}", visual.key);
-                let seeds = vec![
-                    Seed::Field(source.target, visual.place.clone(), true),
-                    Seed::Field(Target::Tokens, entry.clone(), true),
-                ];
-                let worlds = stack.worlds(seeds);
-                let unheld = worlds.iter().any(|world| {
-                    let replaced = stack
-                        .replaced(world, number, source)
-                        .iter()
-                        .any(|item| is_above(item, &visual.place));
-                    let held = stack.of(Target::Tokens).any(|(_, tokens)| {
-                        stack.applies(world, tokens)
-                            && tokens
-                                .ops
-                                .iter()
-                                .any(|op| op.path == entry || is_above(&entry, &op.path))
-                    });
-                    stack.applies(world, source) && !replaced && !held
-                });
-                if unheld {
-                    let kind = ProblemKind::UnknownVisual {
-                        visual: visual.key.to_string(),
-                    };
-                    self.problem(source.layer, &visual.at, kind);
-                }
-                self.states(number, source, visual);
-            }
-        }
-    }
-
-    /// A `WinUiAnimatedIcon` transition's `Keyed` key whose state name, its
-    /// UpperCamelCase form, no marker of its visual holds under some world
-    /// in which the transition is in effect and the visual held (S2.7,
-    /// S12): the markers those of every source of the tokens applying, as
-    /// the map's entries merge (S6.1). A key the transition's own source
-    /// does not state (a patch of the engine alone) is not read.
-    fn states(&mut self, number: usize, source: &Source, visual: &Visual) {
-        let stack = self.stack;
-        let Some((state, at)) = &visual.state else {
-            return;
-        };
-        let name = camel_case(state.as_str());
-        let entry = format!("icons.animated_visuals.{}", visual.key);
-        let markers = format!("{entry}.markers.");
-        let seeds = vec![
-            Seed::Field(source.target, visual.place.clone(), true),
-            Seed::Field(Target::Tokens, entry.clone(), true),
-        ];
-        let worlds = stack.worlds(seeds);
-        let unknown = worlds.iter().any(|world| {
-            let replaced = stack
-                .replaced(world, number, source)
-                .iter()
-                .any(|item| is_above(item, &visual.place));
-            if !stack.applies(world, source) || replaced {
-                return false;
-            }
-            let mut held = false;
-            let mut holds = false;
-            for (_, tokens) in stack.of(Target::Tokens) {
-                if !stack.applies(world, tokens) {
-                    continue;
-                }
-                for op in &tokens.ops {
-                    held |= op.path == entry || is_above(&entry, &op.path);
-                    holds |= op
-                        .path
-                        .strip_prefix(&markers)
-                        .is_some_and(|marker| marker_holds(marker, &name));
-                }
-            }
-            held && !holds
-        });
-        if unknown {
-            let kind = ProblemKind::UnknownState {
-                state: state.to_string(),
-                visual: visual.key.to_string(),
-            };
-            self.problem(source.layer, at, kind);
-        }
-    }
 }
 
-/// A `Keyed` key's state name as `WinUiAnimatedIcon` forms it (S2.7): each
-/// `_`-separated word capitalised and joined (`pointer_over_on` is
-/// `PointerOverOn`).
-fn camel_case(key: &str) -> String {
-    key.split('_')
-        .map(|word| {
-            let mut chars = word.chars();
-            chars.next().map_or_else(String::new, |first| {
-                first.to_uppercase().chain(chars).collect::<String>()
-            })
-        })
-        .collect()
-}
-
-/// Whether the marker `marker`, named as its source names it, holds the
-/// state `state` (S2.7): the state's own marker, or a segment's from or to
-/// it (`<from>To<to>`, with `_Start` or `_End` or neither).
-fn marker_holds(marker: &str, state: &str) -> bool {
-    let segment = marker
-        .strip_suffix("_Start")
-        .or_else(|| marker.strip_suffix("_End"))
-        .unwrap_or(marker);
-    segment == state
-        || segment
-            .strip_prefix(state)
-            .is_some_and(|rest| rest.starts_with("To"))
-        || segment
-            .strip_suffix(state)
-            .is_some_and(|rest| rest.ends_with("To"))
-}
-
-/// S4.4's owner order of the text slots.
-const OWNER_ORDER: [&str; 19] = [
+/// S4.4's owner order of the text slots at depth (the other nine are
+/// staged, S6.1).
+const OWNER_ORDER: [&str; 10] = [
     "body",
     "caption",
     "title1",
     "title2",
     "title3",
     "headline",
-    "subheadline",
     "large_title",
     "display_large",
-    "display_medium",
     "display_small",
-    "body_emphasized",
-    "callout",
-    "footnote",
-    "caption_emphasized",
-    "caption2",
-    "label",
     "monospace",
-    "numeric",
 ];
 
 const CORNERS: [&str; 4] = ["top_left", "top_right", "bottom_right", "bottom_left"];

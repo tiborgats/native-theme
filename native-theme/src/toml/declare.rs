@@ -35,7 +35,6 @@ pub(crate) fn read_declarations(item: &Item, at: &str, cx: &mut Reader) -> Optio
             "text_styles" => out.text_styles = keys(cx),
             "elevation" => out.elevation = keys(cx),
             "blend_modes" => out.blend_modes = keys(cx),
-            "timings" => out.timings = keys(cx),
             "presentation_events" => out.presentation_events = keys(cx),
             "symbol_variants" => out.symbol_variants = keys(cx),
             "symbol_scales" => out.symbol_scales = keys(cx),
@@ -43,12 +42,9 @@ pub(crate) fn read_declarations(item: &Item, at: &str, cx: &mut Reader) -> Optio
             "icon_state_effects" => out.icon_state_effects = keys(cx),
             "focus_kinds" => out.focus_kinds = keys(cx),
             "device_models" => out.device_models = keys(cx),
-            "durations" => out.durations = keys(cx),
             "icon_contexts" => out.icon_contexts = keys(cx),
             "symbolic_colors" => out.symbolic_colors = keys(cx),
             "accent_ramp" => out.accent_ramp = keys(cx),
-            "rendering_engines" => out.rendering_engines = keys(cx),
-            "lcd_filters" => out.lcd_filters = keys(cx),
             "surface_sets" => {
                 out.surface_sets = Vec::read(item, Spelling::Bare, &at, cx).unwrap_or_default();
             }

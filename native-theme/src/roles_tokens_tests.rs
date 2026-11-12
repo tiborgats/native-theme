@@ -18,7 +18,7 @@ use super::roles::{
 };
 use super::selector::Scheme;
 use super::tokens::{
-    Behavior, BehaviorPatch, Caret, IconSizeTokens, IconTokens, KdeEffects, KdeTokens, KeyRepeat,
+    Behavior, BehaviorPatch, Caret, IconSizeTokens, IconTokens, KdeEffects, KdeTokens,
     MaterialScheme, MaterialVariant, Mnemonics, PointerTokens, SizeClassThreshold,
     SizeClassThresholdPatch, TextRendering, TextRoles, TextTokens, TokensPatch, TouchBehavior,
 };
@@ -76,56 +76,35 @@ fn token_paths(prefix: &str, fields: &'static [FieldInfo], out: &mut Vec<String>
     }
 }
 
-/// Every token path S4 states, down to S2's blocks; `Behavior.scroll` is
-/// staged with the `scroll_view` unit (S6.1), and `theme_change` and
-/// `pointer` with theirs (the M1a design, decision 9).
+/// Every token path S4 states at the depth 0.8.0 states, down to S2's
+/// blocks; `Behavior.scroll` is staged with the `scroll_view` unit (S6.1),
+/// `theme_change` and `pointer` with theirs (the M1a design, decision 9),
+/// and the paths the token rule stages with their parking units or units
+/// of depth (S6.1, ADD-A147): the keyed durations and timings, the colour
+/// space and the animated visuals, the caret, the behaviour but the
+/// mnemonics and the focus visibility, the fallbacks and the rendering,
+/// nine text slots and the icons' mirroring.
 fn token_spec_paths() -> Vec<String> {
-    let mut out: Vec<String> = [
-        "motion.durations",
-        "motion.timings: Timing",
-        "motion.speed_factor",
-        "motion.color_space",
-        "elevation: ShadowLayer",
-    ]
-    .map(str::to_owned)
-    .to_vec();
+    let mut out: Vec<String> = ["motion.speed_factor", "elevation: ShadowLayer"]
+        .map(str::to_owned)
+        .to_vec();
     for slot in [
         "body",
-        "body_emphasized",
         "caption",
-        "caption_emphasized",
-        "caption2",
-        "footnote",
-        "subheadline",
-        "callout",
         "headline",
         "title1",
         "title2",
         "title3",
         "large_title",
         "display_large",
-        "display_medium",
         "display_small",
-        "label",
         "monospace",
-        "numeric",
     ] {
         out.push(format!("text.roles.{slot}: TextStyle"));
     }
     out.extend(
         [
             "text.keyed: TextStyle",
-            "text.fallbacks.families",
-            "text.fallbacks.emoji_family",
-            "text.fallbacks.per_language",
-            "text.fallbacks.per_family",
-            "text.rendering.engine",
-            "text.rendering.antialiasing",
-            "text.rendering.hinting",
-            "text.rendering.subpixel_order",
-            "text.rendering.lcd_filter",
-            "text.rendering.gamma",
-            "text.rendering.contrast",
             "text.scaling",
             "text.font_dpi",
             "icons.set",
@@ -137,39 +116,7 @@ fn token_spec_paths() -> Vec<String> {
             "icons.sizes.dialog: IconStyle",
             "icons.sizes.panel: IconStyle",
             "icons.sizes.keyed: IconStyle",
-            "icons.mirroring",
-            "icons.animated_visuals.duration",
-            "icons.animated_visuals.markers",
             "focus: FocusIndicator",
-            "caret.color",
-            "caret.width",
-            "caret.blink_on",
-            "caret.blink_off",
-            "caret.blink_timeout",
-            "caret.blink_style",
-            "caret.secondary",
-            "caret.shown_in_read_only",
-            "caret.solid_while_typing",
-            "behavior.double_click_time",
-            "behavior.double_click_distance",
-            "behavior.drag_threshold",
-            "behavior.hover_time",
-            "behavior.key_repeat.delay",
-            "behavior.key_repeat.interval",
-            "behavior.hide_pointer_while_typing",
-            "behavior.hide_pointer_delay",
-            "behavior.hide_pointer_fade",
-            "behavior.long_press",
-            "behavior.spring_loading",
-            "behavior.drag_time",
-            "behavior.drag_min_delay",
-            "behavior.single_click_activates",
-            "behavior.double_click_height",
-            "behavior.touch.slop",
-            "behavior.touch.paging_slop",
-            "behavior.touch.double_tap_time",
-            "behavior.touch.double_tap_slop",
-            "behavior.touch.delay",
             "behavior.mnemonics",
             "behavior.mnemonics.on_alt.delay",
             "behavior.mnemonic_when_disabled",
@@ -220,12 +167,10 @@ fn tokens_registry_has_slice_groups() {
     for path in [
         "params.opacity.disabled",
         "params.color.contrast",
-        "motion.durations.button",
         "elevation.1.blur",
         "text.keyed.body.font.size",
         "text.roles.body.font.size",
         "icons.sizes.keyed.main_toolbar.size",
-        "icons.animated_visuals.accept.markers.NormalOnToNormalOff_Start",
         "size_classes.compact.horizontal",
         "behavior.focus_visible_when.keyboard.timeout",
     ] {
@@ -236,8 +181,23 @@ fn tokens_registry_has_slice_groups() {
         "behavior.scroll_lines_per_step",
         "behavior.scroll_px_per_step",
         "params",
+        "caret",
         "caret.shape",
         "icons.sizes.keyed",
+        "motion.durations",
+        "motion.timings",
+        "motion.color_space",
+        "icons.mirroring",
+        "icons.animated_visuals",
+        "icons.sizes.toolbar.animation",
+        "focus.transition",
+        "text.fallbacks",
+        "text.rendering",
+        "text.roles.footnote",
+        "behavior.key_repeat",
+        "behavior.touch",
+        "behavior.long_press",
+        "theme_change",
     ] {
         let found = registry::find(registry::tokens(), path);
         assert_eq!(
@@ -453,26 +413,16 @@ fn caret_secondary_read_only_and_typing_may_be_absent() {
 #[test]
 fn caret_width_may_be_absent() {
     assert!(marked(Caret::FIELDS, "width"));
-    assert!(
-        registry::find(registry::tokens(), "caret.width").is_some_and(|field| field.may_be_absent)
-    );
 }
 
 #[test]
 fn behavior_values_may_be_absent() {
     let values = value_fields(Behavior::FIELDS);
-    assert_eq!(values.len(), 15);
+    assert_eq!(values.len(), 2);
     for path in values {
         assert!(marked(Behavior::FIELDS, path), "{path}");
     }
-    for path in [
-        "key_repeat",
-        "key_repeat.delay",
-        "key_repeat.interval",
-        "mnemonics.on_alt.delay",
-    ] {
-        assert!(!marked(Behavior::FIELDS, path), "{path}");
-    }
+    assert!(!marked(Behavior::FIELDS, "mnemonics.on_alt.delay"));
 }
 
 #[test]
@@ -533,8 +483,8 @@ fn text_style_place_marks_only_the_drawn_text_leaves() {
     for place in [
         "keyed.title",
         "roles.body",
-        "roles.caption2",
-        "roles.numeric",
+        "roles.caption",
+        "roles.monospace",
     ] {
         for path in &values {
             assert_eq!(
@@ -545,7 +495,8 @@ fn text_style_place_marks_only_the_drawn_text_leaves() {
         }
         assert!(!marked(TextTokens::FIELDS, &format!("{place}.font.family")));
     }
-    assert_eq!(TextRoles::FIELDS.len(), 19);
+    // The slots at depth; the other nine are staged (S6.1).
+    assert_eq!(TextRoles::FIELDS.len(), 10);
     for path in drawn {
         assert!(!marked(TextStyle::FIELDS, path), "{path}");
     }
@@ -1037,25 +988,23 @@ fn ms(n: f32) -> Value<Ms> {
 #[test]
 fn behavior_enum_and_optional_fields_are_set_whole() {
     let mut earlier = BehaviorPatch {
-        key_repeat: Some(Some(KeyRepeat::new(ms(500.0), ms(30.0)))),
         mnemonics: Some(Mnemonics::OnAlt { delay: ms(100.0) }),
+        mnemonic_when_disabled: Some(Value::Stated(true)),
         focus_visible_when: Some(Value::Stated(FocusVisibleWhen::AnyFocus)),
         ..BehaviorPatch::default()
     };
     let later = BehaviorPatch {
-        key_repeat: Some(None),
         mnemonics: Some(Mnemonics::Always),
-        long_press: Some(Value::Absent),
+        mnemonic_when_disabled: Some(Value::Absent),
         ..BehaviorPatch::default()
     };
     assert_eq!(earlier.merge(later), Ok(()));
-    assert_eq!(earlier.key_repeat, Some(None));
     assert_eq!(earlier.mnemonics, Some(Mnemonics::Always));
     assert_eq!(
         earlier.focus_visible_when,
         Some(Value::Stated(FocusVisibleWhen::AnyFocus))
     );
-    assert_eq!(earlier.long_press, Some(Value::Absent));
+    assert_eq!(earlier.mnemonic_when_disabled, Some(Value::Absent));
 }
 
 #[test]
@@ -1175,21 +1124,14 @@ fn token_maps_of_blocks_patch_each_entry() {
     );
 }
 
-/// The token fields that may be `Absent`, in table order: every `TextRendering`
-/// field, `Caret.secondary`, `shown_in_read_only` and `solid_while_typing`,
-/// every `Value` field of `Behavior` and `TouchBehavior`,
-/// `IconTokens.theme_fallback` (S6.3), and the catalogue's table (*Colour roles
-/// and tokens*): `icons.theme`, the icon-size contexts, and `kde` and
-/// `material`, each one preset's (S4.8). `PointerTokens` is staged (the M1a
-/// design, decision 9).
+/// The token fields that may be `Absent`, in table order: the `Value`
+/// fields of `Behavior` at depth, `IconTokens.theme_fallback` (S6.3), and
+/// the catalogue's table (*Colour roles and tokens*): `icons.theme`, the
+/// icon-size contexts, and `kde` and `material`, each one preset's (S4.8).
+/// `PointerTokens` is staged (the M1a design, decision 9), and so are the
+/// text rendering, the caret, the touch behaviour and the other behaviour
+/// fields (S6.1, ADD-A147): their types' own marks are tested apart.
 const EXPECTED_ABSENT_TOKENS: &[&str] = &[
-    "text.rendering.engine",
-    "text.rendering.antialiasing",
-    "text.rendering.hinting",
-    "text.rendering.subpixel_order",
-    "text.rendering.lcd_filter",
-    "text.rendering.gamma",
-    "text.rendering.contrast",
     "icons.theme",
     "icons.theme_fallback",
     "icons.sizes.toolbar",
@@ -1197,28 +1139,6 @@ const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "icons.sizes.large",
     "icons.sizes.dialog",
     "icons.sizes.panel",
-    "caret.width",
-    "caret.secondary",
-    "caret.shown_in_read_only",
-    "caret.solid_while_typing",
-    "behavior.double_click_time",
-    "behavior.double_click_distance",
-    "behavior.drag_threshold",
-    "behavior.hover_time",
-    "behavior.hide_pointer_while_typing",
-    "behavior.hide_pointer_delay",
-    "behavior.hide_pointer_fade",
-    "behavior.long_press",
-    "behavior.spring_loading",
-    "behavior.drag_time",
-    "behavior.drag_min_delay",
-    "behavior.single_click_activates",
-    "behavior.double_click_height",
-    "behavior.touch.slop",
-    "behavior.touch.paging_slop",
-    "behavior.touch.double_tap_time",
-    "behavior.touch.double_tap_slop",
-    "behavior.touch.delay",
     "behavior.mnemonic_when_disabled",
     "behavior.focus_visible_when",
     "kde",

@@ -121,7 +121,8 @@ pub struct PartStyle {
     /// part's for the whole widget); merged by role or surface (S6.1).
     #[parts(block = "set", keyed)]
     pub bindings: Vec<Binding>,
-    /// The transitions; merged by property group (S6.1).
+    /// The transitions; merged by property group (S6.1). No part lists them
+    /// until the motion unit (S6.1; D6 outcome 3), so a style holds none.
     #[parts(block = "fields", keyed)]
     pub transitions: Vec<Transition>,
 }

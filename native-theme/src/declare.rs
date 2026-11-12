@@ -39,8 +39,6 @@ pub(crate) struct Declarations {
     pub(crate) accent_inputs: Vec<InputName>,
     /// The keyed blend modes.
     pub(crate) blend_modes: Vec<Key>,
-    /// The motion timing tokens' keys.
-    pub(crate) timings: Vec<Key>,
     /// The keyed transition kinds, with their parameters' units.
     pub(crate) transition_kinds: Vec<(Key, Vec<(Key, ScalarUnit)>)>,
     /// The keyed presentation kinds, with their parameters' units.
@@ -63,8 +61,6 @@ pub(crate) struct Declarations {
     pub(crate) device_models: Vec<Key>,
     /// Material parameters beyond the named ones, with their units.
     pub(crate) material_params: Vec<(Key, ScalarUnit)>,
-    /// The motion durations' keys.
-    pub(crate) durations: Vec<Key>,
     /// The icon contexts.
     pub(crate) icon_contexts: Vec<Key>,
     /// The icon symbolic colours' keys: the platform's mark names.
@@ -74,10 +70,6 @@ pub(crate) struct Declarations {
     pub(crate) drag_cursors: Vec<Key>,
     /// The accent ramp's entries.
     pub(crate) accent_ramp: Vec<Key>,
-    /// The text rendering engines.
-    pub(crate) rendering_engines: Vec<Key>,
-    /// The LCD filters.
-    pub(crate) lcd_filters: Vec<Key>,
     /// A palette's schemes (S14).
     pub(crate) schemes: Vec<Scheme>,
     /// What each typed widget has on the preset.

@@ -6,8 +6,8 @@
 //! A path names its place as the layer was written (S1's `Problem.path`): in
 //! the model's Rust names for a layer built in Rust, an enum's variant a step
 //! of its own (`top_left.concentric.minimum`); by the TOML keys as S11 spells
-//! them for a layer read from TOML (`min_width_px`, `top_left_px`,
-//! `durations.button_ms`). Where the model has no path (a rule's selector
+//! them for a layer read from TOML (`min_width_px`, `top_left_px`). Where
+//! the model has no path (a rule's selector
 //! and patch, read from TOML), the TOML key; a shorthand's places are named
 //! at its key ([`Shorthands`](crate::layer::Shorthands)).
 

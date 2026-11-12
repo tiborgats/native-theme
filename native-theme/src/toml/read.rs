@@ -320,6 +320,66 @@ impl Reader {
     }
 }
 
+/// What `value`, one TOML value, reads as a `T` keyed `spelling` at `at`
+/// (S11): the type's own reader, no widget in between, for the tests of a
+/// block no enabled part lists (a part's `transitions`, the motion unit's,
+/// D6 outcome 3) or of a staged token; its problems as `path: kind` lines.
+#[cfg(test)]
+pub(crate) fn read_as<T: FromToml>(
+    value: &str,
+    spelling: Spelling,
+    at: &str,
+) -> Result<T, Vec<String>> {
+    read_in(value, spelling, at, None)
+}
+
+/// What `value`, one TOML table, reads as a map of `V` keyed by `K` at
+/// `at` (S11), as [`read_as`] reads a value.
+#[cfg(test)]
+pub(crate) fn read_map_as<K: MapKey + PartialEq, V: FromToml>(
+    value: &str,
+    at: &str,
+) -> Result<Vec<(K, V)>, Vec<String>> {
+    let table: Table =
+        ::toml::from_str(&format!("value = {value}")).map_err(|error| vec![error.to_string()])?;
+    let item = table
+        .get("value")
+        .ok_or_else(|| vec!["no value".to_owned()])?;
+    let mut cx = Reader::default();
+    let read = read_map::<K, V>(item, at, &mut cx);
+    let problems: Vec<String> = cx.into_problems().iter().map(Problem::to_string).collect();
+    match read {
+        Some(read) if problems.is_empty() => Ok(read),
+        Some(_) | None => Err(problems),
+    }
+}
+
+/// [`read_as`] inside the table of the typed widget `widget`, where a bare
+/// part name names one of its parts.
+#[cfg(test)]
+pub(crate) fn read_in<T: FromToml>(
+    value: &str,
+    spelling: Spelling,
+    at: &str,
+    widget: Option<WidgetKind>,
+) -> Result<T, Vec<String>> {
+    let table: Table =
+        ::toml::from_str(&format!("value = {value}")).map_err(|error| vec![error.to_string()])?;
+    let item = table
+        .get("value")
+        .ok_or_else(|| vec!["no value".to_owned()])?;
+    let mut cx = Reader {
+        widget,
+        ..Reader::default()
+    };
+    let read = T::read(item, spelling, at, &mut cx);
+    let problems: Vec<String> = cx.into_problems().iter().map(Problem::to_string).collect();
+    match read {
+        Some(read) if problems.is_empty() => Ok(read),
+        Some(_) | None => Err(problems),
+    }
+}
+
 /// `key` as a TOML key: bare where TOML allows it, else quoted.
 pub(crate) fn toml_key(key: &str) -> String {
     let bare = !key.is_empty()

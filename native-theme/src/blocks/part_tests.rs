@@ -239,11 +239,6 @@ fn part_style_paths() -> Vec<String> {
         ],
     ));
     out.extend(paint("icon.symbolic_colors"));
-    out.push("icon.animation.period".to_owned());
-    out.extend(timing("icon.animation.timing"));
-    out.extend(under("icon.animation.keyframes", &["at", "part"]));
-    out.extend(timing("icon.animation.keyframes.timing"));
-    out.push("icon.animation.keyframes.patch".to_owned());
     out.extend(under("glyph", &["source", "size"]));
     out.extend(paint("glyph.fill"));
     out.extend(paint("glyph.stroke.paint"));
@@ -274,7 +269,6 @@ fn part_style_paths() -> Vec<String> {
     ));
     out.extend(corners("focus.corners"));
     out.extend(shadow("focus.shadow"));
-    out.extend(transition_paths("focus.transition"));
     out.extend(under(
         "interaction",
         &[
@@ -459,16 +453,18 @@ fn interaction_marks() {
     assert!(!marked("StateLayerStyle", "alpha"));
 }
 
+/// The focus indicator's own transition is staged with the motion unit
+/// (S6.1).
 #[test]
-fn focus_shadow_and_transition_may_be_absent() {
+fn focus_shadow_may_be_absent() {
     assert!(marked("FocusIndicator", "shadow"));
-    assert!(marked("FocusIndicator", "transition"));
     assert!(!marked("FocusIndicator", "dash"));
 }
 
+/// The icon's animation is staged with the motion unit (S6.1).
 #[test]
-fn icon_state_effect_weight_scale_animation_may_be_absent() {
-    for path in ["state_effect", "weight", "scale", "animation"] {
+fn icon_state_effect_weight_scale_may_be_absent() {
+    for path in ["state_effect", "weight", "scale"] {
         assert!(marked("IconStyle", path), "{path}");
     }
 }
@@ -578,14 +574,12 @@ fn no_other_field_may_be_absent_or_auto() {
     let mut expected_absent = vec![
         "Decoration.by_word",
         "FocusIndicator.shadow",
-        "FocusIndicator.transition",
         "Font.width",
         "Glyph.draw_extent",
         "Glyph.draw_start",
         "Glyph.fill",
         "Glyph.size",
         "Glyph.stroke",
-        "IconStyle.animation",
         "IconStyle.fill",
         "IconStyle.scale",
         "IconStyle.state_effect",
@@ -811,7 +805,6 @@ fn a_focus_indicators_corners_patch_by_fields() {
             curve: CornerCurve::Circular,
         },
         shadow: Value::Absent,
-        transition: Value::Absent,
     };
     assert_eq!(focus.apply(earlier), Ok(()));
     assert_eq!(focus.corners.top_left, Radius::FollowPart);
@@ -1329,17 +1322,16 @@ fn platform_curves_evaluate_to_their_sources() {
 
 #[test]
 fn platform_curve_spelling() {
-    // S11: `{ platform = { qt = "in_out_sine" } }`.
-    let layer = crate::Layer::from_toml(
-        "[tokens.motion.timings]\nfocus = { platform = { qt = \"in_out_sine\" } }\n\
-         spinner = { platform = { adw = \"ease_in_out_sine\" } }\n\
-         page = { platform = \"kirigami_velocity\" }",
-    )
-    .unwrap_or_else(|error| panic!("{error}"));
-    let timings = layer.bases.tokens.motion.and_then(|motion| motion.timings);
+    // S11: `{ platform = { qt = "in_out_sine" } }`, read by the keyed
+    // timings' own reader: they are staged with the motion unit (S6.1).
+    let timings = crate::toml::read::read_map_as::<crate::key::Key, Timing>(
+        "{ focus = { platform = { qt = \"in_out_sine\" } }, spinner = { platform = { adw = \
+         \"ease_in_out_sine\" } }, page = { platform = \"kirigami_velocity\" } }",
+        "tokens.motion.timings",
+    );
     assert_eq!(
         timings,
-        Some(vec![
+        Ok(vec![
             (
                 key!("focus"),
                 Timing::Platform(PlatformCurve::Qt(QtEasing::InOutSine))
@@ -1489,7 +1481,10 @@ fn a_keyframes_patch_resolves_field_by_field() {
     assert_eq!(set.opacity, Some(Some(Fraction(0.0))));
     assert_eq!(set.fill, Some(None));
 
-    let keyframes = table_of(PartStyle::FIELDS, "icon.animation.keyframes.patch");
+    let keyframes = table_of(
+        PartStyle::FIELDS,
+        "transitions.kind.keyframes.keyframes.patch",
+    );
     assert!(matches!(
         keyframes.map(|f| f.ty),
         Some(FieldType::Patch {
@@ -1501,9 +1496,9 @@ fn a_keyframes_patch_resolves_field_by_field() {
         "fill.layers.blend",
         "opacity",
         "padding.left",
-        "icon.animation.keyframes.patch.min_width",
+        "transitions.kind.keyframes.keyframes.patch.min_width",
     ] {
-        let below = format!("icon.animation.keyframes.patch.{path}");
+        let below = format!("transitions.kind.keyframes.keyframes.patch.{path}");
         let found = table_of(PartStyle::FIELDS, &below);
         assert!(found.is_some(), "{below}");
         assert_eq!(found, table_of(PartStyle::FIELDS, path), "{path}");
@@ -1512,7 +1507,13 @@ fn a_keyframes_patch_resolves_field_by_field() {
             "{below}"
         );
     }
-    assert!(table_of(PartStyle::FIELDS, "icon.animation.keyframes.patch.nothing").is_none());
+    assert!(
+        table_of(
+            PartStyle::FIELDS,
+            "transitions.kind.keyframes.keyframes.patch.nothing"
+        )
+        .is_none()
+    );
 
     let keyframe = Keyframe {
         at: Fraction(0.5),

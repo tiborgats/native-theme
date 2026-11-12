@@ -312,13 +312,17 @@ fn fields_over_absent_never_refused() {
              set = {{ stroke.top.width_px = 2 }}"
         )
     };
-    let decl = declare("[declare.widget.button]\nsizes = [\"mini\", \"regular\"]");
+    // A rule names the default size alone while the sizes unit is not
+    // enabled (S12; ADD-A147).
+    let decl = declare(
+        "[declare.widget.button]\nsizes = [\"mini\", \"regular\"]\ndefault_size = \"regular\"",
+    );
     for (first, second) in [
         (
             "{ conditions = [\"scheme:dark\"] }",
             "{ conditions = [\"scheme:light\"] }",
         ),
-        ("{ sizes = [\"mini\"] }", "{ sizes = [\"regular\"] }"),
+        ("{ sizes = [\"regular\"] }", "{ not_sizes = [\"regular\"] }"),
         (
             "{ conditions = [\"scheme:dark\"] }",
             "{ conditions = [\"reduced_motion\"] }",
@@ -1034,12 +1038,16 @@ fn combination_per_flavour_declarations() {
             "rules[0].when.variants[0]: `@pill` is not declared in `flavor.widgets.widget.button.variants`"
         ]
     );
+    // A rule naming a flavour but the default names one a later unit
+    // states while the flavours unit is not enabled (S12; ADD-A147).
+    let later = "rules[0].when.conditions[0]: `kirigami` is declared in `flavors`, and a later \
+                 unit states it";
     assert_eq!(
         alone(
             &rule("{ conditions = [\"flavor:kirigami\"], variants = [\"@pill\"] }"),
             &decl
         ),
-        NONE
+        [later]
     );
     assert_eq!(
         alone(
@@ -1060,7 +1068,7 @@ fn combination_per_flavour_declarations() {
     );
     let flagged = "[[rules]]\nwhen = { conditions = [\"flavor:kirigami\"] }\ntarget = \
                    \"button.body\"\nset = { opacity = \"= element.progress\" }";
-    assert_eq!(alone(flagged, &decl), NONE);
+    assert_eq!(alone(flagged, &decl), [later]);
     // Availability under a flavour.
     let unavailable = declare(
         "flavors = [\"widgets\", \"kirigami\"]\n[declare.flavor.kirigami.widget.button]\n\
@@ -1588,6 +1596,7 @@ fn combination_widget_part_text_metrics_followed() {
 /// A keyed list's later item replaces the earlier whole (S6.1): the
 /// replaced transition's `delay` is never evaluated.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn combination_keyed_item_replaced() {
     let transition = |delay: &str| {
         format!(
@@ -1617,6 +1626,7 @@ fn combination_keyed_item_replaced() {
 /// ADD-A126): a later transition of the same test replaces the earlier, so
 /// its `duration` is never evaluated; one of another test leaves it.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn combination_keyed_item_replaced_by_breeze_test() {
     let transition = |duration: &str, any: &str| {
         format!(
@@ -1889,12 +1899,6 @@ fn combination_exclusions_are_s12s() {
             "",
         ),
         (
-            "flavour",
-            "conditions = [\"flavor:one\"]",
-            "conditions = [\"flavor:two\"]",
-            "flavors = [\"one\", \"two\"]",
-        ),
-        (
             "container size",
             "conditions = [\"container_size:button:small\"]",
             "conditions = [\"container_size:button:large\"]",
@@ -1915,21 +1919,9 @@ fn combination_exclusions_are_s12s() {
         (
             "exclusive variants",
             "variants = [\"primary\"]",
-            "variants = [\"flat\"]",
-            "\nvariants = [\"primary\", \"flat\"]\n\
-             exclusive_variants = [[\"primary\", \"flat\"]]",
-        ),
-        (
-            "control size",
-            "sizes = [\"small\"]",
-            "sizes = [\"regular\"]",
-            "",
-        ),
-        (
-            "density",
-            "densities = [\"default\"]",
-            "densities = [\"compact\"]",
-            "",
+            "variants = [\"tool\"]",
+            "\nvariants = [\"primary\", \"tool\"]\n\
+             exclusive_variants = [[\"primary\", \"tool\"]]",
         ),
         (
             "direction",
@@ -1947,12 +1939,6 @@ fn combination_exclusions_are_s12s() {
             "parity",
             "position = { parity = \"odd\" }",
             "position = { parity = \"even\" }",
-            "",
-        ),
-        (
-            "an ancestor's size",
-            "context = [{ scope = { nearest = [\"button\"] }, widget = \"button\", sizes = [\"small\"] }]",
-            "context = [{ scope = { nearest = [\"button\"] }, widget = \"button\", sizes = [\"regular\"] }]",
             "",
         ),
         (
@@ -1983,6 +1969,20 @@ fn combination_exclusions_are_s12s() {
     for (name, first, second, decl) in excluded {
         assert_eq!(pair(first, second, decl), NONE, "{name}");
     }
+    // Two flavours: a rule naming a flavour but the default names one a
+    // later unit states while the flavours unit is not enabled (S12;
+    // ADD-A147), so the pair is refused for that alone.
+    assert_eq!(
+        pair(
+            "conditions = [\"flavor:one\"]",
+            "conditions = [\"flavor:two\"]",
+            "flavors = [\"one\", \"two\"]"
+        ),
+        [
+            "rules[1].when.conditions[0]: `two` is declared in `flavors`, and a later unit states \
+             it"
+        ]
+    );
     // The same kinds of atom, independent: refused.
     let independent: &[(&str, &str, &str)] = &[
         (
@@ -1994,11 +1994,6 @@ fn combination_exclusions_are_s12s() {
             "two flags",
             "states = [\"hover\"]",
             "states = [\"pressed\"]",
-        ),
-        (
-            "size and density",
-            "sizes = [\"small\"]",
-            "densities = [\"compact\"]",
         ),
         (
             "two axes",
@@ -2015,14 +2010,49 @@ fn combination_exclusions_are_s12s() {
             "conditions = [\"tiled:top\"]",
             "not_conditions = [\"tiled:left\"]",
         ),
+    ];
+    for (name, first, second) in independent {
+        assert_eq!(pair(first, second, ""), [REFUSED], "{name}");
+    }
+    // Sizes and densities: the widget declares no default size and two
+    // densities, so each size and density a rule names is the sizes unit's,
+    // refused while it is not enabled (S12; ADD-A147); their exclusions
+    // come with that unit.
+    let sized: &[(&str, &str, &str)] = &[
+        (
+            "control size",
+            "sizes = [\"small\"]",
+            "sizes = [\"regular\"]",
+        ),
+        (
+            "density",
+            "densities = [\"default\"]",
+            "densities = [\"compact\"]",
+        ),
+        (
+            "an ancestor's size",
+            "context = [{ scope = { nearest = [\"button\"] }, widget = \"button\", sizes = [\"small\"] }]",
+            "context = [{ scope = { nearest = [\"button\"] }, widget = \"button\", sizes = [\"regular\"] }]",
+        ),
+        (
+            "size and density",
+            "sizes = [\"small\"]",
+            "densities = [\"compact\"]",
+        ),
         (
             "any ancestors' sizes",
             "context = [{ widget = \"button\", sizes = [\"small\"] }]",
             "context = [{ widget = \"button\", sizes = [\"regular\"] }]",
         ),
     ];
-    for (name, first, second) in independent {
-        assert_eq!(pair(first, second, ""), [REFUSED], "{name}");
+    for (name, first, second) in sized {
+        let problems = pair(first, second, "");
+        assert!(
+            problems
+                .iter()
+                .any(|problem| problem.ends_with("and a later unit states it")),
+            "{name}: {problems:?}"
+        );
     }
 }
 
@@ -2240,7 +2270,7 @@ fn combination_reference_through_an_absent_block() {
         over(
             base,
             "[tokens.text]\nroles.body = \"= token.text.keyed.a\"\n\
-             roles.label = \"= token.text.roles.body\"\n",
+             roles.monospace = \"= token.text.roles.body\"\n",
             &decl
         ),
         NONE
@@ -2358,6 +2388,7 @@ fn layers_added_at_once_each_problem_its_layer() {
 /// a field whose value on the part resolves `Absent`, or every field where
 /// the part is not drawn or drawn as another, is not evaluated.
 #[test]
+#[ignore = "motion unit: `IconStyle.animation` is staged until it is enabled (D6 outcome 3)"]
 fn keyframe_checked_over_its_part() {
     let stated = |part: &str, presence: &str, patch: &str| {
         format!(

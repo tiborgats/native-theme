@@ -1,12 +1,12 @@
 //! Icon style and glyph (S2.9).
 //!
 //! Icon lookup takes the element's direction and language, from the scope
-//! its part's query returned; mirroring per icon role is
-//! `token.icons.mirroring`, stated per preset.
+//! its part's query returned; mirroring per icon role enters with the
+//! right-to-left unit (S6.1). `IconStyle.animation`, a repeating icon
+//! animation, is staged: it enters with the motion unit (S6.1).
 
 use native_theme_derive::ThemeParts;
 
-use super::motion::{Loop, ResolvedLoop};
 use super::outline::{LineCap, LineJoin};
 use super::paint::{Paint, PaintPatch, ResolvedPaint};
 use super::text::{AxisTag, AxisValue, LanguageTag};
@@ -48,9 +48,6 @@ pub struct IconStyle {
     /// platform's mark names (`success`, `accent`, KDE's `highlight`, …).
     #[parts(block = "append")]
     pub symbolic_colors: Vec<(Key, Value<Paint>)>,
-    /// A repeating icon animation.
-    #[parts(block = "fields", may_be_absent)]
-    pub animation: Value<Loop>,
 }
 
 /// How an icon is recoloured.

@@ -436,7 +436,7 @@ pub(crate) fn find(fields: &'static [FieldInfo], path: &str) -> Option<&'static 
 
 /// The field a path names below `fields`, as [`find`] does, and how many
 /// of its map's levels of keys the path names below it: 0 for the field
-/// itself, 1 for an entry of a map (`durations.backdrop`), 2 for an entry
+/// itself, 1 for an entry of a map (`elevation.level1`), 2 for an entry
 /// of a map's entry (`params.opacity.disabled`).
 pub(crate) fn find_entry(
     fields: &'static [FieldInfo],

@@ -3,11 +3,18 @@
 //!
 //! `Behavior.scroll` and its `ScrollPhysics` and `ScrollDecay`, the wheel
 //! steps among them, are staged: they enter with the unit holding the
-//! `scroll_view` widget (S6.1). So are
-//! two of `Tokens`' fields, which the slice reads nowhere and its facts do
-//! not state (the M1a design, decision 9), their types already here:
-//! `theme_change` with M3's tokens unit (S4's remaining groups and
-//! conditions), `pointer` with the first unit that reads it.
+//! `scroll_view` widget (S6.1). So are the token fields no value at depth
+//! reads, the core does not read, no connector reads to draw a value at
+//! depth and no built system reader states (S6.1, ADD-A147), their types
+//! already here (`scripts/widget_units.toml`'s `[staged.slice]`):
+//! `theme_change`, the keyed durations and timings, the colour space and
+//! the WinUI animated visuals enter with the motion unit, `caret` with the
+//! fields unit and the icons' mirroring with the right-to-left unit; every
+//! `Behavior` field but `mnemonics`, `mnemonic_when_disabled` and
+//! `focus_visible_when` waits in the behaviour parking unit, the text
+//! rendering and the font fallbacks in the text rendering one, nine of the
+//! text slots in the text styles one, and `pointer` in the pointer one,
+//! each until the first unit whose value reads it.
 //!
 //! The marks of what may be absent are S6.3's: the core's marks of these
 //! blocks' fields, and the catalogue's token table for the tokens no block
@@ -20,11 +27,10 @@ use super::blocks::focus::{
     FocusIndicator, FocusIndicatorPatch, FocusVisibleWhen, ResolvedFocusIndicator,
     ResolvedFocusVisibleWhen,
 };
+use super::blocks::icon::IconStyle;
 use super::blocks::icon::ResolvedIconStyle;
-use super::blocks::icon::{IconStyle, Mirroring};
 use super::blocks::motion::ResolvedTiming;
 use super::blocks::motion::Timing;
-use super::blocks::motion::{AnimatedVisual, ResolvedAnimatedVisual};
 use super::blocks::shadow::ResolvedShadowLayer;
 use super::blocks::shadow::ShadowLayer;
 use super::blocks::text::ResolvedTextStyle;
@@ -34,21 +40,21 @@ use super::key::Key;
 use super::selector::{Condition, SizeClass};
 use super::units::{Ms, Px, Scalar};
 use super::value::Value;
-use crate::{IconRole, IconSet};
+use crate::IconSet;
 
 /// The tokens (S4).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
 pub struct Tokens {
-    /// Durations, timings (keyed) and the speed factor (S4.1).
+    /// The speed factor (S4.1).
     #[parts(block = "fields")]
     pub motion: MotionTokens,
     /// The platform's elevation ramp, keyed, or empty (R8).
     #[parts(block = "fields")]
     pub elevation: Vec<(Key, Vec<ShadowLayer>)>,
-    /// The text ramp, fallbacks and rendering (S4.4); its patch boxed, as
-    /// it holds a text style's patch per slot.
+    /// The text ramp (S4.4); its patch boxed, as it holds a text style's
+    /// patch per slot.
     #[parts(block = "fields", boxed)]
     pub text: TextTokens,
     /// The icon set, theme and sizes (S4.5); its patch boxed.
@@ -57,9 +63,6 @@ pub struct Tokens {
     /// The platform's focus indicator (R12).
     #[parts(block = "fields")]
     pub focus: FocusIndicator,
-    /// The caret (S4.2).
-    #[parts(block = "fields")]
-    pub caret: Caret,
     /// Input behaviour (S4.2).
     #[parts(block = "fields")]
     pub behavior: Behavior,
@@ -87,28 +90,14 @@ pub struct Tokens {
 /// their stated minimum.
 pub(crate) const ABSENT_PARAM_GROUPS: [&str; 1] = ["display"];
 
-/// Motion tokens (S4.1). A key names the platform's motion in snake_case
-/// and carries no unit suffix in a path (`token.motion.durations.button`);
-/// in TOML a duration's key takes `_ms` as a field's does (`button_ms`,
-/// S11).
+/// Motion tokens (S4.1): the speed factor. The keyed durations and timings
+/// and the colour space are staged: they enter with the motion unit (S6.1).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
 pub struct MotionTokens {
-    /// Keyed durations, in ms: a `token.motion.durations.<key>` is a
-    /// duration; a scaled one is stated as
-    /// `= mul(token.motion.durations.x, token.motion.speed_factor)`.
-    pub durations: Vec<(Key, Value<Ms>)>,
-    /// Keyed timings (S2.7): a `token.motion.timings.<key>` is a `Timing`,
-    /// stated whole (S6.1).
-    #[parts(block = "set")]
-    pub timings: Vec<(Key, Timing)>,
     /// The factor the platform scales its animations' durations by (R9).
     pub speed_factor: Value<f32>,
-    /// The space colour transitions move through (S2.7): a transition's, a
-    /// presentation step's and a loop's keyframes' colours, a paint layer's
-    /// included; a rule may restate it under a condition.
-    pub color_space: Value<ColorInterpolation>,
 }
 
 /// The space a moving colour's intermediate colours are taken in (S2.7):
@@ -170,8 +159,8 @@ pub enum ThemeChange {
     Instant,
 }
 
-/// How text is rendered (S4): `token.text.rendering`. A toolkit applies what
-/// it can (R23).
+/// How text is rendered (S4): `token.text.rendering`, staged with the text
+/// rendering parking unit (S6.1). A toolkit applies what it can (R23).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
@@ -282,64 +271,14 @@ pub enum BlinkStyle {
     Fade,
 }
 
-/// Input behaviour (S4.2). Every `Value` field may be absent where the
-/// platform has no counterpart (S6.3).
+/// Input behaviour (S4.2): the fields a connector reads to draw a value at
+/// depth. The others, and the `KeyRepeat` and `TouchBehavior` blocks, are
+/// staged: they wait in the behaviour parking unit (S6.1). Every `Value` field
+/// may be absent where the platform has no counterpart (S6.3).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
 pub struct Behavior {
-    /// The longest time between the clicks of a double click.
-    #[parts(may_be_absent)]
-    pub double_click_time: Value<Ms>,
-    /// The farthest the pointer may move between the clicks of a double
-    /// click, horizontally.
-    #[parts(may_be_absent)]
-    pub double_click_distance: Value<Px>,
-    /// The distance the pointer moves before a drag starts.
-    #[parts(may_be_absent)]
-    pub drag_threshold: Value<Px>,
-    /// The system's one hover time: how long the pointer rests on an
-    /// element before it counts as hovering, where the platform derives its
-    /// hover delays from one setting; absent where it has none.
-    #[parts(may_be_absent)]
-    pub hover_time: Value<Ms>,
-    /// Key repeat; `None`: keys never repeat (the user turned it off).
-    #[parts(block = "set")]
-    pub key_repeat: Option<KeyRepeat>,
-    /// The pointer is hidden while typing.
-    #[parts(may_be_absent)]
-    pub hide_pointer_while_typing: Value<bool>,
-    /// How long after typing starts the pointer is hidden.
-    #[parts(may_be_absent)]
-    pub hide_pointer_delay: Value<Ms>,
-    /// How long the pointer takes to fade out.
-    #[parts(may_be_absent)]
-    pub hide_pointer_fade: Value<Ms>,
-    /// How long a press lasts to be a long press.
-    #[parts(may_be_absent)]
-    pub long_press: Value<Ms>,
-    /// How long a drag hovers over a target before it opens.
-    #[parts(may_be_absent)]
-    pub spring_loading: Value<Ms>,
-    /// How long a press held still takes to start a drag (Qt's
-    /// `startDragTime`); absent where only movement starts one.
-    #[parts(may_be_absent)]
-    pub drag_time: Value<Ms>,
-    /// How long after the press no drag starts, however far the pointer has
-    /// moved (GTK's `MIN_TIME_TO_DND`); zero where a move past
-    /// `drag_threshold` starts it at once.
-    #[parts(may_be_absent)]
-    pub drag_min_delay: Value<Ms>,
-    /// A single click activates an item.
-    #[parts(may_be_absent)]
-    pub single_click_activates: Value<bool>,
-    /// The farthest the pointer may move between the clicks of a double
-    /// click, vertically.
-    #[parts(may_be_absent)]
-    pub double_click_height: Value<Px>,
-    /// Touch behaviour.
-    #[parts(block = "fields")]
-    pub touch: TouchBehavior,
     /// When mnemonics are shown.
     #[parts(block = "set")]
     pub mnemonics: Mnemonics,
@@ -415,8 +354,12 @@ pub enum Mnemonics {
     Always,
 }
 
-/// The text ramp's nineteen semantic slots (S4.4), each filled by every
-/// preset: a reference to a keyed style, or to the slot that owns it. In a
+/// The text ramp's semantic slots at depth (S4.4), each filled by every
+/// preset: a reference to a keyed style, or to the slot that owns it. The
+/// other nine of the nineteen `TextRole`s name (`body_emphasized`,
+/// `callout`, `caption2`, `caption_emphasized`, `display_medium`,
+/// `footnote`, `label`, `numeric`, `subheadline`) are staged: their slots
+/// wait in the text styles parking unit (S6.1). In a
 /// slot, as in a keyed style, a style's `fill`, `elision`, `wrap` and
 /// `max_lines` may be `Absent` where the platform's style does not set
 /// them (S2.8, S6.3); a part referencing it takes none of them absent
@@ -435,16 +378,6 @@ pub struct TextRoles {
         only = "max_lines"
     )]
     pub body: Value<TextStyle>,
-    /// `body_emphasized`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub body_emphasized: Value<TextStyle>,
     /// `caption`.
     #[parts(
         block = "fields",
@@ -455,56 +388,6 @@ pub struct TextRoles {
         only = "max_lines"
     )]
     pub caption: Value<TextStyle>,
-    /// `caption_emphasized`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub caption_emphasized: Value<TextStyle>,
-    /// `caption2`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub caption2: Value<TextStyle>,
-    /// `footnote`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub footnote: Value<TextStyle>,
-    /// `subheadline`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub subheadline: Value<TextStyle>,
-    /// `callout`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub callout: Value<TextStyle>,
     /// `headline`.
     #[parts(
         block = "fields",
@@ -565,16 +448,6 @@ pub struct TextRoles {
         only = "max_lines"
     )]
     pub display_large: Value<TextStyle>,
-    /// `display_medium`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub display_medium: Value<TextStyle>,
     /// `display_small`.
     #[parts(
         block = "fields",
@@ -585,16 +458,6 @@ pub struct TextRoles {
         only = "max_lines"
     )]
     pub display_small: Value<TextStyle>,
-    /// `label`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub label: Value<TextStyle>,
     /// `monospace`.
     #[parts(
         block = "fields",
@@ -605,16 +468,6 @@ pub struct TextRoles {
         only = "max_lines"
     )]
     pub monospace: Value<TextStyle>,
-    /// `numeric`.
-    #[parts(
-        block = "fields",
-        inner_may_be_absent,
-        only = "fill",
-        only = "elision",
-        only = "wrap",
-        only = "max_lines"
-    )]
-    pub numeric: Value<TextStyle>,
 }
 
 /// The text tokens (S4.4).
@@ -638,12 +491,6 @@ pub struct TextTokens {
         only = "max_lines"
     )]
     pub keyed: Vec<(Key, TextStyle)>,
-    /// The font fallbacks.
-    #[parts(block = "fields")]
-    pub fallbacks: FontFallbacks,
-    /// How text is rendered.
-    #[parts(block = "fields")]
-    pub rendering: TextRendering,
     /// How the text-scaling factor applies (S9.4).
     pub scaling: TextScaling,
     /// Logical pixels per inch (72 points), the platform's; the reader's
@@ -685,7 +532,9 @@ pub struct FontFallbacks {
     pub per_family: Vec<(String, Vec<String>)>,
 }
 
-/// The icon tokens (S4.5).
+/// The icon tokens (S4.5). The mirroring per icon role is staged: it enters
+/// with the right-to-left unit, and WinUI's animated visuals with the
+/// motion unit (S6.1).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
@@ -702,13 +551,6 @@ pub struct IconTokens {
     /// The icon-size contexts.
     #[parts(block = "fields")]
     pub sizes: IconSizeTokens,
-    /// How each icon role mirrors under right-to-left.
-    pub mirroring: Vec<(IconRole, Mirroring)>,
-    /// WinUI's `AnimatedIcon` sources, the visuals the preset's
-    /// `WinUiAnimatedIcon` transitions name (S2.7); `{}` on every preset
-    /// but `windows-11`, as no other platform's transition can name one.
-    #[parts(block = "fields")]
-    pub animated_visuals: Vec<(Key, AnimatedVisual)>,
 }
 
 /// The icon-size contexts (S4.5): each an icon style in which only `size` is
