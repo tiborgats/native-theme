@@ -583,10 +583,11 @@ the facts tooling reads it.
     the larger defects. The document check's amendments of this plan stand where each is marked `(ADD-A146)`
     (item 43).
   - **The register's open entries, by kind.** **Decided at D6** (2026-11-12, outcome 14; the D6 register design):
-    of the rows of kind `d`, the fifteen the checkpoint examined: fourteen settled from the sources (U180 and U504
-    in part), U555 moved with `single_click_activates` to the containers unit (*The units 0.8.0 enables*), and U473
-    by D13's criterion the parking unit *behaviour*'s, 0.7.0's model holding no key repeat; their outcomes in the
-    ledger, each open to the maintainer's veto (veto list items 3, 7, 8, 26 to 30 and 52).
+    of the register's rows of kind `d`, the fifteen choices of model form the checkpoint examined are fourteen
+    settled from the sources (U180 and U504 in part) and U555, moved with `single_click_activates` to the containers
+    unit (*The units 0.8.0 enables*); U473 is by D13's criterion the parking unit *behaviour*'s, 0.7.0's model
+    holding no key repeat; the outcomes are in the ledger, each open to the maintainer's veto (veto list items 3, 7,
+    8, 26 to 30 and 52).
   - **The slice's pending facts and the depth of a unit** (ADD-A146): whether the slice's 45,766 pending facts of
     74,029 (the eight `[pending]` tables 1,508 paths, the register 235 rows at M1b's close) are closed before the
     scale-up, and whether 0.8.0 states each widget at the depth 0.7.0's model distinguishes, the further variant
