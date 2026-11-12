@@ -59,7 +59,10 @@ orchestrator's decisions on the checks correct this file's outcomes as follows, 
 - Outcome 5: the four Apple status pairings rest on reads (U757–U760), each closed by a source that names a colour
   for the meaning, which pairs that colour, or by a measurement of an element the platform itself colours for it, in
   a colour the run does not set, which pairs the role with the colour measured, a keyed colour (0.7.0's or another)
-  where the two are equal in each scheme and contrast and under a second accent; the facts lane names the element
+  where the two are equal in each scheme and contrast and under a second accent, the measured derivation over the
+  accent where the second-accent run shows the colour changing with the accent, as U750 and U706 state such colours,
+  never a literal, and a literal only where the colour holds under the second accent and equals no system colour;
+  the facts lane names the element
   in the fact's evidence, which cites the read even where the pairing is a reference, and the verifier and the
   tie-break, to which every fact closing a read goes, decide whether it counts and confirm a survey that finds
   none, or none that counts (AppKit's "critical" `error`, as `dialog` reads it); each preset is decided on its own;

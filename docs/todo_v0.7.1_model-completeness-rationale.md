@@ -1839,7 +1839,9 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
   no counterpart for is the mapping's, outside those conditions, by a style or family the platform names. On
   `macos-*` and `ios-*` the status fills, and the error and warning standalone colours, are paired by their reads
   with the keyed system colour a source names or a measurement finds equal in each scheme and contrast and under a
-  second accent (0.7.0's or another), or with the colour measured where it equals none, each preset on its own, a
+  second accent (0.7.0's or another), with the measured derivation over the accent where the second-accent run shows
+  the colour changing with it, as U750 and U706 state such colours, never a literal, or with the colour measured, a
+  literal, only where it holds under the second accent and equals no system colour (ADD-A147), each preset on its own, a
   fill, or a colour a source names without saying how it is drawn, pairing the fill alone and a standalone colour
   paired only by one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector
   holding them; where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on,
@@ -2071,8 +2073,9 @@ Each is decided from the pinned sources; the specification cites them.
   `ios-*` the status records' `fill`, and `error`'s and `warning`'s `standalone`, are paired by their reads with the
   keyed system colour a source names for the status or a measurement finds equal in each scheme and contrast and
   under a second accent (0.7.0 drew
-  systemRed, systemOrange, systemGreen and systemBlue; a read finding another pairs that one), otherwise with the
-  colour measured, the pairings listed in the specification's
+  systemRed, systemOrange, systemGreen and systemBlue; a read finding another pairs that one), with the measured
+  derivation over the accent where the colour follows the accent, never a literal, and otherwise with the colour
+  measured, the pairings listed in the specification's
   catalogue for the maintainer's veto, and on `macos-*` the sets' status text colours follow them, as on every preset
   without per-set values. `success.standalone` and `info.standalone` stay absent there, and so does `destructive`: no
   connector holds a success or info text colour on the surface (0.7.0's egui held only `error_fg_color` and
@@ -2086,7 +2089,9 @@ Each is decided from the pinned sources; the specification cites them.
   measurement of an element the platform itself colours for that meaning, in a colour the run does not set, which
   pairs the role with the colour measured, the keyed colour where the two are equal in each scheme and each contrast
   the keyed colour states, and under a second accent too, within the measurement's tolerance (as U750 and U706
-  check a look that may follow the accent); each preset is decided on its own, and where two
+  check a look that may follow the accent), the measured derivation over `input.accent` where the second-accent run
+  shows the colour changing with the accent, as U750 and U706 state such colours, never a literal, and a literal
+  only where the colour holds under the second accent and equals no system colour (ADD-A147); each preset is decided on its own, and where two
   witnesses that count disagree on a preset the tie-break decides; a fill being an area the platform paints in the
   colour and text or a mark the colour drawn as text, a glyph or a stroke on the surface, a colour named or measured
   as a fill, or named by a source that does not say how it is drawn, pairs the `fill` alone, a `standalone` being

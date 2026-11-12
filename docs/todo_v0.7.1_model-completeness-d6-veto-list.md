@@ -55,7 +55,8 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   of the gate's platform comparison, never absent and never recorded as the platform's fact. It changes R25.17,
   which made the status colours absent on `macos-*`. What it brings:
   - on `macos-*` and `ios-*` the status roles are paired with the platform's keyed system colour a source names or
-    a measurement finds (0.7.0's or another), or with the colour measured where it equals none (closes *register
+    a measurement finds (0.7.0's or another), with a measured derivation over the accent where the colour follows
+    the accent, or with the colour measured where it holds under a second accent and equals none (closes *register
     row* U456; a register row is one line of the ledger's list of what is not measured yet). No pinned Apple source
     yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success or info, so each pairing
     waits on a read that names a colour for the meaning, or a measurement of an element the platform itself colours
@@ -65,7 +66,11 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
     closing a read goes whether or not the two agree, decide whether it counts (macOS's level indicator's warning
     and critical fills are candidates; AppKit's "critical" is its top severity, so error, as the catalogue already
     reads NSAlert's critical style; its other name, "caution", is not WinUI's). A measurement pairs a keyed colour
-    only where the two are equal in each scheme and contrast and under a second accent too. Each preset is decided
+    only where the two are equal in each scheme and contrast and under a second accent too. Where the second-accent
+    run shows the element's colour changing with the accent, the platform draws that meaning in the accent: the
+    pairing is then the measured derivation over the accent, as rows U750 and U706 state such colours (and as
+    `adwaita`'s info refers to the accent), never a fixed colour; a fixed colour is paired only where it holds under
+    the second accent and equals no system colour. Each preset is decided
     on its own. Where a read finds neither on a preset by the release (the lane's survey finding no candidate, or
     none that counts, and the tie-break confirming it), that status (its fill, its standalone colour where it has
     one and its text colour) is absent on `macos-*` and `ios-*` by item 56's third condition, a catalogue change
@@ -116,7 +121,7 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   alone, and documentation pairing the colour it names: the decisions N5-1 to N5-3 on its fifth
   (`batch-check/check-N5.md`); the read cited, every closing fact to the tie-breaker, AppKit's "critical" `error`,
   and the fill, the preset and the equality test made precise: the decisions N6-1 to N6-4 on its sixth
-  (`batch-check/check-N6.md`).
+  (`batch-check/check-N6.md`); a colour that follows the accent paired as a derivation over it: the decision N6-5.
 
 **56. Which roles the labelled mapping covers (the scope of item 3).**
 - *Decided:* the mapping applies to a typed role where all three hold: (1) a connector maps it to a toolkit field
@@ -221,7 +226,9 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   colour, recorded in its contract. 0.7.0's status colour there is then lost. A source that names a colour pairs
   that colour, 0.7.0's or another; a measurement pairs it with the colour the platform is measured drawing, a keyed
   colour where the two are equal in each scheme and contrast and under a second accent too, within the
-  measurement's tolerance (S3). Either way the status keeps a
+  measurement's tolerance, a measured derivation over the accent where the second-accent run shows the colour
+  changing with the accent, never a fixed colour, and a fixed colour only where it holds under the second accent and
+  equals no system colour (S3). Either way the status keeps a
   colour (its standalone colour only where it is named or measured as text or a mark, item 3). Until a read closes,
   those values are pending, which no release may hold.
 - *Why:* item 56's third condition: a colour that merely exists in the platform's palette does not count, and
@@ -237,7 +244,8 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   on its fourth (`batch-check/check-N4.md`, finding 1), the element left to the facts lane and the tie-break and
   documentation pairing the colour it names by the decisions N5-1 and N5-3 on its fifth (`batch-check/check-N5.md`,
   findings 1, 4, 5), every closing fact to the tie-breaker, each preset on its own and the equality test by the
-  decisions N6-2 and N6-4 on its sixth (`batch-check/check-N6.md`, findings 2, 6, 7, 9); the specification's S3, the catalogue's *global roles*,
+  decisions N6-2 and N6-4 on its sixth (`batch-check/check-N6.md`, findings 2, 6, 7, 9), a colour that follows the
+  accent paired as a derivation over it by the decision N6-5; the specification's S3, the catalogue's *global roles*,
   `status`; the rationale's R21 and R25.17.
 
 ---
@@ -558,7 +566,8 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 - **The individual status-colour pairings (item 3).** The catalogue's *global roles* `status` row lists them
   (`error` `= role.@system_red`, `warning` `@system_orange`, `success` `@system_green`, `info` `@system_blue`, on
   `macos-*` and `ios-*`, where a source names the colour or a measurement finds it, a keyed colour a read finds
-  instead pairing that one, otherwise the colour measured; rows U757–U760), and item 3 now names the status text colours, on `ios-*` the filled button's title colour
+  instead pairing that one, a derivation over the accent where the colour measured follows the accent, otherwise
+  the colour measured; rows U757–U760), and item 3 now names the status text colours, on `ios-*` the filled button's title colour
   (U755).
 - **0.7.0's values under `tab`, `card`, `expander`, `status_bar` (item 48).** The query answers "not available"
   where 0.7.0 gave values. No source calls this a loss, so it is not in group B.

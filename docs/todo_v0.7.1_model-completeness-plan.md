@@ -654,7 +654,9 @@ the facts tooling reads it.
       names; on `macos-*` and
       `ios-*` the status fills, and the error and warning standalone colours, are paired by their reads with the
       keyed system colour a source names or a measurement finds equal in each scheme and contrast and under a second
-      accent (0.7.0's or another), or with the colour measured where it equals none, each preset on its own, a fill,
+      accent (0.7.0's or another), with the measured derivation over the accent where the second-accent run shows
+      the colour changing with it, never a literal, or with the colour measured, a literal, only where it holds under
+      the second accent and equals no system colour (ADD-A147), each preset on its own, a fill,
       or a colour a source names without saying how it is drawn, pairing the fill alone and a standalone colour paired
       only by one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector holding them;
       where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on, through that
