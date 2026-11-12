@@ -1432,7 +1432,13 @@ caller's build, and a default would hide it.
   0.7.0 has, one the Apple motion trial does not measure (the plan's M2, task 1): the dialog's entrance kind
   (`adwaita`, `kde-breeze`, `windows-11`, `material-3`), or the busy indicator's loop as theme data (every preset;
   the icon sets' frames on `adwaita`, `kde-breeze` and `material-3`) (ADD-A147; D6, decided by logic, awaiting the
-  maintainer's veto: veto list items 5, 6 and 32 to 39) and, until D6 decides it (the plan's D6 question W3-3), the
+  maintainer's veto: veto list items 5, 6 and 32 to 39); the icon size of a context the platform names none for,
+  which 0.7.0 stated on every preset (the catalogue's absence table for `token.icons.sizes`: `material-3`'s `small`
+  and `large`, 0.7.0's 16 and 32 with no source; `adwaita`'s `dialog` and `panel`, 0.7.0's 22 and 20; on `macos-*`,
+  `windows-11` and `ios-*` as far as the register's U102, U516 and U127 find); the icon theme's name on the presets
+  whose icon set is not freedesktop, where 0.7.0 repeated the set's name (`material-3`'s `"material"`), the name
+  staying in `token.icons.set` (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 7
+  and 8) and, until D6 decides it (the plan's D6 question W3-3), the
   widgets a preset declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`)
   (ADD-A146), what 0.7.0's API holds beyond them and 0.8.0 does not keep being the plan's *Not kept*, and get the
   new model weeks earlier; each
@@ -1751,19 +1757,25 @@ of that day:
   brings it back); of the two motions 0.7.0 has, one the Apple motion trial does not measure (the plan's M2, task 1):
   the dialog's entrance kind (`adwaita`, `kde-breeze`, `windows-11`, `material-3`), or the busy indicator's loop as
   theme data (every preset; the icon sets' frames on `adwaita`, `kde-breeze` and `material-3`) (ADD-A147; D6, decided
-  by logic, awaiting the maintainer's veto: veto list items 5, 6 and 32 to 39) and, until D6 decides it (the plan's D6 question W3-3), the widgets a preset declares unavailable where
+  by logic, awaiting the maintainer's veto: veto list items 5, 6 and 32 to 39); the icon size of a context the
+  platform names none for, which 0.7.0 stated on every preset (`material-3`'s `small` and `large`, `adwaita`'s
+  `dialog` and `panel`, and on `macos-*`, `windows-11` and `ios-*` as far as the register's U102, U516 and U127 find);
+  the icon theme's name on the presets whose icon set is not freedesktop, where 0.7.0 repeated the set's name
+  (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 7 and 8) and, until D6 decides it (the plan's D6 question W3-3), the widgets a preset declares unavailable where
   0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`), the plan listing what its API does not keep.
 - R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
   none (the specification's S15).
 
-Amended by the 0.8.0 plan's checkpoint D6 (2026-11-10, outcomes 1, 2 and 3; the specification's batch ADD-A147; D6,
-decided by logic, awaiting the maintainer's veto: veto list items 1, 2 and 4):
+Amended by the 0.8.0 plan's checkpoint D6 (2026-11-10, outcomes 1, 2, 3 and 14; the specification's batch ADD-A147;
+D6, decided by logic, awaiting the maintainer's veto: veto list items 1, 2, 4, 7 and 8):
 
 - R21: a unit enters at the depth 0.7.0's model and readers distinguish, its further variants, sizes, host contexts,
   states and conditions in later units of depth; 0.8.0 holds the two motions 0.7.0's model has, the dialog's
   presentation and the busy indicator's loop, with the speed factor and the reduced-motion conditions, each if an
   Apple trial measures it on the Apple presets, and state-change transitions are the motion unit's; the invented
-  values D6's comparison finds join R19's on the list of what users lose.
+  values D6's comparison finds join R19's on the list of what users lose, and so do, by the register's rows the
+  checkpoint settled, the icon sizes of contexts a platform names none for and the icon theme's name on the presets
+  whose icon set is not freedesktop (veto list items 7 and 8).
 - R4: the gate checks the combinations of the names its enabled units hold.
 - R2.7, R15: a variant, size or flavour the platform has and a later unit states is answered 'later', never 'not
   available'.
