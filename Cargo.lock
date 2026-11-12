@@ -5712,6 +5712,7 @@ dependencies = [
  "objc2-core-graphics",
  "objc2-core-text",
  "objc2-foundation 0.3.2",
+ "peak_alloc",
  "png 0.18.1",
  "pollster 1.0.1",
  "proptest",
@@ -6849,6 +6850,12 @@ dependencies = [
  "digest 0.10.7",
  "hmac",
 ]
+
+[[package]]
+name = "peak_alloc"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccc90935a8dd139fdf341762773687a1e361d3f54b396a55d9dd1f7001e484bb"
 
 [[package]]
 name = "peniko"
