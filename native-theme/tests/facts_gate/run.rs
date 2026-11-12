@@ -17,7 +17,7 @@ use native_theme::gate::{
 use native_theme::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
 
-use super::depth::Depth;
+use super::depth::{Depth, Place};
 use super::facts::{self, Fact, Stated};
 use super::model::{self, Block, Mentioned, Model, Point, Space, strings};
 use super::timing::{Step, timed};
@@ -132,11 +132,13 @@ pub struct Report {
     /// Facts a unit they belong to, their key's or a widget's their `when`
     /// names, is not enabled for (S17 *While 0.8.0 is built*), by key.
     pub units_not_enabled: BTreeMap<String, usize>,
-    /// Facts a preset's run skips by S17's predicate (ADD-A147): their
-    /// `when` names a name a later unit not enabled holds there, or a
-    /// variant the state model in force draws nowhere, by `<preset>: <the
-    /// later unit>` ([`later_unit`]).
+    /// Facts a preset's run skips by S17's predicate (ADD-A147) that a unit
+    /// they wait for places (`depth::Place::Later`), by `<preset>\t<the
+    /// unit>`.
     pub later_units: BTreeMap<String, usize>,
+    /// Facts a preset's run skips by S17's predicate that no unit's names
+    /// place (`depth::Place::Unplaced`), by preset.
+    pub unplaced: BTreeMap<String, usize>,
     /// Per preset, the facts of the enabled units its run prepares and how
     /// many of them are pending (S17's predicate, ADD-A147).
     pub at_depth: BTreeMap<String, (usize, usize)>,
@@ -280,6 +282,9 @@ impl Report {
         for (key, count) in other.later_units {
             *self.later_units.entry(key).or_default() += count;
         }
+        for (preset, count) in other.unplaced {
+            *self.unplaced.entry(preset).or_default() += count;
+        }
         for (preset, counts) in other.at_depth {
             self.at_depth.entry(preset).or_insert(counts);
         }
@@ -320,7 +325,8 @@ impl Report {
         format!(
             "failures {failures:?}\ngroups {groups:?}\npending {:?}\nsynthetic {:?}\n\
              listed {:?}\nunchecked {:?}\nunread {unread:?}\nkeys not held {:?}\n\
-             units not enabled {:?}\nlater units {:?}\nat depth {:?}\nwhens not held {:?}\nother presets {}\n\
+             units not enabled {:?}\nlater units {:?}\nunplaced {:?}\nat depth {:?}\nwhens not held {:?}\n\
+             other presets {}\n\
              variants not held {:?}\naccent run {}\nfields not drawn {}\n\
              whens not drawn {}\ncombinations skipped {}\ncombinations {:?}\nqueried {}\n\
              compared {}",
@@ -331,6 +337,7 @@ impl Report {
             self.keys_not_held,
             self.units_not_enabled,
             self.later_units,
+            self.unplaced,
             self.at_depth,
             self.whens_not_held,
             self.other_presets,
@@ -704,6 +711,57 @@ pub fn read_all(platform: &Platform, report: &mut Report) {
     }
 }
 
+/// Counts where a fact of `preset` (its `when` as written for it) stands
+/// ([`Depth::unit`], S17, ADD-A147): under the unit that places it, apart
+/// where none does, and, of the enabled units, in `counts` (its facts, its
+/// pending facts); whether it is of the enabled units.
+fn count_place(
+    depth: &Depth,
+    fact: &Fact,
+    written: Option<&Value>,
+    preset: &str,
+    counts: &mut (usize, usize),
+    report: &mut Report,
+) -> bool {
+    match depth.unit(&fact.key, written) {
+        Place::Enabled => {
+            counts.0 = counts.0.saturating_add(1);
+            if matches!(fact.stated, Stated::Pending(_)) {
+                counts.1 = counts.1.saturating_add(1);
+            }
+            true
+        }
+        Place::Later(unit) => {
+            *report
+                .later_units
+                .entry(format!("{preset}\t{unit}"))
+                .or_default() += 1;
+            false
+        }
+        Place::Unplaced => {
+            *report.unplaced.entry(preset.to_owned()).or_default() += 1;
+            false
+        }
+    }
+}
+
+/// Where every fact of `platform` that can apply to `preset` stands, counted
+/// in the report as [`prepare`] counts it, with no preset loaded
+/// (`facts_units`).
+pub fn place_facts(platform: &Platform, preset: &str, report: &mut Report) {
+    let depth = Depth::new(platform, preset);
+    let mut counts = (0_usize, 0_usize);
+    for fact in &platform.facts {
+        if fact.accent_run {
+            continue;
+        }
+        if let Some((written, _)) = facts::for_preset(fact.when.as_ref(), preset) {
+            count_place(&depth, fact, written.as_ref(), preset, &mut counts, report);
+        }
+    }
+    report.at_depth.insert(preset.to_owned(), counts);
+}
+
 /// The facts of `platform` that can apply to `preset`, by key, each read;
 /// what [`read_all`] counted or failed left out.
 pub fn prepare<'f>(
@@ -714,7 +772,7 @@ pub fn prepare<'f>(
 ) -> Vec<KeyFacts<'f>> {
     let mut out: Vec<KeyFacts<'f>> = Vec::new();
     let depth = Depth::new(platform, preset);
-    let (mut at_depth, mut pending) = (0_usize, 0_usize);
+    let mut counts = (0_usize, 0_usize);
     for fact in &platform.facts {
         if fact.accent_run {
             continue;
@@ -722,16 +780,8 @@ pub fn prepare<'f>(
         let Some((written, _)) = facts::for_preset(fact.when.as_ref(), preset) else {
             continue;
         };
-        if let Some(unit) = depth.unit(&fact.key, written.as_ref()) {
-            *report
-                .later_units
-                .entry(format!("{preset}\t{unit}"))
-                .or_default() += 1;
+        if !count_place(&depth, fact, written.as_ref(), preset, &mut counts, report) {
             continue;
-        }
-        at_depth += 1;
-        if matches!(fact.stated, Stated::Pending(_)) {
-            pending += 1;
         }
         let Some(Ok(key)) = platform.key(&fact.key) else {
             continue;
@@ -795,9 +845,7 @@ pub fn prepare<'f>(
             }),
         }
     }
-    report
-        .at_depth
-        .insert(preset.to_owned(), (at_depth, pending));
+    report.at_depth.insert(preset.to_owned(), counts);
     // A part's own key is compared under every combination, drawn where no
     // part fact applies (S17, ADD-A130), so a part with no fact has its key
     // too.
