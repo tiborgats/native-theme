@@ -653,9 +653,10 @@ the facts tooling reads it.
       item 56); a text slot the platform names no counterpart for, by a clause of its own, a style or family it
       names; on `macos-*` and
       `ios-*` the status fills, and the error and warning standalone colours, are paired by their reads with the
-      keyed system colour a source names or a measurement finds equal in both schemes (0.7.0's or another), or with
-      the colour measured where it equals none, a fill pairing the fill alone and a standalone colour paired only by
-      one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector holding them;
+      keyed system colour a source names or a measurement finds equal in each scheme and contrast and under a second
+      accent (0.7.0's or another), or with the colour measured where it equals none, each preset on its own, a fill,
+      or a colour a source names without saying how it is drawn, pairing the fill alone and a standalone colour paired
+      only by one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector holding them;
       where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on, through that
       task's own spec change), and the status
       text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a filled
@@ -668,10 +669,11 @@ the facts tooling reads it.
       title colour, as U651, measured on each status fill by the second-tint run, each of the four Apple pairings
       resting on a read that names the colour for the meaning or measures an element the platform itself colours for
       it, in a colour the run does not set, the facts lane naming the element in the fact's evidence and the verifier
-      and the tie-break deciding whether it counts (*Facts, independently*; the ledger's U757–U760), which
+      and the tie-break, to which every fact closing a read goes, deciding whether it counts (*Facts, independently*;
+      the ledger's U757–U760), which
       the macOS and iOS lanes make before their facts edit, the facts pending on it until then (S3 for the outcome
-      where neither is found, the lane's survey finding no candidate and the tie-break confirming it: the status's
-      `fill`, its `standalone` where paired, and its `foreground` absent there, a loss of 0.7.0's status colour, veto
+      where neither is found, the lane's survey finding no candidate, or none that counts, and the tie-break
+      confirming it: the status's `fill`, for `error` and `warning` its `standalone`, and its `foreground` absent there, a loss of 0.7.0's status colour, veto
       list item 57; a `standalone` no read pairs by text or a mark on the surface absent alone), the reads closing at the latest at M4's pending
       condition, and the macOS foregrounds on a probe pass over the status fills (U756), due at the same condition.
     - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
@@ -1863,7 +1865,11 @@ dev-dependencies and modules linked again.
   state model and declarations from the sources, without the lane's, and the two are compared mechanically (a
   combination the lane missed would otherwise never be checked); then, for the agreed combinations, it reports a value
   and a citation for each key, never seeing the lane's, and both are compared mechanically. Each disagreement goes to a
-  tie-breaker agent with both citations and the source. An audit sample of the agreed facts (5 % per lane and unit,
+  tie-breaker agent with both citations and the source. A fact that closes a read of the specification's labelled
+  mapping (S3; the ledger's U757–U760: a pairing, or `absent` because the survey finds no candidate or none counts)
+  goes to the tie-breaker whether or not the lane and its verifier agree, with the lane's survey, each candidate and
+  the readings the row records: whether an element draws a meaning is a judgment both can share wrongly (ADD-A147).
+  An audit sample of the agreed facts (5 % per lane and unit,
   at least ten, as during the slice; kept at D6, outcome 13; ADD-A147) goes to the tie-breaker too, to measure how often a lane and its
   verifier agree on a wrong value. The orchestrator reads the tie-breakers' summaries and every verdict that changes the
   catalogue or the specification. A low agreement or audit rate (below 95 %) starts a search for the systematic cause

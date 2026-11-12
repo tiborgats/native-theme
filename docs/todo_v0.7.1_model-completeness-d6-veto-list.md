@@ -60,16 +60,20 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
     yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success or info, so each pairing
     waits on a read that names a colour for the meaning, or a measurement of an element the platform itself colours
     for that meaning, in a colour the run does not set (rows U757–U760), the status's values pending meanwhile. The
-    batch states this test; the facts lane picks the element and names it in the fact's evidence, and the verifier
-    and the tie-break decide whether it counts, as for every disputed fact (macOS's level indicator's warning and
-    critical fills are candidates, with both readings of AppKit's "critical" recorded: by rank its top severity, so
-    error; by its other name, "caution", a warning). Where a read finds neither by the release (the lane's survey
-    finding no candidate and the tie-break confirming it), that status (its fill, its standalone colour where it has
+    batch states this test; the facts lane picks the element and names it in the fact's evidence, which cites the
+    read even where the pairing refers to a keyed colour, and the verifier and the tie-break, to which every fact
+    closing a read goes whether or not the two agree, decide whether it counts (macOS's level indicator's warning
+    and critical fills are candidates; AppKit's "critical" is its top severity, so error, as the catalogue already
+    reads NSAlert's critical style; its other name, "caution", is not WinUI's). A measurement pairs a keyed colour
+    only where the two are equal in each scheme and contrast and under a second accent too. Each preset is decided
+    on its own. Where a read finds neither on a preset by the release (the lane's survey finding no candidate, or
+    none that counts, and the tie-break confirming it), that status (its fill, its standalone colour where it has
     one and its text colour) is absent on `macos-*` and `ios-*` by item 56's third condition, a catalogue change
     that loses 0.7.0's status colour there (item 57). The pairings take the fill of all four statuses, and the
     standalone colour (the status's text on the surface) of error and warning alone, where a source names it or the
-    platform is measured drawing the status as text or a mark (a fill does not witness it, as on `windows-11`; else
-    it alone is absent). No connector holds a success or info text colour on the surface (0.7.0's
+    platform is measured drawing the status as text or a mark (a fill, an area the platform paints in the colour,
+    does not witness it, as on `windows-11`, nor does a source that does not say how the colour is drawn; else it
+    alone is absent). No connector holds a success or info text colour on the surface (0.7.0's
     egui held only the error and warning ones), so those stay absent there by item 56's first condition, judged
     from the connectors as they stand;
   - the status text colours (`foreground`, the text on the status fill), each paired only where its fill is, refer
@@ -110,7 +114,9 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   colour measured and `destructive`'s ground: the decisions N4-1 and N4-2 on its fourth check
   (`batch-check/check-N4.md`); the element left to the facts lane and the tie-break, a fill pairing the fill
   alone, and documentation pairing the colour it names: the decisions N5-1 to N5-3 on its fifth
-  (`batch-check/check-N5.md`).
+  (`batch-check/check-N5.md`); the read cited, every closing fact to the tie-breaker, AppKit's "critical" `error`,
+  and the fill, the preset and the equality test made precise: the decisions N6-1 to N6-4 on its sixth
+  (`batch-check/check-N6.md`).
 
 **56. Which roles the labelled mapping covers (the scope of item 3).**
 - *Decided:* the mapping applies to a typed role where all three hold: (1) a connector maps it to a toolkit field
@@ -208,12 +214,14 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
 - *Decided:* only if a read finds no Apple documentation that names a system colour for error, warning, success or
   info, and no measurement of an element the platform itself colours for that meaning, in a colour the run does not
   set (rows U757–U760, made by the macOS and iOS lanes before their facts edit, at the latest at M4's pending
-  condition before the release; the lane picks the element, and the tie-break decides whether it counts and
-  confirms a survey that finds none): that status (its fill, its standalone colour where it has one and its text
-  colour) is absent on `macos-*` and `ios-*`, and each connector fills its toolkit's field with the toolkit's own
+  condition before the release; the lane picks the element, and the verifier and the tie-break, to which every fact
+  closing a read goes, decide whether it counts and confirm a survey that finds none, or none that counts): that
+  status (its fill, its standalone colour where it has one and its text colour) is absent on each of `macos-*` and
+  `ios-*` where none is found, and each connector fills its toolkit's field with the toolkit's own
   colour, recorded in its contract. 0.7.0's status colour there is then lost. A source that names a colour pairs
   that colour, 0.7.0's or another; a measurement pairs it with the colour the platform is measured drawing, a keyed
-  colour where the two are equal in both schemes within the measurement's tolerance. Either way the status keeps a
+  colour where the two are equal in each scheme and contrast and under a second accent too, within the
+  measurement's tolerance (S3). Either way the status keeps a
   colour (its standalone colour only where it is named or measured as text or a mark, item 3). Until a read closes,
   those values are pending, which no release may hold.
 - *Why:* item 56's third condition: a colour that merely exists in the platform's palette does not count, and
@@ -228,7 +236,8 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   (`batch-check/check-N3.md`, finding 1), the measurement's pairing with the colour measured by the decision N4-1
   on its fourth (`batch-check/check-N4.md`, finding 1), the element left to the facts lane and the tie-break and
   documentation pairing the colour it names by the decisions N5-1 and N5-3 on its fifth (`batch-check/check-N5.md`,
-  findings 1, 4, 5); the specification's S3, the catalogue's *global roles*,
+  findings 1, 4, 5), every closing fact to the tie-breaker, each preset on its own and the equality test by the
+  decisions N6-2 and N6-4 on its sixth (`batch-check/check-N6.md`, findings 2, 6, 7, 9); the specification's S3, the catalogue's *global roles*,
   `status`; the rationale's R21 and R25.17.
 
 ---

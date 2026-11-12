@@ -36,7 +36,7 @@ Nothing that blocks the work. To come, each with its facts when they exist:
 
 ## Corrections of the batch's fix rounds (2026-11-12)
 
-The batch that applied these outcomes (ADD-A147) was checked twice, and its fix rounds five times more; the
+The batch that applied these outcomes (ADD-A147) was checked twice, and its fix rounds six times more; the
 orchestrator's decisions on the checks correct this file's outcomes as follows, each open to the maintainer's veto
 (the veto list, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`):
 
@@ -59,11 +59,14 @@ orchestrator's decisions on the checks correct this file's outcomes as follows, 
 - Outcome 5: the four Apple status pairings rest on reads (U757–U760), each closed by a source that names a colour
   for the meaning, which pairs that colour, or by a measurement of an element the platform itself colours for it, in
   a colour the run does not set, which pairs the role with the colour measured, a keyed colour (0.7.0's or another)
-  where the two are equal in both schemes; the facts lane names the element and the tie-break decides whether it
-  counts, and confirms a survey that finds none; a fill pairs the fill alone, a standalone colour only one named or
-  measured as text or a mark on the surface, absent otherwise as `windows-11`'s; each
+  where the two are equal in each scheme and contrast and under a second accent; the facts lane names the element
+  in the fact's evidence, which cites the read even where the pairing is a reference, and the verifier and the
+  tie-break, to which every fact closing a read goes, decide whether it counts and confirm a survey that finds
+  none, or none that counts (AppKit's "critical" `error`, as `dialog` reads it); each preset is decided on its own;
+  a fill, or a colour a source names without saying how it is drawn, pairs the fill alone, a standalone colour only
+  one named or measured as text or a mark on the surface, absent otherwise as `windows-11`'s; each
   status's fill, its standalone colour where paired, and its text colour pending while its read is open, and absent
-  where a read finds neither, a loss of 0.7.0's status colour there (veto list item 57); a status's text colour is paired only where its fill is, the macOS one measured over each status fill by
+  on a preset where a read finds neither, a loss of 0.7.0's status colour there (veto list item 57); a status's text colour is paired only where its fill is, the macOS one measured over each status fill by
   a probe pass (U756). The success and info standalone colours and `destructive` on `macos-*` and `ios-*`, and
   `adwaita`'s info standalone colour, stay absent: no connector holds them (the first condition, judged from the
   connectors as they stand, their "danger" fields reading `error` on presets that state no destructive colour apart;

@@ -1468,10 +1468,11 @@ caller's build, and a default would hide it.
   `windows-11` and `ios-*` as far as the register's U102, U516 and U127 find); the icon theme's name on the presets
   whose icon set is not freedesktop, where 0.7.0 repeated the set's name (`material-3`'s `"material"`), the name
   staying in `token.icons.set` (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 7
-  and 8); on `macos-*` and `ios-*` a status colour whose read finds neither an Apple source naming it for that
-  status nor a measurement of an element the platform itself colours for that status, in a colour the run does not
-  set, and an `error` or `warning` standalone colour there (egui's `error_fg_color` and `warn_fg_color`) that no
-  read names or measures as text or a mark on the surface, a fill not pairing it (the ledger's U757–U760), and on
+  and 8); on `macos-*` and `ios-*` a status colour whose read finds on that preset neither an Apple source naming it
+  for that status nor a measurement that counts of an element the platform itself colours for that status, in a
+  colour the run does not set, and an `error` or `warning` standalone colour there (egui's `error_fg_color` and
+  `warn_fg_color`) that no read names or measures as text or a mark on the surface, a fill, or a source that does
+  not say how the colour is drawn, not pairing it (the ledger's U757–U760), and on
   `windows-11` egui's error and warning text colours (`error_fg_color` and
   `warn_fg_color`, which 0.7.0 filled with `#c42b1c` and `#9d5d00`, `v0.7.0:native-theme/src/presets/windows-11.toml:37`,
   `:40`), each held by the connector's contract as the toolkit's own colour (the specification's S3, S21.3; ADD-A147;
@@ -1837,15 +1838,17 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
   contract records the toolkit's own colour there as an exception (veto list item 56). A text slot the platform names
   no counterpart for is the mapping's, outside those conditions, by a style or family the platform names. On
   `macos-*` and `ios-*` the status fills, and the error and warning standalone colours, are paired by their reads
-  with the keyed system colour a source names or a measurement finds equal in both schemes (0.7.0's or another), or
-  with the colour measured where it equals none, a fill pairing the fill alone and a standalone colour paired only by
-  one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector
+  with the keyed system colour a source names or a measurement finds equal in each scheme and contrast and under a
+  second accent (0.7.0's or another), or with the colour measured where it equals none, each preset on its own, a
+  fill, or a colour a source names without saying how it is drawn, pairing the fill alone and a standalone colour
+  paired only by one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector
   holding them; where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on,
   through that task's own spec change), and the status text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a
   filled button's title in, as `accent_foreground` there (on `macos-*` `= role.global.accent_foreground`; on `ios-*`
   U651's measured colour, measured on each status fill by the second-tint run), each pairing resting on a read that
   names the colour for the meaning or measures an element the platform itself colours for it, in a colour the run
-  does not set, the facts lane naming the element and the tie-break deciding whether it counts (U757–U760), pending
+  does not set, the facts lane naming the element in the fact's evidence and the verifier and the tie-break, to
+  which every fact closing a read goes, deciding whether it counts (U757–U760), pending
   on it while it is open, absent where
   neither is found, and the macOS foregrounds measured over a status fill (U756), so 0.8.0 keeps the macOS status
   colours where a read pairs them (R21; veto list item 57); on `adwaita` the info role's fill and text colour
@@ -2066,7 +2069,8 @@ Each is decided from the pinned sources; the specification cites them.
   connector's contract records the toolkit's own colour there as an exception, as for a widget a preset declares
   unavailable (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 56). On `macos-*` and
   `ios-*` the status records' `fill`, and `error`'s and `warning`'s `standalone`, are paired by their reads with the
-  keyed system colour a source names for the status or a measurement finds equal in both schemes (0.7.0 drew
+  keyed system colour a source names for the status or a measurement finds equal in each scheme and contrast and
+  under a second accent (0.7.0 drew
   systemRed, systemOrange, systemGreen and systemBlue; a read finding another pairs that one), otherwise with the
   colour measured, the pairings listed in the specification's
   catalogue for the maintainer's veto, and on `macos-*` the sets' status text colours follow them, as on every preset
@@ -2080,13 +2084,18 @@ Each is decided from the pinned sources; the specification cites them.
   maintainer's veto: veto list items 3 and 56). Each pairing rests on a read that meets the third condition, Apple documentation that names a
   system colour for that meaning by its API name (a hue word, "red", does not), which pairs that colour, or a
   measurement of an element the platform itself colours for that meaning, in a colour the run does not set, which
-  pairs the role with the colour measured, the keyed colour where the two are equal in both schemes within the
-  measurement's tolerance; a colour named or measured as a fill pairs the `fill` alone, a `standalone` being paired
-  only by one named or measured as text or a mark on the surface and otherwise absent, as `windows-11`'s are; the
-  facts lane names the element in the fact's evidence and the verifier and the tie-break decide whether it counts,
-  a read closing as not found where the lane's survey finds no candidate and the tie-break confirms it (the ledger's
-  U757–U760), the macOS and iOS lanes making it before their facts edit; while it is open
-  the status's `fill`, its `standalone` where paired, and its `foreground` are pending on it, and where neither is found,
+  pairs the role with the colour measured, the keyed colour where the two are equal in each scheme and each contrast
+  the keyed colour states, and under a second accent too, within the measurement's tolerance (as U750 and U706
+  check a look that may follow the accent); each preset is decided on its own, and where two
+  witnesses that count disagree on a preset the tie-break decides; a fill being an area the platform paints in the
+  colour and text or a mark the colour drawn as text, a glyph or a stroke on the surface, a colour named or measured
+  as a fill, or named by a source that does not say how it is drawn, pairs the `fill` alone, a `standalone` being
+  paired only by one named or measured as text or a mark on the surface and otherwise absent, as `windows-11`'s
+  are; the facts lane names the element in the fact's evidence, which cites the read even where the pairing is a
+  reference, and the verifier and the tie-break, to which every fact closing a read goes, decide whether it counts,
+  a read closing as not found where the lane's survey finds no candidate, or none that counts, and the tie-break
+  confirms it (the ledger's U757–U760), the macOS and iOS lanes making it before their facts edit; while it is open
+  the status's `fill`, for `error` and `warning` its `standalone`, and its `foreground` are pending on it, and where neither is found,
   by M4 at the latest, they are absent there by R5.1's rule, the connectors' contracts recording the toolkit's colour,
   a loss of 0.7.0's status colour (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 57,
   whose veto keeps the pairing). Rejected: the fields absent while the read is open, which the catalogue could only
@@ -2113,7 +2122,9 @@ Each is decided from the pinned sources; the specification cites them.
   allows it. The text slots' mappings (R10)
   carry the same label. The Selection set's outline stays absent
   on `macos-*`; macOS's destructive buttons keep their system red, its level indicator its own fills
-  (candidates U757 and U758 record for the error and warning statuses' measurement).
+  (candidates U757 and U758 record for the error and warning statuses' measurement: the critical fill `error`'s,
+  AppKit's "critical" its top severity, as the catalogue's `dialog` reads NSAlert's critical style as its `error`
+  variant; the warning fill `warning`'s).
 - *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that
   held there, so a field's facts had to restate where their part is drawn (eleven fields of GNOME's menu arrow, and as
   two facts each, since the arrow is drawn under either of two variants). Options: keep the failure (no check gained:
