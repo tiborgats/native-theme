@@ -13,7 +13,7 @@ The brief (`d6-decisions.md`) holds the options and their arguments; this file d
 | 2 | **Changes an earlier decision (R21, "a unit enters whole").** 0.8.0 states each widget, role and token at the depth 0.7.0's model distinguishes; the further variant sets, sizes, contexts and settings are named later units, deferred as S6.1 defers placement, and impossible to ask for until their unit. The facts already written stay in `docs/facts`. Sample runs with a composition decision (the brief's C) are the method of those later units. `ios-26` stays. | D13: "0.8.0 ships when the new model covers what 0.7.0 covers", taken for time ("about 3–4 weeks against 5–7"). Measuring every combination is priced at 814 to 2,958 M of usage, 3 to 11 weeks, for the facts alone, so it defeats D13's reason; 99.95 % of the pending button facts lie beyond 0.7.0's depth. D13's text keeps `ios-26` and keeps the rigor inside each unit, which the deferral does not touch. |
 | 3 | **Changes an earlier decision (R21, "every capability but placement").** 0.8.0 holds the two motions 0.7.0 has (the dialog's entrance, the animated busy icons); state-change transitions (the runtime's engines, their use in the connectors, the Apple measurements) are a later unit. The model's types and the written facts stay. The connectors' design must show that the later unit needs no redesign of their API; if it cannot, the runtime's API is built now and its engines later. | D13's criterion, and the plan's own two reasons for deferring placement, which hold for motion word for word: 0.7.0 does not have it, and Apple states no timings, so each Apple engine rests on a measurement no trial has made (21 of 29 macOS and 43 of 48 iOS motion facts pending). |
 | 4 | The readers unit moves to the start of M3b; M3a keeps each unit's own readers step. | The comparison of all four readers with 0.7.0's found no read whose target lies outside 0.8.0's other units. |
-| 5 | **Changes an earlier decision (R25.17, the status roles absent on `macos-*`).** One rule: a typed role or slot that a portable application needs and the platform names no counterpart for is native-theme's mapping: labelled, outside the gate's platform comparison, never absent, never a stated fact. On `macos-*` and `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them (corrected below: each paired by its read, U757–U760); the text slots' mappings get the same label. The pairings are listed for the maintainer's veto. Closes U456. | Necessity, not preference: iced, gpui-component and egui hold these as plain colours that cannot be left empty, so with the role absent a connector puts either the toolkit's default (forbidden: connectors follow the theme's data) or a pairing of its own, unlabelled and different per connector. A pairing exists either way; the rule puts it in one labelled place. It invents no colour (the colours are the platform's system colours), and R19 already admits labelled picks. |
+| 5 | **Changes an earlier decision (R25.17, the status roles absent on `macos-*`).** One rule: a typed role or slot that a portable application needs and the platform names no counterpart for is native-theme's mapping: labelled, outside the gate's platform comparison, never absent, never a stated fact. On `macos-*` and `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them (corrected below: the rule rests on a witness, not on necessity; each status paired by its read, U757–U760); the text slots' mappings get the same label. The pairings are listed for the maintainer's veto. Closes U456. | Necessity, not preference: iced, gpui-component and egui hold these as plain colours that cannot be left empty, so with the role absent a connector puts either the toolkit's default (forbidden: connectors follow the theme's data) or a pairing of its own, unlabelled and different per connector. A pairing exists either way; the rule puts it in one labelled place. It invents no colour (the colours are the platform's system colours), and R19 already admits labelled picks. |
 | 6 | The declarations stay. The connectors' contract lists, per preset, the entry a connector draws its toolkit's widget from where the preset declares the widget unavailable: a stand-in entry, or, where the catalogue names none, the toolkit's own geometry with every colour and font from the theme's typed roles (never an unthemed toolkit colour). The contract's test checks the list is complete. | The declarations are true. Moving `bottom_tab_bar` and `group_box` into 0.8.0 adds two units against D13 and still leaves the rule missing; no rule leaves each connector to decide, against "connectors follow the theme's data". Where the platform has no such widget there is no platform geometry to follow, so only the colours and fonts can be the theme's. |
 | 7 | Decided with the palettes' design, M2's fourth task, by R19: a palette must not give a mixed look. Over a preset whose widgets read keyed colours it reaches them by a stated mapping method (each keyed role mapped once to the scheme's vocabulary, the mapping reviewed), or it is not offered over that preset. | Nothing before M2's fourth task depends on it, and R19 already rejects the mix of two schemes; a method removes the per-pick veto the brief names as the one preference. |
 | 8 | `docs/platform-facts.md` is not committed: CI and each release generate it, the gates run the generator and its self-test, and `check_facts.py` enforces a split of a facts file by key prefix past 40 MB. The local tools that cite its lines read the facts or a generated copy. | The file is generated from committed facts, is 47.8 MiB against Git's warning at 50 MiB and GitHub's block at 100 MiB, and grows with every measured fact; GitHub does not render a file of that size, so the committed copy has no reader. |
@@ -36,45 +36,27 @@ Nothing that blocks the work. To come, each with its facts when they exist:
 
 ## Corrections of the batch's fix rounds (2026-11-12)
 
-The batch that applied these outcomes (ADD-A147) was checked twice, and its fix rounds six times more; the
+The batch that applied these outcomes (ADD-A147) was checked twice, its fix rounds six times more, and the whole
+batch once more (F1); the
 orchestrator's decisions on the checks correct this file's outcomes as follows, each open to the maintainer's veto
 (the veto list, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`):
 
 - Outcome 2: `button`'s `label_position`, `repeat_delay` and `repeat_interval` are at depth wherever a preset states
   them with no later name; the staging design's figures are recounted (1,381 pending facts and 687 listed paths on
   0.8.0's path; ledger queue #258; veto list item 1).
-- Outcome 5: the rule's scope for a typed role is three conditions, a connector maps the role to a toolkit field
-  that cannot be left empty, no stated fact gives it a value (a fact stating it `absent` is replaced), and the
-  platform draws that meaning in a colour of its own: a colour its documentation or code uses for that meaning, or
-  the colour it is measured drawing in that role (the filled button's title colour, U651, U755), a colour that
-  merely exists in its palette not counting; where only the last fails (among them `material-3`'s warning, success
-  and info, and `windows-11`'s `error.standalone` and `warning.standalone`, which egui holds) the role stays absent and the connector's contract records the toolkit's own colour as an exception (veto list
-  item 56). A text slot is the mapping's by a clause of its own: every slot is filled, by a style or family the
-  platform names. The status text colours, the text on the status fill, refer to the colour the platform draws a
-  filled button's title in: on `macos-*` `= role.global.accent_foreground` (`alternateSelectedControlTextColor`;
-  0.7.0's `labelColor` was the body text beside a status mark); on `ios-*` the filled button's measured title
-  colour, as `accent_foreground` (ledger U755), measured on each status fill by the second-tint run (U706), 0.7.0's
-  having been a literal with no source. On `adwaita` the info role's fill and text colour refer to the accent's, its
-  fill the colour libadwaita's info bar draws info from (ledger queue #278).
-- Outcome 5: the four Apple status pairings rest on reads (U757–U760), each closed by a source that names a colour
-  for the meaning, which pairs that colour, or by a measurement of an element the platform itself colours for it, in
-  a colour the run does not set, which pairs the role with the colour measured, a keyed colour (0.7.0's or another)
-  where the two are equal in each scheme and contrast and under a second accent, the measured derivation over the
-  accent where the second-accent run shows the colour changing with the accent, as U750 and U706 state such colours,
-  never a literal, and a literal only where the colour holds under the second accent and equals no system colour;
-  the facts lane names the element
-  in the fact's evidence, which cites the read even where the pairing is a reference, and the verifier and the
-  tie-break, to which every fact closing a read goes, decide whether it counts and confirm a survey that finds
-  none, or none that counts (AppKit's "critical" `error`, as `dialog` reads it); each preset is decided on its own;
-  a fill, or a colour a source names without saying how it is drawn, pairs the fill alone, a standalone colour only
-  one named or measured as text or a mark on the surface, absent otherwise as `windows-11`'s; each
-  status's fill, its standalone colour where paired, and its text colour pending while its read is open, and absent
-  on a preset where a read finds neither, a loss of 0.7.0's status colour there (veto list item 57); a status's text colour is paired only where its fill is, the macOS one measured over each status fill by
-  a probe pass (U756). The success and info standalone colours and `destructive` on `macos-*` and `ios-*`, and
-  `adwaita`'s info standalone colour, stay absent: no connector holds them (the first condition, judged from the
-  connectors as they stand, their "danger" fields reading `error` on presets that state no destructive colour apart;
-  U761 closed, no read needed); where M2 task 1's contract tables name a toolkit field for
-  one, the rule applies from then on, through that task's own spec change.
+- Outcome 3: 21 of the 27 macOS motion facts pending at `7430a0a2`, by the D6 staging design's count, not 21 of 29.
+- Outcome 5: the rule rests on a witness, not on necessity: a typed role no source of the platform states is
+  native-theme's labelled mapping where the platform draws its meaning in a colour of its own, documented or
+  measured; a text slot is filled by a style or family the platform names ("never absent" and the necessity reason
+  are withdrawn; the specification's S3; veto list item 3). Where the platform draws the meaning in no colour
+  (`material-3`'s warning, success and info) the role is absent and the connector's contract records the toolkit's
+  own colour there, an exception to following the theme's data (veto list item 56). The status text colours are
+  the colour the platform is measured drawing over the status fill (ledger U756, U755); on `adwaita` the info
+  role's fill and text colour refer to the accent's (ledger queue #278). On `macos-*` and `ios-*` each status waits
+  on its read (U757–U760), its values pending meanwhile and absent where a read finds no witness, a loss of 0.7.0's
+  status colour there (veto list item 57); `destructive`, and a status's standalone colour the platform is not
+  found drawing as text or a mark, stay absent, no committed source or measurement showing them (U761 retired); the
+  set text colours refer to the status's colour, its fill where no text colour is paired, on every preset.
 - Outcome 7: a palette is not offered over a preset whose widget colours are measured literals that follow no role
   (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
 - Outcome 8: 40 MiB (41,943,040 bytes), and GitHub's warning at 50 MiB, not Git's (S17).

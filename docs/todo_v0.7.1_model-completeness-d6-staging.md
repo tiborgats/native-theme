@@ -1356,6 +1356,11 @@ one rule for every model field does. The options:
   keeps 0.7.0's own turning arc (5.1) as a stand-in, a deferred entry of its contract (S-10), not a still spinner.
 - **(iii) A value stated on some presets** (a per-preset `later` for a value). Rejected: `values()` returns a struct
   whose field would hold an empty list or `None` on the others, the false statement of (b).
+- **(iv) A value that answers 'later' on the presets that do not state it yet** (the Apple presets, where 0.7.0
+  states no entrance): truthful, and it keeps 0.7.0's coverage whatever the trial finds; it costs a model form no
+  value has today (a per-preset `later` for a value field, its S12 rule and each connector's handling), a class 2
+  change for two values. Not taken: the trial may make it unnecessary; to be weighed again if the trial fails
+  (ADD-A147 fix round F1, the check F1's finding 12).
 
 **Chosen: the trial first, then (i) or (ii) by its result** (the orchestrator's decision G). No pinned Apple source
 states either motion: `xcode@16.4` and `xcode@26.6` carry the API only (`UIActivityIndicatorView.h:35-37`,

@@ -50,114 +50,83 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   orchestrator.
 
 **3. A role the platform does not name gets native-theme's labelled mapping (outcome 5, with the U651 pairing).**
-- *Decided:* a typed role or slot (a colour role or text slot every preset must fill) that a portable application
-  needs and the platform names no counterpart for is native-theme's own mapping. It is labelled as such, kept out
-  of the gate's platform comparison, never absent and never recorded as the platform's fact. It changes R25.17,
-  which made the status colours absent on `macos-*`. What it brings:
-  - on `macos-*` and `ios-*` the status roles are paired with the platform's keyed system colour a source names or
-    a measurement finds (0.7.0's or another), with a measured derivation over the accent where the colour follows
-    the accent, or with the colour measured where it holds under a second accent and equals none (closes *register
-    row* U456; a register row is one line of the ledger's list of what is not measured yet). No pinned Apple source
-    yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success or info, so each pairing
-    waits on a read that names a colour for the meaning, or a measurement of an element the platform itself colours
-    for that meaning, in a colour the run does not set (rows U757–U760), the status's values pending meanwhile. The
-    batch states this test; the facts lane picks the element and names it in the fact's evidence, which cites the
-    read even where the pairing refers to a keyed colour, and the verifier and the tie-break, to which every fact
-    closing a read goes whether or not the two agree, decide whether it counts (macOS's level indicator's warning
-    and critical fills are candidates; AppKit's "critical" is its top severity, so error, as the catalogue already
-    reads NSAlert's critical style; its other name, "caution", is not WinUI's). A measurement pairs a keyed colour
-    only where the two are equal in each scheme and contrast and under a second accent too. Where the second-accent
-    run shows the element's colour changing with the accent, the platform draws that meaning in the accent: the
-    pairing is then the measured derivation over the accent, as rows U750 and U706 state such colours (and as
-    `adwaita`'s info refers to the accent), never a fixed colour; a fixed colour is paired only where it holds under
-    the second accent and equals no system colour. Each preset is decided
-    on its own. Where a read finds neither on a preset by the release (the lane's survey finding no candidate, or
-    none that counts, and the tie-break confirming it), that status (its fill, its standalone colour where it has
-    one and its text colour) is absent on `macos-*` and `ios-*` by item 56's third condition, a catalogue change
-    that loses 0.7.0's status colour there (item 57). The pairings take the fill of all four statuses, and the
-    standalone colour (the status's text on the surface) of error and warning alone, where a source names it or the
-    platform is measured drawing the status as text or a mark (a fill, an area the platform paints in the colour,
-    does not witness it, as on `windows-11`, nor does a source that does not say how the colour is drawn; else it
-    alone is absent). No connector holds a success or info text colour on the surface (0.7.0's
-    egui held only the error and warning ones), so those stay absent there by item 56's first condition, judged
-    from the connectors as they stand;
-  - the status text colours (`foreground`, the text on the status fill), each paired only where its fill is, refer
-    to the colour the platform draws a filled button's title in, as `accent_foreground` there: on `macos-*` to
-    `alternateSelectedControlTextColor`, the text on emphasized content (`NSColor.h:211`), measured white as the
-    default push button's title is (`= role.global.accent_foreground`; 0.7.0 drew `labelColor` there, which its own
-    preset names the body text beside a status mark, not text on the fill), measured over each status fill by a
-    probe pass (row U756); on `ios-*` to the filled button's measured title colour (row U755), measured on each
-    status fill by the second-tint run (U706); 0.7.0's was a literal with no source;
-  - the destructive role on `macos-*` and `ios-*` stays absent as the success and info standalone colours do: no
-    connector holds a destructive colour (0.7.0's held none; on these presets its "danger" fields read the error
-    status's, a destructive colour only where a preset states one apart, as `adwaita` does), so item
-    56's first condition fails and no read is needed (row U761 closed). Where M2 task 1's contract tables
-    name a toolkit field for any of these roles, the rule applies from then on, through that task's own spec
-    change;
+- *Decided:* a typed colour role that no source of the platform states is native-theme's own mapping where the
+  platform draws the role's meaning in a colour of its own, documented or measured (item 56); a text slot every
+  preset must fill takes a style or family the platform names. It is labelled as such, kept out of the gate's
+  platform comparison and never recorded as the platform's fact (the specification's S3 states the rule). It
+  changes R25.17's ground: the status colours of `macos-*` and `ios-*` are no longer absent by decision but stated
+  where a source or a measurement shows the platform drawing them. What it brings:
+  - on `macos-*` and `ios-*` each status waits on its read (rows U757–U760; a register row is one line of the
+    ledger's list of what is not measured yet), its values pending meanwhile (closes U456). No pinned Apple source
+    yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success or info. The reads begin
+    by pinning and reading the HIG's colour pages; the rows hold the candidates and what closes each. What the
+    evidence in hand gives: a candidate element only for macOS's error and warning (the level indicator's two
+    fills). For success and info on all four presets and for all four statuses on `ios-*` the pinned headers name
+    none, so unless an Apple page not yet read names the colours, those twelve status colours are absent in 0.8.0
+    and each connector draws its toolkit's colour there; a preset may then draw one status in the platform's colour
+    and another in the toolkit's (item 57);
+  - the status text colours (`foreground`, the text on the status fill) are the colour the platform is measured
+    drawing over that fill: on `macos-*` `alternateSelectedControlTextColor`, the text on emphasized content, where
+    a probe pass (row U756) finds it equal, as the default push button's title is (0.7.0 drew `labelColor` there,
+    which its own preset names the body text beside a status mark); on `ios-*` the filled button's measured title
+    colour (row U755), checked on the second-tint run (U706); 0.7.0's was a literal with no source;
+  - the destructive role, and a status's text colour on the surface where the platform is not found drawing the
+    status as text or a mark, stay absent on `macos-*` and `ios-*`: no committed source or measurement shows them
+    (row U761 retired). The set text colours (`negative`, `neutral`, `positive`) refer to the status's colour there,
+    its fill where no text colour is paired, as on `windows-11`, so a connector's error-text field still gets the
+    platform's colour;
   - on `adwaita` the info role's fill and text colour refer to the accent's fill and its foreground, the fill the
-    colour libadwaita's info bar draws info from, as 0.7.0 drew it; its standalone colour stays absent, since no
-    connector holds it and libadwaita draws no info as text (item 56);
+    colour libadwaita's info bar draws info from, as 0.7.0 drew it; its standalone colour stays absent, since
+    libadwaita draws no info as text (item 56);
   - the text slots' existing mappings get the same label;
   - on `ios-*`, `accent_foreground` (text on the accent colour) is paired with the colour UIKit draws a filled
     button's title in, measured `#ffffff` in both schemes on both presets, the same value 0.7.0's `ios-13` had. It
     is checked again on the second-tint run (U706);
   - on `windows-11`, the monospace slot becomes a labelled keyed style (its font family is item 26).
-- *Why:* iced, gpui-component and egui hold these as plain colours that cannot be left empty. With the role absent,
-  each connector would put either the toolkit's default there (forbidden: connectors follow the theme's data) or a
-  pairing of its own. The rule invents no colour, and R19 already admits labelled picks. For U651 the filled
-  button is the one control in the slice that draws content on a tint fill.
+- *Why:* the rule invents no colour: what is native-theme's is the pairing, and unlike R19's picks it rests on a use
+  the platform itself makes of the colour. With the role absent where the platform draws the meaning in a colour the
+  theme could give, each connector would put either the toolkit's default there (against "connectors follow the
+  theme's data") or a pairing of its own. For U651 the filled button is the one control in the slice that draws
+  content on a tint fill.
 - *Veto brings:* the roles stay absent. 0.8.0 keeps losing the macOS status colours, and the rationale needs a rule
   for what a connector puts in a toolkit field the model leaves empty. For U651 alone: a different witness for
   "content on the accent".
-- *Source:* outcome 5; register §2.2, U651, U509, §7 item 4; brief §2 decision 5. The macOS status text colours
-  and `adwaita`'s info: the orchestrator's decisions N1-1 and N1-2 on the batch's check of its fix rounds
-  (`batch-check/decisions.md`, `batch-check/check-N1.md`), by item 56's scope; the reads' outcome and
-  `destructive`: the decisions N2-1 and N2-2 on its second check (`batch-check/check-N2.md`); the open reads as
-  pending values and the success and info standalone colours and `adwaita`'s info standalone colour left absent:
-  the decisions N3-1 and N3-3 on its third check (`batch-check/check-N3.md`); `destructive` absent as the success
-  and info standalone colours: the decision N3-4 after that check's fix round; a measurement's pairing with the
-  colour measured and `destructive`'s ground: the decisions N4-1 and N4-2 on its fourth check
-  (`batch-check/check-N4.md`); the element left to the facts lane and the tie-break, a fill pairing the fill
-  alone, and documentation pairing the colour it names: the decisions N5-1 to N5-3 on its fifth
-  (`batch-check/check-N5.md`); the read cited, every closing fact to the tie-breaker, AppKit's "critical" `error`,
-  and the fill, the preset and the equality test made precise: the decisions N6-1 to N6-4 on its sixth
-  (`batch-check/check-N6.md`); a colour that follows the accent paired as a derivation over it: the decision N6-5.
+- *Source:* outcome 5; register §2.2, U651, U509, §7 item 4; brief §2 decision 5; the orchestrator's decisions on
+  the batch's checks N1 to N6 and F1 (`batch-check/decisions.md`, the checks in `batch-check/`), the rule's present
+  form, the set text colours and the destructive role's ground by the decisions F1-1, F1-3 and F1-4.
 
 **56. Which roles the labelled mapping covers (the scope of item 3).**
-- *Decided:* the mapping applies to a typed role where all three hold: (1) a connector maps it to a toolkit field
-  that cannot be left empty (the connectors' contract tables name these); (2) no stated fact gives it a value (a
-  role cited as the platform's own fact stays a fact, as `windows-11`'s `role.window.negative` and `macos-*`'s
-  `accent_standalone`; a fact stating it `absent` is replaced by the mapping); (3) the platform draws that meaning
-  in a colour of its own: a colour its documentation or code uses for that meaning (libadwaita's info bar draws
-  info from the accent, `_deprecated.scss:174`), or the colour it is measured drawing in that role (the filled
-  button's title colour, U651, U755); a colour that merely exists in its palette does not count. A text slot is
-  outside these conditions: every preset fills every slot, so where the platform names no counterpart the slot is
-  the mapping's, by a text style or family the platform names, never a made-up font (U509's monospace slot among
-  them). The pairing refers to the platform's colour or font, never to one native-theme makes up. Where only (3)
-  fails (`material-3`'s warning, success and info: Material draws none of those meanings; `windows-11`'s error
-  and warning standalone colours, which egui holds and WinUI draws only as fills; an Apple status whose read
-  finds neither a source nor a measurement, item 57, and an Apple error or warning standalone colour no read pairs
-  by text or a mark on the surface, item 3; whatever else the contract tables show), the role stays absent, and the connector's contract records the toolkit's own colour
-  there as an exception, as item 48 records a toolkit's own look for an unavailable widget, and the contract test
-  fails a table that lacks one. On `windows-11` this loses egui's error and warning text colours that 0.7.0 filled
-  (`#c42b1c`, `#9d5d00`), a loss R21 lists.
+- *Decided:* the mapping applies to a typed role that no source of the platform states, where the platform draws
+  the role's meaning in a colour of its own: a colour its documentation or code uses for that meaning (libadwaita's
+  info bar draws info from the accent, `_deprecated.scss:174`), or the colour of an element the platform itself
+  colours for that meaning, measured (the filled button's title, U651); a colour that merely exists in its palette
+  does not count. A reference the catalogue prescribes where the platform has one colour for two uses (the accent
+  as its own text colour; the set text colours as the status colour, on `windows-11` too) is the model's form, not
+  this mapping. A text slot is outside this: every preset fills every slot, by a style or family the platform names
+  (U509's monospace slot among them). Where the platform draws the meaning in no colour (`material-3`'s warning,
+  success and info; an Apple status whose read finds no witness, item 57), the role stays absent, the connector's
+  contract records there the colour the toolkit's default theme of the resolved scheme holds in that field, and the
+  contract test fails a table that lacks one. This is an exception to your rule that a connector never shows a
+  toolkit's own colour; item 48 admits a toolkit's geometry, never its colour. On `material-3` this loses the three
+  status colours 0.7.0 stated without a source, a loss R21 lists.
 - *Why:* item 3's wording ("a role a portable application needs") named no test. Read by its own reason, it would
   cover every field a toolkit holds as a plain colour, also where the platform has nothing to pair with, which
-  would make native-theme invent the colour; and it would turn references that the facts cite as the platform's own
-  into native-theme's picks.
+  would make native-theme invent the colour inside a preset, the platform's look. Where the platform draws the
+  meaning in no colour, the theme has no data for the connector to follow.
 - *Veto brings:* either the pairings extended to those roles too (`material-3`'s warning, success and info: a
   colour native-theme chooses where the platform has none), or each connector deciding what it puts in a toolkit
   field whose role is absent; for `adwaita`'s info, the role left absent (a colour only a deprecated widget draws
   not counted as the platform's).
 - *Source:* the batch check B's finding 3 and the orchestrator's decision B3 (`batch-check/check-B.md`,
   `decisions.md`), corrected by the check of the fix rounds and the decisions N1-2 and N1-3
-  (`batch-check/check-N1.md`, `decisions.md`); the rationale's R5.1, R10 and R25.17, the specification's S3.
+  (`batch-check/check-N1.md`, `decisions.md`), restated by the decisions F1-1 to F1-3 on the check of the whole batch
+  (`batch-check/check-F1.md`); the rationale's R5.1, R10 and R25.17, the specification's S3.
 
 **4. A bundled preset is checked by the crate's tests, not again at load (R2.8, a rationale sentence).**
 - *Decided:* the preset's own checks and the checks over combinations are not run again when a theme loads them for
   the stacks built from three kinds of data alone: a bundled preset whose pending table is empty (every one, at a
   release), a bundled palette, and the layers `Theme` derives from them. The crate's build test and the facts gate
-  run those checks at every commit. Each layer's own checks still run at every change. What the system and the
+  run those checks at every commit. The checks of each layer above the preset still run at every change. What the system and the
   application add, and a system reading with every layer above it, a bundled palette among them, where a change
   alters what the reading leaves out, is still checked when added or changed, its checks over combinations only
   where something they read changed. Queries still cannot fail.
@@ -168,6 +137,16 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
 - *Source:* load §3.8 (R2.8, class 3), §5 *The maintainer's numbers*, header; §3.3 *What it leaves*, as the
   orchestrator's decision N2-3 words it, corrected by the decision N3-2 (`batch-check/decisions.md`,
   `batch-check/check-N3.md`).
+
+**58. From now on the orchestrator may decide a change to a rationale decision, and a register row's choice of
+model form, by your earlier decisions and the project's rules.**
+- *Decided:* each such decision is applied at once, marked at its rule as awaiting your veto, and listed in the
+  report of the milestone or unit that made it; a pure preference, or a value only you can supply, stays yours (the
+  plan's *Spec changes*, class 3; the ledger's rule for kind `d`).
+- *Why:* your standing rule, settle by logic first and ask only real preferences.
+- *Veto brings:* class 3 changes and kind `d` rows wait for your decision, as before D6.
+- *Source:* the check F1's finding 11 and the orchestrator's decision F1-11 (`batch-check/check-F1.md`,
+  `batch-check/decisions.md`).
 
 ---
 
@@ -193,7 +172,11 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
 - *Why:* one rule for every model field: a value is stated on every preset or on none. No pinned Apple source states
   either motion.
 - *Veto brings:* a larger trial (see item 24); a value stated on some presets only was rejected as a false statement.
-  If decision G meant the two motions to leave together, the only change is that a measured one leaves too.
+  If decision G meant the two motions to leave together, the only change is that a measured one leaves too. Or
+  (iv) a value that answers 'later' on the presets that do not state it yet (the Apple presets, where 0.7.0 states
+  no entrance): truthful, and it keeps 0.7.0's coverage whatever the trial finds; it costs a model form no value has
+  today (a per-preset `later` for a value field, its S12 rule and each connector's handling), a class 2 change for
+  two values. Not taken: the trial may make it unnecessary; to be weighed again if the trial fails.
 - *Source:* staging §5.5, §6.1 R-3, §8 point 9, §10.2.
 
 **7. Icon sizes for contexts the platform names none for.**
@@ -216,37 +199,26 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
 - *Source:* register U559, §7 item 7.
 
 **57. The Apple status colours, if no Apple source pairs them (with item 3).**
-- *Decided:* only if a read finds no Apple documentation that names a system colour for error, warning, success or
-  info, and no measurement of an element the platform itself colours for that meaning, in a colour the run does not
-  set (rows U757–U760, made by the macOS and iOS lanes before their facts edit, at the latest at M4's pending
-  condition before the release; the lane picks the element, and the verifier and the tie-break, to which every fact
-  closing a read goes, decide whether it counts and confirm a survey that finds none, or none that counts): that
-  status (its fill, its standalone colour where it has one and its text colour) is absent on each of `macos-*` and
-  `ios-*` where none is found, and each connector fills its toolkit's field with the toolkit's own
-  colour, recorded in its contract. 0.7.0's status colour there is then lost. A source that names a colour pairs
-  that colour, 0.7.0's or another; a measurement pairs it with the colour the platform is measured drawing, a keyed
-  colour where the two are equal in each scheme and contrast and under a second accent too, within the
-  measurement's tolerance, a measured derivation over the accent where the second-accent run shows the colour
-  changing with the accent, never a fixed colour, and a fixed colour only where it holds under the second accent and
-  equals no system colour (S3). Either way the status keeps a
-  colour (its standalone colour only where it is named or measured as text or a mark, item 3). Until a read closes,
-  those values are pending, which no release may hold.
-- *Why:* item 56's third condition: a colour that merely exists in the platform's palette does not count, and
-  0.7.0's choice cites no source for the meaning. The same rule leaves `material-3`'s warning, success and info
-  absent, where 0.7.0 also drew colours.
-- *Veto brings:* the system colour kept as native-theme's pick even without an Apple source. That needs a fourth
-  alternative in item 56's third condition (a keyed colour 0.7.0 drew for that meaning), by which `material-3`'s
-  info (`#6750a4`, its primary) and `windows-11`'s error and warning text colours (0.7.0's `#c42b1c` and `#9d5d00`,
-  WinUI's critical and caution fills) would qualify too, so item 56 changes with it.
-- *Source:* the orchestrator's decision N2-1 on the batch's second check of its fix rounds (`batch-check/check-N2.md`,
-  finding 1; `batch-check/decisions.md`), the open reads' pending values by the decision N3-1 on its third
-  (`batch-check/check-N3.md`, finding 1), the measurement's pairing with the colour measured by the decision N4-1
-  on its fourth (`batch-check/check-N4.md`, finding 1), the element left to the facts lane and the tie-break and
-  documentation pairing the colour it names by the decisions N5-1 and N5-3 on its fifth (`batch-check/check-N5.md`,
-  findings 1, 4, 5), every closing fact to the tie-breaker, each preset on its own and the equality test by the
-  decisions N6-2 and N6-4 on its sixth (`batch-check/check-N6.md`, findings 2, 6, 7, 9), a colour that follows the
-  accent paired as a derivation over it by the decision N6-5; the specification's S3, the catalogue's *global roles*,
-  `status`; the rationale's R21 and R25.17.
+- *Decided:* a status whose read (rows U757–U760) finds on a preset neither Apple documentation naming a system
+  colour for that meaning nor a measurement of an element the platform itself colours for it is absent on that
+  preset, and each connector fills its toolkit's field with the toolkit's own colour, recorded in its contract;
+  0.7.0's status colour there is then lost. The macOS and iOS lanes make the reads before their facts edit, at the
+  latest at M4's pending condition, beginning with the HIG's colour pages; the rows state how a colour found is
+  paired (the specification's S3 states the rule). Until a read closes, those values are pending, which no release
+  may hold. What the evidence in hand gives: a candidate element only for macOS's error and warning (the level
+  indicator's two fills). For success and info on all four presets and for all four statuses on `ios-*` the pinned
+  headers name none, so unless an Apple page not yet read names the colours, those twelve status colours are absent
+  in 0.8.0 and each connector draws its toolkit's colour there; a preset may then draw one status in the platform's
+  colour and another in the toolkit's.
+- *Why:* item 56: a colour that merely exists in the platform's palette does not count, and 0.7.0's choice cites no
+  source for the meaning. The same rule leaves `material-3`'s warning, success and info absent, where 0.7.0 also
+  drew colours.
+- *Veto brings:* the system colour kept as native-theme's pick even without an Apple source. That needs a further
+  alternative in item 56 (a keyed colour 0.7.0 drew for that meaning), by which `material-3`'s info (`#6750a4`, its
+  primary) would qualify too, so item 56 changes with it.
+- *Source:* the orchestrator's decisions N2-1, N3-1, N4-1, N5-1, N5-3, N6-2, N6-4 and N6-5 on the batch's checks of
+  its fix rounds and the check F1's finding 7 (`batch-check/decisions.md`, the checks in `batch-check/`); the
+  specification's S3, the catalogue's *global roles*, `status`; the rationale's R21 and R25.17.
 
 ---
 
@@ -563,11 +535,8 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 
 ## Points that may be yours but are not clearly marked
 
-- **The individual status-colour pairings (item 3).** The catalogue's *global roles* `status` row lists them
-  (`error` `= role.@system_red`, `warning` `@system_orange`, `success` `@system_green`, `info` `@system_blue`, on
-  `macos-*` and `ios-*`, where a source names the colour or a measurement finds it, a keyed colour a read finds
-  instead pairing that one, a derivation over the accent where the colour measured follows the accent, otherwise
-  the colour measured; rows U757–U760), and item 3 now names the status text colours, on `ios-*` the filled button's title colour
+- **The individual status-colour pairings (item 3).** The catalogue's *global roles* `status` row lists each once
+  its row (U757–U760) closes, and item 3 names the status text colours, on `ios-*` the filled button's title colour
   (U755).
 - **0.7.0's values under `tab`, `card`, `expander`, `status_bar` (item 48).** The query answers "not available"
   where 0.7.0 gave values. No source calls this a loss, so it is not in group B.
