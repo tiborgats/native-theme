@@ -284,20 +284,27 @@ fn what(measure: Measure) -> String {
     }
 }
 
-/// The cases `names` asks for, in its order, or the first name the probe
-/// cannot measure.
-pub fn asked(names: &str, all: &[Case]) -> Result<Vec<Case>, String> {
-    names
+/// The cases among `all` that `names` asks for, in its order; each name
+/// that is none of them is printed `cost-error <name> not a case this
+/// binary can measure`, and the others are measured all the same (the
+/// design's situation A13: a case a probe change no longer produces fails
+/// alone); with the number of such names.
+pub fn asked(names: &str, all: &[Case]) -> (Vec<Case>, usize) {
+    let mut unknown = 0_usize;
+    let cases = names
         .split(',')
         .map(str::trim)
         .filter(|name| !name.is_empty())
-        .map(|name| {
-            all.iter()
-                .find(|case| case.name == name)
-                .cloned()
-                .ok_or_else(|| name.to_owned())
+        .filter_map(|name| {
+            let case = all.iter().find(|case| case.name == name).cloned();
+            if case.is_none() {
+                unknown = unknown.saturating_add(1);
+                println!("cost-error {name} not a case this binary can measure");
+            }
+            case
         })
-        .collect()
+        .collect();
+    (cases, unknown)
 }
 
 /// A bundled preset's file as the probe needs it from outside the crate:

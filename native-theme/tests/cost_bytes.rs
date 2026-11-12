@@ -93,7 +93,10 @@ fn one_preset(cases: &[Case]) -> Res<()> {
         let own = file.own()?;
         let before = in_use();
         let theme = cost_common::theme(id, route, &file, &own)?;
-        let resolution = theme.resolve(&mut WindowState::default(), &conditions);
+        // The window's own record is kept with its resolution, as an
+        // application keeps it.
+        let mut window = WindowState::default();
+        let resolution = theme.resolve(&mut window, &conditions);
         let held = in_use().saturating_sub(before);
         if let Some(case) = kept {
             print_bytes(&case.name, held, "");
@@ -104,7 +107,7 @@ fn one_preset(cases: &[Case]) -> Res<()> {
             drop(again);
             print_bytes(&case.name, peak, "");
         }
-        drop(resolution);
+        drop((resolution, window));
     }
     if let Some(case) = named(&|m| m == Measure::File) {
         let bytes = usize::try_from(std::fs::metadata(cost_common::preset_path(id))?.len())?;
@@ -139,8 +142,7 @@ fn bundled_preset_bytes() -> Res<()> {
         }
         return Ok(());
     };
-    let cases = cost_common::asked(&names, &all)
-        .map_err(|name| format!("{name}: not a case this binary can measure"))?;
+    let (cases, unknown) = cost_common::asked(&names, &all);
     if std::env::var("NT_COST_CHILD").is_ok() {
         return one_preset(&cases);
     }
@@ -161,6 +163,9 @@ fn bundled_preset_bytes() -> Res<()> {
             .map(|case| case.name.as_str())
             .collect();
         cost_common::run_child(TEST, id.key(), &names)?;
+    }
+    if unknown > 0 {
+        return Err(format!("{unknown} cases not measured").into());
     }
     Ok(())
 }

@@ -147,9 +147,9 @@ pub struct ReadCost {
 }
 
 /// Times the read of the bundled preset `id`'s text, as `Theme::from_preset`
-/// reads it, the load budget's line 1 on a preset whose `[pending]` table
-/// lists paths (the case `read`, a lower bound: no stack is built, nothing
-/// is validated). `in_use`, a counting allocator's bytes in use, is read
+/// reads it: the load budget's case `read` of lines 1 to 3, on every
+/// bundled preset (a lower bound of a load: no stack is built, nothing is
+/// validated). `in_use`, a counting allocator's bytes in use, is read
 /// before the read and at its end, while its result is held. Figures only:
 /// the result is dropped before this returns.
 pub fn read_cost(id: PresetId, in_use: Option<&dyn Fn() -> usize>) -> Result<ReadCost, LayerError> {

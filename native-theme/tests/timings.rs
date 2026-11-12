@@ -439,6 +439,9 @@ impl Subject {
                 let id = self.id;
                 timed_change(theme, |theme| Ok(theme.set_preset(id)?), |_| Ok(()))
             }
+            // A resolve's time includes dropping the resolution it returns,
+            // as the probe's D6 measurement (cost-probe d7adb68c) did (lines 5
+            // and 6).
             Measure::ResolveChanged(_) => {
                 median_calls(|| theme.resolve(&mut WindowState::default(), &conditions))
             }
@@ -470,8 +473,9 @@ impl Subject {
                 let (_, text) = REFERENCE_LAYERS.get(at).ok_or("no such reference layer")?;
                 let layer = Layer::from_toml(text)?;
                 median_of(|| {
+                    let layer = layer.clone();
                     let start = Instant::now();
-                    let id = theme.add_layer(layer.clone())?;
+                    let id = theme.add_layer(layer)?;
                     let time = start.elapsed();
                     theme.remove_layer(id)?;
                     Ok(time)
@@ -537,12 +541,10 @@ fn sweep(names: &str) -> Res<()> {
         .into_iter()
         .filter(|case| case.kind() == cost_common::Kind::Time)
         .collect();
-    let cases = cost_common::asked(names, &all)
-        .map_err(|name| format!("{name}: not a case this binary can measure"))?;
+    let (cases, mut failed) = cost_common::asked(names, &all);
     let began = Instant::now();
     let sampler = Sampler::start();
     let mut subject: Option<Subject> = None;
-    let mut failed = 0_usize;
     for case in &cases {
         let result = match (case.measure, theme_route(case.measure)) {
             (Measure::Load(_), _) => cost_common::run_child(TEST, &case.name, &[&case.name]),
