@@ -714,18 +714,22 @@ const UNEQUAL_OFFSETS: [&str; 1] = [
 
 /// The problems of the button's body's `FollowPart` top-left corner whose
 /// top offset reads `top` and whose left and right ones read `sides`, the
-/// label's font stated 12 in `size` and its line height 12px, the
-/// subtitle's font 12 in `size`, the body's top and left padding 12px.
-fn follow_part_reading(size: &str, top: &str, sides: &str) -> Vec<String> {
+/// label's and the subtitle's text as `texts` states them (each table's
+/// keys below `text.`), the body's top and left padding 12px and its
+/// bottom padding `= add(1px, 1px)`.
+fn follow_part_reading(texts: [&str; 2], top: &str, sides: &str) -> Vec<String> {
     let decl = declare(
         "[declare.widget.button]\ndata = { body = [\"widget.label.font_size\", \
-         \"widget.label.line_height\", \"widget.subtitle.font_size\"] }",
+         \"widget.label.line_height\", \"widget.subtitle.font_size\", \
+         \"widget.subtitle.line_height\"] }",
     );
+    let [label, subtitle] = texts;
     alone(
         &format!(
             "[widgets.button.body]\npadding.top_px = 12\npadding.left_px = 12\n\
-             [widgets.button.label]\ntext.font.{size} = 12\ntext.line_height_px = 12\n\
-             [widgets.button.subtitle]\ntext.font.{size} = 12\n\
+             padding.bottom_px = \"= add(1px, 1px)\"\n\
+             [widgets.button.label.text]\n{label}\n\
+             [widgets.button.subtitle.text]\n{subtitle}\n\
              [widgets.button.body.focus]\ncorners.top_left = \"follow_part\"\n\
              offset.top_px = \"= {top}\"\noffset.left_px = \"= {sides}\"\n\
              offset.right_px = \"= {sides}\""
@@ -736,21 +740,18 @@ fn follow_part_reading(size: &str, top: &str, sides: &str) -> Vec<String> {
 
 /// Offsets reading one stated number in two units differ (S2.4, S9.4,
 /// S12): a font size of 12pt against a line height of 12px, 16px and 12px
-/// at 96 DPI, read plainly or inside a call; two font sizes in points
-/// still read equal.
+/// at 96 DPI, read plainly or inside a call; a font size in points read on
+/// every side still reads equal.
 #[test]
 fn combination_follow_part_offsets_through_units() {
+    let texts = ["font.size_pt = 12\nline_height_px = 12", ""];
     assert_eq!(
-        follow_part_reading(
-            "size_pt",
-            "widget.label.font_size",
-            "widget.label.line_height"
-        ),
+        follow_part_reading(texts, "widget.label.font_size", "widget.label.line_height"),
         UNEQUAL_OFFSETS
     );
     assert_eq!(
         follow_part_reading(
-            "size_pt",
+            texts,
             "add(widget.label.font_size, 2px)",
             "add(widget.label.line_height, 2px)"
         ),
@@ -758,18 +759,14 @@ fn combination_follow_part_offsets_through_units() {
     );
     assert_eq!(
         follow_part_reading(
-            "size_pt",
+            texts,
             "add(widget.label.font_size, 2px)",
-            "add(widget.subtitle.font_size, 2px)"
+            "add(widget.label.font_size, 2px)"
         ),
         NONE
     );
     assert_eq!(
-        follow_part_reading(
-            "size_pt",
-            "widget.label.font_size",
-            "widget.subtitle.font_size"
-        ),
+        follow_part_reading(texts, "widget.label.font_size", "widget.label.font_size"),
         NONE
     );
 }
@@ -779,12 +776,76 @@ fn combination_follow_part_offsets_through_units() {
 /// size; two lengths still read equal.
 #[test]
 fn combination_follow_part_offsets_through_text_scaling() {
+    let texts = ["font.size_px = 12", ""];
     assert_eq!(
-        follow_part_reading("size_px", "widget.label.font_size", "part.padding.top"),
+        follow_part_reading(texts, "widget.label.font_size", "part.padding.top"),
         UNEQUAL_OFFSETS
     );
     assert_eq!(
-        follow_part_reading("size_px", "part.padding.left", "part.padding.top"),
+        follow_part_reading(texts, "part.padding.left", "part.padding.top"),
+        NONE
+    );
+}
+
+/// Offsets reading one stated number of pixels in two kinds of font size
+/// differ (S2.4, S9.4, S12): `WinUi` scales a font size and leaves a line
+/// height; and, read conservatively, two text styles' sizes or line heights
+/// differ, as `DynamicType` scales each by its style's role and
+/// `AndroidNonLinear` a line height by its style's font size. One line
+/// height read on every side still reads equal.
+#[test]
+fn combination_follow_part_offsets_through_scaling_kinds() {
+    let texts = [
+        "font.size_px = 12\nline_height_px = 12",
+        "font.size_px = 12\nline_height_px = 12",
+    ];
+    assert_eq!(
+        follow_part_reading(texts, "widget.label.font_size", "widget.label.line_height"),
+        UNEQUAL_OFFSETS
+    );
+    assert_eq!(
+        follow_part_reading(
+            texts,
+            "widget.label.line_height",
+            "widget.subtitle.line_height"
+        ),
+        UNEQUAL_OFFSETS
+    );
+    assert_eq!(
+        follow_part_reading(texts, "widget.label.font_size", "widget.subtitle.font_size"),
+        UNEQUAL_OFFSETS
+    );
+    assert_eq!(
+        follow_part_reading(
+            texts,
+            "widget.label.line_height",
+            "widget.label.line_height"
+        ),
+        NONE
+    );
+}
+
+/// An offset reading an expression at a font size's place differs from the
+/// same expression written at the offset (S2.4, S9.4, S12): its `1px`
+/// literals are font sizes there, text-scaled; the place read on every
+/// side, or the expression at a length's place, still reads equal.
+#[test]
+fn combination_follow_part_offsets_through_font_literals() {
+    let texts = ["line_height = \"= add(1px, 1px)\"", ""];
+    assert_eq!(
+        follow_part_reading(texts, "widget.label.line_height", "add(1px, 1px)"),
+        UNEQUAL_OFFSETS
+    );
+    assert_eq!(
+        follow_part_reading(
+            texts,
+            "widget.label.line_height",
+            "widget.label.line_height"
+        ),
+        NONE
+    );
+    assert_eq!(
+        follow_part_reading(texts, "part.padding.bottom", "add(1px, 1px)"),
         NONE
     );
 }
