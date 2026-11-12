@@ -1515,7 +1515,9 @@ no base states written `{}` (`# S10`); the state model in force (the
 default flavour's, each element's default size) is what the covering
 bases, the `[pending]` table and the round trip read. S19.2's staged bases
 and the keyed namespaces of `[declare]` are left for hand-writing, with the
-entries a hand-written `[declare]` must lose listed (`declaration: …`). Prints
+entries a hand-written `[declare]` must lose listed (`declaration: …`), and
+each value's reference to a keyed entry no base states reported (S12 refuses
+it: the units file stages an entry a value at depth reads). Prints
 on stderr the transcription share per widget and per unit (the 0.8.0
 plan's checkpoint D6), the rule count, the pending facts' register ids and
 a round trip: the draft read back gives every combination the value of

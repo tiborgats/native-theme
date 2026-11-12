@@ -1010,6 +1010,59 @@ MAP_NAMESPACES = {
 }
 
 
+# the `[declare]` keyed namespaces whose keys a value names (S10, NAMED_BY's "value" rules): the field holding the key
+VALUE_NAMESPACES = {"rendering_engines": "engine", "lcd_filters": "lcd_filter", "symbol_scales": "scale",
+                    "icon_state_effects": "state_effect", "spec_versions": "spec_version"}
+# a reference to a keyed entry in an expression (S2.2): a keyed text style, icon context, elevation entry, parameter
+# key or keyed colour role
+KEYED_REFERENCE = re.compile(r"(?<![\w.])(token\.text\.keyed\.\w+|token\.icons\.sizes\.keyed\.\w+|token\.elevation\.\w+"
+                             r"|token\.params\.\w+\.\w+|role\.@\w+)")
+
+
+def named_values(node) -> set:
+    """Every (field, value) pair a parsed value holds at any depth, a keyed value's `@` left out, and each keyed
+    transition kind's key as ("transition_kind", key) (S2.7's `kind = { keyed = { key } }`)."""
+    out = set()
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if isinstance(v, str):
+                out.add((k, v[1:] if v.startswith("@") else v))
+            if k == "kind" and isinstance(v, dict) and isinstance(v.get("keyed"), dict) and isinstance(
+                    v["keyed"].get("key"), str):
+                out.add(("transition_kind", v["keyed"]["key"]))
+            out |= named_values(v)
+    elif isinstance(node, list):
+        for v in node:
+            out |= named_values(v)
+    return out
+
+
+def unstated_references(text: str) -> list:
+    """The keyed entries a value of the preset references (KEYED_REFERENCE, in a base, a rule or a hand-written block)
+    that no base states and no listed path lies below, each with the number of value lines naming it: a reference
+    S12 refuses (an undeclared keyed name), the units file staging an entry a value at depth reads (S6.1's token rule,
+    clause 2)."""
+    data = tomllib.loads(text)
+    stated = [unsuffixed(p) for section in SECTIONS if section in data for p in stated_paths(data[section], (section,))]
+    stated += [unsuffixed(listed_path(k)) for k in data.get("pending", {})]
+    counts = {}
+    for line in text.split("\n"):
+        if not line.lstrip().startswith("#"):
+            for ref in KEYED_REFERENCE.findall(line):
+                counts[ref] = counts.get(ref, 0) + 1
+    out = []
+    for ref, n in counts.items():
+        segs = ref.split(".")
+        if ref.startswith("role.@"):
+            ok = any(len(p) > 3 and p[0] == "colors" and p[2] == "keyed" and p[3] == segs[1][1:] for p in stated)
+        else:
+            path = ("tokens",) + tuple(segs[1:])
+            ok = any(p[:len(path)] == path for p in stated)
+        if not ok:
+            out.append((ref, n))
+    return out
+
+
 def stated_paths(node, path=()) -> list:
     """Every leaf path of a parsed TOML table (an empty table a leaf too)."""
     if isinstance(node, dict) and node:
@@ -1041,6 +1094,9 @@ def declare_findings(text: str) -> list:
     naming the entry and why, for the hand-written part's edit (the generator writes none of these):
     - an entry of a keyed map's declaration (MAP_NAMESPACES, `params.<group>.keys`, `symbolic_colors`) that no base
       states and no listed path (`[pending]`, which the synthetic route's bases state) lies below;
+    - an entry of a namespace a value's field holds (VALUE_NAMESPACES: `rendering_engines`, `lcd_filters`, …;
+      `transition_kinds`, a transition's keyed kind) that no value of the preset, a base's or a rule's, names (a
+      staged block's, such as `TextRendering`'s, names none: S6.1's token rule, the D6 staging design's 1.5);
     - a `conditions` system setting no rule names (`system_setting:<key>`, positive or negative), one declared
       `for_applications` kept; a `device_models` entry no rule names (`device_model:<m>`); a `container_sizes`
       entry beyond its container's default (its first) that no rule names (`container_size:<c>:<size>`); a
@@ -1069,6 +1125,11 @@ def declare_findings(text: str) -> list:
         keys = table.get("keys", []) if isinstance(table, dict) else []
         out += [f"declare.params.{group}.keys {e!r}: no base states it and no listed path lies below it"
                 for e in keys if isinstance(e, str) and not states((("tokens", "params", group),), e)]
+    values = named_values({k: data.get(k) for k in SECTIONS} | {"rules": rules})
+    for ns, at in list(VALUE_NAMESPACES.items()) + [("transition_kinds", "transition_kind")]:
+        entries = decl.get(ns, [])
+        out += [f"declare.{ns} {e!r}: no value names it" for e in (list(entries) if isinstance(entries, (list, dict))
+                                                                    else []) if (at, e) not in values]
     for e in decl.get("conditions", []):
         key = e if isinstance(e, str) else e.get("key") if isinstance(e, dict) else None
         if isinstance(e, dict) and e.get("for_applications") is True or not isinstance(key, str):
@@ -3840,6 +3901,9 @@ presentation_events = ["show", "hide"]
 color_roles = ["a", "b"]
 text_styles = ["body", "title"]
 durations = ["button"]
+rendering_engines = ["native"]
+symbol_scales = ["medium", "large"]
+transition_kinds = { pressed = {} }
 
 [declare.params.opacity]
 unit = "fraction"
@@ -3859,15 +3923,25 @@ durations.button_ms = 200
 
 [widgets.button.body]
 presentations = [{ event = "show", steps = [] }]
+fill = "= role.@b"
+
+[widgets.button.icon]
+icon = { scale = "@medium" }
 
 [[rules]]
 when = { conditions = ["system_setting:x", "device_model:iphone"], not_conditions = ["container_size:sidebar:wide"] }
 target = "colors"
+
+[rules.set]
+keyed.a = "= token.text.keyed.title"
 '''
 FINDINGS_WANT = [
     "declare.color_roles 'b': no base states it and no listed path lies below it",
     "declare.text_styles 'title': no base states it and no listed path lies below it",
     "declare.params.opacity.keys 'dim': no base states it and no listed path lies below it",
+    "declare.rendering_engines 'native': no value names it",
+    "declare.symbol_scales 'large': no value names it",
+    "declare.transition_kinds 'pressed': no value names it",
     "declare.conditions '@unnamed': no rule names it",
     "declare.device_models 'ipad': no rule names it",
     "declare.container_sizes.sidebar 'compact': no rule names it",
@@ -3923,6 +3997,10 @@ def depth_cases(root: Path) -> list:
     got = declare_findings(FINDINGS_PRESET)
     if got != FINDINGS_WANT:
         failures.append(f"declare_findings: {got}, expected {FINDINGS_WANT}")
+    # a value referencing a keyed entry no base states (`role.@b`, `token.text.keyed.title`), one stated not
+    got = unstated_references(FINDINGS_PRESET + 'stroke = "= token.text.keyed.body"\n')
+    if got != [("role.@b", 1), ("token.text.keyed.title", 1)]:
+        failures.append(f"unstated_references: {got}")
     return failures
 
 
@@ -5293,6 +5371,7 @@ def run(ctx, preset: str, mode, out) -> int:
         model = read_model(ctx.root)
         fields = field_lines(model, draft, written)
         declared = declare_findings(written)
+        dangling = unstated_references(written)
     except (OSError, UnicodeDecodeError, InputError, check_facts.InputError, check_facts_trace.InputError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
@@ -5319,6 +5398,9 @@ def run(ctx, preset: str, mode, out) -> int:
         print(f"# the bundled preset's hand-written parts not read for the fields below: {unread}", file=sys.stderr)
     for line in fields:
         print(line, file=sys.stderr)
+    for ref, n in dangling:
+        print(f"# a reference no base states: {ref} ({n} value lines; S12 refuses it, the units file staging an entry "
+              f"a value at depth reads)", file=sys.stderr)
     for m in trip.mismatches:
         print(f"round trip: {m}", file=sys.stderr)
     if mode == "--write" and trip.mismatches:
