@@ -2,8 +2,8 @@
 
 **Status:** design, drafted 2026-10-28 from the gap map; checked eight times independently (§5), then amended
 in place during the specification's thirteen checks; done with the specification, 2026-10-29, and amended in place
-since by the 0.8.0 plan's decisions D12 and D13 and by the specification's batches, the last ADD-A147 (the outcomes
-of the plan's checkpoint D6, decided 2026-11-10, applied 2026-11-12).
+since by the 0.8.0 plan's decisions D12 and D13 and by the specification's batches, the last ADD-A148 (the fixes of
+the document pass after the plan's checkpoint D6, 2026-11-12).
 Every amendment is noted under R25.13, in the order made. Input: [`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)
 and its six platform files ("the map"; a row is identified by its file and ID, and cited here by ID,
 with its file where the prefix does not say it). Next: the specification,
@@ -437,9 +437,11 @@ catalogue, as typed widgets' do, R14), its keyed colour roles, text styles and e
 flavours, and its inputs (R2.6). Adding a layer checks every rule and reference against the declarations: a typo
 is an error, not a silent miss. A query for a size or variant the element's widget does not declare in its
 context returns "not available", a result the application handles, not a failure; a density the widget does
-not declare is ignored (R15). A variant, a size, a density or a flavour the platform has and a later unit states is answered
-'later': the theme does not state it yet (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list
-item 1).
+not declare is ignored (R15). A name the platform has and a later unit states cannot be asked for meanwhile, as the
+0.8.0 plan's *The depth 0.8.0 states* lists by kind: a typed variant is no member of `Variant`, a keyed one is
+declared `later`, a size, a density or a flavour is answered 'later', never 'not available', and an element under a
+given name resolves as without it (ADD-A147, ADD-A148; D6, decided by logic, awaiting the maintainer's veto: veto
+list item 1).
 
 **R2.8 — Validation and infallible queries.** The project forbids runtime panics, and a query runs inside a
 connector's draw call. The checks prove every rule's derivations against every base and rule they can apply
@@ -454,8 +456,10 @@ addition or a later change alters, and are not run where nothing they read diffe
 they run over a reader's structural reading and every layer above it, a bundled palette among them, where a change
 alters what the reading leaves out (a bundled palette applied or removed over it, `set_accent` on `kde-breeze` with
 the KDE reader); the checks of each
-value against the declarations, and the check that no input reads itself over the stack up to each layer, run over
-every layer above the preset at every change (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 4).
+value against the declarations, and the input checks over the stack up to each layer (the cycle check, no input
+reading itself, and the absent-role check, no input's expression reading a colour role that can be absent where
+that value of the input is in force; ADD-A148), run over every layer above the preset at every change (ADD-A147; D6,
+decided by logic, awaiting the maintainer's veto: veto list item 4).
 Rejected: the checks run again at every load, which repeats at run time what every commit already proves of the same
 data (four of the slice's presets loaded in 259 ms to 17.6 s with them, against the 16 ms of the plan's *The load budget*).
 
@@ -942,7 +946,8 @@ MAT-X13–MAT-X15, X-MO-1).
     code is not in the cache, are measured (interrupted at three points, a spring's velocity, stacked changes, a theme
     change, a deactivation, an occlusion and reduced motion landing in a run) and get their member with the
     measurement, their transitions pending facts the presets state none of meanwhile, each path in the preset's `[pending]` table
-    (S17, ADD-A128; never a placeholder `[]` or `Absent`), with no placeholder member (a
+    from the motion unit on (S17, ADD-A128; never a placeholder `[]` or `Absent`; in 0.8.0 a path a unit stages or
+    defers is no listed path, S17, ADD-A148), with no placeholder member (a
     member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
     likewise. A presentation interrupted (a popover dismissed while it
     appears) is a presentation event's matter, not settled here: ADD-A129 (queue #118), meanwhile cut, the state after
@@ -1110,7 +1115,7 @@ scale factor does not already carry (on an X11 session the font DPI reaches the 
 no reader of 0.8.0's reports one, the specification's S9.4; ADD-A146); a change of it is a theme change (R9). Folding the DPI into the
 text-scaling factor was rejected: that factor also scales sizes stated in pixels and is 1 where the platform scales by
 the font size itself, so it would scale pixel-stated fonts wrongly; a fixed DPI in the code was rejected as false on
-some platforms and as dropping the user's KDE setting.
+some platforms (the token is 72 where the point is the logical pixel and the platform's DPI elsewhere; ADD-A148).
 
 ### R11 — Icons and glyphs (C13, C19)
 
@@ -1127,23 +1132,28 @@ Fluent Icons); an icon of its icon theme by name; a vector path taken from its s
 check mark with `QPainterPath`); a system image the platform names for that purpose (AppKit's menu on-state check
 mark); or, where the platform names none, the system's own rendering of the whole control.
 
-AppKit draws its controls from CoreUI's compiled `.car` assets (as `platform-facts.md` §2.11 records for the tab
-bezel) and names no image for the checkbox's mark, the pop-up button's arrows or the disclosure triangle (its
+AppKit draws its controls from CoreUI's compiled `.car` assets (as the hand-written `docs/platform-facts.md` of 0.7.0
+records for the tab bezel, `platform-facts.md@fc6109d1:1356`) and names no image for the checkbox's mark, the pop-up button's arrows or the disclosure triangle (its
 named triangles are generic left- and right-facing images, which Apple says to use for their purpose, not their
 look). For MAC-C06, MAC-CB01, MAC-EX02 and MAC-L10 the part's look is therefore the control as AppKit draws it
 (`NSButton` with its checkbox or disclosure bezel, `NSPopUpButton`), in the state, size and appearance asked for,
 rendered by native-theme at run time through AppKit, on the main thread as AppKit requires, at the display's
-backing scale and the control's pixel size, with the window's key state, and cached per control, state, size,
+backing scale and the control's pixel size, with the window's key state where AppKit has a route for a control
+drawn off screen (the register's U708, read before the 0.8.0 plan's M2 task 7; where none exists the rendering does
+not follow it, a limit the connector's contract records, R23; ADD-A148), and cached per control, state, size,
 appearance, key state, layout direction and scale, as the SF Symbols loader renders symbols today; the cache is emptied at every
 theme change the reader reports (R2.5), as AppKit's drawing follows settings the key does not hold (the accent;
-ADD-A146). Called off the main thread, or
-off macOS (a `macos-*` preset used on another platform), the rendering is absent and the modelled parts stand;
+ADD-A146). Called off the main thread, off macOS (a `macos-*` preset used on another platform) or without the
+`macos` feature, the rendering is absent and the modelled parts stand;
 a toolkit that cannot use the rendering records that limit (R23). For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
 together, the rendering stated on the box, drawn in every state, ADD-A126); the modelled box (its measured fill,
 stroke and corners, R6, R7) remains for a toolkit that cannot, and the radio's dot (its measured diameter and its
-colour, a cornered fill) likewise, while the checkbox's mark has no model of its own, so without the rendering no
-mark is drawn and a checked and a mixed checkbox differ only where their box fills do, the mixed one a measurement
-(MAC-C01), the limit recorded where it is (R23). The rendering uses the system's accent: an application's accent cannot
+colour, a cornered fill) likewise, while the checkbox's mark, the pop-up's arrows and the disclosure triangle have no
+model of their own: where the rendering is absent the connector draws its toolkit's own mark, arrows and triangle,
+each in a colour from the theme, an exception its contract records (ADD-A148; decided by logic at the document pass,
+awaiting the maintainer's veto: veto list item 60). Rejected: no mark drawn there, a checked and a mixed checkbox
+differing only where their box fills do (the mixed one a measurement, MAC-C01), a loss of the mark 0.7.0 drew on
+`macos-*` presets everywhere. The rendering uses the system's accent: an application's accent cannot
 reach it, which the connector records (R23). Measuring the mark's geometry from renders was weighed and rejected:
 its outline can only be traced from a picture, which the project's asset rule forbids; its size and colour are
 still measured. Elsewhere a glyph's size, stroke width and fill are its values.
@@ -1221,9 +1231,9 @@ resource scope propagate; an application-wide density is the root's. A density r
 declare it (Material's density applies to some components); a widget that declares none ignores it, whether it
 inherits a density or its element states one. Size is the element's own, as AppKit's `controlSize` is. A size or
 variant the element's widget does not declare in its context returns "not available" (R2.7): an application asking
-for a small button on `adwaita` learns there is none, rather than getting an invented one. A variant, a size, a
-density or a flavour the platform has and a later unit states is answered 'later': the theme does not state it yet (ADD-A147; D6,
-decided by logic, awaiting the maintainer's veto: veto list item 1).
+for a small button on `adwaita` learns there is none, rather than getting an invented one. A name the platform has
+and a later unit states cannot be asked for meanwhile, by kind as R2.7 says (ADD-A147, ADD-A148; D6, decided by
+logic, awaiting the maintainer's veto: veto list item 1).
 
 ### R16 — Layout, placement, breakpoints and direction (C26)
 
@@ -1314,8 +1324,9 @@ Solarized and Tokyo Night publish none, and no project publishes one for Windows
 option would leave palettes on KDE only and drop five projects.
 
 **Decision (the maintainer's, 2026-10-28):** a fifth option, which the survey made necessary. Every community scheme
-stays, as a palette on every platform. A palette is **native-theme's own mapping** of the project's published colours
-onto the colour roles, documented and labelled as native-theme's (neither a platform fact nor the project's), the same
+stays, as a palette on every platform, over every preset that takes one (ADD-A148; decided by logic at the document
+pass, awaiting the maintainer's veto: veto list item 49: the `macos-*` and `ios-*` presets take none, below). A
+palette is **native-theme's own mapping** of the project's published colours onto the colour roles, documented and labelled as native-theme's (neither a platform fact nor the project's), the same
 on every platform; where a project publishes a port for a platform, that port is the palette there instead, converted
 mechanically. Principle 3 concerns platform values: a palette is a decoration an application chooses, not a platform's
 look, and its mapping is stated as native-theme's choice, never presented as a fact. The mapping:
@@ -1323,8 +1334,9 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
 - maps each role it covers to a colour the project publishes (Catppuccin's `Surface0`, Dracula's `Background`), or to a
   derivation of those by the model's functions; where a project's guide gives a range ("Overlay 2 20% - 30% Opacity"),
   the mapping records the value it picks and labels it as its pick;
-- leaves every role it does not cover to the platform's value and derivation (a libadwaita hover is the foreground at an
-  opacity, whatever the foreground is);
+- leaves every value it does not cover to the platform's value and derivation (a libadwaita hover is the foreground at an
+  opacity, whatever the foreground is), a colour role a value of the preset reads only where that role follows what
+  the mapping states (below; ADD-A148);
 - is one palette per variant the project publishes. A variant is a set of the project's base colours under one
   name with one of the accents the project publishes for it, in the schemes the project defines under that name:
   Catppuccin's 4 flavours × 14 accents are 56 variants (ADD-A146). 0.8.0 bundles the ten schemes 0.7.0 ships (the
@@ -1352,26 +1364,40 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   palette chosen, the system light) was an error or a suspension by which came first, and an application restoring
   its saved palette at start-up in a light session had to watch the scheme to apply it later;
 - carries no icon set (today's `icon_set = "lucide"` goes, as no project's colours state one);
-- on `windows-11` and `macos-*`, whose accent-dependent colours follow derivations their makers do not
-  publish (R2.6), states those derived inputs too, mapped to the project's colours in a per-preset section and
-  labelled as native-theme's picks like any other (the alternatives: leaving the platform's own accent in place under
-  the palette, which mixes two colour schemes, or refusing the palette on those presets, which drops it there); on
-  `ios-*` the accent is the one accent input, and what UIKit draws in the tint follows the palette's accent by the
-  measured derivations (R2.6; ADD-A146);
-- over a preset whose widgets read keyed colours (`windows-11`'s button reads 24 keyed colour roles and no typed one,
-  21 of them literals under the plain schemes), reaches them by a stated mapping method: each keyed colour role
-  those widgets read that follows nothing the palette states, mapped once to the project's own vocabulary, the
-  mapping reviewed; a palette without it is not offered over that preset (ADD-A147; D6, decided by logic, awaiting
-  the maintainer's veto: veto list item 49; the method is designed with the palettes, the specification's S14).
-  Rejected: typed roles alone, the mixed look recorded (the Windows button in WinUI's greys under the project's
-  colours, the mix of two schemes this decision rejects); the keyed colours picked one by one for a veto (21 picks
-  per palette and scheme for that button alone, ten palettes, thirty widgets to come);
-- is not offered over a preset whose widget colours the mapping method cannot reach, measured literals that follow
-  no role (the `macos-*` and `ios-*` bezels; `macos-tahoe`'s button fills are 2,561 measured literals of its 2,795
-  fill lines): a recorded limit, stated with the palettes (the specification's S14; ADD-A147; D6, decided by logic,
-  awaiting the maintainer's veto: veto list item 49). Rejected: offered there with the limit recorded (the mixed
-  look this decision rejects, the platform's literals under the palette's colours);
-- skips a role or surface set the current preset does not have, so one file serves every preset.
+- on `windows-11`, whose accent-dependent colours follow a derivation Microsoft does not publish (R2.6), states
+  those derived inputs too, mapped to the project's colours in a per-preset section and labelled as native-theme's
+  picks like any other (the alternative: leaving the platform's own accent in place under the palette, which mixes
+  two colour schemes; ADD-A148);
+- states, over any preset, every colour role, typed or keyed, that a value of the preset reads, unless that role is,
+  through references alone, a role or an input the mapping states (a derivation or a function call is no
+  reference), each mapped once to the project's own vocabulary by a stated method, the table per project and preset
+  reviewed: `windows-11`'s button reads 24 keyed colour roles and no typed one, 21 of them literals under the plain
+  schemes, and `material-3`'s ladder, Material's scheme of the seed, is mapped as those are, while `windows-11`'s
+  `@accent_fill_default`, `= role.global.accent_ramp.dark1`, which is `= input.accent_ramp.dark1`, needs no entry.
+  Where the preset states a typed role as a reference to a keyed one (`material-3`'s `role.window.background`,
+  `= role.@background`), the mapping states both alike or neither, so no surface is drawn in two colours. A palette
+  without the table for a preset is not offered over it (ADD-A147; D6; ADD-A148, decided by logic at the document
+  pass, awaiting the maintainer's veto: veto list item 49; the method is designed with the palettes, the
+  specification's S14). The bundled palettes' tables are written once, when every widget of 0.8.0 is in (the plan's
+  M4), so until then they are offered over `adwaita` and `kde-breeze` (ADD-A148; decided by logic at the document
+  pass, awaiting the maintainer's veto: veto list item 63). Rejected: typed roles alone, the mixed look recorded (the
+  Windows button in WinUI's greys under the project's colours, the mix of two schemes this decision rejects); a
+  keyed role that follows the accent left to the preset's derivation (over `material-3` the widgets would show
+  Material's scheme of the palette's accent beside the project's colours on the typed roles: the same mix); no
+  palette over `material-3` (it gives up more than its table costs); the keyed colours picked one by one for a veto
+  (21 picks per palette and scheme for that button alone, ten palettes, thirty widgets to come); each unit's
+  commit extending every bundled palette's tables (a review per project, preset and unit);
+- is not offered over a preset whose widget colours are measured literals that follow no role, which no mapping
+  reaches (the `macos-*` and `ios-*` bezels; `macos-tahoe`'s button fills are 2,561 measured literals of its 2,795
+  fill lines): the preset declares that it takes no palette, with its reason, and a palette over it is refused, a
+  recorded limit per preset, not per platform (an application on macOS may use a palette over a preset whose colours
+  follow roles; the specification's S10, S14; ADD-A147; D6; ADD-A148, decided by logic at the document pass,
+  awaiting the maintainer's veto: veto list item 49). Rejected: offered there with the limit recorded (the mixed look
+  this decision rejects, the platform's literals under the palette's colours); the preset ids listed in the
+  library's code (platform knowledge in code, edited when a preset's facts change); a section required for each
+  preset a palette serves (against one file for every preset, and a third party's section over `macos-*` would give
+  the mixed look); a check over the widgets' literals (it needs the method's design);
+- skips a role or surface set the current preset does not have, so one file serves every preset it is offered over.
 
 The facts gate checks a palette's colours against the project's published colours; its labelled picks are recorded as
 such and not compared with any platform.
@@ -1434,16 +1460,21 @@ caller's build, and a default would hide it.
 `Theme::from_file` go.
 
 - *Release in stages by capability.* Against: the rules touch every widget at once, each stage would break the
-  connectors again, and a release with some capabilities filled shows mixed looks.
+  connectors again, and a release with some capabilities filled shows mixed looks. Two capabilities 0.7.0 lacks are
+  staged all the same, as units (D13, D6): placement and the motion between states; the connectors' design shows
+  that the motion unit leaves their application-facing API unchanged, or the runtime's interface is built in 0.8.0
+  and its engines later (the plan's M2, task 1; the specification's S2.7, *In 0.8.0*; ADD-A148).
 - *One release.* Against: a long branch.
 - *0.8.0 at today's coverage, then the rest by units* (added by the maintainer's decision D13 of the 0.8.0 plan,
   2026-11-06): 0.8.0 holds every widget, colour role, token and value today's model holds, the catalogue's other
   units following in later releases. For: users lose no widget, colour role, token or value of 0.7.0's model but the
-  invented light variants (R19), the `button` values 0.7.0 stated with no
-  source, or against its own cited source, which the facts correct (D6's comparison, the plan's *The depth 0.8.0
-  states*: the `macos-*` and `ios-13` hover fills, `kde-breeze`'s inherited primary, `adwaita`'s text colour
+  invented light variants (R19); a community scheme over the `macos-*` and `ios-*` presets, which 0.7.0 offered on
+  every platform as a whole theme (R19: their widget colours are measured literals a palette cannot reach; ADD-A148;
+  decided by logic at the document pass, awaiting the maintainer's veto: veto list item 49); the values 0.7.0 stated
+  with no source, or against its own cited source, which the facts correct (D6's comparison for `button`, the plan's
+  *The depth 0.8.0 states*: the `macos-*` and `ios-13` hover fills, `kde-breeze`'s inherited primary, `adwaita`'s text colour
   `#2e3436`, the unsourced sizes and icon gaps, the `macos-monterey` pressed fill, the `ios-13` pressed and disabled
-  fills, the `windows-11` disabled fill); the values 0.7.0 took from a source the preset's reference rule does not
+  fills, the `windows-11` disabled fill; the list growing by each further unit's comparison, ADD-A148); the values 0.7.0 took from a source the preset's reference rule does not
   choose for it (R1.6 for `material-3`: the older `v0_192` token set's disabled container, and material-web's
   component's vertical padding and minimum width where Compose has the button; R1.3 and R1.4 for `ios-13`: WebKit's
   HTML button's pressed label against UIKit's), which the facts restate by that rule; the look of a button with no
@@ -1472,15 +1503,29 @@ caller's build, and a default would hide it.
   `status_bar`; ADD-A146), which a connector draws by its contract's list (the specification's S21.3), a widget
   being 0.8.0's on every preset whose platform draws it (ADD-A147; D6, decided by logic, awaiting the maintainer's
   veto: veto list item 48), what 0.7.0's API holds beyond them and 0.8.0 does not keep being the plan's *Not kept*, and get the
-  new model weeks earlier; each
+  new model weeks earlier (on Linux, where the desktop's reader is not compiled, `from_system` gives the platform's
+  preset in the scheme the reads that need no feature give, as 0.7.0's `linux_fallback` did, the specification's S16;
+  ADD-A148; decided by logic at the document pass, awaiting the maintainer's veto: veto list item 59; rejected:
+  `Err(FeatureDisabled)` there, a loss D13 does not allow); each
   release's units are whole in what they state: every part, field and value of their entries, in every combination
   of the names the release holds. What a unit does not hold yet is a named later unit's and cannot be asked for
-  meanwhile: placement (their menus, popovers and dialogs open where the toolkit puts them, as in 0.7.0); the
-  variants, sizes, host contexts, states and conditions beyond those 0.7.0's model and readers distinguish, each
-  entering whole, on every preset, with a later unit of depth; and the state-change transitions (a state changes at
-  once, as in 0.7.0). So no element is drawn from rules of two depths (ADD-A147; D6, decided by logic, awaiting the
-  maintainer's veto: veto list items 1 and 2). Against: several releases, each with its gate run; a later widget that adds members to an
-  exhaustive enum is a breaking release (the plan's D14); widgets 0.7.0 styles through other widgets' fields keep
+  meanwhile (by kind as R2.7 says): placement (their menus, popovers and dialogs open where the toolkit puts them, as
+  in 0.7.0); the variants, sizes, host contexts, states and conditions beyond those 0.7.0's model and readers
+  distinguish, each entering whole, on every preset, with a later unit of depth, where a 0.7.0 `defaults` colour that
+  maps to a role brings no state flag (0.7.0's connectors drew the disabled text and the selection in one colour on
+  every widget, and the connectors' deferred entries draw those states from the typed roles as 0.7.0's did, the
+  specification's S21.3; ADD-A148; decided by logic at the document pass, awaiting the maintainer's veto: veto list
+  item 64) and `full_keyboard_access` is at depth model-wide, as `contrast_high` is (the built macOS reader reads it,
+  and without it no macOS widget would draw the focus ring 0.7.0's connectors drew on keyboard focus; ADD-A148;
+  decided by logic at the document pass, awaiting the maintainer's veto: veto list item 62); and motion beyond the
+  two 0.7.0 has: the state-change transitions (a state changes at once, as in 0.7.0), every presentation but the
+  dialog's, every widget's loop but the spinner's, and the theme-change token (a theme change is drawn at once),
+  while a part's `shown` stays with its rest meaning alone (an unchecked box draws no mark, as in 0.7.0) and the
+  press ripple stays (ADD-A148; decided by logic at the document pass, awaiting the maintainer's veto: veto list item
+  61). So no element is drawn from rules of two depths (ADD-A147; D6, decided by logic, awaiting the
+  maintainer's veto: veto list items 1 and 2). Against: several releases, each with its gate run; a later widget that
+  adds members to an exhaustive enum, a unit of depth that adds typed variants and the motion unit are breaking
+  releases (the plan's D14; veto list item 31); widgets 0.7.0 styles through other widgets' fields keep
   those stand-ins until their units.
 
 **Decision:** the third (D13; until then, one release). v0.7.1 is this milestone's documents; the implementation runs
@@ -1769,31 +1814,7 @@ of that day:
   application picked (a recorded decision reversed, kept at D6, outcome 12); under
   a KDE port the reader's accent stays in force, as the specification's S14 recorded.
 - R21: the error, diagnostic and status enums, which no connector maps, are `#[non_exhaustive]`; what 0.8.0 keeps
-  of 0.7.0 is its model's widgets, roles, tokens and values but the invented light variants (R19), the `button` values 0.7.0 stated with no source, or against its own cited source,
-  which the facts correct (D6's comparison, the plan's *The depth 0.8.0 states*: the `macos-*` and `ios-13` hover
-  fills, `kde-breeze`'s inherited primary, `adwaita`'s text colour `#2e3436`, the unsourced sizes and icon gaps, the
-  `macos-monterey` pressed fill, the `ios-13` pressed and disabled fills, the `windows-11` disabled fill); the values
-  0.7.0 took from a source the preset's reference rule does not choose for it (R1.6 for `material-3`: the older
-  `v0_192` token set's disabled container, and material-web's component's vertical padding and minimum width where
-  Compose has the button; R1.3 and R1.4 for `ios-13`: WebKit's HTML button's pressed label against UIKit's), which
-  the facts restate by that rule; the look of a button with no variant on `material-3` and `ios-13`, which draws the
-  platform's default button (Compose's `Button`, the filled one; UIKit's system button), 0.7.0's look staying under
-  `tinted` and `@gray` (0.7.0 mapped its plain button to Material's tonal button and to WebKit's HTML button, neither
-  the platform's default: `androidx@e4d933c9 …/material3/Button.kt:77-88` against `FilledTonalButton`, `:439-447`;
-  `xcode@26.6 UIKit/UIButton.h:22-23`); `material-3`'s checked text-button colours (0.7.0 stated the tonal toggle of
-  Material's latest token set; baseline Material draws a toggle only as an icon button, the content unit's, and a
-  text toggle under the `expressive` flavour, the flavours unit's, where Compose 1.5's Expressive `ToggleButton`
-  brings it back); of the two motions 0.7.0 has, one the Apple motion trial does not measure (the plan's M2, task 1):
-  the dialog's entrance kind (`adwaita`, `kde-breeze`, `windows-11`, `material-3`), or the busy indicator's loop as
-  theme data (every preset; the icon sets' frames on `adwaita`, `kde-breeze` and `material-3`) (ADD-A147; D6, decided
-  by logic, awaiting the maintainer's veto: veto list items 5, 6 and 32 to 39); the icon size of a context the
-  platform names none for, which 0.7.0 stated on every preset (`material-3`'s `small` and `large`, `adwaita`'s
-  `dialog` and `panel`, and on `macos-*`, `windows-11` and `ios-*` as far as the register's U102, U516 and U127 find);
-  the icon theme's name on the presets whose icon set is not freedesktop, where 0.7.0 repeated the set's name
-  (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 7 and 8) and the widgets a preset
-  declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`), which a connector draws
-  by its contract's list (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 48), the
-  plan listing what its API does not keep.
+  of 0.7.0 is its model's widgets, roles, tokens and values but R21's list (ADD-A148).
 - R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
   none (the specification's S15).
 
@@ -1834,6 +1855,27 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
 - R21: a widget is 0.8.0's on every preset whose platform draws it; where a preset declares unavailable a widget
   0.7.0 resolved, a connector draws its toolkit's widget by its contract's list (veto list item 48).
 - R2.6, R4, R10, R19, R21: the five amendments of ADD-A146 stand (outcome 12; veto list item 42).
+
+Amended in place by the specification's batch ADD-A148 (2026-11-12, the fixes of the document pass after D6; decided
+by logic, awaiting the maintainer's veto: veto list items 49 and 59 to 64):
+
+- R19: a mapping states every colour role, typed or keyed, a value of the preset reads but one that follows,
+  through references alone, what it states, so `material-3`'s ladder is mapped; the bundled palettes' tables are
+  written at M4, offered over `adwaita` and `kde-breeze` until then; a preset whose widget colours are measured
+  literals declares that it takes no palette (`macos-*`, `ios-*`), which changes "a palette on every platform" (items
+  49 and 63).
+- R21: the list of losses gains a community scheme over the `macos-*` and `ios-*` presets; `from_system` on Linux
+  without the desktop's reader keeps 0.7.0's preset in the detected scheme (item 59); a 0.7.0 `defaults` colour that
+  maps to a role brings no state flag to depth (item 64); `full_keyboard_access` is at depth model-wide (item 62);
+  the motion unit holds every presentation but the dialog's, every loop but the spinner's and the theme-change
+  token, while `shown` and the press ripple stay (item 61); the staged capabilities and the breaking releases of
+  the later units stated.
+- R11: where the AppKit rendering is absent the connector draws its toolkit's own mark, arrows and triangle (item
+  60); the key state followed only where U708 finds a route.
+- R2.8: the input checks are the cycle check and an input expression's absent-role check. R2.7, R15: the later
+  names by kind, as the plan lists them. R9: an Apple transition's path is listed from the motion unit on. R10: the
+  fixed DPI's second reason dropped. R25.17: the labelled mapping is compared by the gate and reported apart; each
+  of a status's fields needs its own witness.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
@@ -2027,7 +2069,8 @@ Each is decided from the pinned sources; the specification cites them.
   unchecked); the system colours 0.7.0 drew kept as native-theme's labelled pick with no witness, as outcome 5 first
   had it (a preset is the platform's look, where principle 3 holds, unlike a palette, R19; and the same pick could
   not be refused to `material-3`); one rule for every typed role or slot no source of the platform states: native-theme's own mapping,
-  labelled as such, outside the gate's platform comparison and never recorded as the platform's fact.
+  labelled as such, compared by the gate like any value and reported apart from the platform's stated facts, and
+  never recorded as the platform's fact (ADD-A148).
   **Decision:** the last (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 3). It
   invents no colour: what is native-theme's is the pairing, which the label says, and unlike R19's picks it rests on
   a use the platform itself makes of the colour. A typed role is the mapping's where the platform draws its meaning
@@ -2049,11 +2092,13 @@ Each is decided from the pinned sources; the specification cites them.
   (`v0.7.0:native-theme/src/presets/macos-tahoe.toml:37-39`), and its iOS status text a literal with no source
   (`v0.7.0:native-theme/src/presets/ios-13.toml:45-56`), so neither gives a pairing to keep (ADD-A147; D6, decided
   by logic, awaiting the maintainer's veto: veto list item 3). On `adwaita` the `info` record's `fill` and
-  `foreground` refer to the accent's, as libadwaita's info bar draws info (`_deprecated.scss:174`) and as 0.7.0 drew
+  `foreground` refer to the accent's fill and its foreground, the fill the colour libadwaita's info bar draws info
+  from (`libadwaita@1.10.0 src/stylesheet/widgets/_deprecated.scss:174-180`), as 0.7.0 drew
   it (`v0.7.0:native-theme/src/presets/adwaita.toml:42-45`) (ADD-A147; D6, decided by logic, awaiting the
-  maintainer's veto: veto list item 56). A status's `standalone` waits on its row as its fill does (the
-  specification's S3). `destructive`, `background`, `background_solid` and `neutral` stay absent where the catalogue
-  allows it: no committed source or measurement shows the platform drawing them at 0.8.0's depth. The Selection set's outline stays
+  maintainer's veto: veto list item 56). A status's `standalone` waits on its row as its fill does, each field paired
+  only by a witness of its own: a fill pairs the `fill` and its `foreground`, a witness drawn as text or a mark alone
+  the `standalone` alone (the specification's S3; ADD-A148). On `macos-*` and `ios-*` `destructive`, `background`,
+  `background_solid` and `neutral` stay absent where the catalogue allows it: no committed source or measurement shows the platform drawing them at 0.8.0's depth. The Selection set's outline stays
   absent on `macos-*`; macOS's destructive buttons keep their system red, its level indicator its own fills (U757's
   and U758's candidates).
 - *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that
