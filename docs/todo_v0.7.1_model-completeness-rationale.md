@@ -442,7 +442,7 @@ not declare is ignored (R15). A variant, a size or a flavour the platform has an
 item 1).
 
 **R2.8 — Validation and infallible queries.** The project forbids runtime panics, and a query runs inside a
-connector's draw call. Resolution checks every rule's derivations against every base and rule they can apply
+connector's draw call. The checks prove every rule's derivations against every base and rule they can apply
 over, and every expression against every binding it can meet: types, references, cycles, and operands that
 could be absent, or automatic where arithmetic would need a number (an automatic size has none). A preset or layer that fails is an error when it is added, and it is refused (R2.5); so resolution
 and the query cannot fail. A bundled preset whose `[pending]` table is empty (every one at a release), a bundled
@@ -451,7 +451,7 @@ palette, and every layer `Theme` derives from them alone pass these checks in th
 the application add passes them when it is added: they run over every layer whose stack, as they read it, the
 addition changes, and are not run where nothing they read differs from a stack that passed them; the checks of each
 value against the declarations, and the check that no input reads itself over the stack up to each layer, run over
-every layer at every change (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 4).
+every layer above the preset at every change (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 4).
 Rejected: the checks run again at every load, which repeats at run time what every commit already proves of the same
 data (four of the slice's presets loaded in 259 ms to 17.6 s with them, against the 16 ms of the plan's *The load budget*).
 
@@ -601,9 +601,11 @@ fill and stroke tiers.
   platform's own roles* (Material's ladder, WinUI's tiers).
 
 **Decision:** the third (principle 4). A role the platform does not have is absent there, as the Selection set's
-outline is on `macos-*` (R25.17), unless a portable application needs it: then it is native-theme's labelled
-mapping, as the status roles are on `macos-*` and `ios-*` (R25.17; ADD-A147; D6, decided by logic, awaiting the
-maintainer's veto: veto list item 3).
+outline is on `macos-*` (R25.17), unless all three hold: a connector maps it to a toolkit field that cannot be left
+empty (the connectors' contract tables name these), no stated fact gives it, and the platform has a keyed colour of
+its own to pair it with. Then it is native-theme's labelled mapping, a reference to that colour, as the status roles
+are on `macos-*` and `ios-*` (R25.17; ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list
+items 3 and 56).
 
 **Groups.** The window being inactive holds for a whole window, so an inactive group is a colour-role rule under the
 inactive condition; being disabled is per element, so each surface set also holds disabled roles, which parts'
@@ -1360,6 +1362,11 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   Rejected: typed roles alone, the mixed look recorded (the Windows button in WinUI's greys under the project's
   colours, the mix of two schemes this decision rejects); the keyed colours picked one by one for a veto (21 picks
   per palette and scheme for that button alone, ten palettes, thirty widgets to come);
+- is not offered over a preset whose widget colours the mapping method cannot reach, measured literals that follow
+  no role (the `macos-*` and `ios-*` bezels; `macos-tahoe`'s button fills are 2,561 measured literals of its 2,795
+  fill lines): a recorded limit, stated with the palettes (the specification's S14; ADD-A147; D6, decided by logic,
+  awaiting the maintainer's veto: veto list item 49). Rejected: offered there with the limit recorded (the mixed
+  look this decision rejects, the platform's literals under the palette's colours);
 - skips a role or surface set the current preset does not have, so one file serves every preset.
 
 The facts gate checks a palette's colours against the project's published colours; its labelled picks are recorded as
@@ -1776,21 +1783,23 @@ of that day:
   the icon theme's name on the presets whose icon set is not freedesktop, where 0.7.0 repeated the set's name
   (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 7 and 8) and the widgets a preset
   declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`), which a connector draws
-  by its contract's list (ADD-A147; veto list item 48), the plan listing what its API does not keep.
+  by its contract's list (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 48), the
+  plan listing what its API does not keep.
 - R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
   none (the specification's S15).
 
 Amended by the 0.8.0 plan's checkpoint D6 (2026-11-10, outcomes 1, 2, 3, 5, 6, 7, 12 and 14; the specification's
-batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 1, 2, 3, 4, 7, 8, 42, 48 and
-49):
+batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 1 to 8, 32 to 40, 42, 48, 49,
+54 and 56):
 
 - R21: a unit enters at the depth 0.7.0's model and readers distinguish, its further variants, sizes, host contexts,
   states and conditions in later units of depth; 0.8.0 holds the two motions 0.7.0's model has, the dialog's
   presentation and the busy indicator's loop, with the speed factor and the reduced-motion conditions, each if an
   Apple trial measures it on the Apple presets, and state-change transitions are the motion unit's; the invented
-  values D6's comparison finds join R19's on the list of what users lose, and so do, by the register's rows the
-  checkpoint settled, the icon sizes of contexts a platform names none for and the icon theme's name on the presets
-  whose icon set is not freedesktop (veto list items 7 and 8).
+  values D6's comparison finds join R19's on the list of what users lose, and so do `material-3`'s checked text
+  toggle, until the flavours unit (veto list item 5), a motion the Apple trial does not measure (item 6), and, by
+  the register's rows the checkpoint settled, the icon sizes of contexts a platform names none for and the icon
+  theme's name on the presets whose icon set is not freedesktop (veto list items 7 and 8).
 - R4: the gate checks the combinations of the names its enabled units hold.
 - R2.7, R15: a variant, size or flavour the platform has and a later unit states is answered 'later', never 'not
   available'.
@@ -1800,12 +1809,17 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
   alone are checked by the crate's own tests at every commit and not again when a theme loads them; what the system
   and the application add is checked when added, over every layer whose stack, as the checks read it, the addition
   changes (veto list item 4).
-- R5.1, R10, R25.17: a typed role or slot a portable application needs and the platform names no counterpart for is
-  native-theme's labelled mapping, outside the gate's platform comparison, never absent and never a stated fact; on
-  `macos-*` and `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them, so 0.8.0 no longer
-  loses the macOS status colours (R21); the text slots' mappings are labelled alike (veto list item 3).
+- R5.1, R10, R25.17: a typed role or slot the platform names no counterpart for is native-theme's labelled mapping,
+  outside the gate's platform comparison, never absent and never a stated fact, where a connector maps it to a
+  toolkit field that cannot be left empty, no stated fact gives it and the platform has a keyed colour of its own to
+  pair it with; where only the last fails, it stays absent and the connector's contract records the toolkit's own
+  colour there as an exception (veto list item 56). On `macos-*` and `ios-*` the status roles refer to the keyed
+  system colours as 0.7.0 drew them, and on `macos-*` the status text colours to `labelColor`, so 0.8.0 no longer
+  loses the macOS status colours (R21); the iOS status text colour's pairing is open; the text slots' mappings are
+  labelled alike (veto list item 3).
 - R19: over a preset whose widgets read keyed colours, a palette reaches them by a stated, reviewed mapping method,
-  or it is not offered over that preset (veto list item 49).
+  or it is not offered over that preset; nor is it offered over a preset whose widget colours are measured literals
+  that follow no role (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
 - R21: a widget is 0.8.0's on every preset whose platform draws it; where a preset declares unavailable a widget
   0.7.0 resolved, a connector draws its toolkit's widget by its contract's list (veto list item 48).
 - R2.6, R4, R10, R19, R21: the five amendments of ADD-A146 stand (outcome 12; veto list item 42).
@@ -2002,11 +2016,26 @@ Each is decided from the pinned sources; the specification cites them.
   counterpart for: native-theme's own mapping, labelled as such, outside the gate's platform comparison, never
   absent and never recorded as the platform's fact. **Decision:** the last (ADD-A147; D6, decided by logic, awaiting
   the maintainer's veto: veto list item 3). It invents no colour: the colours are the platform's system colours, and
-  what is native-theme's is the pairing, which the label says, as R19's labelled picks are. On `macos-*` and `ios-*`
-  the status roles refer to the keyed system colours as 0.7.0 drew them, the pairings listed in the specification's
-  catalogue for the maintainer's veto, and on `macos-*` the sets' status text colours follow them, as on every
-  preset without per-set values; a status field 0.7.0 drew no system colour for stays absent where the catalogue
-  allows it; the text slots' mappings (R10) carry the same label. The Selection set's outline stays absent
+  what is native-theme's is the pairing, which the label says, as R19's labelled picks are. The rule maps a role or
+  slot where all three hold: a connector maps it to a toolkit field that cannot be left empty (the connectors'
+  contract tables name these); no stated fact gives it (a role cited as the platform's own fact stays a fact, as
+  `windows-11`'s `role.window.negative` and `macos-*`'s `accent_standalone`); and the platform has a keyed colour of
+  its own to pair it with. The pairing refers to that colour, never to a colour native-theme makes up. Where only the
+  third fails (`material-3`'s warning, success and info, `adwaita`'s info), the role stays absent and the
+  connector's contract records the toolkit's own colour there as an exception, as for a widget a preset declares
+  unavailable (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 56). On `macos-*` and
+  `ios-*` the status records' `fill` and `standalone` refer to the keyed system colours 0.7.0 drew, systemRed,
+  systemOrange, systemGreen and systemBlue, the pairings listed in the specification's catalogue for the
+  maintainer's veto, and on `macos-*` the sets' status text colours follow them, as on every preset without per-set
+  values. On `macos-*` each status `foreground`, which the gpui connector holds as a plain colour
+  (`danger_foreground` and its three siblings, filled in 0.7.0 from `*_text_color`), refers to AppKit's
+  `labelColor`, the colour 0.7.0 drew it in (`v0.7.0:native-theme/src/presets/macos-tahoe.toml:37-47`), which the
+  facts state as `role.window.foreground`; on `ios-*` its pairing is open (the ledger's U755): 0.7.0's status
+  text there was a literal with no source, `#ffffff` and on warning `#000000` in both schemes
+  (`v0.7.0:native-theme/src/presets/ios-13.toml:45-56`), neither UIKit's label colour nor another keyed colour.
+  `background`, `background_solid`, `neutral` and `destructive`, which 0.7.0's model did not hold, stay absent where
+  the catalogue allows it unless a contract table names a toolkit field for them. The text slots' mappings (R10)
+  carry the same label. The Selection set's outline stays absent
   on `macos-*`; macOS's destructive buttons keep their system red, its level indicator its own fills.
 - *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that
   held there, so a field's facts had to restate where their part is drawn (eleven fields of GNOME's menu arrow, and as
