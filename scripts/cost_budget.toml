@@ -33,15 +33,22 @@ tolerance_floor = 0.05
 6 = { what = "Theme::resolve, nothing changed", budget = 10, unit = "us" }
 7 = { what = "a styled query, computed", budget = 50, unit = "us" }
 8 = { what = "a styled query, repeated in one resolution", budget = 2, unit = "us" }
-9 = { what = "bytes a preset adds to a binary", budget = 256, unit = "KiB", exact = true }
+9 = { what = "bytes a preset adds to a binary (256 KiB), counted exactly", budget = 262144, unit = "bytes", exact = true }
 10 = { what = "Theme::from_system, the theme's own part (the read of the preset and the acceptance of the reading)", budget = 16, unit = "ms" }
 11 = { what = "peak memory during Theme::resolve, above the level before it", budget = 8, unit = "MiB" }
 12 = { what = "the cost of adding an application layer that states structure: reported, no line", unit = "ms" }
 
-# Every case the probe can measure (rule 4), and the plain route's cases of the four presets
-# whose [pending] table M2's task 0 empties. Lines 1 to 3 are `read` on every preset (the read
-# alone, a lower bound); the synthetic route's cases and the `read` of a preset leave the file
-# as the plan says once its table is empty and load task 1 has merged.
+# Every case the probe can measure (rule 4), and the cases later tasks' probe changes bring, each
+# "first measured by" its task until then (named in the printout, not asked for: the design's
+# situation 13): the plain route's cases of the four presets whose [pending] table M2's task 0
+# empties, and load task 4b's line 10 (`Theme::from_system`'s own part, the first reading) and
+# line 4's re-reads (of an identical reading, of another accent, of the other scheme, of another
+# font size), per reader over its own preset (`system`). Line 4's case of a bundled palette
+# applied or removed is "first measured by" M2's fourth task, which bundles the palettes and
+# decides which presets each serves; no case can be keyed by its preset before that, so its cases
+# enter with that task. Lines 1 to 3 are `read` on every preset (the read alone, a lower bound);
+# the synthetic route's cases and the `read` of a preset leave the file as the plan says once its
+# table is empty and load task 1 has merged.
 [cases]
 # adwaita
 "1.adwaita.read" = { first_measured_by = "the trigger step" }
@@ -306,3 +313,31 @@ tolerance_floor = 0.05
 "12.windows-11.plain.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
 "12.windows-11.plain.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
 "12.windows-11.plain.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# Load task 4b: from_system on the readers' fixtures, per reader over its own preset (GNOME
+# adwaita, KDE kde-breeze, macOS macos-monterey and macos-tahoe, Windows windows-11)
+"4.adwaita.system.reread_identical" = { first_measured_by = "load task 4b" }
+"4.adwaita.system.reread_accent" = { first_measured_by = "load task 4b" }
+"4.adwaita.system.reread_scheme" = { first_measured_by = "load task 4b" }
+"4.adwaita.system.reread_font_size" = { first_measured_by = "load task 4b" }
+"10.adwaita.system" = { first_measured_by = "load task 4b" }
+"4.kde-breeze.system.reread_identical" = { first_measured_by = "load task 4b" }
+"4.kde-breeze.system.reread_accent" = { first_measured_by = "load task 4b" }
+"4.kde-breeze.system.reread_scheme" = { first_measured_by = "load task 4b" }
+"4.kde-breeze.system.reread_font_size" = { first_measured_by = "load task 4b" }
+"10.kde-breeze.system" = { first_measured_by = "load task 4b" }
+"4.macos-monterey.system.reread_identical" = { first_measured_by = "load task 4b" }
+"4.macos-monterey.system.reread_accent" = { first_measured_by = "load task 4b" }
+"4.macos-monterey.system.reread_scheme" = { first_measured_by = "load task 4b" }
+"4.macos-monterey.system.reread_font_size" = { first_measured_by = "load task 4b" }
+"10.macos-monterey.system" = { first_measured_by = "load task 4b" }
+"4.macos-tahoe.system.reread_identical" = { first_measured_by = "load task 4b" }
+"4.macos-tahoe.system.reread_accent" = { first_measured_by = "load task 4b" }
+"4.macos-tahoe.system.reread_scheme" = { first_measured_by = "load task 4b" }
+"4.macos-tahoe.system.reread_font_size" = { first_measured_by = "load task 4b" }
+"10.macos-tahoe.system" = { first_measured_by = "load task 4b" }
+"4.windows-11.system.reread_identical" = { first_measured_by = "load task 4b" }
+"4.windows-11.system.reread_accent" = { first_measured_by = "load task 4b" }
+"4.windows-11.system.reread_scheme" = { first_measured_by = "load task 4b" }
+"4.windows-11.system.reread_font_size" = { first_measured_by = "load task 4b" }
+"10.windows-11.system" = { first_measured_by = "load task 4b" }
