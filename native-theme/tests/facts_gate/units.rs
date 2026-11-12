@@ -74,6 +74,9 @@ pub struct Units {
     /// `[at_depth]`: a key prefix's segments and the conditions at depth for
     /// its keys that a later unit holds for every other key.
     at_depth: Vec<(Vec<String>, Vec<String>)>,
+    /// Each path `[staged]` stages or `[deferred]` defers, by its segments,
+    /// with the unit it waits for, in the file's order.
+    waiting_paths: Vec<(Vec<String>, String)>,
 }
 
 /// A path's segments, each without its unit suffix.
@@ -202,6 +205,7 @@ impl Units {
             units: Vec::new(),
             later: Vec::new(),
             at_depth: Vec::new(),
+            waiting_paths: Vec::new(),
         }
     }
 
@@ -222,6 +226,7 @@ impl Units {
             }
         };
         let mut deferred = Vec::new();
+        let mut waiting_paths = Vec::new();
         for (widget, values) in &table("deferred")? {
             let values = values
                 .as_table()
@@ -231,6 +236,16 @@ impl Units {
                     .keys()
                     .map(|value| segments(&deferred_path(widget, value))),
             );
+            for (value, unit) in values {
+                let unit = unit.as_str().unwrap_or_default().to_owned();
+                waiting_paths.push((segments(&deferred_path(widget, value)), unit));
+            }
+        }
+        for (_, paths) in &table("staged")? {
+            for (staged, unit) in paths.as_table().into_iter().flatten() {
+                let unit = unit.as_str().unwrap_or_default().to_owned();
+                waiting_paths.push((segments(staged), unit));
+            }
         }
         let prefixes = table("prefixes")?;
         let staged = table("staged")?;
@@ -286,6 +301,7 @@ impl Units {
             units,
             later: read_later(&data, path)?,
             at_depth,
+            waiting_paths,
         })
     }
 
@@ -327,11 +343,109 @@ impl Units {
     /// The first later unit not enabled for which `holds`, with its place
     /// in the file's order.
     fn waiting_one(&self, holds: impl Fn(&Later) -> bool) -> Option<(usize, &str)> {
+        self.waiting_from(&[], holds)
+    }
+
+    /// The first later unit neither enabled nor among `added` for which
+    /// `holds`, with its place in the file's order.
+    fn waiting_from(
+        &self,
+        added: &[String],
+        holds: impl Fn(&Later) -> bool,
+    ) -> Option<(usize, &str)> {
         self.later
             .iter()
             .enumerate()
-            .find(|(_, unit)| !unit.enabled && holds(unit))
+            .find(|(_, unit)| !unit.enabled && !added.contains(&unit.name) && holds(unit))
             .map(|(at, unit)| (at, unit.name.as_str()))
+    }
+
+    /// The later units not enabled, by name, in the file's order.
+    pub fn waiting_names(&self) -> Vec<String> {
+        self.later
+            .iter()
+            .filter(|unit| !unit.enabled)
+            .map(|unit| unit.name.clone())
+            .collect()
+    }
+
+    /// Whether a variant (`variant`) or a state flag of `entry` on `preset`
+    /// is held by a later unit neither enabled nor among `added`.
+    pub fn name_off(
+        &self,
+        entry: &str,
+        preset: &str,
+        name: &str,
+        variant: bool,
+        added: &[String],
+    ) -> bool {
+        self.waiting_from(added, |unit| {
+            unit.groups.iter().any(|group| {
+                group.entry == entry
+                    && group
+                        .presets
+                        .as_ref()
+                        .is_none_or(|presets| presets.iter().any(|held| held == preset))
+                    && if variant {
+                        group.variants.iter().any(|held| held == name)
+                    } else {
+                        group.states.iter().any(|held| held == name)
+                    }
+            })
+        })
+        .is_some()
+    }
+
+    /// Whether a condition, for the key `key`, is held by a later unit
+    /// neither enabled nor among `added` ([`Units::condition_holder`]).
+    pub fn condition_off(&self, condition: &str, key: &str, added: &[String]) -> bool {
+        if self.condition_holder(condition, key).is_none() {
+            return false;
+        }
+        self.waiting_from(added, |unit| {
+            unit.conditions.iter().any(|held| held == condition)
+        })
+        .is_some()
+    }
+
+    /// Whether a direction is held by a later unit neither enabled nor among
+    /// `added`.
+    pub fn direction_off(&self, direction: &str, added: &[String]) -> bool {
+        self.waiting_from(added, |unit| {
+            unit.directions.iter().any(|held| held == direction)
+        })
+        .is_some()
+    }
+
+    /// Whether the sizes unit is neither enabled nor among `added`.
+    pub fn sizes_off(&self, added: &[String]) -> bool {
+        self.waiting_from(added, |unit| unit.sizes).is_some()
+    }
+
+    /// Whether the flavours unit is neither enabled nor among `added`.
+    pub fn flavours_off(&self, added: &[String]) -> bool {
+        self.waiting_from(added, |unit| {
+            unit.conditions
+                .iter()
+                .any(|condition| condition.starts_with("flavor:"))
+        })
+        .is_some()
+    }
+
+    /// The unit a key no enabled unit holds waits for: the one the longest
+    /// `[staged]` or `[deferred]` path above it names, else its first
+    /// segment (an entry of a unit not enabled; check_facts_trace.py's
+    /// `key_unit`).
+    pub fn key_unit(&self, key: &str) -> String {
+        let path = segments(key);
+        self.waiting_paths
+            .iter()
+            .filter(|(prefix, _)| under(&path, prefix))
+            .max_by_key(|(prefix, _)| prefix.len())
+            .map_or_else(
+                || path.first().cloned().unwrap_or_default(),
+                |(_, unit)| unit.clone(),
+            )
     }
 
     /// The later unit not enabled that holds a variant (`variant`) or a

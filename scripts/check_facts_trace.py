@@ -397,6 +397,33 @@ class Combo:
     size: str | None = None
     density: str | None = None
     direction: str = "ltr"
+    ancestors: tuple = ()      # (widget, part, surface, variants, states, sizes) of each, the outermost first
+    siblings: bool = False     # inside a host, where siblings can stand in any position
+
+
+def ancestors_of(context) -> tuple:
+    """A state model's `axes.contexts` entry (one selector, or a list of them, the outermost first) as the ancestors
+    of a combination drawn in it."""
+    chain = context if isinstance(context, list) else [context]
+    return tuple((e.get("widget"), e.get("part"), e.get("surface"), frozenset(listed(e, "variants")),
+                  frozenset(listed(e, "states")), frozenset(listed(e, "sizes")))
+                 for e in chain if isinstance(e, dict))
+
+
+def context_entry_holds(e: dict, ancestors: tuple) -> bool:
+    """Whether a `when`'s context entry holds among the ancestors (S7, S8): `scope = "any"`, any of them; a `nearest`
+    scope, the innermost whose widget it names."""
+    def matches(a):
+        widget, part, surface, variants, states, sizes = a
+        if any(k in e and e[k] != v for k, v in (("widget", widget), ("part", part), ("surface", surface))):
+            return False
+        return all(listed(e, k) <= have and not listed(e, "not_" + k) & have
+                   for k, have in (("variants", variants), ("states", states), ("sizes", sizes)))
+    scope = e.get("scope", "any")
+    if isinstance(scope, dict):
+        nearest = next((a for a in reversed(ancestors) if a[0] in listed(scope, "nearest")), None)
+        return nearest is not None and matches(nearest)
+    return any(matches(a) for a in ancestors)
 
 
 def listed(when, k) -> set:
@@ -406,35 +433,42 @@ def listed(when, k) -> set:
 
 @dataclass(frozen=True)
 class Match:
-    """A `when` read once for combo_holds(): per kind its positive and negative names, whether it can hold in a
-    combination of no ancestor and no sibling at all (`never`), its `latest` flags."""
+    """A `when` read once for combo_holds(): per kind its positive and negative names, whether it holds in no
+    combination at all (`never`: a size class, which no unit draws), its `latest` flags, its context entries and
+    negative ones, whether its position needs a sibling, its direction."""
     lists: tuple
     never: bool
     latest: tuple
+    context: tuple = ()
+    not_context: tuple = ()
+    sibling: bool = False
+    direction: str = "ltr"
 
 
 MATCH_KINDS = ("conditions", "states", "variants", "sizes", "densities")
 
 
 def compiled(when) -> Match:
-    """The `when` as combo_holds() reads it: no positive context, size class or other direction than the default
-    holds at depth, and a position holds only as an element's alone (no sibling)."""
+    """The `when` as combo_holds() reads it."""
     when = when if isinstance(when, dict) else {}
     lists = tuple((frozenset(listed(when, k)), frozenset(listed(when, "not_" + k))) for k in MATCH_KINDS)
     sc = when.get("size_class") if isinstance(when.get("size_class"), dict) else {}
     pos = when.get("position")
-    never = (bool(when.get("context")) or when.get("direction", "ltr") != "ltr"
-             or any(listed(sc, a) for a in ("horizontal", "vertical"))
-             or isinstance(pos, dict) and (any(k in pos and pos[k] != LONE[k] for k in LONE) or "previous" in pos
-                                           or "next" in pos))
+    sibling = isinstance(pos, dict) and (any(k in pos and pos[k] != LONE[k] for k in LONE) or "previous" in pos
+                                         or "next" in pos)
     latest = when.get("latest") if isinstance(when.get("latest"), dict) else {}
-    return Match(lists, never, tuple(sorted(latest.items())))
+    entries = lambda k: tuple(e for e in when.get(k, []) if isinstance(e, dict)) \
+        if isinstance(when.get(k), list) else ()  # noqa: E731
+    return Match(lists, any(listed(sc, a) for a in ("horizontal", "vertical")), tuple(sorted(latest.items())),
+                 entries("context"), entries("not_context"), sibling,
+                 when.get("direction", "ltr") if isinstance(when.get("direction"), str) else "ltr")
 
 
 def combo_holds(when, c: Combo, recency: dict) -> bool:
-    """Whether a `when` (or its Match) holds in a combination of no ancestor and no sibling (S11's matching): every
-    positive list held, no negative one met, its position an element's alone, its `latest` flags present and made
-    latest by one order (check_facts.orders_possible)."""
+    """Whether a `when` (or its Match) holds in a combination (S11's matching): every positive list held, no negative
+    one met, its `latest` flags present and made latest by one order (check_facts.orders_possible), its direction the
+    combination's, its context entries held among the combination's ancestors and none of its negative ones, and a
+    position other than an element's alone only where siblings can stand (inside a host)."""
     m = when if isinstance(when, Match) else compiled(when)
     if m.never:
         return False
@@ -447,7 +481,11 @@ def combo_holds(when, c: Combo, recency: dict) -> bool:
         latest = dict(m.latest)
         if not (set(latest.values()) <= c.states and check_facts.orders_possible(latest, c.states, recency)):
             return False
-    return True
+    if m.direction != c.direction or (m.sibling and not c.siblings):
+        return False
+    if not all(context_entry_holds(e, c.ancestors) for e in m.context):
+        return False
+    return not any(context_entry_holds(e, c.ancestors) for e in m.not_context)
 
 
 def condition_kind(condition: str) -> str:
@@ -499,7 +537,7 @@ def context_names(when) -> set:
     return out
 
 
-SEARCH_LIMIT = 5_000   # combinations each step of a later unit's search reads for one fact, fewest names first
+HOSTLESS = "identities"   # the unit of a fact drawn only in a context naming no widget (the identities, with hosts)
 STRAY = "stray"   # a fact no later unit's names make hold (S17: reported apart, under no unit)
 
 
@@ -529,10 +567,9 @@ class Depth:
     not `absent` or a `drawn_as`, a pending one counting as drawn. A key of no widget (a colour role, an input, a
     token) holds in a combination of the scheme and the conditions at depth for it. Every other fact is a later
     unit's: the units are added to the enabled ones in the file's order, and its later unit is the one at whose
-    adding it first holds (S17, cumulatively: of the units whose names it needs, the last), the search starting at
-    the last unit holding a name its positive lists name and at the first that draws its part, reading at most
-    SEARCH_LIMIT combinations at each step; STRAY where none does (a misspelt name, a size no style takes), a fact
-    reported under no unit."""
+    adding it first holds (S17, cumulatively: of the units whose names it needs, the last), each step decided exactly
+    (holds_exact()) and the steps halved, holding being monotone in the units added; STRAY where it holds even with
+    every unit added in no combination (a misspelt name, a size no style takes), a fact reported under no unit."""
 
     def __init__(self, root: Path, items, units=None, later=None):
         self.units = read_units(root) if units is None else units
@@ -625,39 +662,29 @@ class Depth:
             self._combos[k] = ([c for c, _ in got], [r for _, r in got])
         return self._combos[k]
 
-    def stream(self, platform: str, widget: str, preset: str, added=frozenset(), when=None, budget=None,
-               prefer=frozenset()):
+    def stream(self, platform: str, widget: str, preset: str, added=frozenset()):
         """Each (combination, its recency sets) of the widget's state model in force on the preset, the units `added`
-        counted as enabled, in order, computed as it is read; with `when`, only the variant sets and state
-        combinations its positive and negative lists admit; with `budget`, ending after that many candidates, those
-        a `not_drawn` entry names counted; with `prefer`, the variant sets and state combinations holding one of its
-        names first."""
-        read = 0
-        want = {k: listed(when, k) for k in ("variants", "not_variants", "states", "not_states", "conditions",
-                                              "not_conditions")}
-        for rec, sets, states, vectors, sizes_of, densities, nd in self.space(platform, widget, preset, added):
-            sets = sorted((s for s in sets if want["variants"] <= s and not want["not_variants"] & s),
-                          key=lambda x: (not x & prefer, len(x), sorted(x)))
-            states = sorted((s for s in states if want["states"] <= s and not want["not_states"] & s),
-                            key=lambda s: (not s & prefer, len(s), sorted(s)))
-            vectors = [v for v in vectors if want["conditions"] <= v and not want["not_conditions"] & v]
-            for s in sets:
+        counted as enabled, computed as it is read."""
+        for rec, sets, states, vectors, sizes_of, densities, nd, contexts, directions in self.space(
+                platform, widget, preset, added):
+            for s in sorted(sets, key=lambda x: (len(x), sorted(x))):
                 for size in sizes_of[s]:
                     for density in densities:
-                        for st in states:
+                        for st in sorted(states, key=lambda x: (len(x), sorted(x))):
                             for cv in vectors:
-                                read += 1
-                                if budget is not None and read > budget:
-                                    return
-                                c = Combo(s, st, cv, size, density)
-                                if not any(combo_holds(x, c, rec) for x in nd):
-                                    yield c, rec
+                                for ancestors, siblings in contexts:
+                                    for direction in directions:
+                                        c = Combo(s, st, cv, size, density, direction, ancestors, siblings)
+                                        if not any(combo_holds(x, c, rec) for x in nd):
+                                            yield c, rec
 
-    def space(self, platform: str, widget: str, preset: str, added=frozenset()) -> list:
+    def space(self, platform: str, widget: str, preset: str, added=frozenset(), hosts=None) -> list:
         """Per entry in force (stream()), computed once: (its recency sets, its variant sets of names at depth or of
         `added`'s, its state combinations so, its condition vectors, {variant set: its sizes in force}, its densities
-        in force, its `not_drawn` entries as Matches)."""
-        k = ("space", platform, widget, preset, added)
+        in force, its `not_drawn` entries as Matches, its contexts (ancestors, whether siblings stand there): none, and
+        each `axes.contexts` entry whose widgets are enabled and the entry at that place
+        (`hosts` a number), its directions: `ltr`, and `rtl` where the unit holding it is enabled or added)."""
+        k = ("space", platform, widget, preset, added, hosts)
         if k in self._combos:
             return self._combos[k]
         out = []
@@ -699,9 +726,21 @@ class Depth:
                     sizes_of[s] = sizes or [None]
                 else:
                     sizes_of[s] = [self.default_size(model, s)]
-            out.append((rec, sets, states, vectors, sizes_of, densities, nd))
+            chains = [c for c in axes.get("contexts", []) if isinstance(c, (dict, list))]
+            held = [ancestors_of(c) for i, c in enumerate(chains)
+                    if hosts == i
+                    or all(isinstance(a[0], str) and self.held(a[0]) for a in ancestors_of(c))]
+            contexts = [((), False)] + [(a, True) for a in held if a]
+            directions = ["ltr"] + [d for d in ("rtl",) if self.direction_off(d, added) is None]
+            out.append((rec, sets, states, vectors, sizes_of, densities, nd, contexts, directions))
         self._combos[k] = out
         return out
+
+    def host_chains(self, platform: str, widget: str, preset: str) -> list:
+        """The `axes.contexts` entries of the widget's default state model in force on the preset, in order."""
+        model = self.model(platform, widget, preset) or {}
+        axes = model.get("axes") if isinstance(model.get("axes"), dict) else {}
+        return [c for c in axes.get("contexts", []) if isinstance(c, (dict, list))]
 
     def presence_facts(self, platform: str, part_key: str, preset: str) -> list:
         """[(its `when` for the preset read as a Match, the fact)] of the part's presence facts holding for the preset,
@@ -721,15 +760,6 @@ class Depth:
         value = None if last is None or "pending" in last else last.get("value")
         return not (value == "absent" or isinstance(value, dict) and "drawn_as" in value)
 
-    def drawn(self, platform: str, part_key: str, preset: str) -> list:
-        """Per combination of combos(), whether the part resolves drawn (drawn_in()), computed once."""
-        k = (platform, part_key, preset)
-        if k not in self._drawn:
-            cs, recs = self.combos(platform, part_key.split(".")[0], preset)
-            facts = self.presence_facts(platform, part_key, preset)
-            self._drawn[k] = [self.drawn_in(facts, c, rec) for c, rec in zip(cs, recs)]
-        return self._drawn[k]
-
     @staticmethod
     def part_of(key: str) -> str | None:
         """`<widget>.<part>` of a part's field's key; None for a widget value, a part's own key or a key of no
@@ -738,28 +768,45 @@ class Depth:
         return f"{seg[0]}.{seg[1]}" if len(seg) > 2 and seg[1] != "values" else None
 
     def holds_at(self, platform: str, key: str, when: dict, preset: str) -> bool:
-        """Whether a fact of a widget's key holds in a combination at depth where its part is drawn."""
-        widget, part = key.split(".")[0], self.part_of(key)
-        cs, recs = self.combos(platform, widget, preset)
-        drawn = self.drawn(platform, part, preset) if part else None
-        m = compiled(when)
-        return any((drawn is None or drawn[i]) and combo_holds(m, c, rec)
-                   for i, (c, rec) in enumerate(zip(cs, recs)))
+        """Whether a fact of a widget's key holds in a combination at depth where its part is drawn (holds_exact())."""
+        return self.holds_exact(platform, key, when, preset, frozenset())
 
-    def holds_with(self, platform: str, key: str, when: dict, preset: str, added: frozenset, limit: int,
-                   prefer=frozenset()) -> bool:
-        """holds_at() with the units `added` counted as enabled, reading at most `limit` candidate combinations, those
-        holding a name of `prefer` (the last unit added's) first."""
+    def holds_exact(self, platform: str, key: str, when: dict, preset: str, added: frozenset, hosts=None) -> bool:
+        """Whether a fact of a widget's key holds, with the later units `added` counted as enabled (and the host
+        contexts `hosts` gives, space()), in a combination its state model in force draws where its part is drawn:
+        decided exactly by its names. A combination matters only by the names some `when` that is read names (the
+        fact's, each `not_drawn` entry's, each presence fact's of the part, and every recency set's members where one
+        of them names `latest`), so the variants, flags, conditions, sizes and densities are read projected on those
+        names (a size or density none names as none), the projections each kept once, and every combination of them
+        with every context and direction tested: no cap, no combination left unread."""
         widget, part = key.split(".")[0], self.part_of(key)
-        facts = self.presence_facts(platform, part, preset) if part else None
+        presences = self.presence_facts(platform, part, preset) if part else []
         m = compiled(when)
-        return any(combo_holds(m, c, rec) and (facts is None or self.drawn_in(facts, c, rec))
-                   for c, rec in self.stream(platform, widget, preset, added, when, limit, prefer))
-
-    @staticmethod
-    def names_of(unit: Later, widget: str) -> frozenset:
-        """The variants and state flags a later unit holds for the entry, on any preset."""
-        return frozenset(n for _, got in unit.names.get(widget, ()) for names in got.values() for n in names)
+        if m.never:
+            return False
+        for rec, sets, states, vectors, sizes_of, densities, nd, contexts, directions in self.space(
+                platform, widget, preset, added, hosts):
+            matches = [m] + nd + [w for w, _ in presences]
+            names = [frozenset().union(*(pos | neg for x in matches for pos, neg in [x.lists[i]]))
+                     for i in range(len(MATCH_KINDS))]
+            rc, rs, rv, rz, rd = names
+            if any(x.latest for x in matches):
+                rs = rs | frozenset(f for flags in rec.values() for f in flags)
+            (vp, vn), (sp, sn), (cp, cn) = m.lists[2], m.lists[1], m.lists[0]
+            classes = {(s & rv, z if z in rz else None, d if d in rd else None)
+                       for s in sets if vp <= s and not vn & s for z in sizes_of[s] for d in densities}
+            kinds = {k & rs for k in states if sp <= k and not sn & k}
+            conds = {v & rc for v in vectors if cp <= v and not cn & v}
+            for s, z, d in classes:
+                for k in kinds:
+                    for v in conds:
+                        for ancestors, siblings in contexts:
+                            for direction in directions:
+                                c = Combo(s, k, v, z, d, direction, ancestors, siblings)
+                                if (combo_holds(m, c, rec) and not any(combo_holds(x, c, rec) for x in nd)
+                                        and self.drawn_in(presences, c, rec)):
+                                    return True
+        return False
 
     def key_unit(self, key: str) -> str:
         """The unit a key no enabled unit holds waits for: the one the longest `[staged]` or `[deferred]` path above it
@@ -807,49 +854,32 @@ class Depth:
         needed += [self.off(widget, preset, "variants", v) for v in listed(when, "variants")]
         needed += [self.off(widget, preset, "states", s) for s in listed(when, "states") | set(latest.values())]
         needed += [self.direction_off(when["direction"]) for _ in (0,) if isinstance(when.get("direction"), str)]
-        if listed(when, "densities"):
-            needed.append(self.sizes_off())
-        sizes = listed(when, "sizes")
-        if sizes and self.sizes_off() and not sizes & {c.size for c in self.combos(platform, widget, preset)[0]}:
-            needed.append(self.sizes_off())
         needed = [u for u in needed if u]
         if not needed and self.holds_at(platform, key, when, preset):
             return None
-        part = self.part_of(key)
-        first = max([self.order[u] for u in needed] + [self.part_drawn_from(platform, part, preset) if part else 0])
-        added = frozenset()
-        for i, u in enumerate(self.later):
-            if u.enabled:
-                continue
-            added |= {u.name}
-            if i >= first and self.holds_with(platform, key, when, preset, added, SEARCH_LIMIT,
-                                              self.names_of(u, widget)):
-                return u.name
-        return STRAY
-
-    def part_drawn_from(self, platform: str, part_key: str, preset: str) -> int:
-        """The place in the file's order of the first later unit whose names, with every unit's before it, draw the
-        part in some combination (0 where it is drawn at depth; past the last where none does), computed once: no
-        field of it holds anywhere drawn before."""
-        k = ("from", platform, part_key, preset)
-        if k not in self._drawn:
-            facts = self.presence_facts(platform, part_key, preset)
-            widget = part_key.split(".")[0]
-            found, added = len(self.later), frozenset()
-            if any(self.drawn(platform, part_key, preset)):
-                found = 0
+        # the units added in the file's order: holding is monotone in them (each adds combinations, never takes one),
+        # so the first at whose adding the fact holds is found by halving
+        waiting = [u.name for u in self.later if not u.enabled]
+        start = max([waiting.index(u) for u in needed], default=0)
+        added = lambda n: frozenset(waiting[:n + 1])  # noqa: E731
+        every = added(len(waiting) - 1)
+        if not self.holds_exact(platform, key, when, preset, every):
+            # drawn only inside a host the model does not hold yet: the host's unit (its widget's, the first such
+            # context in the state model's order; a context naming no widget, the identities with their hosts')
+            chains = self.host_chains(platform, widget, preset)
+            for i, chain in enumerate(chains):
+                if self.holds_exact(platform, key, when, preset, every, i):
+                    named = [a[0] for a in ancestors_of(chain) if isinstance(a[0], str)]
+                    return named[-1] if named else HOSTLESS
+            return STRAY
+        lo, hi = start, len(waiting) - 1
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if self.holds_exact(platform, key, when, preset, added(mid)):
+                hi = mid
             else:
-                for i, u in enumerate(self.later):
-                    if u.enabled:
-                        continue
-                    added |= {u.name}
-                    if any(self.drawn_in(facts, c, rec)
-                           for c, rec in self.stream(platform, widget, preset, added, budget=SEARCH_LIMIT,
-                                                     prefer=self.names_of(u, widget))):
-                        found = i
-                        break
-            self._drawn[k] = found
-        return self._drawn[k]
+                lo = mid + 1
+        return waiting[lo]
 
 
 # ---------------------------------------------------------------------------------------------- the check
@@ -1095,6 +1125,9 @@ def facts_report(ctx) -> list:
                     units[unit] = units.get(unit, 0) + 1
             listing = ", ".join(f"{u} {n}" for u, n in sorted(units.items(), key=lambda x: -x[1]))
             out.append(f"{preset}: {enabled} facts of the enabled units ({pending} pending); later units: {listing}")
+            # the machine-read form the facts gate compares its own report with (NT_FACTS_GATE_UNITS)
+            out.append(f"unit\t{preset}\t(enabled)\t{enabled}\t{pending}")
+            out += [f"unit\t{preset}\t{u}\t{n}\t0" for u, n in sorted(units.items())]
         pending_places = {(it.file, it.line) for it in items if it.platform == platform and "pending" in it.data}
         pending = sum(1 for place, held in on_path.items() if held and place in pending_places)
         if on_path:

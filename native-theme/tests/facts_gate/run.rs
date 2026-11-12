@@ -17,6 +17,7 @@ use native_theme::gate::{
 use native_theme::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
 
+use super::depth::Depth;
 use super::facts::{self, Fact, Stated};
 use super::model::{self, Block, Mentioned, Model, Point, Space, strings};
 use super::timing::{Step, timed};
@@ -202,7 +203,7 @@ pub struct Group {
 
 impl Report {
     /// A failure of no comparison, its own group.
-    fn fail(&mut self, failure: String) {
+    pub fn fail(&mut self, failure: String) {
         let group = (String::new(), String::new(), failure.clone());
         self.fail_in(group, failure);
     }
@@ -548,88 +549,6 @@ pub fn drawn_nowhere(entry: &Model) -> Vec<String> {
         .collect()
 }
 
-/// What a run reports a skipped fact under where the names it needs are no
-/// later unit's: a variant at depth its state model in force draws nowhere
-/// (a later unit's names draw it; check_facts_trace.py's search finds which).
-const DRAWN_NOWHERE: &str = "a variant drawn nowhere at depth";
-
-/// Why a fact holding for `preset` (its `when` with the preset decided,
-/// `written`) is not of the enabled units by S17's predicate as the gate
-/// reads it (ADD-A147), or `None` where it is: its key lies in an enabled
-/// unit on the preset (else the key is no unit's here), and every name its
-/// positive lists name is at depth there: a variant (not one the state
-/// model in force, `entries`, draws nowhere), a state flag (a `latest`
-/// flag too), a condition (for its key), a density or a size no default in
-/// force while the sizes unit is not enabled, a direction. A fact needing
-/// the names of several later units is reported under the last of them in
-/// the units file's order (S17: the unit at whose enabling it first holds).
-/// The combinations at depth draw no other name, so a fact naming one
-/// applies in none; one whose part they never draw is compared nowhere
-/// (`fields_not_drawn`).
-fn later_unit(
-    platform: &Platform,
-    preset: &str,
-    entries: &[Model],
-    key: &str,
-    written: Option<&Value>,
-) -> Option<String> {
-    let units = &platform.units;
-    if !(key.starts_with("input.") || units.hold_on(key, Some(preset))) {
-        return Some("a key no enabled unit holds here".to_owned());
-    }
-    let when = written?;
-    let mut needed: Vec<(usize, &str)> = Vec::new();
-    needed.extend(
-        strings(when.get("conditions"))
-            .iter()
-            .filter_map(|condition| units.condition_holder(condition, key)),
-    );
-    let widget = key.split('.').next().unwrap_or_default();
-    let mut nowhere_named = false;
-    if let Some(entry) = entries.iter().find(|entry| entry.widget == widget) {
-        let nowhere = drawn_nowhere(entry);
-        for variant in strings(when.get("variants")) {
-            match units.holder(widget, preset, &variant, true) {
-                Some(unit) => needed.push(unit),
-                None if nowhere.contains(&variant) => nowhere_named = true,
-                None => {}
-            }
-        }
-        let mut flags = strings(when.get("states"));
-        if let Some(latest) = when.get("latest").and_then(Value::as_table) {
-            flags.extend(latest.values().filter_map(Value::as_str).map(str::to_owned));
-        }
-        needed.extend(
-            flags
-                .iter()
-                .filter_map(|flag| units.holder(widget, preset, flag, false)),
-        );
-        let sizes = strings(when.get("sizes"));
-        let defaults: Vec<&String> = entry
-            .sizes
-            .iter()
-            .chain(
-                entry
-                    .sizes_by_variant
-                    .iter()
-                    .flat_map(|(_, sizes, _)| sizes),
-            )
-            .collect();
-        let other_size = !sizes.is_empty() && !sizes.iter().any(|size| defaults.contains(&size));
-        if other_size || !strings(when.get("densities")).is_empty() {
-            needed.extend(units.sizes_holder());
-        }
-    }
-    if let Some(direction) = when.get("direction").and_then(Value::as_str) {
-        needed.extend(units.direction_holder(direction));
-    }
-    match needed.iter().max_by_key(|(at, _)| *at) {
-        Some((_, unit)) => Some((*unit).to_owned()),
-        None if nowhere_named => Some(DRAWN_NOWHERE.to_owned()),
-        None => None,
-    }
-}
-
 /// One fact prepared for a preset: its `when` read with the preset's
 /// conditions decided, its value read for its key, its tolerance.
 pub struct Prepared<'f> {
@@ -794,28 +713,19 @@ pub fn prepare<'f>(
     report: &mut Report,
 ) -> Vec<KeyFacts<'f>> {
     let mut out: Vec<KeyFacts<'f>> = Vec::new();
-    let entries: Vec<Model> = model::in_force(&platform.models, preset, None)
-        .into_iter()
-        .map(|entry| in_force_at_depth(entry, &platform.units, preset))
-        .collect();
+    let depth = Depth::new(platform, preset);
     let (mut at_depth, mut pending) = (0_usize, 0_usize);
     for fact in &platform.facts {
-        if fact.accent_run || !fact.enabled {
+        if fact.accent_run {
             continue;
         }
-        let Some(Ok(key)) = platform.key(&fact.key) else {
-            continue;
-        };
         let Some((written, _)) = facts::for_preset(fact.when.as_ref(), preset) else {
             continue;
         };
-        let Ok(when) = read_when(written.as_ref()) else {
-            continue;
-        };
-        if let Some(unit) = later_unit(platform, preset, &entries, &fact.key, written.as_ref()) {
+        if let Some(unit) = depth.unit(&fact.key, written.as_ref()) {
             *report
                 .later_units
-                .entry(format!("{preset}: {unit}"))
+                .entry(format!("{preset}\t{unit}"))
                 .or_default() += 1;
             continue;
         }
@@ -823,6 +733,12 @@ pub fn prepare<'f>(
         if matches!(fact.stated, Stated::Pending(_)) {
             pending += 1;
         }
+        let Some(Ok(key)) = platform.key(&fact.key) else {
+            continue;
+        };
+        let Ok(when) = read_when(written.as_ref()) else {
+            continue;
+        };
         let block = set_whole(&fact.key);
         let leaf = match (&fact.stated, &block) {
             (Stated::Value(value), Some(_)) => Some(value.clone()),

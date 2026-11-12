@@ -59,8 +59,18 @@
 //! (`facts::Sources`); `facts_gate` fails where one is missing. A fixture's
 //! scheme files lie under its own `sources/`.
 
+//!
+//! Each preset's run decides every fact's units by S17's predicate
+//! (`depth::Depth`, ADD-A147) and reports per preset the facts of the
+//! enabled units and those of each later unit. `NT_FACTS_GATE_UNITS`
+//! naming a file of `scripts/check_facts_trace.py --facts`'s output
+//! compares the two attributions for every preset run, each difference a
+//! failure.
+
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+#[path = "facts_gate/depth.rs"]
+mod depth;
 #[path = "facts_gate/facts.rs"]
 mod facts;
 #[path = "facts_gate/model.rs"]
@@ -3373,6 +3383,57 @@ fn facts_gate_evidence_root() {
     std::fs::remove_dir_all(&base).unwrap();
 }
 
+/// The variable naming a file of `scripts/check_facts_trace.py --facts`'s
+/// output, against whose `unit` lines the run's report by unit is compared
+/// (S17, ADD-A147: every reader of the units file attributes every fact
+/// alike).
+const UNITS_VARIABLE: &str = "NT_FACTS_GATE_UNITS";
+
+/// The differences between the run's facts of the enabled units and of each
+/// later unit, per preset it ran, and the `unit` lines of the file at
+/// `path` (`unit\t<preset>\t<unit or (enabled)>\t<facts>\t<pending>`), each
+/// a failure's text; a file that does not read is one.
+fn units_differences(path: &Path, report: &run::Report) -> Vec<String> {
+    let text = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) => return vec![format!("{UNITS_VARIABLE}: {path:?}: {error}")],
+    };
+    let mut theirs: BTreeMap<(String, String), (usize, usize)> = BTreeMap::new();
+    for line in text.lines() {
+        let fields: Vec<&str> = line.split('\t').collect();
+        if let ["unit", preset, unit, facts, pending] = fields.as_slice()
+            && report.at_depth.contains_key(*preset)
+        {
+            let count = |text: &str| text.parse::<usize>().unwrap_or(usize::MAX);
+            theirs.insert(
+                ((*preset).to_owned(), (*unit).to_owned()),
+                (count(facts), count(pending)),
+            );
+        }
+    }
+    let mut ours: BTreeMap<(String, String), (usize, usize)> = BTreeMap::new();
+    for (preset, counts) in &report.at_depth {
+        ours.insert((preset.clone(), "(enabled)".to_owned()), *counts);
+    }
+    for (key, count) in &report.later_units {
+        if let Some((preset, unit)) = key.split_once('\t') {
+            ours.insert((preset.to_owned(), unit.to_owned()), (*count, 0));
+        }
+    }
+    let keys: BTreeSet<&(String, String)> = theirs.keys().chain(ours.keys()).collect();
+    keys.into_iter()
+        .filter(|key| theirs.get(*key) != ours.get(*key))
+        .map(|(preset, unit)| {
+            format!(
+                "{UNITS_VARIABLE}: {preset} `{unit}`: the gate counts {:?}, check_facts_trace.py --facts \
+                 {:?} (facts, pending)",
+                ours.get(&(preset.clone(), unit.clone())),
+                theirs.get(&(preset.clone(), unit.clone()))
+            )
+        })
+        .collect()
+}
+
 #[test]
 fn facts_gate() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/facts");
@@ -3430,7 +3491,12 @@ fn facts_gate() {
         return;
     }
     let evidence = facts::evidence_root(&root).unwrap_or_else(|error| panic!("{error}"));
-    let report = run::run_shard(&root, &evidence, &facts::sources(), &presets, shard);
+    let mut report = run::run_shard(&root, &evidence, &facts::sources(), &presets, shard);
+    if let Some(path) = std::env::var_os(UNITS_VARIABLE) {
+        for difference in units_differences(Path::new(&path), &report) {
+            report.fail(difference);
+        }
+    }
     if shard != run::Shard::WHOLE
         && let Some(directory) = directory_variable(LISTED_VARIABLE)
     {
