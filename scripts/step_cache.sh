@@ -575,7 +575,28 @@ step_cache_self_test() {
     expect "a failure recorded nothing" ran 1
     expect "passed" ran
     expect "after the pass" skipped
-    step_cache_self_test_shared "$dir" || failures=$((failures + 1))
+    # The shared part runs with GIT_DIR and GIT_WORK_TREE naming a repository
+    # `outer`, as in a git hook; whatever the part does, `outer` must stay as
+    # it was.
+    local outer_git=(step_cache_git -c user.name=step-cache -c user.email=step-cache@invalid
+        -c commit.gpgsign=false -c core.hooksPath=/dev/null)
+    local outer_head outer_now
+    "${outer_git[@]}" init -q "$dir/outer" || return 1
+    "${outer_git[@]}" -C "$dir/outer" commit -q --allow-empty -m "outer" || return 1
+    outer_head=$("${outer_git[@]}" -C "$dir/outer" rev-parse HEAD) || return 1
+    (
+        export GIT_DIR="$dir/outer/.git" GIT_WORK_TREE="$dir/outer"
+        step_cache_self_test_shared "$dir"
+    ) || failures=$((failures + 1))
+    outer_now="$("${outer_git[@]}" -C "$dir/outer" rev-parse HEAD) $("${outer_git[@]}" -C "$dir/outer" rev-list --count HEAD)"
+    if [ "$outer_now" != "$outer_head 1" ]; then
+        printf "step cache self-test: under a caller's GIT_DIR and GIT_WORK_TREE, the outer repository changed: %s, was %s 1\n" \
+            "$outer_now" "$outer_head" >&2
+        failures=$((failures + 1))
+    else
+        printf "  ok  git's variables of the caller (GIT_DIR, GIT_WORK_TREE): the outer repository untouched: %s\n" \
+            "$outer_now"
+    fi
     chmod -R u+w "$dir" 2>/dev/null || true
     rm -rf "$dir"
     if [ "$failures" -ne 0 ]; then
@@ -588,17 +609,13 @@ step_cache_self_test() {
 # repository with two worktrees, `one` and `two`, each holding the same
 # synthetic tree and a calling script that defines the step's wrapping
 # function and a function the shared base holds; the same step run shared
-# and per worktree. The whole part runs with GIT_DIR and GIT_WORK_TREE
-# naming a repository `outer`, as in a git hook, which must stay untouched.
-# Returns 1 on a failed case.
+# and per worktree. step_cache_self_test runs it with GIT_DIR and
+# GIT_WORK_TREE naming a repository `outer`, as in a git hook, which must
+# stay untouched. Returns 1 on a failed case.
 step_cache_self_test_shared() {
-    local dir="$1" failures=0 tools=1 root shared_dir outer_head
+    local dir="$1" failures=0 tools=1 root shared_dir
     local git_test=(step_cache_git -c user.name=step-cache -c user.email=step-cache@invalid
         -c commit.gpgsign=false -c core.hooksPath=/dev/null)
-    "${git_test[@]}" init -q "$dir/outer" || return 1
-    "${git_test[@]}" -C "$dir/outer" commit -q --allow-empty -m "outer" || return 1
-    outer_head=$("${git_test[@]}" -C "$dir/outer" rev-parse HEAD) || return 1
-    export GIT_DIR="$dir/outer/.git" GIT_WORK_TREE="$dir/outer"
     "${git_test[@]}" init -q "$dir/one" || return 1
     "${git_test[@]}" -C "$dir/one" commit -q --allow-empty -m "step cache self-test" || return 1
     "${git_test[@]}" -C "$dir/one" worktree add -q --detach "$dir/two" || return 1
@@ -779,6 +796,23 @@ step_cache_self_test_shared() {
         "$(run_shared shared one 0)" "skipped test-commit in one, "
     check "two worktrees' records: two, unchanged, finds its own (shared step)" \
         "$(run_shared shared two 0)" "skipped test-commit in two, "
+    # One step's two passed states, each recorded with its own key in one
+    # shared folder: both found, a third key not.
+    found=$(
+        STEP_CACHE_SHARED_DIR="$dir/side-by-side"
+        mkdir -p "$STEP_CACHE_SHARED_DIR"
+        STEP_CACHE_SHARED_LABEL="state A" && step_cache_record --shared "S" "key-1"
+        STEP_CACHE_SHARED_LABEL="state B" && step_cache_record --shared "S" "key-2"
+        for key in key-1 key-2 key-3; do
+            if label=$(step_cache_hit --shared "S" "$key"); then
+                printf "%s; " "${label%%,*}"
+            else
+                printf "miss; "
+            fi
+        done
+    )
+    check "one step's records with keys 1 and 2 side by side, a third key a miss" \
+        "$found" "state A; state B; miss; "
     # A wrapper that is not defined is an error: no key.
     local status=0
     found=$(cd "$dir/one" && step_cache_key --shared step_cache_self_test_undefined "a step" file.txt -- true \
@@ -797,10 +831,6 @@ step_cache_self_test_shared() {
         check "a record that cannot be written" "$found" "returned 1, went on"
     fi
     chmod u+w "$shared_dir"
-    unset GIT_DIR GIT_WORK_TREE
-    found="$("${git_test[@]}" -C "$dir/outer" rev-parse HEAD) $("${git_test[@]}" -C "$dir/outer" rev-list --count HEAD)"
-    check "git's variables of the caller (GIT_DIR, GIT_WORK_TREE): the outer repository untouched" \
-        "$found" "$outer_head 1"
     [ "$failures" -eq 0 ]
 }
 
