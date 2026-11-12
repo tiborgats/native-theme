@@ -1120,6 +1120,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K3.62 | `PartStyle.icon.fill @ {selected} / {pressed} (selection foreground)` | rule |
 | K3.63 | `token.icons.sizes.toolbar, token.icons.sizes.keyed.main_toolbar, token.icons.sizes.small, token.icons.sizes.large, token.icons.sizes.dialog, token.icons.sizes.panel` | token |
 | K3.63 | `reader:kde:icon theme index.theme *Default sizes` (`MainToolbarDefault` among them; a key the theme omits KIconTheme's own default for its group, `kiconthemes@6.31.0 src/kicontheme.cpp:160-167`, from KDE facts; S9.3, ADD-A140) | reader |
+| K3.63 | `reader:kde:kdeglobals [Icons] Theme` (into `token.icons.theme` under `for_preset.kde-breeze` wherever the value is not empty, also where it is no plain path component or names a theme not installed, the lookup then falling back by `token.icons.theme_fallback`; no such key leaving the preset's `breeze`, `kiconthemes@6.31.0 src/kicontheme.cpp:686`; S9.3, ADD-A148) | reader |
 | K3.64 | `token.pointer.theme, token.pointer.size (ADD-A46)` | token |
 | K3.64 | `reader:kde:kcminputrc [Mouse] cursorTheme, cursorSize` | reader |
 | K3.65† | `PartStyle.cursor per part: link.body.cursor, splitter.divider.cursor @ variant @column_view, list.accessory.cursor @ variant reorder, button.body.cursor @ variant help, sidebar.handle (the drawer edges)` | field |
