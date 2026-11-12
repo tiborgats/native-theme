@@ -161,7 +161,9 @@ cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 # aid, no gate (native-theme/tests/facts_gate.rs): every mode gates every
 # preset and every shard, even where the caller's environment names a subset
 # or a shard (--commit and --quick name each part they run, facts_gate_steps).
-unset NT_FACTS_GATE_PRESETS NT_FACTS_GATE_SHARD
+# Nor does any mode merge shards' listed paths (NT_FACTS_GATE_MERGE, which
+# checks those paths instead of gating) or write them (NT_FACTS_GATE_LISTED).
+unset NT_FACTS_GATE_PRESETS NT_FACTS_GATE_SHARD NT_FACTS_GATE_MERGE NT_FACTS_GATE_LISTED
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colour + icon vocabulary
@@ -703,7 +705,8 @@ step_passed() {
     local passed_key="" passed_scope=()
     step_key_of "$step_description" passed_key passed_scope "$@" || return 0
     if [ "$passed_key" = "$step_key" ]; then
-        step_cache_record ${passed_scope[@]+"${passed_scope[@]}"} "$step_description" "$step_key"
+        step_cache_record ${passed_scope[@]+"${passed_scope[@]}"} "$step_description" "$step_key" \
+            || print_warn "step cache: the pass of \"$step_description\" not recorded (its record could not be written)"
     fi
 }
 
@@ -713,7 +716,8 @@ step_passed() {
 # shared base with the text of the functions it names, nothing for one the
 # worktree's own cache keys. Returns 1, the step not keyed, where its inputs
 # are not declared (CACHE_INPUTS) or cannot be resolved, or where it is
-# shared and the shared cache is off (SHARED_CACHE).
+# shared and the shared cache is off (SHARED_CACHE) or a function it names
+# is not defined (an error step_cache_key prints).
 step_key_of() {
     local step_description="$1"
     local -n step_key_out="$2"
@@ -726,7 +730,7 @@ step_key_of() {
         [[ $SHARED_CACHE ]] || return 1
         step_scope_out=(--shared)
         step_key_out=$(step_cache_key --shared "${CACHE_SHARED[$step_description]}" \
-            "$step_description" "${step_inputs[@]}" -- "$@")
+            "$step_description" "${step_inputs[@]}" -- "$@") || return 1
     else
         step_scope_out=()
         step_key_out=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@")
@@ -1087,21 +1091,16 @@ if [[ $STEP_CACHE ]]; then
         sha256sum scripts/check_release.sh scripts/step_cache.sh
         step_cache_environment
     )"
-    # The shared base: the tool versions, the variables that can change a
-    # verdict, and the text of the functions and settings here that key a
-    # step and record it.
-    if shared_cache_dir=$(step_cache_shared_dir "$PWD"); then
+    # The shared base (step_cache_start_shared): the tool versions and the
+    # settings here that decide a step's inputs, with the text of the
+    # functions here that key a step, look it up and record it.
+    if step_cache_start_shared "$PWD" "$cache_label in $(basename "$PWD")" \
+        "$(printf "%s\n" "$cache_tools" "$CACHE_HOST_PROBES" "$CACHE_TRUSTED_BUILD_CODE")" \
+        step_cached step_passed step_key_of cache_inputs rust_reach rust_reach_resolve rust_config_inputs; then
         SHARED_CACHE=1
-        step_cache_init_shared "$shared_cache_dir" "$PWD" "$cache_label in $(basename "$PWD")" "$(
-            printf "%s\n" "$cache_tools"
-            step_cache_verdict_environment
-            declare -f step_cached step_passed step_key_of cache_inputs rust_reach rust_reach_resolve \
-                rust_config_inputs
-            printf "%s\n" "$CACHE_HOST_PROBES" "$CACHE_TRUSTED_BUILD_CODE"
-        )"
-        print_info "step cache: on (target/check-release-cache; the facts gate's parts: $shared_cache_dir, every worktree's; --no-cache runs every step)"
+        print_info "step cache: on (target/check-release-cache; the facts gate's parts: $STEP_CACHE_SHARED_DIR, every worktree's; --no-cache runs every step)"
     else
-        print_info "step cache: on (target/check-release-cache; --no-cache runs every step); no git directory found, so the facts gate's parts are not cached"
+        print_info "step cache: on (target/check-release-cache; --no-cache runs every step); the facts gate's parts are not cached: $STEP_CACHE_SHARED_NOTE"
     fi
 fi
 if [[ $HAVE_NEXTEST ]]; then

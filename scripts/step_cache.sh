@@ -22,36 +22,47 @@
 #     Paths are sorted bytewise (LC_ALL=C), whatever the locale.
 # A failed step records nothing; a step whose inputs change while it runs
 # records nothing either. A step that declares no inputs always runs. Its
-# records are the worktree's own (check_release.sh: target/check-release-cache).
+# records are the worktree's own (check_release.sh: target/check-release-cache),
+# one per step.
 #
 # A shared step (check_release.sh's CACHE_SHARED: the facts gate's parts) is
 # keyed narrowly instead, so that its result is reused wherever what decides
 # its verdict is the same, in any worktree of the repository:
-#   * the shared base (step_cache_init_shared): the tool versions as above;
-#     the environment variables that can change a verdict alone
+#   * the shared base, which step_cache_start_shared builds for every caller:
+#     the caller's fixed text (check_release.sh: the tool versions as above
+#     and the settings that decide a step's inputs), the text of the
+#     caller's functions it names (check_release.sh: those that key a step,
+#     look it up and record it) and of this file's key, lookup and record
+#     functions. The scripts' hashes and the environment are not in it, so
+#     an unrelated edit of a script, another working directory or an
+#     unrelated variable keeps the record;
+#   * the environment variables that can change a verdict, read for each key
 #     (step_cache_verdict_environment, whose comment lists each rule and its
-#     reason); the text of the cache's own key functions; and what the
-#     caller adds (check_release.sh: the text of its cache functions). The
-#     scripts' hashes and the rest of the environment are not in it, so an
-#     unrelated edit of a script, another working directory, a thread count
-#     or an unrelated variable keeps the record;
+#     reason);
 #   * the step's description and command, as above;
 #   * the text of the functions that wrap it between the caller's call and
-#     the command's start (`declare -f`), each named where it is declared;
+#     the command's start (`declare -f`), each named where it is declared; a
+#     named function that is not defined is an error, the step not keyed;
 #   * its declared inputs' content, as above, each path under the worktree's
 #     root written relative to it, and a missing path outside the root left
 #     out (Cargo's configuration files of the root's ancestors: which of them
 #     are looked for depends on where the worktree is, not on what it holds;
 #     one that exists is hashed by path and content).
 # Its records live in the repository's common git directory
-# (step_cache_shared_dir: <git-common-dir>/check-release-cache), one for every
-# worktree, and each names the commit and worktree it passed in and when.
+# (step_cache_shared_dir: <git-common-dir>/check-release-cache), shared by
+# every worktree: one file per step and key, so each worktree's passed state
+# keeps its own record, naming the commit and worktree it passed in and
+# when. A record found is touched; one not written or found for 30 days is
+# removed when the cache starts. Where the folder cannot be created or
+# written, the shared cache is off (step_cache_start_shared says why) and
+# the shared steps run; a record that cannot be written returns 1, which
+# check_release.sh reports as a warning.
 #
 # Usage (sourced): step_cache_init <dir> <label> <base text>, and for shared
-# steps step_cache_init_shared <dir> <root> <label> <base text>; then per step
-# step_cache_key [--shared <functions>] <description> <inputs...> --
-# <command...> (prints the key), step_cache_hit [--shared] <description>
-# <key> (prints the label recorded, returns 1 on a miss) and
+# steps step_cache_start_shared <root> <label> <fixed text> <functions...>;
+# then per step step_cache_key [--shared <functions>] <description>
+# <inputs...> -- <command...> (prints the key), step_cache_hit [--shared]
+# <description> <key> (prints the label recorded, returns 1 on a miss) and
 # step_cache_record [--shared] <description> <key>.
 #
 #   scripts/step_cache.sh --self-test
@@ -63,8 +74,12 @@
 # unrelated edit of the calling script, in another worktree with the same
 # content (its record found there), under another thread count, locale,
 # evidence path or unrelated variable, and re-runs after a declared input, a
-# verdict variable, the command, a wrapping function's text or a tool version
-# changes; a step that is not shared re-runs after each of these.
+# verdict variable, the command, a wrapping or caller function's text or a
+# tool version changes; a step that is not shared re-runs after each of
+# these. Two worktrees' records stand side by side; an undefined wrapper is
+# an error; a shared folder that cannot be written turns the shared cache
+# off; and git's variables of the caller (a hook's GIT_DIR) reach no
+# repository the self-test makes.
 
 STEP_CACHE_DIR=""
 STEP_CACHE_LABEL=""
@@ -72,7 +87,11 @@ STEP_CACHE_BASE=""
 STEP_CACHE_SHARED_DIR=""
 STEP_CACHE_SHARED_LABEL=""
 STEP_CACHE_SHARED_BASE=""
+STEP_CACHE_SHARED_NOTE=""
 STEP_CACHE_ROOT=""
+
+# The age, in minutes, past which a shared record is removed: 30 days.
+STEP_CACHE_SHARED_AGE=$((30 * 24 * 60))
 
 # $1 = the cache directory, $2 = the label a record states ("<commit>"),
 # $3 = the base text (tool versions, scripts, environment).
@@ -83,23 +102,61 @@ step_cache_init() {
     mkdir -p "$STEP_CACHE_DIR"
 }
 
-# The shared steps' cache: $1 = its directory (step_cache_shared_dir), $2 =
-# the worktree's root, $3 = the label a record states ("<commit> in
-# <worktree>"; the record adds when), $4 = the base text (tool versions,
-# step_cache_verdict_environment, the caller's cache functions). The cache's
-# own key functions join the base.
-step_cache_init_shared() {
-    STEP_CACHE_SHARED_DIR="$1"
-    STEP_CACHE_ROOT="$2"
-    STEP_CACHE_SHARED_LABEL="$3"
+# Starts the shared steps' cache of the worktree whose root is $1: $2 = the
+# label a record states ("<commit> in <worktree>"; the record adds when),
+# $3 = the caller's fixed text (tool versions, settings), $4... = the
+# caller's functions whose text the shared base holds. Builds the shared
+# base (the fixed text, those functions' text and this file's key, lookup
+# and record functions'), creates the folder, checks that it can be
+# written and removes the records older than STEP_CACHE_SHARED_AGE.
+# Returns 1, the reason in STEP_CACHE_SHARED_NOTE, where there is no git
+# directory, the folder cannot be written or a function named is not
+# defined.
+step_cache_start_shared() {
+    local root="$1" label="$2" fixed="$3"
+    shift 3
+    local dir probe functions
+    STEP_CACHE_SHARED_DIR=""
+    STEP_CACHE_SHARED_NOTE=""
+    if ! dir=$(step_cache_shared_dir "$root"); then
+        STEP_CACHE_SHARED_NOTE="no git directory found for $root"
+        return 1
+    fi
+    if ! functions=$(step_cache_defined_functions "$@" 2>&1); then
+        STEP_CACHE_SHARED_NOTE="$functions"
+        return 1
+    fi
+    if ! mkdir -p "$dir" 2>/dev/null || ! probe=$(mktemp "$dir/.write-test.XXXXXX" 2>/dev/null) \
+        || ! rm -f "$probe"; then
+        STEP_CACHE_SHARED_NOTE="$dir cannot be written"
+        return 1
+    fi
+    find "$dir" -maxdepth 1 -type f -mmin "+$STEP_CACHE_SHARED_AGE" -delete 2>/dev/null || true
+    STEP_CACHE_SHARED_DIR="$dir"
+    STEP_CACHE_ROOT="$root"
+    STEP_CACHE_SHARED_LABEL="$label"
     STEP_CACHE_SHARED_BASE=$(
         {
-            printf "%s\n" "$4"
-            step_cache_functions step_cache_key step_cache_inputs step_cache_listing \
-                step_cache_excluding step_cache_relative step_cache_functions \
-                step_cache_verdict_environment step_cache_directory_content
+            printf "%s\n" "$fixed"
+            printf "%s\n" "$functions"
+            step_cache_functions step_cache_start_shared step_cache_key step_cache_inputs \
+                step_cache_listing step_cache_excluding step_cache_relative step_cache_functions \
+                step_cache_defined_functions step_cache_verdict_environment step_cache_file \
+                step_cache_hit step_cache_record
         } | sha256sum | cut -d' ' -f1
     )
+}
+
+# git, its arguments $@, with every GIT_* variable of the environment
+# removed: a caller's GIT_DIR (a git hook's) would point it at another
+# repository.
+step_cache_git() {
+    local name
+    local unset_arguments=()
+    while IFS= read -r name; do
+        unset_arguments+=(-u "$name")
+    done < <(compgen -e | grep '^GIT_' || true)
+    env ${unset_arguments[@]+"${unset_arguments[@]}"} git "$@"
 }
 
 # The shared steps' cache directory of the worktree whose root is $1: the
@@ -107,8 +164,9 @@ step_cache_init_shared() {
 # same from every worktree.
 step_cache_shared_dir() {
     local common
-    common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 1
+    common=$(cd "$1" && step_cache_git rev-parse --git-common-dir 2>/dev/null) || return 1
     [ -n "$common" ] || return 1
+    common=$(cd "$1" && cd "$common" && pwd) || return 1
     printf "%s/check-release-cache" "$common"
 }
 
@@ -118,15 +176,15 @@ step_cache_environment() {
     env -0 | grep -zvE '^(_|SHLVL|OLDPWD)=' | LC_ALL=C sort -z | sha256sum | cut -d' ' -f1
 }
 
-# The environment as part of the shared base: the variables that can change
-# a verdict of the facts gate or of its build, sorted, NUL-separated entries
+# The environment as part of a shared key: the variables that can change a
+# verdict of the facts gate or of its build, sorted, NUL-separated entries
 # hashed. In:
 #   * NT_* (the gate's NT_FACTS_GATE_PRESETS and NT_FACTS_GATE_SHARD select
-#     what it checks; the project's other NT_ variables, current and future,
-#     too) and FACTS_GATE_RELEASE (the release's stricter gate);
-#     NT_FACTS_GATE_MERGE, a path, by the content of the directory it names
-#     (step_cache_directory_content): it makes the gate check the shards'
-#     listed paths there instead of gating;
+#     what it checks, NT_FACTS_GATE_MERGE makes it check shards' listed
+#     paths instead; check_release.sh unsets all three and
+#     NT_FACTS_GATE_LISTED; the project's other NT_ variables, current and
+#     future, are in too) and FACTS_GATE_RELEASE (the release's stricter
+#     gate);
 #   * NATIVE_THEME_* (the project's own; the test fixtures' root among them);
 #   * CARGO_* (Cargo's configuration: profiles, CARGO_TARGET_<triple>_*,
 #     rustflags, the target, unstable flags, aliases, registries) and the
@@ -135,15 +193,19 @@ step_cache_environment() {
 #     RUSTC_WORKSPACE_WRAPPER, RUSTC_BOOTSTRAP: a wrapper is a program run in
 #     rustc's place), RUSTDOC, RUSTDOC_*, RUSTFMT, RUSTUP_* (the toolchain
 #     chosen) and RUST_* (RUST_MIN_STACK decides whether a test overflows its
-#     stack; RUST_TEST_* other than the two below);
+#     stack; RUST_TEST_* other than those below);
 #   * NEXTEST_* (a test step run by nextest: its profile, its retries);
 #   * GIT_* (GIT_DIR, GIT_WORK_TREE, GIT_CEILING_DIRECTORIES, GIT_CONFIG_*:
 #     where the git the gate runs on the evidence and the source cache
 #     looks).
+# By their form alone, the thread and job counts, which set how fast it
+# runs: NT_FACTS_GATE_THREADS, RUST_TEST_THREADS, CARGO_BUILD_JOBS and
+# NEXTEST_TEST_THREADS. A plain positive number of up to nine digits, which
+# each of the gate, libtest, Cargo and nextest takes, is left out like the
+# variable unset (the default count); any other value, which one of them
+# may refuse, is keyed by its text.
 # Out, each named below:
-#   * how fast it runs: NT_FACTS_GATE_THREADS, CARGO_BUILD_JOBS,
-#     CARGO_INCREMENTAL, CARGO_CACHE_RUSTC_INFO, RUST_TEST_THREADS,
-#     NEXTEST_TEST_THREADS;
+#   * how fast it runs: CARGO_INCREMENTAL, CARGO_CACHE_RUSTC_INFO;
 #   * what it prints: NT_FACTS_GATE_TIMING, CARGO_TERM_*, CARGO_LOG,
 #     RUST_BACKTRACE, RUST_LIB_BACKTRACE, RUST_LOG, RUSTC_LOG,
 #     RUST_TEST_NOCAPTURE, NEXTEST's status, output and progress settings;
@@ -151,7 +213,7 @@ step_cache_environment() {
 #     path and content), CARGO_TARGET_DIR, CARGO_BUILD_TARGET_DIR,
 #     CARGO_BUILD_BUILD_DIR;
 #   * where it writes, never reads: NT_FACTS_GATE_LISTED (a shard's listed
-#     paths; check_release.sh runs no shard);
+#     paths; check_release.sh unsets it and runs no shard);
 #   * paths to pinned data: NATIVE_THEME_EVIDENCE and NATIVE_THEME_SOURCES
 #     (the evidence root and the source cache): the gate refuses either
 #     unless it is a clean checkout at the commit docs/facts/sources.toml
@@ -174,16 +236,19 @@ step_cache_verdict_environment() {
     while IFS= read -r -d '' entry; do
         name="${entry%%=*}"
         case "$name" in
-            NT_FACTS_GATE_THREADS | NT_FACTS_GATE_TIMING | NT_FACTS_GATE_LISTED) continue ;;
-            NT_FACTS_GATE_MERGE) entry="$name=$(step_cache_directory_content "${entry#*=}")" ;;
+            NT_FACTS_GATE_THREADS | RUST_TEST_THREADS | CARGO_BUILD_JOBS | NEXTEST_TEST_THREADS)
+                if [[ "${entry#*=}" =~ ^[1-9][0-9]{0,8}$ ]]; then
+                    continue
+                fi
+                ;;
+            NT_FACTS_GATE_TIMING | NT_FACTS_GATE_LISTED) continue ;;
             NATIVE_THEME_EVIDENCE | NATIVE_THEME_SOURCES) continue ;;
-            CARGO_BUILD_JOBS | CARGO_INCREMENTAL | CARGO_CACHE_RUSTC_INFO | CARGO_TERM_* | CARGO_LOG | \
+            CARGO_INCREMENTAL | CARGO_CACHE_RUSTC_INFO | CARGO_TERM_* | CARGO_LOG | \
                 CARGO_HOME | CARGO_TARGET_DIR | CARGO_BUILD_TARGET_DIR | CARGO_BUILD_BUILD_DIR) continue ;;
-            RUST_TEST_THREADS | RUST_BACKTRACE | RUST_LIB_BACKTRACE | RUST_LOG | RUSTC_LOG | \
-                RUST_TEST_NOCAPTURE) continue ;;
-            NEXTEST_TEST_THREADS | NEXTEST_STATUS_LEVEL | NEXTEST_FINAL_STATUS_LEVEL | \
-                NEXTEST_FAILURE_OUTPUT | NEXTEST_SUCCESS_OUTPUT | NEXTEST_HIDE_PROGRESS_BAR | \
-                NEXTEST_SHOW_PROGRESS | NEXTEST_NO_INPUT_HANDLER) continue ;;
+            RUST_BACKTRACE | RUST_LIB_BACKTRACE | RUST_LOG | RUSTC_LOG | RUST_TEST_NOCAPTURE) continue ;;
+            NEXTEST_STATUS_LEVEL | NEXTEST_FINAL_STATUS_LEVEL | NEXTEST_FAILURE_OUTPUT | \
+                NEXTEST_SUCCESS_OUTPUT | NEXTEST_HIDE_PROGRESS_BAR | NEXTEST_SHOW_PROGRESS | \
+                NEXTEST_NO_INPUT_HANDLER) continue ;;
             GIT_EDITOR | GIT_SEQUENCE_EDITOR | GIT_PAGER | GIT_ASKPASS | GIT_TERMINAL_PROMPT | \
                 GIT_TRACE* | GIT_AUTHOR_* | GIT_COMMITTER_* | GIT_SSH*) continue ;;
             NT_* | FACTS_GATE_RELEASE | NATIVE_THEME_* | CARGO_* | RUSTFLAGS | RUSTDOCFLAGS | RUSTC | \
@@ -194,28 +259,24 @@ step_cache_verdict_environment() {
     done < <(env -0) | LC_ALL=C sort -z | sha256sum | cut -d' ' -f1
 }
 
-# The identity of the directory $1 names, as a variable's value: its files'
-# paths (relative to it) and content, or `missing`. A relative path is the
-# gate's, which cargo runs in its package's directory (native-theme/).
-step_cache_directory_content() {
-    local directory="$1"
-    if [[ "$directory" != /* ]]; then
-        directory="native-theme/$directory"
-    fi
-    if [ ! -d "$directory" ]; then
-        printf "missing"
-        return
-    fi
-    (cd "$directory" && find -L . -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum --) \
-        | sha256sum | cut -d' ' -f1
-}
-
 # The text of the shell functions $@, each by `declare -f`; a function not
-# defined by name.
+# defined by name. For this file's own functions, which are always defined.
 step_cache_functions() {
     local name
     for name in "$@"; do
         declare -f "$name" || printf "no function %s\n" "$name"
+    done
+}
+
+# The text of the shell functions $@, each by `declare -f`; returns 1, an
+# error on standard error, where one is not defined.
+step_cache_defined_functions() {
+    local name
+    for name in "$@"; do
+        if ! declare -f "$name"; then
+            printf "step cache: no function %s, which a shared step's key names\n" "$name" >&2
+            return 1
+        fi
     done
 }
 
@@ -321,9 +382,11 @@ step_cache_relative() {
 
 # Prints the key of the step $1 with the inputs before `--` and the command
 # after it. With `--shared <functions>` first, the shared key: the shared
-# base, the text of the functions (space-separated names) that wrap the
-# step, and paths under the worktree's root relative to it, in the inputs
-# and in the command's arguments.
+# base, the verdict's variables (step_cache_verdict_environment), the text
+# of the functions (space-separated names) that wrap the step, and paths
+# under the worktree's root relative to it, in the inputs and in the
+# command's arguments; returns 1, printing nothing, where one of those
+# functions is not defined.
 step_cache_key() {
     local shared="" functions=""
     if [ "${1:-}" = "--shared" ]; then
@@ -350,10 +413,12 @@ step_cache_key() {
         } | sha256sum | cut -d' ' -f1
         return
     fi
-    local argument function_names
+    local argument function_names function_text
     read -ra function_names <<<"$functions"
+    function_text=$(step_cache_defined_functions ${function_names[@]+"${function_names[@]}"}) || return 1
     {
         printf 'shared base %s\n' "$STEP_CACHE_SHARED_BASE"
+        printf 'environment %s\n' "$(step_cache_verdict_environment)"
         printf 'step %s\n' "$description"
         printf 'command'
         for argument in "$@"; do
@@ -363,51 +428,58 @@ step_cache_key() {
             printf ' %q' "$argument"
         done
         printf '\n'
-        printf 'functions %s\n' "$(step_cache_functions ${function_names[@]+"${function_names[@]}"} \
-            | sha256sum | cut -d' ' -f1)"
+        printf 'functions %s\n' "$(printf "%s" "$function_text" | sha256sum | cut -d' ' -f1)"
         printf 'inputs %s\n' "$(step_cache_inputs --relative "$STEP_CACHE_ROOT" ${inputs[@]+"${inputs[@]}"})"
     } | sha256sum | cut -d' ' -f1
 }
 
-# The record file of the step $1 (after `--shared`, in the shared cache).
+# The record file of the step $1. `--shared <key>` first: in the shared
+# cache, named by the step and the key, one file for each key passed.
 step_cache_file() {
-    local dir="$STEP_CACHE_DIR"
     if [ "$1" = "--shared" ]; then
-        dir="$STEP_CACHE_SHARED_DIR"
-        shift
+        printf "%s/%s" "$STEP_CACHE_SHARED_DIR" "$(printf "%s\n%s" "$3" "$2" | sha256sum | cut -d' ' -f1)"
+        return
     fi
-    printf "%s/%s" "$dir" "$(printf "%s" "$1" | sha256sum | cut -d' ' -f1)"
+    printf "%s/%s" "$STEP_CACHE_DIR" "$(printf "%s" "$1" | sha256sum | cut -d' ' -f1)"
 }
 
 # Returns 0 and prints the recorded label when the step $1 last passed with
-# the key $2; 1 otherwise. `--shared` first: in the shared cache.
+# the key $2; 1 otherwise. `--shared` first: in the shared cache, the record
+# of that key, touched so that its age counts from this use.
 step_cache_hit() {
-    local scope=()
+    local file key label shared=""
     if [ "$1" = "--shared" ]; then
-        scope=(--shared)
+        shared=1
+        file=$(step_cache_file --shared "$3" "$2")
         shift
+    else
+        file=$(step_cache_file "$1")
     fi
-    local file key label
-    file=$(step_cache_file ${scope[@]+"${scope[@]}"} "$1")
     [ -f "$file" ] || return 1
     { IFS= read -r key && IFS= read -r label; } <"$file" || return 1
     [ "$key" = "$2" ] || return 1
+    if [[ $shared ]]; then
+        touch -- "$file" 2>/dev/null || true
+    fi
     printf "%s" "$label"
 }
 
-# Records that the step $1 passed with the key $2. `--shared` first: in the
-# shared cache, its label followed by the date and time; written to a file
-# of its own, then moved, as another worktree may record the same step.
+# Records that the step $1 passed with the key $2; returns 1 where the
+# record cannot be written. `--shared` first: in the shared cache, its label
+# followed by the date and time; written to a file of its own, then moved,
+# as another worktree may record the same step.
 step_cache_record() {
     local file label tmp
     if [ "$1" = "--shared" ]; then
         shift
-        mkdir -p "$STEP_CACHE_SHARED_DIR" || return 1
-        file=$(step_cache_file --shared "$1")
+        file=$(step_cache_file --shared "$2" "$1")
         label="$STEP_CACHE_SHARED_LABEL, $(date '+%Y-%m-%d %H:%M')"
-        tmp=$(mktemp "$file.XXXXXX") || return 1
-        printf "%s\n%s\n%s\n" "$2" "$label" "$1" >"$tmp" && mv "$tmp" "$file"
-        return
+        tmp=$(mktemp "$file.XXXXXX" 2>/dev/null) || return 1
+        if ! printf "%s\n%s\n%s\n" "$2" "$label" "$1" >"$tmp" || ! mv "$tmp" "$file"; then
+            rm -f "$tmp"
+            return 1
+        fi
+        return 0
     fi
     file=$(step_cache_file "$1")
     printf "%s\n%s\n%s\n" "$2" "$STEP_CACHE_LABEL" "$1" >"$file.tmp" && mv "$file.tmp" "$file"
@@ -504,6 +576,7 @@ step_cache_self_test() {
     expect "passed" ran
     expect "after the pass" skipped
     step_cache_self_test_shared "$dir" || failures=$((failures + 1))
+    chmod -R u+w "$dir" 2>/dev/null || true
     rm -rf "$dir"
     if [ "$failures" -ne 0 ]; then
         return 1
@@ -514,12 +587,18 @@ step_cache_self_test() {
 # The shared cache's part of the self-test, in the directory $1: a
 # repository with two worktrees, `one` and `two`, each holding the same
 # synthetic tree and a calling script that defines the step's wrapping
-# function; the same step run shared and per worktree. Returns 1 on a
-# failed case.
+# function and a function the shared base holds; the same step run shared
+# and per worktree. The whole part runs with GIT_DIR and GIT_WORK_TREE
+# naming a repository `outer`, as in a git hook, which must stay untouched.
+# Returns 1 on a failed case.
 step_cache_self_test_shared() {
-    local dir="$1" failures=0 tools=1 root shared_dir
-    local git_test=(git -c user.name=step-cache -c user.email=step-cache@invalid -c commit.gpgsign=false
-        -c core.hooksPath=/dev/null)
+    local dir="$1" failures=0 tools=1 root shared_dir outer_head
+    local git_test=(step_cache_git -c user.name=step-cache -c user.email=step-cache@invalid
+        -c commit.gpgsign=false -c core.hooksPath=/dev/null)
+    "${git_test[@]}" init -q "$dir/outer" || return 1
+    "${git_test[@]}" -C "$dir/outer" commit -q --allow-empty -m "outer" || return 1
+    outer_head=$("${git_test[@]}" -C "$dir/outer" rev-parse HEAD) || return 1
+    export GIT_DIR="$dir/outer/.git" GIT_WORK_TREE="$dir/outer"
     "${git_test[@]}" init -q "$dir/one" || return 1
     "${git_test[@]}" -C "$dir/one" commit -q --allow-empty -m "step cache self-test" || return 1
     "${git_test[@]}" -C "$dir/one" worktree add -q --detach "$dir/two" || return 1
@@ -530,7 +609,8 @@ step_cache_self_test_shared() {
         printf 'upper\n' >"$root/inputs/B.txt"
         printf 'lower\n' >"$root/inputs/a.txt"
         printf 'c\n' >"$root/one.glob"
-        printf '#!/bin/bash\nstep_cache_self_test_wrapper() { "$@"; }\n' >"$root/script.sh"
+        printf '#!/bin/bash\nstep_cache_self_test_wrapper() { "$@"; }\nstep_cache_self_test_keyer() { :; }\n' \
+            >"$root/script.sh"
     done
     shared_dir=$(step_cache_shared_dir "$dir/one") || return 1
     if [ "$shared_dir" != "$(step_cache_shared_dir "$dir/two")" ] || [[ "$shared_dir" != "$dir/one/.git/"* ]]; then
@@ -538,6 +618,11 @@ step_cache_self_test_shared() {
             "$shared_dir" "$(step_cache_shared_dir "$dir/two")" >&2
         return 1
     fi
+    # The worktree whose own cache the worktree step uses (by default its
+    # own: check_release.sh's target/check-release-cache), and a folder the
+    # shared step uses in place of the common git directory's (by default
+    # none).
+    local cache_of="" shared_of=""
     # One run of the step in the worktree $2 ("one" or "two"), shared or per
     # worktree ($1 "shared" or "worktree"), as check_release.sh runs it from
     # the worktree's root, its script sourced; $3 = what the command exits
@@ -553,10 +638,16 @@ step_cache_self_test_shared() {
         # missing paths outside it, which differ between the worktrees.
         local step_inputs=("$root/file.txt" "inputs" "$root/*.glob" "$dir/absent-$name/config.toml")
         if [ "$scope" = "shared" ]; then
-            step_cache_init_shared "$shared_dir" "$root" "test-commit in $name" \
-                "$(printf "tools %s\n%s" "$tools" "$(step_cache_verdict_environment)")"
+            if ! step_cache_start_shared "$root" "test-commit in $name" "tools $tools" step_cache_self_test_keyer; then
+                printf "uncached %s" "$STEP_CACHE_SHARED_NOTE"
+                return
+            fi
+            if [ -n "$shared_of" ]; then
+                STEP_CACHE_SHARED_DIR="$shared_of"
+                mkdir -p "$shared_of"
+            fi
             key=$(step_cache_key --shared step_cache_self_test_wrapper "a step" "${step_inputs[@]}" \
-                -- step_cache_self_test_wrapper true "$@")
+                -- step_cache_self_test_wrapper true "$@") || return 1
             if label=$(step_cache_hit --shared "a step" "$key"); then
                 printf "skipped %s" "$label"
                 return
@@ -567,7 +658,7 @@ step_cache_self_test_shared() {
             fi
             return
         fi
-        step_cache_init "$root/worktree-cache" "test-commit" \
+        step_cache_init "$dir/${cache_of:-$name}/worktree-cache" "test-commit" \
             "$(printf "tools %s\n%s\n%s" "$tools" "$(sha256sum <"$root/script.sh")" "$(step_cache_environment)")"
         key=$(step_cache_key "a step" "${step_inputs[@]}" -- step_cache_self_test_wrapper true "$@")
         if label=$(step_cache_hit "a step" "$key"); then
@@ -579,23 +670,21 @@ step_cache_self_test_shared() {
             step_cache_record "a step" "$key"
         fi
     }
+    # $1 = the case, $2 = what it found, $3 = what was expected (a prefix).
+    check() {
+        if [[ "$2" != "$3"* ]]; then
+            printf "step cache self-test: %s: expected %s, got %s\n" "$1" "$3" "$2" >&2
+            failures=$((failures + 1))
+        else
+            printf "  ok  %s: %s\n" "$1" "$2"
+        fi
+    }
     # $1 = the case, $2 = the worktree, $3 = what the shared step does, $4 =
     # what the worktree step does ("ran" or "skipped"), $5... = run_shared's
     # status and arguments.
     expect_both() {
-        local scope expected got
-        for scope in shared worktree; do
-            expected="$3"
-            [ "$scope" = "worktree" ] && expected="$4"
-            got=$(run_shared "$scope" "$2" "${@:5}")
-            if [ "${got%% *}" != "$expected" ]; then
-                printf "step cache self-test: %s (%s step, worktree %s): expected %s, got %s\n" \
-                    "$1" "$scope" "$2" "$expected" "$got" >&2
-                failures=$((failures + 1))
-            else
-                printf "  ok  %s (%s step, worktree %s): %s\n" "$1" "$scope" "$2" "$got"
-            fi
-        done
+        check "$1 (shared step, worktree $2)" "$(run_shared shared "$2" "${@:5}")" "$3"
+        check "$1 (worktree step, worktree $2)" "$(run_shared worktree "$2" "${@:5}")" "$4"
     }
     # $1 = the variable, $2 = its value or nothing to unset it.
     set_variable() {
@@ -605,7 +694,7 @@ step_cache_self_test_shared() {
             unset "$1"
         fi
     }
-    local rustflags=("RUSTFLAGS") locale=("LC_ALL")
+    local rustflags=("RUSTFLAGS") locale=("LC_ALL") found
     [[ -n "${RUSTFLAGS+set}" ]] && rustflags+=("$RUSTFLAGS")
     [[ -n "${LC_ALL+set}" ]] && locale+=("$LC_ALL")
     printf "step cache self-test, a shared step and a worktree step:\n"
@@ -614,54 +703,46 @@ step_cache_self_test_shared() {
     printf '# an unrelated edit\n' >>"$dir/one/script.sh"
     expect_both "(a) an unrelated edit of the calling script" one skipped ran 0
     printf '# an unrelated edit\n' >>"$dir/two/script.sh"
-    expect_both "(b) another worktree (another PWD), the same content" two skipped ran 0
-    local found
-    found=$(run_shared shared two 0)
-    if [[ "$found" != "skipped test-commit in one, "* ]]; then
-        printf "step cache self-test: the shared record found from two is not the one written in one: %s\n" "$found" >&2
-        failures=$((failures + 1))
-    else
-        printf "  ok  the shared record found from two names one: %s\n" "$found"
-    fi
-    # The negative control: the shared step in two, its cache in a directory
+    check "(b) another worktree (another PWD), the same content (shared step, worktree two)" \
+        "$(run_shared shared two 0)" "skipped test-commit in one, "
+    # The worktree step in two looks in one's cache, which holds one's
+    # record: only its key (the working directory, the absolute paths) can
+    # make it run.
+    cache_of=one
+    check "(b) another worktree (another PWD), the same content (worktree step, worktree two, one's cache)" \
+        "$(run_shared worktree two 0)" "ran"
+    cache_of=""
+    # The negative control: the shared step in two, its cache in a folder
     # of two's own, does not find one's record, so (b) found it through the
     # common git directory alone.
-    local common_dir="$shared_dir"
-    shared_dir="$dir/two/own-cache"
-    found=$(run_shared shared two 0)
-    shared_dir="$common_dir"
-    if [ "$found" != "ran" ]; then
-        printf "step cache self-test: negative control: a cache of two's own found a record: %s\n" "$found" >&2
-        failures=$((failures + 1))
-    else
-        printf "  ok  negative control: from a cache of two's own, the step ran\n"
-    fi
+    shared_of="$dir/two/own-cache"
+    check "negative control: from a cache of two's own (shared step, worktree two)" \
+        "$(run_shared shared two 0)" "ran"
+    shared_of=""
     export NT_FACTS_GATE_THREADS=3 CARGO_BUILD_JOBS=2 NEXTEST_TEST_THREADS=2 RUST_TEST_THREADS=2
     expect_both "(c) another thread count" one skipped ran 0
+    export NT_FACTS_GATE_THREADS=0
+    expect_both "(c) a thread count the gate refuses (0)" one ran ran 0
     unset NT_FACTS_GATE_THREADS CARGO_BUILD_JOBS NEXTEST_TEST_THREADS RUST_TEST_THREADS
     export STEP_CACHE_SELF_TEST_VARIABLE=1
     expect_both "(d) an unrelated new variable" one skipped ran 0
     unset STEP_CACHE_SELF_TEST_VARIABLE
     export LC_ALL=C
     expect_both "another locale (C)" one skipped ran 0
-    export LC_ALL=en_US.UTF-8
-    expect_both "another locale (en_US.UTF-8, B.txt and a.txt sorted otherwise)" one skipped ran 0
+    if locale -a 2>/dev/null | grep -qixE 'en_US\.utf-?8'; then
+        export LC_ALL=en_US.UTF-8
+        expect_both "another locale (en_US.UTF-8, B.txt and a.txt sorted otherwise)" one skipped ran 0
+    else
+        printf "  skip  another locale (en_US.UTF-8): not installed (locale -a)\n"
+    fi
     set_variable "${locale[@]}"
     export NATIVE_THEME_EVIDENCE="$dir/evidence-elsewhere" NATIVE_THEME_SOURCES="$dir/sources-elsewhere"
     expect_both "another evidence root and source cache path (the pin unchanged)" one skipped ran 0
     unset NATIVE_THEME_EVIDENCE NATIVE_THEME_SOURCES
-    mkdir -p "$dir/merge-a" "$dir/merge-b"
-    printf 'listed\n' >"$dir/merge-a/listed-1-of-2.tsv"
-    printf 'listed\n' >"$dir/merge-b/listed-1-of-2.tsv"
-    export NT_FACTS_GATE_MERGE="$dir/merge-a"
-    expect_both "NT_FACTS_GATE_MERGE set" one ran ran 0
-    export NT_FACTS_GATE_MERGE="$dir/merge-b"
-    expect_both "NT_FACTS_GATE_MERGE at another path, the same content" one skipped ran 0
-    printf 'listed 2\n' >"$dir/merge-b/listed-1-of-2.tsv"
-    # The worktree step's base holds the variable's text, as it always has.
-    expect_both "NT_FACTS_GATE_MERGE's content edited" one ran skipped 0
+    export NT_FACTS_GATE_MERGE="$dir/merge"
+    expect_both "NT_FACTS_GATE_MERGE set (keyed by its text)" one ran ran 0
     unset NT_FACTS_GATE_MERGE
-    expect_both "NT_FACTS_GATE_MERGE unset (the record holds the last pass)" one ran ran 0
+    expect_both "NT_FACTS_GATE_MERGE unset (each key's own record)" one skipped ran 0
     expect_both "unchanged" one skipped skipped 0
     printf 'a2\n' >"$dir/one/file.txt"
     expect_both "(e) a declared input edited" one ran ran 0
@@ -670,15 +751,19 @@ step_cache_self_test_shared() {
     export RUSTFLAGS="${RUSTFLAGS:-} --cfg step_cache_self_test"
     expect_both "(f) RUSTFLAGS changed" one ran ran 0
     set_variable "${rustflags[@]}"
-    expect_both "(f) RUSTFLAGS back (the record holds the last pass)" one ran ran 0
+    expect_both "(f) RUSTFLAGS back (each key's own record)" one skipped ran 0
     export FACTS_GATE_RELEASE=1
     expect_both "(f) FACTS_GATE_RELEASE set" one ran ran 0
     unset FACTS_GATE_RELEASE
-    expect_both "(f) FACTS_GATE_RELEASE unset" one ran ran 0
+    expect_both "(f) FACTS_GATE_RELEASE unset" one skipped ran 0
     expect_both "(g) the command changed" one ran ran 0 --flag
-    expect_both "(g) the command back" one ran ran 0
-    printf '#!/bin/bash\nstep_cache_self_test_wrapper() { "$@" || return; }\n' >"$dir/one/script.sh"
+    expect_both "(g) the command back" one skipped ran 0
+    printf '#!/bin/bash\nstep_cache_self_test_wrapper() { "$@" || return; }\nstep_cache_self_test_keyer() { :; }\n' \
+        >"$dir/one/script.sh"
     expect_both "(h) the wrapping function's text changed" one ran ran 0
+    printf '#!/bin/bash\nstep_cache_self_test_wrapper() { "$@" || return; }\nstep_cache_self_test_keyer() { true; }\n' \
+        >"$dir/one/script.sh"
+    expect_both "(h) a function of the caller's shared base changed" one ran ran 0
     tools=2
     expect_both "(i) a tool version changed" one ran ran 0
     expect_both "unchanged" one skipped skipped 0
@@ -687,6 +772,35 @@ step_cache_self_test_shared() {
     expect_both "a failure recorded nothing" one ran ran 1
     expect_both "passed" one ran ran 0
     expect_both "after the pass" one skipped skipped 0
+    # Two worktrees at different content: each record stays beside the other.
+    printf 'two only\n' >"$dir/two/file.txt"
+    check "two worktrees' records: two at its own content (shared step)" "$(run_shared shared two 0)" "ran"
+    check "two worktrees' records: one, unchanged, finds its own (shared step)" \
+        "$(run_shared shared one 0)" "skipped test-commit in one, "
+    check "two worktrees' records: two, unchanged, finds its own (shared step)" \
+        "$(run_shared shared two 0)" "skipped test-commit in two, "
+    # A wrapper that is not defined is an error: no key.
+    local status=0
+    found=$(cd "$dir/one" && step_cache_key --shared step_cache_self_test_undefined "a step" file.txt -- true \
+        2>/dev/null) || status=$?
+    check "an undefined wrapper: the key's status and output" "$status ${found:-none}" "1 none"
+    # A shared folder that cannot be written: the shared cache is off, with
+    # its reason; a record there fails without ending the caller.
+    chmod a-w "$shared_dir"
+    if [ -w "$shared_dir" ]; then
+        printf "  skip  a shared folder that cannot be written: this user writes it all the same\n"
+    else
+        check "a shared folder that cannot be written (shared step)" "$(run_shared shared one 0)" \
+            "uncached $shared_dir cannot be written"
+        found=$(set -e; STEP_CACHE_SHARED_DIR="$shared_dir"; step_cache_record --shared "a step" "0" \
+            || printf "returned %s, " "$?"; printf "went on")
+        check "a record that cannot be written" "$found" "returned 1, went on"
+    fi
+    chmod u+w "$shared_dir"
+    unset GIT_DIR GIT_WORK_TREE
+    found="$("${git_test[@]}" -C "$dir/outer" rev-parse HEAD) $("${git_test[@]}" -C "$dir/outer" rev-list --count HEAD)"
+    check "git's variables of the caller (GIT_DIR, GIT_WORK_TREE): the outer repository untouched" \
+        "$found" "$outer_head 1"
     [ "$failures" -eq 0 ]
 }
 
