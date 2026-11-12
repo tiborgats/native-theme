@@ -285,8 +285,8 @@ data documents' checks (the four on the registry, the platform-facts
 sections, `docs/todo.md` and the presets' definition comments, the first
 three `PLAN_EXCLUDED` until M2.6; then the 0.8.0 plan's: the ledger's
 triage, the pinned sources and their cache, the facts and their citations,
-the generated widgets, presets, `sf_tracking` and `dynamic_type` tables and
-`docs/platform-facts.md`, the function vectors, the trace lines, the
+the generated widgets, presets, `sf_tracking` and `dynamic_type` tables,
+`docs/platform-facts.md` generated into a scratch directory, the function vectors, the trace lines, the
 pinned line citations and no file tracked under `docs/evidence/`, whose
 evidence lives in `native-theme-evidence`), docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
@@ -719,7 +719,9 @@ cite. A registry table is looked for in the section its `# §2.x` comment
 names (`[defaults]` in all of §2.1), a field under its name without the unit
 suffix, and a `border`, `font` or `icon_sizes` field part by part, the
 per-side paddings under their axis rows; the script's docstring states the
-whole rule. Prints one line per missing field (field, section, row name) and
+whole rule. `docs/platform-facts.md` is not committed: the script reads the
+document `generate_platform_facts.py` generates from the facts, on demand.
+Prints one line per missing field (field, section, row name) and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read. `--self-test` runs the rule on a synthetic registry and facts file. `check_release.sh` (both modes)
 and `ci.yml`'s parity job run its self-test; the check itself is
@@ -727,7 +729,7 @@ and `ci.yml`'s parity job run its self-test; the check itself is
 registry names today's (0.7) fields, and the generated
 `docs/platform-facts.md` has none of today's `§2` sections.
 
-Requires Python 3.
+Requires Python 3.11 (the generator's).
 
 ```sh
 python3 scripts/check_platform_facts_rows.py
@@ -741,7 +743,9 @@ Lists every numbered `§` reference in `docs/property-registry.toml`,
 `docs/new-os-version-guide.md` that names no section of
 `docs/platform-facts.md` (`§2` a chapter, `§2.21` a `###`, `§2.1.9` a `####`
 heading); a lettered `§` or one after another `.md` file's name is another
-document's and is skipped, as the script's docstring states. Prints one line
+document's and is skipped, as the script's docstring states.
+`docs/platform-facts.md` is not committed: the script reads the document
+`generate_platform_facts.py` generates from the facts, on demand. Prints one line
 per dangling reference (file:line, reference) and exits 0 when there is none,
 1 when there are some, 2 on an input it cannot read. `--self-test` runs the
 rule on a synthetic document and facts file. `check_release.sh` (both modes)
@@ -750,7 +754,7 @@ and `ci.yml`'s parity job run its self-test; the check itself is
 is deleted, and the generated `docs/platform-facts.md` has no numbered
 sections.
 
-Requires Python 3.
+Requires Python 3.11 (the generator's).
 
 ```sh
 python3 scripts/check_section_refs.py
@@ -1482,10 +1486,14 @@ per preset the value of the fact that applies there (the last in file
 order) with its citations. Writes `--out PATH`, by default
 `docs/platform-facts.md`, which its output has replaced since the switch:
 the document is generated and never edited (the hand-written one, which the
-planning documents cite by line, is the one `fc6109d1` holds). `--check`
-exits 1 when PATH differs from a fresh run; `check_release.sh` (both modes
-and `--quick`) runs it and the self-test. Offline. `--self-test` compares a
-fixture's document with the expected one and runs `--check`.
+planning documents cite by line, is the one `fc6109d1` holds), and not
+committed (specification S17): the path is ignored, CI and each release
+generate it, and a tool that cites its lines reads the facts or a copy
+generated on demand, naming the commit it was generated at. `--check` exits
+1 when PATH differs from a fresh run. `check_release.sh` (both modes and
+`--quick`) and `ci.yml`'s parity job run the generation into a scratch path
+and the self-test. Offline. `--self-test` compares a fixture's document with
+the expected one and runs `--check`.
 
 Requires Python 3.11.
 

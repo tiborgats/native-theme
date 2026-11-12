@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Development**: `scripts/check_release.sh` has a `PLAN_EXCLUDED` list for the steps the 0.8.0 transition breaks until a named milestone (skipped by `--commit`, run and reported as warnings by the full run, matched both ways against `# PLAN_EXCLUDED:` marks in `ci.yml`), and checks the ledger, the pinned sources, the source cache and the facts. Since the model's switch it lists 97 steps: the connectors' until the plan's M2.1 ports them (63), three data-document checks of 0.7.0's documents until M2.6 rewrites them to read the facts, and the showcases' and their shared crate's until M5 (31).
-- **Development**: `docs/platform-facts.md` is generated from the verified facts by `scripts/generate_platform_facts.py`, whose `--check` `scripts/check_release.sh` runs (both modes and `--quick`); the hand-written document it replaces is the one commit `fc6109d1` holds. `docs/new-os-version-guide.md` describes the facts process: pinning a release, re-checking the facts, measuring on CI, verifying, regenerating the preset.
+- **Development**: `docs/platform-facts.md` is generated from the verified facts by `scripts/generate_platform_facts.py` and not committed: CI and each release generate it, and `scripts/check_release.sh` (both modes and `--quick`) and CI's parity job run the generation into a scratch path and its `--self-test`; `scripts/check_facts.py` fails a facts file past 40 MiB, which is split by key prefix. The hand-written document it replaces is the one commit `fc6109d1` holds. `docs/new-os-version-guide.md` describes the facts process: pinning a release, re-checking the facts, measuring on CI, verifying, regenerating the preset.
 
 ### Removed
 
