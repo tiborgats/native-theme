@@ -445,7 +445,15 @@ item 1).
 connector's draw call. Resolution checks every rule's derivations against every base and rule they can apply
 over, and every expression against every binding it can meet: types, references, cycles, and operands that
 could be absent, or automatic where arithmetic would need a number (an automatic size has none). A preset or layer that fails is an error when it is added, and it is refused (R2.5); so resolution
-and the query cannot fail.
+and the query cannot fail. A bundled preset whose `[pending]` table is empty (every one at a release), a bundled
+palette, and every layer `Theme` derives from them alone pass these checks in the crate's own tests at every commit
+(S19.1's build test and the facts gate), and a theme does not run them again when it loads them. What the system and
+the application add passes them when it is added: they run over every layer whose stack, as they read it, the
+addition changes, and are not run where nothing they read differs from a stack that passed them; the checks of each
+value against the declarations, and the check that no input reads itself over the stack up to each layer, run over
+every layer at every change (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 4).
+Rejected: the checks run again at every load, which repeats at run time what every commit already proves of the same
+data (four of the slice's presets loaded in 259 ms to 17.6 s with them, against the 16 ms of the plan's *The load budget*).
 
 ### R3 — State flags
 
@@ -1748,8 +1756,8 @@ of that day:
 - R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
   none (the specification's S15).
 
-Amended by the 0.8.0 plan's checkpoint D6 (2026-11-10, outcomes 2 and 3; the specification's batch ADD-A147; D6,
-decided by logic, awaiting the maintainer's veto: veto list items 1 and 2):
+Amended by the 0.8.0 plan's checkpoint D6 (2026-11-10, outcomes 1, 2 and 3; the specification's batch ADD-A147; D6,
+decided by logic, awaiting the maintainer's veto: veto list items 1, 2 and 4):
 
 - R21: a unit enters at the depth 0.7.0's model and readers distinguish, its further variants, sizes, host contexts,
   states and conditions in later units of depth; 0.8.0 holds the two motions 0.7.0's model has, the dialog's
@@ -1761,6 +1769,10 @@ decided by logic, awaiting the maintainer's veto: veto list items 1 and 2):
   available'.
 - *Today's model*: 0.7.0's accessibility has no preset values behind it, but its readers write high-contrast values
   into the theme and its connectors honour reduced motion, as its code does (veto list item 40).
+- R2.8: a bundled preset whose `[pending]` table is empty, a bundled palette and the layers `Theme` derives from them
+  alone are checked by the crate's own tests at every commit and not again when a theme loads them; what the system
+  and the application add is checked when added, over every layer whose stack, as the checks read it, the addition
+  changes (veto list item 4).
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
