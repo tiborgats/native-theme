@@ -1495,13 +1495,15 @@ is fixed before task 0 on its own branch, `side-units`.
    animations on macOS 15 and 26 and iOS 18 and 26, at most two harness rounds per Apple harness (D6's budget for the
    trial, not a figure from the slice's evidence, whose Apple lanes needed several correcting rounds each; the
    fallback is a likely outcome); a motion measured on all four is stated on every preset, one that is not leaves
-   0.8.0 on every preset, a loss for the maintainer. Second, if the loop stays, the motion runtime's interface (spec
-   S2.7): `Motion`, `Places` (empty), `MotionUpdate`, `Drawn` and `Presence`, with `Motion::update` and
-   `Motion::sample`, running the loops a part's style and its widget's `loop` value state and no transition,
-   `MotionUpdate.speed_factor` from the resolved token, with a test per clause of S2.7's *A loop*, the connectors
-   drawing every part through `Motion::sample` from then on; if the loop leaves, no `Motion` is built but for a
-   connector whose design cannot show that the motion unit needs no change of its application-facing API (the D6
-   staging design, 5.6). The engines, `Places`' content, `interpolate_color`, Compose's spring, `ComposeShapeMorph` and
+   0.8.0 on every preset, a loss for the maintainer, each of the two motions decided on its own. Second, if either
+   motion stays, or if the connectors' design shows a connector that cannot keep its application-facing API through
+   the motion unit without it (the D6 staging design, 5.6), the motion runtime's interface (spec S2.7, *In 0.8.0*):
+   `Motion`, `Places` (empty), `MotionUpdate`, `Drawn` and `Presence`, with `Motion::update` and `Motion::sample`,
+   running no transition and, if the loop stays, the loops a part's style and its widget's `loop` value state, with
+   a test per clause of S2.7's *A loop*; `MotionUpdate.speed_factor` from the resolved token; the connectors drawing
+   every part through `Motion::sample` from then on (where both motions leave, the connector whose design needs it);
+   a dialog presentation that stays run by the connector's own animation with `timing::evaluate`. Otherwise no
+   `Motion` is built, and the interface is the motion unit's (ADD-A147). The engines, `Places`' content, `interpolate_color`, Compose's spring, `ComposeShapeMorph` and
    S4.3's theme change are the motion unit's (*After 0.8.0*), `interpolate_color` earlier only with a stated loop that
    interpolates a colour (ADD-A147). Then the connectors, gpui first, then iced, egui and egui-widgets: each one's old mapping deleted;
    its spinner and animated-icon code removed (`AnimatedIcon` is gone; busy indicators return with the indicators
