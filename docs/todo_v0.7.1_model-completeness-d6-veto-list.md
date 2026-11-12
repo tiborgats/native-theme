@@ -197,10 +197,13 @@ model form, by your earlier decisions and the project's rules.**
   literals of 2,795 fill lines). Over such a preset `apply_palette` and `set_preset` refuse a palette
   (`PaletteNotForPreset`), and `Palette::presets` lists the presets a palette has a source for and that take one,
   which a picker reads. Over a preset whose widgets read keyed colours a palette reaches them by a stated, reviewed
-  mapping method: a mapping states every colour role a value of the preset reads, unless that role follows, through
-  references alone, a role or an input the mapping states (a derivation or a call is no reference: `material-3`'s keyed
-  ladder, Material's scheme of the accent, is mapped as `windows-11`'s keyed roles are); a typed role the preset
-  states as a reference to a keyed one is stated with it or not at all, so no surface has two colours. Over
+  mapping method: a mapping states every colour role a value of the preset reads, unless that role follows the
+  mapping: a reference or a derivation over roles the mapping states or that so follow, or, through references
+  alone, an input it states (a literal, and a call that reads an input itself, follow nothing: `kde-breeze`'s
+  disabled roles, Plasma's effects over the mapping's colours, need no entry, while `material-3`'s keyed ladder,
+  Material's scheme of the accent, a function of the accent input alone, is mapped as `windows-11`'s literal keyed
+  roles are); a typed role the preset states as a reference to a keyed one is stated with it, the keyed role as a
+  reference to the typed one or both by the same expression, or not at all, so no surface has two colours. Over
   `material-3` and `windows-11` a palette needs the method's table, written once, at M4 (item 63); until then the
   bundled palettes are offered over `adwaita` and `kde-breeze`. This changes R19's "a palette on every platform",
   which you decided on 2026-10-28.
@@ -632,7 +635,8 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
   `linux_fallback` did (`v0.7.0:native-theme/src/pipeline.rs:1103-1110`), never `Err(FeatureDisabled)`; with the
   feature the reader runs as specified. A code task of its own beside M2's numbered tasks (ledger queue #281). On
   macOS and Windows nothing changes: 0.7.0 also answered `FeatureDisabled` there without the feature
-  (`pipeline.rs:1089-1102`).
+  (`pipeline.rs:1089-1102`); a platform the crate has no reader for in any build (iOS and Android until their
+  readers, any other target) is `Err(PlatformUnsupported)`, as 0.7.0's other targets were (`pipeline.rs:1111-1116`).
 - *Why:* D13 (nothing 0.7.0 has is lost): 0.7.0 needed no feature for this, and 0.8.0 as built answers
   `Err(FeatureDisabled)` in those builds.
 - *Veto brings:* the limit stated instead: a Linux build without the reader's feature gets `Err(FeatureDisabled)`
@@ -657,10 +661,10 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 **63. The bundled palettes' keyed-role tables are written once, at M4.**
 - *Decided:* the keyed-role sections of the bundled palettes (the method's tables for `windows-11` and `material-3`,
   item 49) are written once, at M4, when every widget of 0.8.0 is in; until then no bundled palette has a source for
-  a preset with keyed tables, and the bundled palettes are offered over `adwaita` and `kde-breeze`. M2's fourth task
-  proves the method on the slice's keyed roles with a test fixture (a mapping palette built in the test). A release
-  that enables units may refuse an application's mapping palette whose section lacks a keyed role the new units
-  read; its notes list those roles per preset. Task 4's design may change this.
+  a preset whose values read keyed colour roles, and the bundled palettes are offered over `adwaita` and
+  `kde-breeze`. M2's fourth task proves the method on the slice's keyed roles with a test fixture (a mapping palette
+  built in the test). A release that enables units may refuse an application's mapping palette whose section lacks
+  a colour role the new units read; its notes list those roles per preset. Task 4's design may change this.
 - *Why:* each M3a unit makes `windows-11` read further keyed roles and declares them only then, so a table written
   at M2 would be refused at the next unit until every project's table was extended and reviewed again; written at
   M4, each project's table is reviewed once per preset.
@@ -672,9 +676,10 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 **64. A 0.7.0 colour that maps to a role brings no state flag to an entry's depth.**
 - *Decided:* only a 0.7.0 field that maps to a token brings a state flag to an entry's depth (`focus_ring_*`, which
   is `token.focus`: `focused` and `focus_visible` where a part lists `focus`); a 0.7.0 `defaults` colour that maps to
-  a role (`disabled_text_color`, the selection pair) brings none. Where an entry's state flag is not at depth, the
-  connector draws that state as 0.7.0's did, from the typed role (`role.window.disabled.foreground`, the selection
-  roles), through its contract's deferred entries (the specification's S21.3).
+  a role (`disabled_text_color`, the selection pair) brings none. Where 0.7.0's connector drew a state whose flag is
+  not at depth for an entry from such a colour, the connector draws that state from the typed role
+  (`role.window.disabled.foreground`, the selection roles), through its contract's deferred entries (the
+  specification's S21.3); every other such state is drawn as the look at depth.
 - *Why:* D13: 0.7.0's depth for those looks is one global colour, not a per-widget state; its connectors applied
   `disabled_text_color` and the selection pair to every widget from the theme's defaults, which the deferred entries
   keep.

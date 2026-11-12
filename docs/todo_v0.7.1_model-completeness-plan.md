@@ -167,13 +167,20 @@ facts gate skips a fact that is not of the enabled units (the lanes run ahead), 
 units* is one whose key's path, and the widget a `drawn_as` value names, the enabled units hold and whose `when` holds
 in at least one combination of the enabled units' names that its entry's state model draws on that preset, decided
 exactly over the combinations at depth (S17; ADD-A146, ADD-A147, ADD-A148). A fact that is not of the
-enabled units is a later unit's: the unit at whose enabling, the units enabled one after another in the units file's
-order, the fact is first of the enabled units. It is decided from names, without walking combinations: for each
-drawn set of its entry's state model that can hold the fact (its part drawn there, by the part's presence facts), the
-last unit in the file's order among the names the fact needs in that set (the names its `when` lists positively, the
-names the set or the presence fact requires beside them, a name of a kind whose at-depth names the fact's negative
-list excludes, its key's path, a host context where the set is drawn only inside one: that host's unit, `identities`
-for a context naming no widget); the fact's unit is the first such unit over those sets (S17; ADD-A148). A fact that
+enabled units is a later unit's or unplaced (below). Its later unit is the unit at whose enabling, the units enabled
+one after another in the units file's order, the fact is first of the enabled units. It is decided from names,
+without walking combinations: for each drawn set of its entry's state model that can hold the fact (its part drawn
+there, by the part's presence facts), the last unit in the file's order among the names the fact needs in that set
+(the names its `when` lists positively, a widget its `context`, its `scope.nearest` or its `widget` names among them;
+the names the state model requires for that set to be drawn there, the set's other variants and the states and
+conditions under which alone its `not_drawn` entries leave it drawn; the names the presence fact that draws the part
+there lists, the earliest unit where several draw it; a size other than the set's default in force where the fact's
+`not_sizes` excludes that default, the sizes unit: a size is the one kind of which an element always holds a name, so
+excluding the name at depth asks a later one; its key's path; the widget a `drawn_as` value names and the variants it
+names of that widget; a host context where the set is drawn only inside one: that host's unit, `identities` for a
+context naming no widget); the fact's unit is the first such unit over those sets (S17; ADD-A148). A fact's other
+negative lists (`not_context`, `not_variants`, `not_states`, `not_conditions`) never add a unit: an element may hold
+no name of those kinds, so the negation holds among the names at depth (ADD-A148). A fact that
 no drawn set can hold with any units' names is *unplaced*: the gate and `check_facts_trace.py` report it apart, under
 no unit, and from M4 the gate fails it (ADD-A148). A fact of the enabled units is checked exactly, over the
 combinations at depth; nothing walks the combinations of all units' names (ADD-A148). From M4 the gate also fails a
@@ -804,8 +811,8 @@ from `defaults.focus_ring_*` on every preset with no Full Keyboard Access read
 (`v0.7.0:connectors/native-theme-egui/src/atlas.rs:114`, `:641`, `accessors.rs:102-115`); ADD-A148; veto list item
 62), and
 `animations_off` and `reduced_motion` for the motion values 0.8.0 holds (the dialog's `presentations` and the
-spinner's `loop`, each where the Apple motion trial measures it). A typed colour role enters whole under the scheme, `contrast_high`
-and the conditions the catalogue's *today's fields* table names; a token path, and a keyed name of any kind, is at
+spinner's `loop`, each where the Apple motion trial measures it). A typed colour role enters whole under the scheme, `contrast_high`,
+`full_keyboard_access` (ADD-A148) and the conditions the catalogue's *today's fields* table names; a token path, and a keyed name of any kind, is at
 depth when 0.7.0 has it, a value at depth reads it, the core reads it, a connector reads it to draw a value at depth,
 or a built system reader states it, and every other waits in a parking unit for the first unit that reads it. Every
 other name (the further variants, sizes, densities, host contexts, positions, directions, states and conditions)
@@ -1410,7 +1417,10 @@ built entry point lost against 0.7.0: on Linux, where the desktop's reader is no
 and the portal desktops, `kde` off on KDE), `Theme::from_system` runs the reads that need no feature (`GTK_THEME`,
 gsettings, `settings.ini`: the scheme and motion) and gives the platform's preset in that scheme, as 0.7.0's
 `linux_fallback` did (`v0.7.0:native-theme/src/pipeline.rs:1103-1110`), where it answers `Err(FeatureDisabled)`
-today (`native-theme/src/reader.rs:230-271`); with the feature the reader runs as S16 specifies. *Done:* a test per
+today (`native-theme/src/reader.rs:230-271`); with the feature the reader runs as S16 specifies. On macOS and
+Windows a build without the platform's feature stays `Err(FeatureDisabled)`, as in 0.7.0
+(`v0.7.0:native-theme/src/pipeline.rs:1088-1101`), and a platform with no reader in any build
+`Err(PlatformUnsupported)` (S16). *Done:* a test per
 case (each desktop's build without its reader's feature, and with it); S16's sentence that these desktops keep what
 0.7.0 gave them true; the per-feature checks and `check_release.sh --quick` green. Rejected: the limit stated and
 added to R21's list of losses (the veto's alternative).
@@ -1684,10 +1694,12 @@ is fixed before task 0 on its own branch, `side-units`.
    `check_sources.py` gains here (S17's *Sources*; ADD-A148). Over a preset whose widgets read keyed colours, a
    palette reaches them by S14's stated mapping method, or it is not offered over that preset (D6, outcome 7;
    ADD-A147): per project and preset, every colour role a value of the preset reads, keyed or typed, mapped once to
-   the project's vocabulary unless it is, through references alone, a role or an input the mapping states (a
-   derivation or a call is no reference: `material-3`'s ladder, Material's scheme of the seed, is mapped as
-   `windows-11`'s keyed roles are), a typed role the preset states as a reference to a keyed one mapped alike with it
-   or not at all, the table reviewed by a `review` agent before a palette is bundled over that preset; the design of
+   the project's vocabulary unless it follows the mapping: a reference or a derivation over roles the mapping states
+   or that so follow, or, through references alone, an input it states (a literal, and a call that reads an input
+   itself, follow nothing: `kde-breeze`'s disabled roles, Plasma's effects over the mapping's colours, need no entry,
+   while `material-3`'s ladder, Material's scheme of the seed, a function of the accent input alone, is mapped as
+   `windows-11`'s literal keyed roles are), a typed role the preset states as a reference to a keyed one stated with
+   it, the keyed role as a reference to the typed one or both by the same expression, or not at all, the table reviewed by a `review` agent before a palette is bundled over that preset; the design of
    the method is this task's first step and may refine it (ADD-A148; veto list item 49). The bundled palettes' tables
    for `windows-11` and `material-3` are written once, at M4, when every widget of 0.8.0 is in; until then the
    bundled palettes are offered over `adwaita` and `kde-breeze` alone, and this task proves the method on the slice's

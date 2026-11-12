@@ -34,14 +34,21 @@ platform's verified commit, whatever its unit, and `verify_facts.py units` stays
 the units of depth and the parking units in 3.4's order, the order S17 reads (P-4). The predicate (1.3, 2.5) is
 decided exactly, over the combinations at depth: a fact is of the enabled units when its key's path, and the widget a
 `drawn_as` value names, are held by them and its `when` holds in at least one combination of the enabled units'
-names that its entry's state model draws on that preset. A fact that is not of the enabled units is a later unit's:
-the unit at whose enabling, the units enabled one after another in the units file's order, the fact is first of the
-enabled units, not the first unit whose names it needs. It is decided from names, without walking combinations: for
-each drawn set of its entry's state model that can hold the fact (its part drawn there, by the part's presence
-facts), the last unit in the file's order among the names the fact needs in that set (the names its `when` lists
-positively, the names the set or the presence fact requires beside them, a name of a kind whose at-depth names the
-fact's negative list excludes, its key's path, a host context where the set is drawn only inside one: that host's
-unit, `identities` for a context naming no widget); the fact's unit is the first such unit over those sets. A fact
+names that its entry's state model draws on that preset. A fact that is not of the enabled units is a later unit's
+or unplaced (below). Its later unit is the unit at whose enabling, the units enabled one after another in the units
+file's order, the fact is first of the enabled units, not the first unit whose names it needs. It is decided from
+names, without walking combinations: for each drawn set of its entry's state model that can hold the fact (its part
+drawn there, by the part's presence facts), the last unit in the file's order among the names the fact needs in that
+set (the names its `when` lists positively, a widget its `context`, its `scope.nearest` or its `widget` names among
+them; the names the state model requires for that set to be drawn there, the set's other variants and the states and
+conditions under which alone its `not_drawn` entries leave it drawn; the names the presence fact that draws the part
+there lists, the earliest unit where several draw it; a size other than the set's default in force where the fact's
+`not_sizes` excludes that default, the sizes unit, a size being the one kind of which an element always holds a
+name; its key's path; the widget a `drawn_as` value names and the variants it names of that widget; a host context
+where the set is drawn only inside one: that host's unit, `identities` for a context naming no widget); the fact's
+unit is the first such unit over those sets. A fact's other negative lists (`not_context`, `not_variants`,
+`not_states`, `not_conditions`) never add a unit: an element may hold no name of those kinds, so the negation holds
+among the names at depth (S17; X1-2 of the batch's check). A fact
 that no drawn set can hold with any units' names is *unplaced*: the gate and `check_facts_trace.py` report it apart,
 under no unit, and from the plan's M4 the gate fails it. A fact of the enabled units is checked exactly, over the
 combinations at depth; nothing walks the combinations of all units' names, so the "stray fact" of 2.5 and of the revision tables (a `when` no union of units

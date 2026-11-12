@@ -1368,14 +1368,17 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   those derived inputs too, mapped to the project's colours in a per-preset section and labelled as native-theme's
   picks like any other (the alternative: leaving the platform's own accent in place under the palette, which mixes
   two colour schemes; ADD-A148);
-- states, over any preset, every colour role, typed or keyed, that a value of the preset reads, unless that role is,
-  through references alone, a role or an input the mapping states (a derivation or a call is no
-  reference), each mapped once to the project's own vocabulary by a stated method, the table per project and preset
-  reviewed: `windows-11`'s button reads 24 keyed colour roles and no typed one, 21 of them literals under the plain
-  schemes, and `material-3`'s ladder, Material's scheme of the seed, is mapped as those are, while `windows-11`'s
-  `@accent_fill_default`, `= role.global.accent_ramp.dark1`, which is `= input.accent_ramp.dark1`, needs no entry.
-  Where the preset states a typed role as a reference to a keyed one (`material-3`'s `role.window.background`,
-  `= role.@background`), the mapping states both alike or neither, so no surface is drawn in two colours. A palette
+- states, over any preset, every colour role, typed or keyed, that a value of the preset reads, unless the role
+  follows the mapping: a reference or a derivation over roles the mapping states or that so follow, or, through
+  references alone, an input it states (a literal, and a call that reads an input itself, follow nothing), each
+  mapped once to the project's own vocabulary by a stated method, the table per project and preset reviewed:
+  `windows-11`'s button reads 24 keyed colour roles and no typed one, 21 of them literals under the plain schemes,
+  and `material-3`'s ladder, Material's scheme of the seed, a function of the accent input alone, is mapped as those
+  are, while `windows-11`'s `@accent_fill_default`, `= role.global.accent_ramp.dark1`, which is
+  `= input.accent_ramp.dark1`, and `kde-breeze`'s disabled roles, Plasma's effects over the mapping's own colours,
+  need no entry. Where the preset states a typed role as a reference to a keyed one (`material-3`'s
+  `role.window.background`, `= role.@background`), the mapping states both, the keyed role as a reference to the
+  typed one or both by the same expression, or neither, so no surface is drawn in two colours. A palette
   without the table for a preset is not offered over it (ADD-A147; D6; ADD-A148, decided by logic at the document
   pass, awaiting the maintainer's veto: veto list item 49; the method is designed with the palettes, the
   specification's S14). The bundled palettes' tables are written once, when every widget of 0.8.0 is in (the plan's
@@ -1861,8 +1864,9 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
 Amended in place by the specification's batch ADD-A148 (2026-11-12, the fixes of the document pass after D6; decided
 by logic, awaiting the maintainer's veto: veto list items 49 and 59 to 64):
 
-- R19: a mapping states every colour role, typed or keyed, a value of the preset reads but one that follows,
-  through references alone, what it states, so `material-3`'s ladder is mapped; the bundled palettes' tables are
+- R19: a mapping states every colour role, typed or keyed, a value of the preset reads but one that follows the
+  mapping (a reference or a derivation over what it states, not a literal or a call that reads an input itself), so
+  `material-3`'s ladder is mapped; the bundled palettes' tables are
   written at M4, offered over `adwaita` and `kde-breeze` until then; a preset whose widget colours are measured
   literals declares that it takes no palette (`macos-*`, `ios-*`), which changes "a palette on every platform" (items
   49 and 63).

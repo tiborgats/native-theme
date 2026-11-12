@@ -86,9 +86,10 @@ applied as ADD-A148 (ledger queue #288), correct this file's outcomes as follows
   the theme (item 60).
 - Outcome 7 **changes an earlier decision** (R19's "a palette on every platform", the maintainer's, 2026-10-28): a
   preset whose widget colours are measured literals that follow no role declares that it takes no palette
-  (`macos-*`, `ios-*`); a mapping states every colour role a value of the preset reads unless that role follows,
-  through references alone, a role or an input the mapping states (`material-3`'s ladder is mapped as `windows-11`'s
-  keyed roles are); the bundled palettes' keyed tables are written once, at M4, the bundled palettes offered over
+  (`macos-*`, `ios-*`); a mapping states every colour role a value of the preset reads unless that role follows the
+  mapping, a reference or a derivation over roles the mapping states or that so follow, or, through references
+  alone, an input it states (a literal, and a call that reads an input itself, follow nothing: `material-3`'s ladder
+  is mapped as `windows-11`'s literal keyed roles are); the bundled palettes' keyed tables are written once, at M4, the bundled palettes offered over
   `adwaita` and `kde-breeze` until then (veto list items 49, 63).
 - Outcome 12: nothing changes; its two reversed decisions, the iOS tint and the palette suspended under a followed
   scheme, are veto list items of their own (65, 66).

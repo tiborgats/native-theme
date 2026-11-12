@@ -10378,7 +10378,8 @@ platform default monospace typeface (MAT-X36†).
 | `TextScaleEntry.line_height_pt`/`line_height_px` | the keyed style's `line_height` (ADD-A40) |
 | accessibility flags (§2.1.7) | conditions (S7.1) |
 
-The typed roles enter whole, under the scheme, `contrast_high` and the conditions this table names (`window_inactive`
+The typed roles enter whole, under the scheme, `contrast_high`, `full_keyboard_access` (ADD-A148; veto list item 62)
+and the conditions this table names (`window_inactive`
 for the `selection` set, whole: 0.7.0's `selection_inactive_background`). A token path this table does not name enters by S6.1's rule; every keyed role, text
 style, elevation entry and icon context is declared with the first unit whose value reads it, or with the reader that
 states it. A token at depth is stated under the scheme, `contrast_high`, `full_keyboard_access` (ADD-A148; veto
