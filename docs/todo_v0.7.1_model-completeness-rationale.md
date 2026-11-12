@@ -605,15 +605,10 @@ fill and stroke tiers.
   platform's own roles* (Material's ladder, WinUI's tiers).
 
 **Decision:** the third (principle 4). A role the platform does not have is absent there, as the Selection set's
-outline is on `macos-*` (R25.17), unless all three hold: a connector maps it to a toolkit field that cannot be left
-empty (the connectors' contract tables name these), no stated fact gives it a value (a fact stating it `absent` is
-replaced), and the platform draws that meaning in a colour of its own: a colour its documentation or code uses for
-that meaning (libadwaita's info bar draws info from the accent), or the colour it is measured drawing in that role
-(the filled button's title colour, U651, U755); a colour that merely exists in its palette does not count. Then it
-is native-theme's labelled mapping, paired with that colour, as the status roles
-are on `macos-*` and `ios-*` where their reads pair them (U757–U760) and the info role's fill and text colour
-on `adwaita` (R25.17;
-ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 3, 56 and 57).
+outline is on `macos-*` (R25.17), unless the platform draws its meaning in a colour of its own: then it is
+native-theme's labelled mapping to that colour (the specification's S3), as the info role's fill and text colour on
+`adwaita` and the status roles on `macos-*` and `ios-*` where the ledger's U757–U760 pair them (R25.17; ADD-A147; D6,
+decided by logic, awaiting the maintainer's veto: veto list items 3, 56 and 57).
 
 **Groups.** The window being inactive holds for a whole window, so an inactive group is a colour-role rule under the
 inactive condition; being disabled is per element, so each surface set also holds disabled roles, which parts'
@@ -1468,15 +1463,12 @@ caller's build, and a default would hide it.
   `windows-11` and `ios-*` as far as the register's U102, U516 and U127 find); the icon theme's name on the presets
   whose icon set is not freedesktop, where 0.7.0 repeated the set's name (`material-3`'s `"material"`), the name
   staying in `token.icons.set` (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 7
-  and 8); on `macos-*` and `ios-*` a status colour whose read finds on that preset neither an Apple source naming it
-  for that status nor a measurement that counts of an element the platform itself colours for that status, in a
-  colour the run does not set, and an `error` or `warning` standalone colour there (egui's `error_fg_color` and
-  `warn_fg_color`) that no read names or measures as text or a mark on the surface, a fill, or a source that does
-  not say how the colour is drawn, not pairing it (the ledger's U757–U760), and on
-  `windows-11` egui's error and warning text colours (`error_fg_color` and
-  `warn_fg_color`, which 0.7.0 filled with `#c42b1c` and `#9d5d00`, `v0.7.0:native-theme/src/presets/windows-11.toml:37`,
-  `:40`), each held by the connector's contract as the toolkit's own colour (the specification's S3, S21.3; ADD-A147;
-  D6, decided by logic, awaiting the maintainer's veto: veto list items 56 and 57); and the widgets a preset declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`,
+  and 8); on `material-3` the warning, success and info colours and their text colours, which 0.7.0 stated with no
+  source (`#7d5700`, `#386a20`, `#6750a4` on `#ffffff`, and the dark scheme's;
+  `v0.7.0:native-theme/src/presets/material-3.toml:29-34`, `:548-553`), Material drawing none of those meanings, and
+  on `macos-*` and `ios-*` a status colour the ledger's U757–U760 close with no witness, each held by the connector's
+  contract as the toolkit's own colour (the specification's S3, S21.3; ADD-A147; D6, decided by logic, awaiting the
+  maintainer's veto: veto list items 56 and 57); and the widgets a preset declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`,
   `status_bar`; ADD-A146), which a connector draws by its contract's list (the specification's S21.3), a widget
   being 0.8.0's on every preset whose platform draws it (ADD-A147; D6, decided by logic, awaiting the maintainer's
   veto: veto list item 48), what 0.7.0's API holds beyond them and 0.8.0 does not keep being the plan's *Not kept*, and get the
@@ -1824,38 +1816,18 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
   into the theme and its connectors honour reduced motion, as its code does (veto list item 40).
 - R2.8: a bundled preset whose `[pending]` table is empty, a bundled palette and the layers `Theme` derives from them
   alone are checked by the crate's own tests at every commit, and a theme runs neither the preset's own checks nor
-  the checks over combinations of those stacks again when it loads them, each layer's own checks running at every
-  change; what the system
+  the checks over combinations of those stacks again when it loads them, the checks of each layer above the preset
+  running at every change; what the system
   and the application add is checked when added, over every layer whose stack, as the checks read it, the addition
   changes, and a system reading with every layer above it, a bundled palette among them, where a change alters what
   the reading leaves out (veto list item 4).
-- R5.1, R10, R25.17: a typed role the platform names no counterpart for is native-theme's labelled mapping,
-  outside the gate's platform comparison, never absent and never a stated fact, where a connector maps it to a
-  toolkit field that cannot be left empty, no stated fact gives it a value (a fact stating it `absent` is replaced)
-  and the platform draws that meaning in a colour of its own: a colour its documentation or code uses for that
-  meaning, or the colour it is measured drawing in that role (the filled button's title colour, U651, U755), a colour
-  that merely exists in its palette not counting; where only the last fails, it stays absent and the connector's
-  contract records the toolkit's own colour there as an exception (veto list item 56). A text slot the platform names
-  no counterpart for is the mapping's, outside those conditions, by a style or family the platform names. On
-  `macos-*` and `ios-*` the status fills, and the error and warning standalone colours, are paired by their reads
-  with the keyed system colour a source names or a measurement finds equal in each scheme and contrast and under a
-  second accent (0.7.0's or another), with the measured derivation over the accent where the second-accent run shows
-  the colour changing with it, as U750 and U706 state such colours, never a literal, or with the colour measured, a
-  literal, only where it holds under the second accent and equals no system colour (ADD-A147), each preset on its own, a
-  fill, or a colour a source names without saying how it is drawn, pairing the fill alone and a standalone colour
-  paired only by one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector
-  holding them; where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on,
-  through that task's own spec change), and the status text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a
-  filled button's title in, as `accent_foreground` there (on `macos-*` `= role.global.accent_foreground`; on `ios-*`
-  U651's measured colour, measured on each status fill by the second-tint run), each pairing resting on a read that
-  names the colour for the meaning or measures an element the platform itself colours for it, in a colour the run
-  does not set, the facts lane naming the element in the fact's evidence and the verifier and the tie-break, to
-  which every fact closing a read goes, deciding whether it counts (U757–U760), pending
-  on it while it is open, absent where
-  neither is found, and the macOS foregrounds measured over a status fill (U756), so 0.8.0 keeps the macOS status
-  colours where a read pairs them (R21; veto list item 57); on `adwaita` the info role's fill and text colour
-  refer to the accent's, its fill the colour libadwaita's info bar draws info from; the text slots' mappings are
-  labelled alike (veto list item 3).
+- R5.1, R10, R25.17: a typed role no source of the platform states is native-theme's labelled mapping where the
+  platform draws its meaning in a colour of its own, a text slot the platform names no style for by a style or family
+  it names (the specification's S3; veto list item 3); where the platform draws the meaning in no colour the role is
+  absent and the connector's contract records the toolkit's own colour there, an exception to following the theme's
+  data (veto list item 56), `material-3`'s warning, success and info colours a loss R21 lists; on `adwaita` the info
+  role's fill and text colour refer to the accent's; on `macos-*` and `ios-*` the statuses wait on the ledger's
+  U757–U760, so 0.8.0 keeps the Apple status colours where a row pairs them (R21; veto list item 57).
 - R19: over a preset whose widgets read keyed colours, a palette reaches them by a stated, reviewed mapping method,
   or it is not offered over that preset; nor is it offered over a preset whose widget colours are measured literals
   that follow no role (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
@@ -2046,90 +2018,42 @@ Each is decided from the pinned sources; the specification cites them.
   the measurement.
 - *The status colours of `macos-*` and `ios-*`.* AppKit declares no status colour, and its selection no outline
   colour; UIKit declares no status colour either (the register's U456). Options: map statuses to the system palette
-  as the platform's fact (no Apple source maps them; it would invent the platform's meaning); leave them absent there,
-  every route that reads them checked (the decision until D6: iced's palette, gpui-component's theme and egui's
-  visuals hold status colours as plain colours that cannot be left empty, so each connector would put there either
-  the toolkit's default, which the project's rules forbid, or a pairing of its own, unlabelled and different per
+  as the platform's fact (no Apple source maps them; it would invent the platform's meaning); leave them absent there
+  whatever the platform draws, every route that reads them checked (the decision until D6: iced's palette,
+  gpui-component's theme and egui's visuals hold status colours as plain colours that cannot be left empty, so each
+  connector would put there the toolkit's default also where the platform draws the meaning in a colour the theme
+  could give, which following the theme's data forbids, or a pairing of its own, unlabelled and different per
   connector); per-preset code in each connector reading the keyed roles (the same pairing, in four places and
-  unchecked); one rule for every typed role or slot that a portable application needs and the platform names no
-  counterpart for: native-theme's own mapping, labelled as such, outside the gate's platform comparison, never
-  absent and never recorded as the platform's fact. **Decision:** the last (ADD-A147; D6, decided by logic, awaiting
-  the maintainer's veto: veto list item 3). It invents no colour: the colours are the platform's system colours, and
-  what is native-theme's is the pairing, which the label says, as R19's labelled picks are. The rule maps a typed role
-  where all three hold: a connector maps it to a toolkit field that cannot be left empty (the connectors' contract
-  tables name these); no stated fact gives it a value (a role cited as the platform's own fact stays a fact, as
-  `windows-11`'s `role.window.negative` and `macos-*`'s `accent_standalone`; a fact stating it `absent` is replaced);
-  and the platform draws that meaning in a colour of its own: a colour its documentation or code uses for that
-  meaning (libadwaita's info bar draws info from `--accent-bg-color`, `libadwaita@1.10.0
-  src/stylesheet/widgets/_deprecated.scss:174`), or the colour it is measured drawing in that role (the filled
-  button's title colour, U651, U755); a colour that merely exists in its palette does not count. A text slot is the
-  mapping's by a clause of its own, every slot being filled (R10): a style or family the platform names, never a
-  made-up font. The pairing refers to that colour, never to a colour native-theme makes up. Where only the
-  third fails (among them `material-3`'s warning, success and info, which Material draws none of, and `windows-11`'s
-  `error.standalone` and `warning.standalone`, which egui holds as `error_fg_color` and `warn_fg_color` and WinUI
-  draws only as fills; the contract tables list each), the role stays absent and the
-  connector's contract records the toolkit's own colour there as an exception, as for a widget a preset declares
-  unavailable (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 56). On `macos-*` and
-  `ios-*` the status records' `fill`, and `error`'s and `warning`'s `standalone`, are paired by their reads with the
-  keyed system colour a source names for the status or a measurement finds equal in each scheme and contrast and
-  under a second accent (0.7.0 drew
-  systemRed, systemOrange, systemGreen and systemBlue; a read finding another pairs that one), with the measured
-  derivation over the accent where the colour follows the accent, never a literal, and otherwise with the colour
-  measured, the pairings listed in the specification's
-  catalogue for the maintainer's veto, and on `macos-*` the sets' status text colours follow them, as on every preset
-  without per-set values. `success.standalone` and `info.standalone` stay absent there, and so does `destructive`: no
-  connector holds a success or info text colour on the surface (0.7.0's egui held only `error_fg_color` and
-  `warn_fg_color`, `v0.7.0:connectors/native-theme-egui/src/style/base.rs:180-181`) or a destructive colour (0.7.0's
-  model held none; its "danger" fields read `error` on presets that state no destructive colour apart from it, as
-  these do), so the first condition fails, judged from the
-  connectors as they stand; where M2 task 1's contract tables name a toolkit field for one of these roles, the rule
-  applies to it from then on, through that task's own spec change (ADD-A147; D6, decided by logic, awaiting the
-  maintainer's veto: veto list items 3 and 56). Each pairing rests on a read that meets the third condition, Apple documentation that names a
-  system colour for that meaning by its API name (a hue word, "red", does not), which pairs that colour, or a
-  measurement of an element the platform itself colours for that meaning, in a colour the run does not set, which
-  pairs the role with the colour measured, the keyed colour where the two are equal in each scheme and each contrast
-  the keyed colour states, and under a second accent too, within the measurement's tolerance (as U750 and U706
-  check a look that may follow the accent), the measured derivation over `input.accent` where the second-accent run
-  shows the colour changing with the accent, as U750 and U706 state such colours, never a literal, and a literal
-  only where the colour holds under the second accent and equals no system colour (ADD-A147); each preset is decided on its own, and where two
-  witnesses that count disagree on a preset the tie-break decides; a fill being an area the platform paints in the
-  colour and text or a mark the colour drawn as text, a glyph or a stroke on the surface, a colour named or measured
-  as a fill, or named by a source that does not say how it is drawn, pairs the `fill` alone, a `standalone` being
-  paired only by one named or measured as text or a mark on the surface and otherwise absent, as `windows-11`'s
-  are; the facts lane names the element in the fact's evidence, which cites the read even where the pairing is a
-  reference, and the verifier and the tie-break, to which every fact closing a read goes, decide whether it counts,
-  a read closing as not found where the lane's survey finds no candidate, or none that counts, and the tie-break
-  confirms it (the ledger's U757–U760), the macOS and iOS lanes making it before their facts edit; while it is open
-  the status's `fill`, for `error` and `warning` its `standalone`, and its `foreground` are pending on it, and where neither is found,
-  by M4 at the latest, they are absent there by R5.1's rule, the connectors' contracts recording the toolkit's colour,
-  a loss of 0.7.0's status colour (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 57,
-  whose veto keeps the pairing). Rejected: the fields absent while the read is open, which the catalogue could only
-  mark by a condition no check reads and which would put a temporary exception in every connector's contract. A
-  status `foreground` is paired only where its fill is. On `macos-*` each status `foreground`, the text on the status fill, which the gpui connector holds as a plain
-  colour (`danger_foreground` and its three siblings), is `alternateSelectedControlTextColor`, the text on emphasized
-  content (`xcode@26.6 AppKit/NSColor.h:211`), which the facts state as `role.global.accent_foreground`, measured
-  white in both schemes, as the default and `primary` push button's title is measured on `macos-tahoe`
-  (`docs/facts/macos/button.toml`, MAC-B02, MAC-B07), and measured over each status fill by the ledger's U756: `=
-  role.global.accent_foreground`. 0.7.0 filled those fields from `*_text_color`, `labelColor`, which its own preset
-  names "the body text beside a status mark, not text on the status fill"
-  (`v0.7.0:native-theme/src/presets/macos-tahoe.toml:37-39`), so it gives no pairing to keep. On `ios-*` it is the
-  colour UIKit draws a filled button's title in, as `accent_foreground` is there (the ledger's U651, U755), measured
-  on each status fill by U706's second-tint run (the status colours as tints); 0.7.0's status
-  text there was a literal with no source, `#ffffff` and on warning `#000000` in both schemes
-  (`v0.7.0:native-theme/src/presets/ios-13.toml:45-56`), so it gives no pairing to keep (ADD-A147; D6, decided by
-  logic, awaiting the maintainer's veto: veto list item 3). On `adwaita` the `info` record's `fill` and `foreground`
-  refer to the accent's, its fill the colour libadwaita's info bar draws info from (`_deprecated.scss:174`), its
-  foreground the text libadwaita draws on the accent (`src/adw-style-manager.c:161`), as 0.7.0 drew it
-  (`v0.7.0:native-theme/src/presets/adwaita.toml:42-45`); its `standalone` stays absent, no connector holding an
-  info text colour on the surface and libadwaita drawing no info as text (`_labels.scss:21-29` names error, warning
-  and success) (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 56).
-  `background`, `background_solid` and `neutral`, which 0.7.0's model did not hold, stay absent where the catalogue
-  allows it. The text slots' mappings (R10)
-  carry the same label. The Selection set's outline stays absent
-  on `macos-*`; macOS's destructive buttons keep their system red, its level indicator its own fills
-  (candidates U757 and U758 record for the error and warning statuses' measurement: the critical fill `error`'s,
-  AppKit's "critical" its top severity, as the catalogue's `dialog` reads NSAlert's critical style as its `error`
-  variant; the warning fill `warning`'s).
+  unchecked); one rule for every typed role or slot no source of the platform states: native-theme's own mapping,
+  labelled as such, outside the gate's platform comparison and never recorded as the platform's fact.
+  **Decision:** the last (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 3). It
+  invents no colour: what is native-theme's is the pairing, which the label says, and unlike R19's picks it rests on
+  a use the platform itself makes of the colour. A typed role is the mapping's where the platform draws its meaning
+  in a colour of its own, documented or measured; a text slot by a style or family the platform names (R10); the
+  specification's S3 states the rule. Where the platform draws the meaning in no colour (`material-3`'s warning,
+  success and info), the role stays absent and the connector's contract records there the colour the toolkit's
+  default theme of the resolved scheme holds (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto
+  list item 56). Where the platform draws the meaning in no colour the theme has no data to follow, so this is an
+  exception to "connectors follow the theme's data": for a widget the platform lacks the toolkit gives only its
+  geometry (the specification's S21.3), here it gives a colour. On `macos-*` and `ios-*` no pinned Apple source names
+  the colours 0.7.0 drew (systemRed, systemOrange, systemGreen, systemBlue) for these meanings, so each status waits
+  on its read (the ledger's U757–U760, which hold the candidates and what closes each), its facts pending meanwhile;
+  a status a read closes with no witness is absent there, a loss of 0.7.0's status colour (ADD-A147; D6, decided by
+  logic, awaiting the maintainer's veto: veto list item 57, whose veto keeps the pairing). Rejected: the fields
+  absent while the read is open, which the catalogue could only mark by a condition no check reads and which would
+  put a temporary exception in every connector's contract. A status `foreground`, the text on its fill, is the
+  colour the platform is measured drawing as text over that fill (U756, U755): 0.7.0's `labelColor` on `macos-*` is
+  by its own preset "the body text beside a status mark, not text on the status fill"
+  (`v0.7.0:native-theme/src/presets/macos-tahoe.toml:37-39`), and its iOS status text a literal with no source
+  (`v0.7.0:native-theme/src/presets/ios-13.toml:45-56`), so neither gives a pairing to keep (ADD-A147; D6, decided
+  by logic, awaiting the maintainer's veto: veto list item 3). On `adwaita` the `info` record's `fill` and
+  `foreground` refer to the accent's, as libadwaita's info bar draws info (`_deprecated.scss:174`) and as 0.7.0 drew
+  it (`v0.7.0:native-theme/src/presets/adwaita.toml:42-45`) (ADD-A147; D6, decided by logic, awaiting the
+  maintainer's veto: veto list item 56). `destructive`, a status's `standalone` the platform is not found drawing as
+  text or a mark, `background`, `background_solid` and `neutral` stay absent where the catalogue allows it: no
+  committed source or measurement shows the platform drawing them at 0.8.0's depth. The Selection set's outline stays
+  absent on `macos-*`; macOS's destructive buttons keep their system red, its level indicator its own fills (U757's
+  and U758's candidates).
 - *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that
   held there, so a field's facts had to restate where their part is drawn (eleven fields of GNOME's menu arrow, and as
   two facts each, since the arrow is drawn under either of two variants). Options: keep the failure (no check gained:

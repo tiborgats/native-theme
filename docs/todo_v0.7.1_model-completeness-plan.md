@@ -182,8 +182,13 @@ entry then enabled, or declares, as the facts state, that its platform has none 
 
 Rejected: declaring unwritten widgets `available = false` (the presets would state that the platform does not draw
 them, which is false); a lenient validation mode (it hides the gaps the gate exists to find); placeholder preset values
-(invented); a deferred name declared but drawn as the base, or left out of the declarations with no answer of its own
-(the first shows a look the platform does not draw for it, the second states that the platform lacks it; ADD-A147).
+(invented); a deferred name that an application asks for (a variant, a size, a density, a flavour) declared but drawn
+as the base, or left out of the declarations with no answer of its own (the first shows a look the platform does not
+draw for it, the second states that the platform lacks it; ADD-A147). A deferred name that a connector or a reader
+reports (a state, a keyed flag, a condition, a host context, a position, a direction) is no request and has no answer
+to give: an element under it resolves as without it, as in 0.7.0, a keyed flag or system setting of a unit not
+enabled is not declared meanwhile, and each connector's contract lists what it draws there and the unit that states
+it (S21.3, *A deferred entry*).
 
 ### What cannot build meanwhile: `PLAN_EXCLUDED`
 
@@ -537,9 +542,11 @@ the facts tooling reads it.
     with no variant on `material-3` and `ios-13`, 0.7.0's staying under `tinted` and `@gray`; `material-3`'s checked
     text-button colours; of the two motions 0.7.0 has, one the Apple motion trial does not measure; the icon size of a
     context the platform names none for; the icon theme's name on the presets whose icon set is not freedesktop; on
-    `macos-*` and `ios-*` a status colour whose read finds neither a source nor a measurement, and an error or warning
-    standalone colour no read pairs by text or a mark on the surface; on `windows-11` egui's error and warning text
-    colours: ADD-A147, veto list items 5 to 8, 32 to 39, 56 and 57) and the widgets a preset declares unavailable where 0.7.0 resolved
+    `material-3` the warning, success and info colours and their text colours, which 0.7.0 stated with no source
+    (`#7d5700`, `#386a20`, `#6750a4` on `#ffffff`, and the dark scheme's;
+    `v0.7.0:native-theme/src/presets/material-3.toml:29-34`, `:548-553`), Material drawing none of those meanings; on
+    `macos-*` and `ios-*` a status colour the ledger's U757–U760 close with no witness: ADD-A147, veto list items 5
+    to 8, 32 to 39, 56 and 57) and the widgets a preset declares unavailable where 0.7.0 resolved
     them (`tab`, `card`, `expander`, `status_bar`), which a connector draws by its contract's list (S21.3; D6, outcome
     6; ADD-A147) (what its API does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks
     earlier (the maintainer's estimate: about 3–4 weeks against 5–7). Against: several releases, each with its own gate run; D14 (*Settled by
@@ -645,39 +652,16 @@ the facts tooling reads it.
       of the 45,766 pending facts): **Decided at D6** (2026-11-10, outcome 2): a unit staged by its depth (*The depth
       0.8.0 states*), `ios-26` staying in 0.8.0 (D13; the rationale's R4 and R21; veto list item 1).
     - R-3 with R-12, a typed role the platform names no counterpart for: **Decided at D6** (2026-11-10, outcome 5):
-      one rule, native-theme's labelled mapping, outside the gate's platform comparison, never absent and never a
-      stated fact, where a connector maps the role to a toolkit field that cannot be left empty, no stated fact
-      gives it a value (a fact stating it `absent` replaced) and the platform draws that meaning in a colour of its
-      own: a colour its documentation or code uses for that meaning, or the colour it is measured drawing in that
-      role (the filled button's title colour, U651, U755), a colour merely in its palette not counting (veto list
-      item 56); a text slot the platform names no counterpart for, by a clause of its own, a style or family it
-      names; on `macos-*` and
-      `ios-*` the status fills, and the error and warning standalone colours, are paired by their reads with the
-      keyed system colour a source names or a measurement finds equal in each scheme and contrast and under a second
-      accent (0.7.0's or another), with the measured derivation over the accent where the second-accent run shows
-      the colour changing with it, never a literal, or with the colour measured, a literal, only where it holds under
-      the second accent and equals no system colour (ADD-A147), each preset on its own, a fill,
-      or a colour a source names without saying how it is drawn, pairing the fill alone and a standalone colour paired
-      only by one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector holding them;
-      where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on, through that
-      task's own spec change), and the status
-      text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a filled
-      button's title in (on `macos-*` `= role.global.accent_foreground`, AppKit's
-      `alternateSelectedControlTextColor`); on `adwaita` the info role's fill and text colour to the accent's, its
-      fill the colour libadwaita's info bar draws info from; the pairings listed in the catalogue's *global roles*
-      (`status`) for the maintainer's veto; the text slots' mappings are labelled alike; R25.17 names `ios-*` too
-      (the rationale's R5.1, R10, R25.17; the specification's S3, S4.4, S17; veto list item 3). U456 closes with the
-      pairings, the iOS status text colours split off as U755 and paired there with the filled button's measured
-      title colour, as U651, measured on each status fill by the second-tint run, each of the four Apple pairings
-      resting on a read that names the colour for the meaning or measures an element the platform itself colours for
-      it, in a colour the run does not set, the facts lane naming the element in the fact's evidence and the verifier
-      and the tie-break, to which every fact closing a read goes, deciding whether it counts (*Facts, independently*;
-      the ledger's U757–U760), which
-      the macOS and iOS lanes make before their facts edit, the facts pending on it until then (S3 for the outcome
-      where neither is found, the lane's survey finding no candidate, or none that counts, and the tie-break
-      confirming it: the status's `fill`, for `error` and `warning` its `standalone`, and its `foreground` absent there, a loss of 0.7.0's status colour, veto
-      list item 57; a `standalone` no read pairs by text or a mark on the surface absent alone), the reads closing at the latest at M4's pending
-      condition, and the macOS foregrounds on a probe pass over the status fills (U756), due at the same condition.
+      one rule, native-theme's labelled mapping, outside the gate's platform comparison and never a stated fact,
+      where no source of the platform states the role and the platform draws its meaning in a colour of its own, a
+      text slot the platform names no style for by a style or family it names (the specification's S3; the
+      rationale's R5.1, R10, R25.17; veto list item 3); where the platform draws the meaning in no colour, the role
+      absent and the connector's contract recording the toolkit's own colour there (S21.3; veto list item 56); on
+      `adwaita` the info role's fill and text colour the accent's; on `macos-*` and `ios-*` the statuses read by the
+      ledger's U757–U760, their foregrounds by U755 and U756, which the macOS and iOS lanes make before their facts
+      edit, the facts pending on them until then, a status a row closes with no witness a loss of 0.7.0's status
+      colour (veto list item 57), the rows closing at the latest at M4's pending condition; U456 closes with the
+      pairings.
     - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
       staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
       trial measures them (M2's task 1), Apple stating no timings (at `7430a0a2` 21 of the 27 macOS and 43 of the 48
@@ -1326,15 +1310,26 @@ tool reading a committed copy (by search). Rejected: the file committed per plat
 projected, for M3a's units at full depth, about 125 MiB for the iOS file and 104 MiB for the macOS one, each past
 GitHub's block); kept as it is (it stands at GitHub's warning and grows with every measured fact).
 
+**The Apple colour pages** (D6, outcome 5; the first step of the register's U757–U760; ADD-A147). No colour page
+of Apple's Human Interface Guidelines is pinned, and whether one names a colour for error, warning, success or info
+decides most of veto list item 57. So the HIG's colour pages for macOS and iOS are pinned as page snapshots (S17's
+`snapshot` source with `describes`, as the HIG's typography pages are, `hig-typography@2026-02-09`) and read, beside
+M2's first tasks and before the connectors' design (task 1) is checked, so that the design knows which status fields
+the theme fills. *Done:* the snapshots in `docs/facts/sources.toml` and `check_fact_citations.py` passing; for each
+of the four statuses on each platform, its row (U757–U760) recording the system colour the pages name for it by its
+API name, with the snapshot's line and how the page says the colour is drawn, or that they name none; the
+connectors' design citing the outcome.
+
 **The iOS second-tint run** (D6, outcome 12; the register's U706; ADD-A147). The iOS lane's host pass on both
 simulators under a second tint, beside M2's tasks, after the staging task, so that what UIKit draws in the tint is a
 measured derivation over the accent (R2.6), as the macOS second-accent pass made it on `macos-*`; and the filled
-button's title measured with each status's system colour as the tint (`systemRed`, `systemOrange`, `systemGreen`,
-`systemBlue`), in both schemes, the check of U755's pairings. *Done:* every
+button's title measured with the colour each status's read pairs its fill with as the tint (U757–U760, which close
+first; 0.7.0's `systemRed`, `systemOrange`, `systemGreen`, `systemBlue` where the read pairs those), in both schemes,
+the check of U755's pairings. *Done:* every
 tint-following fact at 0.8.0's depth stated as a derivation over the accent and verified, the default tint's
 literals gone from them, and U706 closed for them; a value that does not follow the tint stays a literal, with the
-run's evidence; each of the four status colours measured as the tint, the `foreground` (U755) of each status whose
-read pairs its fill (U757–U760) then that measured colour. It blocks the iOS presets' release, not M2's other tasks.
+run's evidence; each paired status fill measured as the tint, its `foreground` (U755) then that measured colour. It
+blocks the iOS presets' release, not M2's other tasks.
 
 **The KDE reader's `Xft.dpi` read removed** (D6, outcome 12; the ledger's queue #198; ADD-A147). One code task
 (`implement`), beside M2's numbered tasks, since it removes a defect of a built reader (the font DPI applied twice
@@ -1477,8 +1472,8 @@ is fixed before task 0 on its own branch, `side-units`.
    only at a release (S21.1). So before task 1, and after the staging task above (its gate green; ADD-A147), the
    presets whose table is small are brought to an empty one by their lanes' rounds (`adwaita` 0 paths, `kde-breeze`
    4, `material-3` 9, `windows-11` 55 once the staging task is merged; a row with no route among theirs goes to the
-   maintainer first, *How values are checked*), so that at least `adwaita` and `kde-breeze` build
-   through `from_preset`. Its first step is code (`implement`; ADD-A147), before the facts of U180 and U505 are
+   maintainer first, *How values are checked*), so that `adwaita` and `kde-breeze` build
+   through `from_preset` first. Its first step is code (`implement`; ADD-A147), before the facts of U180 and U505 are
    written: S2.2's operators `ceil` and `if_le` and the font metric `font_descent` (S8's `FontMetrics::descent`,
    S10's data list) in the model's code, with unit tests from S2.2's definitions whose vectors are the exactness
    checks of the D6 register design's `u180_ops_check.py` (QPainter's underline over its grid of inputs in 1/64 px
@@ -1500,8 +1495,10 @@ is fixed before task 0 on its own branch, `side-units`.
    preset, as S19.1's build test makes it (`from_preset_synthetic` over the preset's synthetic layers); the
    connectors' dev-tests and slice examples (task 1) call it, and no connector's public API names it. A connector test over every preset
    iterates `PresetId::all()` and takes the plain route where it succeeds. *Done:* the four tables empty (`adwaita`,
-   `kde-breeze`, `material-3`, `windows-11`), their presets regenerated and `generate_preset.py --check` green; the
-   first step's unit tests passing, with `u180_ops_check.py`'s three positive controls failing as they should; the
+   `kde-breeze`, `material-3`, `windows-11`), their presets regenerated and `generate_preset.py --check` green; task
+   1's design starts once `adwaita`'s and `kde-breeze`'s are empty and this task's two steps are done, and a table of
+   the other two that still lists a path when the first connector's code starts is reported to the maintainer with
+   its register rows; the first step's unit tests passing, with `u180_ops_check.py`'s three positive controls failing as they should; the
    second step's checkers' self-tests passing, among them a positive control in which a preset's `# mapping:`
    comment on a value whose fact has no `mapping` is refused. Rejected: tasks 4 and 5 before task 1
    (it gives up the reason the connectors come first, and still no preset would build a theme).
@@ -1520,12 +1517,9 @@ is fixed before task 0 on its own branch, `side-units`.
      (*Widgets 0.7.0 styles through stand-ins*), and the side S21.3 adds, what the connector supplies (its flags and
      their order, content variants, element data, root inputs, font metrics, the presences it reports, a row per
      declared keyed component), which the tables hold from the connectors' port on (ADD-A146);
-   - the roles bundled presets leave absent because no connector held a toolkit field for them (S3's first
-     condition: `success.standalone`, `info.standalone` and `destructive` on `macos-*` and `ios-*`,
-     `info.standalone` on `adwaita`): where a table names a toolkit field that cannot be left empty for one, the
-     design records it and S3's rule is applied to it by a spec change in this task (ADD-A147, decision N3-4);
-     likewise which role a "danger" field reads where a preset states `destructive` apart from `error`
-     (*today's fields*);
+   - which role a "danger" field reads where a preset states `destructive` apart from `error` (*today's fields*); a
+     toolkit field for a status's text on the surface (egui's `error_fg_color`, `warn_fg_color`; iced's
+     `text::danger`) reads the window set's `negative`, `neutral` or `positive` (ADD-A147);
    - one linked example per toolkit, `slice-<toolkit>`, an `[[example]]` of its connector crate (egui-widgets'
      widgets in egui's), which draws the slice's button in its states and which each unit's connector task extends
      with the unit's widgets, kept until M5 links the showcases again; its screenshots are compared at M2.1, and at
@@ -1867,10 +1861,10 @@ dev-dependencies and modules linked again.
   state model and declarations from the sources, without the lane's, and the two are compared mechanically (a
   combination the lane missed would otherwise never be checked); then, for the agreed combinations, it reports a value
   and a citation for each key, never seeing the lane's, and both are compared mechanically. Each disagreement goes to a
-  tie-breaker agent with both citations and the source. A fact that closes a read of the specification's labelled
-  mapping (S3; the ledger's U757–U760: a pairing, or `absent` because the survey finds no candidate or none counts)
-  goes to the tie-breaker whether or not the lane and its verifier agree, with the lane's survey, each candidate and
-  the readings the row records: whether an element draws a meaning is a judgment both can share wrongly (ADD-A147).
+  tie-breaker agent with both citations and the source. A fact of the specification's labelled mapping of a typed
+  role (S3), and a fact that closes one of the ledger's U757–U760 as `absent` because the survey finds no candidate or
+  none counts, goes to the tie-breaker whether or not the lane and its verifier agree, with its source or measurement
+  and, for a row, the lane's survey and each candidate the row records: whether an element draws a meaning is a judgment both can share wrongly (ADD-A147).
   An audit sample of the agreed facts (5 % per lane and unit,
   at least ten, as during the slice; kept at D6, outcome 13; ADD-A147) goes to the tie-breaker too, to measure how often a lane and its
   verifier agree on a wrong value. The orchestrator reads the tie-breakers' summaries and every verdict that changes the
