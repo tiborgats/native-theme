@@ -63,7 +63,8 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
     `macos-*` and `ios-*` by item 56's third condition, a catalogue change that loses 0.7.0's status colour there
     (item 57). The pairings take the fill of all four statuses and the standalone colour (the status's text on the
     surface) of error and warning alone: no connector holds a success or info text colour on the surface (0.7.0's
-    egui held only the error and warning ones), so those stay absent there by item 56's first condition;
+    egui held only the error and warning ones), so those stay absent there by item 56's first condition, judged
+    from the connectors as they stand;
   - the status text colours (`foreground`, the text on the status fill), each paired only where its fill is, refer
     to the colour the platform draws a filled button's title in, as `accent_foreground` there: on `macos-*` to
     `alternateSelectedControlTextColor`, the text on emphasized content (`NSColor.h:211`), measured white as the
@@ -71,9 +72,11 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
     preset names the body text beside a status mark, not text on the fill), measured over each status fill by a
     probe pass (row U756); on `ios-*` to the filled button's measured title colour (row U755), measured on each
     status fill by the second-tint run (U706); 0.7.0's was a literal with no source;
-  - the destructive role on `macos-*` and `ios-*` is a row of its own (U761), its values pending meanwhile; Apple's
-    headers name only a hue for it. It is decided first by whether a contract table names a toolkit field for it
-    (M2 task 1), staying absent where none does, then, if one does, by a read as the four statuses';
+  - the destructive role on `macos-*` and `ios-*` stays absent as the success and info standalone colours do: no
+    connector holds a destructive colour (0.7.0's held none; its "danger" fields read the error status's), so item
+    56's first condition fails and no source read is needed (row U761 closed). Where M2 task 1's contract tables
+    name a toolkit field for any of these roles, the rule applies from then on, through that task's own spec
+    change;
   - on `adwaita` the info role's fill and text colour refer to the accent's fill and its foreground, the fill the
     colour libadwaita's info bar draws info from, as 0.7.0 drew it; its standalone colour stays absent, since no
     connector holds it and libadwaita draws no info as text (item 56);
@@ -93,8 +96,9 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   and `adwaita`'s info: the orchestrator's decisions N1-1 and N1-2 on the batch's check of its fix rounds
   (`batch-check/decisions.md`, `batch-check/check-N1.md`), by item 56's scope; the source reads' outcome and
   `destructive`: the decisions N2-1 and N2-2 on its second check (`batch-check/check-N2.md`); the open reads as
-  pending values, the success and info standalone colours and `adwaita`'s info standalone colour left absent, and
-  `destructive`'s order: the decisions N3-1 and N3-3 on its third check (`batch-check/check-N3.md`).
+  pending values and the success and info standalone colours and `adwaita`'s info standalone colour left absent:
+  the decisions N3-1 and N3-3 on its third check (`batch-check/check-N3.md`); `destructive` absent as the success
+  and info standalone colours: the decision N3-4 after that check's fix round.
 
 **56. Which roles the labelled mapping covers (the scope of item 3).**
 - *Decided:* the mapping applies to a typed role where all three hold: (1) a connector maps it to a toolkit field

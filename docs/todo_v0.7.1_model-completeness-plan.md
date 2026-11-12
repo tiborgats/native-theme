@@ -652,7 +652,9 @@ the facts tooling reads it.
       item 56); a text slot the platform names no counterpart for, by a clause of its own, a style or family it
       names; on `macos-*` and
       `ios-*` the status fills, and the error and warning standalone colours, refer to the keyed system colours as
-      0.7.0 drew them (the success and info standalone colours absent, no connector holding them), and the status
+      0.7.0 drew them (the success and info standalone colours and `destructive` absent, no connector holding them;
+      where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on, through that
+      task's own spec change), and the status
       text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a filled
       button's title in (on `macos-*` `= role.global.accent_foreground`, AppKit's
       `alternateSelectedControlTextColor`); on `adwaita` the info role's fill and text colour to the accent's, its
@@ -665,9 +667,7 @@ the facts tooling reads it.
       the macOS and iOS lanes make before their facts edit, the facts pending on it until then (S3 for the outcome
       where neither is found: the status's `fill`, its `standalone` where paired, and its `foreground` absent there,
       a loss of 0.7.0's status colour, veto list item 57), at the latest at M4's pending condition, and the macOS
-      foregrounds on a probe pass over the status fills (U756); `destructive` on `macos-*` and `ios-*` a row of its
-      own (U761), decided first by M2 task 1's contract tables (absent where none names a toolkit field for it),
-      then, where one does, by a read as the four statuses'.
+      foregrounds on a probe pass over the status fills (U756).
     - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
       staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
       trial measures them (M2's task 1), Apple stating no timings (at `7430a0a2` 21 of the 27 macOS and 43 of the 48

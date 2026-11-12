@@ -60,9 +60,10 @@ orchestrator's decisions on the checks correct this file's outcomes as follows, 
   the colour for the meaning or by a measurement of the role, each status's fill, standalone and text colour pending
   while its read is open, and absent where a read finds neither, a loss of 0.7.0's status colour there (veto list
   item 57); a status's text colour is paired only where its fill is, the macOS one measured over each status fill by
-  a probe pass (U756); `destructive` on Apple a row of its own (U761), pending while it is open, decided first by
-  whether a contract table names a toolkit field for it. The success and info standalone colours on `macos-*` and
-  `ios-*`, and `adwaita`'s info standalone colour, stay absent: no connector holds them (the first condition).
+  a probe pass (U756). The success and info standalone colours and `destructive` on `macos-*` and `ios-*`, and
+  `adwaita`'s info standalone colour, stay absent: no connector holds them (the first condition, judged from the
+  connectors as they stand; U761 closed, no read needed); where M2 task 1's contract tables name a toolkit field for
+  one, the rule applies from then on, through that task's own spec change.
 - Outcome 7: a palette is not offered over a preset whose widget colours are measured literals that follow no role
   (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
 - Outcome 8: 40 MiB (41,943,040 bytes), and GitHub's warning at 50 MiB, not Git's (S17).

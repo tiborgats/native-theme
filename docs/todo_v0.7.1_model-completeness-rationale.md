@@ -1834,14 +1834,14 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
   contract records the toolkit's own colour there as an exception (veto list item 56). A text slot the platform names
   no counterpart for is the mapping's, outside those conditions, by a style or family the platform names. On
   `macos-*` and `ios-*` the status fills, and the error and warning standalone colours, refer to the keyed system
-  colours as 0.7.0 drew them (the success and info standalone colours absent, no connector holding them), and the
-  status text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a
+  colours as 0.7.0 drew them (the success and info standalone colours and `destructive` absent, no connector
+  holding them; where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on,
+  through that task's own spec change), and the status text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a
   filled button's title in, as `accent_foreground` there (on `macos-*` `= role.global.accent_foreground`; on `ios-*`
   U651's measured colour, measured on each status fill by the second-tint run), each pairing resting on a read that
   names the colour for the meaning or measures the role (U757–U760), pending on it while it is open, absent where
   neither is found, and the macOS foregrounds measured over a status fill (U756), so 0.8.0 keeps the macOS status
-  colours where an Apple source pairs them (R21; veto list item 57); `destructive` there a row of its own (U761),
-  decided first by whether a contract table names a field for it; on `adwaita` the info role's fill and text colour
+  colours where an Apple source pairs them (R21; veto list item 57); on `adwaita` the info role's fill and text colour
   refer to the accent's, its fill the colour libadwaita's info bar draws info from; the text slots' mappings are
   labelled alike (veto list item 3).
 - R19: over a preset whose widgets read keyed colours, a palette reaches them by a stated, reviewed mapping method,
@@ -2061,9 +2061,13 @@ Each is decided from the pinned sources; the specification cites them.
   `ios-*` the status records' `fill`, and `error`'s and `warning`'s `standalone`, refer to the keyed system colours
   0.7.0 drew, systemRed, systemOrange, systemGreen and systemBlue, the pairings listed in the specification's
   catalogue for the maintainer's veto, and on `macos-*` the sets' status text colours follow them, as on every preset
-  without per-set values. `success.standalone` and `info.standalone` stay absent there: no connector holds a success
-  or info text colour on the surface (0.7.0's egui held only `error_fg_color` and `warn_fg_color`,
-  `v0.7.0:connectors/native-theme-egui/src/style/base.rs:180-181`), so the first condition fails. Each pairing rests on a read that meets the third condition, Apple documentation that names that
+  without per-set values. `success.standalone` and `info.standalone` stay absent there, and so does `destructive`: no
+  connector holds a success or info text colour on the surface (0.7.0's egui held only `error_fg_color` and
+  `warn_fg_color`, `v0.7.0:connectors/native-theme-egui/src/style/base.rs:180-181`) or a destructive colour (0.7.0's
+  model held none, its "danger" fields reading the error status's), so the first condition fails, judged from the
+  connectors as they stand; where M2 task 1's contract tables name a toolkit field for one of these roles, the rule
+  applies to it from then on, through that task's own spec change (ADD-A147; D6, decided by logic, awaiting the
+  maintainer's veto: veto list item 56). Each pairing rests on a read that meets the third condition, Apple documentation that names that
   colour for that meaning by its API name (a hue word, "red", does not) or a measurement of the platform drawing the
   role in it (the ledger's U757–U760), which the macOS and iOS lanes make before their facts edit; while it is open
   the status's `fill`, its `standalone` where paired, and its `foreground` are pending on it, and where none is found,
@@ -2090,10 +2094,9 @@ Each is decided from the pinned sources; the specification cites them.
   info text colour on the surface and libadwaita drawing no info as text (`_labels.scss:21-29` names error, warning
   and success) (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 56).
   `background`, `background_solid`, `neutral` and `destructive`, which 0.7.0's model did not hold, stay absent where
-  the catalogue allows it unless a contract table names a toolkit field for them; on `macos-*` and `ios-*`
-  `destructive` is a row of its own (the ledger's U761), pending on it while it is open: decided first by whether a
-  contract table names a toolkit field for it, absent where none does, then, if one does, by a read as the four
-  statuses', Apple's headers naming only a hue for it. The text slots' mappings (R10)
+  the catalogue allows it, the first condition failing, judged from the connectors as they stand; where M2 task 1's
+  contract tables name a toolkit field for one of them, the rule applies from then on, through that task's own spec
+  change. The text slots' mappings (R10)
   carry the same label. The Selection set's outline stays absent
   on `macos-*`; macOS's destructive buttons keep their system red, its level indicator its own fills.
 - *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that
