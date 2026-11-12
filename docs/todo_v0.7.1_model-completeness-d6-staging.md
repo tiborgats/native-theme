@@ -34,14 +34,17 @@ platform's verified commit, whatever its unit, and `verify_facts.py units` stays
 the units of depth and the parking units in 3.4's order, the order S17 reads (P-4). The predicate (1.3, 2.5) is
 decided exactly, over the combinations at depth: a fact is of the enabled units when its key's path, and the widget a
 `drawn_as` value names, are held by them and its `when` holds in at least one combination of the enabled units'
-names that its entry's state model draws on that preset. A fact that is not is a later unit's by the names it names:
-of the units not enabled that hold a name its `when` lists positively, the widget a `drawn_as` value names or its
-key's path, the last in the units file's order, not the first; a name
-the state model draws only inside a host context is that host's unit's (a context naming no widget: `identities`).
-A fact that is not of the enabled units and names no later unit's name is *unplaced*: the gate and
-`check_facts_trace.py` report it apart, under no unit, and from the plan's M4 the gate fails it. A fact that holds in
-no drawn combination is found when its unit is enabled, by the first rule's exact check; nothing searches the
-combinations of all units' names, so the "stray fact" of 2.5 and of the revision tables (a `when` no union of units
+names that its entry's state model draws on that preset. A fact that is not of the enabled units is a later unit's:
+the unit at whose enabling, the units enabled one after another in the units file's order, the fact is first of the
+enabled units, not the first unit whose names it needs. It is decided from names, without walking combinations: for
+each drawn set of its entry's state model that can hold the fact (its part drawn there, by the part's presence
+facts), the last unit in the file's order among the names the fact needs in that set (the names its `when` lists
+positively, the names the set or the presence fact requires beside them, a name of a kind whose at-depth names the
+fact's negative list excludes, its key's path, a host context where the set is drawn only inside one: that host's
+unit, `identities` for a context naming no widget); the fact's unit is the first such unit over those sets. A fact
+that no drawn set can hold with any units' names is *unplaced*: the gate and `check_facts_trace.py` report it apart,
+under no unit, and from the plan's M4 the gate fails it. A fact of the enabled units is checked exactly, over the
+combinations at depth; nothing walks the combinations of all units' names, so the "stray fact" of 2.5 and of the revision tables (a `when` no union of units
 makes hold, failed by `check_facts.py` from M4) is withdrawn in favour of the unplaced fact (2.5, 3.1; K4-4, K4-8,
 the orchestrator's O-14). A part's `shown` stays in 0.8.0 with its rest meaning alone and is not the motion unit's
 (2.4, 5.3, 5.4 (a), 6.4's step 1), and every widget's `loop` but the spinner's is the motion unit's (K2-1, K2-7;

@@ -166,14 +166,19 @@ facts gate skips a fact that is not of the enabled units (the lanes run ahead), 
 `scripts/widget_units.toml` as `check_facts_trace.py` does (`tests/facts_gate/units.rs`). A fact *of the enabled
 units* is one whose key's path, and the widget a `drawn_as` value names, the enabled units hold and whose `when` holds
 in at least one combination of the enabled units' names that its entry's state model draws on that preset, decided
-exactly over the combinations at depth (S17; ADD-A146, ADD-A147, ADD-A148). Every other fact is a later unit's by
-the names it names: of the units not enabled that hold a name its `when` lists positively, the widget a `drawn_as`
-value names or its key's path, the last in the units file's order, a name the state model draws only inside a host
-context being that host's unit's (a context naming no widget: `identities`); a fact that names no later unit's name is
-*unplaced*, which the gate and `check_facts_trace.py` report apart, under no unit (ADD-A148). From M4 the gate fails
-an unplaced fact and a fact whose key lies in no unit or that names a name, a condition or a staged path no unit holds
-(ADD-A147, ADD-A148), and reports the other skipped facts by unit; a fact that holds in no drawn combination is found
-when its unit is enabled, by the exact check, nothing searching the combinations of all units' names (ADD-A148). So
+exactly over the combinations at depth (S17; ADD-A146, ADD-A147, ADD-A148). A fact that is not of the
+enabled units is a later unit's: the unit at whose enabling, the units enabled one after another in the units file's
+order, the fact is first of the enabled units. It is decided from names, without walking combinations: for each
+drawn set of its entry's state model that can hold the fact (its part drawn there, by the part's presence facts), the
+last unit in the file's order among the names the fact needs in that set (the names its `when` lists positively, the
+names the set or the presence fact requires beside them, a name of a kind whose at-depth names the fact's negative
+list excludes, its key's path, a host context where the set is drawn only inside one: that host's unit, `identities`
+for a context naming no widget); the fact's unit is the first such unit over those sets (S17; ADD-A148). A fact that
+no drawn set can hold with any units' names is *unplaced*: the gate and `check_facts_trace.py` report it apart, under
+no unit, and from M4 the gate fails it (ADD-A148). A fact of the enabled units is checked exactly, over the
+combinations at depth; nothing walks the combinations of all units' names (ADD-A148). From M4 the gate also fails a
+fact whose key lies in no unit or that names a name, a condition or a staged path no unit holds (ADD-A147), and
+reports the other skipped facts by unit. So
 that it can tell a later unit's fact from an unplaced one, `widget_units.toml` lists every unit with an enabled flag
 (*M3*). M4 requires every unit of 0.8.0's scope enabled (D13); each follow-up
 release requires its own units enabled; after the last one no fact is skipped. A unit enters with every part, field
@@ -809,8 +814,8 @@ of `Variant`, a keyed one is declared `later`, a size, a density or a flavour is
 while the sizes unit is not enabled, as a size is; ADD-A147), and a given name is mentioned by no rule of
 a bundled preset, so an element under it resolves as without it (S6.1, S8, S10, S12). A fact is of the enabled units
 when its key's path is held by them and its `when` holds in a combination of those names that its state model draws
-on that preset, its part drawn there; every other fact is a later unit's by the names it names, or *unplaced* where it
-names no later unit's name, and no fact is edited (S17, *One rule for every model field*; ADD-A148). Rejected: the selector pairs of *Today's fields* alone (a
+on that preset, its part drawn there; every other fact is a later unit's, the unit at whose enabling it is first of the
+enabled units, or *unplaced* where no drawn set can hold it with any units' names, and no fact is edited (S17, *One rule for every model field*; ADD-A148). Rejected: the selector pairs of *Today's fields* alone (a
 `primary` button's stroke or a button pressed while hovered would have no fact, and a block's leaves are stated
 together); every state flag of the state models (1,674 pending facts at depth against 1,381, for flags 0.7.0's
 button does not distinguish).
@@ -1854,8 +1859,8 @@ gate, and no measuring).
   bundled palette's table for `windows-11` and for `material-3` written once by M2's fourth task's method, per
   project and preset, and reviewed; the palettes then offered over those two presets, their sources over them in
   the build test's trusted forms and the palette run (S14, S19.1).
-- **The enabled units' checks** (a tooling task before the gate): the facts gate fails an unplaced fact (one not of
-  the enabled units that names no later unit's name, *One rule for every model field*), a fact of the enabled units
+- **The enabled units' checks** (a tooling task before the gate): the facts gate fails an unplaced fact (one that no
+  drawn set can hold with any units' names, *One rule for every model field*), a fact of the enabled units
   it cannot read (a key the model does not hold, a value unread), a fact whose key lies in no unit, and a name, a
   condition or a staged path no unit holds, and reports the facts of units not enabled by unit (*One rule for every model field*;
   ADD-A148); `check_ledger.py --final` takes the units from `scripts/widget_units.toml` by the same rule and asks its
