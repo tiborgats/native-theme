@@ -10784,8 +10784,8 @@ S9.3 over both for the reads it states.
   (`platform-facts.md@fc6109d1:717`, *Font DPI override*) (S9.3, S9.4, ADD-A146): K3.46.
 - icon theme `index.theme` `*Default` sizes (`MainToolbarDefault` among them; an omitted key KIconTheme's group
   default, S9.3, ADD-A140): K3.63.
-- kdeglobals `[Icons] Theme` into `token.icons.theme` under `for_preset.kde-breeze`, stated as read wherever the
-  value is not empty, also where it is no plain path component or names a theme not installed (the lookup then
+- kdeglobals `[Icons] Theme` into `token.icons.theme` under `for_preset.kde-breeze`, wherever the value is not
+  empty, as read, also where it is no plain path component or names a theme not installed (the lookup then
   falling back by `token.icons.theme_fallback`); where kdeglobals has no such key the preset's `breeze` shows, as
   KIconTheme's own default (`kiconthemes@6.31.0 src/kicontheme.cpp:686`) (S9.3, ADD-A148): K3.63.
 - kcminputrc `[Mouse] cursorTheme`, `cursorSize`; key repeat (`kwin src/main.cpp:108-109`,
