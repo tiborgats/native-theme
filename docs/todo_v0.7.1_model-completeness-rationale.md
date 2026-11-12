@@ -2059,8 +2059,13 @@ Each is decided from the pinned sources; the specification cites them.
   `standalone` refer to the accent's three roles, the colour libadwaita's info bar draws info from, as 0.7.0 drew it
   (`v0.7.0:native-theme/src/presets/adwaita.toml:42-45`) (ADD-A147; D6, decided by logic, awaiting the maintainer's
   veto: veto list item 56).
-  `background`, `background_solid`, `neutral` and `destructive`, which 0.7.0's model did not hold, stay absent where
-  the catalogue allows it unless a contract table names a toolkit field for them. The text slots' mappings (R10)
+  Each of the four Apple status pairings waits on a source read (the ledger's U757–U760); the catalogue requires
+  the fields there, so where none exists the maintainer chooses between the labelled pick (R19) and the field allowed absent
+  (veto list item 3). On `macos-*` and `ios-*` `destructive`'s `fill` and `standalone` refer to systemRed, the red
+  AppKit and UIKit use for a destructive action (`xcode@26.6 AppKit/NSTableViewRowAction.h:30`,
+  `UIKit/UIActionSheet.h:41`) (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 3).
+  `background`, `background_solid`, `neutral` and `destructive.foreground`, which 0.7.0's model did not hold, stay
+  absent where the catalogue allows it unless a contract table names a toolkit field for them. The text slots' mappings (R10)
   carry the same label. The Selection set's outline stays absent
   on `macos-*`; macOS's destructive buttons keep their system red, its level indicator its own fills.
 - *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that
