@@ -331,7 +331,13 @@ installed, the test steps run `cargo nextest run` (`cargo_tests` in the
 script), and `cargo test --doc` where `cargo test` would have run doctests too.
 The step cache (`step_cache.sh`, below) skips a step whose declared inputs are
 unchanged since it last passed; the summary lists each as
-`unchanged since <commit>`, and `--no-cache` runs every step.
+`unchanged since <commit>`, and `--no-cache` runs every step. The facts
+gate's parts are shared steps: keyed on what can change their verdict alone,
+they are reused from any worktree of the repository, listed as
+`unchanged since <commit> in <worktree>, <date>`.
+`check_release.sh --quick --cache-keys` prints every step's key, its cache
+(`shared`, `worktree`, or `uncached` with the key `-`) and its description,
+and runs nothing.
 
 The facts gate (`native-theme/tests/facts_gate.rs`'s `facts_gate`) is a step
 of its own; the other test steps skip it (`-- --skip facts_gate --exact`), since no `cfg` reaches it and
@@ -375,13 +381,66 @@ build helper that probes the host (`pkg-config`, `cc`, …) or a workspace build
 script or procedural macro not reviewed for what it reads, the step is not
 cached. A failed step records nothing, nor does one whose inputs changed while
 it ran; a step with no declaration always runs. The records are in
-`target/check-release-cache/`, one file per step.
+`target/check-release-cache/`, one file per step. Paths are sorted bytewise,
+whatever the locale.
+
+A shared step (`CACHE_SHARED` in `check_release.sh`: the facts gate's parts,
+`facts gate (the facts, no preset)` and `facts gate (<preset>)`) is keyed
+narrowly, so a pass is reused wherever what decides its verdict is the same:
+the shared base, which `step_cache_start_shared` builds for both scripts (the
+tool versions, the settings that decide a step's inputs, and the text of the
+functions that key, look up and record a step: `step_cached`,
+`step_passed`, `step_key_of`, `cache_inputs`, `rust_reach`,
+`rust_reach_resolve` and `rust_config_inputs` in `check_release.sh`, and
+`step_cache.sh`'s own); the environment variables that can change the
+verdict, read for each key (`step_cache_verdict_environment`, whose comment
+gives each rule and its reason: `NT_*` but the gate's timing and
+listed-paths output, `FACTS_GATE_RELEASE`, `NATIVE_THEME_*` but the evidence
+root and the source cache, `CARGO_*` but incremental builds, terminal, log
+and directory settings, `RUSTFLAGS`, `RUSTDOCFLAGS`, `RUSTC*`, `RUSTDOC*`,
+`RUSTFMT`, `RUSTUP_*`, `RUST_*` but backtraces, logs and captured output,
+`NEXTEST_*` but its output, and `GIT_*` but git's editors, pager, prompts,
+tracing, identity and transport; the thread and job counts by their form
+alone: a plain positive number is left out, like the variable unset, any
+other value keyed by its text); the step's description and command; the
+text of the functions that wrap it between its call and its command's start
+(`run_tests` and `_run_tests_impl` for the gate's parts; one not defined is
+an error, the step not cached); and its declared inputs' content, each path
+under the worktree's root written relative to it and a missing path outside
+it left out. The scripts' own hashes and the rest of the environment (the
+working directory, the locale, the evidence root's path, whose content the
+pin in `docs/facts/sources.toml` fixes) are not in it. `check_release.sh`
+unsets `NT_FACTS_GATE_PRESETS`, `NT_FACTS_GATE_SHARD`, `NT_FACTS_GATE_MERGE`
+and `NT_FACTS_GATE_LISTED` in every mode. Its records are in the
+repository's common git directory (`git rev-parse --git-common-dir`, its
+`check-release-cache/`), shared by every worktree, one file per step and
+key, so each worktree's passed state keeps its own; each names the commit
+and worktree it passed in and when. A record is touched when it is found,
+and one not written or found for 30 days is removed when the cache starts.
+Where that folder cannot be created or written, the run says so and runs
+the shared steps uncached; a record that cannot be written is a warning. A
+failed step records nothing there either, and `--no-cache` and the full run
+never read or write it.
 
 `--self-test` shows that a declared file edited, added, renamed or removed, a
 glob's new match, the script edited, the command or the environment changed,
 re-run the step, that a file a `!<pattern>` leaves out changes nothing while
-its neighbours still do, and that a failure records nothing; `check_release.sh` runs it
-in every mode.
+its neighbours still do, and that a failure records nothing. Over two
+worktrees of a synthetic repository it shows that a shared step is reused
+after an unrelated edit of the calling script, from the other worktree (its
+record found there, and not from a cache of that worktree's own), under
+another thread count, locale, evidence path or unrelated variable, and
+re-runs after a declared input, a thread count the gate refuses,
+`RUSTFLAGS`, `FACTS_GATE_RELEASE`, `NT_FACTS_GATE_MERGE`, the command, a
+wrapping function's or a shared-base function's text or a tool version
+changes, while a step that is not shared re-runs after each of these (the
+other worktree's step even with the first one's record in its cache). It
+also shows two worktrees' records side by side, each found by its own key;
+an undefined wrapper refused; a shared folder that cannot be written
+turning the shared cache off with its reason, and a record there failing
+without ending the caller; and that the self-test's git, under a caller's
+`GIT_DIR` and `GIT_WORK_TREE`, leaves that repository untouched.
+`check_release.sh` runs it in every mode.
 
 ```sh
 bash scripts/step_cache.sh --self-test

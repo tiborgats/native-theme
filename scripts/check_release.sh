@@ -62,7 +62,12 @@
 #   * the step cache (scripts/step_cache.sh) skips a step whose declared
 #     inputs (CACHE_INPUTS, below), tool versions, environment and command
 #     are what they were when it last passed; the summary names each such
-#     step "unchanged since <commit>". --no-cache runs every step.
+#     step "unchanged since <commit>". --no-cache runs every step. The
+#     facts gate's parts (CACHE_SHARED, below) are keyed narrowly, on what
+#     can change their verdict alone, and their records are shared by every
+#     worktree of the repository: such a step is "unchanged since <commit>
+#     in <worktree>, <date>". --quick --cache-keys prints each step's key
+#     and runs nothing.
 #
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
@@ -74,6 +79,7 @@ set -u  # Exit if an undefined variable is used
 usage() {
     cat <<'EOF'
 Usage: scripts/check_release.sh [--commit | --quick] [--no-cache]
+       scripts/check_release.sh --quick --cache-keys
 
   (no argument)  the full pre-release check; required on the last commit of
                  every fix phase and before the release commit
@@ -106,24 +112,33 @@ Usage: scripts/check_release.sh [--commit | --quick] [--no-cache]
                  like --commit, it skips the steps PLAN_EXCLUDED lists
   --no-cache     with --commit or --quick: run every step, the step cache
                  neither read nor written (the full run never uses it)
+  --cache-keys   with --quick: print each step's cache key, whether its
+                 record is shared by the worktrees or the worktree's own,
+                 and its description ("-" and "uncached" for a step the
+                 cache does not key), and run nothing
   -h, --help     print this help and exit
 
 With --commit or --quick, cargo nextest runs the test steps where it is
 installed (cargo test --doc the doctests), and a step whose declared inputs,
 tools, environment and command are unchanged since it last passed is skipped,
-named in the summary "unchanged since <commit>". The full run runs every step
-through cargo test, with no cache.
+named in the summary "unchanged since <commit>". The facts gate's parts are
+keyed on what can change their verdict alone (their inputs, tools, command,
+wrapping functions and the variables that decide it) and reused from any
+worktree of the repository, "unchanged since <commit> in <worktree>, <date>".
+The full run runs every step through cargo test, with no cache.
 EOF
 }
 
 COMMIT_MODE=""
 QUICK_MODE=""
 NO_CACHE=""
+CACHE_KEYS=""
 for arg in "$@"; do
     case "$arg" in
         --commit) COMMIT_MODE=1 ;;
         --quick) QUICK_MODE=1 ;;
         --no-cache) NO_CACHE=1 ;;
+        --cache-keys) CACHE_KEYS=1 ;;
         -h|--help) usage; exit 0 ;;
         *) printf "Unknown argument: %s\n\n" "$arg" >&2; usage >&2; exit 2 ;;
     esac
@@ -134,6 +149,11 @@ if [[ $COMMIT_MODE && $QUICK_MODE ]]; then
     usage >&2
     exit 2
 fi
+if [[ $CACHE_KEYS && ( ! $QUICK_MODE || $NO_CACHE ) ]]; then
+    printf -- "--cache-keys goes with --quick alone\n\n" >&2
+    usage >&2
+    exit 2
+fi
 
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 
@@ -141,7 +161,9 @@ cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 # aid, no gate (native-theme/tests/facts_gate.rs): every mode gates every
 # preset and every shard, even where the caller's environment names a subset
 # or a shard (--commit and --quick name each part they run, facts_gate_steps).
-unset NT_FACTS_GATE_PRESETS NT_FACTS_GATE_SHARD
+# Nor does any mode merge shards' listed paths (NT_FACTS_GATE_MERGE, which
+# checks those paths instead of gating) or write them (NT_FACTS_GATE_LISTED).
+unset NT_FACTS_GATE_PRESETS NT_FACTS_GATE_SHARD NT_FACTS_GATE_MERGE NT_FACTS_GATE_LISTED
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colour + icon vocabulary
@@ -641,24 +663,34 @@ doctests_selected() {
 # A step the cache skips ($1 its description, $2 the name of the caller's
 # variable for its key, $3... its command): returns 0, the step printed as
 # unchanged, where it last passed with the key its run has now; else 1, the
-# key in $2, empty where the cache is off or the step's inputs are not
-# declared (CACHE_INPUTS) or cannot be resolved.
+# key in $2, empty where the cache is off or the step is not keyed
+# (step_key_of). With --cache-keys, prints the step's key, its cache and its
+# description instead, and returns 0: the step does not run.
 step_cached() {
     local step_description="$1"
     local key_variable="$2"
     shift 2
     printf -v "$key_variable" "%s" ""
-    [[ $STEP_CACHE && -n "${CACHE_INPUTS[$step_description]+set}" ]] || return 1
-    local step_inputs=()
-    cache_inputs "$step_description" step_inputs || return 1
-    local step_key step_label
-    step_key=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@")
-    if step_label=$(step_cache_hit "$step_description" "$step_key"); then
+    [[ $STEP_CACHE ]] || return 1
+    local cached_key="" cached_scope=() step_label
+    step_key_of "$step_description" cached_key cached_scope "$@" || cached_key=""
+    if [[ $CACHE_KEYS ]]; then
+        if [ -z "$cached_key" ]; then
+            printf "%s %s %s\n" "-" "uncached" "$step_description"
+        elif [ "${#cached_scope[@]}" -gt 0 ]; then
+            printf "%s %s %s\n" "$cached_key" "shared" "$step_description"
+        else
+            printf "%s %s %s\n" "$cached_key" "worktree" "$step_description"
+        fi
+        return 0
+    fi
+    [ -n "$cached_key" ] || return 1
+    if step_label=$(step_cache_hit ${cached_scope[@]+"${cached_scope[@]}"} "$step_description" "$cached_key"); then
         printf "${DIM}↷  %-47s unchanged since %s${NC}\n" "$step_description" "$step_label"
         CACHED+=("$step_description: unchanged since $step_label")
         return 0
     fi
-    printf -v "$key_variable" "%s" "$step_key"
+    printf -v "$key_variable" "%s" "$cached_key"
     return 1
 }
 
@@ -670,10 +702,38 @@ step_passed() {
     local step_key="$2"
     shift 2
     [ -n "$step_key" ] || return 0
+    local passed_key="" passed_scope=()
+    step_key_of "$step_description" passed_key passed_scope "$@" || return 0
+    if [ "$passed_key" = "$step_key" ]; then
+        step_cache_record ${passed_scope[@]+"${passed_scope[@]}"} "$step_description" "$step_key" \
+            || print_warn "step cache: the pass of \"$step_description\" not recorded (its record could not be written)"
+    fi
+}
+
+# The cache key of the step $1 ($4... its command) into the variable named
+# $2, and into the array named $3 the cache option of step_cache_hit and
+# step_cache_record: `--shared` for a step CACHE_SHARED lists, keyed on the
+# shared base with the text of the functions it names, nothing for one the
+# worktree's own cache keys. Returns 1, the step not keyed, where its inputs
+# are not declared (CACHE_INPUTS) or cannot be resolved, or where it is
+# shared and the shared cache is off (SHARED_CACHE) or a function it names
+# is not defined (an error step_cache_key prints).
+step_key_of() {
+    local step_description="$1"
+    local -n step_key_out="$2"
+    local -n step_scope_out="$3"
+    shift 3
+    [[ -n "${CACHE_INPUTS[$step_description]+set}" ]] || return 1
     local step_inputs=()
-    cache_inputs "$step_description" step_inputs || return 0
-    if [ "$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@")" = "$step_key" ]; then
-        step_cache_record "$step_description" "$step_key"
+    cache_inputs "$step_description" step_inputs || return 1
+    if [[ -n "${CACHE_SHARED[$step_description]+set}" ]]; then
+        [[ $SHARED_CACHE ]] || return 1
+        step_scope_out=(--shared)
+        step_key_out=$(step_cache_key --shared "${CACHE_SHARED[$step_description]}" \
+            "$step_description" "${step_inputs[@]}" -- "$@") || return 1
+    else
+        step_scope_out=()
+        step_key_out=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@")
     fi
 }
 
@@ -988,7 +1048,35 @@ for preset in $GATE_PRESETS; do
     done
     CACHE_INPUTS["facts gate ($preset)"]="@rust:native-theme$others docs/facts/$directory docs/facts/*.toml scripts/widget_units.toml"
 done
+# The shared steps (scripts/step_cache.sh): keyed on what can change their
+# verdict alone, their records in the repository's common git directory, one
+# for every worktree. Each names the functions that wrap it between its call
+# here and its command's start, whose text its key holds: the facts gate's
+# parts, which facts_gate_steps runs through run_tests and _run_tests_impl.
+# Only they are shared; a step opted in later declares its own wrappers and
+# needs its verdict's variables in step_cache_verdict_environment.
+GATE_WRAPPERS="run_tests _run_tests_impl"
+declare -A CACHE_SHARED=(["facts gate (the facts, no preset)"]="$GATE_WRAPPERS")
+for preset in $GATE_PRESETS; do
+    CACHE_SHARED["facts gate ($preset)"]="$GATE_WRAPPERS"
+done
 
+# The tool versions every key's base holds.
+cache_tool_versions() {
+    local nextest_version=""
+    if [[ $HAVE_NEXTEST ]]; then
+        nextest_version=$(cargo nextest --version 2>&1)
+    fi
+    rustc -vV 2>&1
+    cargo -vV 2>&1
+    cargo clippy -V 2>&1
+    rustdoc -V 2>&1
+    rustfmt -V 2>&1
+    python3 -VV 2>&1
+    printf "nextest %s\n" "$nextest_version"
+}
+
+SHARED_CACHE=""
 if [[ $STEP_CACHE ]]; then
     # shellcheck source=scripts/step_cache.sh
     source scripts/step_cache.sh
@@ -997,22 +1085,23 @@ if [[ $STEP_CACHE ]]; then
     if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
         cache_label="$cache_label with uncommitted changes"
     fi
-    nextest_version=""
-    if [[ $HAVE_NEXTEST ]]; then
-        nextest_version=$(cargo nextest --version 2>&1)
-    fi
+    cache_tools=$(cache_tool_versions)
     step_cache_init "target/check-release-cache" "$cache_label" "$(
-        rustc -vV 2>&1
-        cargo -vV 2>&1
-        cargo clippy -V 2>&1
-        rustdoc -V 2>&1
-        rustfmt -V 2>&1
-        python3 -VV 2>&1
-        printf "nextest %s\n" "$nextest_version"
+        printf "%s\n" "$cache_tools"
         sha256sum scripts/check_release.sh scripts/step_cache.sh
         step_cache_environment
     )"
-    print_info "step cache: on (target/check-release-cache; --no-cache runs every step)"
+    # The shared base (step_cache_start_shared): the tool versions and the
+    # settings here that decide a step's inputs, with the text of the
+    # functions here that key a step, look it up and record it.
+    if step_cache_start_shared "$PWD" "$cache_label in $(basename "$PWD")" \
+        "$(printf "%s\n" "$cache_tools" "$CACHE_HOST_PROBES" "$CACHE_TRUSTED_BUILD_CODE")" \
+        step_cached step_passed step_key_of cache_inputs rust_reach rust_reach_resolve rust_config_inputs; then
+        SHARED_CACHE=1
+        print_info "step cache: on (target/check-release-cache; the facts gate's parts: $STEP_CACHE_SHARED_DIR, every worktree's; --no-cache runs every step)"
+    else
+        print_info "step cache: on (target/check-release-cache; --no-cache runs every step); the facts gate's parts are not cached: $STEP_CACHE_SHARED_NOTE"
+    fi
 fi
 if [[ $HAVE_NEXTEST ]]; then
     print_info "test steps: cargo nextest (doctests: cargo test --doc)"
@@ -1104,6 +1193,9 @@ if [[ $QUICK_MODE ]]; then
     run_check "the specification's entries" python3 scripts/check_spec_entries.py
     run_check "the specification's traceability" python3 scripts/check_spec_trace.py
     run_check "the 0.8.0 ledger triages every open item" python3 scripts/check_ledger.py
+    if [[ $CACHE_KEYS ]]; then
+        exit 0
+    fi
     printf "\n${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
     if [ "$WARN_COUNT" -eq 0 ]; then
         printf "${BOLD}${GREEN}${ICON_PARTY} ALL PASS${NC} · native-theme v%s per-task gate (not a per-commit or release check)\n" "$CURRENT_VERSION"
