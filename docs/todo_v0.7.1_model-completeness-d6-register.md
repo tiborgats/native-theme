@@ -11,7 +11,7 @@ model form for Qt Quick's line position in U180, part 3 (for the flavours unit).
 
 **Corrections of ADD-A147's fix round (2026-11-12), the orchestrator's decisions on the batch's checks** (each open
 to the maintainer's veto, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`): `button`'s `label_position` is
-at depth wherever a preset states it with no later name (ledger queue #258), so U697's pending fact is on 0.8.0's
+at depth where a button with no later name reads it (ledger queue #258; ADD-A148), so U697's pending fact is on 0.8.0's
 release path, its facts edit due before 0.8.0 (section 1's table and section 4's comparison are corrected below).
 U180's open rest is two rows: Qt Quick's line position, U753, takes the non-breaking form, a field on `Decoration`
 defined with the flavours unit; QPainter's wavy and strike lines are U754, due with the first unit that states one.

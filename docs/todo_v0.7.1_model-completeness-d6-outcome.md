@@ -41,8 +41,8 @@ batch once more (F1); the
 orchestrator's decisions on the checks correct this file's outcomes as follows, each open to the maintainer's veto
 (the veto list, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`):
 
-- Outcome 2: `button`'s `label_position`, `repeat_delay` and `repeat_interval` are at depth wherever a preset states
-  them with no later name; the staging design's figures are recounted (1,381 pending facts and 687 listed paths on
+- Outcome 2: `button`'s `label_position`, `repeat_delay` and `repeat_interval` are at depth where a button with no
+  later name reads them (ADD-A148); the staging design's figures are recounted (1,381 pending facts and 687 listed paths on
   0.8.0's path; ledger queue #258; veto list item 1).
 - Outcome 3: 21 of the 27 macOS motion facts pending at `7430a0a2`, by the D6 staging design's count, not 21 of 29.
 - Outcome 5: the rule rests on a witness, not on necessity: a typed role no source of the platform states is

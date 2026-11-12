@@ -162,16 +162,20 @@ where every preset that exists then states it from verified facts, or declares i
 added later states every field the model then holds. So S12 stays strict, and S19.1's build test and the facts gate run
 over the whole model at every commit. Generated declarations are staged by the generator's list of enabled units
 (`scripts/generate_widgets.py`); hand-written ones (S3's roles, S4's tokens) are written in their unit's commit. The
-facts gate skips a fact while one of its units is not enabled (the lanes run ahead; S17 gives a fact its key's unit,
-the unit of every widget its `when`'s positive lists name and of the widget a `drawn_as` value names and, of its
-combinations, those of the enabled units' names, ADD-A146, ADD-A147), reading the units from `scripts/widget_units.toml` as
-`check_facts_trace.py` does (`tests/facts_gate/units.rs`). A fact *of the enabled units* is one whose units are all
-enabled and which holds in a combination of their names that its state model draws (S17; ADD-A147). From M4
-`check_facts.py` fails a fact whose `when` the names of all units together do not make hold (a stray fact, which
-under S17's predicate is never a skipped fact of the enabled units, so a check of those would never fire), and the gate
-a fact whose key lies in no unit or that names a name, a condition or a staged path no unit holds (ADD-A147), and
-reports the other skipped facts by unit; so that it can tell a later unit's fact from a stray one, `widget_units.toml`
-lists every unit with an enabled flag (*M3*). M4 requires every unit of 0.8.0's scope enabled (D13); each follow-up
+facts gate skips a fact that is not of the enabled units (the lanes run ahead), reading the units from
+`scripts/widget_units.toml` as `check_facts_trace.py` does (`tests/facts_gate/units.rs`). A fact *of the enabled
+units* is one whose key's path, and the widget a `drawn_as` value names, the enabled units hold and whose `when` holds
+in at least one combination of the enabled units' names that its entry's state model draws on that preset, decided
+exactly over the combinations at depth (S17; ADD-A146, ADD-A147, ADD-A148). Every other fact is a later unit's by
+the names it names: of the units not enabled that hold a name its `when` lists positively, the widget a `drawn_as`
+value names or its key's path, the last in the units file's order, a name the state model draws only inside a host
+context being that host's unit's (a context naming no widget: `identities`); a fact that names no later unit's name is
+*unplaced*, which the gate and `check_facts_trace.py` report apart, under no unit (ADD-A148). From M4 the gate fails
+an unplaced fact and a fact whose key lies in no unit or that names a name, a condition or a staged path no unit holds
+(ADD-A147, ADD-A148), and reports the other skipped facts by unit; a fact that holds in no drawn combination is found
+when its unit is enabled, by the exact check, nothing searching the combinations of all units' names (ADD-A148). So
+that it can tell a later unit's fact from an unplaced one, `widget_units.toml` lists every unit with an enabled flag
+(*M3*). M4 requires every unit of 0.8.0's scope enabled (D13); each follow-up
 release requires its own units enabled; after the last one no fact is skipped. A unit enters with every part, field
 and value of its catalogue entries, in every combination of the names their **Depth** lines list, less what S6.1 lets
 it defer to a later unit: a value (the `Placement` values, to the placement unit), a part's field or a block's leaf
@@ -502,7 +506,7 @@ the facts tooling reads it.
     file-level licence with its notice (`src/platform/android_non_linear.rs` and `src/ripple.rs` port AOSP and
     androidx under Apache-2.0, `src/platform/win_ui.rs` microsoft-ui-xaml under MIT). The crate's `license` is the
     manifest's expression as it stands, `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT`
-    (`native-theme/Cargo.toml`). A risk judgement, as D10's first part is, not a legal conclusion: accepting "AND
+    (`native-theme/Cargo.toml`), which adds `AND MIT` to the licence the maintainer decided at D10 (ADD-A148). A risk judgement, as D10's first part is, not a legal conclusion: accepting "AND
     Apache-2.0" for a ported file already gave up a crate usable with no notice to carry, and MIT's obligation (keep
     the notice) is of the same kind and no wider. Rejected: no code that carries a notice (the MIT and Apache-2.0
     ports redone through the clean room, the licence back to `MIT OR Apache-2.0 OR 0BSD`).
@@ -646,7 +650,7 @@ the facts tooling reads it.
     derivation over it, U706's second-tint run scheduled in M2 (R2.6, R4, R19); a palette suspended, not refused,
     under a followed scheme it lacks (R19); the ten bundled palettes 0.7.0's ten schemes, each the variant with
     0.7.0's accent (R19); `#[non_exhaustive]` error enums (R21); no font DPI read where the toolkit's scale carries
-    it, the KDE reader's `Xft.dpi` read going (R10) (veto list item 42).
+    it, the KDE reader's `Xft.dpi` read going (R10) (veto list items 42, 65 and 66).
   - **The rationale's open questions** the document check left (ADD-A146), each answered by an outcome:
     - R-1, R21's release condition and R4's Apple list against the slice's numbers (the Apple presets held 45,538
       of the 45,766 pending facts): **Decided at D6** (2026-11-10, outcome 2): a unit staged by its depth (*The depth
@@ -670,7 +674,8 @@ the facts tooling reads it.
       outcome 7): over a preset whose widgets read keyed colours, a palette reaches them by a stated mapping method,
       or it is not offered over that preset, built with the palettes in M2's task 4; nor is it offered over a preset
       whose widget colours are measured literals that follow no role (`macos-*`, `ios-*`), a recorded limit (the
-      specification's S14, the rationale's R19; veto list item 49).
+      specification's S14, the rationale's R19; veto list item 49), which the preset declares (`[declare]
+      no_palette`, S10; ADD-A148).
     - W3-3 with W5-15, what a connector draws where a preset declares unavailable a widget 0.7.0 resolved there
       (`tab`, `card`, `expander`, `status_bar`) or a stand-in widget whose unit is enabled: **Decided at D6**
       (2026-11-10, outcome 6): the declarations stay, D13's sentence restated to the presets whose platform draws
@@ -789,7 +794,10 @@ that unit's spec batch adds it to the Depth line of each entry its mappings targ
 --check` skips a context whose host's unit is not enabled; ADD-A148), the default size in force, the scheme, the
 preset's default flavour, `contrast_high` (model-wide: 0.7.0's Windows and GNOME readers give values under it) and
 `full_keyboard_access` (model-wide: the built macOS reader reads it and only `focus_visible_when` values, at depth on
-every entry, select on it, so without it no macOS widget draws a focus ring; ADD-A148; veto list item 62), and
+every entry, select on it, so without it no macOS widget draws a focus ring, where 0.7.0's egui connector drew one
+from `defaults.focus_ring_*` on every preset with no Full Keyboard Access read
+(`v0.7.0:connectors/native-theme-egui/src/atlas.rs:114`, `:641`, `accessors.rs:102-115`); ADD-A148; veto list item
+62), and
 `animations_off` and `reduced_motion` for the motion values 0.8.0 holds (the dialog's `presentations` and the
 spinner's `loop`, each where the Apple motion trial measures it). A typed colour role enters whole under the scheme, `contrast_high`
 and the conditions the catalogue's *today's fields* table names; a token path, and a keyed name of any kind, is at
@@ -800,16 +808,18 @@ belongs to a named later unit of depth, model-wide, and cannot be asked for mean
 of `Variant`, a keyed one is declared `later`, a size, a density or a flavour is answered `Later` (a declared density,
 while the sizes unit is not enabled, as a size is; ADD-A147), and a given name is mentioned by no rule of
 a bundled preset, so an element under it resolves as without it (S6.1, S8, S10, S12). A fact is of the enabled units
-when its `when` holds in a combination of those names that its state model draws, its part drawn there; every other
-fact is a later unit's, and no fact is edited (S17). Rejected: the selector pairs of *Today's fields* alone (a
+when its key's path is held by them and its `when` holds in a combination of those names that its state model draws
+on that preset, its part drawn there; every other fact is a later unit's by the names it names, or *unplaced* where it
+names no later unit's name, and no fact is edited (S17, *One rule for every model field*; ADD-A148). Rejected: the selector pairs of *Today's fields* alone (a
 `primary` button's stroke or a button pressed while hovered would have no fact, and a block's leaves are stated
 together); every state flag of the state models (1,674 pending facts at depth against 1,381, for flags 0.7.0's
 button does not distinguish).
 
 For `button` (the catalogue's Depth line): the variants `primary`, `toggle`, `with_icon`, `tool`, `tinted` and, on
 `ios-*`, `@gray`; the states `hover`, `pressed`, `disabled`, `checked`, `default`, `focused` and `focus_visible` (on
-`ios-*` `hover` and `focus_visible` the iPad unit's); the default size in force; no host context in the slice
-(`toolbar.bar` from the containers unit); the scheme, `contrast_high` and `full_keyboard_access` (ADD-A148). On
+`ios-*` `hover` and `focus_visible` the iPad unit's, as `idiom:phone` and `idiom:pad` are; ADD-A148); the default
+size in force; no host context in the slice (`toolbar.bar` from the containers unit); the scheme, the preset's
+default flavour, `contrast_high` and `full_keyboard_access` (ADD-A148). On
 `material-3` `toggle`, and on `ios-*`
 `tool`, are `later`: their state models draw them in no combination at depth.
 
@@ -1392,7 +1402,7 @@ search); `check_function_vectors.py`, the KDE reader's tests and `check_release.
 **`from_system` on Linux without the desktop's reader** (D13: nothing 0.7.0 has is lost; S16, *Which reader*;
 ADD-A148; veto list item 59). One code task (`implement`), beside M2's numbered tasks, since it restores what a
 built entry point lost against 0.7.0: on Linux, where the desktop's reader is not compiled (`portal` off on GNOME
-and the portal desktops, `kde` off on KDE), `Theme::from_system` runs the reads that need no D-Bus (`GTK_THEME`,
+and the portal desktops, `kde` off on KDE), `Theme::from_system` runs the reads that need no feature (`GTK_THEME`,
 gsettings, `settings.ini`: the scheme and motion) and gives the platform's preset in that scheme, as 0.7.0's
 `linux_fallback` did (`v0.7.0:native-theme/src/pipeline.rs:1103-1110`), where it answers `Err(FeatureDisabled)`
 today (`native-theme/src/reader.rs:230-271`); with the feature the reader runs as S16 specifies. *Done:* a test per
@@ -1437,8 +1447,10 @@ is fixed before task 0 on its own branch, `side-units`.
   deferred parts evaluated on them against the lines as they stand, line 1's on the case `read` while load task 1
   has not merged (a whole load over its line then takes a named miss whose cause is load task 1, and fires nothing;
   ADD-A148). *Done:* the figures and each trigger's outcome in the ledger; five recorded runs (three for the bytes),
-  each case's spread, tolerance and first record in the ledger and in `cost_budget.toml`, each case whose record does
-  not meet its line under a named miss of its own; the release build's time and a quiet sweep's duration recorded,
+  each case's spread, tolerance and first record in the ledger and in `cost_budget.toml`, each record naming the
+  measuring machine in a field of `cost_budget.toml`'s records that this step adds (*The load budget*; ADD-A148),
+  each case whose record does not meet its line under a named miss of its
+  own; the release build's time and a quiet sweep's duration recorded,
   the release run's bound raised where three sweeps take more than half of it; each part whose trigger fired named as a task before M3a's first widget
   unit; where line 5, 7 or 11 is missed, its part's decision (the kept rules held by reference, a faster query)
   taken with load task 4a.
@@ -1597,7 +1609,9 @@ is fixed before task 0 on its own branch, `side-units`.
      conditions, where the states and the transitions runtime enter, and what the toolkit's theme object still
      carries; and, for motion, the four points the D6 staging design lists (the state kept per element part, drawing
      from `Drawn`, the request for the next frame, an identity and a frame time in every application-facing call),
-     and the contract's deferred entries (ADD-A147);
+     and the contract's deferred entries (ADD-A147); a part whose resolved `shown` is false not drawn, and the press
+     ripple's per-element state and frame request, needed whatever the Apple motion trial finds (*The depth 0.8.0
+     states*; ADD-A148);
    - the contract table's format, with its `pending` and stand-in entries, where a stand-in entry first appears
      (*Widgets 0.7.0 styles through stand-ins*), and the side S21.3 adds, what the connector supplies (its flags and
      their order, content variants, element data, root inputs, font metrics, the presences it reports, a row per
@@ -1673,9 +1687,11 @@ is fixed before task 0 on its own branch, `side-units`.
    for `windows-11` and `material-3` are written once, at M4, when every widget of 0.8.0 is in; until then the
    bundled palettes are offered over `adwaita` and `kde-breeze` alone, and this task proves the method on the slice's
    keyed roles with a test fixture, a mapping palette built in the test (ADD-A148; veto list item 63; an input to the
-   method's design, which may change it). A palette is not offered over a preset whose widget colours the
-   method cannot reach, measured literals that follow no role (`macos-*`, `ios-*`): a recorded limit (S14, R19;
-   ADD-A147). The build test's trusted forms gain each bundled palette's source over each
+   method's design, which may change it). A preset whose widget colours are measured literals that follow no role
+   (`macos-*`, `ios-*`) declares `[declare] no_palette = "<reason>"`, hand-written with its reason, and over it
+   `apply_palette` and `set_preset` are `Err(PaletteNotForPreset)`, `Palette::presets` leaving it out: a recorded
+   limit per preset, not per platform, built in this task, whose design may derive the declaration mechanically
+   instead (S10, S14, S16, R19; ADD-A147, ADD-A148; veto list item 49). The build test's trusted forms gain each bundled palette's source over each
    preset it serves, under each contrast condition (S19.1), and line 4's case of a bundled palette applied or removed
    takes its first record ("first measured by" this task until then; *The load budget*; ADD-A147).
    Beside it, `material-3`'s accent-derivation layer (its `m3_role` statements and S8's leave-out, S9.2; its forms
@@ -1741,7 +1757,7 @@ placement's commit; M3b's units are listed in this order, and which a release ho
   lists in `scripts/widget_units.toml` every unit of depth and every parking unit, each with an `enabled` flag, and
   gives each staged path its parking unit, its unit of depth or its widget unit (ADD-A147, ADD-A148); this task adds
   every widget unit of M3's order with its entries, prefixes and an `enabled` flag, so that a key in no listed unit
-  is a stray; `generate_widgets.py`, `check_facts_trace.py`, `tests/facts_gate/units.rs` and `check_ledger.py` read
+  fails (*One rule for every model field*; ADD-A148); `generate_widgets.py`, `check_facts_trace.py`, `tests/facts_gate/units.rs` and `check_ledger.py` read
   it. `button` becomes an entry of *buttons and toggles*; the roles, the inputs and the slice's tokens stay the unit
   `slice`, whose pending condition (*The unit's pending facts*) `check_ledger.py --unit slice` asks in the gate of
   every M3a unit, the first included, a row whose Due is later not blocking it (the Apple status rows U755–U760 keep
@@ -1838,18 +1854,18 @@ gate, and no measuring).
   bundled palette's table for `windows-11` and for `material-3` written once by M2's fourth task's method, per
   project and preset, and reviewed; the palettes then offered over those two presets, their sources over them in
   the build test's trusted forms and the palette run (S14, S19.1).
-- **The enabled units' checks** (a tooling task before the gate): `check_facts.py` fails a stray fact (a `when` the
-  names of all units together do not make hold); the facts gate fails a fact of the enabled units it cannot read (a
-  key the model does not hold, a value unread), a fact whose key lies in no unit, and a name, a condition or a staged
-  path no unit holds, and reports the facts of units not enabled by unit (*One rule for every model field*;
+- **The enabled units' checks** (a tooling task before the gate): the facts gate fails an unplaced fact (one not of
+  the enabled units that names no later unit's name, *One rule for every model field*), a fact of the enabled units
+  it cannot read (a key the model does not hold, a value unread), a fact whose key lies in no unit, and a name, a
+  condition or a staged path no unit holds, and reports the facts of units not enabled by unit (*One rule for every model field*;
   ADD-A148); `check_ledger.py --final` takes the units from `scripts/widget_units.toml` by the same rule and asks its
   per-fact conditions of the enabled units' facts only (no pending fact or declaration, every measured fact with a
   drift comparison, no open unmeasured-register entry whose key or pending facts lie in the enabled units), fails a
   register entry whose key lies in no unit, and reports the others by unit. A name of a state model, a condition of
   a fact or a staged path in no unit fails as a key in no unit does (ADD-A147).
   - **The gate's two modes** (ADD-A146). The ordinary run, from this task on, fails on what is skipped or refused
-    among the enabled units' facts (a key not held, a value unread; ADD-A148) and on a
-    fact whose key lies in no unit. The release mode, `FACTS_GATE_RELEASE=1`, which the gate already has (unsharded,
+    among the enabled units' facts (a key not held, a value unread; ADD-A148), on an unplaced fact (ADD-A148) and on
+    a fact whose key lies in no unit. The release mode, `FACTS_GATE_RELEASE=1`, which the gate already has (unsharded,
     over every preset), requires in addition no pending fact, listed path or synthetic value among them. Today it
     asserts that nothing at all is skipped, the facts of units not enabled among it, which D13 lets the lanes write
     ahead: the task restates the assertion over the enabled units, the facts of the others reported by unit, and the

@@ -382,7 +382,7 @@ input's base for it. The inputs:
   refuses it. On the `macos-*` presets the accent, the colours AppKit derives from it by a derivation Apple
   does not publish (the selection, focus and accent-tinted colours, read through `NSColor`), and the
   separate highlight colour setting. On the `ios-*` presets the accent alone, UIKit's tint (ADD-A146; kept at
-  D6, outcome 12, ADD-A147, open to the maintainer's veto: veto list item 42): what
+  D6, outcome 12, ADD-A147, open to the maintainer's veto: veto list item 65): what
   UIKit draws in the tint is stated as derivations over it, measured under the default tint and a second one, as
   the accent-following values of `macos-*` are measured under a second accent; until the host pass under the
   second tint is run, the facts hold the default tint's measured literals and their derivations are pending (the
@@ -574,7 +574,7 @@ so the preset must state {checked, hover}.
   second one, so that what UIKit draws in the tint is a measured derivation over the accent (R2.6), as macOS's
   accent-following values are from its second-accent pass; until the host pass under the second tint is run,
   the facts hold the default tint's literals and their derivations are pending (the unmeasured register's U706;
-  ADD-A146; kept at D6, outcome 12, ADD-A147, open to the maintainer's veto: veto list item 42; the run is M2's).
+  ADD-A146; kept at D6, outcome 12, ADD-A147, open to the maintainer's veto: veto list item 65; the run is M2's).
   Rejected: the default tint alone until a reader exists, as this bullet had it: on iOS the
   application supplies the accent itself, reader or not (R1.5), and the measuring host reads these values under
   any tint now; and under one tint the facts hold the default tint as literals, which an application's accent
@@ -1353,7 +1353,7 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   platform's condition rules (KDE's inactive effects) apply over it;
 - is suspended while either contrast condition holds, unless its project states colours for it (R2.4);
 - applies only under the schemes it has (ADD-A146; kept at D6, outcome 12, ADD-A147, open to the maintainer's veto:
-  veto list item 42). Where the application follows the system's scheme and that
+  veto list item 66). Where the application follows the system's scheme and that
   scheme is one the palette lacks, the API accepts the palette and suspends it: it reports that the palette does
   not apply, the theme is the preset with the reader's values, and the palette applies when the scheme returns,
   whichever came first, the palette or the scheme (it stays chosen, so the application need not watch the scheme to
@@ -1516,7 +1516,9 @@ caller's build, and a default would hide it.
   every widget, and the connectors' deferred entries draw those states from the typed roles as 0.7.0's did, the
   specification's S21.3; ADD-A148; decided by logic at the document pass, awaiting the maintainer's veto: veto list
   item 64) and `full_keyboard_access` is at depth model-wide, as `contrast_high` is (the built macOS reader reads it,
-  and without it no macOS widget would draw the focus ring 0.7.0's connectors drew on keyboard focus; ADD-A148;
+  and without it no macOS widget would draw the focus ring 0.7.0's egui connector drew from `defaults.focus_ring_*`
+  on every preset, with no Full Keyboard Access read, `v0.7.0:connectors/native-theme-egui/src/atlas.rs:114`, `:641`,
+  `accessors.rs:102-115`; ADD-A148;
   decided by logic at the document pass, awaiting the maintainer's veto: veto list item 62); and motion beyond the
   two 0.7.0 has: the state-change transitions (a state changes at once, as in 0.7.0), every presentation but the
   dialog's, every widget's loop but the spinner's, and the theme-change token (a theme change is drawn at once),
@@ -1854,7 +1856,7 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
   that follow no role (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
 - R21: a widget is 0.8.0's on every preset whose platform draws it; where a preset declares unavailable a widget
   0.7.0 resolved, a connector draws its toolkit's widget by its contract's list (veto list item 48).
-- R2.6, R4, R10, R19, R21: the five amendments of ADD-A146 stand (outcome 12; veto list item 42).
+- R2.6, R4, R10, R19, R21: the five amendments of ADD-A146 stand (outcome 12; veto list items 42, 65 and 66).
 
 Amended in place by the specification's batch ADD-A148 (2026-11-12, the fixes of the document pass after D6; decided
 by logic, awaiting the maintainer's veto: veto list items 49 and 59 to 64):

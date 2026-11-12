@@ -24,9 +24,9 @@ its findings cited by their ids, K4-7 and so on).
   key under one combination, with its proof; a *pending* fact has its combination written down, not its value).
   `ios-26` stays. This changes R21's "a unit enters whole". Result: 1,381 of the slice's 45,766 pending facts
   (3.0 %) and 687 of its 1,508 listed paths (the paths that keep a preset from loading) stay on 0.8.0's path. These
-  figures count `button`'s `label_position`, `repeat_delay` and `repeat_interval` at depth wherever a preset states
-  them with no later name (the fix round's recount, ledger queue #258; with the three deferred they were 1,376 and
-  682).
+  figures count `button`'s `label_position`, `repeat_delay` and `repeat_interval` at depth where a button with no
+  later name reads them (the fix round's recount, ledger queue #258; ADD-A148; with the three deferred they were
+  1,376 and 682).
 - *Why:* D13 ("0.8.0 ships when the new model covers what 0.7.0 covers", taken for time: about 3–4 weeks against
   5–7). Measuring every combination was priced at 814 to 2,958 M of usage, 3 to 11 weeks for the facts alone;
   99.95 % of the pending button facts lie beyond 0.7.0's depth.
@@ -627,7 +627,7 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 
 **59. `Theme::from_system` on Linux without a reader feature keeps 0.7.0's behaviour.**
 - *Decided:* on Linux, where the desktop's reader is not compiled (GNOME and the other desktops without the
-  `portal` feature, KDE without `kde`), `from_system` runs the reads that need no D-Bus (`GTK_THEME`, gsettings,
+  `portal` feature, KDE without `kde`), `from_system` runs the reads that need no feature (`GTK_THEME`, gsettings,
   `settings.ini`: the scheme and motion) and gives the platform's preset in that scheme, as 0.7.0's
   `linux_fallback` did (`v0.7.0:native-theme/src/pipeline.rs:1103-1110`), never `Err(FeatureDisabled)`; with the
   feature the reader runs as specified. A code task of its own beside M2's numbered tasks (ledger queue #281). On
@@ -643,8 +643,9 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 - *Decided:* the macOS setting `full_keyboard_access` is at depth model-wide, as `contrast_high` is: one setting,
   read by the built macOS reader (`native-theme/src/macos.rs:535-536`), and selected only by `focus_visible_when`
   values, which are at depth on every entry. So on `macos-*` a focused widget draws its focus ring under keyboard
-  navigation, where 0.7.0's connectors drew one from `defaults.focus_ring_*`
-  (`v0.7.0:connectors/native-theme-egui/mapping.toml:253-261`). The units file, the generator and the presets
+  navigation, where 0.7.0's egui connector drew one from `defaults.focus_ring_*` on every preset with no Full
+  Keyboard Access read (`v0.7.0:connectors/native-theme-egui/src/atlas.rs:114`, `:641`, `accessors.rs:102-115`;
+  `mapping.toml:253-261`). The units file, the generator and the presets
   follow after the staging task merges (ledger queue #283).
 - *Why:* without it the macOS `focus_visible_when` value at depth states only its `never` base, and no macOS widget
   shows a focus ring in 0.8.0, although `focus_visible` and `token.focus` are at depth.

@@ -11,8 +11,8 @@ orchestrator's decisions not applied as worded.
 The batch that applied this design (ADD-A147) checked 1.3's point 1 against the facts, as that point asks: `button`'s
 `label_position` is stated with no later name on `kde-breeze`, and `repeat_delay` and `repeat_interval` at the base
 on `kde-breeze` and `macos-*`, so "only names of later units read" them does not hold (ledger queue #258). The
-orchestrator's decision on the batch's check A: the three are at depth wherever a preset states them with no later
-name, as the rule's "every part, field and value" of an entry at depth has it; the other values of 1.3's point 1
+orchestrator's decision on the batch's check A: the three are at depth where a button with no later name reads them
+(ADD-A148), as the rule's "every part, field and value" of an entry at depth has it; the other values of 1.3's point 1
 stay deferred (open to the maintainer's veto, veto list item 1). The recount, the staging scripts with the three not
 deferred (`depth_count_a2.py --values-at-depth`, a copy of `depth_count.py` beside it with that option, which without
 it prints `depth_count.py`'s tables unchanged): 1,381 pending facts at depth (was 1,376), 687 listed paths that stay
@@ -31,9 +31,19 @@ maintainer's veto, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`) change
 below is not rewritten. Only verified facts reach the branch: the gate lists every new or changed fact since a
 platform's verified commit, whatever its unit, and `verify_facts.py units` stays unit-blind, so "and
 `verify_facts.py units`" is withdrawn from 2.5's *Who checks it* and from 6.4's step 2 (P-3). The units file lists
-the units of depth and the parking units in 3.4's order, the order S17 reads, and a fact that needs names of two
-units is reported under the last of them in that order, the unit at whose enabling it first holds, not the first
-(2.5, 3.1; P-4, K4-8). A part's `shown` stays in 0.8.0 with its rest meaning alone and is not the motion unit's
+the units of depth and the parking units in 3.4's order, the order S17 reads (P-4). The predicate (1.3, 2.5) is
+decided exactly, over the combinations at depth: a fact is of the enabled units when its key's path, and the widget a
+`drawn_as` value names, are held by them and its `when` holds in at least one combination of the enabled units'
+names that its entry's state model draws on that preset. A fact that is not is a later unit's by the names it names:
+of the units not enabled that hold a name its `when` lists positively, the widget a `drawn_as` value names or its
+key's path, the last in the units file's order, not the first; a name
+the state model draws only inside a host context is that host's unit's (a context naming no widget: `identities`).
+A fact that is not of the enabled units and names no later unit's name is *unplaced*: the gate and
+`check_facts_trace.py` report it apart, under no unit, and from the plan's M4 the gate fails it. A fact that holds in
+no drawn combination is found when its unit is enabled, by the first rule's exact check; nothing searches the
+combinations of all units' names, so the "stray fact" of 2.5 and of the revision tables (a `when` no union of units
+makes hold, failed by `check_facts.py` from M4) is withdrawn in favour of the unplaced fact (2.5, 3.1; K4-4, K4-8,
+the orchestrator's O-14). A part's `shown` stays in 0.8.0 with its rest meaning alone and is not the motion unit's
 (2.4, 5.3, 5.4 (a), 6.4's step 1), and every widget's `loop` but the spinner's is the motion unit's (K2-1, K2-7;
 veto list item 61). `full_keyboard_access` is at depth model-wide, as `contrast_high` is (1.3 point 6, 1.4; C-4,
 item 62). `idiom:phone` is the iPad unit's with `idiom:pad`, so combinations at depth hold no idiom (1.4, 3.1's

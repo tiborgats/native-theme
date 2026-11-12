@@ -3288,7 +3288,7 @@ without a new input group and its checks); the placeholder left in force under h
 descendants (the root part's for the whole widget, S2.11). Every role reference resolves against the nearest binding
 of that role in scope (the element's own, then its ancestors' as its `Scope` carries them, S8), else the root's:
 In two steps. (1) `surface.x`: walk outward; the first element with a `Role { Surface(x) }` binding or a
-`Surface(S)` binding decides; a `Surface(S)` answer becomes the lookup `role.S.x`, walked again from the querying
+`Surface(S)` binding decides (where one part carries both, the role binding wins; ADD-A148); a `Surface(S)` answer becomes the lookup `role.S.x`, walked again from the querying
 element outward (so a nearer `Set(S, x)` binding counts, R5.2), and with no binding at all it is `role.window.x`; `x` is a `SurfaceRole` path, a disabled role included, so a
 `surface.disabled.foreground` under a `Surface(Header)` binding is `role.header.disabled.foreground` (a Breeze toolbar's
 Header set, `breeze@6.8.2 kstyle/breezetoolsareamanager.cpp:201-216`, reaches its flat buttons' disabled text so; ADD-A121,
@@ -3813,7 +3813,9 @@ K-KA-47†): the platform's lookup chain, as a KDE application resolves it, not 
 (S2.7): `windows-11` states its entries from its facts, and on every other preset no transition can name one, so the
 map is `{}` by this definition, no platform's value: those presets state `animated_visuals = {}` with this section as
 its comment, `# S4.5`, as S9.4's `font_dpi` is stated on the Apple presets, no fact states it, and the gate compares
-the resolved map with the definition (S11, S17; ADD-A131). Rejected: an absence fact per platform (no definition on
+the resolved map with the definition (S11, S17; ADD-A131). The field is staged with the motion unit (S6.1), so until
+that unit no preset states `animated_visuals`, `windows-11`'s entries and the empty map alike, and the citation
+exception for it (S11, S17) applies from that unit on (ADD-A148). Rejected: an absence fact per platform (no definition on
 GTK, Qt, AppKit, UIKit or Compose is where WinUI's AnimatedVisual sources would belong, so its citation could quote
 no head the absence is of, and `absent = []` would claim a platform fact where the emptiness follows from the engine
 set).
@@ -4021,7 +4023,7 @@ the core does not read it (the core reads `token.size_classes`, `token.text.font
 `token.text.roles.body` for `body_font_height`, `token.params.display` (S4.6), `token.kde` and `token.material`;
 its read of `token.icons.animated_visuals` is a transition engine's, the motion unit's, S2.7; ADD-A148), no connector
 reads it to draw a value at depth (S4.2's `mnemonics` and `mnemonic_when_disabled`), and no built system reader
-states it (S9.3's ports; ADD-A148); it waits in the parking unit the units file names until the first unit whose
+states it (S9.3's readers; ADD-A148); it waits in the parking unit the units file names until the first unit whose
 value reads it, or until its parking unit is enabled (ADD-A148). A keyed entry is at depth for a preset by the same
 five clauses, each preset's own, and is declared from then on; until then it is undeclared (ADD-A147, ADD-A148).
 The units file, `scripts/widget_units.toml`, lists each
@@ -7799,8 +7801,8 @@ completion is one the state model does not draw, for a size or a variant its nam
 facts naming `mini`, `small` or `large` and no style, which only the configuration styles take, `sizes_by_variant`;
 52 "not available (Size)" failures in the iOS facts lane's round 5) or by `not_drawn`, it is completed once with each
 variant, or set, the state model draws that makes it drawn (for a size, each `sizes_by_variant` entry whose `sizes`
-hold it), each completion the declarations and `not_drawn` leave drawn checked, an undrawn one no failure; a `when` no completion makes drawn holds in no combination the platform draws, a stray fact
-(*While the units are built*, below; ADD-A141, ADD-A148). The gate completes a size by its styles so (`complete`, `native-theme/tests/facts_gate/run.rs`,
+hold it), each completion the declarations and `not_drawn` leave drawn checked, an undrawn one no failure; a `when` no completion makes drawn holds in no combination the platform draws, an unplaced fact
+once its units are enabled (*While the units are built*, below; ADD-A141, ADD-A148). The gate completes a size by its styles so (`complete`, `native-theme/tests/facts_gate/run.rs`,
 with the fixture `own_size_styles`); the completion with each required form, where it takes the first today, and
 with each variant or set where the lack is not a size's are the gate's work at M4 (ADD-A146). Rejected: the first such style alone (the lane's proposal: an
 order the entries happen to have picks the one style that checks a fact claiming them all, and a fact naming a
@@ -7813,15 +7815,18 @@ once per flavour, each with its flavour's entries, the default flavour alone whi
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
 `rows`. **While the units are built** (ADD-A128, ADD-A135), the 0.8.0 plan enables the catalogue's units one by one,
 a unit entering the model in the commit whose presets state it (S6.1), 0.8.0 releasing the units of its scope and
-each follow-up release its own (the plan's D13, S21.1). A fact is of the enabled units when its key lies in an
-enabled unit, every widget its `when`'s positive lists name (`context`, its `scope.nearest`, a `widget`) and the
-widget a `drawn_as` value names are enabled, and its `when` holds in at least one combination of the enabled units'
-names (each entry's Depth line, the units of depth enabled) that its state model draws, its part drawn there; the
-gate skips every other fact, its later unit being, of the units whose names it needs, the last in the units file's
-order: the unit at whose enabling, in that order, it first holds (ADD-A146, ADD-A147, ADD-A148). A fact whose `when`
-the names of every unit together do not make hold in a combination its state model draws is a stray fact, no later
-unit's: the gate and `check_facts_trace.py` report it under no unit, and from the plan's M4 `check_facts.py` fails
-it (ADD-A148). A key that belongs to no widget (a colour role, an input, a token) is judged under the condition
+each follow-up release its own (the plan's D13, S21.1). A fact is of the enabled units when its key's path, and the
+widget a `drawn_as` value names, are held by them and its `when` holds in at least one combination of the enabled
+units' names (each entry's Depth line, the units of depth enabled) that its entry's state model draws on that
+preset, its part drawn there, decided exactly, over the combinations at depth (ADD-A146, ADD-A147, ADD-A148). The
+gate skips every other fact, a later unit's by the names it names: of the units not enabled that hold a name its
+`when` lists positively (a widget its `context`, its `scope.nearest` or its `widget` names among them), the widget a
+`drawn_as` value names or its key's path, the last in the units file's order; a name the state model draws only
+inside a host context is that host's unit's (a context naming no widget: `identities`) (ADD-A148). A fact that is
+not of the enabled units and names no later unit's name is *unplaced*: the gate and `check_facts_trace.py` report
+it apart, under no unit, and from the plan's M4 the gate fails it; a fact that holds in no drawn combination is
+found when its unit is enabled, by the first rule's exact check, nothing searching the combinations of all units'
+names (ADD-A148). A key that belongs to no widget (a colour role, an input, a token) is judged under the condition
 sets the catalogue's *today's fields* table names for it (the scheme and `contrast_high`, `window_inactive` for the
 `selection` set, `animations_off` and `reduced_motion` for the speed factor and the motion values' tokens) and the
 preset's default flavour. A part whose presence fact is pending counts as drawn. A bundled preset mentions no name
@@ -7913,8 +7918,9 @@ fact that applies where its part is not drawn (it adds no check the part's key d
 restatement). It compares every token,
 colour-role and input fact the same way, under its `when`. While the units are built, the gate skips a fact whose key the
 model does not hold yet (the 0.8.0 plan enables its units one by one); each release is made with no fact of its
-enabled units skipped, the gate failing from the plan's M4 on such a fact and on a fact whose key lies in no unit or
-that names a name, a condition or a staged path no unit holds (ADD-A148). Where the
+enabled units skipped, the gate failing from the plan's M4 on such a fact, on an unplaced fact (*While the units are
+built*) and on a fact whose key lies in no unit or that names a name, a condition or a staged path no unit holds
+(ADD-A148). Where the
 fact that applies is pending, the gate compares nothing for that key and combination: it counts it and lists it with
 its register id in its report, apart from the failures, and passes it while the units are built, as a skipped key; the
 perturbed and accent runs skip it too. That list, the register and `check_ledger.py --final` meet at each release:
