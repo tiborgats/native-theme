@@ -2,8 +2,8 @@
 
 **Status:** design, drafted 2026-10-28 from the gap map; checked eight times independently (§5), then amended
 in place during the specification's thirteen checks; done with the specification, 2026-10-29, and amended in place
-since by the 0.8.0 plan's decisions D12 and D13 and by the specification's batches, the last ADD-A147 (2026-11-12,
-the outcomes of the plan's checkpoint D6).
+since by the 0.8.0 plan's decisions D12 and D13 and by the specification's batches, the last ADD-A147 (the outcomes
+of the plan's checkpoint D6, decided 2026-11-10, applied 2026-11-12).
 Every amendment is noted under R25.13, in the order made. Input: [`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)
 and its six platform files ("the map"; a row is identified by its file and ID, and cited here by ID,
 with its file where the prefix does not say it). Next: the specification,

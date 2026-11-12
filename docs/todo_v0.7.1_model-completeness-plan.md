@@ -6,7 +6,8 @@ their fixes into one text, and draft 12 applies the eleventh review's. Draft 13 
 scope decision D13 (0.8.0 covers what 0.7.0 covers, the rest of the catalogue follows in later releases) and D14,
 settled by logic (the follow-up releases numbered by SemVer), with an independent check's fixes. Draft 14
 (2026-11-09) applies the document check's fixes (spec batch ADD-A146), its amendments confirmed at D6. Draft 15
-(2026-11-12) applies the outcomes of the checkpoint D6 (spec batch ADD-A147), each open to the maintainer's veto.
+applies the outcomes of the checkpoint D6 (decided 2026-11-10, applied 2026-11-12; spec batch ADD-A147), each open
+to the maintainer's veto.
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
 facts and passing the facts gate; the bundled palettes checked against their projects' published colours; the four
@@ -488,7 +489,7 @@ the facts tooling reads it.
     (a); the bundled KDE port files shipped with their licence notices; the tools written from the settings the references pin, not their
     code, though a CI tool may compile a pinned upstream source unchanged to call an internal function (it never ships
     in the crate).
-  - **Extended at D6** (2026-11-12, outcome 11; ADD-A147; open to the maintainer's veto, veto list item 41): D10 names
+  - **Extended at D6** (2026-11-10, outcome 11; ADD-A147; open to the maintainer's veto, veto list item 41): D10 names
     four classes of reference. An LGPL or a GPL reference goes through the clean room, (a): the clean room carries
     no code of the reference, so it serves a GPL reference exactly as an LGPL one (M2.1's `Breeze` engine follows
     Breeze's kstyle, GPL-2.0-or-later). An Apache-2.0 or an MIT reference may be ported, the ported file under a
@@ -561,7 +562,7 @@ the facts tooling reads it.
   measurements, three design notes working out those that needed design (the D6 staging, load and register
   designs), each checked independently until a check found nothing serious. Each outcome is the work's basis and
   open to the maintainer's veto, which the D6 veto list numbers. Where each now stands:
-  - **The slice's cost, and the caps.** **Decided at D6** (2026-11-12, outcome 10): no cap is set now. The work runs
+  - **The slice's cost, and the caps.** **Decided at D6** (2026-11-10, outcome 10): no cap is set now. The work runs
     to M2's close, whose report gives M2's cost, the gate's time and the load cost, and M3a's approval is asked
     there with the first real unit costs; no lane writes facts ahead for M3b's units meanwhile (D7; *M2*'s milestone
     gate; *M3*; *How the work runs*; veto list item 51). A cap from an estimate last wrong by a factor of 12.8 (the
@@ -570,11 +571,11 @@ the facts tooling reads it.
     repository pinned by commit (*The evidence repository*), over keeping it in this repository (recommended up to
     about 500 MB, which the open facts branches already pass) and Git LFS (rejected for its quota and bandwidth
     costs).
-  - **The facts gate's run time and its limits.** **Decided at D6** (2026-11-12, outcome 9): 3 h a shard on CI,
+  - **The facts gate's run time and its limits.** **Decided at D6** (2026-11-10, outcome 9): 3 h a shard on CI,
     1 h and 12 GB a local preset step, the release run one unsharded local run (the ledger's queue #213), reviewed
     with the first widget unit's measured times (*The facts gate's cost*; veto list item 25). It sets no budget for
     the build's time or the docs.rs build.
-  - **The presets' generation, the audit rate and the plan's amendments.** **Decided at D6** (2026-11-12,
+  - **The presets' generation, the audit rate and the plan's amendments.** **Decided at D6** (2026-11-10,
     outcome 13): they stand. Every bundled preset is generated from its verified facts (`generate_preset.py`, its
     `--check` a step of `check_release.sh` in every mode); hand-written stay `[preset] generation`, the `[declare]`
     keyed namespaces and the `read` facts' values, in the generator's marked blocks, and S19.2's bases (veto list
@@ -582,7 +583,7 @@ the facts tooling reads it.
     recomputed (*How values are checked*; item 45): the audits found 0 wrong of 430 and 1 of 74, the recomputation
     the larger defects. The document check's amendments of this plan stand where each is marked `(ADD-A146)`
     (item 43).
-  - **The register's open entries, by kind.** **Decided at D6** (2026-11-12, outcome 14; the D6 register design):
+  - **The register's open entries, by kind.** **Decided at D6** (2026-11-10, outcome 14; the D6 register design):
     of the register's rows of kind `d`, the fifteen choices of model form the checkpoint examined are fourteen
     settled from the sources (U180 and U504 in part) and U555, moved with `single_click_activates` to the containers
     unit (*The units 0.8.0 enables*); U473 is by D13's criterion the parking unit *behaviour*'s, 0.7.0's model
@@ -591,7 +592,7 @@ the facts tooling reads it.
   - **The slice's pending facts and the depth of a unit** (ADD-A146): whether the slice's 45,766 pending facts of
     74,029 (the eight `[pending]` tables 1,508 paths, the register 235 rows at M1b's close) are closed before the
     scale-up, and whether 0.8.0 states each widget at the depth 0.7.0's model distinguishes, the further variant
-    sets deferred to a named later unit as S6.1 defers `Placement`. **Decided at D6** (2026-11-12, outcome 2; the D6
+    sets deferred to a named later unit as S6.1 defers `Placement`. **Decided at D6** (2026-11-10, outcome 2; the D6
     staging design): each entry at that depth, the rest in named later units of depth (*The depth 0.8.0 states*;
     *One rule for every model field*), the facts already written staying and `ios-26` staying (D13). So 1,376 of
     the pending facts and 682 of the listed paths stay on 0.8.0's path, the four small tables M2's task 0's, the rest
@@ -599,7 +600,7 @@ the facts tooling reads it.
   - **`docs/platform-facts.md`** (the ledger's queue #170): whether the generated file stays committed. It is
     50,121,732 bytes since `72dd07b4`, where a push to GitHub is warned at 50 MiB and blocked at 100 MiB (GitHub's
     documentation, as read for D6), and grows with every measured fact; the largest facts file,
-    `docs/facts/ios/button.toml`, is 34,075,260 bytes. **Decided at D6** (2026-11-12, outcome 8): not committed; CI
+    `docs/facts/ios/button.toml`, is 34,075,260 bytes. **Decided at D6** (2026-11-10, outcome 8): not committed; CI
     and each release generate it, the gates running the generator and its self-test; `check_facts.py` enforces a
     split of a facts file by key prefix past 40 MB; the local tools that cite its lines read the facts or a
     generated copy (R22 asks that the readable tables are generated from the facts, not that a copy is committed,
@@ -608,18 +609,18 @@ the facts tooling reads it.
     `generate_platform_facts.py --check` stays in the gates (veto list item 50).
   - **The model's cost to an application,** which no gate measured: per preset, in a release build, the load, the
     resolution, the query, the memory and the bytes a preset adds, beside 0.7.0's figures. **Decided at D6**
-    (2026-11-12, outcome 1; the D6 load design): the slice misses any budget (four presets profiled loaded in 259 ms
+    (2026-11-10, outcome 1; the D6 load design): the slice misses any budget (four presets profiled loaded in 259 ms
     to 17.6 s and peaked at 18 to 1,827 MiB above the load's start, where 0.7.0 loads in under 1 ms), so the budget
     is *The load budget*, its numbers applying as proposed until the maintainer changes one (veto list items 9 to
     23), and the repair is M2's load path, before M3a's first widget unit (item 46).
   - **D10's licence classes:** whether D10 covers what the crate ships (an MIT port, `src/platform/win_ui.rs`, and
-    a GPL reference, Breeze's kstyle for M2.1's `Breeze` engine). **Decided at D6** (2026-11-12, outcome 11): D10
+    a GPL reference, Breeze's kstyle for M2.1's `Breeze` engine). **Decided at D6** (2026-11-10, outcome 11): D10
     names four classes (*D10*, *Extended at D6*; veto list item 41).
   - **The readers unit:** whether it belongs to M3a, its stated need having been met at M1b. **Decided at D6**
-    (2026-11-12, outcome 4): it moves to the start of M3b, and M3a keeps each unit's own readers step (*The units
+    (2026-11-10, outcome 4): it moves to the start of M3b, and M3a keeps each unit's own readers step (*The units
     0.8.0 enables*; *M3*): the comparison of all four readers with 0.7.0's at `2796b26e` found no read whose target
     lies outside 0.8.0's other units (veto list item 47).
-  - **The rationale's amendments** of the document check (ADD-A146). **Decided at D6** (2026-11-12, outcome 12):
+  - **The rationale's amendments** of the document check (ADD-A146). **Decided at D6** (2026-11-10, outcome 12):
     the five stand, as the rationale now states them: `ios-*`'s accent alone, what UIKit draws in the tint a measured
     derivation over it, U706's second-tint run scheduled in M2 (R2.6, R4, R19); a palette suspended, not refused,
     under a followed scheme it lacks (R19); the ten bundled palettes 0.7.0's ten schemes, each the variant with
@@ -627,28 +628,28 @@ the facts tooling reads it.
     it, the KDE reader's `Xft.dpi` read going (R10) (veto list item 42).
   - **The rationale's open questions** the document check left (ADD-A146), each answered by an outcome:
     - R-1, R21's release condition and R4's Apple list against the slice's numbers (the Apple presets held 45,538
-      of the 45,766 pending facts): **Decided at D6** (2026-11-12, outcome 2): a unit staged by its depth (*The depth
+      of the 45,766 pending facts): **Decided at D6** (2026-11-10, outcome 2): a unit staged by its depth (*The depth
       0.8.0 states*), `ios-26` staying in 0.8.0 (D13; the rationale's R4 and R21; veto list item 1).
-    - R-3 with R-12, a typed role the platform names no counterpart for: **Decided at D6** (2026-11-12, outcome 5):
+    - R-3 with R-12, a typed role the platform names no counterpart for: **Decided at D6** (2026-11-10, outcome 5):
       one rule, native-theme's labelled mapping, outside the gate's platform comparison, never absent and never a
       stated fact; on `macos-*` and `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them,
       the pairings listed in the catalogue's *global roles* (`status`) for the maintainer's veto; the text slots'
       mappings are labelled alike; R25.17 names `ios-*` too (the rationale's R5.1, R10, R25.17; the specification's
       S3, S4.4, S17; veto list item 3). U456 closes with the pairings.
-    - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-12, outcome 3; the D6
+    - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
       staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
       trial measures them (M2's task 1), Apple stating no timings (at `7430a0a2` 21 of the 27 macOS and 43 of the 48
       iOS motion facts pending, by the D6 staging design's count) (veto list items 2 and 6).
-    - K4-2, what a palette states for the keyed roles a preset's values read: **Decided at D6** (2026-11-12,
+    - K4-2, what a palette states for the keyed roles a preset's values read: **Decided at D6** (2026-11-10,
       outcome 7): over a preset whose widgets read keyed colours, a palette reaches them by a stated mapping method,
       or it is not offered over that preset, built with the palettes in M2's task 4 (the specification's S14, the
       rationale's R19; veto list item 49).
     - W3-3 with W5-15, what a connector draws where a preset declares unavailable a widget 0.7.0 resolved there
       (`tab`, `card`, `expander`, `status_bar`) or a stand-in widget whose unit is enabled: **Decided at D6**
-      (2026-11-12, outcome 6): the declarations stay, D13's sentence restated to the presets whose platform draws
+      (2026-11-10, outcome 6): the declarations stay, D13's sentence restated to the presets whose platform draws
       the widget, and the connectors' contract lists per preset the entry a connector draws its toolkit's widget
       from (the specification's S21.3; *Widgets 0.7.0 styles through stand-ins*; veto list item 48).
-  - **The documents' next check.** **Decided at D6** (2026-11-12, outcome 15): a full pass over all documents after
+  - **The documents' next check.** **Decided at D6** (2026-11-10, outcome 15): a full pass over all documents after
     the batch that applies D6, then each unit's batch as it is written (*Spec changes*; veto list item 53).
 
 ### Settled by logic (recorded)
