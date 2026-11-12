@@ -80,6 +80,14 @@ closed (R21, D13; 0.7.x patches, D11); each follow-up release has its own branch
   Rejected: every task waiting for a whole CI run (hours a task, for a gate most tasks' changes cannot move); a
   budget alone, as D6's item had it (before two speed-ups three of the slice's eight shards were cancelled at the
   six-hour job limit, run 42534030431, and what a unit adds cannot be extrapolated from one widget).
+- **The load budget** (ADD-A147; D6, outcome 1). What the model costs an application (a preset's load, a change, a
+  resolve, a query, memory and the binary's bytes) is held to *The load budget*'s lines, per preset, in a release
+  build on the measuring machine, a case over its line passing only under a named miss with its cause. The work a
+  call does (the runs of the checks over combinations, the reads of a preset, a resolution or query built again) is
+  gated in `cargo test` on every platform; the times and the bytes by the budget step (`scripts/check_cost_budget.py`
+  over the probe's output, against `scripts/cost_budget.toml`), on the measuring machine only, from M2's load task 6:
+  a unit run in each unit's gate (*M3*) and the release run in `check_release.sh`'s full run, never in `cargo test`
+  or on CI.
 
 ## The transition from today's model
 
@@ -589,7 +597,11 @@ the facts tooling reads it.
     being built (`native-theme/tests/facts_gate/run.rs`, `thread_count`). The measurement is made on the slice for
     D6, through the synthetic route while no bundled preset builds a theme. With a budget set, the per-unit gate
     gains its check; if the slice already misses it, a task before M3a (a compact preset form built at compile time,
-    or resolution by need) costs less than one after it.
+    or resolution by need) costs less than one after it. **Decided at D6** (2026-11-10, outcome 1; the D6 load
+    design; ADD-A147): the slice misses it (four presets profiled loaded in 259 ms to 17.6 s and peaked at 18 to
+    1,827 MiB above the load's start, where 0.7.0 loads in under 1 ms), so the budget is *The load budget*, its
+    numbers applying as proposed until the maintainer changes one, and the repair is M2's load path, before M3a's
+    first widget unit.
   - **D10's licence classes:** whether the decision covers what the crate ships. D10 decides for LGPL references
     and for an own port of Apache-2.0 material-color-utilities, and gives the expression `(MIT OR Apache-2.0 OR
     0BSD) AND Apache-2.0`. The crate's `license` is `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT`
@@ -1243,13 +1255,144 @@ staying: `adwaita` 0, `kde-breeze` 4, `macos-monterey` 93, `macos-tahoe` 76, `io
 `windows-11` 54, `material-3` 9 (682 in all). A table that differs is reported with the paths that differ, and the
 task does not close until the orchestrator has decided it.
 
+**The load path** (D6, outcome 1; the D6 load design; ADD-A147). The load tasks, named as the design names them
+("load task 1" is not M2's task 1), and the trigger step run beside M2's numbered tasks, each placed by what must
+come before it.
+What they build: **A**, trust (a bundled preset whose `[pending]` table is empty, and the layers `Theme` derives from
+it alone, checked by the build test and the facts gate through the validating construction and not again at run
+time: R2.8, S8, S19.1); **B**, the checks over combinations run only for a layer whose stack, as they read it, the
+change altered (S12's *What a change re-checks*), with a thread-local differential switch that re-runs a skipped
+change on the full path in the crate's own unit tests; **E1**, one read of a preset per process while a theme holds
+it (a `Weak` per preset); **E2**, `WindowState` keeping the resolution it returned (S8). Each diff gets its `review`
+before it merges; none changes a preset's value or a fact; each task records the budget's cases its change can move
+(*The load budget*, *Who makes records*). The defect the design found in today's checks (two sides of a corner
+compared by their stated numbers whatever their unit, `SideLen::same` in `native-theme/src/validate/combos/mod.rs`)
+is fixed before task 0 on its own branch, `side-units`.
+
+- *Before the trigger step:* **load task P, the probe** (`implement`). `native-theme/tests/timings.rs`'s
+  `bundled_preset_costs` (the ledger's queue #253) merged and extended to every case of *The load budget*: one
+  process per pass for line 1; the bytes in a test binary of its own with `peak_alloc` 0.3 as a dev-dependency, one
+  test thread (lines 2, 3, 11); line 1 on a preset whose table is not empty as the case `read`, a lower bound, timed
+  by a doc-hidden `native_theme::gate` function that returns figures only, never a theme or a stack; lines 4 to 8 on
+  the plain theme where the table is empty, else on the synthetic theme, labelled so; the embedded bytes; the held
+  bytes per rule for all eight; reference layers for line 12; `scripts/check_cost_budget.py` and
+  `scripts/cost_budget.toml`. *Done:* the probe runs the cases it is asked for by name and lists, when asked, every
+  case it can measure; it samples the runnable count in a thread of its own and prints each pass's mean beside the
+  pass's figure, and each sweep's duration; the script's `--self-test`, on made-up figures, per-pass means and sweep
+  start times, passes and fails one case each way of every outcome the four rules give (*The load budget*), and
+  leaves `cost_budget.toml` byte for byte unchanged; then five recorded runs (three for the bytes), each case's
+  spread, tolerance and first record in the ledger and in `cost_budget.toml`, each case whose record does not meet
+  its line under a named miss of its own; the release build's time and a quiet sweep's duration recorded, the
+  release run's bound raised where three sweeps take more than half of it. The step is not wired into
+  `check_release.sh` before load task 6, so it needs no `PLAN_EXCLUDED` entry.
+- **The trigger step** (`worker`, release, on the measuring machine), once the staging task has merged with its
+  regenerated presets passing its gate, and before the connectors' design is checked; nothing else waits for it: load
+  task P's probe over the eight presets as the staging task leaves them, each trigger of *The load budget*'s
+  deferred parts evaluated on them against the lines as they stand. *Done:* the figures and each trigger's outcome in
+  the ledger; task P's records on the regenerated presets replaced from rule 3's runs, each case whose record does
+  not meet its line under its named miss; each part whose trigger fired named as a task before M3a's first widget
+  unit; where line 5, 7 or 11 is missed, its part's decision (the kept rules held by reference, a faster query)
+  taken with load task 4a.
+- *Before the connectors' design is checked* (task 1's first part; it states who keeps a query's result and how a
+  connector resolves): the class-2 lines of the load design and R2.8's sentence, which ADD-A147 applies; and **load
+  task 4a, the query and resolve profile** (`worker`, on the `cost-profile` branch, release, on the measuring
+  machine). *Done:* where `style`'s 32–53 µs and `resolve`'s 0.23–1.47 ms go on the four profiled presets, by phase,
+  traced to raw files; the decisions on load task 5, a faster query and the kept rules held by reference stated from
+  it.
+- *Before the first connector's code* (task 1's connectors, which are written against these types):
+  - **Load task 1, trust and B** (`implement-hard`: B's comparison and the split of `check_stacked` leave judgment,
+    and a wrong choice there would pass the tests and be unsound). The stack's checking, `Full` or `Incremental`;
+    the validating construction (`Stack::new`, `Stack::synthetic`, `preset_stack`, `synthetic_stack` and the facts
+    gate's constructions, `Full`) and the trusted one (`Stack::bundled(id, scheme)` and
+    `Stack::set_preset_bundled(id)`, which take a `PresetId` and no text, read `id.source()` through E1's cache and
+    are `from_preset`'s and `set_preset`'s alone; a `#[cfg(test)]` twin `Stack::bundled_text`); B; the switch; E1.
+    *Done:* the build test (S19.1) through the validating construction, with its items: each preset accepted, each
+    trusted form passing the full path's check of its layer, and the stacks `Theme::from_preset` and
+    `Theme::set_preset` build equal to the validated ones; its controls, each with the switch off (a fault only the
+    checks over combinations find, refused by the build test and accepted by the trusted twin; a listed form with a
+    token cycle added, refused; a preset whose inputs read each other in a cycle, refused; a test-only hook that makes
+    `Stack::bundled` build a different stack failing the equality); every existing test that relies on
+    `preset_stack(None, …)` or `validates(None, …)` refusing, and the gate's tests, unchanged and passing; G1 (the
+    runs of the checks over combinations a call makes, a thread-local counter) = 0 with the switch on after
+    `from_preset` on each preset whose table is then empty, `pick`, `set_flavor`, `set_contrast` with no palette,
+    `set_accent` with no reader (on `kde-breeze` too), `set_preset` to another of them, and the Windows fixture's
+    reading set, re-read unchanged and re-read with another accent; G1 ≥ 1 after a structural `add_layer`, a
+    `replace_layer` changing one rule's `when`, the KDE fixture's reading set and re-read at the other scheme,
+    `set_accent` and a palette over it, `set_contrast` under a KDE port beneath a structural layer, and `set_preset`
+    with a structural application layer (the KDE cases on CI's Linux job, where the reader is compiled); negative
+    controls, the switch off and on: a `set_preset` whose application layer names a key the new preset does not
+    declare, a reading whose inputs form a cycle beneath a layer stating one of them, and `add_layer` of an
+    inputs-only layer with an undeclared or ill-typed input (G1 = 0), each refused; the switch on over the crate's
+    unit tests, the mutation tests' stacks and the tests that change a validated stack made `Incremental`, their
+    expectations unchanged, and a wrongly forced skip failing (its positive control); G2 (the reads of a preset the
+    calling thread makes while its own theme holds one, thread-local) at most 1, two themes of one preset holding
+    one read, and `from_system`'s path through the KDE and GNOME fixtures reading once; `Theme` asserted `Send` at
+    compile time; every statement of the old rule ("every change validates the whole stack") worded as S16's
+    sentence: the doc comments of `native-theme/src/theme/mod.rs` and `src/resolve/mod.rs`, the crate's
+    documentation in `src/lib.rs`, the build test's own in `src/theme/tests.rs`, `native-theme/README.md`, the
+    workspace's `README.md` and the CHANGELOG's 0.8.0 entry; the build test's time in debug and release and the facts gate's time
+    (`NT_FACTS_GATE_TIMING=1`) before and after in the ledger, the build test's added items moved into the facts
+    gate's per-preset steps where they would pass a limit of *The facts gate's cost*; the records of lines 1 to 4.
+  - **Load task 3, the resolution kept** (`implement`): E2; `Resolution.theme` an `Arc<ResolvedTheme>` (S8).
+    *Done:* a second `resolve` with nothing changed returns `Unchanged` and the same handle (`Arc::ptr_eq`; G3) and
+    fails if it builds one; every `Theme` mutation and every field of `WindowConditions` and `ReaderState` changed
+    alone gives a new handle, the fields taken by exhaustive destructuring; the records of lines 3, 5, 6 and 11.
+  - **Load task 5, the query cache** (`implement-hard`), only where load task 4a and the connectors' design show a
+    connector querying every frame and no repair of the query bringing it near line 8: the cache inside the
+    resolution, `Scope` a handle carrying its resolution's identity (S8's class-2 line, written with this task).
+    *Done:* every query of the gate's fixture combinations answers the same with the cache and without; each field
+    of `Element` and `ElementData` changed alone gives the uncached answer (the key by exhaustive destructuring); a
+    list longer than the cache's bound answers correctly; G4 (a repeated query evaluates nothing); the records of
+    lines 3, 5, 7, 8 and 11. Where it is not built, line 8 is not binding, its reason that design's ledger row.
+- *Before M3a's first widget unit* (at M2's close):
+  - **Load task 2, colour values out of the checks' sight** (`implement-hard`: the audit is judgment). *Done:* each
+    `Fact` read of the checks (the design's list of thirty-four lines) and every equality on a `Fact`, `Val` or
+    `OpKind` under `native-theme/src/validate` annotated in the ledger with the place it reads and why no colour
+    place reaches it; a stated colour flattens to `Unknown` (a test); B's compared form sets aside the values read as
+    `Unknown`, its cost per op in the probe; every bundled preset's and `src/validate/tests.rs`' problems identical
+    before and after; with the switch on, G1 = 0 after a KDE re-read differing only in its accent and results at the
+    same scheme, a macOS re-read with another accent and a reading differing only in a string, and G1 ≥ 1 after a
+    reading adding a colour statement and one changing a font size; S12's class-2 line (a stated colour read as
+    stated); the records of lines 1 to 4.
+  - **Load task 4b, `from_system` on the readers' fixtures** (`implement`, its diff reviewed before it merges, since
+    the budget step runs its test from then on; its runs release, on the measuring machine, after load tasks 1 and
+    2). *Done:* per reader, over its own preset (through a test-only construction that skips the table's refusal
+    while the table is pending): the reading's size in flattened ops; the first reading (line 10); a re-read of an
+    identical reading, of another accent, of the other scheme and of another font size (line 4); five runs of each,
+    their spread, tolerance and first records, each case whose record does not meet its line under its named miss;
+    the test added to the budget step's runs; the decision on load task 7 stated from them.
+  - **Load task 6, the budget step in the gate** (`implement`): the step enters `check_release.sh`'s full run and
+    M3's gate per unit. *Done:* the step's release run green on the branch, so every armed case was compared, every
+    case armed or not binding, each case whose record does not meet its line under a named miss with its cause; its
+    self-test as in load task P. The project's own parallel lanes keep the runnable count over 10 by themselves, so
+    other lanes pause for the release run, or it sweeps again for 30 minutes and fails "machine busy".
+  - **Load task 7, the readings proven at build time** (`implement-hard`), only where load task 4b shows a reader's
+    first reading over line 10, or a re-read that changes its compared form over line 4: per reader, its maximal
+    reading over its own preset validated by the build test, which records every statement whose `Fact` a check
+    reads and proves the rest removable, and at run time a reading over a trusted form of its own preset, with no
+    application layer or palette, accepted by membership. *Done:* `Fact`'s payload readable only through the
+    recording module, its equality included (the `PartialEq` derive off `Fact`; `Val`'s and `OpKind`'s equality and
+    `curves.contains` through the module), so a pattern or a `==` on a payload outside it does not compile; the
+    proven places per reader; the build test's item for them, failing for a fixture preset that states an
+    expression at a proven place (its positive control); G1 = 0 for each reader's maximal fixture reading and each
+    with its removable statements left out, and G1 ≥ 1 for a statement outside its proven places, over a preset not
+    its own and with an application layer present; the switch over the readers' corpus; the build test's added
+    time; S12's class-2 line (the readings proven at build time); the records of lines 4 and 10, and of lines 1
+    and 2 under a veto of A.
+  - **Each part whose trigger fired** at the trigger step (*The load budget*'s deferred parts), by its agent type
+    there. *Done:* its trigger line met in the probe on the presets that fired it, its records made and its named
+    miss removed; or the miss that remains named with its cause and its new record, and reported to the maintainer
+    with D6's other figures.
+
 0. **What the connectors resolve** (ADD-A146). No bundled preset builds a theme while its `[pending]` table lists a
    path: `Theme::from_preset` refuses it (S17), `from_system` builds through `from_preset`, and the tables are empty
    only at a release (S21.1). So before task 1, and after the staging task above (its gate green; ADD-A147), the
    presets whose table is small are brought to an empty one by their lanes' rounds (`adwaita` 0 paths, `kde-breeze`
    4, `material-3` 9, `windows-11` 54 once the staging task is merged; a row with no route among theirs goes to the
    maintainer first, *How values are checked*), so that at least `adwaita` and `kde-breeze` build
-   through `from_preset`. Until a preset's table is empty, a connector's tests reach it
+   through `from_preset`. A preset whose table it empties takes its plain route's records in
+   `scripts/cost_budget.toml` ("first measured by" this task until then), and its synthetic route's cases and line
+   1's `read` leave the file (*The load budget*, *Who makes records*; ADD-A147). Until a preset's table is empty, a connector's tests reach it
    through the hidden `native_theme::gate`, which gains one function returning the synthetic `Theme` of a bundled
    preset, as S19.1's build test makes it (`from_preset_synthetic` over the preset's synthetic layers); the
    connectors' dev-tests and slice examples (task 1) call it, and no connector's public API names it. A connector test over every preset
@@ -1315,8 +1458,11 @@ task does not close until the orchestrator has decided it.
    picks (the guide's own example value where it gives one, else the middle of the stated range; the picks listed in
    the ledger for the maintainer's veto); the KDE ports, with their measured facts added to the accent run; the
    projects' published colours as facts (a palette lane and its verifier); the gate's palette run, by S17's *The
-   palette run* (each pick skipped).
-   Beside it, `material-3`'s accent-derivation layer (its `m3_role` statements and S8's leave-out, S9.2), the gate's
+   palette run* (each pick skipped). The build test's trusted forms gain each bundled palette's source over each
+   preset it serves, under each contrast condition (S19.1), and line 4's case of a bundled palette applied or removed
+   takes its first record ("first measured by" this task until then; *The load budget*; ADD-A147).
+   Beside it, `material-3`'s accent-derivation layer (its `m3_role` statements and S8's leave-out, S9.2; its forms
+   join the build test's trusted forms, S19.1, ADD-A147), the gate's
    perturbed stand-in stating no `accent` there and the `material-3` accent run (S17; ADD-A134, ADD-A142; ledger queue
    #185), after the Material lane restates the preset's baseline (its roles Compose's sourced literals, its
    `input.accent` the baseline `primary`, U550) and records the run's facts for the accents it chooses.
@@ -1376,6 +1522,10 @@ values stay deferred until its commit; M3b's other units keep this order:
   of its built-in baseline. Gate:
   `generate_widgets.py --check` and `--self-test`, `check_facts_trace.py --self-test`, `check_ledger.py --self-test`,
   `verify_facts.py --self-test`, `cargo test -p native-theme`.
+- **The load calibration, the second look** (`worker`; D6, outcome 1; the D6 load design; ADD-A147): after M3a's
+  first widget unit (window and chrome), the probe over the eight presets as that unit leaves them, and each trigger
+  of *The load budget*'s deferred parts evaluated again on its figures, each outcome in the ledger; a part that fires
+  there is built before M3a's second unit. Beside the facts gate's calibration (*The facts gate's cost*).
 
 A ledger destination `M3 unit <name>` names the unit in whichever part it runs. Per unit:
 
@@ -1427,7 +1577,10 @@ gate, and no measuring).
   units` listing no new or changed fact of the enabled units, pending ones apart, since each platform's verified
   commit. `docs/facts/verified.toml` holds that commit per platform, the one its facts were last verified at; the
   orchestrator moves it when every verification unit of a delta has closed. Without it a fact a lane adds or edits
-  after its unit's verification reaches the gate and the presets with nothing failing.
+  after its unit's verification reaches the gate and the presets with nothing failing. From M2's load task 6, the
+  budget step's unit run (*The load budget*; ADD-A147), which passes a time it could not compare as "not compared";
+  a unit whose own change grows a named miss past its record (a widget unit enlarging the macOS presets) records the
+  case anew with that cause.
 
 ## M4 — The facts gate, complete for 0.8.0's units
 
@@ -1531,7 +1684,8 @@ dev-dependencies and modules linked again.
     memory, `sweep-target.sh`; the maintainer's merge, tag, release and publish.
 - **The last follow-up release** (the one that enables the catalogue's last unit) also runs the gates the plan first set
   for M4: `check_facts_trace.py` with no option (every trace line) and the facts gate with no fact skipped; then the
-  v0.7.1 documents, `tools/gap-map/`, this plan and the ledger are archived to `docs/archive/`, the scripts go as the
+  v0.7.1 documents, `tools/gap-map/`, this plan, the ledger, and the D6 load design with its checks (a `worker`
+  task; ADD-A147) are archived to `docs/archive/`, the scripts go as the
   table below says, and `check_facts.py` takes its keys from the registry from then on. So do the kept scripts
   that read the catalogue or the units through the deleted ones (ADD-A146): `generate_preset.py`,
   `generate_platform_facts.py` and `verify_facts.py` import `spec_catalogue.py` or `check_facts_trace.py`, directly
@@ -1643,6 +1797,138 @@ dev-dependencies and modules linked again.
   without a decision).
 - **Evidence** is committed to the evidence repository (GitHub's artifacts expire), images losslessly compressed
   (*The evidence repository*; decided by the maintainer on 2026-11-08, D6's evidence item).
+
+## The load budget
+
+Decided at D6 (2026-11-10, outcome 1; the D6 load design, its section 2; ADD-A147). Per preset, in a release build,
+on the measuring machine. Every number is a judgment, proposed by the design and applying until the maintainer
+changes it (D6's veto list items 9 to 23); a changed line is an edit of `scripts/cost_budget.toml` with its ledger
+row, which the next run comparing the line's cases (at the latest the release run) applies, and the deferred parts'
+triggers resting on it are evaluated again there. The rules behind the lines: *per frame*, the theme takes under a
+tenth of a 120 Hz frame; *between two frames*, one change, one resolve and every part of a 300-part window asked
+again fit one 60 Hz frame; *once*, the load alone fits one 60 Hz frame. Against 0.7.0 these numbers give up a load 21
+to 35 times slower, a resolve 43 to 50 times, ten or more times the memory and 6.8 times the bytes.
+
+| # | Line | Budget | What sets it |
+|---|---|--:|---|
+| 1 | `Theme::from_preset`, a preset's first load in the process | 16 ms | *once* |
+| 2 | peak memory during that load, above the level before it | 16 MiB | twice line 3, transiently |
+| 3 | memory kept: the theme and one window's resolution | 8 MiB | one full-HD surface (7.9 MiB) |
+| 4 | a change every application makes: a reader's re-read accepted, `pick`, `set_flavor`, `set_contrast`, `set_accent`, a bundled palette applied or removed, `set_preset` to a preset a live theme holds | 0.5 ms | *between frames*: 0.5 + 1 + 300 × 0.05 = 16.5 ms |
+| 5 | `Theme::resolve`, something changed | 1 ms | the same sum |
+| 6 | `Theme::resolve`, nothing changed | 10 µs | *per frame*: 0.01 + 300 × 0.002 = 0.61 ms |
+| 7 | a styled query, computed | 50 µs | line 4's sum |
+| 8 | a styled query, repeated in one resolution | 2 µs | line 6's sum |
+| 9 | bytes a preset adds to a binary | 256 KiB | between the data's compressed size and every binary carrying all eight presets |
+| 10 | `Theme::from_system`, the theme's own part (the read of the preset and the acceptance of the reading) | 16 ms | *once* |
+| 11 | peak memory during `Theme::resolve`, above the level before it | 8 MiB | no more than line 3 |
+| 12 | the cost of adding an application layer that states structure | reported, no line | a line set at the load calibration if the maintainer wants one |
+
+**What gates it.** The work, in `cargo test` on CI's three platforms: G1, the runs of the checks over combinations a
+call makes (0, or at least 1, as load task 1 lists); G2, a preset's reads on the calling thread while its own theme
+holds one, at most 1; G3, a `resolve` with nothing changed building nothing; G4, if the query cache is built, a
+repeated query evaluating nothing. The times and the bytes, by the budget step: `scripts/check_cost_budget.py` over
+the probe's output, on the measuring machine only, from load task 6, in a **unit run** (each unit's gate, *M3*) and
+the **release run** (`check_release.sh`'s full run), never in `cargo test` or on CI. `scripts/cost_budget.toml`
+holds each line's number and, per line, preset and case (the route, plain or synthetic, part of the case), either
+its **record** (a figure, its tolerance as a fraction, the ledger row that made it) or why it has none ("first
+measured by" a named task, or "not binding" with its ledger row); a case with a record is **armed**. It also holds
+the **named misses**, each keyed by one case, with its cause (a task or a section of the load design that removes
+it) and its ledger row. A figure or a record **meets its line** where it is at most the line. Four rules:
+
+1. **Bound.** A case whose record does not meet its line has a named miss of its own, however close; a case that
+   meets its line needs none; a case has at most one (naming one or more causes). A named miss without its cause or
+   ledger row, a second one of a case and one keyed by a case the file does not list fail either run as file
+   defects. With t the case's tolerance, a figure f fails where f > bound × (1 + t), the bound being the line, or,
+   under the case's named miss, its record where that exceeds the line. A miss whose record meets a raised line is
+   no error: the line is its bound, and it is printed as one that may go where its figure meets the line. A figure
+   over a met line by less than its tolerance passes, printed "over its line, within its tolerance". Under a named
+   miss whose record exceeds its line, f < record × (1 − t) prints "record stale: re-record <case>", which fails the
+   release run. Every figure is printed beside its line and its record.
+2. **Figures.** Bytes are counted by `peak_alloc` 0.3 (a hand-written `GlobalAlloc` is an `unsafe impl`) in a test
+   binary of its own run with one test thread, and the preset files' sizes. A time is the lowest median of its
+   passes that count, the passes being three sweeps over every case (one process per pass for lines 1 and 10; a
+   figure under 1 µs timed over batches of 100 calls, 201 samples); the step sets nice 19 and idle I/O itself. While
+   a pass runs the probe samples the runnable count (the first number of `/proc/loadavg`'s fourth field) every
+   100 ms in a thread of its own; a pass counts where its mean is at most 10, the step's own threads included, and a
+   time counts only where at least two of its passes count. The release run sweeps again over the times with fewer
+   than two, starting no sweep later than 30 minutes after the build's end and judging a sweep already running; a
+   time still short fails with "machine busy, run again", no verdict on the figures, the bytes still compared. A
+   unit run makes the three sweeps alone and prints such a time "not compared"; the bytes are compared either way.
+3. **Tolerance.** For a measured figure, twice the spread (the highest over the lowest, less one) of the runs that
+   made the record (five for a time, three for bytes, measured as the release run measures), at least 5 %; for an
+   exact count (line 9's sizes) 0. The record is the lowest of those runs. A re-record of a case under a named miss
+   keeps the old record r where the new lowest lies within r × (1 − t) and r × (1 + t); only a record that changes
+   needs a cause. A spread over 10 % is a defect of the probe, fixed before the record is made, so no tolerance
+   exceeds 20 %.
+4. **The release.** The full run passes only where its release run passed on the release commit (after "machine
+   busy", the step alone run again on that commit) and every case is armed or not binding. The file defines the
+   cases: the step asks the probe by name for each armed case; every case the probe can measure is in the file,
+   armed, "first measured by" a named task or not binding, and one that is not fails either run as "unlisted case";
+   a case asked for and not reported fails either run as "not reported". A unit run prints a case with no record,
+   asks nothing for it and compares nothing, and passes a time "not compared". No run writes the file: the step
+   prints the named misses that may go, and the release's ledger row holds the figures.
+
+The load limit of 10, the 30-minute bound and the 5 % floor are judgments until load task P's runs; where three quiet
+sweeps take more than half the bound, the bound is raised with its ledger row. Rejected: the one-minute load average
+(it lags, both rising and falling); records written by a run (a named miss would grow by its tolerance at every
+passing run); a unit run that waits for a quiet machine (unit gates fail on a machine other projects build on, while
+the release run compares every armed case anyway); a bound at k times the line (a named miss unbounded, a met line
+passing k times over); a ratchet at five times the record (no release bound to its line); figures reported only (no
+regression of a read, a resolve or a query failing).
+
+**Who makes records.** Only a deliberate act with its ledger row changes a record or a named miss: a task that
+changes a cost, for each case its change may move by more than its tolerance, judged before the change is written
+(load task P every case of lines 1 to 9 and 11; load task 1 lines 1 to 4; load task 2 lines 1 to 4; load task 3
+lines 3, 5, 6 and 11; load task 4b line 10 and line 4's re-reads; load task 5 lines 3, 5, 7, 8 and 11; load task 7
+lines 4 and 10, and lines 1 and 2 under a veto of R2.8's sentence; a part a trigger brings, the lines it changes);
+the trigger step, on the regenerated presets; the load calibration after M3a's first widget unit; M2's fourth task,
+for line 4's bundled palette case; the task that empties a preset's table (M2's task 0 for the small ones), for its
+plain route; a unit whose own change grows a named miss past its record; a stale record's re-record with the fall's
+cause, which the release run requires; and the release task, which gives a named miss with its cause to a case
+printed "over its line, within its tolerance" at two consecutive releases. An act that records a case over its line
+names its miss, one whose record meets the line removes it. Every line is armed from its first record (lines 1 to 9
+and 11 from load task P's, line 10 and line 4's re-reads from load task 4b's, line 4's palette case from M2's fourth
+task's); line 8 is not binding where the connectors' design shows no connector querying every frame, and line 6 is
+armed whatever the connectors do, guarding E2.
+
+**What it gives.** A regression past a bound fails at the first run that compares it, at the latest at the release;
+a case over its line passes only under its own named miss, up to its record and tolerance, and the release run fails
+on a stale record. A figure that grows while under its line does not fail; each release's ledger row shows the
+growth. A met line stays exceedable within its tolerance, at most 20 %, by design (line 1's 16 ms may read 19.2 ms
+at every run): the mark goes into the release's ledger row, and two consecutive releases bring the named miss
+above. A unit run on a busy machine says nothing of the times; the release run compares them all.
+
+**The deferred parts and their triggers.** A trigger is a measured miss of a line. Each part below is built only
+where its trigger fires: at the trigger step on the presets the staging task regenerates (lines 1, 2, 3, 5, 7, 9
+and 11; lines 4, 6, 8 and 10 with the load tasks that bring them), or at the load calibration after M3a's first
+widget unit. A part that fires at the trigger step is built before M3a's first widget unit, one that fires at the
+calibration before its second. The projection to thirty widgets is printed beside each figure and fires nothing.
+
+- **Sparse patches** (each block's patch boxed in a part's patch, so a rule costs what it states; `implement`, its
+  gain measured on one preset first by a `worker`): line 3 missed in the probe's kept bytes, or line 2 after the
+  compact form, on a preset whose held bytes per rule are the cause.
+- **The compact form** (generated beside the presets and committed), or the text compressed at compile time: line 1
+  or line 9 missed. A `worker` spike first (decode time and size on `windows-11` and `material-3`); if it proceeds, a
+  design note checked as every design document, then `implement-hard`; the compressed text `implement`.
+- **Building by need** (a trusted preset's widgets decoded at their first query; `implement-hard`): line 1 missed
+  after the compact form, or its spike decoding no faster than the text's read.
+- **The kept rules held by reference** (`Resolution`'s kept rules shared, not cloned; `implement`): line 5 or 11
+  missed, and load task 4a's profile showing those clones are the cost.
+- **Resolution by need** (a part's rules resolved at its first query, kept per resolution; `implement-hard`): line 5
+  or 11 missed after the rules are held by reference.
+- **The readings proven at build time** (load task 7): in load task 4b, line 10 missed by a reader's first reading,
+  or line 4 by a re-read that changes its compared form.
+- **The repairs inside the checks** (the reuse memory extended to every check, the repeated enumerations removed;
+  `implement-hard`): the limits of *The facts gate's cost* reached; line 12 set and missed; or, after load task 7, a
+  reader's statements left on the checks with line 10 or line 4 still missed.
+- **A faster query** (the repair load task 4a's profile names; `implement`): line 7 missed.
+- **The query cache** (load task 5): a connector querying every frame and no repair bringing the query near line 8.
+- **A feature per preset** (`implement`): line 9 missed for the eight together after the compact form, or the
+  maintainer's wish.
+
+Line 12's application layer runs the checks once when added and again whenever something beneath it changes, so
+until a line is set such a layer is added before the first frame.
 
 ## Spec changes
 
