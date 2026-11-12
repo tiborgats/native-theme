@@ -551,7 +551,7 @@ class Predicate(NamedTuple):
         if found is None:
             return True
         platform, when = found
-        return any(self.depth.unit(platform, str(entry[2]), when, preset) is None
+        return any(self.depth.of_enabled(platform, str(entry[2]), when, preset)
                    for preset in check_facts_trace.check_facts.PLATFORMS.get(platform, ())
                    if check_facts_trace.for_preset(when, preset))
 
@@ -986,8 +986,8 @@ default_size = "regular"
     # unit's, its row too where every pending fact naming it is; a pending declaration keeps its widget's unit
 
     class Later:
-        def unit(self, platform, key, when, preset):
-            return "styles" if "flat" in when.get("variants", ()) else None
+        def of_enabled(self, platform, key, when, preset):
+            return "flat" not in when.get("variants", ())
 
     predicate = Predicate(Later(), {("docs/facts/gnome/f.toml", 8): ("gnome", {"variants": ["flat"]}),
                                     ("docs/facts/gnome/f.toml", 9): ("gnome", {})})

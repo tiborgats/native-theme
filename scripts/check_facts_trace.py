@@ -16,6 +16,8 @@ Run from the repository root:
     python3 scripts/check_facts_trace.py                 # every trace line, whatever its target (M4's gate)
     python3 scripts/check_facts_trace.py --enabled --preset kde-breeze   # as if kde-breeze's preset existed
     python3 scripts/check_facts_trace.py --self-test
+    python3 scripts/check_facts_trace.py --facts         # per preset and directory, the facts of the enabled units,
+                                                         # each later unit's and the stray facts (facts_report)
 
 `--preset <id>` (repeatable, beside any of the first three) checks a preset of check_facts.PLATFORMS as if it
 existed: its platform's lines are findings as they would be once the preset is bundled, so a facts lane sees them
@@ -85,7 +87,8 @@ and scripts/generate_preset.py read too. A trace line is checked by `--enabled` 
 alternative of its selector names only names at depth (line_later(): its variants and flags for the target's entry
 on every preset of its platform, its conditions for the target's path, a size no default in force, a density, a
 direction), so an M3a unit is asked for its rows at depth and no more; `--unit <later unit>` checks the lines one of
-whose alternatives names that unit's names and otherwise names at depth.
+whose alternatives names names of that unit and of units before it alone (S17: a line needing two units is the
+last's, whose gate can check it).
 
     python3 scripts/check_facts_trace.py --self-test   # each rule on fixture gap maps, traces, facts and units
 """
@@ -497,6 +500,7 @@ def context_names(when) -> set:
 
 
 SEARCH_LIMIT = 5_000   # combinations each step of a later unit's search reads for one fact, fewest names first
+STRAY = "stray"   # a fact no later unit's names make hold (S17: reported apart, under no unit)
 
 
 class Depth:
@@ -524,10 +528,11 @@ class Depth:
     (combo_holds()) where its part is drawn: the last presence fact of the part (`<widget>.<part>`) holding there is
     not `absent` or a `drawn_as`, a pending one counting as drawn. A key of no widget (a colour role, an input, a
     token) holds in a combination of the scheme and the conditions at depth for it. Every other fact is a later
-    unit's: the first in the file's order among the units holding a name its positive lists need; where they need
-    none (its part drawn only under a later name, a variant at depth drawn nowhere at depth), the first whose names,
-    added to the enabled ones with every unit before it, make it hold (at most SEARCH_LIMIT combinations read for
-    each); "none" where none does (a stray fact)."""
+    unit's: the units are added to the enabled ones in the file's order, and its later unit is the one at whose
+    adding it first holds (S17, cumulatively: of the units whose names it needs, the last), the search starting at
+    the last unit holding a name its positive lists name and at the first that draws its part, reading at most
+    SEARCH_LIMIT combinations at each step; STRAY where none does (a misspelt name, a size no style takes), a fact
+    reported under no unit."""
 
     def __init__(self, root: Path, items, units=None, later=None):
         self.units = read_units(root) if units is None else units
@@ -628,8 +633,35 @@ class Depth:
         a `not_drawn` entry names counted; with `prefer`, the variant sets and state combinations holding one of its
         names first."""
         read = 0
+        want = {k: listed(when, k) for k in ("variants", "not_variants", "states", "not_states", "conditions",
+                                              "not_conditions")}
+        for rec, sets, states, vectors, sizes_of, densities, nd in self.space(platform, widget, preset, added):
+            sets = sorted((s for s in sets if want["variants"] <= s and not want["not_variants"] & s),
+                          key=lambda x: (not x & prefer, len(x), sorted(x)))
+            states = sorted((s for s in states if want["states"] <= s and not want["not_states"] & s),
+                            key=lambda s: (not s & prefer, len(s), sorted(s)))
+            vectors = [v for v in vectors if want["conditions"] <= v and not want["not_conditions"] & v]
+            for s in sets:
+                for size in sizes_of[s]:
+                    for density in densities:
+                        for st in states:
+                            for cv in vectors:
+                                read += 1
+                                if budget is not None and read > budget:
+                                    return
+                                c = Combo(s, st, cv, size, density)
+                                if not any(combo_holds(x, c, rec) for x in nd):
+                                    yield c, rec
+
+    def space(self, platform: str, widget: str, preset: str, added=frozenset()) -> list:
+        """Per entry in force (stream()), computed once: (its recency sets, its variant sets of names at depth or of
+        `added`'s, its state combinations so, its condition vectors, {variant set: its sizes in force}, its densities
+        in force, its `not_drawn` entries as Matches)."""
+        k = ("space", platform, widget, preset, added)
+        if k in self._combos:
+            return self._combos[k]
+        out = []
         flavours_on = not any(u.name == "flavours" and not u.enabled and u.name not in added for u in self.later)
-        want = {k: listed(when, k) for k in ("variants", "not_variants", "states", "not_states")}
         for flavor, model in self.entries(platform, widget, preset):
             if flavor is not None and (not flavours_on or self.condition_off(flavor, widget, added)):
                 continue
@@ -637,16 +669,13 @@ class Depth:
             variants = {v for v in model.get("variants", []) if isinstance(v, str)
                         and not self.off(widget, preset, "variants", v, added)}
             sets_listed, sets_products = check_facts.drawn_set_lists(model)
-            undrawn = [x for x in model.get("not_drawn", []) if isinstance(x, dict) and x
-                       and set(x) <= {"variants", "not_variants"}]
+            undrawn = [(listed(x, "variants"), listed(x, "not_variants")) for x in model.get("not_drawn", [])
+                       if isinstance(x, dict) and x and set(x) <= {"variants", "not_variants"}]
             sets = {frozenset()} | {frozenset([v]) for v in variants} | sets_listed | sets_products
             sets = [s for s in sets if s <= variants and check_facts.requires_ok(model, s)
-                    and not any(listed(x, "variants") <= s and not listed(x, "not_variants") & s for x in undrawn)
-                    and want["variants"] <= s and not want["not_variants"] & s]
-            states = sorted((s for s in check_facts.state_combinations(model)
-                             if not any(self.off(widget, preset, "states", f, added) for f in s)
-                             and want["states"] <= s and not want["not_states"] & s),
-                            key=lambda s: (not s & prefer, len(s), sorted(s)))
+                    and not any(a <= s and not n & s for a, n in undrawn)]
+            states = [frozenset(s) for s in check_facts.state_combinations(model)
+                      if not any(self.off(widget, preset, "states", f, added) for f in s)]
             axes = model.get("axes") if isinstance(model.get("axes"), dict) else {}
             axis = [c for c in axes.get("conditions", []) if isinstance(c, str)]
             schemes = [c for c in axis if c.startswith("scheme:")] or ["scheme:light", "scheme:dark"]
@@ -659,25 +688,20 @@ class Depth:
                 vectors = [v | extra for v in vectors for extra in [frozenset()] + [frozenset([x]) for x in values]]
             sized = self.sizes_off(added) is None
             densities = [None] + ([d for d in model.get("densities", []) if isinstance(d, str)] if sized else [])
-            nd = [compiled(x) for x in model.get("not_drawn", []) if isinstance(x, dict) and x]
-            for s in sorted(sets, key=lambda x: (not x & prefer, len(x), sorted(x))):
+            nd = [m for m in (compiled(x) for x in model.get("not_drawn", []) if isinstance(x, dict) and x)
+                  if not m.never]
+            sizes_of = {}
+            for s in sets:
                 if sized:
                     entry = next((e for e in model.get("sizes_by_variant", []) if isinstance(e, dict)
                                   and e.get("variant") in s and isinstance(e.get("sizes"), list)), None)
                     sizes = [z for z in (entry["sizes"] if entry else model.get("sizes", [])) if isinstance(z, str)]
-                    sizes = sizes or [None]
+                    sizes_of[s] = sizes or [None]
                 else:
-                    sizes = [self.default_size(model, s)]
-                for size in sizes:
-                    for density in densities:
-                        for st in states:
-                            for cv in vectors:
-                                read += 1
-                                if budget is not None and read > budget:
-                                    return
-                                c = Combo(s, frozenset(st), cv, size, density)
-                                if not any(combo_holds(x, c, rec) for x in nd):
-                                    yield c, rec
+                    sizes_of[s] = [self.default_size(model, s)]
+            out.append((rec, sets, states, vectors, sizes_of, densities, nd))
+        self._combos[k] = out
+        return out
 
     def presence_facts(self, platform: str, part_key: str, preset: str) -> list:
         """[(its `when` for the preset read as a Match, the fact)] of the part's presence facts holding for the preset,
@@ -744,6 +768,24 @@ class Depth:
         found = [(len(segs(path)), unit) for path, unit in self.waiting if under(p, segs(path))]
         return max(found, key=lambda x: x[0])[1] if found else p[0]
 
+    def of_enabled(self, platform: str, key: str, when, preset: str) -> bool:
+        """Whether a fact of the platform holding for the preset (its `when` as written) is of the enabled units: unit()
+        is None, found without its later unit's search."""
+        when = preset_when(when, preset)
+        if not self.held(key, preset) or not all(self.held(w) for w in context_names(when)):
+            return False
+        widget = key.split(".")[0]
+        if any(self.condition_off(c, key) for c in listed(when, "conditions")):
+            return False
+        if widget in ("role", "token", "input"):
+            kinds = [condition_kind(c) for c in listed(when, "conditions")]
+            return len(kinds) == len(set(kinds))
+        latest = when.get("latest") if isinstance(when.get("latest"), dict) else {}
+        if any(self.off(widget, preset, "variants", v) for v in listed(when, "variants")) or any(
+                self.off(widget, preset, "states", s) for s in listed(when, "states") | set(latest.values())):
+            return False
+        return self.holds_at(platform, key, when, preset)
+
     def unit(self, platform: str, key: str, when, preset: str) -> str | None:
         """None where a fact of the platform holding for the preset (its `when` as written) is of the enabled units;
         else the later unit it waits for (the class's docstring)."""
@@ -756,30 +798,25 @@ class Depth:
         needed = [self.condition_off(c, key) for c in listed(when, "conditions")]
         widget = key.split(".")[0]
         if widget in ("role", "token", "input"):
-            needed = [u for u in needed if u]
-            if needed:
-                return min(needed, key=self.order.get)
             kinds = [condition_kind(c) for c in listed(when, "conditions")]
-            return None if len(kinds) == len(set(kinds)) else "none"
+            if len(kinds) != len(set(kinds)):
+                return STRAY
+            needed = [u for u in needed if u]
+            return max(needed, key=self.order.get) if needed else None
         latest = when.get("latest") if isinstance(when.get("latest"), dict) else {}
         needed += [self.off(widget, preset, "variants", v) for v in listed(when, "variants")]
         needed += [self.off(widget, preset, "states", s) for s in listed(when, "states") | set(latest.values())]
         needed += [self.direction_off(when["direction"]) for _ in (0,) if isinstance(when.get("direction"), str)]
         if listed(when, "densities"):
             needed.append(self.sizes_off())
-        needed = [u for u in needed if u]
-        if needed:
-            return min(needed, key=self.order.get)
         sizes = listed(when, "sizes")
-        if sizes and self.sizes_off():
-            model = self.model(platform, widget, preset)
-            cs, _ = self.combos(platform, widget, preset)
-            if model is not None and not sizes & {c.size for c in cs}:
-                return self.sizes_off()
-        if self.holds_at(platform, key, when, preset):
+        if sizes and self.sizes_off() and not sizes & {c.size for c in self.combos(platform, widget, preset)[0]}:
+            needed.append(self.sizes_off())
+        needed = [u for u in needed if u]
+        if not needed and self.holds_at(platform, key, when, preset):
             return None
         part = self.part_of(key)
-        first = self.part_drawn_from(platform, part, preset) if part else 0
+        first = max([self.order[u] for u in needed] + [self.part_drawn_from(platform, part, preset) if part else 0])
         added = frozenset()
         for i, u in enumerate(self.later):
             if u.enabled:
@@ -788,7 +825,7 @@ class Depth:
             if i >= first and self.holds_with(platform, key, when, preset, added, SEARCH_LIMIT,
                                               self.names_of(u, widget)):
                 return u.name
-        return "none"
+        return STRAY
 
     def part_drawn_from(self, platform: str, part_key: str, preset: str) -> int:
         """The place in the file's order of the first later unit whose names, with every unit's before it, draw the
@@ -992,7 +1029,7 @@ def check(ctx, units, enabled=(), assumed=(), later=None):
     `units` None checks every line; `enabled` are the other enabled units (a context widget may lie there);
     `assumed` the presets checked as if they existed (`--preset`). With `units`, a line is checked where one
     alternative of its selector names only names at depth (line_later()), or, with `later` (a later unit's name), where
-    one names names of that unit and else at depth (S17, ADD-A147)."""
+    one names names of that unit, the last in the file's order of the units it names (S17, ADD-A147)."""
     lines = read_lines(ctx.root)
     items, _, _ = check_facts.load(ctx)
     carried = carried_rows(ctx, items)
@@ -1006,7 +1043,8 @@ def check(ctx, units, enabled=(), assumed=(), later=None):
             continue
         if depth is not None:
             alts = line_later(line, depth, list(check_facts.PLATFORMS[line.platform]))
-            if not any(a == ({later} if later else set()) for a in alts):
+            last = (lambda a: max(a, key=depth.order.get)) if later else None
+            if not any((later in a and last(a) == later) if later else not a for a in alts):
                 continue
         t = tallies[line.platform]
         t.lines += 1
@@ -1024,6 +1062,44 @@ def check(ctx, units, enabled=(), assumed=(), later=None):
             findings.append((line.platform, line.row, line.target, "in no fact's or state-model entry's `rows` of "
                                                                    f"docs/facts/{line.platform}/, and no verdict"))
     return findings, tallies, presets
+
+
+def facts_report(ctx) -> list:
+    """`--facts`' lines (S17's predicate, ADD-A147; informational, no finding): per bundled preset, the facts of the
+    enabled units and how many are pending, and per later unit the facts it holds (Depth.unit(); a key no enabled unit
+    holds by the unit `[staged]`, `[deferred]` or its widget names); per facts directory the facts of the enabled units
+    on any of its presets and how many are pending, each fact once; and every stray fact, by its place and key (S17:
+    reported under no unit; from the plan's M4 scripts/check_facts.py fails it)."""
+    items, _, _ = check_facts.load(ctx)
+    depth = Depth(ctx.root, items)
+    existing = check_facts.existing_presets(ctx.root)
+    out, strays = [], []
+    for platform, presets in check_facts.PLATFORMS.items():
+        on_path = {}
+        for preset in [p for p in presets if p in existing]:
+            units, enabled, pending = {}, 0, 0
+            for it in items:
+                d = it.data
+                if (it.table != "fact" or it.platform != platform or it.palette or "scheme_file" in d
+                        or "accent" in d or not for_preset(d.get("when"), preset)):
+                    continue
+                unit = depth.unit(platform, d["key"], d.get("when"), preset)
+                place = (it.file, it.line)
+                on_path[place] = on_path.get(place, False) or unit is None
+                if unit is None:
+                    enabled += 1
+                    pending += "pending" in d
+                elif unit == STRAY:
+                    strays.append(f"{preset}\t{it.file}:{it.line}\t{d['key']}")
+                else:
+                    units[unit] = units.get(unit, 0) + 1
+            listing = ", ".join(f"{u} {n}" for u, n in sorted(units.items(), key=lambda x: -x[1]))
+            out.append(f"{preset}: {enabled} facts of the enabled units ({pending} pending); later units: {listing}")
+        pending_places = {(it.file, it.line) for it in items if it.platform == platform and "pending" in it.data}
+        pending = sum(1 for place, held in on_path.items() if held and place in pending_places)
+        if on_path:
+            out.append(f"docs/facts/{platform}: {sum(on_path.values())} facts of the enabled units ({pending} pending)")
+    return out + [f"stray: {s}" for s in strays] + [f"{len(strays)} stray facts"]
 
 
 def report(tallies, presets, scope, assumed=()):
@@ -1206,16 +1282,18 @@ DEPTH_CASES = [   # (preset, key, when, the unit; None: of the enabled units)
     ("adwaita", "button.body.fill", {}, None),
     ("adwaita", "button.body.fill", {"variants": ["primary"], "states": ["pressed"]}, None),
     ("adwaita", "button.body.fill", {"variants": ["flat"]}, "styles"),
-    ("adwaita", "button.body.fill", {"states": ["open"], "variants": ["flat"]}, "styles"),
+    ("adwaita", "button.body.fill", {"states": ["open"], "variants": ["flat"]}, "states"),
     ("adwaita", "button.body.fill", {"states": ["hover"]}, "ipad"),
     ("kde-breeze", "button.body.fill", {"states": ["hover"]}, None),
     ("adwaita", "button.body.fill", {"not_states": ["open"], "not_variants": ["flat"]}, None),
     ("adwaita", "button.body.fill", {"sizes": ["small"]}, "sizes"),
     ("adwaita", "button.body.fill", {"sizes": ["regular"]}, None),
     ("adwaita", "button.body.fill", {"conditions": ["window_inactive"]}, "window_activity"),
-    ("adwaita", "button.body.fill", {"conditions": ["idiom:pad", "window_inactive"]}, "window_activity"),
+    ("adwaita", "button.body.fill", {"conditions": ["idiom:pad", "window_inactive"]}, "ipad"),
     ("adwaita", "button.body.fill", {"variants": ["toggle"]}, "styles"),
-    ("adwaita", "button.body.fill", {"states": ["no_such_flag"]}, "none"),
+    ("adwaita", "button.body.fill", {"states": ["no_such_flag"]}, "stray"),
+    ("adwaita", "button.body.fill", {"variants": ["flat"], "sizes": ["large"]}, "stray"),
+    ("adwaita", "role.window.background", {"conditions": ["scheme:light", "scheme:dark"]}, "stray"),
     ("adwaita", "button.body.transitions", {}, "motion"),
     ("adwaita", "button.mark.glyph", {}, "styles"),
     ("adwaita", "role.selection.background", {"conditions": ["window_inactive"]}, None),
@@ -1247,6 +1325,8 @@ def depth_cases(base: Path) -> list:
         got = depth.unit(platform[preset], key, when, preset)
         if got != want:
             failures.append(f"depth: {preset} {key} {when}: got {got!r}, want {want!r}")
+        if depth.of_enabled(platform[preset], key, when, preset) != (want is None):
+            failures.append(f"depth: of_enabled {preset} {key} {when} disagrees with unit()")
     combos = depth.combos("gnome", "button", "adwaita")[0]
     if {c.size for c in combos} != {"regular"} or any(c.variants & {"flat"} or c.states & {"open", "hover"}
                                                      or "idiom:pad" in c.conditions for c in combos):
@@ -1476,6 +1556,14 @@ def main(argv) -> int:
     args = argv[1:]
     if args == ["--self-test"]:
         return self_test()
+    if args == ["--facts"]:
+        try:
+            lines = facts_report(check_facts.Context(Path(".")))
+        except (OSError, UnicodeDecodeError, InputError, check_facts.InputError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 2
+        print("\n".join(lines))
+        return 0
     assumed, rest = [], []
     while args:
         a = args.pop(0)
