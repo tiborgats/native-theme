@@ -3168,7 +3168,7 @@ def stated_at(table: dict, name: str):
     return None
 
 
-def unstated_fields(model: Model, text: str, held=lambda path: True) -> list:
+def unstated_fields(model: Model, text: str) -> list:
     """The model paths a preset's bases leave unstated, as TOML paths (`widgets.button.icon.icon.rendering_mode`,
     `colors.light.global.scrim`, `tokens.elevation`): each struct field of the colour roles under each scheme (the
     surface sets `[declare] surface_sets` lists, else those the bases state and `window` and `selection`, S3), of the
@@ -3176,18 +3176,16 @@ def unstated_fields(model: Model, text: str, held=lambda path: True) -> list:
     and no `[pending]` path at or above it. A table there is walked below: a struct block's fields, a map's entries
     whose values are structs (S11: a block stated per leaf, an entry stated whole); any other value states the field
     whole. A part stated `absent = true` or `drawn_as` states its fields (S6.3); a part with no table but a `[pending]`
-    path below it has its other fields walked. An unstated field is listed alone, not its fields below. A path the
-    model does not hold at depth (`held`: one the units file stages or defers, S6.1, S17, ADD-A147) is no field of
-    the model, whether or not its struct still holds it, and is not walked. The rules are not read: the reader needs a
-    base for every field (S11). Not checked: the inputs (S9) and the entries `[declare]`'s keyed namespaces
-    declare."""
+    path below it has its other fields walked. An unstated field is listed alone, not its fields below. A field the
+    units file stages or defers is out of its struct (S6.1, S17, ADD-A147), so none is walked, but a keyed map whose
+    entries are each preset's own (`[kept]`), which the preset states, `{}` where none is at depth (S10). The rules
+    are not read: the reader needs a base for every field (S11).
+    Not checked: the inputs (S9) and the entries `[declare]`'s keyed namespaces declare."""
     data = tomllib.loads(text)
     pending = {unsuffixed(tuple(k.split("."))) for k in data.get("pending", {})}
     out = []
 
     def walk(path, typ, node):
-        if not held(path):
-            return
         bare = unsuffixed(path)
         if any(bare[:len(q)] == q for q in pending):
             return
@@ -3288,8 +3286,7 @@ def field_lines(model: Model, draft: Draft, text: str) -> list:
     """The report's lines of the model fields the preset leaves unstated, grouped (field_groups())."""
     if "Tokens" not in model.structs:
         return [f"# unstated model fields: no model sources in {model.folder}"]
-    groups = field_groups(draft.facts, unstated_fields(
-        model, text, lambda path: draft.depth.held(model_key(path), draft.preset)))
+    groups = field_groups(draft.facts, unstated_fields(model, text))
     counts = {g: sum(1 for x in groups if x[0] == g) for g in FIELD_GROUPS}
     out = [f"# unstated model fields: {len(groups)} ("
            + ", ".join(f"{g.lower()} {n}" for g, n in counts.items())
