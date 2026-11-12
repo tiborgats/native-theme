@@ -750,6 +750,13 @@ pub(crate) fn style_font_size(path: &[&str]) -> Option<usize> {
     }
 }
 
+/// Whether the place `path` is one of a text style's font sizes
+/// ([`style_font_size`]).
+fn is_font_size(path: &[String]) -> bool {
+    let names: Vec<&str> = path.iter().map(String::as_str).collect();
+    style_font_size(&names).is_some()
+}
+
 /// A size in points or pixels in logical pixels (S9.4): `pt × dpi / 72`;
 /// `None` for points without a DPI.
 fn convert(size: FontSize, dpi: Option<f32>) -> Option<Px> {
@@ -1204,7 +1211,9 @@ impl<'t> Cx<'t> {
 
     /// `f` evaluated with font sizes converted from points and never
     /// text-scaled: a `Value<FontSize>` field outside a text style, a widget
-    /// value's (S1, S9.4).
+    /// value's (S1, S9.4). No widget value of type `FontSize` exists; one
+    /// added later must decide its scaling with S9.4, as read as an operand
+    /// ([`Cx::operand`]) it would be text-scaled.
     pub(crate) fn unscaled<R>(&mut self, f: impl FnOnce(&mut Self) -> R) -> R {
         let saved = std::mem::replace(&mut self.unscaled, true);
         let out = f(self);
@@ -2235,8 +2244,20 @@ impl<'t> Cx<'t> {
                 target,
                 path,
                 bases_only,
-            } => self.follow(target, path, bases_only, |cx, folds| cx.operand(folds)),
+            } => self.place_operand(target, path, bases_only),
         }
+    }
+
+    /// The value the place `path` of `target` gives as an operand: a length's
+    /// plain reference to a text style's font size reads it so too,
+    /// converted and scaled at its place (S2.2, S9.4).
+    fn place_operand(
+        &mut self,
+        target: Target,
+        path: Vec<String>,
+        bases_only: bool,
+    ) -> Option<Val> {
+        self.follow(target, path, bases_only, |cx, folds| cx.operand(folds))
     }
 
     /// A `Value<X>` field's resolved value (S2.2): the last step's, its
@@ -2281,24 +2302,32 @@ impl<'t> Cx<'t> {
         let below = items.get(..at).unwrap_or_default();
         match expr {
             Expr::Ref(Ref::Base) => self.value::<X>(below, signed),
-            Expr::Ref(reference) => match self.reference(reference, origin)? {
-                // A value with no place (an element's datum, a metric) is
-                // limited as a call's result is (S2.2's *Totality*).
-                Answer::Val(val) => {
-                    let val = match X::field(signed) {
-                        Some(field) => bounded(val, field.bound),
-                        None => val,
-                    };
-                    X::from_val(&val)
-                }
-                Answer::Place {
-                    target,
-                    path,
-                    bases_only,
-                } => self.follow(target, path, bases_only, |cx, folds| {
-                    cx.value::<X>(folds, signed)
-                }),
-            },
+            Expr::Ref(reference) => {
+                let val = match self.reference(reference, origin)? {
+                    // A value with no place (an element's datum, a metric)
+                    // is limited as a call's result is (S2.2's *Totality*).
+                    Answer::Val(val) => val,
+                    Answer::Place {
+                        target,
+                        path,
+                        bases_only,
+                    } if is_font_size(&path) => self.place_operand(target, path, bases_only)?,
+                    Answer::Place {
+                        target,
+                        path,
+                        bases_only,
+                    } => {
+                        return self.follow(target, path, bases_only, |cx, folds| {
+                            cx.value::<X>(folds, signed)
+                        });
+                    }
+                };
+                let val = match X::field(signed) {
+                    Some(field) => bounded(val, field.bound),
+                    None => val,
+                };
+                X::from_val(&val)
+            }
             Expr::Lit(literal) => {
                 let val = self.literal(literal);
                 X::from_val(&val)
@@ -2459,17 +2488,26 @@ impl<'t> Cx<'t> {
             Value::Expr(Expr::Ref(Ref::Base)) => {
                 self.auto(items.get(..at).unwrap_or_default(), signed)
             }
-            Value::Expr(Expr::Ref(reference)) => match self.reference(reference, fold.target)? {
-                Answer::Val(val) => {
-                    let bound = Px::field(signed).map_or(Bound::Unbounded, |field| field.bound);
-                    Px::from_val(&bounded(val, bound)).map(|px| Length::Px(px.0))
-                }
-                Answer::Place {
-                    target,
-                    path,
-                    bases_only,
-                } => self.follow(target, path, bases_only, |cx, folds| cx.auto(folds, signed)),
-            },
+            Value::Expr(Expr::Ref(reference)) => {
+                let val = match self.reference(reference, fold.target)? {
+                    Answer::Val(val) => val,
+                    Answer::Place {
+                        target,
+                        path,
+                        bases_only,
+                    } if is_font_size(&path) => self.place_operand(target, path, bases_only)?,
+                    Answer::Place {
+                        target,
+                        path,
+                        bases_only,
+                    } => {
+                        return self
+                            .follow(target, path, bases_only, |cx, folds| cx.auto(folds, signed));
+                    }
+                };
+                let bound = Px::field(signed).map_or(Bound::Unbounded, |field| field.bound);
+                Px::from_val(&bounded(val, bound)).map(|px| Length::Px(px.0))
+            }
             Value::Stated(_) | Value::Absent | Value::Expr(_) => {
                 self.value::<Px>(items, signed).map(|px| Length::Px(px.0))
             }
