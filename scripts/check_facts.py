@@ -286,6 +286,11 @@ bundled palette (bundled_palettes(): a file of PRESET_DIR whose `[preset] kind` 
 string it states holding a colour literal, and every such string in exactly one of the two (S11, S14). Today no
 bundled palette exists, so this rule checks nothing on the repository; the self-test runs it.
 
+The places of a name (S17, ADD-A147; depth_place_problems, whose docstring states the rule): every name of every state
+model of an enabled entry, every condition a fact or state model names and every token path a fact names lies in
+exactly one place: the entry's Depth line, one later unit of `scripts/widget_units.toml`, `[at_depth]`, or the unit of
+a widget no enabled unit holds.
+
 existing_presets() is the one function that says which presets exist: the stems of the bundled presets,
 `native-theme/src/presets/<id>.toml` (PRESET_DIR), that are platform presets. The directory may be absent or empty:
 then no preset exists and the generation rule asks nothing of a fact without `preset:`.
@@ -3679,6 +3684,100 @@ def platform_facts(ctx, items) -> dict:
     return out
 
 
+def depth_place_problems(ctx: Context, items) -> list:
+    """S17's places of a name (ADD-A147): every name of every state model of an enabled entry (its variants, its
+    `axes.states` and `flags`), every condition a fact or a state model names (positive or negative; a scheme and a
+    preset are no such name) and every token path a fact names lies in exactly one place: the entry's Depth line
+    (spec_catalogue.depth_names), one later unit (scripts/widget_units.toml's `[[later]]`, a group naming presets
+    standing in for the Depth line on them), `[at_depth]` for the keys under its prefix, or the unit of a widget no
+    enabled unit holds (a fact of such a widget is that unit's whole; a token path `[staged]` maps to a unit that is no
+    later unit). A token path lies at depth where an enabled unit holds it on a preset (check_facts_trace.in_unit, its
+    `[kept]` entries counted) and else in the unit the longest `[staged]` path above it names, which must not be a later
+    unit already enabled. Nothing is checked where the root has no units file (a fixture without one)."""
+    import check_facts_trace   # the units file's reader, which imports this module
+    if not (ctx.root / check_facts_trace.UNITS).is_file():
+        return []
+    try:
+        units = check_facts_trace.read_units(ctx.root)
+        later, at_depth = check_facts_trace.read_later(ctx.root)
+        waiting = check_facts_trace.waiting_paths(ctx.root)
+    except check_facts_trace.InputError as err:
+        return [(check_facts_trace.UNITS.as_posix(), 1, str(err))]
+    entries = {e for u in units.values() for e in u.entries if e in ctx.entries}
+    depth = {e: spec_catalogue.depth_names(ctx.entries[e]) or {"variants": [], "states": [], "conditions": []}
+             for e in entries}
+    line_conditions = {c for d in depth.values() for c in d["conditions"]}
+    by_name = {u.name: u for u in later}
+    out, seen = [], set()
+
+    def report(it, key, what):
+        if key not in seen:
+            seen.add(key)
+            out.append((it.file, it.line, what))
+
+    for it in items:
+        if it.palette:
+            continue
+        d = it.data
+        when = d.get("when") if isinstance(d.get("when"), dict) else {}
+        presets = [p for p in PLATFORMS.get(it.platform, ()) if check_facts_trace.for_preset(when, p)]
+        head = d.get("widget") if it.table == "model" else d.get("key")
+        if not isinstance(head, str):
+            continue
+        widget = head.split(".")[0]
+        if it.table == "model" and widget in entries and d.get("available") is not False:
+            axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
+            names = [("variants", v) for v in d.get("variants", []) if isinstance(v, str)]
+            names += [("states", s) for s in list(axes.get("states", [])) + list(d.get("flags", []))
+                      if isinstance(s, str)]
+            for preset in presets:
+                for kind, name in dict.fromkeys(names):
+                    holders = [u.name for u in later if u.holds(widget, preset, kind, name)]
+                    scoped = any(name in g.get(kind, ()) and ps is not None and preset in ps
+                                 for u in later for ps, g in u.names.get(widget, ()))
+                    n = len(holders) + (name in depth[widget][kind] and not scoped)
+                    if n != 1:
+                        report(it, (widget, preset, kind, name),
+                               f"`{widget}`'s {kind[:-1]} `{name}` lies in {n} places on {preset} (its Depth line, "
+                               f"the later units {holders}), not one (S17, ADD-A147)")
+        if widget not in entries and widget not in ("role", "token", "input"):
+            continue   # a widget no enabled unit holds: its unit's names, whole
+        named = set()
+        for w in [when] + [x for x in d.get("not_drawn", []) if isinstance(x, dict)]:
+            named |= {c for k in ("conditions", "not_conditions") for c in w.get(k, []) if isinstance(c, str)}
+        if it.table == "model":
+            axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
+            named |= {c for c in axes.get("conditions", []) if isinstance(c, str)}
+        key = head if it.table == "fact" else widget
+        for c in sorted(named):
+            if c.startswith(("scheme:", "preset:")):
+                continue
+            prefixed = any(c in cs and check_facts_trace.under(check_facts_trace.segs(key),
+                                                               check_facts_trace.segs(p))
+                           for p, cs in at_depth.items())
+            holders = [u.name for u in later if c in u.conditions]
+            n = (c in line_conditions) + (1 if prefixed else len(holders))
+            if n != 1:
+                report(it, ("condition", c, prefixed),
+                       f"the condition `{c}` ({key}) lies in {n} places (a Depth line, `[at_depth]`, the later units "
+                       f"{holders}), not one (S17, ADD-A147)")
+        if it.table == "fact" and widget == "token":
+            for preset in presets:
+                if any(check_facts_trace.in_unit(head, "token", u, preset) for u in units.values()):
+                    continue
+                p = check_facts_trace.segs(head)
+                found = [(len(check_facts_trace.segs(s)), u) for s, u in waiting
+                         if check_facts_trace.under(p, check_facts_trace.segs(s))]
+                unit = max(found, key=lambda x: x[0])[1] if found else None
+                if unit is None:
+                    report(it, ("token", head), f"the token path `{head}` lies in no enabled unit and no `[staged]` "
+                                                f"path above it names a unit (S17, ADD-A147)")
+                elif unit in by_name and by_name[unit].enabled:
+                    report(it, ("token", head), f"the token path `{head}` is staged to `{unit}`, a later unit "
+                                                f"already enabled, whose commit ends the staging (S6.1)")
+    return out
+
+
 def check(ctx: Context):
     """(findings as (file, line, what), counts)."""
     items, findings, nfiles = load(ctx)
@@ -3692,7 +3791,8 @@ def check(ctx: Context):
     findings += latest_problems(ctx, items)
     findings += never_holds_problems(ctx, items)
     findings += ellipse_problems(ctx, items)
-    fact_keys = {it.data.get("key") for it in items if it.palette and isinstance(it.data.get("key"), str)}
+    findings += depth_place_problems(ctx, items)
+    fact_keys ={it.data.get("key") for it in items if it.palette and isinstance(it.data.get("key"), str)}
     palettes = bundled_palettes(ctx.root)
     for path, text, data in palettes:
         findings += palette_problems(path, text, data, fact_keys)
@@ -5284,6 +5384,24 @@ def self_test() -> int:
             got = run(files)
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"{label}: got {got}, want {want}")
+        # the places of a name (S17, ADD-A147): a state model's name in no place or in two, a condition in two, a token
+        # path no enabled unit holds and no staging names (the fixture's button has no Depth line)
+        root = base / "places"
+        units = ('slice = ["button"]\n[prefixes]\nslice = ["token.motion"]\n[staged.slice]\n'
+                 '"token.motion.durations" = "motion"\n'
+                 '[[later]]\nname = "styles"\nkind = "depth"\nenabled = false\nbutton = [{ variants = ["flat"] }]\n'
+                 '[[later]]\nname = "states"\nkind = "depth"\nenabled = false\n'
+                 'button = [{ states = ["hover", "pressed", "disabled", "focused"] }, { variants = ["flat"] }]\n'
+                 '[[later]]\nname = "window_activity"\nkind = "depth"\nenabled = false\nconditions = ["window_inactive"]\n'
+                 '[[later]]\nname = "motion"\nkind = "depth"\nenabled = false\nconditions = ["window_inactive"]\n')
+        write_fixture(root, {**SELF_TEST_FILES, "scripts/widget_units.toml": units})
+        ctx = fixture_context(root)
+        got = [w for _, _, w in depth_place_problems(ctx, load(ctx)[0])]
+        want = ["`button`'s variant `flat` lies in 2 places", "`button`'s variant `@pill` lies in 0 places",
+                "the condition `window_inactive`"]
+        if len([g for g in got if "token path" not in g]) != len(want) or not all(
+                any(w in g for g in got) for w in want):
+            failures.append(f"places: got {got}, want {want}")
         # the vacuous run: no fact file, no bundled palette
         root = base / "empty"
         write_fixture(root, {})

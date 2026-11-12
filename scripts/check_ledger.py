@@ -99,7 +99,10 @@ Also:
   and matched as scripts/check_facts_trace.py reads and matches them
   (read_units, in_unit; an `input.…` key that is no part or value of the
   `input` widget is an S9 input, never that widget). A pending fact is of the
-  enabled units where its key lies in one; a state model's pending entry
+  enabled units where its key lies in one and S17's predicate holds it on a
+  preset of its platform (ADD-A147; check_facts_trace.Depth: its `when`
+  holds in a combination of the names at depth its state model draws, its
+  part drawn there); a state model's pending entry
   (S10's pending default size) where its widget does (S17: it counts as a
   pending fact of its widget's unit).
 - The Unmeasured register: a `b` row of the enabled units is a finding, a
@@ -535,24 +538,62 @@ def unit_path(entry: tuple, input_parts: frozenset | set = frozenset()) -> tuple
     return key, ""
 
 
-def enabled(entry: tuple, units: list | None, input_parts: frozenset | set = frozenset()) -> bool:
-    """Whether a pending fact or declaration is of the enabled units (`units`; None: every entry is)."""
+class Predicate(NamedTuple):
+    """The predicate of a pending fact's units beyond its key's (S17, ADD-A147; check_facts_trace.Depth): its
+    `when` holds in a combination of the names at depth that its state model draws, its part drawn there, on a preset
+    of its platform. `whens`: (file, line) -> (platform, `when`) of each pending fact."""
+    depth: object
+    whens: dict
+
+    def holds(self, entry: tuple) -> bool:
+        found = self.whens.get(entry[:2])
+        if found is None:
+            return True
+        platform, when = found
+        return any(self.depth.unit(platform, str(entry[2]), when, preset) is None
+                   for preset in check_facts_trace.check_facts.PLATFORMS.get(platform, ())
+                   if check_facts_trace.for_preset(when, preset))
+
+
+def enabled(entry: tuple, units: list | None, input_parts: frozenset | set = frozenset(),
+            predicate: Predicate | None = None) -> bool:
+    """Whether a pending fact or declaration is of the enabled units (`units`; None: every entry is): its key, or a
+    declaration's widget, lies in one, and a pending fact is so by `predicate` where it is given."""
     if units is None:
         return True
     path, kind = unit_path(entry, input_parts)
-    return any(check_facts_trace.in_unit(path, kind, u) for u in units)
+    if not any(check_facts_trace.in_unit(path, kind, u) for u in units):
+        return False
+    return predicate is None or entry[4:5] == ("pending declaration",) or predicate.holds(entry)
 
 
-def outside_ids(pending: list, units: list | None, input_parts: frozenset | set = frozenset()) -> set:
+def outside_ids(pending: list, units: list | None, input_parts: frozenset | set = frozenset(),
+                predicate: Predicate | None = None) -> set:
     """The register Ids of units not enabled: named by pending facts or declarations, every one not enabled."""
     named: dict[object, bool] = {}
     for entry in pending:
-        named[entry[3]] = named.get(entry[3], False) or enabled(entry, units, input_parts)
+        named[entry[3]] = named.get(entry[3], False) or enabled(entry, units, input_parts, predicate)
     return {pid for pid, any_enabled in named.items() if isinstance(pid, str) and not any_enabled}
 
 
+def pending_whens(texts: dict[str, str]) -> dict:
+    """{(file, line): (platform, `when`)} of every pending fact pending_facts() gives, its platform the facts
+    directory its file lies in."""
+    out = {}
+    for name, text in texts.items():
+        data = tomllib.loads(text)
+        facts = [f for f in data.get("fact", []) if isinstance(f, dict) and "pending" in f]
+        lines = [n for n, line in enumerate(text.splitlines(), 1) if PENDING.match(line)]
+        platform = Path(name).parent.name
+        for k, fact in enumerate(facts):
+            when = fact.get("when") if isinstance(fact.get("when"), dict) else {}
+            out[(name, lines[k] if len(lines) == len(facts) else 1)] = (platform, when)
+    return out
+
+
 def pending_problems(ledger: str, ledger_text: str, pending: list, final: bool, units: list | None = None,
-                     input_parts: frozenset | set = frozenset()) -> list[tuple[str, int, str]]:
+                     input_parts: frozenset | set = frozenset(),
+                     predicate: Predicate | None = None) -> list[tuple[str, int, str]]:
     """S17 *A pending measurement*: on every run, a pending fact whose id names no row of the register; with
     `final`, every pending fact of the enabled units (`units`, None for every entry; a release is made with none)."""
     rows, _ = register_rows(ledger, ledger_text)
@@ -563,7 +604,7 @@ def pending_problems(ledger: str, ledger_text: str, pending: list, final: bool, 
         what = kind[0] if kind else "pending fact"
         if not isinstance(pid, str) or pid not in ids:
             found.append((name, line, f"{what} {key!r} names {pid!r}, no row of the ledger's Unmeasured register"))
-        if final and enabled(entry, units, input_parts):
+        if final and enabled(entry, units, input_parts, predicate):
             found.append((name, line, f"{what} {key!r} ({pid}): a release is made with no S17 {what} of its "
                                       f"enabled units"))
     return found
@@ -582,6 +623,16 @@ def enabled_units() -> list:
     try:
         return list(check_facts_trace.read_units(Path(".")).values())
     except check_facts_trace.InputError as err:
+        raise InputError(str(err)) from err
+
+
+def depth_predicate(fact_texts: dict[str, str]) -> Predicate:
+    """The Predicate over the repository's state models and presence facts (check_facts.load) and the units file."""
+    cf = check_facts_trace.check_facts
+    try:
+        items, _, _ = cf.load(cf.Context(Path(".")))
+        return Predicate(check_facts_trace.Depth(Path("."), items), pending_whens(fact_texts))
+    except (check_facts_trace.InputError, cf.InputError) as err:
         raise InputError(str(err)) from err
 
 
@@ -929,6 +980,26 @@ default_size = "regular"
         failures.append(f"outside ids: got {sorted(got)}, want ['U2', 'U4']")
     if outside_ids(scoped, None) or outside_ids([("f.toml", 1, "menu.body.fill", 7)], units):
         failures.append("outside ids: every entry enabled, or a malformed id, gave an id")
+    # the predicate of a fact's units (S17, ADD-A147): a pending fact whose `when` a later unit's name holds in is that
+    # unit's, its row too where every pending fact naming it is; a pending declaration keeps its widget's unit
+
+    class Later:
+        def unit(self, platform, key, when, preset):
+            return "styles" if "flat" in when.get("variants", ()) else None
+
+    predicate = Predicate(Later(), {("docs/facts/gnome/f.toml", 8): ("gnome", {"variants": ["flat"]}),
+                                    ("docs/facts/gnome/f.toml", 9): ("gnome", {})})
+    deep = [("docs/facts/gnome/f.toml", 8, "button.body.fill", "U1"),
+            ("docs/facts/gnome/f.toml", 9, "button.body.fill", "U2"),
+            ("s.toml", 4, "button.default_size", "U5", "pending declaration")]
+    got = [(f, n) for f, n, _ in pending_problems("L", ledger, deep, True, units, frozenset(), predicate)
+           if "a release is made" in _]
+    if got != [("docs/facts/gnome/f.toml", 9), ("s.toml", 4)] or outside_ids(deep, units, frozenset(),
+                                                                             predicate) != {"U1"}:
+        failures.append(f"pending, --final, the depth's predicate: got {got}")
+    if pending_whens({"docs/facts/kde/b.toml": '[[fact]]\nkey = "button.body.fill"\nwhen = { states = ["hover"] }\n'
+                      'pending = "U1"\nrows = []\n'}) != {("docs/facts/kde/b.toml", 4): ("kde", {"states": ["hover"]})}:
+        failures.append("pending_whens: a pending fact's platform and when read wrong")
     if unmeasured_problems("L", ledger, True, {"U2"}) or unmeasured_problems("L", ledger, True, {"U1"}) != [
             ("L", 7, "unmeasured '`menu.body.shadow`' has no decision")]:
         failures.append("unmeasured, --final: a row of a unit not enabled failed, or one of the enabled units passed")
@@ -1040,11 +1111,12 @@ def main(argv: list[str]) -> int:
         declarations = pending_declarations(fact_texts)
         units = enabled_units() if final else None
         parts = input_parts_of(sources.get("catalogue")) if final else frozenset()
+        predicate = depth_predicate(fact_texts) if final else None
         every = pending + [(*d, "pending declaration") for d in declarations]
-        found += unmeasured_problems(str(ledger), ledger_text, final, outside_ids(every, units, parts))
-        found += pending_problems(str(ledger), ledger_text, pending, final, units, parts)
+        found += unmeasured_problems(str(ledger), ledger_text, final, outside_ids(every, units, parts, predicate))
+        found += pending_problems(str(ledger), ledger_text, pending, final, units, parts, predicate)
         found += pending_problems(str(ledger), ledger_text, [(*d, "pending declaration") for d in declarations],
-                                  final, units, parts)
+                                  final, units, parts, predicate)
         if final:
             found += check_final(str(ledger), ledger_text, staged)
     except (OSError, UnicodeDecodeError, InputError) as err:

@@ -75,6 +75,18 @@ ADD-A120); `[deferred.<widget>]`, `<value> = "<unit>"`, values a unit defers to 
 deferrals' units; any other shape is an input error, and so is a missing file. The facts gate reads the same file
 by the same rule (`native-theme/tests/facts_gate/units.rs`).
 
+The depth (S6.1, S17; ADD-A147): `[deferred.<widget>]` may name a part's field (`"body.transitions"`); a `[staged]`
+path may hold a `*` segment (any one) or `@*` (any keyed one); `[kept.<unit>]`, `<preset> = [paths]`, names the entries
+of a staged keyed map that lie in the unit on that preset all the same; `[at_depth]`, `<key prefix> = [conditions]`,
+the conditions at depth for those keys that a later unit holds for every other; and `[[later]]` tables the later
+units in their order (read_later; Later). A name of an entry is at depth where no later unit not enabled holds it,
+and a fact is of the enabled units by the predicate of the class Depth (its docstring), which scripts/check_ledger.py
+and scripts/generate_preset.py read too. A trace line is checked by `--enabled` or `--unit <widget unit>` where one
+alternative of its selector names only names at depth (line_later(): its variants and flags for the target's entry
+on every preset of its platform, its conditions for the target's path, a size no default in force, a density, a
+direction), so an M3a unit is asked for its rows at depth and no more; `--unit <later unit>` checks the lines one of
+whose alternatives names that unit's names and otherwise names at depth.
+
     python3 scripts/check_facts_trace.py --self-test   # each rule on fixture gap maps, traces, facts and units
 """
 import contextlib
@@ -93,7 +105,11 @@ import check_spec_trace
 DOCS = Path("docs")
 UNITS = Path("scripts/widget_units.toml")
 # The units file's tables that are no unit.
-TABLES = ("deferred", "hand_written", "prefixes", "staged")
+TABLES = ("deferred", "hand_written", "prefixes", "staged", "kept", "at_depth", "later")
+# A later unit's kinds (S6.1, S17; ADD-A147): a unit of depth, a parking unit.
+LATER_KINDS = ("depth", "parking")
+# The names a later unit holds per catalogue entry.
+ENTRY_NAMES = ("variants", "states")
 UNIT_SUFFIX = re.compile(r"_(?:px|ms|deg|pt)$")
 CONTEXT_RX = re.compile(r"context\s+(?:any\s+|nearest\s+\{([^}]*)\}\s*=\s*)?"
                         r"(component\.[a-z_][a-z0-9_]*|[a-z_][a-z0-9_]*)")
@@ -110,6 +126,7 @@ class Unit:
     name: str
     entries: tuple
     deferred: tuple = ()
+    kept: dict = field(default_factory=dict)   # {preset: (paths)}: the keyed entries at depth its stagings cover
 
 
 @dataclass
@@ -137,6 +154,19 @@ def segs(path: str) -> list:
     return [UNIT_SUFFIX.sub("", s) for s in path.split(".")]
 
 
+def deferred_path(widget: str, name: str) -> str:
+    """The path a `[deferred.<widget>]` key defers: `<widget>.<part>.<field>` for a part's field (`body.transitions`),
+    else the widget value `<widget>.values.<name>`."""
+    return f"{widget}.{name}" if "." in name else f"{widget}.values.{name}"
+
+
+def under(path: list, prefix: list) -> bool:
+    """Whether `path` starts with `prefix`, segment by segment, a `*` segment of the prefix standing for any one, a
+    `@*` for any keyed one (`role.@*`, the keyed colour roles)."""
+    return len(path) >= len(prefix) and all(p == "*" or p == s or p == "@*" and s.startswith("@")
+                                            for p, s in zip(prefix, path))
+
+
 def read_units(root: Path) -> dict:
     """{name: Unit}: scripts/widget_units.toml's enabled units, each with its catalogue entries and its `prefixes`,
     each holding no path it stages (`staged`) and no value a unit defers (`deferred`)."""
@@ -161,7 +191,11 @@ def read_units(root: Path) -> dict:
     if not isinstance(staged, dict) or not all(
             isinstance(ps, dict) and all(isinstance(u, str) for u in ps.values()) for ps in staged.values()):
         raise InputError(f"{UNITS}: `staged` is not a table of unit names to tables of paths to units")
-    dpaths = tuple(f"{w}.values.{v}" for w, vs in deferred.items() for v in vs)
+    kept = data.get("kept", {})
+    if not isinstance(kept, dict) or not all(
+            isinstance(ps, dict) and all(str_list(ks) for ks in ps.values()) for ps in kept.values()):
+        raise InputError(f"{UNITS}: `kept` is not a table of unit names to tables of presets to lists of paths")
+    dpaths =tuple(deferred_path(w, v) for w, vs in deferred.items() for v in vs)
     out = {}
     for name, entries in data.items():
         if name in TABLES:
@@ -169,8 +203,9 @@ def read_units(root: Path) -> dict:
         if not isinstance(entries, list) or not all(isinstance(e, str) and e for e in entries):
             raise InputError(f"{UNITS}: unit `{name}` is not a list of widget names or target prefixes")
         out[name] = Unit(name, tuple(entries) + tuple(prefixes.get(name, ())),
-                         dpaths + tuple(staged.get(name, {})))
-    for table in ("prefixes", "staged"):
+                         dpaths + tuple(staged.get(name, {})),
+                         {p: tuple(ks) for p, ks in kept.get(name, {}).items()})
+    for table in ("prefixes", "staged", "kept"):
         for name in data.get(table, {}):
             if name not in out:
                 raise InputError(f"{UNITS}: `{table}.{name}` names no enabled unit")
@@ -217,11 +252,14 @@ def target_paths(target: str) -> list:
     return out
 
 
-def in_unit(path: str, kind: str, unit: Unit) -> bool:
+def in_unit(path: str, kind: str, unit: Unit, preset: str | None = None) -> bool:
+    """Whether a path lies in the unit: under one of its entries or prefixes and under no path it stages or defers,
+    unless the preset keeps it (`[kept]`, an entry under that staged path; with no preset, any preset)."""
     p = segs(path)
+    kept = unit.kept.get(preset, ()) if preset else [k for ks in unit.kept.values() for k in ks]
     for d in unit.deferred:
         ds = segs(d)
-        if p[:len(ds)] == ds:
+        if under(p, ds) and not any(under(p, segs(k)) and under(segs(k), ds) for k in kept):
             return False
     for e in unit.entries:
         es = segs(e)
@@ -257,6 +295,526 @@ def line_in(line: Line, scope: list, enabled: list, widgets: set) -> bool:
     return any(in_unit(x, line.kind, u) for u in scope for x in paths + sorted(contexts))
 
 
+# ----------------------------------------------------------------------------------------- the names at depth
+
+@dataclass
+class Later:
+    """A later unit (S6.1, S17; ADD-A147): one `[[later]]` table of the units file. It holds, model-wide, its
+    `conditions` and `directions`, the sizes beyond an element's default in force and the densities where `sizes`,
+    and per catalogue entry its groups of names, `{entry: ((presets or None, {"variants": set, "states": set}),
+    …)}`, a group on the presets it names, on every preset where it names none."""
+    name: str
+    kind: str
+    enabled: bool
+    conditions: tuple = ()
+    directions: tuple = ()
+    sizes: bool = False
+    names: dict = field(default_factory=dict)
+
+    def holds(self, entry: str, preset: str, kind: str, name: str) -> bool:
+        """Whether it holds the entry's variant or state flag (`kind`, ENTRY_NAMES) on the preset."""
+        return any((presets is None or preset in presets) and name in got.get(kind, ())
+                   for presets, got in self.names.get(entry, ()))
+
+
+def str_list(value) -> bool:
+    return isinstance(value, list) and all(isinstance(x, str) and x for x in value)
+
+
+def read_later(root: Path) -> tuple:
+    """(the later units in the file's order, `[at_depth]`: {key prefix: the conditions at depth for its keys}) of
+    scripts/widget_units.toml; InputError on any other shape: a unit's `name` (one per unit), `kind` (LATER_KINDS),
+    `enabled`, `conditions`, `directions` and `sizes`, and each other key a catalogue entry's list of groups, each
+    holding `variants`, `states` (ENTRY_NAMES) and `presets` alone."""
+    p = root / UNITS
+    try:
+        data = tomllib.loads(p.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as err:
+        raise InputError(f"{UNITS}: {err}") from err
+    at_depth = data.get("at_depth", {})
+    if not isinstance(at_depth, dict) or not all(str_list(v) for v in at_depth.values()):
+        raise InputError(f"{UNITS}: `at_depth` is not a table of key prefixes to lists of conditions")
+    tables = data.get("later", [])
+    if not isinstance(tables, list) or not all(isinstance(t, dict) for t in tables):
+        raise InputError(f"{UNITS}: `later` is not an array of [[later]] tables")
+    out, seen = [], set()
+    for t in tables:
+        name, kind, enabled = t.get("name"), t.get("kind"), t.get("enabled")
+        if not isinstance(name, str) or not name or name in seen:
+            raise InputError(f"{UNITS}: a [[later]] table has no `name`, or one another has: {name!r}")
+        seen.add(name)
+        if kind not in LATER_KINDS or not isinstance(enabled, bool):
+            raise InputError(f"{UNITS}: later unit `{name}`: `kind` is none of {LATER_KINDS}, or `enabled` no "
+                             f"boolean")
+        for k in ("conditions", "directions"):
+            if not str_list(t.get(k, [])):
+                raise InputError(f"{UNITS}: later unit `{name}`: `{k}` is not a list of names")
+        if not isinstance(t.get("sizes", False), bool):
+            raise InputError(f"{UNITS}: later unit `{name}`: `sizes` is no boolean")
+        names = {}
+        for entry, groups in t.items():
+            if entry in ("name", "kind", "enabled", "conditions", "directions", "sizes"):
+                continue
+            if not isinstance(groups, list) or not all(
+                    isinstance(g, dict) and g and set(g) <= {"presets", *ENTRY_NAMES} and all(
+                        str_list(v) for v in g.values()) for g in groups):
+                raise InputError(f"{UNITS}: later unit `{name}`: `{entry}` is not a list of groups holding "
+                                 f"`presets`, `variants` and `states`")
+            names[entry] = tuple((tuple(g["presets"]) if "presets" in g else None,
+                                  {k: frozenset(g.get(k, ())) for k in ENTRY_NAMES}) for g in groups)
+        out.append(Later(name, kind, enabled, tuple(t.get("conditions", ())), tuple(t.get("directions", ())),
+                         t.get("sizes", False), names))
+    return out, at_depth
+
+
+def waiting_paths(root: Path) -> list:
+    """[(path, unit)]: each path `[staged.<unit>]` stages and each `[deferred.<widget>]` defers (deferred_path()), with
+    the later unit it waits for, in the file's order (read_units checks their shape)."""
+    try:
+        data = tomllib.loads((root / UNITS).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as err:
+        raise InputError(f"{UNITS}: {err}") from err
+    out = [(path, unit) for table in data.get("staged", {}).values() for path, unit in table.items()]
+    return out + [(deferred_path(w, name), unit) for w, vs in data.get("deferred", {}).items()
+                  for name, unit in vs.items()]
+
+
+# A combination (S17 *State models*): its variants, its state flags after the exclusive groups' drop, its
+# conditions, its size (None: it takes none; PENDING_SIZE: its default is pending, so no stated size holds) and
+# density, its direction.
+PENDING_SIZE = "<pending default>"
+LONE = {"first": True, "last": True, "only": True, "parity": "odd"}   # an element with no sibling (S7)
+
+
+@dataclass(frozen=True)
+class Combo:
+    variants: frozenset
+    states: frozenset
+    conditions: frozenset
+    size: str | None = None
+    density: str | None = None
+    direction: str = "ltr"
+
+
+def listed(when, k) -> set:
+    v = when.get(k) if isinstance(when, dict) else None
+    return {x for x in v if isinstance(x, str)} if isinstance(v, list) else set()
+
+
+@dataclass(frozen=True)
+class Match:
+    """A `when` read once for combo_holds(): per kind its positive and negative names, whether it can hold in a
+    combination of no ancestor and no sibling at all (`never`), its `latest` flags."""
+    lists: tuple
+    never: bool
+    latest: tuple
+
+
+MATCH_KINDS = ("conditions", "states", "variants", "sizes", "densities")
+
+
+def compiled(when) -> Match:
+    """The `when` as combo_holds() reads it: no positive context, size class or other direction than the default
+    holds at depth, and a position holds only as an element's alone (no sibling)."""
+    when = when if isinstance(when, dict) else {}
+    lists = tuple((frozenset(listed(when, k)), frozenset(listed(when, "not_" + k))) for k in MATCH_KINDS)
+    sc = when.get("size_class") if isinstance(when.get("size_class"), dict) else {}
+    pos = when.get("position")
+    never = (bool(when.get("context")) or when.get("direction", "ltr") != "ltr"
+             or any(listed(sc, a) for a in ("horizontal", "vertical"))
+             or isinstance(pos, dict) and (any(k in pos and pos[k] != LONE[k] for k in LONE) or "previous" in pos
+                                           or "next" in pos))
+    latest = when.get("latest") if isinstance(when.get("latest"), dict) else {}
+    return Match(lists, never, tuple(sorted(latest.items())))
+
+
+def combo_holds(when, c: Combo, recency: dict) -> bool:
+    """Whether a `when` (or its Match) holds in a combination of no ancestor and no sibling (S11's matching): every
+    positive list held, no negative one met, its position an element's alone, its `latest` flags present and made
+    latest by one order (check_facts.orders_possible)."""
+    m = when if isinstance(when, Match) else compiled(when)
+    if m.never:
+        return False
+    sizes = frozenset([c.size]) if c.size else frozenset()
+    densities = frozenset([c.density]) if c.density else frozenset()
+    for (pos, neg), have in zip(m.lists, (c.conditions, c.states, c.variants, sizes, densities)):
+        if not pos <= have or neg & have:
+            return False
+    if m.latest:
+        latest = dict(m.latest)
+        if not (set(latest.values()) <= c.states and check_facts.orders_possible(latest, c.states, recency)):
+            return False
+    return True
+
+
+def condition_kind(condition: str) -> str:
+    """A condition's kind, one value of which a combination holds at most (S7.1, S12)."""
+    if condition in check_facts.CONTRAST:
+        return "contrast"
+    head, sep, rest = condition.partition(":")
+    if head == "container_size":
+        return "container_size:" + rest.split(":", 1)[0]
+    return head if sep else condition
+
+
+def preset_when(when, preset) -> dict:
+    """A fact's `when` for a preset it holds for: `preset:<id>` out of `conditions`, every preset out of
+    `not_conditions`, a list emptied so gone."""
+    out = {}
+    for k, v in (when if isinstance(when, dict) else {}).items():
+        if k == "conditions" and isinstance(v, list):
+            v = [c for c in v if c != f"preset:{preset}"]
+        elif k == "not_conditions" and isinstance(v, list):
+            v = [c for c in v if not (isinstance(c, str) and c.startswith("preset:"))]
+        if isinstance(v, list) and not v:
+            continue
+        out[k] = v
+    return out
+
+
+def for_preset(when, preset) -> bool:
+    """Whether a fact or state-model entry holds for the preset (S17 *Generations*)."""
+    named = {c[7:] for c in listed(when, "conditions") if c.startswith("preset:")}
+    return (not named or named == {preset}) and f"preset:{preset}" not in listed(when, "not_conditions")
+
+
+def context_names(when) -> set:
+    """The widgets a `when`'s positive lists name as an ancestor or a sibling (its `context` entries and their
+    `nearest` scopes, its position's `among`, `previous` and `next`), the units a fact belongs to beside its key's
+    (S17, ADD-A128); a negative list adds none."""
+    out = set()
+    for e in when.get("context", []) if isinstance(when.get("context"), list) else []:
+        if isinstance(e, dict):
+            out |= {e["widget"]} if isinstance(e.get("widget"), str) else set()
+            scope = e.get("scope")
+            out |= listed(scope, "nearest") if isinstance(scope, dict) else set()
+    pos = when.get("position") if isinstance(when.get("position"), dict) else {}
+    out |= listed(pos, "among")
+    for k in ("previous", "next"):
+        if isinstance(pos.get(k), dict) and isinstance(pos[k].get("widget"), str):
+            out.add(pos[k]["widget"])
+    return out
+
+
+SEARCH_LIMIT = 5_000   # combinations each step of a later unit's search reads for one fact, fewest names first
+
+
+class Depth:
+    """The names at depth and the predicate of a fact's units (S17 *While 0.8.0 is built*; ADD-A147), over the
+    facts' state models (`items`, check_facts.load()'s) and the units file.
+
+    The names at depth of a catalogue entry on a preset are every name of its state models and facts that no later
+    unit not enabled holds there (the units file's `[[later]]`): every name lies in exactly one place, the entry's
+    Depth line or one later unit, which scripts/check_facts.py checks, so the complement is the Depth line. A
+    condition is at depth for a key unless a unit not enabled holds it and `[at_depth]` names it for none of the
+    key's prefixes; the scheme, `contrast_high` and the preset's default flavour no unit holds.
+
+    The state model in force (S10's *Later names*): the default flavour's entry for the preset (its own over the
+    platform's shared one) while the flavours unit is not enabled, each flavour's beside it under `flavor:<f>` once
+    it is; an element holding only variants at depth, at its default size in force (its `sizes_by_variant` entry's
+    default, else the widget's; none where it takes none) and no density while the sizes unit is not enabled. Its
+    combinations at depth: each variant set the entry draws (check_facts.drawn_set_lists, the single variants and
+    none) of variants at depth that `requires_variants` allows, each state combination it draws
+    (check_facts.state_combinations) of flags at depth, each scheme it lists and each choice of one value or none per
+    kind of its other axis conditions at depth, less those a `not_drawn` entry names; no ancestor, sibling or
+    direction but the default (a host context is its host's unit's).
+
+    The predicate (unit()): a fact is of the enabled units when its key lies in an enabled unit (not staged or
+    deferred), every widget its positive lists name lies in one, and its `when` holds in a combination at depth
+    (combo_holds()) where its part is drawn: the last presence fact of the part (`<widget>.<part>`) holding there is
+    not `absent` or a `drawn_as`, a pending one counting as drawn. A key of no widget (a colour role, an input, a
+    token) holds in a combination of the scheme and the conditions at depth for it. Every other fact is a later
+    unit's: the first in the file's order among the units holding a name its positive lists need; where they need
+    none (its part drawn only under a later name, a variant at depth drawn nowhere at depth), the first whose names,
+    added to the enabled ones with every unit before it, make it hold (at most SEARCH_LIMIT combinations read for
+    each); "none" where none does (a stray fact)."""
+
+    def __init__(self, root: Path, items, units=None, later=None):
+        self.units = read_units(root) if units is None else units
+        self.later, self.at_depth = read_later(root) if later is None else later
+        self.waiting = waiting_paths(root)
+        self.order = {u.name: i for i, u in enumerate(self.later)}
+        self.models, self.presences = {}, {}
+        for it in items:
+            if getattr(it, "palette", False):
+                continue
+            d = it.data
+            if it.table == "model" and isinstance(d.get("widget"), str):
+                self.models.setdefault((it.platform, d["widget"]), []).append(d)
+            elif it.table == "fact" and isinstance(d.get("key"), str) and len(d["key"].split(".")) == 2:
+                self.presences.setdefault((it.platform, d["key"]), []).append(d)
+        self._combos, self._drawn, self._held = {}, {}, {}
+
+    # the names
+
+    def off(self, entry: str, preset: str, kind: str, name: str, added=()) -> str | None:
+        """The first later unit, not enabled nor among `added`, that holds the entry's variant or state flag on the
+        preset; None where the name is at depth."""
+        return next((u.name for u in self.later if not u.enabled and u.name not in added
+                     and u.holds(entry, preset, kind, name)), None)
+
+    def condition_off(self, condition: str, key: str, added=()) -> str | None:
+        """The first later unit, not enabled nor among `added`, that holds the condition, unless `[at_depth]` names it
+        for a prefix of `key`; None where it is at depth."""
+        if condition.startswith(("scheme:", "preset:")):
+            return None
+        if any(condition in cs and under(segs(key), segs(prefix)) for prefix, cs in self.at_depth.items()):
+            return None
+        return next((u.name for u in self.later if not u.enabled and u.name not in added
+                     and condition in u.conditions), None)
+
+    def direction_off(self, direction: str, added=()) -> str | None:
+        return next((u.name for u in self.later if not u.enabled and u.name not in added
+                     and direction in u.directions), None)
+
+    def sizes_off(self, added=()) -> str | None:
+        """The sizes unit's name while it is neither enabled nor among `added`."""
+        return next((u.name for u in self.later if u.sizes and not u.enabled and u.name not in added), None)
+
+    def held(self, path: str, preset: str | None = None) -> bool:
+        """Whether a key or widget lies in an enabled unit on the preset (in_unit), an S9 input always."""
+        if path.startswith("input."):
+            return True
+        if (path, preset) not in self._held:
+            self._held[(path, preset)] = any(in_unit(path, "", u, preset) for u in self.units.values())
+        return self._held[(path, preset)]
+
+    # the state model in force
+
+    def entries(self, platform: str, widget: str, preset: str) -> list:
+        """[(the flavour condition or None, the entry)]: the default flavour's entry in force for the preset, its own
+        over the platform's shared one, then each flavour's while the flavours unit is enabled or added (the units
+        that are enabled read only that flag of it)."""
+        es = [d for d in self.models.get((platform, widget), [])
+              if for_preset(d.get("when"), preset) and d.get("available", True) is not False]
+        flavor = [(d, next((c for c in listed(d.get("when"), "conditions") if c.startswith("flavor:")), None))
+                  for d in es]
+        plain = [d for d, f in flavor if f is None]
+        named = [d for d in plain if any(c.startswith("preset:") for c in listed(d.get("when"), "conditions"))]
+        out = [(None, (named or plain)[-1])] if plain else []
+        return out + [(f, d) for d, f in flavor if f is not None]
+
+    def model(self, platform: str, widget: str, preset: str):
+        """The default flavour's entry in force for the preset, or None."""
+        found = self.entries(platform, widget, preset)
+        return found[0][1] if found and found[0][0] is None else None
+
+    def default_size(self, model, variants) -> str | None:
+        """The default size in force of an element holding `variants` (S10): its first `sizes_by_variant` entry's
+        whose variant it holds, else the widget's; None where it takes no size, PENDING_SIZE where the default is
+        pending."""
+        entry = next((e for e in model.get("sizes_by_variant", []) if isinstance(e, dict)
+                      and e.get("variant") in variants and isinstance(e.get("sizes"), list)), None)
+        sizes = entry["sizes"] if entry else model.get("sizes", [])
+        if not sizes:
+            return None
+        default = entry.get("default_size", model.get("default_size")) if entry else model.get("default_size")
+        return default if isinstance(default, str) else PENDING_SIZE
+
+    def combos(self, platform: str, widget: str, preset: str) -> tuple:
+        """([the combinations at depth of the widget's state model in force on the preset], [each one's recency
+        sets]), computed once."""
+        k = (platform, widget, preset)
+        if k not in self._combos:
+            got = list(self.stream(platform, widget, preset))
+            self._combos[k] = ([c for c, _ in got], [r for _, r in got])
+        return self._combos[k]
+
+    def stream(self, platform: str, widget: str, preset: str, added=frozenset(), when=None, budget=None,
+               prefer=frozenset()):
+        """Each (combination, its recency sets) of the widget's state model in force on the preset, the units `added`
+        counted as enabled, in order, computed as it is read; with `when`, only the variant sets and state
+        combinations its positive and negative lists admit; with `budget`, ending after that many candidates, those
+        a `not_drawn` entry names counted; with `prefer`, the variant sets and state combinations holding one of its
+        names first."""
+        read = 0
+        flavours_on = not any(u.name == "flavours" and not u.enabled and u.name not in added for u in self.later)
+        want = {k: listed(when, k) for k in ("variants", "not_variants", "states", "not_states")}
+        for flavor, model in self.entries(platform, widget, preset):
+            if flavor is not None and (not flavours_on or self.condition_off(flavor, widget, added)):
+                continue
+            rec = check_facts.recency_of(model)
+            variants = {v for v in model.get("variants", []) if isinstance(v, str)
+                        and not self.off(widget, preset, "variants", v, added)}
+            sets_listed, sets_products = check_facts.drawn_set_lists(model)
+            undrawn = [x for x in model.get("not_drawn", []) if isinstance(x, dict) and x
+                       and set(x) <= {"variants", "not_variants"}]
+            sets = {frozenset()} | {frozenset([v]) for v in variants} | sets_listed | sets_products
+            sets = [s for s in sets if s <= variants and check_facts.requires_ok(model, s)
+                    and not any(listed(x, "variants") <= s and not listed(x, "not_variants") & s for x in undrawn)
+                    and want["variants"] <= s and not want["not_variants"] & s]
+            states = sorted((s for s in check_facts.state_combinations(model)
+                             if not any(self.off(widget, preset, "states", f, added) for f in s)
+                             and want["states"] <= s and not want["not_states"] & s),
+                            key=lambda s: (not s & prefer, len(s), sorted(s)))
+            axes = model.get("axes") if isinstance(model.get("axes"), dict) else {}
+            axis = [c for c in axes.get("conditions", []) if isinstance(c, str)]
+            schemes = [c for c in axis if c.startswith("scheme:")] or ["scheme:light", "scheme:dark"]
+            kinds = {}
+            for c in axis:
+                if not c.startswith("scheme:") and not self.condition_off(c, widget, added):
+                    kinds.setdefault(condition_kind(c), []).append(c)
+            vectors = [frozenset([s] + ([flavor] if flavor else [])) for s in schemes]
+            for values in kinds.values():
+                vectors = [v | extra for v in vectors for extra in [frozenset()] + [frozenset([x]) for x in values]]
+            sized = self.sizes_off(added) is None
+            densities = [None] + ([d for d in model.get("densities", []) if isinstance(d, str)] if sized else [])
+            nd = [compiled(x) for x in model.get("not_drawn", []) if isinstance(x, dict) and x]
+            for s in sorted(sets, key=lambda x: (not x & prefer, len(x), sorted(x))):
+                if sized:
+                    entry = next((e for e in model.get("sizes_by_variant", []) if isinstance(e, dict)
+                                  and e.get("variant") in s and isinstance(e.get("sizes"), list)), None)
+                    sizes = [z for z in (entry["sizes"] if entry else model.get("sizes", [])) if isinstance(z, str)]
+                    sizes = sizes or [None]
+                else:
+                    sizes = [self.default_size(model, s)]
+                for size in sizes:
+                    for density in densities:
+                        for st in states:
+                            for cv in vectors:
+                                read += 1
+                                if budget is not None and read > budget:
+                                    return
+                                c = Combo(s, frozenset(st), cv, size, density)
+                                if not any(combo_holds(x, c, rec) for x in nd):
+                                    yield c, rec
+
+    def presence_facts(self, platform: str, part_key: str, preset: str) -> list:
+        """[(its `when` for the preset read as a Match, the fact)] of the part's presence facts holding for the preset,
+        in order (the accent run's left out: they apply in that run alone), computed once."""
+        k = ("presence", platform, part_key, preset)
+        if k not in self._drawn:
+            self._drawn[k] = [(compiled(preset_when(d.get("when"), preset)), d)
+                              for d in self.presences.get((platform, part_key), [])
+                              if for_preset(d.get("when"), preset) and "scheme_file" not in d and "accent" not in d]
+        return self._drawn[k]
+
+    @staticmethod
+    def drawn_in(facts: list, c: Combo, rec: dict) -> bool:
+        """Whether the part resolves drawn in the combination: the last of its presence facts `facts` holding there is
+        not `absent` or a `drawn_as` (S6.3); a pending one counts as drawn (S17)."""
+        last = next((d for w, d in reversed(facts) if combo_holds(w, c, rec)), None)
+        value = None if last is None or "pending" in last else last.get("value")
+        return not (value == "absent" or isinstance(value, dict) and "drawn_as" in value)
+
+    def drawn(self, platform: str, part_key: str, preset: str) -> list:
+        """Per combination of combos(), whether the part resolves drawn (drawn_in()), computed once."""
+        k = (platform, part_key, preset)
+        if k not in self._drawn:
+            cs, recs = self.combos(platform, part_key.split(".")[0], preset)
+            facts = self.presence_facts(platform, part_key, preset)
+            self._drawn[k] = [self.drawn_in(facts, c, rec) for c, rec in zip(cs, recs)]
+        return self._drawn[k]
+
+    @staticmethod
+    def part_of(key: str) -> str | None:
+        """`<widget>.<part>` of a part's field's key; None for a widget value, a part's own key or a key of no
+        widget."""
+        seg = key.split(".")
+        return f"{seg[0]}.{seg[1]}" if len(seg) > 2 and seg[1] != "values" else None
+
+    def holds_at(self, platform: str, key: str, when: dict, preset: str) -> bool:
+        """Whether a fact of a widget's key holds in a combination at depth where its part is drawn."""
+        widget, part = key.split(".")[0], self.part_of(key)
+        cs, recs = self.combos(platform, widget, preset)
+        drawn = self.drawn(platform, part, preset) if part else None
+        m = compiled(when)
+        return any((drawn is None or drawn[i]) and combo_holds(m, c, rec)
+                   for i, (c, rec) in enumerate(zip(cs, recs)))
+
+    def holds_with(self, platform: str, key: str, when: dict, preset: str, added: frozenset, limit: int,
+                   prefer=frozenset()) -> bool:
+        """holds_at() with the units `added` counted as enabled, reading at most `limit` candidate combinations, those
+        holding a name of `prefer` (the last unit added's) first."""
+        widget, part = key.split(".")[0], self.part_of(key)
+        facts = self.presence_facts(platform, part, preset) if part else None
+        m = compiled(when)
+        return any(combo_holds(m, c, rec) and (facts is None or self.drawn_in(facts, c, rec))
+                   for c, rec in self.stream(platform, widget, preset, added, when, limit, prefer))
+
+    @staticmethod
+    def names_of(unit: Later, widget: str) -> frozenset:
+        """The variants and state flags a later unit holds for the entry, on any preset."""
+        return frozenset(n for _, got in unit.names.get(widget, ()) for names in got.values() for n in names)
+
+    def key_unit(self, key: str) -> str:
+        """The unit a key no enabled unit holds waits for: the one the longest `[staged]` or `[deferred]` path above it
+        names, else its widget (an entry of a unit not enabled)."""
+        p = segs(key)
+        found = [(len(segs(path)), unit) for path, unit in self.waiting if under(p, segs(path))]
+        return max(found, key=lambda x: x[0])[1] if found else p[0]
+
+    def unit(self, platform: str, key: str, when, preset: str) -> str | None:
+        """None where a fact of the platform holding for the preset (its `when` as written) is of the enabled units;
+        else the later unit it waits for (the class's docstring)."""
+        when = preset_when(when, preset)
+        if not self.held(key, preset):
+            return self.key_unit(key)
+        for w in sorted(context_names(when)):
+            if not self.held(w):
+                return w
+        needed = [self.condition_off(c, key) for c in listed(when, "conditions")]
+        widget = key.split(".")[0]
+        if widget in ("role", "token", "input"):
+            needed = [u for u in needed if u]
+            if needed:
+                return min(needed, key=self.order.get)
+            kinds = [condition_kind(c) for c in listed(when, "conditions")]
+            return None if len(kinds) == len(set(kinds)) else "none"
+        latest = when.get("latest") if isinstance(when.get("latest"), dict) else {}
+        needed += [self.off(widget, preset, "variants", v) for v in listed(when, "variants")]
+        needed += [self.off(widget, preset, "states", s) for s in listed(when, "states") | set(latest.values())]
+        needed += [self.direction_off(when["direction"]) for _ in (0,) if isinstance(when.get("direction"), str)]
+        if listed(when, "densities"):
+            needed.append(self.sizes_off())
+        needed = [u for u in needed if u]
+        if needed:
+            return min(needed, key=self.order.get)
+        sizes = listed(when, "sizes")
+        if sizes and self.sizes_off():
+            model = self.model(platform, widget, preset)
+            cs, _ = self.combos(platform, widget, preset)
+            if model is not None and not sizes & {c.size for c in cs}:
+                return self.sizes_off()
+        if self.holds_at(platform, key, when, preset):
+            return None
+        part = self.part_of(key)
+        first = self.part_drawn_from(platform, part, preset) if part else 0
+        added = frozenset()
+        for i, u in enumerate(self.later):
+            if u.enabled:
+                continue
+            added |= {u.name}
+            if i >= first and self.holds_with(platform, key, when, preset, added, SEARCH_LIMIT,
+                                              self.names_of(u, widget)):
+                return u.name
+        return "none"
+
+    def part_drawn_from(self, platform: str, part_key: str, preset: str) -> int:
+        """The place in the file's order of the first later unit whose names, with every unit's before it, draw the
+        part in some combination (0 where it is drawn at depth; past the last where none does), computed once: no
+        field of it holds anywhere drawn before."""
+        k = ("from", platform, part_key, preset)
+        if k not in self._drawn:
+            facts = self.presence_facts(platform, part_key, preset)
+            widget = part_key.split(".")[0]
+            found, added = len(self.later), frozenset()
+            if any(self.drawn(platform, part_key, preset)):
+                found = 0
+            else:
+                for i, u in enumerate(self.later):
+                    if u.enabled:
+                        continue
+                    added |= {u.name}
+                    if any(self.drawn_in(facts, c, rec)
+                           for c, rec in self.stream(platform, widget, preset, added, budget=SEARCH_LIMIT,
+                                                     prefer=self.names_of(u, widget))):
+                        found = i
+                        break
+            self._drawn[k] = found
+        return self._drawn[k]
+
+
 # ---------------------------------------------------------------------------------------------- the check
 
 def read_lines(root: Path) -> list:
@@ -277,10 +835,11 @@ def read_lines(root: Path) -> list:
     return out
 
 
-def carried_rows(ctx) -> dict:
+def carried_rows(ctx, items=None) -> dict:
     """{platform: {row: the keys of the facts and state-model entries whose `rows` list it}}: a fact's `key` (a
-    pending fact's too), a state-model entry's `widget`."""
-    items, _, _ = check_facts.load(ctx)
+    pending fact's too), a state-model entry's `widget`; `items` check_facts.load()'s, loaded where not given."""
+    if items is None:
+        items, _, _ = check_facts.load(ctx)
     out = {}
     for it in items:
         if it.palette:
@@ -370,12 +929,74 @@ def line_carried(ctx, line: Line, keys) -> bool:
     return False
 
 
-def check(ctx, units, enabled=(), assumed=()):
+SELECTOR_NAME = re.compile(r"(?<![!\w])(?:variants \{(?P<vs>[^}]*)\}|variant (?P<v>@?\w+)|cond (?P<c>[\w:@]+)"
+                           r"|size (?P<z>\w+)|density (?P<d>\w+)|dir (?P<dir>\w+)|\{(?P<s>[^}]*)\})"
+                           r"|^(?P<bare>@?[a-z_][a-z0-9_]*)$")
+
+
+def selector_alternatives(target: str) -> list:
+    """The names of each alternative of a trace target's selector (the catalogue's *Selector notation*: ` / ` between
+    alternatives, a bare name continuing a variant), the target cell up to its first backtick: [{kind: {names}}],
+    kinds `variants`, `states`, `conditions`, `sizes`, `densities`, `directions`; the names of an ancestor (after
+    `context`) left out, its widget's unit deciding it (line_in)."""
+    code = target.split("`", 1)[0]
+    if " @ " not in code:
+        return [{}]
+    selector = code.split(" @ ", 1)[1]
+    out = []
+    for alt in selector.split(" / "):
+        own = alt.split(" context ", 1)[0].split("context ", 1)[0] if not alt.startswith("context") else ""
+        names = {k: set() for k in ("variants", "states", "conditions", "sizes", "densities", "directions")}
+        for m in SELECTOR_NAME.finditer(own.strip()):
+            if m["vs"]:
+                names["variants"] |= {x.strip() for x in m["vs"].split(",")}
+            for k, g in (("variants", "v"), ("variants", "bare"), ("conditions", "c"), ("sizes", "z"),
+                         ("densities", "d"), ("directions", "dir")):
+                if m[g]:
+                    names[k].add(m[g])
+            if m["s"]:
+                names["states"] |= {x.strip() for x in m["s"].split(",")}
+        out.append(names)
+    return out
+
+
+def line_later(line: Line, depth, presets: list) -> list:
+    """Per alternative of the line's selector, the later units not enabled holding its names on every preset of the
+    line's platform (`presets`; a name at depth on one of them is at depth for the line): its variants and state
+    flags for the target's entry, its conditions for the target's path (Depth), a size no default in force of the
+    entry's state model on those presets, a density, a direction."""
+    paths = target_paths(line.target)
+    path = paths[0] if paths else ""
+    entry = path.split(".")[0]
+    defaults = {c.size for p in presets for c in depth.combos(line.platform, entry, p)[0]} if presets else set()
+    out = []
+    for names in selector_alternatives(line.target):
+        units = set()
+        for kind in ("variants", "states"):
+            for n in names.get(kind, ()):
+                held = [depth.off(entry, p, kind, n) for p in presets]
+                if held and all(held):
+                    units.add(held[0])
+        units |= {u for c in names.get("conditions", ()) if (u := depth.condition_off(c, path))}
+        if names.get("sizes") and depth.sizes_off() and not names["sizes"] & defaults:
+            units.add(depth.sizes_off())
+        if names.get("densities") and depth.sizes_off():
+            units.add(depth.sizes_off())
+        units |= {u for d in names.get("directions", ()) if (u := depth.direction_off(d))}
+        out.append(units)
+    return out
+
+
+def check(ctx, units, enabled=(), assumed=(), later=None):
     """(findings as (platform, row, target, what), {platform: Tally}, {platform: existing presets}).
     `units` None checks every line; `enabled` are the other enabled units (a context widget may lie there);
-    `assumed` the presets checked as if they existed (`--preset`)."""
+    `assumed` the presets checked as if they existed (`--preset`). With `units`, a line is checked where one
+    alternative of its selector names only names at depth (line_later()), or, with `later` (a later unit's name), where
+    one names names of that unit and else at depth (S17, ADD-A147)."""
     lines = read_lines(ctx.root)
-    carried = carried_rows(ctx)
+    items, _, _ = check_facts.load(ctx)
+    carried = carried_rows(ctx, items)
+    depth = Depth(ctx.root, items) if units is not None else None
     existing = check_facts.existing_presets(ctx.root) | set(assumed)
     widgets = set(ctx.entries)
     presets = {p: sorted(set(ps) & existing) for p, ps in check_facts.PLATFORMS.items()}
@@ -383,6 +1004,10 @@ def check(ctx, units, enabled=(), assumed=()):
     for line in lines:
         if units is not None and not line_in(line, list(units), list(enabled), widgets):
             continue
+        if depth is not None:
+            alts = line_later(line, depth, list(check_facts.PLATFORMS[line.platform]))
+            if not any(a == ({later} if later else set()) for a in alts):
+                continue
         t = tallies[line.platform]
         t.lines += 1
         t.rows.add(line.row)
@@ -525,6 +1150,132 @@ scaffold_placement = "placement"
 [hand_written]
 placement = false
 '''
+
+
+# The depth's fixture (synthetic names and values): a units file with later units, a state model and facts.
+DEPTH_UNITS = '''slice = ["button"]
+[prefixes]
+slice = ["role", "token.text"]
+[staged.slice]
+"token.text.keyed" = "text_styles"
+"token.text.keyed.*.weight" = "accessibility_text"
+[kept.slice]
+"adwaita" = ["token.text.keyed.body"]
+[deferred.button]
+"body.transitions" = "motion"
+[at_depth]
+"role.selection" = ["window_inactive"]
+[[later]]
+name = "styles"
+kind = "depth"
+enabled = false
+button = [{ variants = ["flat"] }]
+[[later]]
+name = "states"
+kind = "depth"
+enabled = false
+button = [{ states = ["open"] }]
+[[later]]
+name = "sizes"
+kind = "depth"
+enabled = false
+sizes = true
+[[later]]
+name = "window_activity"
+kind = "depth"
+enabled = false
+conditions = ["window_inactive"]
+[[later]]
+name = "ipad"
+kind = "depth"
+enabled = false
+conditions = ["idiom:pad"]
+button = [{ presets = ["adwaita"], states = ["hover"] }]
+[[later]]
+name = "text_styles"
+kind = "parking"
+enabled = false
+'''
+DEPTH_MODEL = {"widget": "button", "available": True, "variants": ["flat", "toggle", "primary"],
+               "sizes": ["regular", "small"], "default_size": "regular", "densities": [],
+               "axes": {"states": ["hover", "pressed", "open"], "conditions": ["scheme:light", "scheme:dark",
+                                                                             "window_inactive", "idiom:pad"]},
+               "exclusive": [], "variant_sets": [["flat", "toggle"]],
+               "not_drawn": [{"variants": ["toggle"], "not_variants": ["flat"]}]}
+DEPTH_CASES = [   # (preset, key, when, the unit; None: of the enabled units)
+    ("adwaita", "button.body.fill", {}, None),
+    ("adwaita", "button.body.fill", {"variants": ["primary"], "states": ["pressed"]}, None),
+    ("adwaita", "button.body.fill", {"variants": ["flat"]}, "styles"),
+    ("adwaita", "button.body.fill", {"states": ["open"], "variants": ["flat"]}, "styles"),
+    ("adwaita", "button.body.fill", {"states": ["hover"]}, "ipad"),
+    ("kde-breeze", "button.body.fill", {"states": ["hover"]}, None),
+    ("adwaita", "button.body.fill", {"not_states": ["open"], "not_variants": ["flat"]}, None),
+    ("adwaita", "button.body.fill", {"sizes": ["small"]}, "sizes"),
+    ("adwaita", "button.body.fill", {"sizes": ["regular"]}, None),
+    ("adwaita", "button.body.fill", {"conditions": ["window_inactive"]}, "window_activity"),
+    ("adwaita", "button.body.fill", {"conditions": ["idiom:pad", "window_inactive"]}, "window_activity"),
+    ("adwaita", "button.body.fill", {"variants": ["toggle"]}, "styles"),
+    ("adwaita", "button.body.fill", {"states": ["no_such_flag"]}, "none"),
+    ("adwaita", "button.body.transitions", {}, "motion"),
+    ("adwaita", "button.mark.glyph", {}, "styles"),
+    ("adwaita", "role.selection.background", {"conditions": ["window_inactive"]}, None),
+    ("adwaita", "role.window.background", {"conditions": ["window_inactive"]}, "window_activity"),
+    ("adwaita", "role.window.background", {"not_conditions": ["window_inactive"]}, None),
+    ("adwaita", "token.text.keyed.body.size", {}, None),
+    ("adwaita", "token.text.keyed.body.weight", {}, "accessibility_text"),
+    ("kde-breeze", "token.text.keyed.body.size", {}, "text_styles"),
+    ("adwaita", "token.text.keyed.title.size", {}, "text_styles"),
+]
+
+
+def depth_cases(base: Path) -> list:
+    """The depth's predicate and the trace lines' selector names (S17, ADD-A147) on DEPTH_UNITS."""
+    from types import SimpleNamespace
+    failures = []
+    root = base / "depth"
+    (root / UNITS).parent.mkdir(parents=True, exist_ok=True)
+    (root / UNITS).write_text(DEPTH_UNITS, encoding="utf-8")
+    items = [SimpleNamespace(table="model", platform=p, data=DEPTH_MODEL) for p in ("gnome", "kde")]
+    items += [SimpleNamespace(table="fact", platform=p, data={"key": "button.mark", "value": "absent"})
+              for p in ("gnome", "kde")]
+    items += [SimpleNamespace(table="fact", platform=p, data={"key": "button.mark", "value": "present",
+                                                              "when": {"variants": ["flat"]}})
+              for p in ("gnome", "kde")]
+    depth = Depth(root, items)
+    platform = {"adwaita": "gnome", "kde-breeze": "kde"}
+    for preset, key, when, want in DEPTH_CASES:
+        got = depth.unit(platform[preset], key, when, preset)
+        if got != want:
+            failures.append(f"depth: {preset} {key} {when}: got {got!r}, want {want!r}")
+    combos = depth.combos("gnome", "button", "adwaita")[0]
+    if {c.size for c in combos} != {"regular"} or any(c.variants & {"flat"} or c.states & {"open", "hover"}
+                                                     or "idiom:pad" in c.conditions for c in combos):
+        failures.append(f"depth: the combinations at depth hold a name beyond it: {combos[:4]}")
+    for target, want in (
+            ("button.body.fill @ {hover} variant flat", [{"variants": {"flat"}, "states": {"hover"}}]),
+            ("button.body.fill @ variant flat / @gray / variants {a,b} cond window_inactive size mini",
+             [{"variants": {"flat"}}, {"variants": {"@gray"}},
+              {"variants": {"a", "b"}, "conditions": {"window_inactive"}, "sizes": {"mini"}}]),
+            ("button.body.fill @ variant tool context toolbar.bar {hover}", [{"variants": {"tool"}}]),
+            ("button.body.fill", [{}])):
+        got = [{k: v for k, v in alt.items() if v} for alt in selector_alternatives(target)]
+        if got != want:
+            failures.append(f"selector_alternatives({target!r}): got {got}, want {want}")
+    line = Line("gnome", "X", "button.body.fill @ {hover} / variant flat", "rule")
+    if line_later(line, depth, ["adwaita"]) != [{"ipad"}, {"styles"}] or line_later(
+            line, depth, ["adwaita", "kde-breeze"]) != [set(), {"styles"}]:
+        failures.append(f"line_later: got {line_later(line, depth, ['adwaita'])}")
+    for bad in ('[[later]]\nname = "x"\nkind = "other"\nenabled = false\n',
+                '[[later]]\nname = "x"\nkind = "depth"\nenabled = false\nbutton = ["flat"]\n',
+                '[[later]]\nname = "x"\nkind = "depth"\nenabled = false\n[[later]]\nname = "x"\nkind = "depth"\n'
+                'enabled = false\n', '[at_depth]\n"role" = "window_inactive"\n'):
+        (root / UNITS).write_text('slice = ["button"]\n' + bad, encoding="utf-8")
+        try:
+            read_later(root)
+            failures.append(f"read_later accepted {bad!r}")
+        except InputError:
+            pass
+    return failures
 
 
 def write_fixture(root: Path, presets=(), units=SELF_TEST_UNITS, extra=None):
@@ -713,6 +1464,7 @@ def self_test() -> int:
         widget_input = Unit("fields", ("input",))
         if in_unit("input.accent", "input", widget_input) or not in_unit("input.body.fill", "field", widget_input):
             failures.append("in_unit: an S9 input is not the input widget")
+        failures += depth_cases(base)
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
@@ -742,7 +1494,8 @@ def main(argv) -> int:
         return 2
     try:
         known = read_units(Path("."))
-        others = []
+        waiting = [u.name for u in read_later(Path("."))[0] if not u.enabled]
+        others, later = [], None
         if not args:
             units, scope = None, "all"
         elif args[0] == "--enabled":
@@ -750,11 +1503,13 @@ def main(argv) -> int:
         elif args[1] in known:
             units, scope = [known[args[1]]], f"`{args[1]}`"
             others = [u for name, u in known.items() if name != args[1]]
+        elif args[1] in waiting:
+            units, scope, later = list(known.values()), f"`{args[1]}`", args[1]
         else:
-            print(f"error: unknown unit `{args[1]}` (units: {', '.join(known)})", file=sys.stderr)
+            print(f"error: unknown unit `{args[1]}` (units: {', '.join(list(known) + waiting)})", file=sys.stderr)
             return 2
         ctx = check_facts.Context(Path("."))
-        findings, tallies, presets = check(ctx, units, others, assumed)
+        findings, tallies, presets = check(ctx, units, others, assumed, later)
     except (OSError, UnicodeDecodeError, InputError, check_facts.InputError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
