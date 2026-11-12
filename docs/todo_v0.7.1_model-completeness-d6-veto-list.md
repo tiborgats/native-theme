@@ -49,7 +49,7 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   (the brief's count at a55cdcd2). Staging counts 21 of 27 at 7430a0a2 and leaves the correction to the
   orchestrator.
 
-**3. A role the platform does not name gets native-theme's labelled mapping (outcome 5, with the U651 pairing).**
+**3. A role the platform does not name may be identified with a colour the platform draws for its meaning (outcome 5, with the U651 pairing).**
 - *Decided:* a typed colour role that no source of the platform states is native-theme's own mapping where the
   platform draws the role's meaning in a colour of its own, documented or measured (item 56); a text slot every
   preset must fill takes a style or family the platform names. It is labelled as such, kept out of the gate's
@@ -68,14 +68,21 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   - the status text colours (`foreground`, the text on the status fill) are the colour the platform is measured
     drawing over that fill: on `macos-*` `alternateSelectedControlTextColor`, the text on emphasized content, where
     a probe pass (row U756) finds it equal, as the default push button's title is (0.7.0 drew `labelColor` there,
-    which its own preset names the body text beside a status mark); on `ios-*` the filled button's measured title
-    colour (row U755), checked on the second-tint run (U706); 0.7.0's was a literal with no source;
+    which its own preset names the body text beside a status mark); on `ios-*` the colour UIKit is measured drawing
+    a filled button's title in over that fill (row U755); each measured in a pass of its own once the reads have
+    paired the fills; 0.7.0's was a literal with no source;
   - a status's text colour on the surface (its `standalone`) waits on the same read as its fill, for all four
     statuses, paired where the platform is found drawing the status as text or a mark and absent otherwise (the
     specification's S3); the destructive role stays absent on `macos-*` and `ios-*`: no committed source or
     measurement shows it (row U761 retired). The set text colours (`negative`, `neutral`, `positive`) refer to the status's colour there,
     its fill where no text colour is paired, as on `windows-11`, so a connector's error-text field still gets the
-    platform's colour;
+    platform's colour. The cost: where the platform draws a status only as a fill, error text is drawn in that
+    fill's colour, which the platform itself never draws as text (0.7.0 did the same). Weighed against the set
+    colours absent there (`windows-11`'s sets would lose them too, and each connector's error-text field would take
+    its toolkit's colour) and against the reference kept on `windows-11` alone (one rule accepted on one preset and
+    refused on others, with egui's error text on `windows-11` its toolkit's red where iced draws the platform's). A
+    veto of this point alone leaves the set colours absent there, and the connector's error-text field then takes
+    the toolkit's colour (item 56);
   - on `adwaita` the info role's fill and text colour refer to the accent's fill and its foreground, the fill the
     colour libadwaita's info bar draws info from, as 0.7.0 drew it; its standalone colour stays absent, since
     libadwaita draws no info as text (item 56);
@@ -89,8 +96,8 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   theme could give, each connector would put either the toolkit's default there (against "connectors follow the
   theme's data") or a pairing of its own. For U651 the filled button is the one control in the slice that draws
   content on a tint fill.
-- *Veto brings:* the roles stay absent. 0.8.0 keeps losing the macOS status colours, and the rationale needs a rule
-  for what a connector puts in a toolkit field the model leaves empty. For U651 alone: a different witness for
+- *Veto brings:* the roles stay absent. 0.8.0 keeps losing the macOS status colours, and each connector draws its
+  toolkit's colour in those fields (item 56's exception). For U651 alone: a different witness for
   "content on the accent".
 - *Source:* outcome 5; register §2.2, U651, U509, §7 item 4; brief §2 decision 5; the orchestrator's decisions on
   the batch's checks N1 to N6 and F1 (`batch-check/decisions.md`, the checks in `batch-check/`), the rule's present
@@ -540,7 +547,7 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 
 - **The individual status-colour pairings (item 3).** The catalogue's *global roles* `status` row lists each once
   its row (U757–U760) closes, and item 3 names the status text colours, on `ios-*` the filled button's title colour
-  (U755).
+  over the status fill (U755).
 - **0.7.0's values under `tab`, `card`, `expander`, `status_bar` (item 48).** The query answers "not available"
   where 0.7.0 gave values. No source calls this a loss, so it is not in group B.
 - **The load gate's other parameters:** at most 10 runnable threads for a pass to count, a 30-minute bound for the

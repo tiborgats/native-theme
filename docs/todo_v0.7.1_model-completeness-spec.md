@@ -3198,19 +3198,21 @@ exception of its contract, the colour the toolkit's default theme of the resolve
 ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 56). Where the platform draws the
 meaning in no colour the theme has no data to follow, so this is an exception to "connectors follow the theme's
 data": for a widget the platform lacks the toolkit gives only its geometry (S21.3), here it gives a colour. A
-status's `foreground`, the text on its fill, is the colour the platform is measured drawing as text over a fill of
-that colour (the register's U756, U755), a reference to `role.global.accent_foreground` where it equals it. A text
+status's `foreground`, the text on its fill, is the colour the platform's code states for text on a fill of that
+colour (`adwaita`'s `info`) or the colour it is measured drawing there (the register's U756, U755), a reference to `role.global.accent_foreground` where it equals it. A text
 slot is filled on every preset (S4.4, R10): where the platform assigns no style to its use, the slot is the
 mapping's, a style the platform names or a family it names for the nearest uses, labelled alike (U509). Open at this
 batch: whether AppKit and UIKit draw `error`, `warning`, `success` and `info` in a colour. The register's U757–U760
 hold the candidates and what closes each; each status's `fill`, `standalone` and `foreground` are pending on its row
-until then (S17), and the catalogue's *global roles*, `status`, lists each pairing once decided. The four
-`standalone`s alike: whether the platform draws a status as text or a mark is as open as whether it draws its fill,
-so the row's read closes it, a witness drawn as text or a mark pairing it and none leaving it absent (ADD-A147;
-decision F1-21; rejected: `success`'s and `info`'s absent now, which would claim a survey nobody has made).
-`destructive` stays absent there by the same condition: no committed source or measurement shows it (the headers
-name a hue for a destructive action, `xcode@26.6 AppKit/NSTableViewRowAction.h:30`, `UIKit/UIActionSheet.h:41`, and
-a destructive button is a later unit of depth's).
+until then (S17), and with them the sets' status text colours that reference them (the catalogue's sets' row), and
+the catalogue's *global roles*, `status`, lists each pairing once decided. The four `standalone`s alike: a row's
+read examines how the platform draws the status, so it closes the `standalone` with the `fill`, a witness drawn as
+text or a mark pairing it and none leaving it absent (ADD-A147; decision F1-21; rejected: `success`'s and `info`'s
+absent now, which the read still open on the same status could reverse). `destructive` has no read at 0.8.0's depth
+and stays absent there until one is made: no committed source or measurement shows it (the headers name a hue for a
+destructive action, `xcode@26.6 AppKit/NSTableViewRowAction.h:30`, `UIKit/UIActionSheet.h:41`, and a destructive
+button is a later unit of depth's, its read that unit's). Absent says there that the platform declares no such
+colour (S17's absence citation), not that a survey found none.
 Rejected: a pairing native-theme picks where the platform draws the meaning in no colour (principle 3: a preset is
 the platform's look, unlike a palette, R19); the role absent whatever the platform draws (each connector would put
 there the toolkit's default also where the platform draws the meaning in a colour the theme could give, which
@@ -3725,7 +3727,7 @@ order, under one combination of conditions. A keyed style is the platform's styl
 `wrap` and `max_lines` that the platform's style does not set is `Absent` there and in the slots that reference it,
 and the parts that draw text in it state all four
 (S2.8, ADD-A130). The exception is a keyed style that is native-theme's labelled mapping (S3's clause for a text
-slot, which every preset fills, outside the conditions for a typed role; S17's `mapping`; ADD-A147): where the platform names no style for a slot, the slot references a keyed style of the
+slot, which every preset fills, outside the condition for a typed role; S17's `mapping`; ADD-A147): where the platform names no style for a slot, the slot references a keyed style of the
 mapping's, every leaf the body style's by reference but those the mapping states (`windows-11`'s
 `token.text.keyed.monospace`, the body style in a fixed-width family the pinned Microsoft pages name for the nearest
 uses, U509). Which keyed style fills a slot the platform names no style for is likewise the mapping's, and its fact
@@ -7075,7 +7077,7 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   the evidence's colour with the reference resolved under the fact's `when`, within `tolerance`. A measured pairing
   stated as a reference holds in every scheme and contrast the referenced colour states and under a second accent; a
   pairing to a colour that follows the accent is a measured derivation (below), with `inputs = ["input.accent"]`,
-  never a literal. A text slot's pairing that is a reference alone has no `cite`: no source assigns the style to the
+  never a literal (it would hold under the measured accent alone). A text slot's pairing that is a reference alone has no `cite`: no source assigns the style to the
   slot's use, and the label says so. So the verifier checks the element and the method (the plan's *Facts,
   independently*). The status
   pairings are listed in the catalogue's *global roles*; the text slots' pairings are the facts with `mapping`,
@@ -7086,7 +7088,8 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   checks the reference's target and the literals' citations, and, for a typed role, the cited source or measurement
   against S3's condition. The generated
   `platform-facts.md` shows it under its label, and the preset carries the label (S11). Rejected: a citation kind
-  of its own (a citation states where a value comes from, and the pairing comes from no source); a separate table
+  of its own (a citation states where a value comes from: a typed role's witness is a `published` or `measured`
+  citation as any other, and a text slot's assignment comes from no source); a separate table
   beside the facts (a second place the generator and the gate would read for one value).
 - **Sources** are pinned in `docs/facts/sources.toml`, whose header defines its entries: `[[source]]` entries of
   kind `git` (a repository at a release's commit, id `<name>@<version>`, or the commit's first eight hex digits where

@@ -1091,7 +1091,7 @@ fifteen and fifteen emphasized (MAT-TS4), WinUI eight, libadwaita about nine.
   keyed set of the platform's own styles.*
 
 **Decision:** the third (principle 4). Which style fills a slot the platform names no style for is native-theme's
-labelled mapping, never the platform's fact: every slot is filled, outside R5.1's conditions for a colour role, by a
+labelled mapping, never the platform's fact: every slot is filled, outside R5.1's condition for a colour role, by a
 style the platform names, or a family it names for the nearest uses, never a made-up font (R25.17; ADD-A147; D6, decided by logic, awaiting the maintainer's veto:
 veto list item 3). **Text scaling:** the text-scaling factor the reader reads (as today's
 `text_scaling_factor`; 1 where the platform scales text another way, as KDE does on Wayland by the font size
@@ -1799,7 +1799,7 @@ of that day:
 
 Amended by the 0.8.0 plan's checkpoint D6 (2026-11-10, outcomes 1, 2, 3, 5, 6, 7, 12 and 14; the specification's
 batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 1 to 8, 32 to 40, 42, 48, 49,
-54 and 56):
+54, 56 and 57):
 
 - R21: a unit enters at the depth 0.7.0's model and readers distinguish, its further variants, sizes, host contexts,
   states and conditions in later units of depth; 0.8.0 holds the two motions 0.7.0's model has, the dialog's
@@ -2024,7 +2024,9 @@ Each is decided from the pinned sources; the specification cites them.
   connector would put there the toolkit's default also where the platform draws the meaning in a colour the theme
   could give, which following the theme's data forbids, or a pairing of its own, unlabelled and different per
   connector); per-preset code in each connector reading the keyed roles (the same pairing, in four places and
-  unchecked); one rule for every typed role or slot no source of the platform states: native-theme's own mapping,
+  unchecked); the system colours 0.7.0 drew kept as native-theme's labelled pick with no witness, as outcome 5 first
+  had it (a preset is the platform's look, where principle 3 holds, unlike a palette, R19; and the same pick could
+  not be refused to `material-3`); one rule for every typed role or slot no source of the platform states: native-theme's own mapping,
   labelled as such, outside the gate's platform comparison and never recorded as the platform's fact.
   **Decision:** the last (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 3). It
   invents no colour: what is native-theme's is the pairing, which the label says, and unlike R19's picks it rests on

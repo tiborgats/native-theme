@@ -17,8 +17,8 @@ U180's open rest is two rows: Qt Quick's line position, U753, takes the non-brea
 defined with the flavours unit; QPainter's wavy and strike lines are U754, due with the first unit that states one.
 The status text colours (U456): on `macos-*` they refer to `role.global.accent_foreground`
 (`alternateSelectedControlTextColor`), measured over each status fill by U756 (fix round N1, withdrawing
-`labelColor`, which 0.7.0's preset names the body text beside a status mark); on `ios-*` to the filled button's
-measured title colour (U755, decided), 0.7.0's having been a literal with no source; each paired only where its fill
+`labelColor`, which 0.7.0's preset names the body text beside a status mark); on `ios-*` to the colour UIKit is
+measured drawing as a filled button's title over each status fill (U755, decided), 0.7.0's having been a literal with no source; each paired only where its fill
 is, and pending while that fill's read is open (U757–U760; fix round N3).
 
 ## Revision 5

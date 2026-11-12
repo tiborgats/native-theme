@@ -1312,24 +1312,32 @@ GitHub's block); kept as it is (it stands at GitHub's warning and grows with eve
 
 **The Apple colour pages** (D6, outcome 5; the first step of the register's U757–U760; ADD-A147). No colour page
 of Apple's Human Interface Guidelines is pinned, and whether one names a colour for error, warning, success or info
-decides most of veto list item 57. So the HIG's colour pages for macOS and iOS are pinned as page snapshots (S17's
-`snapshot` source with `describes`, as the HIG's typography pages are, `hig-typography@2026-02-09`) and read, beside
-M2's first tasks and before the connectors' design (task 1) is checked, so that the design knows which status fields
-the theme fills. *Done:* the snapshots in `docs/facts/sources.toml` and `check_fact_citations.py` passing; for each
-of the four statuses on each platform, its row (U757–U760) recording the system colour the pages name for it by its
-API name, with the snapshot's line and how the page says the colour is drawn, or that they name none; the
-connectors' design citing the outcome.
+decides most of veto list item 57. So the HIG's colour pages are pinned as page snapshots (S17's `snapshot`
+source with `describes`), one capture from each generation's lifetime (D12), as the Typography page is
+(`hig-typography@2025-08-15`, macOS 15 and iOS 18, for `macos-monterey` and `ios-13`; `@2026-02-09`, macOS 26 and
+iOS 26, for `macos-tahoe` and `ios-26`; `docs/facts/sources.toml`), and read (`worker`), beside M2's first tasks and
+before the connectors' design (task 1) is checked, so that the design knows which status fields the theme fills.
+*Done:* the snapshots in `docs/facts/sources.toml` with their `describes` and `generations`, and
+`check_fact_citations.py` passing; for each of the four statuses on each of the four presets, its row (U757–U760)
+recording the pages read and the system colour they name for it by its API name, with the snapshot's line and how
+the page says the colour is drawn, or that they name none; the connectors' design citing the outcome.
 
 **The iOS second-tint run** (D6, outcome 12; the register's U706; ADD-A147). The iOS lane's host pass on both
 simulators under a second tint, beside M2's tasks, after the staging task, so that what UIKit draws in the tint is a
-measured derivation over the accent (R2.6), as the macOS second-accent pass made it on `macos-*`; and the filled
-button's title measured with the colour each status's read pairs its fill with as the tint (U757–U760, which close
-first; 0.7.0's `systemRed`, `systemOrange`, `systemGreen`, `systemBlue` where the read pairs those), in both schemes,
-the check of U755's pairings. *Done:* every
+measured derivation over the accent (R2.6), as the macOS second-accent pass made it on `macos-*`. *Done:* every
 tint-following fact at 0.8.0's depth stated as a derivation over the accent and verified, the default tint's
 literals gone from them, and U706 closed for them; a value that does not follow the tint stays a literal, with the
-run's evidence; each paired status fill measured as the tint, its `foreground` (U755) then that measured colour. It
-blocks the iOS presets' release, not M2's other tasks.
+run's evidence. It blocks the iOS presets' release, not M2's other tasks.
+
+**The status foregrounds' pass** (D6, outcome 5; the register's U755, U756; ADD-A147). Each status's `foreground`
+measured over the fill its read pairs (spec S3), a pass of its own once U757–U760 have closed, on `macos-*` and
+`ios-*` alike: on `macos-*` the probe pass on both images drawing the default push button with `bezelColor` that
+colour (U756), on `ios-*` the iOS host's pass on both simulators drawing the filled button with that colour as the
+tint (U755), each in both schemes; no pass for a status whose read pairs none. *Done:* each paired status's
+`foreground` on each preset that measured colour, a reference to `role.global.accent_foreground` where equal, with
+the run's evidence, and U755 and U756 closed. Due before the release, at M4's pending condition. Rejected: the
+measurement inside U706's second-tint run (the run would wait on four reads that may close as late as M4, and U706's
+tint derivations with it).
 
 **The KDE reader's `Xft.dpi` read removed** (D6, outcome 12; the ledger's queue #198; ADD-A147). One code task
 (`implement`), beside M2's numbered tasks, since it removes a defect of a built reader (the font DPI applied twice
@@ -1500,7 +1508,9 @@ is fixed before task 0 on its own branch, `side-units`.
    the other two that still lists a path when the first connector's code starts is reported to the maintainer with
    its register rows; the first step's unit tests passing, with `u180_ops_check.py`'s three positive controls failing as they should; the
    second step's checkers' self-tests passing, among them a positive control in which a preset's `# mapping:`
-   comment on a value whose fact has no `mapping` is refused. Rejected: tasks 4 and 5 before task 1
+   comment on a value whose fact has no `mapping` is refused, and one in which a typed role's `mapping` fact with
+   no `cite` is refused while a text slot's pure-reference `mapping` fact with none is accepted (S17). Rejected:
+   tasks 4 and 5 before task 1
    (it gives up the reason the connectors come first, and still no preset would build a theme).
 1. **The four connectors on the slice,** preceded by two tasks of their own. First, **the connectors' design**
    (ADD-A146), `docs/todo_v0.7.1_model-completeness-connectors-design.md`, checked as every design document is until
@@ -1518,8 +1528,11 @@ is fixed before task 0 on its own branch, `side-units`.
      their order, content variants, element data, root inputs, font metrics, the presences it reports, a row per
      declared keyed component), which the tables hold from the connectors' port on (ADD-A146);
    - which role a "danger" field reads where a preset states `destructive` apart from `error` (*today's fields*); a
-     toolkit field for a status's text on the surface (egui's `error_fg_color`, `warn_fg_color`; iced's
-     `text::danger`) reads the window set's `negative`, `neutral` or `positive` (ADD-A147);
+     toolkit field for a status's text on the surface (egui's `error_fg_color`, `warn_fg_color`) reads the window
+     set's `negative`, `neutral` or `positive`; where one toolkit field serves a fill and text on the surface alike
+     (iced's `Palette.danger`, `success` and `warning`, which its button styles and `text::danger` and its siblings
+     both read), the design says which of the two roles the field reads on a preset where they differ, and the
+     contract records the other use (ADD-A147);
    - one linked example per toolkit, `slice-<toolkit>`, an `[[example]]` of its connector crate (egui-widgets'
      widgets in egui's), which draws the slice's button in its states and which each unit's connector task extends
      with the unit's widgets, kept until M5 links the showcases again; its screenshots are compared at M2.1, and at
@@ -2073,7 +2086,8 @@ classes:
    specification, which the slice's batches followed). Rejected: one check, whatever it finds.
 3. **A change to a rationale decision** (R1–R25): the maintainer's. The orchestrator may decide one by the
    maintainer's earlier decisions and the project's rules, and applies it marked at its rule as awaiting the
-   maintainer's veto, with its veto list item, as at D6; it stands unless the maintainer vetoes it (ADD-A147).
+   maintainer's veto, with its veto list item, as at D6; it stands unless the maintainer vetoes it (ADD-A147; veto
+   list item 58).
 
 After each batch the orchestrator runs the spec checkers and `generate_widgets.py --check` and tells the running
 tasks; the generator's drift check makes the code follow.
