@@ -5638,7 +5638,8 @@ preset is current; it is refused (`Err(AccentInputsMissing)`) when the `Accent` 
 mapping palette's inputs (S14) or the stand-in's (its common inputs with its part for the new preset) do not state
 the accent inputs the new preset declares as one group, or the mapping's per-preset section lacks one at one of the palette's schemes (S9.2, S14;
 ADD-A132), and
-(`Err(PaletteNotForPreset)`) when the applied palette has neither a port nor a mapping for the new preset (S14). The
+(`Err(PaletteNotForPreset)`) when the applied palette has neither a port nor a mapping for the new preset, a preset
+that declares `no_palette` among them (S14; ADD-A148). The
 reader's `input.accent` is portable only to a preset whose `accent_inputs` is `accent` alone (on `kde-breeze` the
 accent-derivation layer then derives Plasma's accent-dependent roles from it, S9.2), or to its own preset:
 under another preset that declares derived accent inputs (`windows-11`'s ramp, the AppKit-derived roles),

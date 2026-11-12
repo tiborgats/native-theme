@@ -198,7 +198,7 @@ model form, by your earlier decisions and the project's rules.**
   (`PaletteNotForPreset`), and `Palette::presets` lists the presets a palette has a source for and that take one,
   which a picker reads. Over a preset whose widgets read keyed colours a palette reaches them by a stated, reviewed
   mapping method: a mapping states every colour role a value of the preset reads, unless that role follows, through
-  references alone, a role or an input the mapping states (a derivation is no reference: `material-3`'s keyed
+  references alone, a role or an input the mapping states (a derivation or a call is no reference: `material-3`'s keyed
   ladder, Material's scheme of the accent, is mapped as `windows-11`'s keyed roles are); a typed role the preset
   states as a reference to a keyed one is stated with it or not at all, so no surface has two colours. Over
   `material-3` and `windows-11` a palette needs the method's table, written once, at M4 (item 63); until then the

@@ -674,8 +674,8 @@ the facts tooling reads it.
       outcome 7): over a preset whose widgets read keyed colours, a palette reaches them by a stated mapping method,
       or it is not offered over that preset, built with the palettes in M2's task 4; nor is it offered over a preset
       whose widget colours are measured literals that follow no role (`macos-*`, `ios-*`), a recorded limit (the
-      specification's S14, the rationale's R19; veto list item 49), which the preset declares (`[declare]
-      no_palette`, S10; ADD-A148).
+      specification's S14, the rationale's R19; veto list item 49), which the preset declares (`no_palette` in its
+      `[declare]`, S10; ADD-A148).
     - W3-3 with W5-15, what a connector draws where a preset declares unavailable a widget 0.7.0 resolved there
       (`tab`, `card`, `expander`, `status_bar`) or a stand-in widget whose unit is enabled: **Decided at D6**
       (2026-11-10, outcome 6): the declarations stay, D13's sentence restated to the presets whose platform draws
@@ -1334,7 +1334,7 @@ gate:
   presets regenerated with the condition at depth model-wide (*The depth 0.8.0 states*). *Done:* the staging task's
   gate green again, each `[pending]` table or count that moves reported with the paths and facts that move.
 - **The register's `Unit:` token** (the ledger's preamble): `check_ledger.py` reads the unit of a register row that
-  no pending fact names from `Unit: <unit>` at the start of its Key cell (a unit of `scripts/widget_units.toml`, or
+  no pending fact names from `Unit: <unit>;` at the start of its Key cell (a unit of `scripts/widget_units.toml`, or
   `slice`), and counts a row with neither as of the enabled units. *Done:* its self-test both ways (a row tokened
   with a unit not enabled not due; a row with neither due), and `check_ledger.py` green on the ledger.
 - **The input checks** (S12, S8, R2.8; reviewed by `review-hard`), before load task 1: first the reviewer's example
@@ -1680,7 +1680,7 @@ is fixed before task 0 on its own branch, `side-units`.
    palette reaches them by S14's stated mapping method, or it is not offered over that preset (D6, outcome 7;
    ADD-A147): per project and preset, every colour role a value of the preset reads, keyed or typed, mapped once to
    the project's vocabulary unless it is, through references alone, a role or an input the mapping states (a
-   derivation or a function call is no reference: `material-3`'s ladder, Material's scheme of the seed, is mapped as
+   derivation or a call is no reference: `material-3`'s ladder, Material's scheme of the seed, is mapped as
    `windows-11`'s keyed roles are), a typed role the preset states as a reference to a keyed one mapped alike with it
    or not at all, the table reviewed by a `review` agent before a palette is bundled over that preset; the design of
    the method is this task's first step and may refine it (ADD-A148; veto list item 49). The bundled palettes' tables

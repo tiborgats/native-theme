@@ -1369,7 +1369,7 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   picks like any other (the alternative: leaving the platform's own accent in place under the palette, which mixes
   two colour schemes; ADD-A148);
 - states, over any preset, every colour role, typed or keyed, that a value of the preset reads, unless that role is,
-  through references alone, a role or an input the mapping states (a derivation or a function call is no
+  through references alone, a role or an input the mapping states (a derivation or a call is no
   reference), each mapped once to the project's own vocabulary by a stated method, the table per project and preset
   reviewed: `windows-11`'s button reads 24 keyed colour roles and no typed one, 21 of them literals under the plain
   schemes, and `material-3`'s ladder, Material's scheme of the seed, is mapped as those are, while `windows-11`'s
@@ -1822,7 +1822,7 @@ of that day:
 
 Amended by the 0.8.0 plan's checkpoint D6 (2026-11-10, outcomes 1, 2, 3, 5, 6, 7, 12 and 14; the specification's
 batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list items 1 to 8, 32 to 40, 42, 48, 49,
-54, 56 and 57):
+54, 56, 57, 65 and 66):
 
 - R21: a unit enters at the depth 0.7.0's model and readers distinguish, its further variants, sizes, host contexts,
   states and conditions in later units of depth; 0.8.0 holds the two motions 0.7.0's model has, the dialog's
