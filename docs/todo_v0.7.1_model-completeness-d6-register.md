@@ -1504,7 +1504,7 @@ sizes | a decision: absent with a citation".
   hold as values that cannot be left empty (`[outcome]:16`); an icon context the catalogue marks `may_be_absent`
   (`[catalogue]:10336-10337`), and an application that asks for one a platform does not name is told so.
 - **(d) 0.7.0's 16 and 32.** No source; 0.7.0's own platform facts call both "(none)"
-  (`2796b26e:docs/platform-facts.md:1137-1138`).
+  (`platform-facts.md@2796b26e:1137-1138`).
 
 **3. The outcome: (a).** Rule 1 excludes (c) as a fact and (d); the catalogue excludes (c) as a mapping; D13 and
 the catalogue exclude (b) for `panel`. On the release path: yes. Against 0.7.0, `material-3` loses `small` and
