@@ -4401,25 +4401,30 @@ accent-derivation layer's roles over the accent in force show there instead (S9.
 same holds for the reader's or stand-in's stated accent-dependent roles (S9.1's: the `md.sys.color` keyed roles),
 which hold the scheme of their own seed (ADD-A134).
 
-**Validation** (S12) runs on every change of the stack (S16): it validates the whole stack, conservatively (every
+**Validation** (S12) holds for the whole stack after every change of it (S16), conservatively (every
 rule and binding an expression can meet, under every combination of conditions that can hold together, S12,
 R2.8; beneath a palette it may keep the reader's or stand-in's `token.kde`, which it reads under every scheme at
 once, since no check then differs: every field of `token.kde` is stated, S4.8, and was validated with that layer, a
 port's `Tokens` rule states every field over it at the port's scheme, and S12's one check reading a `token.kde`
 value across layers reads the preset's `tint_factor` alone, which the code must match, as today it reads the whole
-stack's, the reader's included; ADD-A145, task T6b's reading), and a change that fails is refused
-whole, leaving the theme as it was (R2.5). So resolution and the query cannot fail. A reader's re-read that fails keeps
+stack's, the reader's included; ADD-A145, task T6b's reading): a change after which it would not hold is refused
+whole, leaving the theme as it was (R2.5). Each layer's own checks, and the input cycle check over the stack up to it,
+run at every change; the checks over combinations run over each layer whose stack, as they read it, the change
+altered (S12's *What a change re-checks*); a bundled preset whose `[pending]` table is empty and the layers `Theme`
+derives from it alone pass them in the crate's own tests (S19.1) and are not checked again (R2.8; ADD-A147). So
+resolution and the query cannot fail. A reader's re-read that fails keeps
 the previous reader layer; `Theme::reader_status()` reports the error.
 
 **Windows and resolution.** Each window's connector owns a `WindowState` (`Default`: never resolved), and
 `Theme::resolve(&self, window: &mut WindowState, conditions: &WindowConditions) -> Resolution` resolves for it
-(infallible), with `Resolution { theme: ResolvedTheme, change: Change, suspends: bool }` (`suspends`: the change
+(infallible), with `Resolution { theme: Arc<ResolvedTheme>, change: Change, suspends: bool }` (`suspends`: the change
 starts the theme-change token's `Suspend`, `pick`'s scheme change included, S4.3; ADD-A126), `Change = First | Unchanged | ThemeChange |
 ConditionChange` relative to that window's last resolution, which `WindowState` records (a theme change wins when
 both happened; a flavour switch is a condition change; S4.3): it compares the layers' values, the inputs and the
 reader values with those it recorded, and the conditions (the window's, the reader's `ReaderState` conditions and the
 application's) separately, and only a change of the first kind, or of `Scheme` or a contrast condition, is a theme
-change. After any change but `Unchanged` a connector rebuilds the
+change. `WindowState` also keeps the resolution it returned: for `Unchanged`, `resolve` returns that one again
+without building one (ADD-A147). After any change but `Unchanged` a connector rebuilds the
 scopes it kept, whose bound colours are the old resolution's (an inactive window changes roles too):
 
 1. merge bases in order; for colours, the base of the conditions' scheme; for each input, its value at the scheme
@@ -4752,8 +4757,10 @@ on or off: each function gives the untinted value when it is off), and nothing e
 no rule); at a slot where the preset's own `input.accent` is in force it states nothing, so the preset's own
 statements show there, as without it (an `Accent` or a stand-in's accent for one scheme leaves the other scheme the
 preset's). `Theme` derives the layer for the slot in force on every change of the stack and of the slot (`pick`,
-`set_contrast` and a reader's re-read among them, S16), its colour bases and inactive input roles that slot's; S12 validates it,
-as the S8 leave-out, at every slot where it can state its roles. Its expressions are evaluated at the slot in force over the accent and the scheme inputs in force there
+`set_contrast` and a reader's re-read among them, S16), its colour bases and inactive input roles that slot's; S12 holds for it,
+as for the S8 leave-out, at every slot where it can state its roles: S19.1's build test validates each form `Theme`
+can derive over the bundled preset (each set of schemes at which an accent is given, with and without the tinting
+roles), and a theme does not check it again (S8; ADD-A147). Its expressions are evaluated at the slot in force over the accent and the scheme inputs in force there
 (S8, S9), as bases, so every rule (the preset's inactive
 rules, a contrast's) and `active(…)` (S2.2) read them as any base, and every layer above replaces the roles it states
 where they apply: at every scheme and contrast the accent in force changes every role Plasma's derivation changes,
@@ -6106,6 +6113,20 @@ original` with `fill = "absent"`: `fill` can be absent and the mode can be other
 so the approximation is not allowed: each check is a small satisfiability problem over one part's rules and the
 tokens and roles they read, solved exactly.
 
+**What a change re-checks** (ADD-A147). The checks over combinations of a layer read the stack up to it only as its
+flattened values: each layer's bases (its part for the current preset among them) and rules with their selectors,
+what it is to the stack and what S8 leaves out of it, the declarations, the preset and whether the reader's accent is
+left out. They read no input but through the input cycle check and a palette's KDE mapping check (S14); a reference
+to an input is read as stated; a stated string, flag or integer is read as stated. So after a change they run for
+each layer whose stack up to it differs, each layer compared with its inputs set aside (a palette's kept) and the
+layers stating nothing else left out, from each form S19.1's build test validates and from the stack, as it was
+before the change, up to each of its layers. At every change, every layer's own checks (each value, patch, rule and
+reference against the current preset's declarations) and the input cycle check over the stack up to it run, and so
+do the reader's state, the listed paths and the missing inputs. S19.1's build test and the facts gate run every check
+of every layer, nothing skipped (R2.8). Rejected: every layer's checks over combinations run at every change, as
+before, which runs them over the whole stack where they would read what they read on a stack that passed (the 0.8.0
+plan's *The load budget*, line 4).
+
 `Theme::add_layer` validates the layer against the theme and refuses it with the error (R2.5). A rule whose
 `Preset` condition excludes the current preset is neither validated nor applied, so one application layer can carry
 rules for several presets' keyed names (R2.3).
@@ -6427,7 +6448,8 @@ connector records (R23; ADD-A126). Whether AppKit draws these controls different
 `SystemTheme` is renamed `Theme`, the one owner of the stack, the inputs and the application's conditions.
 `AccessibilityPreferences` goes: the reader reports conditions, the text-scaling factor and the font DPI in its
 `ReaderState`. Today's `ColorMode` is `Scheme`, and today's `Rgba` is `Color` (S2.1).
-Every mutation validates the whole stack and is refused whole on failure, the theme staying as it was (S8, S12):
+After every mutation the whole stack passes S12, or the mutation is refused whole, the theme staying as it was (S8,
+S12; ADD-A147):
 
 ```rust
 impl Theme {
@@ -7192,7 +7214,7 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   stack holds, and the case takes a spec row when it first appears, with its real shape; a refusal that disappears
   with the preset's facts measured is the gate's choice of values to fix, any other the preset's. A check that passes on a synthetic
   value and would fail on the real one is found when the fact is measured: the preset is regenerated with the measured value stated and
-  validated with it (through `from_preset` once its table is empty), and every table is empty at each release, so nothing it misses ships. Rejected: ADD-A128's
+  validated with it (through S19.1's build test once its table is empty; ADD-A147), and every table is empty at each release, so nothing it misses ships. Rejected: ADD-A128's
   reading of a listed path as able to take any value of its type (it includes values S12 itself refuses, so a preset
   listing a whole focus indicator, an edge or a conditionally marked field could never load, and the repairs it
   needs, a joint reading of every listed value against the checks across fields, are machinery that serves only the
@@ -7742,8 +7764,13 @@ palette (`Palette::from_toml` with its port, S14) (ADD-A146; rejected: bundling 
 palettes with as many ports, where D13 asks for what 0.7.0 has, four). A build test parses and
 validates every bundled preset and palette (each palette over every preset it has a source for, Dracula's KDE port,
 which lacks two colour groups, among them, S14), so `Theme::from_preset` and `Palette::bundled` never meet their error in a
-release (S16). The test validates each bundled preset through `from_preset` where its `[pending]` table is empty,
-and through `from_preset_synthetic` with one synthetic layer per listed path (one per map entry no base states, its
+release (S16). A theme does not check them again (R2.8, S8), so the test also validates each form of the layers
+`Theme` derives from bundled data alone (S9.2's accent-derivation layer for each set of schemes at which an accent is
+given, with and without the tinting roles; each bundled palette's source over each preset it serves, under each
+contrast condition, once palettes are bundled), and asserts that the stack `Theme::from_preset` builds without the
+checks equals the stack the validating construction builds from the same text (ADD-A147). The test validates each
+bundled preset through a validating construction of its own, which runs every check `Theme::from_preset` no longer
+runs, where its `[pending]` table is empty, and through `from_preset_synthetic` with one synthetic layer per listed path (one per map entry no base states, its
 listed fields together, ADD-A133), a listed `default_size` exempt from its check rather than stated, a listed part drawn (S17; ADD-A131) and a listed input's value folded into the preset's input base (S17; ADD-A132), where
 it is not; every table is
 empty at each release, so it is the plain route then (ADD-A128).
