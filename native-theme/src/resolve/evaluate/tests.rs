@@ -300,6 +300,36 @@ fn base_reads_the_steps_below() {
     assert_eq!(operand(&theme, "part.min_width"), length(48.0));
 }
 
+/// The body's focus offset on `side`, evaluated as its `Value<Px>` field.
+fn focus_offset(theme: &ResolvedTheme, side: &str) -> Option<Px> {
+    let scope = scope();
+    with_body(theme, &scope, |cx| {
+        let path = ["focus", "offset", side].map(str::to_owned).to_vec();
+        cx.follow(Target::Part(BODY), path, false, |cx, folds| {
+            cx.value::<Px>(folds, true)
+        })
+    })
+}
+
+/// A length's plain reference to a text style's font size or line height
+/// (S2.2) gives that place's value converted and scaled (S9.4), as the
+/// same reference read as a call's operand does: the label's 9pt at 96 DPI,
+/// 12px, and its 14px line height, each scaled by 1.5.
+#[test]
+fn a_length_reads_a_font_size_plainly() {
+    let offsets = "[widgets.button.label.text]\nline_height_px = 14\n\
+                   [widgets.button.body.focus.offset]\n\
+                   top_px = \"= widget.label.font_size\"\n\
+                   bottom_px = \"= add(widget.label.font_size, 0px)\"\n\
+                   left_px = \"= widget.label.line_height\"\n\
+                   right_px = \"= add(widget.label.line_height, 0px)\"";
+    let theme = resolved(&[BASE, offsets], 1.5);
+    assert_eq!(focus_offset(&theme, "bottom"), Some(Px(18.0)));
+    assert_eq!(focus_offset(&theme, "right"), Some(Px(21.0)));
+    assert_eq!(focus_offset(&theme, "left"), Some(Px(21.0)));
+    assert_eq!(focus_offset(&theme, "top"), Some(Px(18.0)));
+}
+
 /// The call `text` typed as `ty` on the body, its value.
 fn call(theme: &ResolvedTheme, text: &str, ty: Ty) -> Option<Val> {
     let scope = scope();
