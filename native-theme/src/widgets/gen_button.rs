@@ -4,7 +4,12 @@
 // units and run the generator.
 //
 // Deferred (scripts/widget_units.toml): `menu_placement` to `placement`,
-// `scaffold_placement` to `placement`.
+// `scaffold_placement` to `placement`, `help_tooltip_on_click` to `styles`,
+// `menu_indicator_gap` to `menus`, `menu_indicator_anchor` to `menus`,
+// `menu_trigger` to `menus`, `back_title_fallback` to `identities`,
+// `back_display_mode` to `identities`, `display_mode` to `identities`,
+// `presentations` to `motion`, `body.transitions` to `motion`,
+// `icon.transitions` to `motion`, `menu_indicator.transitions` to `motion`.
 
 //! `button` (the catalogue): its parts, its widget values and its own types.
 
@@ -12,7 +17,6 @@ use native_theme_derive::ThemeParts;
 
 use super::gen_index::ButtonLabelPosition;
 use crate::blocks::focus::{FocusVisibleWhen, ResolvedFocusVisibleWhen};
-use crate::blocks::motion::{PresentationTransition, ResolvedPresentationTransition};
 use crate::blocks::part_style::PartStyle;
 use crate::query::mirror::Mirror;
 use crate::units::{Ms, Px, Sides};
@@ -47,7 +51,6 @@ pub(crate) struct ButtonTheme {
             cursor,
             touch_target,
             bindings,
-            transitions,
             interaction
         ),
         absent(shadow, cursor)
@@ -60,19 +63,23 @@ pub(crate) struct ButtonTheme {
     #[part(may_be_absent, fields(text))]
     subtitle: PartStyle,
     /// The image.
-    #[part(may_be_absent, fields(icon, glyph, transitions), absent(glyph))]
+    #[part(may_be_absent, fields(icon, glyph), absent(glyph))]
     icon: PartStyle,
     /// The arrow or chevron of a button that opens a menu.
-    #[part(
-        may_be_absent,
-        fields(glyph, min_width, min_height, margin, transform, transitions)
-    )]
+    #[part(may_be_absent, fields(glyph, min_width, min_height, margin, transform))]
     menu_indicator: PartStyle,
     values: ButtonValues,
 }
 
-/// `button`'s widget values (S5). Its `menu_placement` and `scaffold_placement`
-/// are deferred to the `placement` unit, whose commit adds them (S6.1).
+/// `button`'s widget values (S5). Its `back_title_fallback`,
+/// `back_display_mode` and `display_mode` are deferred to the `identities`
+/// unit, whose commit adds them (S6.1). Its `menu_indicator_gap`,
+/// `menu_indicator_anchor` and `menu_trigger` are deferred to the `menus` unit,
+/// whose commit adds them (S6.1). Its `presentations` is deferred to the
+/// `motion` unit, whose commit adds them (S6.1). Its `menu_placement` and
+/// `scaffold_placement` are deferred to the `placement` unit, whose commit adds
+/// them (S6.1). Its `help_tooltip_on_click` is deferred to the `styles` unit,
+/// whose commit adds them (S6.1).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
@@ -88,13 +95,6 @@ pub struct ButtonValues {
     /// iOS `titlePadding`.
     #[parts(may_be_absent)]
     pub subtitle_gap: Value<Px>,
-    /// Between label and indicator.
-    pub menu_indicator_gap: Value<Px>,
-    /// Where the `menu_indicator` lies.
-    pub menu_indicator_anchor: Value<IndicatorAnchor>,
-    /// The touch-and-hold variant.
-    #[parts(may_be_absent)]
-    pub menu_trigger: Value<MenuTrigger>,
     /// Whether push buttons show icons.
     #[parts(may_be_absent)]
     pub shows_icon: Value<bool>,
@@ -107,22 +107,9 @@ pub struct ButtonValues {
     /// Durations of an auto-repeating button.
     #[parts(may_be_absent)]
     pub repeat_interval: Value<Ms>,
-    /// UIKit shortens the back title, then replaces it by a generic one.
-    pub back_title_fallback: Value<bool>,
-    /// UIKit's `backButtonDisplayMode`.
-    #[parts(may_be_absent)]
-    pub back_display_mode: Value<BackDisplayMode>,
-    /// KDE's ContextualHelpButton shows its tooltip on click.
-    pub help_tooltip_on_click: Value<bool>,
     /// Margins that enlarge the hit area beyond the drawn button.
     #[parts(may_be_absent)]
     pub hit_extension: Sides<Value<Px>>,
-    /// iOS's paste control.
-    #[parts(may_be_absent)]
-    pub display_mode: Value<PasteDisplayMode>,
-    /// Events `Appear`, `Disappear`, `@spring_load`, `@title_change`.
-    #[parts(block = "fields", keyed)]
-    pub presentations: Vec<PresentationTransition>,
 }
 
 /// The values of `button`'s `icon_placement`: the image beside or above the
@@ -149,73 +136,4 @@ impl Mirror for IconPlacement {
             other => other,
         };
     }
-}
-
-/// The values of `button`'s `menu_indicator_anchor`: where the `menu_indicator`
-/// lies.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
-#[parts(toml)]
-pub enum IndicatorAnchor {
-    /// Inline.
-    Inline,
-    /// Inline top.
-    InlineTop,
-    /// Top start.
-    TopStart,
-    /// Top end.
-    TopEnd,
-    /// Bottom start.
-    BottomStart,
-    /// Bottom end.
-    BottomEnd,
-}
-
-/// Its start and end swapped for a right-to-left layout (S2.4).
-impl Mirror for IndicatorAnchor {
-    fn mirror(&mut self) {
-        *self = match *self {
-            IndicatorAnchor::TopStart => IndicatorAnchor::TopEnd,
-            IndicatorAnchor::TopEnd => IndicatorAnchor::TopStart,
-            IndicatorAnchor::BottomStart => IndicatorAnchor::BottomEnd,
-            IndicatorAnchor::BottomEnd => IndicatorAnchor::BottomStart,
-            other => other,
-        };
-    }
-}
-
-/// The values of `button`'s `menu_trigger`: the touch-and-hold variant.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
-#[parts(toml)]
-pub enum MenuTrigger {
-    /// Primary.
-    Primary,
-    /// Long press.
-    LongPress,
-    /// Long press or secondary click.
-    LongPressOrSecondaryClick,
-}
-
-/// The values of `button`'s `back_display_mode`: UIKit's
-/// `backButtonDisplayMode`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
-#[parts(toml)]
-pub enum BackDisplayMode {
-    /// Default.
-    Default,
-    /// Generic.
-    Generic,
-    /// Minimal.
-    Minimal,
-}
-
-/// The values of `button`'s `display_mode`: iOS's paste control.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
-#[parts(toml)]
-pub enum PasteDisplayMode {
-    /// Icon.
-    Icon,
-    /// Label.
-    Label,
-    /// Icon and label.
-    IconAndLabel,
 }

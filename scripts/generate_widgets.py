@@ -40,8 +40,19 @@ The units
     [hand_written]                  # the units written by hand, never generated, each enabled or not
     placement = false
 
+The depth (S6.1, ADD-A147): `[deferred.<widget>]` may name a part's field, `"<part>.<field>"`, which the part's
+`fields(…)` then leaves out; `[[later]]` tables name the later units (scripts/check_facts_trace.py reads them in full),
+of which this reads each unit's name, `enabled`, `conditions`, `sizes` and the variants it holds per entry. An enabled
+entry's **Depth** item (spec_catalogue.depth_names) lists its variants at depth: `Variant`, `WidgetInfo.variants` and
+`content_variants` hold those and the variants of the enabled later units, each other typed variant named in a
+generated comment with the later unit holding it (one neither lists nor holds, or one both do, is an input error);
+the index writes `SIZES_UNIT` and `FLAVOURS_UNIT`, the enabled flags of the unit with `sizes = true` and of the one
+holding the `flavor:` conditions; an enum of the entry no value at depth uses is left out with its values. `--check`
+also reads each Depth item against the *Today's fields* selectors naming a target in the entry (todays_names(),
+depth_check()): a variant or state flag a selector names that the item does not list is a difference.
+
 A deferral names a value of the widget's entry (its Rust name, or as the catalogue writes it), and a unit that is
-hand-written or a unit list, and not enabled: a deferral to an enabled unit, to an unknown unit, of an unknown value
+hand-written, a unit list or a later unit, and not enabled: a deferral to an enabled unit, to an unknown unit, of an unknown value
 or for a widget no enabled unit holds is an input error. A unit's entry that is no typed widget of the catalogue (a
 component, a target prefix) is an input error too: the generator emits typed widgets only.
 
@@ -137,16 +148,43 @@ class InputError(Exception):
 # ------------------------------------------------------------------------------------------------- the units
 
 @dataclass
+class Later:
+    name: str
+    enabled: bool
+    conditions: list           # the conditions it holds model-wide
+    sizes: bool                # it holds the sizes beyond the default in force and the densities
+    names: dict                # entry -> {"variants": set, "states": set}, every preset's groups together
+
+
+@dataclass
 class Units:
     enabled: dict              # unit name -> [entry names]
-    deferred: dict             # widget -> {value name: unit}
+    deferred: dict             # widget -> {value name or `<part>.<field>`: unit}
     hand_written: dict         # unit name -> enabled
+    later: list = field(default_factory=list)   # [Later], in the file's order
 
     def widgets(self) -> list:
         return [w for entries in self.enabled.values() for w in entries]
 
     def is_enabled(self, unit: str) -> bool:
-        return unit in self.enabled or self.hand_written.get(unit, False)
+        return (unit in self.enabled or self.hand_written.get(unit, False)
+                or any(u.name == unit and u.enabled for u in self.later))
+
+    def known(self, unit: str) -> bool:
+        return unit in self.enabled or unit in self.hand_written or any(u.name == unit for u in self.later)
+
+    def holder(self, entry: str, kind: str, name: str):
+        """The later unit holding the entry's variant or state flag (on some preset), or None."""
+        return next((u for u in self.later if name in u.names.get(entry, {}).get(kind, ())), None)
+
+    def flag_of(self, what: str) -> bool:
+        """The enabled flag of the sizes unit (`what` "sizes": the unit with `sizes = true`) or of the flavours unit
+        (`what` "flavours": the unit holding the `flavor:` conditions); an input error where not exactly one is."""
+        found = [u for u in self.later if (u.sizes if what == "sizes"
+                                           else any(c.startswith("flavor:") for c in u.conditions))]
+        if len(found) != 1:
+            raise InputError(f"{UNITS}: {len(found)} later units are the {what} unit; one is (S6.1, S8, S16)")
+        return found[0].enabled
 
 
 def parse_units(text: str) -> Units:
@@ -166,14 +204,31 @@ def parse_units(text: str) -> Units:
             raise InputError(f"{UNITS}: `{table}` is not a table of unit names")
     enabled = {}
     for name, entries in data.items():
-        if name in ("deferred", "hand_written", "prefixes", "staged"):
+        if name in ("deferred", "hand_written", "prefixes", "staged", "kept", "at_depth", "later"):
             continue
         if not isinstance(entries, list) or not all(isinstance(e, str) and e for e in entries):
             raise InputError(f"{UNITS}: unit `{name}` is not a list of catalogue entries")
         if name in hand:
             raise InputError(f"{UNITS}: unit `{name}` is both generated and hand-written")
         enabled[name] = entries
-    units = Units(enabled, deferred, hand)
+    later = []
+    for t in data.get("later", []) if isinstance(data.get("later", []), list) else [None]:
+        if not isinstance(t, dict) or not isinstance(t.get("name"), str) or not isinstance(t.get("enabled"), bool):
+            raise InputError(f"{UNITS}: a [[later]] table has no `name` or no boolean `enabled`")
+        names = {}
+        for entry, groups in t.items():
+            if entry in ("name", "kind", "enabled", "conditions", "directions", "sizes"):
+                continue
+            if not isinstance(groups, list) or not all(isinstance(g, dict) for g in groups):
+                raise InputError(f"{UNITS}: later unit `{t['name']}`: `{entry}` is not a list of groups")
+            held = names.setdefault(entry, {"variants": set(), "states": set()})
+            for g in groups:
+                for k in held:
+                    held[k] |= set(g.get(k, []))
+        if t["name"] in enabled or t["name"] in hand or any(u.name == t["name"] for u in later):
+            raise InputError(f"{UNITS}: later unit `{t['name']}` is named twice")
+        later.append(Later(t["name"], t["enabled"], list(t.get("conditions", [])), t.get("sizes") is True, names))
+    units = Units(enabled, deferred, hand, later)
     seen = set()
     for w in units.widgets():
         if w in seen:
@@ -183,7 +238,7 @@ def parse_units(text: str) -> Units:
         if widget not in seen:
             raise InputError(f"{UNITS}: `deferred.{widget}`: no enabled unit holds `{widget}`")
         for value, unit in values.items():
-            if unit not in enabled and unit not in hand:
+            if not units.known(unit):
                 raise InputError(f"{UNITS}: `deferred.{widget}.{value}` names no unit, `{unit}`")
             if units.is_enabled(unit):
                 raise InputError(f"{UNITS}: `deferred.{widget}.{value}` defers to `{unit}`, which is enabled: "
@@ -337,6 +392,7 @@ class Widget:
     deferred: dict
     content_variants: list = field(default_factory=list)
     part_variants: dict = field(default_factory=dict)
+    later_variants: list = field(default_factory=list)   # [(typed variant, the later unit holding it)]
 
 
 # The model's types a widget value may hold that the query mirrors in right-to-left (S2.4): a presentation's start
@@ -438,7 +494,8 @@ def enum_definitions(entry) -> list:
 def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
     w = entry.name
     where = f"catalogue line {entry.line}, `{w}`"
-    deferred = units.deferred.get(w, {})
+    deferred = {k: u for k, u in units.deferred.get(w, {}).items() if "." not in k}
+    deferred_fields = {k: u for k, u in units.deferred.get(w, {}).items() if "." in k}
 
     # parts
     parts = []
@@ -459,6 +516,12 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
     for p in parts:
         if p.parent is not None and p.parent not in by_name:
             raise InputError(f"{where}: part `{p.name}` nests in `{p.parent}`, no part of the entry")
+    for name in deferred_fields:
+        pname, _, fname = name.partition(".")
+        part = by_name.get(pname)
+        if part is None or fname not in part.fields:
+            raise InputError(f'{UNITS}: `deferred.{w}."{name}"` is no field of a part of `{w}`')
+        part.fields.remove(fname)
 
     # values and their enums
     item = entry.item("Widget values")
@@ -553,6 +616,8 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
                         raise InputError(f"{where}: may_be_absent names `{name}`, no part but the root")
                     part.may_be_absent = True
                 elif label == "fields":
+                    if name in deferred_fields:
+                        continue
                     pname, _, fname = name.partition(".")
                     part = by_name.get(pname)
                     if part is None or fname not in part.fields:
@@ -599,7 +664,94 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
                 raise InputError(f"{where}: typed variant `{name}` is no identifier")
             if name not in held:
                 held.append(name)
-    return Widget(w, entry.line, parts, values, enums, variants, deferred, part_variants=part_variants)
+    variants, later_variants = depth_variants(entry, units, variants, where)
+    used = {split_type(v.ty)[1] for v in values}
+    enums = [e for e in enums if e.name in used]
+    return Widget(w, entry.line, parts, values, enums, variants, {**deferred, **deferred_fields},
+                  part_variants=part_variants, later_variants=later_variants)
+
+
+SELECTOR_WORDS = ("context", "cond", "size", "density", "variant", "variants", "pos", "dir", "latest", "among")
+
+
+def todays_names(entries, widget: str) -> dict:
+    """{"variants": {name: line}, "states": {name: line}} the selectors of the catalogue's *Today's fields* mappings
+    name for a target in the entry `widget` (the Entry format's Depth item; ADD-A147): in its own item every backticked
+    span holding ` @ ` or starting `@ `, in another entry's item each such span whose target starts with the entry's
+    name; after the `@`, `variant <v>` (`variant a, b` continuing while a comma's next word is a name, not a
+    selector's keyword) and `variants {a,b}` name variants, a `{a,b}` not after `!` or `variants` names state flags."""
+    out = {"variants": {}, "states": {}}
+    for e in entries:
+        it = e.item("Today's fields")
+        if it is None:
+            continue
+        for m in re.finditer(r"`([^`]*)`", it.text):
+            span = m.group(1)
+            if span.startswith("@ "):
+                target, selector = "", span[2:]
+            elif " @ " in span:
+                target, selector = span.split(" @ ", 1)
+            else:
+                continue
+            if e.name != widget and not re.match(rf"{re.escape(widget)}(\.|$)", target.strip()):
+                continue
+            line = it.line_at(m.start())
+            for v in re.finditer(r"(?<![!\w])variants \{([^}]*)\}", selector):
+                for n in v.group(1).split(","):
+                    out["variants"].setdefault(n.strip(), line)
+            for v in re.finditer(r"(?<![!\w])variant (@?[a-z_][a-z0-9_]*(?:, @?[a-z_][a-z0-9_]*)*)", selector):
+                for n in v.group(1).split(", "):
+                    if n in SELECTOR_WORDS:
+                        break
+                    out["variants"].setdefault(n, line)
+            for g in re.finditer(r"(?<![!\w])\{([^}]*)\}", selector):
+                if selector[:g.start()].rstrip().endswith("variants"):
+                    continue
+                for n in g.group(1).split(","):
+                    out["states"].setdefault(n.strip(), line)
+    return out
+
+
+def depth_check(entry, entries) -> list:
+    """`--check`'s reading of an entry's **Depth** item against the catalogue (ADD-A147): each variant and state flag
+    a *Today's fields* selector names for a target in the entry (todays_names()) that the item does not list."""
+    depth = spec_catalogue.depth_names(entry)
+    if depth is None:
+        return []
+    named = todays_names(entries, entry.name)
+    return [f"catalogue line {line}: `{entry.name}`'s *Today's fields* selector names the {kind[:-1]} `{n}`, which "
+            f"its Depth item (line {depth['line']}) does not list"
+            for kind in ("variants", "states") for n, line in named[kind].items() if n not in depth[kind]]
+
+
+def depth_variants(entry, units: Units, typed: list, where: str) -> tuple:
+    """(the entry's typed variants at depth, [(each other typed variant, the later unit holding it)]): those its
+    **Depth** item lists (spec_catalogue.depth_names) and those an enabled later unit holds for it (S6.1, ADD-A147).
+    Refused: an entry with no Depth item, a typed name it lists that is no typed variant of the entry, a typed variant
+    neither it lists nor a later unit holds, and one it lists that a later unit holds too."""
+    depth = spec_catalogue.depth_names(entry)
+    if depth is None:
+        raise InputError(f"{where}: no **Depth** item, which every typed entry of an enabled unit states (Entry "
+                         "format, ADD-A147)")
+    listed = [v for v in depth["variants"] if not v.startswith("@")]
+    for v in listed:
+        if v not in typed:
+            raise InputError(f"catalogue line {depth['line']}, `{entry.name}`: the Depth item lists `{v}`, no typed "
+                             "variant of the entry")
+    kept, later = [], []
+    for v in typed:
+        unit = units.holder(entry.name, "variants", v)
+        if v in listed and unit is not None:
+            raise InputError(f"catalogue line {depth['line']}, `{entry.name}`: `{v}` is on the Depth item and in the "
+                             f"later unit `{unit.name}` ({UNITS})")
+        if v in listed or (unit is not None and unit.enabled):
+            kept.append(v)
+        elif unit is None:
+            raise InputError(f"{where}: the typed variant `{v}` is neither on the Depth item nor in a later unit of "
+                             f"{UNITS}")
+        else:
+            later.append((v, unit.name))
+    return kept, later
 
 
 # ----------------------------------------------------------------------------------------------- the output
@@ -703,8 +855,9 @@ def widget_file(w: Widget, shared_names: set) -> str:
         body += wrap_doc(p.doc, "    ") + [f"    #[part({', '.join(attrs)})]", f"    {p.name}: PartStyle,"]
     body += ["    values: " + f"{W}Values,", "}", ""]
     doc = f"`{w.name}`'s widget values (S5)."
-    for unit in sorted(set(w.deferred.values())):
-        names = [f"`{v}`" for v, u in w.deferred.items() if u == unit]
+    values_deferred = {v: u for v, u in w.deferred.items() if "." not in v}
+    for unit in sorted(set(values_deferred.values())):
+        names = [f"`{v}`" for v, u in values_deferred.items() if u == unit]
         listed = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
         doc += (f" Its {listed} {'are' if len(names) > 1 else 'is'} deferred to the `{unit}` unit, whose commit "
                 "adds them (S6.1).")
@@ -737,7 +890,7 @@ def widget_file(w: Widget, shared_names: set) -> str:
     return "\n".join(lines) + "\n"
 
 
-def index_file(widgets: list, shared: dict) -> str:
+def index_file(widgets: list, shared: dict, flags: dict) -> str:
     out = [HEADER] + [x.replace("///", "//!", 1) for x in wrap_doc(
         "The index over the enabled units' typed widgets (S1, S6.1): their kinds, typed variants and parts, their "
         "patches, their slots, their readers and the registry's list.", "")] + ["", "use native_theme_derive::ThemeParts;",
@@ -772,6 +925,20 @@ def index_file(widgets: list, shared: dict) -> str:
     for v, ws in holders.items():
         out += [f"    /// `{v}`, a typed variant of " + ", ".join(f"`{x}`" for x in ws) + ".", f"    {camel(v)},"]
     out += ["}", ""]
+    for w in widgets:
+        if w.later_variants:
+            note = (f"`{w.name}`'s typed variants beyond its depth, each a member from its later unit's commit (S6.1, "
+                    "ADD-A147; scripts/widget_units.toml): " + ", ".join(f"`{v}` ({u})" for v, u in w.later_variants)
+                    + ".")
+            out += [x.replace("///", "//", 1) for x in wrap_doc(note, "")] + [""]
+    out += wrap_doc("Whether the sizes unit is enabled (S6.1, S8, S10; scripts/widget_units.toml): while it is not, "
+                    "an element takes its default size in force alone, and the query answers `Later` for another "
+                    "size it takes and for a declared density.", "")
+    out += [f"pub(crate) const SIZES_UNIT: bool = {'true' if flags['sizes'] else 'false'};", ""]
+    out += wrap_doc("Whether the flavours unit is enabled (S6.1, S16; scripts/widget_units.toml): while it is not, "
+                    "`Theme::set_flavor` refuses every declared flavour but the default and `Theme::flavors` lists "
+                    "the default alone.", "")
+    out += [f"pub(crate) const FLAVOURS_UNIT: bool = {'true' if flags['flavours'] else 'false'};", ""]
     out += ["/// A typed widget's part: one variant per typed widget, each holding that",
             "/// widget's part enum (`TypedPart::Button(ButtonPart::Label)`), so a part",
             "/// paired with the wrong widget does not compile (S1).",
@@ -946,9 +1113,10 @@ def generate(root: Path) -> dict:
         if entry is None:
             raise InputError(f"{UNITS}: `{name}` is no typed widget of the catalogue")
         widget = read_widget(entry, units, shared_table, shared)
-        widget.content_variants = content_variants_of(widget, pairs)
+        widget.content_variants = depth_content(entry, units, content_variants_of(widget, pairs))
         refuse_part_variants(widget)
         widgets.append(widget)
+    flags = {what: units.flag_of(what) for what in ("sizes", "flavours")}
     for name, (line, cell) in shared_table.items():
         names = depth0_names(cell)
         if cell.startswith("`") and names and all(CAMEL.fullmatch(n) for n in names):
@@ -957,8 +1125,34 @@ def generate(root: Path) -> dict:
         for e in enum_definitions(entry):
             mirror_pairs(e)
     out = {f"gen_{w.name}.rs": rustfmt(widget_file(w, set(shared)), f"gen_{w.name}.rs") for w in widgets}
-    out[INDEX] = rustfmt(index_file(widgets, shared), INDEX)
+    out[INDEX] = rustfmt(index_file(widgets, shared, flags), INDEX)
     return out
+
+
+def depth_content(entry, units: Units, pairs: list) -> list:
+    """The content variants of `pairs` at depth (S6.1, ADD-A147): each the entry's Depth item lists or an enabled
+    later unit holds; one a later unit not enabled holds left out until its unit; one neither is an input error."""
+    depth = spec_catalogue.depth_names(entry) or {"variants": []}
+    out = []
+    for part, v in pairs:
+        unit = units.holder(entry.name, "variants", v)
+        if v in depth["variants"] or (unit is not None and unit.enabled):
+            out.append((part, v))
+        elif unit is None:
+            raise InputError(f"catalogue line {entry.line}, `{entry.name}`: the content variant `{v}` is neither on "
+                             f"the Depth item nor in a later unit of {UNITS}")
+    return out
+
+
+def depth_findings(root: Path) -> list:
+    """depth_check() of each enabled unit's entry."""
+    try:
+        units = parse_units((root / UNITS).read_text(encoding="utf-8"))
+        text = (root / spec_catalogue.CATALOGUE).read_text(encoding="utf-8")
+    except OSError as err:
+        raise InputError(str(err)) from err
+    entries = [e for e in spec_catalogue.entries(text)]
+    return [x for e in entries if e.name in units.widgets() for x in depth_check(e, entries)]
 
 
 def differences(root: Path, files: dict) -> list:
@@ -1023,6 +1217,9 @@ SELF_TEST_CATALOGUE = """\
   - on the widget, typed: `sharp`.
 - **may_be_absent:**
   - parts: `mark` (`adwaita`). - fields: `body.stroke` (all). - values: `turn` (all), `spot` (all). `side` is not.
+- **Today's fields:** `color` → `body.fill @ variant round`; `pressed` → `body.fill @ {pressed}`.
+- **Depth** (a note): variants `flat`, `round` (a note, `not_this`), `sharp`; states `pressed`; the scheme and
+  `contrast_high`. Prose.
 """
 
 SELF_TEST_UNITS = """\
@@ -1033,6 +1230,26 @@ spot = "placement"
 
 [hand_written]
 placement = false
+
+[[later]]
+name = "flavours"
+kind = "depth"
+enabled = false
+conditions = ["flavor:other"]
+
+[[later]]
+name = "sizes"
+kind = "depth"
+enabled = true
+sizes = true
+"""
+# The same units with `sharp` in a later unit and the Depth item left without it (S6.1, ADD-A147).
+SELF_TEST_LATER = SELF_TEST_UNITS + """
+[[later]]
+name = "styles"
+kind = "depth"
+enabled = false
+knob = [{ variants = ["sharp"] }]
 """
 
 
@@ -1104,6 +1321,40 @@ def self_test() -> int:
            [("Side", ["Start", "End"], "A shared value type of the catalogue: a note."),
             ("Corner", ["TopStart", "TopEnd", "BothEnds"], "A shared value type of the catalogue.")])
     expect("variants", (w.variants, w.part_variants), (["flat", "round", "sharp"], {}))
+    # the depth (S6.1, ADD-A147): a typed variant a later unit holds is no member, a Depth item's names checked
+    # against the *Today's fields* selectors, the units' flags written
+    shallow = SELF_TEST_CATALOGUE.replace("`round` (a note, `not_this`), `sharp`;", "`round` (a note, `not_this`);")
+    w3 = read_widget(spec_catalogue.entries(shallow)[0], parse_units(SELF_TEST_LATER),
+                     spec_catalogue.shared_types(shallow), {})
+    expect("depth: variants", (w3.variants, w3.later_variants), (["flat", "round"], [("sharp", "styles")]))
+    expect("depth: the units' flags", (parse_units(SELF_TEST_LATER).flag_of("sizes"),
+                                       parse_units(SELF_TEST_LATER).flag_of("flavours")), (True, False))
+    entries = spec_catalogue.entries(SELF_TEST_CATALOGUE)
+    expect("depth: today's names", todays_names(entries, "knob"),
+           {"variants": {"round": entries[0].item("Today's fields").line},
+            "states": {"pressed": entries[0].item("Today's fields").line}})
+    expect("depth: checked", depth_check(entries[0], entries), [])
+    narrow = spec_catalogue.entries(SELF_TEST_CATALOGUE.replace("states `pressed`;", "states `hover`;"))
+    expect("depth: a selector's flag the Depth item lacks", len(depth_check(narrow[0], narrow)), 1)
+    for label, unit_text, catalogue, needle in (
+            ("a typed variant in no place", SELF_TEST_UNITS, shallow, "neither on the Depth item nor in a later unit"),
+            ("a typed variant in two places", SELF_TEST_LATER, SELF_TEST_CATALOGUE, "on the Depth item and in the"),
+            ("no Depth item", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.split("- **Depth**")[0], "no **Depth** item"),
+            ("a part field no part lists", SELF_TEST_UNITS + '[deferred.x]\n', SELF_TEST_CATALOGUE, "")):
+        if not needle:
+            continue
+        try:
+            read_widget(spec_catalogue.entries(catalogue)[0], parse_units(unit_text),
+                        spec_catalogue.shared_types(catalogue), {})
+            failures.append(f"{label}: not refused")
+        except InputError as err:
+            if needle not in str(err):
+                failures.append(f"{label}: refused with {err}")
+    deferred_field = SELF_TEST_UNITS.replace('spot = "placement"', 'spot = "placement"\n"body.stroke" = "styles"')
+    deferred_field += '\n[[later]]\nname = "styles"\nkind = "depth"\nenabled = false\n'
+    w4 = read_widget(spec_catalogue.entries(SELF_TEST_CATALOGUE)[0], parse_units(deferred_field),
+                     spec_catalogue.shared_types(SELF_TEST_CATALOGUE), {})
+    expect("a deferred part field", [p.fields for p in w4.parts if p.root], [["fill"]])
     expect("counterparts", [counterpart(v) for v in ["Start", "Leading", "TopEnd", "EndColumn", "TrailingInline",
                                                      "BothEnds", "Inline", "StartEnd"]],
            ["End", "Trailing", "TopStart", "StartColumn", "LeadingInline", None, None, "EndStart"])
@@ -1118,7 +1369,8 @@ def self_test() -> int:
             failures.append(f"an end without its counterpart: refused with {err}")
     parted = SELF_TEST_CATALOGUE.replace("  - on the widget, typed: `sharp`.",
                                          "  - on `label`, typed (its own): `bold`, `thin`.\n"
-                                         "  - on `label`, keyed, `adwaita`: `@dim`.")
+                                         "  - on `label`, keyed, `adwaita`: `@dim`.").replace(
+        "`round` (a note, `not_this`), `sharp`;", "`round` (a note, `not_this`);")
     w2 = read_widget(spec_catalogue.entries(parted)[0], units, spec_catalogue.shared_types(parted), {})
     expect("a part's own variants", (w2.variants, w2.part_variants), (["flat", "round"], {"label": ["bold", "thin"]}))
     try:
@@ -1158,7 +1410,10 @@ def self_test() -> int:
             failures.append(f"widget file lacks {needle!r}:\n{code}")
     if "impl Mirror for Turn" in code:
         failures.append(f"widget file mirrors `Turn`, which names no end:\n{code}")
-    index = index_file([w], shared)
+    index = index_file([w], shared, {"sizes": True, "flavours": False})
+    for needle in ["pub(crate) const SIZES_UNIT: bool = true;", "pub(crate) const FLAVOURS_UNIT: bool = false;"]:
+        if needle not in index:
+            failures.append(f"index lacks {needle!r}")
     for needle in ["pub enum WidgetKind {\n    /// `knob`.\n    Knob,", "    /// `round`, a typed variant of `knob`.",
                    "    Knob(KnobPart),", "pub knob: Option<Box<KnobPatch>>,",
                    "variants: &[Variant::Flat, Variant::Round, Variant::Sharp],",
@@ -1261,12 +1516,12 @@ def self_test() -> int:
     dial = SELF_TEST_CATALOGUE + "\n### dial\n\n- **Kind:** typed widget.\n- **Widget values:**\n  - "
     for label, line, needle in [
         ("its enum", "`column: Value<Column>`, `Column { EndColumn, Middle }` — which column.",
-         "catalogue line 43: `Column::EndColumn` names an end of the layout and `Column` lacks its counterpart "
+         "catalogue line 46: `Column::EndColumn` names an end of the layout and `Column` lacks its counterpart "
          "`StartColumn`"),
         ("its enum in another item", "`column: Value<Key>` — which column.\n- **Notes:** its rows are\n  "
-         "`Column { Middle,\n  EndColumn }`.", "catalogue line 45: `Column::EndColumn`"),
+         "`Column { Middle,\n  EndColumn }`.", "catalogue line 48: `Column::EndColumn`"),
         ("its enum inside parentheses", "`column: Value<Column>` (its type, `Column { EndColumn, Middle }`) — which.",
-         "catalogue line 43: `Column::EndColumn`"),
+         "catalogue line 46: `Column::EndColumn`"),
         ("its enum without spaces", "`column: Value<Column>`, `Column {Above, Leading}` — which column.",
          "`Column::Leading` names an end of the layout and `Column` lacks its counterpart `Trailing`"),
         ("its enum with a data variant", "`column: Value<Column>`, `Column { Custom(Key), Leading }` — which.",
@@ -1317,7 +1572,11 @@ def main(argv) -> int:
         print(f"error: {err}", file=sys.stderr)
         return 2
     if args == ["--check"]:
-        found = differences(ROOT, files)
+        try:
+            found = differences(ROOT, files) + depth_findings(ROOT)
+        except InputError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 2
         for line in found:
             print(line)
         print(f"generate_widgets: {len(files)} files, {len(found)} differing or stale", file=sys.stderr)

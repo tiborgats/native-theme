@@ -609,6 +609,43 @@ def variant_bullets(item) -> list[VariantBullet]:
     return out
 
 
+DEPTH_ITEM = "Depth"
+DEPTH_CLAUSES = {"variants": "variants", "states": "states"}
+
+
+def depth_names(entry) -> dict | None:
+    """The names an entry's **Depth** item lists (Entry format; ADD-A147): {"variants": [...], "states": [...],
+    "conditions": [...], "line": the item's line}, each the backticked names outside parentheses of the clause of the
+    item's first sentence (up to a `.` outside parentheses and backticks followed by a space) that starts with that
+    word, the conditions of the clause starting `the scheme`, the clauses separated by `;` outside them; a backticked
+    name that is no identifier, keyed (`@k`) or plain (a preset's `ios-*`), is left out. None where the entry has no
+    such item."""
+    item = entry.item(DEPTH_ITEM)
+    if item is None:
+        return None
+    text = item.text
+    colon = depth0_find(text, lambda t, i: t[i] == ":")
+    text = text[colon + 1:] if colon >= 0 else text
+    end = depth0_find(text, lambda t, i: t[i] == "." and (i + 1 == len(t) or t[i + 1] == " "))
+    sentence = text if end < 0 else text[:end]
+    out = {k: [] for k in list(DEPTH_CLAUSES.values()) + ["conditions"]}
+    start = 0
+    while start <= len(sentence):
+        stop = depth0_find(sentence, lambda t, i: t[i] == ";", start)
+        clause = sentence[start:] if stop < 0 else sentence[start:stop]
+        word = clause.strip().split(" ", 1)[0]
+        if clause.strip().startswith("the scheme"):
+            out["conditions"] += [n for _, _, n in depth0_tokens(clause)[0] if re.fullmatch(r"[a-z_][a-z0-9_:]*", n)]
+        if word in DEPTH_CLAUSES:
+            out[DEPTH_CLAUSES[word]] += [n for _, _, n in depth0_tokens(clause)[0]
+                                          if re.fullmatch(r"@?[a-z_][a-z0-9_]*", n)]
+        if stop < 0:
+            break
+        start = stop + 1
+    out["line"] = item.line
+    return out
+
+
 def recency_sets(entry) -> list:
     """(name, [flags in the stated order], line) of every recency set the entry's **Exclusive groups** item names: each
     backticked `<name> = [<flag>, …]` after the words `Recency sets` (S10's `recency`; ADD-A124)."""

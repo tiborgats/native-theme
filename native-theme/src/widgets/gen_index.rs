@@ -11,8 +11,7 @@ use native_theme_derive::ThemeParts;
 
 use super::gen_button::ButtonTheme;
 pub use super::gen_button::{
-    BackDisplayMode, ButtonPart, ButtonPatch, ButtonValues, ButtonValuesPatch, IconPlacement,
-    IndicatorAnchor, MenuTrigger, PasteDisplayMode, ResolvedButtonValues,
+    ButtonPart, ButtonPatch, ButtonValues, ButtonValuesPatch, IconPlacement, ResolvedButtonValues,
 };
 use super::{PartPatch, WidgetSlot, WidgetTable};
 use crate::blocks::{Apply, MergeConflict};
@@ -40,71 +39,36 @@ pub enum Variant {
     Primary,
     /// `tinted`, a typed variant of `button`.
     Tinted,
-    /// `flat`, a typed variant of `button`.
-    Flat,
-    /// `destructive`, a typed variant of `button`.
-    Destructive,
-    /// `warning`, a typed variant of `button`.
-    Warning,
-    /// `pill`, a typed variant of `button`.
-    Pill,
-    /// `circular`, a typed variant of `button`.
-    Circular,
-    /// `glass`, a typed variant of `button`.
-    Glass,
-    /// `help`, a typed variant of `button`.
-    Help,
     /// `toggle`, a typed variant of `button`.
     Toggle,
-    /// `menu`, a typed variant of `button`.
-    Menu,
     /// `tool`, a typed variant of `button`.
     Tool,
-    /// `clear`, a typed variant of `button`.
-    Clear,
-    /// `icon_only`, a typed variant of `button`.
-    IconOnly,
     /// `with_icon`, a typed variant of `button`.
     WithIcon,
-    /// `close`, a typed variant of `button`.
-    Close,
-    /// `back`, a typed variant of `button`.
-    Back,
-    /// `previous`, a typed variant of `button`.
-    Previous,
-    /// `next`, a typed variant of `button`.
-    Next,
-    /// `overflow`, a typed variant of `button`.
-    Overflow,
-    /// `add`, a typed variant of `button`.
-    Add,
-    /// `remove`, a typed variant of `button`.
-    Remove,
-    /// `done`, a typed variant of `button`.
-    Done,
-    /// `clear_field`, a typed variant of `button`.
-    ClearField,
-    /// `reveal`, a typed variant of `button`.
-    Reveal,
-    /// `pane_toggle`, a typed variant of `button`.
-    PaneToggle,
-    /// `play`, a typed variant of `button`.
-    Play,
-    /// `volume`, a typed variant of `button`.
-    Volume,
-    /// `full_screen`, a typed variant of `button`.
-    FullScreen,
-    /// `frame_step`, a typed variant of `button`.
-    FrameStep,
-    /// `minimize`, a typed variant of `button`.
-    Minimize,
-    /// `maximize`, a typed variant of `button`.
-    Maximize,
-    /// `restore`, a typed variant of `button`.
-    Restore,
-    /// `route`, a typed variant of `button`.
-    Route,
 }
+
+// `button`'s typed variants beyond its depth, each a member from its later
+// unit's commit (S6.1, ADD-A147; scripts/widget_units.toml): `flat` (styles),
+// `destructive` (styles), `warning` (styles), `pill` (styles), `circular`
+// (styles), `glass` (glass), `help` (styles), `menu` (menus), `clear` (glass),
+// `icon_only` (content), `close` (identities), `back` (identities), `previous`
+// (identities), `next` (identities), `overflow` (identities), `add`
+// (identities), `remove` (identities), `done` (identities), `clear_field`
+// (identities), `reveal` (identities), `pane_toggle` (identities), `play`
+// (identities), `volume` (identities), `full_screen` (identities),
+// `frame_step` (identities), `minimize` (identities), `maximize` (identities),
+// `restore` (identities), `route` (identities).
+
+/// Whether the sizes unit is enabled (S6.1, S8, S10;
+/// scripts/widget_units.toml): while it is not, an element takes its default
+/// size in force alone, and the query answers `Later` for another size it takes
+/// and for a declared density.
+pub(crate) const SIZES_UNIT: bool = false;
+
+/// Whether the flavours unit is enabled (S6.1, S16; scripts/widget_units.toml):
+/// while it is not, `Theme::set_flavor` refuses every declared flavour but the
+/// default and `Theme::flavors` lists the default alone.
+pub(crate) const FLAVOURS_UNIT: bool = false;
 
 /// A typed widget's part: one variant per typed widget, each holding that
 /// widget's part enum (`TypedPart::Button(ButtonPart::Label)`), so a part
@@ -233,9 +197,7 @@ impl Widget for ButtonValues {
 impl Mirror for ResolvedButtonValues {
     fn mirror(&mut self) {
         self.icon_placement.mirror();
-        self.menu_indicator_anchor.mirror();
         self.hit_extension.mirror();
-        self.presentations.mirror();
     }
 }
 
@@ -292,45 +254,9 @@ pub(crate) const WIDGETS: &[WidgetInfo] = &[WidgetInfo {
     variants: &[
         Variant::Primary,
         Variant::Tinted,
-        Variant::Flat,
-        Variant::Destructive,
-        Variant::Warning,
-        Variant::Pill,
-        Variant::Circular,
-        Variant::Glass,
-        Variant::Help,
         Variant::Toggle,
-        Variant::Menu,
         Variant::Tool,
-        Variant::Clear,
-        Variant::IconOnly,
         Variant::WithIcon,
-        Variant::Close,
-        Variant::Back,
-        Variant::Previous,
-        Variant::Next,
-        Variant::Overflow,
-        Variant::Add,
-        Variant::Remove,
-        Variant::Done,
-        Variant::ClearField,
-        Variant::Reveal,
-        Variant::PaneToggle,
-        Variant::Play,
-        Variant::Volume,
-        Variant::FullScreen,
-        Variant::FrameStep,
-        Variant::Minimize,
-        Variant::Maximize,
-        Variant::Restore,
-        Variant::Route,
     ],
-    content_variants: &[
-        (None, "icon_only"),
-        (None, "with_icon"),
-        (None, "@custom_child"),
-        (None, "@arrow_only"),
-        (None, "@with_arrow"),
-        (None, "@tab_overflow"),
-    ],
+    content_variants: &[(None, "with_icon")],
 }];
