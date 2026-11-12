@@ -11,8 +11,8 @@ orchestrator's decisions not applied as worded.
 The batch that applied this design (ADD-A147) checked 1.3's point 1 against the facts, as that point asks: `button`'s
 `label_position` is stated with no later name on `kde-breeze`, and `repeat_delay` and `repeat_interval` at the base
 on `kde-breeze` and `macos-*`, so "only names of later units read" them does not hold (ledger queue #258). The
-orchestrator's decision on the batch's check A: the three are at depth wherever a preset states them with no later
-name, as the rule's "every part, field and value" of an entry at depth has it; the other values of 1.3's point 1
+orchestrator's decision on the batch's check A: the three are at depth where a button with no later name reads them
+(ADD-A148), as the rule's "every part, field and value" of an entry at depth has it; the other values of 1.3's point 1
 stay deferred (open to the maintainer's veto, veto list item 1). The recount, the staging scripts with the three not
 deferred (`depth_count_a2.py --values-at-depth`, a copy of `depth_count.py` beside it with that option, which without
 it prints `depth_count.py`'s tables unchanged): 1,381 pending facts at depth (was 1,376), 687 listed paths that stay
@@ -23,6 +23,50 @@ all `label_position`'s: U697 on `kde-breeze`, U616 on `macos-monterey`, U333 on 
 presets (a fact of two presets), U517 on `windows-11`; and their listed path `widgets.button.values.label_position`
 on `macos-monterey`, `macos-tahoe`, `ios-13`, `ios-26` and `windows-11`. The figures below are corrected where they
 describe revision 4's rule; those that record an earlier revision or a check stay as they were.
+
+## Correction of the document pass (2026-11-12)
+
+The full document pass after ADD-A147 and the orchestrator's decision per finding (ADD-A148, each open to the
+maintainer's veto, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`) change this design as follows; the body
+below is not rewritten. Only verified facts reach the branch: the gate lists every new or changed fact since a
+platform's verified commit, whatever its unit, and `verify_facts.py units` stays unit-blind, so "and
+`verify_facts.py units`" is withdrawn from 2.5's *Who checks it* and from 6.4's step 2 (P-3). The units file lists
+the units of depth and the parking units in 3.4's order, the order S17 reads (P-4). The predicate (1.3, 2.5) is
+decided exactly, over the combinations at depth: a fact is of the enabled units when its key's path, and the widget a
+`drawn_as` value names, are held by them and its `when` holds in at least one combination of the enabled units'
+names that its entry's state model draws on that preset. A fact that is not of the enabled units is a later unit's
+or unplaced (below). Its later unit is the unit at whose enabling, the units enabled one after another in the units
+file's order, the fact is first of the enabled units, not the first unit whose names it needs. It is decided from
+names, without walking combinations: for each drawn set of its entry's state model that can hold the fact (its part
+drawn there, by the part's presence facts), the last unit in the file's order among the names the fact needs in that
+set (the names its `when` lists positively, a widget its `context`, its `scope.nearest` or its `widget` names among
+them; the names the state model requires for that set to be drawn there, the set's other variants and the states and
+conditions under which alone its `not_drawn` entries leave it drawn; the names the presence fact that draws the part
+there lists, the earliest unit where several draw it; a size other than the set's default in force where the fact's
+`not_sizes` excludes that default, the sizes unit, a size being the one kind of which an element always holds a
+name; its key's path; the widget a `drawn_as` value names and the variants it names of that widget; a host context
+where the set is drawn only inside one: that host's unit, `identities` for a context naming no widget); the fact's
+unit is the first such unit over those sets. A fact's other negative lists (`not_context`, `not_variants`,
+`not_states`, `not_conditions`) never add a unit: an element may hold no name of those kinds, so the negation holds
+among the names at depth (S17; X1-2 of the batch's check). A fact
+that no drawn set can hold with any units' names is *unplaced*: the gate and `check_facts_trace.py` report it apart,
+under no unit, and from the plan's M4 the gate fails it. A fact of the enabled units is checked exactly, over the
+combinations at depth; nothing walks the combinations of all units' names, so the "stray fact" of 2.5 and of the revision tables (a `when` no union of units
+makes hold, failed by `check_facts.py` from M4) is withdrawn in favour of the unplaced fact (2.5, 3.1; K4-4, K4-8,
+the orchestrator's O-14 and O-15). A part's `shown` stays in 0.8.0 with its rest meaning alone and is not the motion unit's
+(2.4, 5.3, 5.4 (a), 6.4's step 1), and every widget's `loop` but the spinner's is the motion unit's (K2-1, K2-7;
+veto list item 61). `full_keyboard_access` is at depth model-wide, as `contrast_high` is (1.3 point 6, 1.4; C-4,
+item 62). `idiom:phone` is the iPad unit's with `idiom:pad`, so combinations at depth hold no idiom (1.4, 3.1's
+table; C-7). The trimming (2.3) also leaves undeclared an exclusive group or a recency set left with fewer than two
+flags, a recency set no rule of the enabled units' facts names, and `device_models`, `container_sizes` beyond each
+default and `presentation_events` that no rule (for an event, a `presentations` list) of the enabled units' facts
+names, a setting declared for applications aside (K3-6). The tests a part's deferred `transitions` leaves without a
+part that lists it (the plan's staging task, its step on tests): a check that is a function of the block alone is tested on the block; a check
+that needs a part listing the field keeps its tests, compiled and `#[ignore]`d with the motion unit as the reason,
+recorded in the ledger as that unit's and un-ignored at its enabling; a test that used the field only as an example
+moves to a field at depth; the checks and tests of a staged token field that leaves its struct leave with it, listed
+by the unit that brings it back (O-1). The figures below are not recomputed for these changes; the increment that
+brings `full_keyboard_access` to depth reports any change of the done-tables (ledger queue #283).
 
 ## Revision 4
 

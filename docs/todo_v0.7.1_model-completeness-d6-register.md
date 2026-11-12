@@ -11,7 +11,7 @@ model form for Qt Quick's line position in U180, part 3 (for the flavours unit).
 
 **Corrections of ADD-A147's fix round (2026-11-12), the orchestrator's decisions on the batch's checks** (each open
 to the maintainer's veto, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`): `button`'s `label_position` is
-at depth wherever a preset states it with no later name (ledger queue #258), so U697's pending fact is on 0.8.0's
+at depth where a button with no later name reads it (ledger queue #258; ADD-A148), so U697's pending fact is on 0.8.0's
 release path, its facts edit due before 0.8.0 (section 1's table and section 4's comparison are corrected below).
 U180's open rest is two rows: Qt Quick's line position, U753, takes the non-breaking form, a field on `Decoration`
 defined with the flavours unit; QPainter's wavy and strike lines are U754, due with the first unit that states one.
@@ -20,6 +20,18 @@ The status text colours (U456): on `macos-*` they refer to `role.global.accent_f
 `labelColor`, which 0.7.0's preset names the body text beside a status mark); on `ios-*` to the colour UIKit is
 measured drawing as a filled button's title over each status fill (U755, decided), 0.7.0's having been a literal with no source; each paired only where its fill
 is, and pending while that fill's read is open (U757–U760; fix round N3).
+
+**Correction of the document pass (2026-11-12), the orchestrator's decisions on the full document pass after
+ADD-A147** (ADD-A148, each open to the maintainer's veto): in U180's part 4, point 4 (*Typing*), a `<n>px` literal
+beside a font size in either of `if_le`'s pairs, and in `div`, is a font size, converted and scaled as one (S9.4),
+not a length compared as px; `div` is named beside `add`, `sub`, `min` and `max` where a font size meets a length,
+as the code types it (K1-2). U509's Consolas is cited to `fonts.ts:41` alone at M2's task 0, `typography.md:203`
+added once U520's checker notation exists, U520 having left 0.8.0's path by the staging (U509's part 4; L-9). The
+help bezel's member (U314 and U614, part 4) gets a register row of its own, U762, due with the unit that brings
+`help`, in place of U708 gaining it, since U708 retires at M2's task 7 (L's minor 3). Where this note gives
+`single_click_activates` and U555 to the containers unit, or to the unit that brings the item views, they go to the
+first unit whose value at depth reads the token: the containers unit if `list`'s does, else the parking unit
+*behaviour*, as the catalogue stands (P-8).
 
 ## Revision 5
 

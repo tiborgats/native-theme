@@ -1,11 +1,14 @@
 # D6: what you may veto
 
-2026-11-12. Everything checkpoint D6 decided that you may veto, in one list. **Every item is already applied as the
+2026-11-12. Everything checkpoint D6 and the full document pass after it decided that you may veto, in one list of
+66 items (59 to 66 the pass's). **Every item is already applied as the
 work's basis and stays so unless you veto it**; nothing here blocks the work. Answer by item number: "veto 12", or
 "veto 12: instead …"; an item you do not name stands. Sources, all in the repository:
 `docs/todo_v0.7.1_model-completeness-d6-outcome.md` ("outcome N"), `-d6-register.md` ("register"),
 `-d6-staging.md` ("staging"), `-d6-load.md` ("load"); `d6-decisions.md` ("brief", which holds the alternatives)
-and the batch's checks and decisions (`batch-check/`) stay in the project's working files (`scratch-keep/d6/`).
+and the batch's checks and decisions (`batch-check/`) stay in the project's working files (`scratch-keep/d6/`), and
+so do the document pass's reports and the orchestrator's decision per finding ("the pass", `scratch-keep/docpass/`,
+its findings cited by their ids, K4-7 and so on).
 
 ---
 
@@ -21,9 +24,9 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   key under one combination, with its proof; a *pending* fact has its combination written down, not its value).
   `ios-26` stays. This changes R21's "a unit enters whole". Result: 1,381 of the slice's 45,766 pending facts
   (3.0 %) and 687 of its 1,508 listed paths (the paths that keep a preset from loading) stay on 0.8.0's path. These
-  figures count `button`'s `label_position`, `repeat_delay` and `repeat_interval` at depth wherever a preset states
-  them with no later name (the fix round's recount, ledger queue #258; with the three deferred they were 1,376 and
-  682).
+  figures count `button`'s `label_position`, `repeat_delay` and `repeat_interval` at depth where a button with no
+  later name reads them (the fix round's recount, ledger queue #258; ADD-A148; with the three deferred they were
+  1,376 and 682).
 - *Why:* D13 ("0.8.0 ships when the new model covers what 0.7.0 covers", taken for time: about 3–4 weeks against
   5–7). Measuring every combination was priced at 814 to 2,958 M of usage, 3 to 11 weeks for the facts alone;
   99.95 % of the pending button facts lie beyond 0.7.0's depth.
@@ -34,7 +37,8 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
 
 **2. State-change transitions after 0.8.0 (outcome 3).**
 - *Decided:* 0.8.0 keeps the two motions 0.7.0 has (the dialog's entrance and the animated busy indicator, with
-  the speed factor). The animation between two states of a widget (the runtime's engines, their use in the
+  the speed factor), each only if the Apple motion trial measures it on macOS 15 and 26 and iOS 18 and 26 (items 6
+  and 24); what else of motion stays is item 61. The animation between two states of a widget (the runtime's engines, their use in the
   connectors, the Apple measurements, the theme-change token) is a later motion unit. Until then a state changes at
   once, as in 0.7.0. The model's types and the written facts stay. The connectors' design must show that the later
   unit needs no change to their API; if it cannot, the runtime's API is built now and its engines later. This
@@ -43,26 +47,47 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   does not have it, and Apple states no timings.
 - *Veto brings:* motion in 0.8.0 as planned. M2's runtime task builds every engine, after an Apple motion trial.
 - *Source:* outcome 3; staging §5, §6.1 R-1, R-4; brief §2 decision 3.
-- *The sources disagree:* (1) staging (the orchestrator's decision G) keeps the two motions in 0.8.0 only if an
-  Apple trial measures them, and says this "puts Apple motion measurements back on 0.8.0's path, which outcome 3
-  gave as its reason to defer motion" (items 6 and 24). (2) Outcome 3 gives "21 of 29 macOS" motion facts pending
-  (the brief's count at a55cdcd2). Staging counts 21 of 27 at 7430a0a2 and leaves the correction to the
-  orchestrator.
+- *Settled:* the trial's condition is the plan's (M2 task 1) and R21's; the count of pending macOS motion facts is
+  21 of 27 at 7430a0a2 (the outcome file's corrections).
+
+**61. What of motion stays in 0.8.0 beside the two motions (with item 2).**
+- *Decided:* a part's `shown` stays in 0.8.0 with its rest meaning alone: a part is drawn while `shown` holds, and
+  with no part listing `transitions` a false `shown` means not drawn. So a part the platform hides at rest (the
+  unchecked mark that `kde-breeze`, `windows-11` and `material-3` draw on or trim off, the radio's dot, `windows-11`'s
+  list selection pill) is hidden at rest, with no engine. Every widget's `loop` but the spinner's (the progress bar's
+  indeterminate motion among them) is the motion unit's. The press ripple stays (`material-3`, the specification's
+  S2.12), a third frame-timed effect, so the connectors' design needs per-element state and a frame request whatever
+  the Apple trial finds. This changes D6's motion staging (item 2), which gave `shown` to the motion unit and placed
+  no other loop and no ripple.
+- *Why:* D13: 0.7.0 drew a check mark only on a checked box, so hiding a part at rest is 0.7.0's coverage, and its
+  rest meaning needs no engine; with `shown` deferred, `windows-11`'s unchecked check would hold its stroke and its
+  list pill would be styled on every row, a part that may be neither hidden nor absent there. A widget loop but the
+  spinner's is neither of 0.7.0's two motions. The ripple is stated by S2.12 and built (`native-theme/src/ripple.rs`).
+- *Veto brings:* for `shown`, an interim rule: a part that lists it stated `Absent` where hidden until the motion
+  unit, which needs a may-be-absent allowance for every such part on every preset and its facts written twice; for
+  the loops, `progress_bar`'s loop stated in 0.8.0 with its Apple measurement and a `Motion` to run it; for the
+  ripple, a press on `material-3` drawn without it until the motion unit.
+- *Source:* the pass, K2-1, K1-1, K2-7, C-10, K2-15, K1-3, R-2; the specification's S2.7 *In 0.8.0*; R21's
+  amendment.
 
 **3. A role the platform does not name may be identified with a colour the platform draws for its meaning (outcome 5, with the U651 pairing).**
 - *Decided:* a typed colour role that no source of the platform states is native-theme's own mapping where the
   platform draws the role's meaning in a colour of its own, documented or measured (item 56); a text slot every
-  preset must fill takes a style or family the platform names. It is labelled as such, kept out of the gate's
-  platform comparison and never recorded as the platform's fact (the specification's S3 states the rule). It
+  preset must fill takes a style or family the platform names. It is labelled as such, compared by the gate like
+  any value and reported apart from the platform's stated facts, and never recorded as the platform's fact (the
+  specification's S3 states the rule). It
   changes R25.17's ground: the status colours of `macos-*` and `ios-*` are no longer absent by decision but stated
   where a source or a measurement shows the platform drawing them. What it brings:
   - on `macos-*` and `ios-*` each status waits on its read (rows U757–U760; a register row is one line of the
     ledger's list of what is not measured yet), its values pending meanwhile (closes U456). No pinned Apple source
-    yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success or info. The reads begin
-    by pinning and reading the HIG's colour pages; the rows hold the candidates and what closes each. What the
-    evidence in hand gives: a candidate element only for macOS's error and warning (the level indicator's two
-    fills). For success and info on all four presets and for all four statuses on `ios-*` the pinned headers name
-    none, so unless an Apple page not yet read names the colours, those twelve status colours are absent in 0.8.0
+    yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success or info. The HIG's Color,
+    Feedback and Gauges pages were pinned and read on 2026-11-12, one capture per generation (the Feedback page
+    none in macOS 15's and iOS 18's lifetime), and name no system
+    colour for any of the four statuses on any of the four presets (U757–U760); what is left is the lanes' survey of
+    measured elements, with one candidate, on `macos-*` the level indicator's critical and warning fills, for error
+    and warning; the rows hold the candidates and what closes each. For success and info on all four presets and for
+    all four statuses on `ios-*` the pinned headers name none, so unless the survey finds an element the platform
+    colours for the meaning, those twelve status colours are absent in 0.8.0
     and each connector draws its toolkit's colour there; a preset may then draw one status in the platform's colour
     and another in the toolkit's (item 57);
   - the status text colours (`foreground`, the text on the status fill) are the colour the platform is measured
@@ -157,9 +182,85 @@ model form, by your earlier decisions and the project's rules.**
 - *Source:* the check F1's finding 11 and the orchestrator's decision F1-11 (`batch-check/check-F1.md`,
   `batch-check/decisions.md`).
 
+**41. Licence classes, and `AND MIT` added to the licence you decided at D10 (outcome 11).**
+- *Decided:* D10 names four classes of reference: LGPL and GPL through the clean room (one agent describes the
+  licensed source, another implements from the description alone); Apache-2.0 and MIT ported under a file-level
+  licence with its notice; the manifest's expression as it stands, `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND
+  MIT`, which adds `AND MIT` to the licence you decided at D10, `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0`.
+- *Why:* you accepted "AND Apache-2.0" on 2026-10-29, and MIT's obligation (keep the notice) is of the same kind and
+  no wider. This is a risk judgement, not a legal conclusion.
+- *Veto brings:* the MIT port (`native-theme/src/platform/win_ui.rs`) redone through the clean room and the licence
+  back to `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0` (your D10); or, wider, the Apache ports too and the licence
+  `MIT OR Apache-2.0 OR 0BSD`.
+- *Source:* outcome 11; brief decision 11; the plan's D10; the pass, L-8.
+
+**49. A palette over a preset whose widget colours follow no role, and over keyed colours (outcome 7).**
+- *Decided:* a preset whose widget colours are measured literals that follow no role declares that it takes no
+  palette: `macos-monterey`, `macos-tahoe`, `ios-13` and `ios-26` (`macos-tahoe`'s button fills are 2,561 measured
+  literals of 2,795 fill lines). Over such a preset `apply_palette` and `set_preset` refuse a palette
+  (`PaletteNotForPreset`), and `Palette::presets` lists the presets a palette has a source for and that take one,
+  which a picker reads. Over a preset whose widgets read keyed colours a palette reaches them by a stated, reviewed
+  mapping method: a mapping states every colour role a value of the preset reads, unless that role follows the
+  mapping: a reference or a derivation over roles the mapping states or that so follow, or, through references
+  alone, an input it states (a literal, and a call that reads an input itself, follow nothing: `kde-breeze`'s
+  disabled roles, Plasma's effects over the mapping's colours, need no entry, while `material-3`'s keyed ladder,
+  Material's scheme of the accent, a function of the accent input alone, is mapped as `windows-11`'s literal keyed
+  roles are); a typed role the preset states as a reference to a keyed one is stated with it, the keyed role as a
+  reference to the typed one or both by the same expression, or not at all, so no surface has two colours. Over
+  `material-3` and `windows-11` a palette needs the method's table, written once, at M4 (item 63); until then the
+  bundled palettes are offered over `adwaita` and `kde-breeze`. This changes R19's "a palette on every platform",
+  which you decided on 2026-10-28.
+- *Why:* R19 defines a palette as the project's published colours on the colour roles and rejects a mixed look (two
+  schemes on one surface). Over measured literals no mapping reaches the widgets; over `material-3`'s ladder a
+  palette's accent alone gives Material's scheme of that accent, not the project's colours, beside the typed roles
+  the mapping states. The preset declares the limit, so it follows the preset's facts, not a list of preset ids in
+  the library's code.
+- *Veto brings:* a palette on every platform as R19 had it: over `macos-*` and `ios-*` the palette offered with its
+  colours beside the platform's measured literals, the mixed look recorded; or typed roles only everywhere, the
+  mixed look recorded (the Windows button in WinUI's greys under Catppuccin's colours). For `material-3` alone: a
+  palette there is its accent alone, Material's scheme of it, not the project's colours.
+- *Source:* outcome 7 and its corrections; brief decision 7; the pass, K3-2 with K4-1, K4-2, R-1, R-3.
+
+**60. Where the AppKit rendering is absent, the toolkit's own mark, arrows and triangle (with item 48).**
+- *Decided:* on a `macos-*` preset, where S15's rendering of a system control is absent (wherever
+  `render_system_control` returns `None`), the connector draws its toolkit's own check mark, pop-up arrows and disclosure
+  triangle, each colour from the theme (the role or value the connectors' design names per glyph), recorded in its
+  contract as the exception for a `SystemControl` source without its rendering. This changes R11, under which no
+  mark is drawn there and a checked and a mixed checkbox differ only where their measured box fills do.
+- *Why:* D13, and outcome 6's rule for what the theme gives no geometry for (the toolkit's own geometry, the
+  theme's colours): 0.7.0 drew a check mark on the `macos-*` presets everywhere, and a checked box that shows no mark
+  is a functional defect.
+- *Veto brings:* R11 as it stands: no mark, arrows or triangle where the rendering is absent, and the loss in R21's
+  list (a check mark on the `macos-*` presets wherever `render_system_control` returns `None`).
+- *Source:* the pass, K2-6; R11; the specification's S15; outcome 6.
+
+**65. The iOS tint follows the accent by a measured derivation (outcome 12; formerly in item 42).**
+- *Decided:* on `ios-*` the preset declares the accent alone, and what UIKit draws in the tint is a measured
+  derivation over it, pending the host pass under a second tint (register U706; the plan's M2 *The iOS second-tint
+  run*, which blocks the iOS presets' release), so `ios-*` leaves the presets whose derived accent inputs a palette
+  or an application states. This reverses a recorded decision (R2.6, R4, R19).
+- *Why:* with the tint a measured literal, `set_accent` left 555 tinted button facts system blue.
+- *Veto brings:* `set_accent` refused on iOS until the run is made.
+- *Source:* outcome 12; brief decision 12; the rationale's R25.13 (ADD-A146's entry); the pass, L-7.
+
+**66. A palette under a followed scheme it lacks is suspended, not refused (outcome 12; formerly in item 42).**
+- *Decided:* a palette that lacks the scheme in force is accepted and suspended while the scheme is followed (the
+  theme is the preset with the reader's values, and the palette applies again when the scheme in force is one it
+  has), and refused (`SchemeNotInPalette`) only while the application has picked that scheme. This reverses R19's
+  earlier rule, which refused it under any scheme it lacks.
+- *Why:* under the earlier rule one state is an error or a suspension by the order of two calls: an application that
+  follows the system and starts in light with a dark-only palette gets an error and no palette, and must watch the
+  scheme to apply it later.
+- *Veto brings:* refused under any scheme it lacks, the earlier rule (R19), the same state then an error or a
+  suspension by the order of two calls.
+- *Source:* outcome 12; brief decision 12; R19; the specification's S14; the pass, L-7.
+
 ---
 
 ## B. Losses against 0.7.0 that its users would notice
+
+Item 49 (in A) also brings one: no community scheme over the `macos-*` and `ios-*` presets, which 0.7.0 offered on
+every platform as whole themes; on macOS and iOS a palette applies only over another platform's preset.
 
 **5. `material-3`'s checked text toggle colours.**
 - *Decided:* 0.7.0's checked colours for a text toggle on `material-3` (`#625b71` fill, `#ffffff` text, from
@@ -181,8 +282,9 @@ model form, by your earlier decisions and the project's rules.**
 - *Why:* one rule for every model field: a value is stated on every preset or on none. No pinned Apple source states
   either motion.
 - *Veto brings:* a larger trial (see item 24); a value stated on some presets only was rejected as a false statement.
-  If decision G meant the two motions to leave together, the only change is that a measured one leaves too. Or
-  (iv) a value that answers 'later' on the presets that do not state it yet (the Apple presets, where 0.7.0 states
+  If decision G (the orchestrator's, staging §5.5: the trial first, then each motion stated on every preset or lost
+  by its result) meant the two motions to leave together, the only change is that a measured one leaves too. Or a
+  value that answers 'later' (staging §5.5's option (iv)) on the presets that do not state it yet (the Apple presets, where 0.7.0 states
   no entrance): truthful, and it keeps 0.7.0's coverage whatever the trial finds; it costs a model form no value has
   today (a per-preset `later` for a value field, its S12 rule and each connector's handling), a class 2 change for
   two values. Not taken: the trial may make it unnecessary; to be weighed again if the trial fails.
@@ -212,12 +314,17 @@ model form, by your earlier decisions and the project's rules.**
   colour for that meaning nor a measurement of an element the platform itself colours for it is absent on that
   preset, and each connector fills its toolkit's field with the toolkit's own colour, recorded in its contract;
   0.7.0's status colour there is then lost. A status's text colour on the surface (its `standalone`) waits on the
-  same read, for all four statuses alike (item 3). The macOS and iOS lanes make the reads before their facts edit, at the
-  latest at M4's pending condition, beginning with the HIG's colour pages; the rows state how a colour found is
-  paired (the specification's S3 states the rule). Until a read closes, those values are pending, which no release
-  may hold. What the evidence in hand gives: a candidate element only for macOS's error and warning (the level
-  indicator's two fills). For success and info on all four presets and for all four statuses on `ios-*` the pinned
-  headers name none, so unless an Apple page not yet read names the colours, those twelve status colours are absent
+  same read, for all four statuses alike (item 3). Each field needs its own witness: a witness drawn as text or a
+  mark alone pairs the `standalone` alone, the `fill` and `foreground` absent, as a fill alone leaves the
+  `standalone` absent (the pass, K2-8). The macOS and iOS lanes make the reads before their facts edit, at the
+  latest at M4's pending condition; the rows state how a colour found is paired (the specification's S3 states the
+  rule). Until a read closes, those values are pending, which no release may hold. The HIG's Color, Feedback and
+  Gauges pages were pinned and read on 2026-11-12, one capture per generation (the Feedback page none in macOS 15's
+  and iOS 18's lifetime), and name no system colour for any of
+  the four statuses on any of the four presets (U757–U760); what is left is the lanes' survey of measured elements,
+  with one candidate, on `macos-*` the level indicator's critical and warning fills, for error and warning. For
+  success and info on all four presets and for all four statuses on `ios-*` the pinned headers name none, so unless
+  the survey finds an element the platform colours for the meaning, those twelve status colours are absent
   in 0.8.0 and each connector draws its toolkit's colour there; a preset may then draw one status in the platform's
   colour and another in the toolkit's.
 - *Why:* item 56: a colour that merely exists in the platform's palette does not count, and 0.7.0's choice cites no
@@ -229,6 +336,21 @@ model form, by your earlier decisions and the project's rules.**
 - *Source:* the orchestrator's decisions N2-1, N3-1, N4-1, N5-1, N5-3, N6-2, N6-4 and N6-5 on the batch's checks of
   its fix rounds, the check F1's finding 7 and the decision F1-21 (`batch-check/decisions.md`, the checks in `batch-check/`); the
   specification's S3, the catalogue's *global roles*, `status`; the rationale's R21 and R25.17.
+
+**48. Widgets a preset declares unavailable (outcome 6).**
+- *Decided:* the declarations stay. Per preset, the connectors' contract lists what a connector draws its toolkit's
+  widget from: a stand-in entry, which on that preset reads no field of the unavailable widget (the toolkit's own
+  geometry, every colour and font from the theme's typed roles), or, where the catalogue names none, the toolkit's
+  own geometry with every colour and font from the theme's typed roles. A test checks the list is complete. In 0.8.0
+  the query answers "not available" where 0.7.0 resolved `tab`, `card`, `expander` or `status_bar` on every preset,
+  a loss R21 lists. 0.7.0 held values under those names, such as the iOS tab bar's height of 49 and the macOS box
+  margins.
+- *Why:* the declarations are true; without a rule each connector decides on its own. 0.7.0's mapping of a tab bar
+  and a group box reads `tab` and `card`, the widgets the query answers "not available" for there, so a stand-in has
+  no geometry of theirs to read.
+- *Veto brings:* `bottom_tab_bar` and `group_box` moved into 0.8.0 (two more units, and the rule is still
+  missing), or each connector decides.
+- *Source:* outcome 6; brief decision 6; the pass, K4-6, L-6.
 
 ---
 
@@ -428,21 +550,13 @@ place).
 
 ## F. Confirmations of earlier proposals
 
-**41. Licence classes (outcome 11).** *Decided:* D10 names four classes: the clean room (one agent describes the
-licensed source, another implements from the description alone) for every LGPL and GPL reference; an own port of an
-Apache-2.0 or MIT reference under a file-level licence with its notice; the manifest's
-`(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT` as it stands. *Why:* you accepted "AND Apache-2.0" on
-2026-10-29, and MIT's obligation is the same kind. This is a risk judgement, not a legal conclusion. *Veto brings:*
-no code that carries a notice: the MIT and Apache ports are redone through the clean room, and the licence
-returns to `MIT OR Apache-2.0 OR 0BSD`. *Source:* outcome 11; brief decision 11.
-
-**42. The five rationale amendments (outcome 12).** *Decided:* the iOS tint is a measured derivation over the accent
-(U706's second-tint run is scheduled); a palette is suspended, not refused, under a followed scheme it lacks; the
+**42. Three of the five rationale amendments (outcome 12; its two reversals are items 65 and 66).** *Decided:* the
 ten bundled palettes are 0.7.0's ten schemes; the error enums are `#[non_exhaustive]`; no font-DPI read where the
-toolkit's scale carries it (the KDE reader's `Xft.dpi` read goes). *Why:* each removes a defect found as a fact,
-for example `set_accent` leaving 555 tinted button facts system blue. *Veto brings:* for the tint, `set_accent`
-refused on iOS until the run is made; for the others the brief saw no open alternative. *Source:* outcome 12;
-brief decision 12.
+toolkit's scale carries it (the KDE reader's `Xft.dpi` read goes). *Why:* each removes a defect found as a fact:
+D13's criterion; one new validation problem making a patch release breaking; the setting applied twice. *Veto
+brings:* for the palettes, none (the brief saw no open alternative); for the enums, exhaustive enums, so
+a new validation problem is a breaking release; for the font DPI, the `Xft.dpi` read kept, the font DPI applied
+twice where the toolkit's scale carries it. *Source:* outcome 12; brief decision 12; the pass, L-7.
 
 **43. The plan's ADD-A146 amendments (outcome 13).** *Decided:* they stand: your closing cadence, the register's two
 kinds of row, M2's task 0, the connectors' design before their code, which gate run gates what, M5's comparisons.
@@ -459,13 +573,13 @@ recomputed. *Why:* the audits found 0 wrong of 430 and 1 of 74; the recomputatio
 
 ---
 
-## G. The other decisions of D6
+## G. The other decisions of D6 and of the document pass
 
 The six groups above have no place for these. Each follows the project's rules, and each is open to your veto all
 the same.
 
 **46. The load gets a design task now (outcome 1).**
-- *Decided:* a profile of the load, then a design note that chooses the load path (`load-design.md`, with the budget
+- *Decided:* a profile of the load, then a design note that chooses the load path (`-d6-load.md`, with the budget
   of items 9–20), then the repair before M3a's first widget unit, with a release-mode timing check at each unit's
   gate.
 - *Why:* the plan's rule "if the slice already misses it, a task before M3a costs less than one after it". The
@@ -479,27 +593,6 @@ the same.
 *Veto brings:* the unit stays in M3a (208 trace rows, an estimated 16 to 97 M of usage). *Source:* outcome 4;
 brief decision 4.
 
-**48. Widgets a preset declares unavailable (outcome 6).**
-- *Decided:* the declarations stay. Per preset, the connectors' contract lists what a connector draws its toolkit's
-  widget from: a stand-in entry, or, where the catalogue names none, the toolkit's own geometry with every colour
-  and font from the theme's typed roles. A test checks the list is complete. In 0.8.0 the query answers "not
-  available" where 0.7.0 resolved `tab`, `card`, `expander` or `status_bar` on every preset. 0.7.0 held values
-  under those names, such as the iOS tab bar's height of 49 and the macOS box margins.
-- *Why:* the declarations are true; without a rule each connector decides on its own.
-- *Veto brings:* `bottom_tab_bar` and `group_box` moved into 0.8.0 (two more units, and the rule is still
-  missing), or each connector decides.
-- *Source:* outcome 6; brief decision 6.
-
-**49. What a community palette states (outcome 7).** *Decided:* decided with the palettes' design (M2's fourth
-task). A palette over a preset whose widgets read keyed colours reaches them by a stated, reviewed mapping method,
-or it is not offered over that preset. A palette is not offered over a preset whose widget colours the method
-cannot reach, measured literals that follow no role (`macos-*`, `ios-*`: `macos-tahoe`'s button fills are 2,561
-measured literals of 2,795 fill lines), a recorded limit (the orchestrator's decision at the batch's fix round).
-*Why:* R19 rejects a mixed look, and a method removes the per-pick veto.
-*Veto brings:* typed roles only, with the mixed look recorded (for example the Windows button in WinUI's greys
-under Catppuccin's colours); over `macos-*` and `ios-*`, the palette offered with the limit recorded (its colours
-beside the platform's measured literals). *Source:* outcome 7; brief decision 7.
-
 **50. `docs/platform-facts.md` is no longer committed (outcome 8).** *Decided:* CI and each release generate it.
 `check_facts.py` splits a facts file by key prefix past 40 MiB. Local tools that cite its lines read the facts or a
 generated copy. *Why:* the file is 47.8 MiB, against GitHub's warning at 50 MiB and GitHub's block at 100 MiB, and it
@@ -507,8 +600,8 @@ grows with every fact. *Veto brings:* it is committed per platform in smaller fi
 outcome 8; brief decision 8.
 
 **51. No usage cap now (outcome 10).** *Decided:* the work runs to M2's close. The report there gives M2's cost, the
-gate's time and the load cost, and M3a's approval is asked with the first real unit costs. No lane writes facts
-ahead for M3b meanwhile. Setting the caps for M3a stays yours, at M2's close. *Why:* your instruction "do
+gate's time and the load cost, and M3a's approval is asked with M2's measured costs (the staging task, task 0's
+rounds, the connectors' port). No lane writes facts ahead for M3b meanwhile. Setting the caps for M3a stays yours, at M2's close. *Why:* your instruction "do
 everything until M2 is finished". The project's one cost estimate so far was wrong by a factor of 12.8, so a cap
 taken from estimates would either not bind or trip at once. *Veto brings:* a cap per milestone (the brief suggests
 the upper figures), or approval only up to a checkpoint after M3a's first widget unit. *Source:* outcome 10; brief
@@ -516,7 +609,8 @@ decision 10.
 
 **52. The register's choices of model form, settled by the orchestrator (outcome 14).**
 - *Decided:* of the fifteen rows examined, fourteen are settled from the sources (two in part). The fifteenth, U555,
-  moves with `single_click_activates` to the containers unit. What is yours is listed above: items 26–30, the
+  goes with `single_click_activates` to the first unit whose value at depth reads it: the containers unit if
+  `list`'s does, else the parking unit *behaviour*, as the catalogue stands (the pass, P-8). What is yours is listed above: items 26–30, the
   U651 pairing in item 3, and items 7 and 8. For U473 (iOS key repeat), 0.7.0's model holds no such value on any
   preset, so it goes to a later unit (the parking unit *behaviour*) and needs nothing from you.
 - *Why:* your standing rule: settle by logic first, ask only real preferences.
@@ -541,6 +635,65 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 `variant tool`. *Veto brings:* KDE's toolbar font is lost at the containers unit, with 198 fewer pending facts.
 *Source:* staging §1.3 (C-3c), §8 point 9.
 
+**59. `Theme::from_system` on Linux without a reader feature keeps 0.7.0's behaviour.**
+- *Decided:* on Linux, where the desktop's reader is not compiled (GNOME and the other desktops without the
+  `portal` feature, KDE without `kde`), `from_system` runs the reads that need no feature (`GTK_THEME`, gsettings,
+  `settings.ini`: the scheme and motion) and gives the platform's preset in that scheme, as 0.7.0's
+  `linux_fallback` did (`v0.7.0:native-theme/src/pipeline.rs:1103-1110`), never `Err(FeatureDisabled)`; with the
+  feature the reader runs as specified. A code task of its own beside M2's numbered tasks (ledger queue #281). On
+  macOS and Windows nothing changes: 0.7.0 also answered `FeatureDisabled` there without the feature
+  (`pipeline.rs:1089-1102`); a platform the crate has no reader for in any build (iOS and Android until their
+  readers, any other target) is `Err(PlatformUnsupported)`, as 0.7.0's other targets were (`pipeline.rs:1111-1116`).
+- *Why:* D13 (nothing 0.7.0 has is lost): 0.7.0 needed no feature for this, and 0.8.0 as built answers
+  `Err(FeatureDisabled)` in those builds.
+- *Veto brings:* the limit stated instead: a Linux build without the reader's feature gets `Err(FeatureDisabled)`
+  from `from_system`, and R21's list of what users lose gains it.
+- *Source:* the pass, K4-7; the specification's S16, *Which reader*.
+
+**62. Full Keyboard Access at depth on every entry.**
+- *Decided:* the macOS setting `full_keyboard_access` is at depth model-wide, as `contrast_high` is: one setting,
+  read by the built macOS reader (`native-theme/src/macos.rs:535-536`), and selected only by `focus_visible_when`
+  values, which are at depth on every entry. So on `macos-*` a focused widget draws its focus ring under keyboard
+  navigation, where 0.7.0's egui connector drew one from `defaults.focus_ring_*` on every preset with no Full
+  Keyboard Access read (`v0.7.0:connectors/native-theme-egui/src/atlas.rs:114`, `:641`, `accessors.rs:102-115`;
+  `mapping.toml:253-261`). The units file, the generator and the presets
+  follow after the staging task merges (ledger queue #283).
+- *Why:* without it the macOS `focus_visible_when` value at depth states only its `never` base, and no macOS widget
+  shows a focus ring in 0.8.0, although `focus_visible` and `token.focus` are at depth.
+- *Veto brings:* the setting in a later unit: `button`'s Depth line then says `focus_visible` is drawn nowhere at
+  depth on `macos-*`, and the macOS focus ring goes on R21's list of losses.
+- *Source:* the pass, C-4; the catalogue's Depth definition and `button`'s Depth line; the plan's *The depth 0.8.0
+  states*.
+
+**63. The bundled palettes' keyed-role tables are written once, at M4.**
+- *Decided:* the keyed-role sections of the bundled palettes (the method's tables for `windows-11` and `material-3`,
+  item 49) are written once, at M4, when every widget of 0.8.0 is in; until then no bundled palette has a source for
+  a preset whose values read keyed colour roles, and the bundled palettes are offered over `adwaita` and
+  `kde-breeze`. M2's fourth task proves the method on the slice's keyed roles with a test fixture (a mapping palette
+  built in the test). A release that enables units may refuse an application's mapping palette whose section lacks
+  a colour role the new units read; its notes list those roles per preset. Task 4's design may change this.
+- *Why:* each M3a unit makes `windows-11` read further keyed roles and declares them only then, so a table written
+  at M2 would be refused at the next unit until every project's table was extended and reviewed again; written at
+  M4, each project's table is reviewed once per preset.
+- *Veto brings:* each unit's commit extends every bundled palette's table for the keyed roles its values read, with
+  its review: bundled palettes over `windows-11` and `material-3` from M2 on, at one review per project, preset and
+  unit.
+- *Source:* the pass, K4-2, R-1; the specification's S14, S21.1.
+
+**64. A 0.7.0 colour that maps to a role brings no state flag to an entry's depth.**
+- *Decided:* only a 0.7.0 field that maps to a token brings a state flag to an entry's depth (`focus_ring_*`, which
+  is `token.focus`: `focused` and `focus_visible` where a part lists `focus`); a 0.7.0 `defaults` colour that maps to
+  a role (`disabled_text_color`, the selection pair) brings none. Where 0.7.0's connector drew a state whose flag is
+  not at depth for an entry from such a colour, the connector draws that state from the typed role
+  (`role.window.disabled.foreground`, the selection roles), through its contract's deferred entries (the
+  specification's S21.3); every other such state is drawn as the look at depth.
+- *Why:* D13: 0.7.0's depth for those looks is one global colour, not a per-widget state; its connectors applied
+  `disabled_text_color` and the selection pair to every widget from the theme's defaults, which the deferred entries
+  keep.
+- *Veto brings:* `disabled`, and each entry's selection or highlight flag, at depth on every entry with text:
+  per-widget disabled facts 0.7.0 never had, on the measured platforms by measurement.
+- *Source:* the pass, C-1; the catalogue's Depth definition; the specification's S21.3.
+
 ---
 
 ## Points that may be yours but are not clearly marked
@@ -548,8 +701,6 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 - **The individual status-colour pairings (item 3).** The catalogue's *global roles* `status` row lists each once
   its row (U757–U760) closes, and item 3 names the status text colours, on `ios-*` the filled button's title colour
   over the status fill (U755).
-- **0.7.0's values under `tab`, `card`, `expander`, `status_bar` (item 48).** The query answers "not available"
-  where 0.7.0 gave values. No source calls this a loss, so it is not in group B.
 - **The load gate's other parameters:** at most 10 runnable threads for a pass to count, a 30-minute bound for the
   release run's re-sweeps, a 5 % tolerance floor. Load calls them judgments but assigns them to no one; its list of
   what is yours (§7 #11) names only the eleven numbers, the 300 parts and the factor of six. Item 23 is included
@@ -564,6 +715,6 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 - **The plan and specification texts that apply these outcomes** (staging P-1 to P-14, the S8 sentences in load
   §3.8) are the orchestrator's by class. They are cited under items 1, 2 and 4, not listed apart.
 - **Open points staging and the register leave to later units**, not to you: `hover` and `focus_visible` on `ios-*`
-  (+252 pending facts if kept; staging §8 point 2); `single_click_activates` (the containers unit); QPainter's
+  (+252 pending facts if kept; staging §8 point 2); `single_click_activates` (the first unit that reads it); QPainter's
   wavy and strike lines (U754, their units). Qt Quick's underline position is now decided in form (item 27).
-- **Load is still being revised.** Items 4 and 9–23 follow revision 8 as read on 2026-11-12.
+- **Load's revision.** Items 4 and 9–23 follow load's revision 8, its last.
