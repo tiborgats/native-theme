@@ -2,7 +2,8 @@
 
 **Status:** design, drafted 2026-10-28 from the gap map; checked eight times independently (§5), then amended
 in place during the specification's thirteen checks; done with the specification, 2026-10-29, and amended in place
-since by the 0.8.0 plan's decisions D12 and D13 and by the specification's batches, the last ADD-A146 (2026-11-09).
+since by the 0.8.0 plan's decisions D12 and D13 and by the specification's batches, the last ADD-A147 (2026-11-12,
+the outcomes of the plan's checkpoint D6).
 Every amendment is noted under R25.13, in the order made. Input: [`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)
 and its six platform files ("the map"; a row is identified by its file and ID, and cited here by ID,
 with its file where the prefix does not say it). Next: the specification,
@@ -100,7 +101,11 @@ Read at caeddd6b:
 - **Motion** is `dialog.entrance` and the animated icons (`AnimatedIcon`: frame lists and transforms,
   which carry the spinners).
 - **Accessibility** is four run-time flags on `AccessibilityPreferences` (`text_scaling_factor`,
-  `reduce_motion`, `high_contrast`, `reduce_transparency`), with no theme values behind them.
+  `reduce_motion`, `high_contrast`, `reduce_transparency`), with no preset values behind them; under
+  `high_contrast` the Windows reader writes the system colours and the GNOME reader the focus ring into the theme,
+  the macOS reader's colours follow Increase Contrast, and the connectors honour `reduce_motion` for the busy
+  indicator and their own animations (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item
+  40).
 - **The `Option` structs are not `#[non_exhaustive]`** (docs/todo.md, *Dialog: the platform's vertical
   placement*), so a new field breaks struct literals; the resolved structs and some enums (`IconRole`,
   `IconSet`) are.
@@ -432,7 +437,9 @@ catalogue, as typed widgets' do, R14), its keyed colour roles, text styles and e
 flavours, and its inputs (R2.6). Adding a layer checks every rule and reference against the declarations: a typo
 is an error, not a silent miss. A query for a size or variant the element's widget does not declare in its
 context returns "not available", a result the application handles, not a failure; a density the widget does
-not declare is ignored (R15).
+not declare is ignored (R15). A variant, a size or a flavour the platform has and a later unit states is answered
+'later': the theme does not state it yet (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list
+item 1).
 
 **R2.8 — Validation and infallible queries.** The project forbids runtime panics, and a query runs inside a
 connector's draw call. Resolution checks every rule's derivations against every base and rule they can apply
@@ -538,7 +545,10 @@ so the preset must state {checked, hover}.
   distinguishes (a toolbar item, a bar item), and the styles and sizes the API enumerates
   (`NSButton.BezelStyle`, `NSControl.ControlSize`, `UIButton.Configuration`), each measured by the probe;
   where a recency set holds several present flags, each order of them (R3). The map is a survey; the platforms'
-  state models are the list.
+  state models are the list. At each release the gate checks the combinations whose names its enabled units hold; a
+  combination holding a variant, a size, a host context, a position, a direction, a state or a condition of a unit
+  not enabled is that unit's, checked from its commit on (ADD-A147; D6, decided by logic, awaiting the maintainer's
+  veto: veto list item 1).
 - **Derivations:** where a platform states a derivation, the fact is the derivation. The gate resolves each
   preset twice, with its own inputs and base colours and with perturbed ones (another accent, foreground and
   background), and
@@ -553,7 +563,8 @@ so the preset must state {checked, hover}.
   any tint now; and under one tint the facts hold the default tint as literals, which an application's accent
   leaves in place and the perturbed run cannot tell from a derivation.
 - **What the gate proves** (ADD-A146): the presets are generated from the facts (the plan's D6 item), so the gate
-  proves that every key has a fact under every listed combination, that the model resolves to it, and that a
+  proves that every key has a fact under every listed combination of the enabled units' names (ADD-A147; D6, decided
+  by logic, awaiting the maintainer's veto: veto list item 1), that the model resolves to it, and that a
   measured derivation holds over each of its passes. It cannot prove that the facts hold every combination and
   every derivation the platform has: a fact is a selector, as a rule is, so a look the lane never wrote is covered
   by a broader fact, and a literal written where the platform derives is the generated preset's literal too. That
@@ -1191,7 +1202,9 @@ resource scope propagate; an application-wide density is the root's. A density r
 declare it (Material's density applies to some components); a widget that declares none ignores it, whether it
 inherits a density or its element states one. Size is the element's own, as AppKit's `controlSize` is. A size or
 variant the element's widget does not declare in its context returns "not available" (R2.7): an application asking
-for a small button on `adwaita` learns there is none, rather than getting an invented one.
+for a small button on `adwaita` learns there is none, rather than getting an invented one. A variant, a size or a
+flavour the platform has and a later unit states is answered 'later': the theme does not state it yet (ADD-A147; D6,
+decided by logic, awaiting the maintainer's veto: veto list item 1).
 
 ### R16 — Layout, placement, breakpoints and direction (C26)
 
@@ -1393,20 +1406,43 @@ caller's build, and a default would hide it.
 - *0.8.0 at today's coverage, then the rest by units* (added by the maintainer's decision D13 of the 0.8.0 plan,
   2026-11-06): 0.8.0 holds every widget, colour role, token and value today's model holds, the catalogue's other
   units following in later releases. For: users lose no widget, colour role, token or value of 0.7.0's model but the
-  status colours on `macos-*` (R25.17), the invented light variants (R19) and, until D6 decides it (the plan's D6 question W3-3), the
+  status colours on `macos-*` (R25.17), the invented light variants (R19), the `button` values 0.7.0 stated with no
+  source, or against its own cited source, which the facts correct (D6's comparison, the plan's *The depth 0.8.0
+  states*: the `macos-*` and `ios-13` hover fills, `kde-breeze`'s inherited primary, `adwaita`'s text colour
+  `#2e3436`, the unsourced sizes and icon gaps, the `macos-monterey` pressed fill, the `ios-13` pressed and disabled
+  fills, the `windows-11` disabled fill); the values 0.7.0 took from a source the preset's reference rule does not
+  choose for it (R1.6 for `material-3`: the older `v0_192` token set's disabled container, and material-web's
+  component's vertical padding and minimum width where Compose has the button; R1.3 and R1.4 for `ios-13`: WebKit's
+  HTML button's pressed label against UIKit's), which the facts restate by that rule; the look of a button with no
+  variant on `material-3` and `ios-13`, which draws the platform's default button (Compose's `Button`, the filled
+  one; UIKit's system button), 0.7.0's look staying under `tinted` and `@gray` (0.7.0 mapped its plain button to
+  Material's tonal button and to WebKit's HTML button, neither the platform's default: `androidx@e4d933c9
+  …/material3/Button.kt:77-88` against `FilledTonalButton`, `:439-447`; `xcode@26.6 UIKit/UIButton.h:22-23`);
+  `material-3`'s checked text-button colours (0.7.0 stated the tonal toggle of Material's latest token set; baseline
+  Material draws a toggle only as an icon button, the content unit's, and a text toggle under the `expressive`
+  flavour, the flavours unit's, where Compose 1.5's Expressive `ToggleButton` brings it back); of the two motions
+  0.7.0 has, one the Apple motion trial does not measure (the plan's M2, task 1): the dialog's entrance kind
+  (`adwaita`, `kde-breeze`, `windows-11`, `material-3`), or the busy indicator's loop as theme data (every preset;
+  the icon sets' frames on `adwaita`, `kde-breeze` and `material-3`) (ADD-A147; D6, decided by logic, awaiting the
+  maintainer's veto: veto list items 5, 6 and 32 to 39) and, until D6 decides it (the plan's D6 question W3-3), the
   widgets a preset declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`)
   (ADD-A146), what 0.7.0's API holds beyond them and 0.8.0 does not keep being the plan's *Not kept*, and get the
   new model weeks earlier; each
-  release's units are whole, every capability filled on them but placement, which 0.8.0's widgets defer to the
-  placement unit (their menus, popovers and dialogs open where the toolkit puts them, as in 0.7.0), so no widget
-  shows a mixed look. Against: several releases, each with its gate run; a later widget that adds members to an
+  release's units are whole in what they state: every part, field and value of their entries, in every combination
+  of the names the release holds. What a unit does not hold yet is a named later unit's and cannot be asked for
+  meanwhile: placement (their menus, popovers and dialogs open where the toolkit puts them, as in 0.7.0); the
+  variants, sizes, host contexts, states and conditions beyond those 0.7.0's model and readers distinguish, each
+  entering whole, on every preset, with a later unit of depth; and the state-change transitions (a state changes at
+  once, as in 0.7.0). So no element is drawn from rules of two depths (ADD-A147; D6, decided by logic, awaiting the
+  maintainer's veto: veto list items 1 and 2). Against: several releases, each with its gate run; a later widget that adds members to an
   exhaustive enum is a breaking release (the plan's D14); widgets 0.7.0 styles through other widgets' fields keep
   those stand-ins until their units.
 
 **Decision:** the third (D13; until then, one release). v0.7.1 is this milestone's documents; the implementation runs
 on its own branch (`v0.8.0-rc1`), staged by the specification's plan, and 0.8.0 is not released until every platform
-preset, `ios-26` included, is complete for the units holding today's model and passes the facts gate (R4); each later
-release enables only units complete on every preset and passing the gate.
+preset, `ios-26` included, is complete for the units holding today's model, at the depth today's model distinguishes,
+and passes the facts gate (R4); each later release enables only units, of widgets or of depth, complete on every
+preset and passing the gate (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 1).
 
 ### R22 — The documents that follow the model
 
@@ -1690,10 +1726,41 @@ of that day:
   a KDE port the reader's accent stays in force, as the specification's S14 recorded.
 - R21: the error, diagnostic and status enums, which no connector maps, are `#[non_exhaustive]`; what 0.8.0 keeps
   of 0.7.0 is its model's widgets, roles, tokens and values but the status colours on `macos-*` (R25.17), the
-  invented light variants (R19) and, until D6 decides it (the plan's D6 question W3-3), the widgets a preset declares unavailable where
+  invented light variants (R19), the `button` values 0.7.0 stated with no source, or against its own cited source,
+  which the facts correct (D6's comparison, the plan's *The depth 0.8.0 states*: the `macos-*` and `ios-13` hover
+  fills, `kde-breeze`'s inherited primary, `adwaita`'s text colour `#2e3436`, the unsourced sizes and icon gaps, the
+  `macos-monterey` pressed fill, the `ios-13` pressed and disabled fills, the `windows-11` disabled fill); the values
+  0.7.0 took from a source the preset's reference rule does not choose for it (R1.6 for `material-3`: the older
+  `v0_192` token set's disabled container, and material-web's component's vertical padding and minimum width where
+  Compose has the button; R1.3 and R1.4 for `ios-13`: WebKit's HTML button's pressed label against UIKit's), which
+  the facts restate by that rule; the look of a button with no variant on `material-3` and `ios-13`, which draws the
+  platform's default button (Compose's `Button`, the filled one; UIKit's system button), 0.7.0's look staying under
+  `tinted` and `@gray` (0.7.0 mapped its plain button to Material's tonal button and to WebKit's HTML button, neither
+  the platform's default: `androidx@e4d933c9 …/material3/Button.kt:77-88` against `FilledTonalButton`, `:439-447`;
+  `xcode@26.6 UIKit/UIButton.h:22-23`); `material-3`'s checked text-button colours (0.7.0 stated the tonal toggle of
+  Material's latest token set; baseline Material draws a toggle only as an icon button, the content unit's, and a
+  text toggle under the `expressive` flavour, the flavours unit's, where Compose 1.5's Expressive `ToggleButton`
+  brings it back); of the two motions 0.7.0 has, one the Apple motion trial does not measure (the plan's M2, task 1):
+  the dialog's entrance kind (`adwaita`, `kde-breeze`, `windows-11`, `material-3`), or the busy indicator's loop as
+  theme data (every preset; the icon sets' frames on `adwaita`, `kde-breeze` and `material-3`) (ADD-A147; D6, decided
+  by logic, awaiting the maintainer's veto: veto list items 5, 6 and 32 to 39) and, until D6 decides it (the plan's D6 question W3-3), the widgets a preset declares unavailable where
   0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`), the plan listing what its API does not keep.
 - R25.16: on `macos-*` the pop-up's arrow area is placed from the resolved values, the rendering's image stating
   none (the specification's S15).
+
+Amended by the 0.8.0 plan's checkpoint D6 (2026-11-10, outcomes 2 and 3; the specification's batch ADD-A147; D6,
+decided by logic, awaiting the maintainer's veto: veto list items 1 and 2):
+
+- R21: a unit enters at the depth 0.7.0's model and readers distinguish, its further variants, sizes, host contexts,
+  states and conditions in later units of depth; 0.8.0 holds the two motions 0.7.0's model has, the dialog's
+  presentation and the busy indicator's loop, with the speed factor and the reduced-motion conditions, each if an
+  Apple trial measures it on the Apple presets, and state-change transitions are the motion unit's; the invented
+  values D6's comparison finds join R19's on the list of what users lose.
+- R4: the gate checks the combinations of the names its enabled units hold.
+- R2.7, R15: a variant, size or flavour the platform has and a later unit states is answered 'later', never 'not
+  available'.
+- *Today's model*: 0.7.0's accessibility has no preset values behind it, but its readers write high-contrast values
+  into the theme and its connectors honour reduced motion, as its code does (veto list item 40).
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
