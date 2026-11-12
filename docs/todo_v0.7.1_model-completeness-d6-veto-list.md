@@ -57,14 +57,9 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   - on `macos-*` and `ios-*` the status roles refer to the platform's keyed system colours, as 0.7.0 drew them
     (closes *register row* U456; a register row is one line of the ledger's list of what is not measured yet).
     No pinned Apple source yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success
-    or info, so each pairing waits on a source read (rows U757–U760). The catalogue requires all four on
-    `macos-*` and `ios-*` (`error.fill` on every preset; warning, success and info allowed absent only on
-    `material-3`, their `standalone` also on `windows-11`), so where a read finds none, you choose: that colour as
-    native-theme's labelled pick, continuing 0.7.0's look, or the status allowed absent on Apple, a catalogue change
-    that loses 0.7.0's status colour there;
-  - on `macos-*` and `ios-*` the destructive role (`fill` and `standalone`) refers to systemRed: AppKit and UIKit
-    use red for destructive actions (`xcode@26.6 AppKit/NSTableViewRowAction.h:30`, `UIKit/UIActionSheet.h:41`,
-    `UIKit/UICellAccessory.h:83`, the same lines at `xcode@16.4`), so item 56's third condition holds;
+    or info, so each pairing waits on a source read (rows U757–U760); where a read finds none, that status stays
+    absent on `macos-*` and `ios-*` by item 56's third condition, losing 0.7.0's status colour there, so this
+    outcome depends on those rows;
   - the status text colours (`foreground`, the text on the status fill) refer to the colour the platform draws a
     filled button's title in, as `accent_foreground` there: on `macos-*` to the colour AppKit draws a filled
     button's title in (`= role.global.accent_foreground`, AppKit's `alternateSelectedControlTextColor`; 0.7.0 drew
