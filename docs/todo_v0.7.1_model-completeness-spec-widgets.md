@@ -2965,7 +2965,8 @@ spaces:
   `button`'s presentations), the completion popup an `autocomplete` in `context input` (MAC-P3-7†). The decorations
   of `preedit`, `misspelling`, `grammar_mark` and `correction` follow the font (S2.8): where the platform draws the
   line from the font's own metrics (Pango's, AppKit's `NSFont`, DirectWrite's, Android's `Paint`; Qt draws its own
-  adjustment of them, register U180's, S2.8, ADD-A130), their `thickness` and `offset` are the references the
+  adjustment of them, S2.8, ADD-A130: QPainter's underline in S2.2's arithmetic, its wavy line and Qt Quick's
+  lines register U180's, ADD-A147), their `thickness` and `offset` are the references the
   parts state, and a number is stated only where the
   platform draws a fixed line (macOS's spelling and grammar dots, MAC-X28); the value phase states which per preset
   from the facts (GN-1.281†, K1.49†, W1-151†, MAT-I18†). Provenance: group
@@ -7728,7 +7729,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `emphasis`, `strong`, `underline`, `strikethrough`, `subscript`, `superscript` (Compose's HTML underline,
     MAT-P3-20†): `text`. The underline's and the strike line's `text.decoration` follow the run's font where the
     platform draws them from its metrics (AppKit, Android's `Paint`, S2.8; Qt's drawn underline and strike line,
-    `kde-breeze`'s, are register U180's, S2.8, ADD-A130): `thickness` `=
+    `kde-breeze`'s, are S2.8's, ADD-A130: QPainter's underline in S2.2's arithmetic, its strike line and Qt Quick's
+    lines register U180's, ADD-A147): `thickness` `=
     element.font_underline_thickness` and `offset` `= element.font_underline_offset` on `underline`,
     `element.font_strikeout_thickness` and `element.font_strikeout_offset` on `strikethrough`, which the parts
     declare, `data = { underline = ["font_underline_offset", "font_underline_thickness"], strikethrough =
@@ -10219,7 +10221,7 @@ sets it (WinUI's trimming and wrapping, `TextBlock_themeresources.xaml:10-51`), 
 `BoldText` condition (a token rule on `font.weight`) [TS-3].
 
 **Windows.** The nine Fluent styles: `caption`, `body`, `body_strong`, `body_large`, `body_large_strong`, `subtitle`,
-`title`, `title_large`, `display` [W1-147]; `monospace`, sourced as today's `mono_font` is (W3-47†).
+`title`, `title_large`, `display` [W1-147]; `monospace`, a labelled mapping (W3-47†; U509, ADD-A147).
 
 **GNOME.** libadwaita's classes: `title_1`, `title_2`, `title_3`, `title_4`, `heading`, `body`, `caption_heading`,
 `caption`, `document`, `monospace`, `numeric` [GN-1.189]. `document` takes its family and size from
@@ -10573,8 +10575,8 @@ Kirigami's elevation entries are (`token.elevation`); Material's `_emphasized` s
 `Typography` holding them under either flavour (`body_emphasized` and `caption_emphasized` reference two of them,
 *Text ramp*; ADD-A134). Group 8 adds
 the per-role line height, letter spacing and optical-size axis (MAC-X18, W3-23, MAT-X16,
-X-DT-5, GN-3.57's weight), the default size category's sizes on `ios-*` (X-DT-1), `monospace` with a source on
-`windows-11` (W3-47†) and the platform default sans and monospace on `material-3` (MAT-X36†). `token.text.fallbacks`
+X-DT-5, GN-3.57's weight), the default size category's sizes on `ios-*` (X-DT-1), `monospace` on
+`windows-11`, a labelled mapping (W3-47†; ADD-A147), and the platform default sans and monospace on `material-3` (MAT-X36†). `token.text.fallbacks`
 (ADD-A41) holds the family fallbacks, emoji family, per-language fallback map (all FM rows) and the per-family
 chains, `per_family` (S4.4, ADD-A122, ADD-A123); `token.text.rendering`
 (ADD-B04) holds `engine` (Qt Quick's render type, Q3.32), `antialiasing`, `hinting`, `subpixel_order`,
@@ -10585,7 +10587,7 @@ TS-2, X-DT-1, R25.15; `WinUi` on `windows-11`, ADD-A141; `Linear` elsewhere; S9.
 each keyed style's `scaling_role` (*keyed text styles per platform*).
 
 **token.icons** (`IconTokens`, S4.5): `set`, `theme`, `theme_fallback`, `sizes`, `animated_visuals` and `mirroring` (per icon role,
-GN-FM03†, MAT-FM04†, W3-54†, X-SV-3). Under `sizes`, contexts beyond the five groups (GN-3.59, K3.63, W3-27) are keys
+GN-FM03†, MAT-FM04†, W3-54†, X-SV-3). Under `sizes`, contexts beyond the five groups (GN-3.59, K3.63; ADD-A147) are keys
 of the same token; weight and scale are `IconStyle` fields (X-IC-2), stated in a context where the platform's context
 sets them (S4.5) and on parts otherwise; a `scale` is a key of `[declare] symbol_scales` (S10). `animated_visuals`
 (ADD-A126): WinUI's AnimatedIcon sources, each an `AnimatedVisual` (its duration and markers, as its source states
@@ -10754,7 +10756,7 @@ S9.3 over both for the reads it states.
 **Windows**
 
 - `UISettings.GetColorValue` for `AccentDark1`–`3`, `AccentLight1`–`3`: W3-12.
-- `SPI_GETKEYBOARDCUES`: W3-21, W3-48†.
+- `SPI_GETKEYBOARDCUES`: W3-21 (ADD-A147).
 - no text-rendering read (W3-22): `windows-11` states `token.text.rendering` from its facts alone, the reader
   reading none of ClearType's settings (`SPI_GETCLEARTYPE`, `SPI_GETFONTSMOOTHING`, `SPI_GETFONTSMOOTHINGTYPE`,
   `SPI_GETFONTSMOOTHINGCONTRAST`), which WinUI's greyscale text does not take, and no DirectWrite rendering
@@ -10776,7 +10778,6 @@ S9.3 over both for the reads it states.
   `SM_CYDRAG`, `SPI_GETWHEELSCROLLLINES`, `SPI_GETKEYBOARDDELAY`: W3-41 (its `UISettings.MessageDuration` is out,
   R1.1: the shell's notifications);
   `SM_CXDOUBLECLK`, `SM_CYDOUBLECLK`: W-P3-12†; `SPI_GETWHEELSCROLLCHARS`: W3-52†; `SPI_GETMOUSEVANISH`: W-P3-10†.
-- `HKCU\Console` `FaceName`, `FontSize`, `FontWeight` (host to verify): W3-47†.
 - `SPI_GETMENUFADE`, `SPI_GETTOOLTIPFADE`, `SPI_GETSELECTIONFADE`, `SPI_GETCOMBOBOXANIMATION`,
   `SPI_GETLISTBOXSMOOTHSCROLLING`, `SPI_GETHOTTRACKING`, `SPI_GETDROPSHADOW`, `SPI_GETUIEFFECTS`: W3-53†.
 - `SPI_GETMENUDROPALIGNMENT` into `cond system_setting:menu_drop_alignment`: W3-55†.
