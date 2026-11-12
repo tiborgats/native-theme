@@ -49,7 +49,7 @@ fn groups(item: &Listed) -> Vec<PropertyGroup> {
         .iter()
         .filter_map(|key| match key {
             ItemKey::Group(group, ..) => Some(*group),
-            ItemKey::Event(_) | ItemKey::Role(_) | ItemKey::Surface => None,
+            ItemKey::Role(_) | ItemKey::Surface => None,
         })
         .collect()
 }

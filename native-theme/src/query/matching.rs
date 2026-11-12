@@ -208,6 +208,51 @@ pub(crate) fn declarations(theme: &ResolvedTheme, widget: WidgetKind) -> WidgetD
     }
 }
 
+/// Whether the element asks for what a unit not yet enabled states (S8,
+/// S10's *Later names*; ADD-A147): a variant, a content variant included,
+/// that `decl` lists under `later`; or, while the sizes unit is not enabled,
+/// a size it takes (by its declared variants' and its context's entries)
+/// other than its default in force, or a density its widget declares (its
+/// own, else its scope's). `outer` are the scope's entries outside its own
+/// parts; `declared` its widget's variants.
+fn later(
+    decl: &WidgetDecl,
+    element: &Element<'_>,
+    outer: &[ScopeEntry],
+    declared: &[VariantRef],
+) -> bool {
+    if element
+        .variants
+        .iter()
+        .any(|variant| decl.is_later(variant))
+    {
+        return true;
+    }
+    if crate::widgets::SIZES_UNIT {
+        return false;
+    }
+    let held =
+        |variant: &VariantRef| declared.contains(variant) && element.variants.contains(variant);
+    let by_variant = decl.variant_entry(held);
+    let by_context = decl
+        .sizes_by_context
+        .iter()
+        .flatten()
+        .find(|entry| context_holds(outer, &entry.context));
+    let taken = decl.sizes_taken(by_variant, by_context);
+    let default = match decl.default_in_force(by_variant, by_context) {
+        Some(DefaultSize::Size(size)) => Some(*size),
+        Some(DefaultSize::Pending(_)) | None => None,
+    };
+    let size_later = element
+        .size
+        .is_some_and(|size| taken.contains(&size) && Some(size) != default);
+    let density = element.density.as_ref().or(element.scope.density.as_ref());
+    let density_later =
+        density.is_some_and(|density| decl.densities.iter().flatten().any(|held| held == density));
+    size_later || density_later
+}
+
 /// An element as the query reads it (S8).
 pub(crate) struct Matched<'e> {
     theme: &'e ResolvedTheme,
@@ -254,6 +299,9 @@ impl<'e> Matched<'e> {
             .get(..entries.len().saturating_sub(own))
             .unwrap_or_default();
         let declared = decl.variants.as_deref().unwrap_or_default();
+        if later(&decl, element, outer, declared) {
+            return Err(Unavailable::Later);
+        }
         let mut variants = Vec::new();
         for variant in element.variants {
             if declared.contains(variant) {

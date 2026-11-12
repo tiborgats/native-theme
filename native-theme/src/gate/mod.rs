@@ -903,6 +903,8 @@ pub struct Declared {
     pub recency: Vec<(String, Vec<String>)>,
     /// `requires_variants`.
     pub requires_variants: Vec<String>,
+    /// `later.variants` (S10's *Later names*, ADD-A147).
+    pub later: Vec<String>,
     /// `sizes_by_variant`: each variant, its sizes and its default size,
     /// in written order.
     pub sizes_by_variant: Vec<(String, Vec<String>, Option<String>)>,
@@ -1107,6 +1109,7 @@ impl Declared {
                 .map(|(set, members)| (set.as_str().to_owned(), flags(members)))
                 .collect(),
             requires_variants: variants(decl.requires_variants.as_deref().unwrap_or_default()),
+            later: variants(decl.later.as_deref().unwrap_or_default()),
             sizes_by_variant: decl
                 .sizes_by_variant
                 .iter()

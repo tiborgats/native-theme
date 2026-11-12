@@ -169,6 +169,10 @@ pub(crate) struct WidgetDecl {
     pub(crate) keys: Option<Vec<(&'static str, Vec<Key>)>>,
     /// The breakpoints.
     pub(crate) breakpoints: Option<Vec<Breakpoint>>,
+    /// `later.variants`: declared variants the platform has that a unit not
+    /// yet enabled states, each refused in every layer and answered
+    /// `NotAvailable(Later)` by the query (S10's *Later names*, ADD-A147).
+    pub(crate) later: Option<Vec<VariantRef>>,
 }
 
 impl WidgetDecl {
@@ -193,6 +197,7 @@ impl WidgetDecl {
             data,
             keys,
             breakpoints,
+            later,
         } = over;
         fn pick<T: Clone>(over: &Option<T>, own: &Option<T>) -> Option<T> {
             over.as_ref().or(own.as_ref()).cloned()
@@ -217,7 +222,13 @@ impl WidgetDecl {
             data: pick(data, &self.data),
             keys: pick(keys, &self.keys),
             breakpoints: pick(breakpoints, &self.breakpoints),
+            later: pick(later, &self.later),
         }
+    }
+
+    /// Whether `variant` is one its `later` lists (S10's *Later names*).
+    pub(crate) fn is_later(&self, variant: &VariantRef) -> bool {
+        self.later.iter().flatten().any(|held| held == variant)
     }
 }
 

@@ -67,14 +67,14 @@ const DECLARE: &str = r#"
 [declare]
 surface_sets = ["window", "button"]
 [declare.widget.button]
-variants = ["primary", "flat", "destructive", "@solo"]
+variants = ["primary", "tool", "tinted", "@solo"]
 sizes = ["small", "regular"]
 densities = ["compact"]
 flags = ["@armed"]
 exclusive = [["disabled", "pressed"]]
-exclusive_variants = [["primary", "flat"]]
+exclusive_variants = [["primary", "tool"]]
 recency = { lift = ["pressed", "focus_visible", "hover"] }
-sizes_by_variant = [{ variant = "destructive", sizes = ["large"], default_size = "large" }]
+sizes_by_variant = [{ variant = "tinted", sizes = ["large"], default_size = "large" }]
 default_size = "regular"
 data = { label = ["char_width"] }
 "#;
@@ -264,65 +264,55 @@ fn rtl_mirrors_sides_not_corners() {
     );
 }
 
-/// `rtl_mirrors_indicator_anchor_corner` (S2.4, ADD-A146): a variant whose
-/// name holds `End` is swapped for its counterpart, so a menu indicator
-/// anchored at the bottom end lies at the bottom start, the physical left,
-/// under right-to-left.
+/// `later_names_answer_later` (S8, S10's *Later names*; ADD-A147): an
+/// element holding a variant its widget lists under `later` is answered
+/// `NotAvailable(Later)`, and, while the sizes unit is not enabled, one
+/// asking a size it takes other than its default in force, or a declared
+/// density; its default size, and a size it does not take, as before.
 #[test]
-fn rtl_mirrors_indicator_anchor_corner() -> Result<(), String> {
-    let theme = fixture(&["[widgets.button.values]\nmenu_indicator_anchor = \"bottom_end\""]);
-    let anchor = |direction| match theme.values::<ButtonValues>(&Element::new(
-        BODY,
-        &root(&theme, direction),
-        &Metrics,
-    )) {
-        Styled::Style(values) => Ok(values.menu_indicator_anchor),
-        other => Err(format!("the values do not resolve: {other:?}")),
-    };
+fn later_names_answer_later() {
+    assert!(!crate::widgets::SIZES_UNIT, "the sizes unit is not enabled");
+    let declare = format!("{DECLARE}later = {{ variants = [\"@solo\"] }}\n");
+    let theme = theme_with(&declare, &[]);
+    let scope = root(&theme, Direction::Ltr);
+    let element = || Element::new(BODY, &scope, &Metrics);
+    let solo = [VariantRef::Keyed(key("solo"))];
     assert_eq!(
-        anchor(Direction::Ltr)?,
-        Some(crate::widgets::IndicatorAnchor::BottomEnd)
+        theme.style(&element().with_variants(&solo)),
+        Styled::NotAvailable(Unavailable::Later)
     );
     assert_eq!(
-        anchor(Direction::Rtl)?,
-        Some(crate::widgets::IndicatorAnchor::BottomStart)
+        theme.style(&element().with_size(ControlSize::Small)),
+        Styled::NotAvailable(Unavailable::Later)
     );
-    Ok(())
-}
-
-/// `rtl_mirrors_indicator_anchor_start` (S2.4, ADD-A146): the start
-/// corners read from TOML, `top_start` and `bottom_start`, are swapped for
-/// their end counterparts under right-to-left and kept under left-to-right.
-#[test]
-fn rtl_mirrors_indicator_anchor_start() -> Result<(), String> {
-    use crate::widgets::IndicatorAnchor;
-    for (stated, ltr, rtl) in [
-        (
-            "top_start",
-            IndicatorAnchor::TopStart,
-            IndicatorAnchor::TopEnd,
+    assert!(matches!(
+        theme.style(&element().with_size(ControlSize::Regular)),
+        Styled::Style(_)
+    ));
+    assert_eq!(
+        theme.style(&element().with_size(ControlSize::Large)),
+        Styled::NotAvailable(Unavailable::Size)
+    );
+    let tinted = [VariantRef::Typed(Variant::Tinted)];
+    assert!(matches!(
+        theme.style(
+            &element()
+                .with_variants(&tinted)
+                .with_size(ControlSize::Large)
         ),
-        (
-            "bottom_start",
-            IndicatorAnchor::BottomStart,
-            IndicatorAnchor::BottomEnd,
-        ),
-    ] {
-        let theme = fixture(&[&format!(
-            "[widgets.button.values]\nmenu_indicator_anchor = \"{stated}\""
-        )]);
-        let anchor = |direction| match theme.values::<ButtonValues>(&Element::new(
-            BODY,
-            &root(&theme, direction),
-            &Metrics,
-        )) {
-            Styled::Style(values) => Ok(values.menu_indicator_anchor),
-            other => Err(format!("`{stated}`: the values do not resolve: {other:?}")),
-        };
-        assert_eq!(anchor(Direction::Ltr)?, Some(ltr), "`{stated}`");
-        assert_eq!(anchor(Direction::Rtl)?, Some(rtl), "`{stated}`");
-    }
-    Ok(())
+        Styled::Style(_)
+    ));
+    assert_eq!(
+        theme.style(&element().with_density(Density::Compact)),
+        Styled::NotAvailable(Unavailable::Later)
+    );
+    // An unavailable widget's answer comes first.
+    let unavailable = theme_with(&format!("{declare}available = false\n"), &[]);
+    let scope = root(&unavailable, Direction::Ltr);
+    assert_eq!(
+        unavailable.style(&Element::new(BODY, &scope, &Metrics).with_variants(&solo)),
+        Styled::NotAvailable(Unavailable::Widget)
+    );
 }
 
 /// `undeclared_variant_not_available` (S8): a variant the application asks
@@ -339,14 +329,13 @@ fn undeclared_variant_not_available() {
         Styled::NotAvailable(Unavailable::Variant)
     );
     // `vertical`-like: a name another widget has is asked for here.
-    let other = [VariantRef::Typed(Variant::Pill)];
+    let other = [VariantRef::Typed(Variant::Toggle)];
     assert_eq!(
         theme.style(&Element::new(BODY, &scope, &Metrics).with_variants(&other)),
         Styled::NotAvailable(Unavailable::Variant)
     );
     let content = [
-        VariantRef::Typed(Variant::IconOnly),
-        VariantRef::Keyed(key("with_arrow")),
+        VariantRef::Typed(Variant::WithIcon),
         VariantRef::Typed(Variant::Primary),
     ];
     let (_, scope_out) = drawn(
@@ -365,7 +354,7 @@ fn absent_part_not_drawn() {
     let rules = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.label\"\n\
                  set = { absent = true }\n\
                  [[rules]]\nwhen = { states = [\"focus_visible\"] }\ntarget = \"button.icon\"\n\
-                 set = { drawn_as = { widget = \"button\", part = \"body\", variants = [\"flat\"] } }";
+                 set = { drawn_as = { widget = \"button\", part = \"body\", variants = [\"tool\"] } }";
     let theme = fixture(&[rules]);
     let scope = root(&theme, Direction::Ltr);
     assert_eq!(
@@ -383,7 +372,7 @@ fn absent_part_not_drawn() {
         theme.style(&focused),
         Styled::DrawnAs {
             target: WidgetOrPart::Part(BODY),
-            variants: vec![VariantRef::Typed(Variant::Flat)],
+            variants: vec![VariantRef::Typed(Variant::Tool)],
         }
     );
     assert_eq!(
@@ -623,7 +612,7 @@ fn not_available_size() {
     let scope = root(&theme, Direction::Ltr);
     let large = Element::new(BODY, &scope, &Metrics).with_size(ControlSize::Large);
     assert_eq!(theme.style(&large), Styled::NotAvailable(Unavailable::Size));
-    let destructive = [VariantRef::Typed(Variant::Destructive)];
+    let destructive = [VariantRef::Typed(Variant::Tinted)];
     let small = Element::new(BODY, &scope, &Metrics)
         .with_variants(&destructive)
         .with_size(ControlSize::Small);
@@ -639,16 +628,16 @@ fn not_available_size() {
 /// size it is given is not available.
 #[test]
 fn sizes_by_variant_then_context() {
-    let declare = "[declare.widget.button]\nvariants = [\"primary\", \"flat\"]\n\
+    let declare = "[declare.widget.button]\nvariants = [\"primary\", \"tool\"]\n\
                    sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n\
                    sizes_by_variant = [{ variant = \"primary\", sizes = [\"regular\", \"large\"], \
-                   default_size = \"large\" }, { variant = \"flat\", sizes = [] }]\n\
+                   default_size = \"large\" }, { variant = \"tool\", sizes = [] }]\n\
                    sizes_by_context = [{ context = { widget = \"button\", part = \"body\" }, \
                    sizes = [\"regular\", \"large\"], default_size = \"regular\" }]";
     let theme = theme_with(declare, &[]);
     let root = root(&theme, Direction::Ltr);
     let primary = [VariantRef::Typed(Variant::Primary)];
-    let flat = [VariantRef::Typed(Variant::Flat)];
+    let flat = [VariantRef::Typed(Variant::Tool)];
     let size_of = |element: &Element<'_>| match theme.style(element) {
         Styled::Style((_, scope)) => Ok(scope.entries.last().and_then(|entry| entry.size)),
         Styled::NotAvailable(why) => Err(why),
@@ -747,7 +736,7 @@ fn not_available_variant() {
     let theme = fixture(&[]);
     let both = [
         VariantRef::Typed(Variant::Primary),
-        VariantRef::Typed(Variant::Flat),
+        VariantRef::Typed(Variant::Tool),
     ];
     assert_eq!(
         theme.style(&Element::new(BODY, &scope, &Metrics).with_variants(&both)),
@@ -762,7 +751,7 @@ fn context_skips_the_elements_own_parts() {
     let rules = "[[rules]]\nwhen = { context = [{ widget = \"button\" }] }\ntarget = \"button.body\"\n\
                  set = { min_width_px = 99 }\n\
                  [[rules]]\nwhen = { context = [{ scope = { nearest = [\"button\"] }, widget = \"button\", \
-                 variants = [\"flat\"] }] }\ntarget = \"button.label\"\n\
+                 variants = [\"tool\"] }] }\ntarget = \"button.label\"\n\
                  set = { padding.top_px = 9 }";
     let theme = fixture(&[rules]);
     let scope = root(&theme, Direction::Ltr);
@@ -777,7 +766,7 @@ fn context_skips_the_elements_own_parts() {
     );
     // The label's own button is flat; it is skipped, and the enclosing one
     // is not.
-    let flat = [VariantRef::Typed(Variant::Flat)];
+    let flat = [VariantRef::Typed(Variant::Tool)];
     let (_, own) = drawn(
         &theme,
         &Element::new(BODY, &scope, &Metrics).with_variants(&flat),
@@ -909,7 +898,7 @@ fn size_density_and_direction_match() {
                  [[rules]]\nwhen = { direction = \"rtl\" }\ntarget = \"button.label\"\n\
                  set = { padding.bottom_px = 3 }";
     let theme = fixture(&[rules]);
-    let destructive = [VariantRef::Typed(Variant::Destructive)];
+    let destructive = [VariantRef::Typed(Variant::Tinted)];
     let scope = root(&theme, Direction::Ltr);
     let (_, large) = drawn(
         &theme,
@@ -1205,7 +1194,7 @@ fn breeze_tests_in_rank_order() {
         breeze("stroke", 100, "\"focus_visible\"", "\"disabled\""),
         breeze("opacity", 100, "\"hover\"", ""),
         rule(
-            "variants = [\"flat\"]",
+            "variants = [\"tool\"]",
             breeze("fill", 100, "\"checked\"", "")
         ),
         rule(
@@ -1233,7 +1222,7 @@ fn breeze_tests_in_rank_order() {
     ];
     let element = Element::new(BODY, &scope, &Metrics);
     assert_eq!(drawn(&theme, &element).0.breeze_tests, ranked);
-    let flat = [VariantRef::Typed(Variant::Flat)];
+    let flat = [VariantRef::Typed(Variant::Tool)];
     let element = Element::new(BODY, &scope, &Metrics).with_variants(&flat);
     let mut with_flat = ranked.to_vec();
     with_flat.insert(3, test(StateFlag::Checked, &[]));

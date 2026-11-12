@@ -714,14 +714,29 @@ impl<'a> Checker<'a> {
     }
 
     fn variant(&mut self, widget: WidgetKind, variant: &VariantRef, at: &str) {
-        let declared = self
-            .widget_decls(widget)
+        let decls = self.widget_decls(widget);
+        let declared = decls
             .iter()
             .any(|decl| decl.variants.as_ref().is_some_and(|v| v.contains(variant)));
         if !declared {
             let declaration = self.declaration(widget, "variants");
             self.undeclared(at, &variant_name(variant), &declaration);
+        } else if decls.iter().any(|decl| decl.is_later(variant)) {
+            let declaration = self.declaration(widget, "later");
+            self.later(at, &variant_name(variant), &declaration);
         }
+    }
+
+    /// A name the preset declares that a unit not yet enabled states (S10's
+    /// *Later names*, S12; ADD-A147).
+    fn later(&mut self, at: &str, name: &str, declaration: &str) {
+        self.problem(
+            at,
+            ProblemKind::Later {
+                name: name.to_owned(),
+                declaration: declaration.to_owned(),
+            },
+        );
     }
 
     fn flag(&mut self, widget: WidgetKind, flag: &StateFlag, at: &str) {
@@ -742,7 +757,8 @@ impl<'a> Checker<'a> {
     /// variant entry's take it: a context entry only leaves sizes out, so a
     /// size it alone names is taken by no element (S10, ADD-A131).
     fn size(&mut self, widget: WidgetKind, size: ControlSize, at: &str) {
-        let declared = self.widget_decls(widget).iter().any(|decl| {
+        let decls = self.widget_decls(widget);
+        let declared = decls.iter().any(|decl| {
             decl.sizes.as_ref().is_some_and(|s| s.contains(&size))
                 || decl
                     .sizes_by_variant
@@ -750,9 +766,30 @@ impl<'a> Checker<'a> {
                     .flatten()
                     .any(|entry| entry.sizes.contains(&size))
         });
+        // A size of a unit not enabled (S10's *Later names*; ADD-A147): no
+        // default in force of the widget's, its variant entries' or its
+        // context entries'.
+        let default =
+            |held: Option<&DefaultSize>| matches!(held, Some(DefaultSize::Size(d)) if *d == size);
+        let in_force = decls.iter().any(|decl| {
+            default(decl.default_size.as_ref())
+                || decl
+                    .sizes_by_variant
+                    .iter()
+                    .flatten()
+                    .any(|entry| default(entry.default_size.as_ref()))
+                || decl
+                    .sizes_by_context
+                    .iter()
+                    .flatten()
+                    .any(|entry| default(entry.default_size.as_ref()))
+        });
         if !declared {
             let declaration = self.declaration(widget, "sizes");
             self.undeclared(at, size.name(), &declaration);
+        } else if !crate::widgets::SIZES_UNIT && !in_force {
+            let declaration = self.declaration(widget, "sizes");
+            self.later(at, size.name(), &declaration);
         }
     }
 
@@ -761,14 +798,18 @@ impl<'a> Checker<'a> {
             .widget_decls(widget)
             .iter()
             .any(|decl| decl.densities.as_ref().is_some_and(|d| d.contains(density)));
+        let name = match density {
+            Density::Default => "default".to_owned(),
+            Density::Compact => "compact".to_owned(),
+            Density::Keyed(key) => format!("@{key}"),
+        };
+        let declaration = self.declaration(widget, "densities");
         if !declared {
-            let name = match density {
-                Density::Default => "default".to_owned(),
-                Density::Compact => "compact".to_owned(),
-                Density::Keyed(key) => format!("@{key}"),
-            };
-            let declaration = self.declaration(widget, "densities");
             self.undeclared(at, &name, &declaration);
+        } else if !crate::widgets::SIZES_UNIT {
+            // A density of a unit not enabled: the densities are the sizes
+            // unit's (S10's *Later names*; ADD-A147).
+            self.later(at, &name, &declaration);
         }
     }
 
@@ -959,7 +1000,18 @@ impl<'a> Checker<'a> {
                 decl.conditions.iter().any(|setting| setting.key == *key),
             ),
             Condition::DeviceModel(key) => (key, "device_models", decl.device_models.contains(key)),
-            Condition::Flavor(key) => (key, "flavors", decl.flavors.contains(key)),
+            Condition::Flavor(key) => {
+                // A flavour of a unit not enabled (S10's *Later names*,
+                // S12; ADD-A147): every declared flavour but the default.
+                if !crate::widgets::FLAVOURS_UNIT
+                    && decl.flavors.contains(key)
+                    && decl.flavors.first() != Some(key)
+                {
+                    self.later(at, key.as_str(), "flavors");
+                    return;
+                }
+                (key, "flavors", decl.flavors.contains(key))
+            }
             Condition::ContainerSize { container, size } => (
                 size,
                 "container_sizes",
@@ -3055,12 +3107,18 @@ pub(super) fn unused(
             section,
         )
     });
-    let flavors = decl.flavor.iter().flat_map(|(flavor, section)| {
-        section.widgets.iter().map(move |(widget, section)| {
-            let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));
-            (at, *widget, section)
-        })
-    });
+    // A flavour of a unit not enabled is exempt, with its sections: it cannot
+    // be asked for and no rule may name it (S12, S16; ADD-A147).
+    let flavors = decl
+        .flavor
+        .iter()
+        .filter(|_| crate::widgets::FLAVOURS_UNIT)
+        .flat_map(|(flavor, section)| {
+            section.widgets.iter().map(move |(widget, section)| {
+                let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));
+                (at, *widget, section)
+            })
+        });
     let sections: Vec<_> = own.chain(flavors).collect();
     for (at, widget, section) in &sections {
         for flag in section.flags.iter().flatten() {
@@ -3092,7 +3150,12 @@ pub(super) fn unused(
             unused.push(("declare.conditions".to_owned(), format!("@{}", setting.key)));
         }
     }
-    for flavor in decl.flavors.iter().skip(1) {
+    for flavor in decl
+        .flavors
+        .iter()
+        .skip(1)
+        .filter(|_| crate::widgets::FLAVOURS_UNIT)
+    {
         if !uses.conditions.contains(&Condition::Flavor(flavor.clone())) {
             unused.push(("declare.flavors".to_owned(), flavor.to_string()));
         }

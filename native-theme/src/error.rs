@@ -536,6 +536,15 @@ pub enum ProblemKind {
         /// `widget.button.variants`).
         declaration: String,
     },
+    /// A name the preset declares that a unit not yet enabled states: a
+    /// variant its `later` lists, or a size, a density or a flavour of a
+    /// unit not enabled (S10's *Later names*, S12, S16; ADD-A147).
+    Later {
+        /// The name as written.
+        name: String,
+        /// The declaration that lists it (`widget.button.later`, `flavors`).
+        declaration: String,
+    },
     /// A `Colors` or `Tokens` rule with selector parts that are not
     /// conditions (S7, S12).
     NotConditions,
@@ -848,6 +857,10 @@ impl fmt::Display for ProblemKind {
             ProblemKind::Undeclared { name, declaration } => {
                 write!(f, "`{name}` is not declared in `{declaration}`")
             }
+            ProblemKind::Later { name, declaration } => write!(
+                f,
+                "`{name}` is declared in `{declaration}`, and a later unit states it"
+            ),
             ProblemKind::NotConditions => {
                 f.write_str("a colours or tokens rule selects on conditions only")
             }

@@ -1286,6 +1286,7 @@ fn gate_declarations_each_compared() {
             facts: Vec::new(),
             keys: Vec::new(),
             models,
+            units: units::Units::none(),
         };
         let mut report = run::Report::default();
         run::declarations_run(&platform, &preset, None, &mut report);
@@ -1322,6 +1323,7 @@ fn gate_declarations_each_compared() {
             facts: Vec::new(),
             keys: Vec::new(),
             models: model::Model::read("gnome/state-models.toml", &model_of(&stated)).unwrap(),
+            units: units::Units::none(),
         };
         let mut report = run::Report::default();
         run::declarations_run(&platform, &preset, None, &mut report);
@@ -1346,6 +1348,7 @@ fn gate_declarations_each_compared() {
                 &model_of("sizes = [\"small\"]\ndefault_size = \"small\"\n"),
             )
             .unwrap(),
+            units: units::Units::none(),
         };
         let mut report = run::Report::default();
         run::declarations_run(&platform, &preset, None, &mut report);
@@ -1392,6 +1395,7 @@ fn gate_declarations_each_compared() {
         facts: Vec::new(),
         keys: Vec::new(),
         models: Vec::new(),
+        units: units::Units::none(),
     };
     let mut report = run::Report::default();
     run::declarations_run(&platform, &preset, None, &mut report);
@@ -1435,6 +1439,7 @@ fn gate_declarations_skip_unheld_context() -> Result<(), String> {
             facts: Vec::new(),
             keys: Vec::new(),
             models,
+            units: units::Units::none(),
         };
         let mut report = run::Report::default();
         run::declarations_run(&platform, &preset, None, &mut report);
@@ -3487,6 +3492,12 @@ fn facts_gate() {
     }
     for (key, count) in &report.units_not_enabled {
         eprintln!("  unit not enabled: {count}: {key}");
+    }
+    for (preset, (facts, pending)) in &report.at_depth {
+        eprintln!("  at depth: {preset}: {facts} facts of the enabled units, {pending} pending");
+    }
+    for (unit, count) in &report.later_units {
+        eprintln!("  later unit: {count}: {unit}");
     }
     for (entry, count) in &report.combinations {
         eprintln!("  combinations: {entry}: {count}");

@@ -63,6 +63,12 @@ pub enum Unavailable {
     Variant,
     /// The part: one the widget does not have.
     Part,
+    /// The platform has it, and a unit not yet enabled states it: a variant
+    /// (a content variant included) the widget's declarations list under
+    /// `later`, a size the element takes other than its default in force,
+    /// or a declared density, while the sizes unit is not enabled (S8, S10;
+    /// ADD-A147). It comes before every other answer but `Widget`.
+    Later,
 }
 
 /// What a window's root scope starts from (S8): what the connector measures

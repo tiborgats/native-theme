@@ -1,30 +1,80 @@
 //! The enabled units (S17 *While 0.8.0 is built*): `scripts/widget_units.toml`
-//! read as `scripts/check_facts_trace.py` reads it (its `read_units`), a path
-//! in a unit by that script's `in_unit` rule, so the gate and the trace check
-//! enable the same units from one source.
+//! read as `scripts/check_facts_trace.py` reads it (its `read_units` and
+//! `read_later`), a path in a unit by that script's `in_unit` rule and a name
+//! at depth by its `Depth` class's (ADD-A147), so the gate and the scripts
+//! enable the same units and names from one source.
 
 use std::path::Path;
 
 use toml::{Table, Value};
 
 /// The units file's tables that are no unit.
-const TABLES: [&str; 4] = ["deferred", "hand_written", "prefixes", "staged"];
+const TABLES: [&str; 7] = [
+    "deferred",
+    "hand_written",
+    "prefixes",
+    "staged",
+    "kept",
+    "at_depth",
+    "later",
+];
 
 /// The unit suffixes a path's segment drops before it is compared (S1).
 const SUFFIXES: [&str; 4] = ["_px", "_ms", "_deg", "_pt"];
 
-/// One enabled unit: its catalogue entries and prefixes, and the paths it
-/// holds none of (the values a unit defers, the paths it stages), each by
-/// its segments.
-#[derive(Debug)]
+/// The keys of a `[[later]]` table that name no catalogue entry.
+const LATER_KEYS: [&str; 6] = [
+    "name",
+    "kind",
+    "enabled",
+    "conditions",
+    "directions",
+    "sizes",
+];
+
+/// One enabled unit: its catalogue entries and prefixes, the paths it holds
+/// none of (the values and part fields a unit defers, the paths it stages,
+/// a `*` segment standing for any one, a `@*` for any keyed one), and per
+/// preset the entries of a staged keyed map it keeps (`[kept]`), each by its
+/// segments.
+#[derive(Clone, Debug)]
 struct Unit {
     entries: Vec<Vec<String>>,
     deferred: Vec<Vec<String>>,
+    kept: Vec<(String, Vec<Vec<String>>)>,
 }
 
-/// The enabled units.
-#[derive(Debug)]
-pub struct Units(Vec<Unit>);
+/// A group of names a later unit holds for a catalogue entry: on the
+/// presets it names, on every preset where it names none.
+#[derive(Clone, Debug)]
+struct Group {
+    entry: String,
+    presets: Option<Vec<String>>,
+    variants: Vec<String>,
+    states: Vec<String>,
+}
+
+/// A later unit (`[[later]]`, ADD-A147): whether it is enabled and what it
+/// holds.
+#[derive(Clone, Debug)]
+struct Later {
+    name: String,
+    enabled: bool,
+    conditions: Vec<String>,
+    directions: Vec<String>,
+    sizes: bool,
+    groups: Vec<Group>,
+}
+
+/// The enabled units, and the later units with the names they hold.
+#[derive(Clone, Debug)]
+pub struct Units {
+    units: Vec<Unit>,
+    later: Vec<Later>,
+    /// `[at_depth]`: a key prefix's segments and the conditions at depth for
+    /// its keys that a later unit holds for every other key.
+    at_depth: Vec<(Vec<String>, Vec<String>)>,
+}
 
 /// A path's segments, each without its unit suffix.
 fn segments(path: &str) -> Vec<String> {
@@ -37,6 +87,25 @@ fn segments(path: &str) -> Vec<String> {
                 .to_owned()
         })
         .collect()
+}
+
+/// Whether `path` starts with `prefix`, segment by segment, a `*` segment
+/// of the prefix standing for any one, a `@*` for any keyed one.
+fn under(path: &[String], prefix: &[String]) -> bool {
+    path.len() >= prefix.len()
+        && prefix.iter().zip(path).all(|(held, segment)| {
+            held == "*" || held == segment || (held == "@*" && segment.starts_with('@'))
+        })
+}
+
+/// The path a `[deferred.<widget>]` key defers: a part's field where the key
+/// is `<part>.<field>`, else a widget value.
+fn deferred_path(widget: &str, name: &str) -> String {
+    if name.contains('.') {
+        format!("{widget}.{name}")
+    } else {
+        format!("{widget}.values.{name}")
+    }
 }
 
 /// The strings of a list, or why it is none.
@@ -55,10 +124,85 @@ fn list(value: &Value, what: &str) -> Result<Vec<String>, String> {
         .collect()
 }
 
+/// The strings of an optional list of a table.
+fn listed(table: &Table, key: &str, what: &str) -> Result<Vec<String>, String> {
+    table
+        .get(key)
+        .map_or_else(|| Ok(Vec::new()), |value| list(value, what))
+}
+
+/// The later units of `data`, in the file's order.
+fn read_later(data: &Table, path: &Path) -> Result<Vec<Later>, String> {
+    let Some(tables) = data.get("later") else {
+        return Ok(Vec::new());
+    };
+    let tables = tables
+        .as_array()
+        .ok_or_else(|| format!("{path:?}: `later` is not an array of tables"))?;
+    let mut out = Vec::new();
+    for table in tables {
+        let table = table
+            .as_table()
+            .ok_or_else(|| format!("{path:?}: a `later` item is not a table"))?;
+        let name = table
+            .get("name")
+            .and_then(Value::as_str)
+            .ok_or_else(|| format!("{path:?}: a [[later]] table has no `name`"))?;
+        let what = |key: &str| format!("{path:?}: later unit `{name}`'s `{key}`");
+        let enabled = table
+            .get("enabled")
+            .and_then(Value::as_bool)
+            .ok_or_else(|| format!("{} is no boolean", what("enabled")))?;
+        let sizes = match table.get("sizes") {
+            None => false,
+            Some(value) => value
+                .as_bool()
+                .ok_or_else(|| format!("{} is no boolean", what("sizes")))?,
+        };
+        let mut groups = Vec::new();
+        for (entry, value) in table {
+            if LATER_KEYS.contains(&entry.as_str()) {
+                continue;
+            }
+            let items = value
+                .as_array()
+                .ok_or_else(|| format!("{} is not a list of groups", what(entry)))?;
+            for item in items {
+                let group = item
+                    .as_table()
+                    .ok_or_else(|| format!("{} holds what is no table", what(entry)))?;
+                let presets = match group.get("presets") {
+                    None => None,
+                    Some(value) => Some(list(value, &what(entry))?),
+                };
+                groups.push(Group {
+                    entry: entry.clone(),
+                    presets,
+                    variants: listed(group, "variants", &what(entry))?,
+                    states: listed(group, "states", &what(entry))?,
+                });
+            }
+        }
+        out.push(Later {
+            name: name.to_owned(),
+            enabled,
+            conditions: listed(table, "conditions", &what("conditions"))?,
+            directions: listed(table, "directions", &what("directions"))?,
+            sizes,
+            groups,
+        });
+    }
+    Ok(out)
+}
+
 impl Units {
     /// No unit enabled.
     pub fn none() -> Units {
-        Units(Vec::new())
+        Units {
+            units: Vec::new(),
+            later: Vec::new(),
+            at_depth: Vec::new(),
+        }
     }
 
     /// The repository's units, `scripts/widget_units.toml`'s.
@@ -85,11 +229,12 @@ impl Units {
             deferred.extend(
                 values
                     .keys()
-                    .map(|value| segments(&format!("{widget}.values.{value}"))),
+                    .map(|value| segments(&deferred_path(widget, value))),
             );
         }
         let prefixes = table("prefixes")?;
         let staged = table("staged")?;
+        let kept = table("kept")?;
         let mut units = Vec::new();
         for (name, entries) in &data {
             if TABLES.contains(&name.as_str()) {
@@ -106,34 +251,170 @@ impl Units {
                     .ok_or_else(|| format!("{path:?}: `staged.{name}` is not a table"))?;
                 out.extend(paths.keys().map(|staged| segments(staged)));
             }
+            let mut keeps = Vec::new();
+            if let Some(presets) = kept.get(name) {
+                let presets = presets
+                    .as_table()
+                    .ok_or_else(|| format!("{path:?}: `kept.{name}` is not a table"))?;
+                for (preset, paths) in presets {
+                    let paths = list(paths, &format!("{path:?}: `kept.{name}.{preset}`"))?;
+                    keeps.push((
+                        preset.clone(),
+                        paths.iter().map(|held| segments(held)).collect(),
+                    ));
+                }
+            }
             units.push(Unit {
                 entries: held.iter().map(|entry| segments(entry)).collect(),
                 deferred: out,
+                kept: keeps,
             });
         }
-        for name in prefixes.keys().chain(staged.keys()) {
+        for name in prefixes.keys().chain(staged.keys()).chain(kept.keys()) {
             if !data.contains_key(name) || TABLES.contains(&name.as_str()) {
                 return Err(format!("{path:?}: `{name}` names no enabled unit"));
             }
         }
-        Ok(Units(units))
+        let mut at_depth = Vec::new();
+        for (prefix, conditions) in &table("at_depth")? {
+            at_depth.push((
+                segments(prefix),
+                list(conditions, &format!("{path:?}: `at_depth.{prefix}`"))?,
+            ));
+        }
+        Ok(Units {
+            units,
+            later: read_later(&data, path)?,
+            at_depth,
+        })
     }
 
-    /// Whether `path` lies in an enabled unit (check_facts_trace.py's
+    /// Whether `path` lies in an enabled unit on some preset
+    /// ([`Units::hold_on`] with every preset's kept entries).
+    pub fn hold(&self, path: &str) -> bool {
+        self.hold_on(path, None)
+    }
+
+    /// Whether `path` lies in an enabled unit on `preset` (check_facts_trace.py's
     /// `in_unit`): it starts with one of a unit's entries segment by
     /// segment, or is itself a leading part of one, and lies under no path
-    /// the unit defers or stages.
-    pub fn hold(&self, path: &str) -> bool {
+    /// the unit defers or stages unless the preset keeps it (`[kept]`; with
+    /// no preset, any preset).
+    pub fn hold_on(&self, path: &str, preset: Option<&str>) -> bool {
         let path = segments(path);
-        self.0.iter().any(|unit| {
+        self.units.iter().any(|unit| {
+            let kept = |deferred: &[String]| {
+                unit.kept
+                    .iter()
+                    .filter(|(held, _)| preset.is_none_or(|preset| held == preset))
+                    .any(|(_, paths)| {
+                        paths
+                            .iter()
+                            .any(|kept| under(&path, kept) && under(kept, deferred))
+                    })
+            };
             !unit
                 .deferred
                 .iter()
-                .any(|deferred| path.starts_with(deferred))
+                .any(|deferred| under(&path, deferred) && !kept(deferred))
                 && unit.entries.iter().any(|entry| {
                     let n = path.len().min(entry.len());
                     path.get(..n) == entry.get(..n)
                 })
         })
+    }
+
+    /// The first later unit not enabled for which `holds`, with its place
+    /// in the file's order.
+    fn waiting_one(&self, holds: impl Fn(&Later) -> bool) -> Option<(usize, &str)> {
+        self.later
+            .iter()
+            .enumerate()
+            .find(|(_, unit)| !unit.enabled && holds(unit))
+            .map(|(at, unit)| (at, unit.name.as_str()))
+    }
+
+    /// The later unit not enabled that holds a variant (`variant`) or a
+    /// state flag of the catalogue entry `entry` on `preset`, with its
+    /// place; `None` where the name is at depth (the class `Depth` of
+    /// check_facts_trace.py).
+    pub fn holder(
+        &self,
+        entry: &str,
+        preset: &str,
+        name: &str,
+        variant: bool,
+    ) -> Option<(usize, &str)> {
+        self.waiting_one(|unit| {
+            unit.groups.iter().any(|group| {
+                group.entry == entry
+                    && group
+                        .presets
+                        .as_ref()
+                        .is_none_or(|presets| presets.iter().any(|held| held == preset))
+                    && if variant {
+                        group.variants.iter().any(|held| held == name)
+                    } else {
+                        group.states.iter().any(|held| held == name)
+                    }
+            })
+        })
+    }
+
+    /// Whether a variant (`variant`) or a state flag of `entry` is at depth
+    /// on `preset` ([`Units::holder`]).
+    pub fn at_depth(&self, entry: &str, preset: &str, name: &str, variant: bool) -> bool {
+        self.holder(entry, preset, name, variant).is_none()
+    }
+
+    /// The later unit not enabled that holds a condition for the key `key`,
+    /// with its place: none for a scheme or a preset, nor where
+    /// `[at_depth]` names the condition for a prefix of the key.
+    pub fn condition_holder(&self, condition: &str, key: &str) -> Option<(usize, &str)> {
+        if condition.starts_with("scheme:") || condition.starts_with("preset:") {
+            return None;
+        }
+        let key = segments(key);
+        if self.at_depth.iter().any(|(prefix, conditions)| {
+            under(&key, prefix) && conditions.iter().any(|held| held == condition)
+        }) {
+            return None;
+        }
+        self.waiting_one(|unit| unit.conditions.iter().any(|held| held == condition))
+    }
+
+    /// Whether a condition is at depth for the key `key`
+    /// ([`Units::condition_holder`]).
+    pub fn condition_at_depth(&self, condition: &str, key: &str) -> bool {
+        self.condition_holder(condition, key).is_none()
+    }
+
+    /// The later unit not enabled that holds a direction, with its place.
+    pub fn direction_holder(&self, direction: &str) -> Option<(usize, &str)> {
+        self.waiting_one(|unit| unit.directions.iter().any(|held| held == direction))
+    }
+
+    /// The sizes unit (the later unit holding the sizes) while it is not
+    /// enabled, with its place: an element then takes its default size in
+    /// force alone and no density (S10).
+    pub fn sizes_holder(&self) -> Option<(usize, &str)> {
+        self.waiting_one(|unit| unit.sizes)
+    }
+
+    /// Whether the sizes unit is enabled ([`Units::sizes_holder`]).
+    pub fn sizes_enabled(&self) -> bool {
+        self.sizes_holder().is_none()
+    }
+
+    /// Whether the flavours unit (the later unit holding the `flavor:`
+    /// conditions) is enabled: while it is not, the default flavour's state
+    /// models alone are in force (S10).
+    pub fn flavours_enabled(&self) -> bool {
+        self.waiting_one(|unit| {
+            unit.conditions
+                .iter()
+                .any(|condition| condition.starts_with("flavor:"))
+        })
+        .is_none()
     }
 }

@@ -1096,7 +1096,8 @@ impl Stack {
     }
 
     /// Sets the flavour; refused where the preset does not declare it
-    /// (S10, S16).
+    /// (S10, S16), and, while the flavours unit is not enabled, where it is
+    /// a declared flavour but the default (S6.1; ADD-A147).
     pub(crate) fn set_flavor(&mut self, flavor: Key) -> Result<(), LayerError> {
         if !self.declarations.flavors.contains(&flavor) {
             return Err(LayerError::Invalid(vec![Problem::new(
@@ -1107,7 +1108,28 @@ impl Stack {
                 },
             )]));
         }
+        if !self.flavors().contains(&flavor) {
+            return Err(LayerError::Invalid(vec![Problem::new(
+                "",
+                ProblemKind::Later {
+                    name: flavor.to_string(),
+                    declaration: "flavors".to_owned(),
+                },
+            )]));
+        }
         self.change(|stack| stack.flavor = Some(flavor))
+    }
+
+    /// The flavours `set_flavor` accepts: the preset's declared ones, its
+    /// default first, the default alone while the flavours unit is not
+    /// enabled (S6.1, S16; ADD-A147); none where it declares none.
+    pub(crate) fn flavors(&self) -> Vec<Key> {
+        let declared = &self.declarations.flavors;
+        if crate::widgets::FLAVOURS_UNIT {
+            declared.clone()
+        } else {
+            declared.iter().take(1).cloned().collect()
+        }
     }
 
     /// The accent layer the accent gives (S9.2): its bases state the

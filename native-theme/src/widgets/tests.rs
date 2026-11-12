@@ -3,9 +3,6 @@
 
 use super::*;
 use crate::blocks::focus::{FocusVisibleWhen, ResolvedFocusVisibleWhen};
-use crate::blocks::motion::{
-    PresentationEvent, PresentationTransition, ResolvedPresentationTransition,
-};
 use crate::blocks::part_style::{PartStyle, PartStylePatch};
 use crate::blocks::{Apply, Table};
 use crate::registry::{self, FieldInfo, FieldType, PartInfo};
@@ -33,7 +30,9 @@ fn part(name: &str) -> &'static PartInfo {
 /// absent as a whole, its fields, and the fields its `may_be_absent` item
 /// names), and each widget value with its type, as `ButtonValues` holds it,
 /// and whether it may be absent. `menu_placement` and `scaffold_placement`
-/// are deferred to the placement unit (scripts/widget_units.toml).
+/// are deferred to the placement unit, the values only later names read,
+/// `presentations` and the parts' `transitions` to their later units
+/// (scripts/widget_units.toml; S6.1, ADD-A147).
 const PARTS: &[(&str, bool, &[&str], &[&str])] = &[
     (
         "body",
@@ -54,25 +53,17 @@ const PARTS: &[(&str, bool, &[&str], &[&str])] = &[
             "cursor",
             "touch_target",
             "bindings",
-            "transitions",
             "interaction",
         ],
         &["shadow", "cursor"],
     ),
     ("label", false, &["text", "padding"], &[]),
     ("subtitle", true, &["text"], &[]),
-    ("icon", true, &["icon", "glyph", "transitions"], &["glyph"]),
+    ("icon", true, &["icon", "glyph"], &["glyph"]),
     (
         "menu_indicator",
         true,
-        &[
-            "glyph",
-            "min_width",
-            "min_height",
-            "margin",
-            "transform",
-            "transitions",
-        ],
+        &["glyph", "min_width", "min_height", "margin", "transform"],
         &[],
     ),
 ];
@@ -82,19 +73,11 @@ const VALUES: &[(&str, &str, bool)] = &[
     ("icon_placement", "Value<IconPlacement>", false),
     ("label_position", "Value<ButtonLabelPosition>", true),
     ("subtitle_gap", "Value<Px>", true),
-    ("menu_indicator_gap", "Value<Px>", false),
-    ("menu_indicator_anchor", "Value<IndicatorAnchor>", false),
-    ("menu_trigger", "Value<MenuTrigger>", true),
     ("shows_icon", "Value<bool>", true),
     ("focus_visible_when", "Value<FocusVisibleWhen>", false),
     ("repeat_delay", "Value<Ms>", true),
     ("repeat_interval", "Value<Ms>", true),
-    ("back_title_fallback", "Value<bool>", false),
-    ("back_display_mode", "Value<BackDisplayMode>", true),
-    ("help_tooltip_on_click", "Value<bool>", false),
     ("hit_extension", "Sides<Value<Px>>", false),
-    ("display_mode", "Value<PasteDisplayMode>", true),
-    ("presentations", "Vec<PresentationTransition>", false),
 ];
 
 #[test]
@@ -143,27 +126,32 @@ fn button_parts_match_catalogue() {
     let hit = registry::find(widget.values, "hit_extension.top");
     assert_eq!(hit.map(|f| f.may_be_absent), Some(true));
     assert!(widget.values.iter().all(|f| !f.auto));
-    for deferred in ["menu_placement", "scaffold_placement"] {
+    for deferred in [
+        "menu_placement",
+        "scaffold_placement",
+        "menu_indicator_gap",
+        "back_title_fallback",
+        "presentations",
+    ] {
         assert!(
             registry::find(widget.values, deferred).is_none(),
             "{deferred}"
         );
     }
 
-    assert_eq!(widget.variants.first(), Some(&Variant::Primary));
-    for variant in [
-        Variant::Flat,
-        Variant::Toggle,
-        Variant::Menu,
-        Variant::IconOnly,
-        Variant::WithIcon,
-        Variant::Close,
-        Variant::ClearField,
-        Variant::Route,
-    ] {
-        assert!(widget.variants.contains(&variant), "{variant:?}");
-    }
-    assert_eq!(widget.variants.len(), 34);
+    // The variants of the Depth line alone (S6.1, ADD-A147): no variant of
+    // a later unit is a member.
+    assert_eq!(
+        widget.variants,
+        [
+            Variant::Primary,
+            Variant::Tinted,
+            Variant::Toggle,
+            Variant::Tool,
+            Variant::WithIcon,
+        ]
+    );
+    assert_eq!(widget.content_variants, [(None, "with_icon")]);
 }
 
 #[test]
@@ -273,7 +261,7 @@ fn button_patches_merge_in_order() {
     );
     assert_eq!(
         slots.apply_values(WidgetValuesPatch::Button(Box::new(ButtonValuesPatch {
-            presentations: Some(vec![presentation(PresentationEvent::Appear)]),
+            shows_icon: Some(Value::Stated(true)),
             ..ButtonValuesPatch::default()
         }))),
         Ok(())
@@ -315,7 +303,7 @@ fn button_patches_merge_in_order() {
                 bottom: None,
                 left: None,
             }),
-            presentations: Some(vec![presentation(PresentationEvent::Appear)]),
+            shows_icon: Some(Value::Stated(true)),
             ..values(6.0)
         })
     );
@@ -347,13 +335,6 @@ fn an_absent_part_keeps_its_style_until_brought_back() {
     assert_eq!(slot.style, Some(style(0.3)));
 }
 
-fn presentation(event: PresentationEvent) -> PresentationTransition {
-    PresentationTransition {
-        event,
-        steps: Vec::new(),
-    }
-}
-
 #[test]
 fn button_values_resolve_by_type() {
     let resolved = ResolvedButtonValues {
@@ -361,24 +342,16 @@ fn button_values_resolve_by_type() {
         icon_placement: Some(IconPlacement::Leading),
         label_position: None,
         subtitle_gap: None,
-        menu_indicator_gap: Some(Px(2.0)),
-        menu_indicator_anchor: Some(IndicatorAnchor::Inline),
-        menu_trigger: Some(MenuTrigger::LongPressOrSecondaryClick),
         shows_icon: Some(true),
         focus_visible_when: Some(ResolvedFocusVisibleWhen::AnyFocus),
         repeat_delay: Some(Ms(300.0)),
         repeat_interval: None,
-        back_title_fallback: Some(false),
-        back_display_mode: Some(BackDisplayMode::Minimal),
-        help_tooltip_on_click: Some(false),
         hit_extension: Sides {
             top: Some(Px(1.0)),
             right: None,
             bottom: None,
             left: None,
         },
-        display_mode: Some(PasteDisplayMode::IconAndLabel),
-        presentations: Vec::<ResolvedPresentationTransition>::new(),
     };
     let _: Option<ButtonLabelPosition> = resolved.label_position;
     assert_eq!(resolved.icon_text_gap, Some(Px(4.0)));
@@ -388,12 +361,7 @@ fn button_values_resolve_by_type() {
     // conflict.
     let stated = ButtonValuesPatch {
         icon_placement: Some(Value::Stated(IconPlacement::Leading)),
-        menu_indicator_gap: Some(Value::Stated(Px(2.0))),
-        menu_indicator_anchor: Some(Value::Stated(IndicatorAnchor::Inline)),
         focus_visible_when: Some(Value::Stated(FocusVisibleWhen::Never)),
-        back_title_fallback: Some(Value::Stated(false)),
-        help_tooltip_on_click: Some(Value::Stated(false)),
-        presentations: Some(Vec::new()),
         ..values(4.0)
     };
     let created = <ButtonValues as crate::blocks::Create>::create(stated.clone());
@@ -402,31 +370,25 @@ fn button_values_resolve_by_type() {
         Ok((Value::Stated(Px(4.0)), Value::Absent, Value::Absent))
     );
     let created = <ButtonValues as crate::blocks::Create>::create(ButtonValuesPatch {
-        back_title_fallback: None,
+        icon_placement: None,
         ..stated
     });
     assert_eq!(
         created.map(|_| ()),
         Err(crate::blocks::MergeConflict {
-            path: "back_title_fallback".to_owned(),
+            path: "icon_placement".to_owned(),
             below: crate::blocks::Below::Missing,
         })
     );
 }
 
 #[test]
-fn indicator_anchor_inline_top_reads() {
-    // ADD-A123: an indicator inline with the content, at its top.
-    let layer =
-        crate::Layer::from_toml("[widgets.button.values]\nmenu_indicator_anchor = \"inline_top\"")
-            .unwrap_or_else(|error| panic!("{error}"));
-    let anchor = layer
-        .bases
-        .widgets
-        .button
-        .and_then(|button| button.values)
-        .and_then(|values| values.menu_indicator_anchor);
-    assert_eq!(anchor, Some(Value::Stated(IndicatorAnchor::InlineTop)));
+fn a_deferred_value_is_no_value_of_the_model() {
+    // The values only later names read leave the values struct until their
+    // unit (S6.1, ADD-A147): a layer stating one is refused.
+    let error =
+        crate::Layer::from_toml("[widgets.button.values]\nmenu_indicator_anchor = \"inline_top\"");
+    assert!(error.is_err(), "{error:?}");
 }
 
 #[test]

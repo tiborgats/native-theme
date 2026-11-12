@@ -253,9 +253,19 @@ impl Theme {
     }
 
     /// Sets the flavour (R1.6); refused where the preset does not declare
-    /// it (S10).
+    /// it (S10), and with [`ProblemKind::Later`](crate::ProblemKind::Later)
+    /// for a declared flavour but the default while the flavours unit is not
+    /// enabled (S6.1, S16; ADD-A147).
     pub fn set_flavor(&mut self, flavor: Key) -> Result<(), LayerError> {
         self.stack.set_flavor(flavor)
+    }
+
+    /// The current preset's flavours [`Theme::set_flavor`] accepts, its
+    /// default first: the default alone while the flavours unit is not
+    /// enabled (S6.1, S16; ADD-A147); empty where it declares none.
+    #[must_use]
+    pub fn flavors(&self) -> Vec<Key> {
+        self.stack.flavors()
     }
 
     /// The current preset.

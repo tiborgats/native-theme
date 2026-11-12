@@ -268,11 +268,29 @@ fn widget_decl(widget: WidgetKind, fields: &Table, at: &str, cx: &mut Reader) ->
             "data" => decl.data = Some(data(widget, item, &at, cx)),
             "keys" => decl.keys = Some(value_keys(widget, item, &at, cx)),
             "breakpoints" => decl.breakpoints = Some(breakpoints(item, &at, cx)),
+            "later" => decl.later = Some(later(item, &at, cx)),
             _ => cx.problem(&at, ProblemKind::UnknownKey),
         }
     }
     cx.widget = outer;
     decl
+}
+
+/// `later = { variants = [...] }`: the declared variants a unit not yet
+/// enabled states (S10's *Later names*, ADD-A147).
+fn later(item: &Item, at: &str, cx: &mut Reader) -> Vec<VariantRef> {
+    let Some(fields) = table(item, at, cx) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for (key, item) in fields {
+        let at = join(at, key);
+        match key.as_str() {
+            "variants" => out = names(item, &at, cx, variant),
+            _ => cx.problem(&at, ProblemKind::UnknownKey),
+        }
+    }
+    out
 }
 
 /// An array of arrays of names.

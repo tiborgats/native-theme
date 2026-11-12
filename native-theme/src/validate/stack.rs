@@ -12,8 +12,8 @@ use super::combos::{Expanded, Query, Reads, Seed, Stating, World};
 use super::walk::{Form, Marks, Node, Number, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::blocks::motion::{
-    BreezeTest, Keyframe, PresentationEvent, PresentationTransition, PropertyGroup, Transition,
-    TransitionEngine, TransitionKind, same_flags, same_test,
+    BreezeTest, Keyframe, PropertyGroup, Transition, TransitionEngine, TransitionKind, same_flags,
+    same_test,
 };
 use crate::blocks::paint::PaintPatch;
 use crate::blocks::part_style::{Binding, RoleRef};
@@ -280,8 +280,6 @@ pub(super) enum ItemKey {
     /// A transition's property group, `from` set and Breeze test: a
     /// transition listing several groups is split per group first.
     Group(PropertyGroup, Option<Vec<StateFlag>>, Option<BreezeTest>),
-    /// A presentation's event.
-    Event(PresentationEvent),
     /// A binding's role.
     Role(RoleRef),
     /// A surface-set binding: a part binds one surface set.
@@ -298,12 +296,9 @@ impl PartialEq for ItemKey {
                     && same_flags(x.as_deref(), y.as_deref())
                     && same_test(s.as_ref(), t.as_ref())
             }
-            (ItemKey::Event(a), ItemKey::Event(b)) => a == b,
             (ItemKey::Role(a), ItemKey::Role(b)) => a == b,
             (ItemKey::Surface, ItemKey::Surface) => true,
-            (ItemKey::Group(..) | ItemKey::Event(_) | ItemKey::Role(_) | ItemKey::Surface, _) => {
-                false
-            }
+            (ItemKey::Group(..) | ItemKey::Role(_) | ItemKey::Surface, _) => false,
         }
     }
 }
@@ -316,13 +311,6 @@ pub(super) struct Item {
     pub(super) place: String,
     /// Its keys; replaced at every one, it is gone.
     pub(super) keys: Vec<ItemKey>,
-}
-
-/// A widget's presentations, keyed by event.
-fn presentation_items(source: usize, held: &[PresentationTransition]) -> Vec<Item> {
-    items("presentations", source, held, |presentation| {
-        vec![ItemKey::Event(presentation.event.clone())]
-    })
 }
 
 /// The items of a keyed list at `list`, stated by the source `source`.
@@ -868,7 +856,6 @@ impl<'a> Stack<'a> {
                 let number = self.sources.len();
                 let ops = flatten(&values, &join(&root, "values"), toml, number, None);
                 self.push(Target::Values(WidgetKind::Button), pos, layer, None, ops);
-                self.presentations(number, values.presentations.as_deref());
             }
         }
     }
@@ -1048,15 +1035,7 @@ impl<'a> Stack<'a> {
                     Some(index),
                     ops,
                 );
-                self.presentations(number, values.presentations.as_deref());
             }
-        }
-    }
-
-    /// The presentations the source `number`, a widget's values, states.
-    fn presentations(&mut self, number: usize, held: Option<&[PresentationTransition]>) {
-        if let (Some(source), Some(held)) = (self.sources.get_mut(number), held) {
-            source.items = presentation_items(number, held);
         }
     }
 

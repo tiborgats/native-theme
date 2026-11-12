@@ -131,6 +131,14 @@ pub struct Report {
     /// Facts a unit they belong to, their key's or a widget's their `when`
     /// names, is not enabled for (S17 *While 0.8.0 is built*), by key.
     pub units_not_enabled: BTreeMap<String, usize>,
+    /// Facts a preset's run skips by S17's predicate (ADD-A147): their
+    /// `when` names a name a later unit not enabled holds there, or a
+    /// variant the state model in force draws nowhere, by `<preset>: <the
+    /// later unit>` ([`later_unit`]).
+    pub later_units: BTreeMap<String, usize>,
+    /// Per preset, the facts of the enabled units its run prepares and how
+    /// many of them are pending (S17's predicate, ADD-A147).
+    pub at_depth: BTreeMap<String, (usize, usize)>,
     /// Facts whose `when` names what the model does not hold yet, by what
     /// it names.
     pub whens_not_held: BTreeMap<String, usize>,
@@ -268,6 +276,12 @@ impl Report {
         for (key, count) in other.units_not_enabled {
             *self.units_not_enabled.entry(key).or_default() += count;
         }
+        for (key, count) in other.later_units {
+            *self.later_units.entry(key).or_default() += count;
+        }
+        for (preset, counts) in other.at_depth {
+            self.at_depth.entry(preset).or_insert(counts);
+        }
         for (why, count) in other.whens_not_held {
             *self.whens_not_held.entry(why).or_default() += count;
         }
@@ -305,7 +319,7 @@ impl Report {
         format!(
             "failures {failures:?}\ngroups {groups:?}\npending {:?}\nsynthetic {:?}\n\
              listed {:?}\nunchecked {:?}\nunread {unread:?}\nkeys not held {:?}\n\
-             units not enabled {:?}\nwhens not held {:?}\nother presets {}\n\
+             units not enabled {:?}\nlater units {:?}\nat depth {:?}\nwhens not held {:?}\nother presets {}\n\
              variants not held {:?}\naccent run {}\nfields not drawn {}\n\
              whens not drawn {}\ncombinations skipped {}\ncombinations {:?}\nqueried {}\n\
              compared {}",
@@ -315,6 +329,8 @@ impl Report {
             self.unchecked,
             self.keys_not_held,
             self.units_not_enabled,
+            self.later_units,
+            self.at_depth,
             self.whens_not_held,
             self.other_presets,
             self.variants_not_held,
@@ -335,6 +351,9 @@ pub struct Platform {
     pub facts: Vec<Fact>,
     pub keys: Vec<(String, Result<FactKey, Unread>)>,
     pub models: Vec<Model>,
+    /// The units it was read with, whose names at depth each preset's run
+    /// reads (S17, ADD-A147).
+    pub units: Units,
 }
 
 impl Platform {
@@ -401,6 +420,7 @@ impl Platform {
             facts,
             keys,
             models,
+            units: units.clone(),
         }
     }
 
@@ -424,6 +444,190 @@ fn units_enabled(units: &Units, fact: &Fact) -> bool {
             .when
             .as_ref()
             .is_none_or(|when| when_widgets(when).iter().all(|widget| units.hold(widget)))
+}
+
+/// The entry's state model in force on `preset` (S10's *Later names*, S17,
+/// ADD-A147): its variants, flags and axis conditions at depth (`units`),
+/// each exclusive group and recency set trimmed to the flags at depth (one
+/// left with fewer than two dropped), a set holding a variant beyond depth
+/// no element's ([`Model::without`]); and, while the sizes unit is not
+/// enabled, the default size in force alone (the widget's, and each
+/// `sizes_by_variant` entry's, else the widget's where the entry takes it)
+/// and no density. Its declarations stay whole in the preset.
+pub fn in_force_at_depth(entry: &Model, units: &Units, preset: &str) -> Model {
+    let widget = entry.widget.as_str();
+    let mut off: Vec<String> = entry.skipped_variants.clone();
+    off.extend(
+        entry
+            .variants
+            .iter()
+            .filter(|variant| !units.at_depth(widget, preset, variant, true))
+            .cloned(),
+    );
+    let mut out = entry.without(&off);
+    let flag = |flag: &String| units.at_depth(widget, preset, flag, false);
+    out.states.retain(flag);
+    out.flags.retain(flag);
+    out.exclusive = out
+        .exclusive
+        .iter()
+        .map(|group| {
+            group
+                .iter()
+                .filter(|held| flag(held))
+                .cloned()
+                .collect::<Vec<_>>()
+        })
+        .filter(|group| group.len() >= 2)
+        .collect();
+    out.recency = out
+        .recency
+        .iter()
+        .map(|(name, set)| {
+            let set: Vec<String> = set.iter().filter(|held| flag(held)).cloned().collect();
+            (name.clone(), set)
+        })
+        .filter(|(_, set)| set.len() >= 2)
+        .collect();
+    out.axis_conditions
+        .retain(|condition| units.condition_at_depth(condition, widget));
+    if !units.sizes_enabled() {
+        if let Some(default) = entry
+            .default_size
+            .as_ref()
+            .filter(|d| entry.sizes.contains(d))
+        {
+            out.sizes = vec![default.clone()];
+        }
+        out.sizes_by_variant = entry
+            .sizes_by_variant
+            .iter()
+            .filter(|(variant, _, _)| !off.contains(variant))
+            .map(|(variant, sizes, default)| {
+                let in_force = default
+                    .as_ref()
+                    .or(entry.default_size.as_ref())
+                    .filter(|default| sizes.contains(default));
+                let sizes = in_force.map_or_else(|| sizes.clone(), |size| vec![size.clone()]);
+                (variant.clone(), sizes, default.clone())
+            })
+            .collect();
+        out.densities.clear();
+    }
+    out
+}
+
+/// The variants of a state model in force that it draws in no
+/// combination: no variant option holding one escapes the `not_drawn`
+/// entries naming only variants and contexts that are not there (with no
+/// host context in force, a `not_context` always holds). A variant at depth
+/// so drawn nowhere is the preset's `later` (S10, ADD-A147).
+pub fn drawn_nowhere(entry: &Model) -> Vec<String> {
+    let names = |table: &toml::Table, set: &[String]| {
+        !table.is_empty()
+            && table
+                .keys()
+                .all(|key| ["variants", "not_variants", "not_context"].contains(&key.as_str()))
+            && strings(table.get("variants"))
+                .iter()
+                .all(|variant| set.contains(variant))
+            && !strings(table.get("not_variants"))
+                .iter()
+                .any(|variant| set.contains(variant))
+    };
+    let drawn: BTreeSet<String> = model::variant_options(entry)
+        .into_iter()
+        .filter(|set| !entry.not_drawn.iter().any(|table| names(table, set)))
+        .flatten()
+        .collect();
+    entry
+        .variants
+        .iter()
+        .filter(|variant| !drawn.contains(*variant))
+        .cloned()
+        .collect()
+}
+
+/// What a run reports a skipped fact under where the names it needs are no
+/// later unit's: a variant at depth its state model in force draws nowhere
+/// (a later unit's names draw it; check_facts_trace.py's search finds which).
+const DRAWN_NOWHERE: &str = "a variant drawn nowhere at depth";
+
+/// Why a fact holding for `preset` (its `when` with the preset decided,
+/// `written`) is not of the enabled units by S17's predicate as the gate
+/// reads it (ADD-A147), or `None` where it is: its key lies in an enabled
+/// unit on the preset (else the key is no unit's here), and every name its
+/// positive lists name is at depth there: a variant (not one the state
+/// model in force, `entries`, draws nowhere), a state flag (a `latest`
+/// flag too), a condition (for its key), a density or a size no default in
+/// force while the sizes unit is not enabled, a direction. A fact needing
+/// the names of several later units is reported under the last of them in
+/// the units file's order (S17: the unit at whose enabling it first holds).
+/// The combinations at depth draw no other name, so a fact naming one
+/// applies in none; one whose part they never draw is compared nowhere
+/// (`fields_not_drawn`).
+fn later_unit(
+    platform: &Platform,
+    preset: &str,
+    entries: &[Model],
+    key: &str,
+    written: Option<&Value>,
+) -> Option<String> {
+    let units = &platform.units;
+    if !(key.starts_with("input.") || units.hold_on(key, Some(preset))) {
+        return Some("a key no enabled unit holds here".to_owned());
+    }
+    let when = written?;
+    let mut needed: Vec<(usize, &str)> = Vec::new();
+    needed.extend(
+        strings(when.get("conditions"))
+            .iter()
+            .filter_map(|condition| units.condition_holder(condition, key)),
+    );
+    let widget = key.split('.').next().unwrap_or_default();
+    let mut nowhere_named = false;
+    if let Some(entry) = entries.iter().find(|entry| entry.widget == widget) {
+        let nowhere = drawn_nowhere(entry);
+        for variant in strings(when.get("variants")) {
+            match units.holder(widget, preset, &variant, true) {
+                Some(unit) => needed.push(unit),
+                None if nowhere.contains(&variant) => nowhere_named = true,
+                None => {}
+            }
+        }
+        let mut flags = strings(when.get("states"));
+        if let Some(latest) = when.get("latest").and_then(Value::as_table) {
+            flags.extend(latest.values().filter_map(Value::as_str).map(str::to_owned));
+        }
+        needed.extend(
+            flags
+                .iter()
+                .filter_map(|flag| units.holder(widget, preset, flag, false)),
+        );
+        let sizes = strings(when.get("sizes"));
+        let defaults: Vec<&String> = entry
+            .sizes
+            .iter()
+            .chain(
+                entry
+                    .sizes_by_variant
+                    .iter()
+                    .flat_map(|(_, sizes, _)| sizes),
+            )
+            .collect();
+        let other_size = !sizes.is_empty() && !sizes.iter().any(|size| defaults.contains(&size));
+        if other_size || !strings(when.get("densities")).is_empty() {
+            needed.extend(units.sizes_holder());
+        }
+    }
+    if let Some(direction) = when.get("direction").and_then(Value::as_str) {
+        needed.extend(units.direction_holder(direction));
+    }
+    match needed.iter().max_by_key(|(at, _)| *at) {
+        Some((_, unit)) => Some((*unit).to_owned()),
+        None if nowhere_named => Some(DRAWN_NOWHERE.to_owned()),
+        None => None,
+    }
 }
 
 /// One fact prepared for a preset: its `when` read with the preset's
@@ -590,6 +794,11 @@ pub fn prepare<'f>(
     report: &mut Report,
 ) -> Vec<KeyFacts<'f>> {
     let mut out: Vec<KeyFacts<'f>> = Vec::new();
+    let entries: Vec<Model> = model::in_force(&platform.models, preset, None)
+        .into_iter()
+        .map(|entry| in_force_at_depth(entry, &platform.units, preset))
+        .collect();
+    let (mut at_depth, mut pending) = (0_usize, 0_usize);
     for fact in &platform.facts {
         if fact.accent_run || !fact.enabled {
             continue;
@@ -603,6 +812,17 @@ pub fn prepare<'f>(
         let Ok(when) = read_when(written.as_ref()) else {
             continue;
         };
+        if let Some(unit) = later_unit(platform, preset, &entries, &fact.key, written.as_ref()) {
+            *report
+                .later_units
+                .entry(format!("{preset}: {unit}"))
+                .or_default() += 1;
+            continue;
+        }
+        at_depth += 1;
+        if matches!(fact.stated, Stated::Pending(_)) {
+            pending += 1;
+        }
         let block = set_whole(&fact.key);
         let leaf = match (&fact.stated, &block) {
             (Stated::Value(value), Some(_)) => Some(value.clone()),
@@ -659,6 +879,9 @@ pub fn prepare<'f>(
             }),
         }
     }
+    report
+        .at_depth
+        .insert(preset.to_owned(), (at_depth, pending));
     // A part's own key is compared under every combination, drawn where no
     // part fact applies (S17, ADD-A130), so a part with no fact has its key
     // too.
@@ -1069,13 +1292,24 @@ fn skipped_variants(
             .iter()
             .map(|(variant, _, _)| variant.clone()),
     );
+    // A typed variant the model does not hold yet has no spelling: a later
+    // unit of depth holds it (S6.1, ADD-A147).
+    let unspelled = |variant: &String| {
+        let mut probe = toml::Table::new();
+        probe.insert(
+            "variants".to_owned(),
+            Value::Array(vec![Value::String(variant.clone())]),
+        );
+        matches!(parse_when(&Value::Table(probe)), Err(Unread::NotHeld(_)))
+    };
     let out: Vec<String> = entry
         .variants
         .iter()
         .filter(|variant| {
-            named_off.contains(*variant)
+            (named_off.contains(*variant)
                 && !named_in.contains(*variant)
-                && !exempt.contains(*variant)
+                && !exempt.contains(*variant))
+                || unspelled(variant)
         })
         .cloned()
         .collect();
@@ -1088,7 +1322,9 @@ fn skipped_variants(
 }
 
 /// The entries in force for `preset` and `flavor`, each without the
-/// variants the gate leaves out for the preset (ADD-A128).
+/// variants the gate leaves out for the preset (ADD-A128), and each its
+/// state model in force at depth ([`in_force_at_depth`]): the combinations
+/// the gate draws hold only names at depth (S17, ADD-A147).
 fn projected(
     platform: &Platform,
     preset: &Preset,
@@ -1099,9 +1335,91 @@ fn projected(
         .into_iter()
         .map(|entry| {
             let skipped = skipped_variants(platform, entry, Some(preset.id()), report);
-            entry.without(&skipped)
+            in_force_at_depth(&entry.without(&skipped), &platform.units, preset.id())
         })
         .collect()
+}
+
+/// The entries in force for `preset` and `flavor` as its declarations state
+/// them (S10, ADD-A147): whole, but for the variants the gate leaves out
+/// (ADD-A128) and the typed ones the model does not hold yet (they have no
+/// spelling), their flags, exclusive groups and recency sets trimmed to the
+/// flags at depth (a group or set left with fewer than two dropped), and
+/// `flags` to those a fact of the enabled units names.
+fn declared_entries(
+    platform: &Platform,
+    preset: &Preset,
+    flavor: Option<&str>,
+    report: &mut Report,
+) -> Vec<Model> {
+    let units = &platform.units;
+    let named: BTreeSet<String> = platform
+        .facts
+        .iter()
+        .filter(|fact| fact.enabled && !fact.accent_run)
+        .filter_map(|fact| facts::for_preset(fact.when.as_ref(), preset.id()))
+        .filter_map(|(written, _)| written)
+        .flat_map(|when| {
+            let mut out = strings(when.get("states"));
+            out.extend(strings(when.get("not_states")));
+            if let Some(latest) = when.get("latest").and_then(Value::as_table) {
+                out.extend(latest.values().filter_map(Value::as_str).map(str::to_owned));
+            }
+            out
+        })
+        .collect();
+    model::in_force(&platform.models, preset.id(), flavor)
+        .into_iter()
+        .map(|entry| {
+            let skipped = skipped_variants(platform, entry, Some(preset.id()), report);
+            let mut out = entry.without(&skipped);
+            let widget = out.widget.clone();
+            let flag = |flag: &String| units.at_depth(&widget, preset.id(), flag, false);
+            out.flags.retain(|held| flag(held) && named.contains(held));
+            out.exclusive = out
+                .exclusive
+                .iter()
+                .map(|group| {
+                    group
+                        .iter()
+                        .filter(|held| flag(held))
+                        .cloned()
+                        .collect::<Vec<_>>()
+                })
+                .filter(|group| group.len() >= 2)
+                .collect();
+            out.recency = out
+                .recency
+                .iter()
+                .map(|(name, set)| {
+                    let set: Vec<String> = set.iter().filter(|held| flag(held)).cloned().collect();
+                    (name.clone(), set)
+                })
+                .filter(|(_, set)| set.len() >= 2)
+                .collect();
+            out
+        })
+        .collect()
+}
+
+/// The variants a preset's declarations list under `later` for an entry
+/// (S10, ADD-A147): its keyed variants beyond depth, and its variants at
+/// depth that its state model in force draws in no combination
+/// ([`drawn_nowhere`]), sorted.
+fn later_variants(entry: &Model, units: &Units, preset: &str) -> Vec<String> {
+    let in_force = in_force_at_depth(entry, units, preset);
+    let mut out: Vec<String> = entry
+        .variants
+        .iter()
+        .filter(|variant| {
+            variant.starts_with('@') && !units.at_depth(&entry.widget, preset, variant, true)
+        })
+        .cloned()
+        .collect();
+    out.extend(drawn_nowhere(&in_force));
+    out.sort();
+    out.dedup();
+    out
 }
 
 /// The perturbed run's stand-in layer (S17): under each scheme, a fixed
@@ -1619,7 +1937,12 @@ pub fn run_shard(
             if *directory_of != platform.name {
                 continue;
             }
-            let flavors = preset.flavors();
+            let mut flavors = preset.flavors();
+            // While the flavours unit is not enabled the default flavour's
+            // state models alone are in force (S10, ADD-A147).
+            if !platform.units.flavours_enabled() {
+                flavors.truncate(1);
+            }
             let flavors: Vec<Option<&str>> = if flavors.is_empty() {
                 vec![None]
             } else {
@@ -2390,7 +2713,7 @@ pub fn declarations_run(
     flavor: Option<&str>,
     report: &mut Report,
 ) {
-    let entries = projected(platform, preset, flavor, report);
+    let entries = declared_entries(platform, preset, flavor, report);
     for widget in widgets() {
         let available = preset
             .declared(&widget, flavor)
@@ -2507,6 +2830,14 @@ pub fn declarations_run(
             "requires_variants",
             format!("{:?}", set(&declared.requires_variants)),
             format!("{:?}", set(&entry.requires_variants)),
+        );
+        differ(
+            "later.variants",
+            format!("{:?}", set(&declared.later)),
+            format!(
+                "{:?}",
+                set(&later_variants(entry, &platform.units, preset.id()))
+            ),
         );
         differ(
             "sizes_by_variant",
