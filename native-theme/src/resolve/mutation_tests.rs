@@ -199,7 +199,8 @@ fn preset_change_keeps_a_declared_flavor() {
         Err(LayerError::AccentInputsMissing(vec![ramp]))
     );
     // While the flavours unit is not enabled the flavour set is the
-    // default (S6.1, S16; ADD-A147).
+    // default, and kept only where it is the new preset's default too, the
+    // one flavour `set_flavor` accepts there (S6.1, S16; ADD-A147).
     let mut stack = declared();
     assert_eq!(stack.set_flavor(key!("a")), Ok(()));
     let mut kept = stack.clone();
@@ -211,6 +212,14 @@ fn preset_change_keeps_a_declared_flavor() {
     );
     assert_eq!(kept.flavor(), Some(&key!("a")));
     assert_eq!(*kept.preset_layer, body(0.1));
+    let mut later = stack.clone();
+    later.switch(
+        None,
+        declarations("flavors = [\"c\", \"a\"]\n"),
+        Layer::default(),
+        Vec::new(),
+    );
+    assert_eq!(later.flavor(), Some(&key!("c")));
     let mut other = stack.clone();
     other.switch(
         None,

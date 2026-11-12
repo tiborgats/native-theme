@@ -2480,6 +2480,31 @@ pub(super) fn declarations(decl: &Declarations, synthetic: bool) -> Vec<Problem>
                 }
             }
         }
+        // `later.variants` lists declared variants (S10's *Later names*,
+        // S12; ADD-A147): each one the variants in force declare, once.
+        for (index, variant) in section.later.iter().flatten().enumerate() {
+            let place = format!("{at}.later.variants[{index}]");
+            let name = variant_name(variant);
+            let twice = section
+                .later
+                .iter()
+                .flatten()
+                .take(index)
+                .any(|held| held == variant);
+            if twice {
+                problems.push(Problem::new(&place, ProblemKind::ListedTwice { name }));
+            } else if !view.variants.iter().flatten().any(|held| held == variant) {
+                let declaration = if section.variants.is_some() {
+                    format!("{at}.variants")
+                } else {
+                    format!("{own_at}.variants")
+                };
+                problems.push(Problem::new(
+                    &place,
+                    ProblemKind::Undeclared { name, declaration },
+                ));
+            }
+        }
         problems.extend(recency(&at, section, &in_force));
         // A section replacing the flags, the variants or the sizes and not
         // the recency sets or the default sizes keeps the widget's own,
@@ -3017,11 +3042,12 @@ pub(super) fn unused(
         )
     });
     // A flavour of a unit not enabled is exempt, with its sections: it cannot
-    // be asked for and no rule may name it (S12, S16; ADD-A147).
+    // be asked for and no rule may name it (S12, S16; ADD-A147). The
+    // default flavour's sections are checked.
     let flavors = decl
         .flavor
         .iter()
-        .filter(|_| crate::widgets::FLAVOURS_UNIT)
+        .filter(|(flavor, _)| crate::widgets::FLAVOURS_UNIT || decl.flavors.first() == Some(flavor))
         .flat_map(|(flavor, section)| {
             section.widgets.iter().map(move |(widget, section)| {
                 let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));

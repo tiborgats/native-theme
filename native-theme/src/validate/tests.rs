@@ -4333,6 +4333,84 @@ fn refusal_declarations() {
     );
 }
 
+/// `later.variants` lists declared variants (S10's *Later names*, S12;
+/// ADD-A147): one the variants in force do not declare is undeclared, one
+/// listed twice is refused; and a rule, a context or a patch naming a
+/// `later` variant, in a positive or a negative list, is refused with
+/// `Later`, the declaration named.
+#[test]
+fn refusal_later_names() {
+    let head = "[declare.widget.button]\nvariants = [\"primary\", \"@solo\"]\n";
+    assert_eq!(
+        preset(&format!(
+            "{head}later = {{ variants = [\"@solo\", \"@duo\", \"@solo\"] }}"
+        )),
+        [
+            "declare.widget.button.later.variants[1]: `@duo` is not declared in \
+             `declare.widget.button.variants`",
+            "declare.widget.button.later.variants[2]: `@solo` listed twice",
+        ]
+    );
+    assert_eq!(
+        preset(&format!("{head}later = {{ variants = [\"@solo\"] }}")),
+        NONE
+    );
+    let later = |rules: &str| {
+        preset(&format!(
+            "{head}later = {{ variants = [\"@solo\"] }}\n{rules}"
+        ))
+    };
+    let refused = |at: &str| {
+        format!("{at}: `@solo` is declared in `widget.button.later`, and a later unit states it")
+    };
+    assert_eq!(
+        later(
+            "[[rules]]\nwhen = { not_variants = [\"@solo\"] }\ntarget = \"button.body\"\n\
+             set = { opacity = 0.5 }"
+        ),
+        [refused("rules[0].when.not_variants[0]")]
+    );
+    assert_eq!(
+        later(
+            "[[rules]]\nwhen = { context = [{ widget = \"button\", variants = [\"@solo\"] }] }\n\
+             target = \"button.label\"\nset = { padding.top_px = 1 }"
+        ),
+        [refused("rules[0].when.context[0].variants[0]")]
+    );
+    assert_eq!(
+        later(
+            "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\n\
+             set = { drawn_as = { widget = \"button\", part = \"body\", variants = [\"@solo\"] } }"
+        ),
+        [refused("rules[0].set.drawn_as.variants[0]")]
+    );
+    assert_eq!(
+        later(
+            "[[rules]]\nwhen = { variants = [\"primary\"] }\ntarget = \"button.body\"\n\
+             set = { opacity = 0.5 }"
+        ),
+        NONE
+    );
+}
+
+/// The default flavour's sections are checked for unused names as the
+/// widget's own are; another flavour's, of a unit not enabled, are exempt
+/// (S12; ADD-A147).
+#[test]
+fn refusal_unused_in_the_default_flavours_section() {
+    let flavors = |default: &str, other: &str| {
+        preset(&format!(
+            "[declare]\nflavors = [\"{default}\", \"{other}\"]\n\
+             [declare.flavor.kirigami.widget.button]\nflags = [\"@spin\"]"
+        ))
+    };
+    assert_eq!(
+        flavors("kirigami", "widgets"),
+        ["declare.flavor.kirigami.widget.button.flags: `@spin` is declared but unused"]
+    );
+    assert_eq!(flavors("widgets", "kirigami"), NONE);
+}
+
 /// Each declared keyed name nothing uses, by kind (S12): a system setting
 /// (not one for applications), a container size (not the default), an
 /// event, a flag, a keyed role no base states.

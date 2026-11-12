@@ -936,8 +936,10 @@ impl Stack {
     }
 
     /// The switch of [`Stack::set_preset`], unvalidated: the flavour set is
-    /// kept where the new preset declares it, else the new preset's default
-    /// is in force (S16); the synthetic route's layers are removed (S17).
+    /// kept where the new preset declares it, one [`Stack::flavors`]
+    /// accepts there (its default alone while the flavours unit is not
+    /// enabled, S6.1), else the new preset's default is in force (S16); the
+    /// synthetic route's layers are removed (S17).
     fn switch(
         &mut self,
         preset: Option<PresetId>,
@@ -945,13 +947,6 @@ impl Stack {
         layer: Layer,
         pending: Vec<Listed>,
     ) {
-        if self
-            .flavor
-            .as_ref()
-            .is_some_and(|flavor| !declarations.flavors.contains(flavor))
-        {
-            self.flavor = None;
-        }
         if let Some(synthetic) = self.synthetic.take() {
             self.layers.retain(|(id, _)| !synthetic.layers.contains(id));
         }
@@ -959,6 +954,13 @@ impl Stack {
         self.declarations = declarations;
         self.preset_layer = Arc::new(layer);
         self.pending = pending;
+        if self
+            .flavor
+            .as_ref()
+            .is_some_and(|flavor| !self.flavors().contains(flavor))
+        {
+            self.flavor = None;
+        }
     }
 
     /// Adds an application layer, last, and returns its id.
