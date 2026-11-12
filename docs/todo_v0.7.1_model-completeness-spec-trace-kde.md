@@ -156,7 +156,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.48† | `input.values.mask_character, input.values.mask_reveal` | field |
 | K1.48† | `button.icon.glyph (ThemeIcon with its fallback) @ variant reveal context input` | rule |
 | K1.48† | `input.values.reveal_button_visibility (while the field has text or shows the password)` | field |
-| K1.49† | `text_area.misspelling.text.decoration (line, style, paint: a stated colour, not a role; thickness and offset: Qt's drawn line, held within the descent, not the font's position, register U180's, S2.8, ADD-A130); input.misspelling.text.decoration` | field |
+| K1.49† | `text_area.misspelling.text.decoration (line, style, paint: a stated colour, not a role; thickness and offset: Qt's drawn line, held within the descent, not the font's position, register U754's, S2.8, ADD-A130, ADD-A147); input.misspelling.text.decoration` | field |
 | K1.50 | `checkbox.mark.glyph @ {indeterminate} (three dots, Path)` | rule |
 | K1.51 | `checkbox.box.fill @ {pressed}; radio.ring.fill @ {pressed} (= qt_darker(..))` | rule |
 | K1.52 | `checkbox.box.shadow @ {hover} (inset ring layer); radio.ring.shadow @ {hover}` | rule |
@@ -1243,7 +1243,7 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K-SF09† | `code_editor.dynamic_wrap_indicator.fill (Pattern QtBrush Dense4 in the marker's colour, ADD-B01)` | field |
 | K-SF10† | `code_editor.syntax_span.text (fill, weight, style, decoration), code_editor.syntax_span.fill @ variant comment / variant string / variant function / variant constant / variant preprocessor / variant special_char / variant error / variant warning / variant type / variant decimal / variant base_n / variant float / variant @<role> (the keyed roles and per-language overrides)` | rule |
 | K-SF10† | `code_editor.syntax_span.text.fill @ {text_selected}` (a span whose text lies in the selection: the style's selected-text colour) | rule |
-| K-SF11† | `code_editor.misspelling.text (its decoration's paint; its `thickness` and `offset` Qt's drawn line, register U180's, S2.8, ADD-A130)` | field |
+| K-SF11† | `code_editor.misspelling.text (its decoration's paint; its `thickness` and `offset` Qt's drawn line, register U754's, S2.8, ADD-A130, ADD-A147)` | field |
 | K-SF11† | `code_editor.template_field.fill` | field |
 | K-SF11† | `code_editor.template_placeholder.fill / @ {focused} / @ {read_only}` | rule |
 | K-SF12† | `rich_text.heading_1.text … rich_text.heading_6.text (the weight restated; text.font.size = mul(base, <factor>) each, base the document's font) @ variant markdown` | rule |
