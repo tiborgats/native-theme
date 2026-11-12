@@ -46,7 +46,7 @@ that no drawn set can hold with any units' names is *unplaced*: the gate and `ch
 under no unit, and from the plan's M4 the gate fails it. A fact of the enabled units is checked exactly, over the
 combinations at depth; nothing walks the combinations of all units' names, so the "stray fact" of 2.5 and of the revision tables (a `when` no union of units
 makes hold, failed by `check_facts.py` from M4) is withdrawn in favour of the unplaced fact (2.5, 3.1; K4-4, K4-8,
-the orchestrator's O-14). A part's `shown` stays in 0.8.0 with its rest meaning alone and is not the motion unit's
+the orchestrator's O-14 and O-15). A part's `shown` stays in 0.8.0 with its rest meaning alone and is not the motion unit's
 (2.4, 5.3, 5.4 (a), 6.4's step 1), and every widget's `loop` but the spinner's is the motion unit's (K2-1, K2-7;
 veto list item 61). `full_keyboard_access` is at depth model-wide, as `contrast_high` is (1.3 point 6, 1.4; C-4,
 item 62). `idiom:phone` is the iPad unit's with `idiom:pad`, so combinations at depth hold no idiom (1.4, 3.1's
