@@ -163,8 +163,9 @@ breakpoints measure its breakpoint bin, `Measured::Part(dialog.content)` (the `d
 
 ## Entry format
 
-Each `### <widget>` section states these twelve items, in this order (the rules that hold in all of them, *Nesting*,
-*One-edge lines*, *Keys*, *Auto* and *Units*, follow the list):
+Each `### <widget>` section states these twelve items, in this order, and a thirteenth, *Depth*, after *Today's
+fields*, which the spec batch of the entry's unit writes (ADD-A147; `button`'s with the slice) (the rules that hold in
+all of them, *Nesting*, *One-edge lines*, *Keys*, *Auto* and *Units*, follow the list):
 
 - **Kind:** typed widget, and which platforms draw it, with the rows (counting the cross-check decisions that found it
   drawn inside an element, R14).
@@ -437,6 +438,13 @@ Each `### <widget>` section states these twelve items, in this order (the rules 
   draws none.
 - **State-model source** per platform: where the gate's combination list comes from (R4, S17).
 - **Today's fields:** how each field of `docs/property-registry.toml` maps into the new parts.
+- **Depth** (ADD-A147): the names the entry's own unit holds: its typed variants, its state flags, its host
+  contexts, positions and conditions beside the scheme and `contrast_high`, each named by a selector of a *Today's
+  fields* mapping that targets the entry (in any entry's item), required by a state model for one so named, or listed
+  by a preset's `requires_variants`; the conditions under which 0.7.0's readers or connectors gave the entry values
+  (`animations_off` and `reduced_motion` for a motion value); the default size in force; and the values that only
+  names of later units read, each with that name. Every other name of the entry's state models and facts is a later
+  unit's (`scripts/widget_units.toml`).
 - **Notes:** where the widget is drawn in another's context, the nested controls it holds (below), and what the merge
   took from other groups (every name a note uses is in the lists above).
 
@@ -2053,15 +2061,35 @@ spaces:
     unselected for toggles) per variant and, Expressive, per size; the FAB and icon-button tokens.
 - **Today's fields:** `background_color` → `body.fill`; `font` → `label.text.font` (its `color` →
   `label.text.fill`); `min_width` → `body.min_width`; `min_height` → `body.min_height`; `icon_text_gap` →
-  `values.icon_text_gap`; `primary_background` → `body.fill @ variant primary` (on `macos-*`: `@ {default}`);
-  `primary_text_color` → `label.text.fill @ variant primary` (and `icon.icon.fill`); `disabled_opacity` →
+  `values.icon_text_gap @ variant with_icon` (the gap of a button holding an icon and a label, which `adwaita` states
+  under that content variant; the base where a preset declares no `with_icon`; ADD-A147); `primary_background` →
+  `body.fill @ variant primary` (on `macos-*` and `kde-breeze`: `@ {default}`, Breeze's default button; ADD-A147);
+  `primary_text_color` → `label.text.fill @ variant primary` (and `icon.icon.fill`; on `macos-*` and `kde-breeze`:
+  `@ {default}`); `disabled_opacity` →
   `body.opacity @ {disabled}`; `hover_background` → `body.fill @ {hover}`; `hover_text_color` → `label.text.fill @
   {hover}`; `active_background` → `body.fill @ {pressed}`; `active_text_color` → `label.text.fill @ {pressed}`;
   `disabled_background` → `body.fill @ {disabled}`; `disabled_text_color` → `label.text.fill @ {disabled}`;
   `checked_background` → `body.fill @ {checked}`; `checked_text_color` → `label.text.fill @ {checked}`;
   `border.color` / `border.line_width` → `body.stroke` (each edge's paint and width); `border.corner_radius` →
   `body.corners`; `border.padding_*` → `body.padding`; `border.shadow_enabled` → `body.shadow` (layers or none; the
-  flag goes, R8).
+  flag goes, R8). On `ios-*` the plain button's mappings are `@ variant @gray` (UIKit's gray configuration, WebKit's
+  iOS button's look, which 0.7.0 drew), and on `material-3` `@ variant tinted` (the filled tonal button, which 0.7.0
+  drew): every mapping but `primary_*`'s takes the variant, beside its own where it has one (`icon_text_gap @ variant
+  @gray, with_icon`; `checked_* @ variant tinted, toggle {checked}`, which `material-3` draws nowhere at depth). An
+  element with no variant draws the platform's default button there, UIKit's system button with no configuration
+  (`xcode@26.6 UIKit/UIButton.h:22-23`) and Compose's `Button`, the filled one (`androidx@e4d933c9
+  …/material3/Button.kt:77-88`): 0.7.0's mapping of its plain button to the look these variants hold is corrected,
+  and 0.7.0's look stays under them (ADD-A147).
+- **Depth** (ADD-A147): variants `primary`, `toggle` (the state models draw `checked` with it alone), `with_icon`,
+  `tool` (the toolbar's mappings), `tinted` (`material-3`'s plain-button mappings), and on `ios-*` `@gray` (`ios-*`'s
+  plain-button mappings); states `hover`, `pressed`, `disabled`, `checked`, `default`, `focused`, `focus_visible` (on
+  `ios-*` `hover` and `focus_visible` are the iPad's, U112, U113); the default size in force; no host context
+  (`toolbar.bar` from the containers unit, `toolbar`'s item); the scheme and `contrast_high`. On `material-3`
+  `toggle` is `later` (drawn only with `icon_only` or under `expressive`), and on `ios-*` `tool` (drawn only in the
+  ink toolbar). Values of later names: `label_position` and `help_tooltip_on_click` (styles), `menu_indicator_gap_px`,
+  `menu_indicator_anchor`, `menu_trigger` (`menu`), `back_title_fallback`, `back_display_mode` (`back`),
+  `display_mode` (`@paste_control`), `repeat_delay_ms`, `repeat_interval_ms` (`@repeat`); `presentations` and each
+  part's `transitions` are the motion unit's.
 - **Notes:**
   - Toolbar items are `button` elements in `context toolbar.bar` (a toggle item `toggle`, a menu item `menu`, a split
     item a `split_button`); their states are `button` rules there (K1.152, W1-099, W1-100, MAC-TL02, TB-6, P3-3†,
@@ -4726,9 +4754,11 @@ spaces:
   `UIBarAppearance` standard, compact and scroll edge, the navigation item's style; `material-3`: top and bottom app
   bar tokens (rest, on-scroll) and the Expressive toolbar tokens (docked, floating, vibrant); `windows-11`:
   CommandBar's display-mode and open states.
-- **Today's fields:** `font` → `button.label.text @ context toolbar.bar` (and `title.text` where a preset states one);
-  `bar_height_px` → `bar.min_height`; `item_gap_px` → `item_gap`; `background_color` → `bar.fill`; `icon_size_px` →
-  `button.icon.icon.size @ context toolbar.bar`; `border` → `bar.stroke`, `bar.corners`, `bar.padding`, `bar.shadow`.
+- **Today's fields:** `font` → `button.label.text @ variant tool, context toolbar.bar` where the preset declares
+  `tool` (Qt's tool button, WinUI's app-bar buttons, AppKit's toolbar bezel, the note below), else `@ context
+  toolbar.bar` (and `title.text` where a preset states one; ADD-A147); `bar_height_px` → `bar.min_height`;
+  `item_gap_px` → `item_gap`; `background_color` → `bar.fill`; `icon_size_px` → `button.icon.icon.size @ variant tool,
+  context toolbar.bar` where the preset declares `tool`, else `@ context toolbar.bar` (ADD-A147); `border` → `bar.stroke`, `bar.corners`, `bar.padding`, `bar.shadow`.
 - **Notes:** a toolbar's items are the elements they are, in context: a tool or bar button is
   `button @ context toolbar.bar` (Qt's tool button, WinUI's AppBarButton and AppBarToggleButton and AppKit's toolbar
   bezel are the typed `button @ variant tool`), a toggle item `button @ variant toggle`, a menu item
@@ -10303,6 +10333,12 @@ platform default monospace typeface (MAT-X36†).
 | `TextScaleEntry.line_height_pt`/`line_height_px` | the keyed style's `line_height` (ADD-A40) |
 | accessibility flags (§2.1.7) | conditions (S7.1) |
 
+The typed roles enter whole, under the scheme, `contrast_high` and the conditions this table names (`window_inactive`
+for `role.selection.background`). A token path this table does not name enters by S6.1's rule; every keyed role, text
+style, elevation entry and icon context is declared with the first unit whose value reads it, or with the reader that
+states it. A token at depth is stated under the scheme, `contrast_high` and the preset's default flavour, and the
+speed factor and the tokens the two motion values read also under `animations_off` and `reduced_motion` (ADD-A147).
+
 ## Tokens, conditions, readers, placement
 
 *From group 8's catalogue.*
@@ -10448,7 +10484,8 @@ factor in its layer where kwinrc states one, the one value no preset can know (A
 `token.params.layout.grid_unit` (Q3.29, a length); `token.params.optics.optical_centering` (MAT-X37†: Material's
 unitless optical-centering coefficient, in a group of unit `number` of its own, since `layout` is a group of lengths:
 a group this section adds to S4.6's, as a preset declares its groups (S10), which `material-3` declares with the first
-unit whose rule reads it, `split_button`'s, after 0.8.0, so the tokens unit's list of groups does not hold it, ADD-A146);
+unit whose rule reads it, `split_button`'s, after 0.8.0, so no unit of 0.8.0 holds it, ADD-A146; a token group enters
+with the first unit whose value reads it, S6.1, ADD-A147);
 `token.params.caret.aspect_ratio` (GN-3.36); `token.params.shape.<step>` for Material's shape scale from `none` to `extra_extra_large` (MAT-X11; its `full`, half
 the height at any size, is no scalar: the parts state it as `Radius::Full { maximum: Absent }`, MAT-X11's trace);
 `token.params.display`'s four corner keys (S4.6, R25.11, W-6, X-CR-4: the absence row above);
@@ -10560,7 +10597,8 @@ operation (`copy`, `move`, `link`, `ask`, `none`, `not_allowed`) for GN-P3-12†
 S4.7's one `color: Value<Color>` does not hold what two rows name, macOS's pointer colours, an outline and a fill
 (MAC-X20, the map's "colours"; no pinned source states them), and Windows' pointer style, white, black, inverted
 or a custom colour (W3-50†), of which `inverted` is no colour and which the trace sends to `theme`, a cursor
-theme's name on GNOME and KDE. The tokens unit decides it with its pointer facts (ADD-A146; the ledger's queue):
+theme's name on GNOME and KDE. The pointer unit (after 0.8.0, ADD-A147) decides it with its pointer facts (ADD-A146;
+the ledger's queue):
 `fill`, `outline` and a keyed `style`, each absent where the platform has none, if the macOS facts confirm two
 colours; else the one `color` kept and S4.7 recording that Windows' style and a second macOS colour are not
 modelled. Until then the entry is S4.7's as it stands, and no fact states a pointer colour.
