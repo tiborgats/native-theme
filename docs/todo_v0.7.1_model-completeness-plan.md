@@ -1269,7 +1269,9 @@ differs is reported).
    motion unit's part field `transitions`, `shown` staying (*The depth 0.8.0 states*; ADD-A148); `[staged.slice]`
    gains every token path the token rule stages, each to its parking unit, its unit of depth or the widget unit not
    yet enabled whose value first reads it.
-2. The predicate of a fact's units (S17) in the four readers of the units file, by one rule: the gate
+2. The predicate of a fact's units (S17) in the four readers of the units file, by one rule (the first rule exactly;
+   the later unit by the names a fact lists positively, its key's path and the host rule; the attribution over the
+   drawn sets is queue #289's task): the gate
    (`native-theme/tests/facts_gate/units.rs`, `run.rs`), `scripts/check_facts_trace.py`,
    `scripts/generate_preset.py`; `check_ledger.py` by the same predicate; `verify_facts.py units` stays unit-blind
    (*M3*'s gate per unit; ADD-A148). `check_facts.py` checks that every name of every state model, every condition a
@@ -1355,6 +1357,20 @@ gate:
   cycle search in `native-theme/src/validate/combos/inputs.rs`'s walk, both run over the stack up to each layer at
   every change; where a check already refuses it, that is reported and no code written. *Done:* the example refused,
   with its test; the existing validation tests unchanged and passing.
+- **The query's mirroring gated on the right-to-left unit** (S2.4, S10; ledger queue #285), before task 1's
+  connectors are ported, since the connectors' contract states what a right-to-left scope gives: the mirror calls of
+  `native-theme/src/query/theme.rs` run only where the unit is enabled; the query tests that assert mirroring
+  `#[ignore]`d with the unit as the reason. *Done:* a test that a scope under `rtl` resolves as under `ltr`; the
+  query's other tests passing.
+- **The Depth line's contexts, positions and conditions in `generate_widgets.py --check`** (the catalogue's *Entry
+  format*; ledger queue #290), before M3a's first unit's step 0: the check holds each Depth line's host contexts,
+  positions and conditions, beside its variants and state flags, against the *Today's fields* selectors, skipping a
+  context whose host's unit is not enabled, a name the comparison brings to depth read from the selector it enters
+  on (M3's step 3). *Done:* its self-test both ways (a context of a host whose unit is not enabled skipped; a context,
+  position or condition that no selector names failing); `--check` green on the catalogue.
+- **The later-unit attribution over the drawn sets** (S17; ledger queue #289), before M4, in
+  `check_facts_trace.py` and the gate's `depth.rs`. *Done:* each of the 309 facts under a unit, or unplaced with its
+  reason; the cross-check of the gate's units against `check_facts_trace.py` at 0 differences on the eight presets.
 
 **`docs/platform-facts.md` not committed** (D6, outcome 8; the ledger's queue #170; ADD-A147). One tooling task
 (`implement`), early in M2, merged before the next large facts merge (task 0's lanes' rounds). The file leaves the
@@ -1563,7 +1579,7 @@ is fixed before task 0 on its own branch, `side-units`.
 
 0. **What the connectors resolve** (ADD-A146). No bundled preset builds a theme while its `[pending]` table lists a
    path: `Theme::from_preset` refuses it (S17), `from_system` builds through `from_preset`, and the tables are empty
-   only at a release (S21.1). So before task 1, and after the staging task above (its gate green; ADD-A147), the
+   only at a release (S21.1). So before the first connector's code (task 1), and after the staging task above (its gate green; ADD-A147), the
    presets whose table is small are brought to an empty one by their lanes' rounds (`adwaita` 0 paths, `kde-breeze`
    4, `material-3` 9, `windows-11` 55 once the staging task is merged; a row with no route among theirs goes to the
    maintainer first, *How values are checked*), so that `adwaita` and `kde-breeze` build
@@ -1637,7 +1653,7 @@ is fixed before task 0 on its own branch, `side-units`.
      (iced's `Palette.danger`, `success` and `warning`, which its button styles and `text::danger` and its siblings
      both read), the design says which of the two roles the field reads on a preset where they differ, and the
      contract records the other use (ADD-A147);
-   - where S15's AppKit rendering is absent (off macOS, off the main thread, the feature off), the connector draws its
+   - where S15's AppKit rendering is absent (wherever `render_system_control` returns `None`), the connector draws its
      toolkit's own check mark, pop-up arrows and disclosure triangle, and the design names, per glyph, the role or
      value of the theme each takes its colour from, recorded in the contract as the exception for a `SystemControl`
      source without its rendering (S15, R11; ADD-A148; veto list item 60);
@@ -1730,7 +1746,9 @@ is fixed before task 0 on its own branch, `side-units`.
    nothing cites them any more; their steps and `ci.yml` entries leave `PLAN_EXCLUDED`.
 7. S15 (AppKit rendering), in its own module, checked on CI's macOS legs; specified in full only after the
    register's U708 has its third reading (whether a control rendered off screen can be drawn in the key and the
-   non-key look, by which route, and which look the plain route gives), which S15 then states (ADD-A148). The
+   non-key look, by which route, and which look the plain route gives), which S15 then states (ADD-A148); where it
+   finds no route, R11's limit (the rendering not following the key state) is a change of a rationale decision,
+   listed in M2's report for the maintainer's veto. The
    rendering cache's bound, an engineering parameter, is set in this task with its reason (S15 leaves it to this
    task; ADD-A148). *Done:* `render_system_control` returns an image for each `SystemControl` in each state it
    takes, in a test on CI's macOS legs, and `None` elsewhere (ADD-A148).
@@ -1777,9 +1795,9 @@ placement's commit; M3b's units are listed in this order, and which a release ho
   fails (*One rule for every model field*; ADD-A148); `generate_widgets.py`, `check_facts_trace.py`, `tests/facts_gate/units.rs` and `check_ledger.py` read
   it. `button` becomes an entry of *buttons and toggles*; the roles, the inputs and the slice's tokens stay the unit
   `slice`, whose pending condition (*The unit's pending facts*) `check_ledger.py --unit slice` asks in the gate of
-  every M3a unit, the first included, a row whose Due is later not blocking it (the Apple status rows U755–U760 keep
-  theirs, M4's pending condition; ADD-A148). Done early because it is one format change, after which each M3a commit flips its unit's flag and adds
-  its entries' later names to the units of depth (ADD-A148), and the lanes' facts written ahead are classified from
+  every M3a unit, the first included, a row marked `Due: M4;` left out (*The unit's pending facts*; the Apple
+  status rows U755–U760; ADD-A148). Done early because it is one format change, after which each M3a commit flips the flag of
+  its unit, whose step 0 has added its entries' later names to the units of depth (ADD-A148), and the lanes' facts written ahead are classified from
   the start; M4's failures on them wait until M4, since spec batches can still move an entry between units until then.
   The task also (ADD-A146) names each staged path's widget unit as M3 names it (the slice's
   `"token.behavior.scroll" = "scroll_view"` becomes `containers`, there being no `scroll_view` unit), and brings the
@@ -1799,7 +1817,8 @@ A ledger destination `M3 unit <name>` names the unit in whichever part it runs. 
 0. **The unit's depth** (ADD-A148; before a lane writes a fact of the unit). The lanes write the unit's state models
    and declarations, whole (S10's *Later names*); the orchestrator writes each entry's **Depth** line by the
    catalogue's rule and gives every other name of those state models, and every condition, to its unit of depth in
-   `scripts/widget_units.toml`: a class 2 batch, checked as every batch, which `generate_widgets.py --check` holds
+   `scripts/widget_units.toml`, and gives its `Unit:` token to each register row no pending fact names whose key lies
+   in the unit's entries, by the unit its names now have (the ledger's preamble; ADD-A148): a class 2 batch, checked as every batch, which `generate_widgets.py --check` holds
    against the *Today's fields* selectors. Until it is applied no lane writes a fact of the unit.
 1. **Facts** (the lanes, usually done ahead): the unit's state models and declarations whole, and every key in every
    state-model combination of the unit's depth on every preset (S17; ADD-A148), with the traces' rows carried; what
@@ -1838,7 +1857,10 @@ A ledger destination `M3 unit <name>` names the unit in whichever part it runs. 
 kinds (*How values are checked*). A measurement to make is the lane's queue: the lane's next round on that platform
 measures it, or records why it could not, which makes it a row with no route. A row with no route waits for the
 maintainer's decision, and the series queue moves on to the next unit meanwhile. The unit closes when no pending fact
-of the unit names a measurement row opened before the lane's last closed round on its platform began, and every row of the unit with no route is decided; so M4 meets stragglers, not every unit's whole
+of the unit names a measurement row opened before the lane's last closed round on its platform began, and every row of the unit with no route is decided. A row whose Options cell begins with the token `Due: M4;` is left out of every
+unit's condition and asked at M4 alone (`check_ledger.py --final`): the orchestrator's mark, its reason in the row,
+for a measurement that waits on another row's outcome (U755–U760: the Apple status reads and the foregrounds' pass
+that follows them; ADD-A148). So M4 meets stragglers, not every unit's whole
 debt. Rejected: the unit waiting for the maintainer's decision on every open row, the rule from before the register
 held measurements to make (every unit has such rows, so every M3a unit would wait on decisions that are lane work);
 no condition before M4 (every pending fact of M3a would arrive at M4, which holds a tooling task, a drift run and a
@@ -2179,8 +2201,8 @@ changes a cost, for each case its change may move by more than its tolerance, ju
 line 4's re-reads; load task 5 lines 3, 5, 7, 8 and 11; load task 7 lines 4 and 10, and lines 1 and 2 under a veto
 of R2.8's sentence; a part a trigger brings, the lines it changes); the trigger step, with load task P's probe on
 the regenerated presets, every case of lines 1 to 9 and 11 (ADD-A148); the load calibration after M3a's first widget unit; M2's fourth task,
-for line 4's bundled palette case; the task that empties a preset's table (M2's task 0 for the small ones), for its
-plain route; a unit whose own change grows a named miss past its record; a stale record's re-record with the fall's
+for line 4's bundled palette case; the task that empties a preset's table (the staging task for `adwaita`, its plain
+route recorded at the trigger step; M2's task 0 for the other small ones), for its plain route; a unit whose own change grows a named miss past its record; a stale record's re-record with the fall's
 cause, which the release run requires; and the release task, which gives a named miss with its cause to a case
 printed "over its line, within its tolerance" at two consecutive releases. An act that records a case over its line
 names its miss, one whose record meets the line removes it. Every line is armed from its first record (lines 1 to 9
@@ -2188,7 +2210,8 @@ and 11 from the trigger step's, line 10 and line 4's re-reads from load task 4b'
 task's); line 8 is not binding where the connectors' design shows no connector querying every frame, and line 6 is
 armed whatever the connectors do, guarding E2. Line 4's `set_flavor` cases (on `kde-breeze` and `material-3`) leave
 the probe's list and the file when the staging task merges, `set_flavor` refusing every flavour but the default
-until the flavours unit, which brings them back (ADD-A148).
+until the flavours unit, which brings them back; so do `adwaita`'s synthetic cases, its table
+empty from the staging task on, the probe measuring its plain route (ADD-A148).
 
 **What it gives.** A regression past a bound fails at the first run that compares it, at the latest at the release;
 a case over its line passes only under its own named miss, up to its record and tolerance, and the release run fails

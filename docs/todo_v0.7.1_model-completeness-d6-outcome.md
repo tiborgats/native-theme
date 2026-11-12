@@ -82,15 +82,17 @@ applied as ADD-A148 (ledger queue #288), correct this file's outcomes as follows
   the reads go on with the lanes' survey of measured elements (U757–U760; item 57).
 - Outcome 6: the stand-in entry for a widget a preset declares unavailable reads no field of that widget there: the
   toolkit's own geometry, every colour and font from the theme's typed roles (veto list item 48). Where S15's
-  rendering is absent, the connector draws its toolkit's own mark, arrows and disclosure triangle, each colour from
+  rendering is absent, wherever `render_system_control` returns `None`, the connector draws its toolkit's own mark, arrows and disclosure triangle, each colour from
   the theme (item 60).
 - Outcome 7 **changes an earlier decision** (R19's "a palette on every platform", the maintainer's, 2026-10-28): a
   preset whose widget colours are measured literals that follow no role declares that it takes no palette
   (`macos-*`, `ios-*`); a mapping states every colour role a value of the preset reads unless that role follows the
   mapping, a reference or a derivation over roles the mapping states or that so follow, or, through references
   alone, an input it states (a literal, and a call that reads an input itself, follow nothing: `material-3`'s ladder
-  is mapped as `windows-11`'s literal keyed roles are); the bundled palettes' keyed tables are written once, at M4, the bundled palettes offered over
+  is mapped as `windows-11`'s literal keyed roles are); the bundled palettes' keyed tables for `windows-11` and `material-3` are written once, at M4, the bundled palettes offered over
   `adwaita` and `kde-breeze` until then (veto list items 49, 63).
+- Outcome 10: M3a's approval is asked with M2's measured costs (the staging task, task 0's rounds, the connectors'
+  port), not with the first real unit's (veto list item 51).
 - Outcome 12: nothing changes; its two reversed decisions, the iOS tint and the palette suspended under a followed
   scheme, are veto list items of their own (65, 66).
 - Outcome 14: U473 is not the maintainer's: 0.7.0's model holds no key repeat on iOS, so it is a later unit's (the

@@ -80,11 +80,14 @@ its findings cited by their ids, K4-7 and so on).
   where a source or a measurement shows the platform drawing them. What it brings:
   - on `macos-*` and `ios-*` each status waits on its read (rows U757–U760; a register row is one line of the
     ledger's list of what is not measured yet), its values pending meanwhile (closes U456). No pinned Apple source
-    yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success or info. The reads begin
-    by pinning and reading the HIG's colour pages; the rows hold the candidates and what closes each. What the
-    evidence in hand gives: a candidate element only for macOS's error and warning (the level indicator's two
-    fills). For success and info on all four presets and for all four statuses on `ios-*` the pinned headers name
-    none, so unless an Apple page not yet read names the colours, those twelve status colours are absent in 0.8.0
+    yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success or info. The HIG's Color,
+    Feedback and Gauges pages were pinned and read on 2026-11-12, one capture per generation (the Feedback page
+    none in macOS 15's and iOS 18's lifetime), and name no system
+    colour for any of the four statuses on any of the four presets (U757–U760); what is left is the lanes' survey of
+    measured elements, with one candidate, on `macos-*` the level indicator's critical and warning fills, for error
+    and warning; the rows hold the candidates and what closes each. For success and info on all four presets and for
+    all four statuses on `ios-*` the pinned headers name none, so unless the survey finds an element the platform
+    colours for the meaning, those twelve status colours are absent in 0.8.0
     and each connector draws its toolkit's colour there; a preset may then draw one status in the platform's colour
     and another in the toolkit's (item 57);
   - the status text colours (`foreground`, the text on the status fill) are the colour the platform is measured
@@ -219,8 +222,8 @@ model form, by your earlier decisions and the project's rules.**
 - *Source:* outcome 7 and its corrections; brief decision 7; the pass, K3-2 with K4-1, K4-2, R-1, R-3.
 
 **60. Where the AppKit rendering is absent, the toolkit's own mark, arrows and triangle (with item 48).**
-- *Decided:* on a `macos-*` preset, where S15's rendering of a system control is absent (off macOS, off the main
-  thread, or the `macos` feature off), the connector draws its toolkit's own check mark, pop-up arrows and disclosure
+- *Decided:* on a `macos-*` preset, where S15's rendering of a system control is absent (wherever
+  `render_system_control` returns `None`), the connector draws its toolkit's own check mark, pop-up arrows and disclosure
   triangle, each colour from the theme (the role or value the connectors' design names per glyph), recorded in its
   contract as the exception for a `SystemControl` source without its rendering. This changes R11, under which no
   mark is drawn there and a checked and a mixed checkbox differ only where their measured box fills do.
@@ -228,7 +231,7 @@ model form, by your earlier decisions and the project's rules.**
   theme's colours): 0.7.0 drew a check mark on the `macos-*` presets everywhere, and a checked box that shows no mark
   is a functional defect.
 - *Veto brings:* R11 as it stands: no mark, arrows or triangle where the rendering is absent, and the loss in R21's
-  list (a check mark on the `macos-*` presets off macOS, off the main thread or without the feature).
+  list (a check mark on the `macos-*` presets wherever `render_system_control` returns `None`).
 - *Source:* the pass, K2-6; R11; the specification's S15; outcome 6.
 
 **65. The iOS tint follows the accent by a measured derivation (outcome 12; formerly in item 42).**
@@ -314,11 +317,14 @@ every platform as whole themes; on macOS and iOS a palette applies only over ano
   same read, for all four statuses alike (item 3). Each field needs its own witness: a witness drawn as text or a
   mark alone pairs the `standalone` alone, the `fill` and `foreground` absent, as a fill alone leaves the
   `standalone` absent (the pass, K2-8). The macOS and iOS lanes make the reads before their facts edit, at the
-  latest at M4's pending condition, beginning with the HIG's colour pages; the rows state how a colour found is
-  paired (the specification's S3 states the rule). Until a read closes, those values are pending, which no release
-  may hold. What the evidence in hand gives: a candidate element only for macOS's error and warning (the level
-  indicator's two fills). For success and info on all four presets and for all four statuses on `ios-*` the pinned
-  headers name none, so unless an Apple page not yet read names the colours, those twelve status colours are absent
+  latest at M4's pending condition; the rows state how a colour found is paired (the specification's S3 states the
+  rule). Until a read closes, those values are pending, which no release may hold. The HIG's Color, Feedback and
+  Gauges pages were pinned and read on 2026-11-12, one capture per generation (the Feedback page none in macOS 15's
+  and iOS 18's lifetime), and name no system colour for any of
+  the four statuses on any of the four presets (U757–U760); what is left is the lanes' survey of measured elements,
+  with one candidate, on `macos-*` the level indicator's critical and warning fills, for error and warning. For
+  success and info on all four presets and for all four statuses on `ios-*` the pinned headers name none, so unless
+  the survey finds an element the platform colours for the meaning, those twelve status colours are absent
   in 0.8.0 and each connector draws its toolkit's colour there; a preset may then draw one status in the platform's
   colour and another in the toolkit's.
 - *Why:* item 56: a colour that merely exists in the platform's palette does not count, and 0.7.0's choice cites no
@@ -594,8 +600,8 @@ grows with every fact. *Veto brings:* it is committed per platform in smaller fi
 outcome 8; brief decision 8.
 
 **51. No usage cap now (outcome 10).** *Decided:* the work runs to M2's close. The report there gives M2's cost, the
-gate's time and the load cost, and M3a's approval is asked with the first real unit costs. No lane writes facts
-ahead for M3b meanwhile. Setting the caps for M3a stays yours, at M2's close. *Why:* your instruction "do
+gate's time and the load cost, and M3a's approval is asked with M2's measured costs (the staging task, task 0's
+rounds, the connectors' port). No lane writes facts ahead for M3b meanwhile. Setting the caps for M3a stays yours, at M2's close. *Why:* your instruction "do
 everything until M2 is finished". The project's one cost estimate so far was wrong by a factor of 12.8, so a cap
 taken from estimates would either not bind or trip at once. *Veto brings:* a cap per milestone (the brief suggests
 the upper figures), or approval only up to a checkpoint after M3a's first widget unit. *Source:* outcome 10; brief
@@ -603,7 +609,8 @@ decision 10.
 
 **52. The register's choices of model form, settled by the orchestrator (outcome 14).**
 - *Decided:* of the fifteen rows examined, fourteen are settled from the sources (two in part). The fifteenth, U555,
-  moves with `single_click_activates` to the containers unit. What is yours is listed above: items 26–30, the
+  goes with `single_click_activates` to the first unit whose value at depth reads it: the containers unit if
+  `list`'s does, else the parking unit *behaviour*, as the catalogue stands (the pass, P-8). What is yours is listed above: items 26–30, the
   U651 pairing in item 3, and items 7 and 8. For U473 (iOS key repeat), 0.7.0's model holds no such value on any
   preset, so it goes to a later unit (the parking unit *behaviour*) and needs nothing from you.
 - *Why:* your standing rule: settle by logic first, ask only real preferences.
@@ -708,6 +715,6 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 - **The plan and specification texts that apply these outcomes** (staging P-1 to P-14, the S8 sentences in load
   §3.8) are the orchestrator's by class. They are cited under items 1, 2 and 4, not listed apart.
 - **Open points staging and the register leave to later units**, not to you: `hover` and `focus_visible` on `ios-*`
-  (+252 pending facts if kept; staging §8 point 2); `single_click_activates` (the containers unit); QPainter's
+  (+252 pending facts if kept; staging §8 point 2); `single_click_activates` (the first unit that reads it); QPainter's
   wavy and strike lines (U754, their units). Qt Quick's underline position is now decided in form (item 27).
 - **Load's revision.** Items 4 and 9–23 follow load's revision 8, its last.

@@ -1141,11 +1141,11 @@ rendered by native-theme at run time through AppKit, on the main thread as AppKi
 backing scale and the control's pixel size, with the window's key state where AppKit has a route for a control
 drawn off screen (the register's U708, read before the 0.8.0 plan's M2 task 7; where none exists the rendering does
 not follow it, a limit the connector's contract records, R23; ADD-A148), and cached per control, state, size,
-appearance, key state, layout direction and scale, as the SF Symbols loader renders symbols today; the cache is emptied at every
+appearance, key state where it is followed, layout direction and scale, as the SF Symbols loader renders symbols today; the cache is emptied at every
 theme change the reader reports (R2.5), as AppKit's drawing follows settings the key does not hold (the accent;
-ADD-A146). Called off the main thread, off macOS (a `macos-*` preset used on another platform) or without the
-`macos` feature, the rendering is absent and the modelled parts stand;
-a toolkit that cannot use the rendering records that limit (R23). For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
+ADD-A146). Wherever `render_system_control` returns `None` (the specification's S15; a `macos-*` preset used on
+another platform among them), the rendering is absent and the modelled parts stand;
+a toolkit that cannot composite the rendering draws as where it is absent, and records that limit (R23). For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
 together, the rendering stated on the box, drawn in every state, ADD-A126); the modelled box (its measured fill,
 stroke and corners, R6, R7) remains for a toolkit that cannot, and the radio's dot (its measured diameter and its
 colour, a cornered fill) likewise, while the checkbox's mark, the pop-up's arrows and the disclosure triangle have no
@@ -1381,7 +1381,7 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
   typed one or both by the same expression, or neither, so no surface is drawn in two colours. A palette
   without the table for a preset is not offered over it (ADD-A147; D6; ADD-A148, decided by logic at the document
   pass, awaiting the maintainer's veto: veto list item 49; the method is designed with the palettes, the
-  specification's S14). The bundled palettes' tables are written once, when every widget of 0.8.0 is in (the plan's
+  specification's S14). The bundled palettes' tables for `windows-11` and `material-3` are written once, when every widget of 0.8.0 is in (the plan's
   M4), so until then they are offered over `adwaita` and `kde-breeze` (ADD-A148; decided by logic at the document
   pass, awaiting the maintainer's veto: veto list item 63). Rejected: typed roles alone, the mixed look recorded (the
   Windows button in WinUI's greys under the project's colours, the mix of two schemes this decision rejects); a

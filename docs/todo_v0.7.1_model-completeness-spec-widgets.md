@@ -2542,9 +2542,9 @@ spaces:
     (K1.55, MAT-C8, Material's in its transparent unchecked colour), the unchecked states' foregrounds and
     AnimatedIcon keys on `windows-11` (W1-037, W1-039); elsewhere it is `Absent` unchecked by a rule written last:
     `adwaita`, as GTK swaps the icon at once (GN-P4-7†), and `ios-*` until its measurement (CK-1); `macos-*` draws it only by AppKit's rendering on the box, the part `Absent` in every state, as AppKit names
-    no image for it and its outline could only be traced (R11), so without the rendering no mark is drawn and a
-    checked and a mixed box differ only where their box fills do, the mixed one a measurement (R23, MAC-C01,
-    MAC-C06); whether AppKit or UIKit animates it is measured (Open items). The mark's colour is on the field its form takes:
+    no image for it and its outline could only be traced (R11), so the model draws none (MAC-C06): where the
+    rendering is absent the connector draws its toolkit's own mark, its colour from the theme (S15, S21.3; ADD-A148;
+    veto list item 60); whether AppKit or UIKit animates it is measured (Open items). The mark's colour is on the field its form takes:
     `glyph.stroke` on a stroked path (WinUI's, Compose's and Breeze's check, its `fill` absent, S2.9), `glyph.fill` on
     a filled one (Breeze's dots, GNOME's icons).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami

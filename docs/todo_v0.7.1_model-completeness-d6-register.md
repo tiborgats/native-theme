@@ -28,7 +28,10 @@ not a length compared as px; `div` is named beside `add`, `sub`, `min` and `max`
 as the code types it (K1-2). U509's Consolas is cited to `fonts.ts:41` alone at M2's task 0, `typography.md:203`
 added once U520's checker notation exists, U520 having left 0.8.0's path by the staging (U509's part 4; L-9). The
 help bezel's member (U314 and U614, part 4) gets a register row of its own, U762, due with the unit that brings
-`help`, in place of U708 gaining it, since U708 retires at M2's task 7 (L's minor 3).
+`help`, in place of U708 gaining it, since U708 retires at M2's task 7 (L's minor 3). Where this note gives
+`single_click_activates` and U555 to the containers unit, or to the unit that brings the item views, they go to the
+first unit whose value at depth reads the token: the containers unit if `list`'s does, else the parking unit
+*behaviour*, as the catalogue stands (P-8).
 
 ## Revision 5
 
