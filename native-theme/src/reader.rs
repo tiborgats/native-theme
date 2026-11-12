@@ -13,7 +13,9 @@
 //! the portal-only read of the Linux desktops with no reader of their own
 //! (S16's *Which reader*, ADD-A135), KDE's (with the `kde` feature, on KDE
 //! Plasma), macOS's (with the `macos` feature) and Windows' (with the
-//! `windows` feature).
+//! `windows` feature); on Linux, where the desktop's reader is not
+//! compiled, 0.7.0's scheme and motion chain alone ([`crate::linux_chain`],
+//! ADD-A148).
 
 use crate::error::{ReaderFailure, ThemeError};
 use crate::layer::Layer;
@@ -24,7 +26,7 @@ use crate::resolve::ReaderState;
 /// where another stood in for it (S9.1, S9.3: the status's `Fallback`).
 #[cfg_attr(
     not(any(
-        all(target_os = "linux", any(feature = "portal", feature = "kde")),
+        target_os = "linux",
         all(target_os = "macos", feature = "macos"),
         all(target_os = "windows", feature = "windows")
     )),
@@ -52,6 +54,10 @@ pub(crate) enum SystemReader {
     /// The KDE reader: kdeglobals and the scheme file it names.
     #[cfg(all(target_os = "linux", feature = "kde"))]
     Kde,
+    /// 0.7.0's scheme and motion chain alone, standing in for the Linux
+    /// reader this build lacks.
+    #[cfg(all(target_os = "linux", not(all(feature = "portal", feature = "kde"))))]
+    Chain(Uncompiled),
     /// The macOS reader: AppKit's appearances, colours and settings.
     #[cfg(all(target_os = "macos", feature = "macos"))]
     Macos,
@@ -79,11 +85,50 @@ impl SystemReader {
             SystemReader::Portal => Ok(crate::gnome::portal::read().await),
             #[cfg(all(target_os = "linux", feature = "kde"))]
             SystemReader::Kde => crate::kde::read(own),
+            #[cfg(all(target_os = "linux", not(all(feature = "portal", feature = "kde"))))]
+            SystemReader::Chain(uncompiled) => Ok(crate::linux_chain::read(uncompiled.failure())),
             #[cfg(all(target_os = "macos", feature = "macos"))]
             SystemReader::Macos => crate::macos::read(own),
             #[cfg(all(target_os = "windows", feature = "windows"))]
             SystemReader::Windows => crate::windows::read(own),
         }
+    }
+}
+
+/// A Linux reader this build lacks, whose desktop 0.7.0's scheme and motion
+/// chain reads instead (S16's *Which reader*, ADD-A148).
+#[cfg(all(target_os = "linux", not(all(feature = "portal", feature = "kde"))))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Uncompiled {
+    /// The GNOME reader, without the `portal` feature.
+    #[cfg(not(feature = "portal"))]
+    Gnome,
+    /// The portal-only read, without the `portal` feature.
+    #[cfg(not(feature = "portal"))]
+    Portal,
+    /// The KDE reader, without the `kde` feature.
+    #[cfg(not(feature = "kde"))]
+    Kde,
+}
+
+#[cfg(all(target_os = "linux", not(all(feature = "portal", feature = "kde"))))]
+impl Uncompiled {
+    /// What the chain's reading stands in for, the status's `Fallback`: the
+    /// reader not compiled, its feature, and what was read instead.
+    pub(crate) fn failure(self) -> ReaderFailure {
+        let (reader, feature) = match self {
+            #[cfg(not(feature = "portal"))]
+            Uncompiled::Gnome => ("the GNOME reader", "portal"),
+            #[cfg(not(feature = "portal"))]
+            Uncompiled::Portal => ("the portal-only read", "portal"),
+            #[cfg(not(feature = "kde"))]
+            Uncompiled::Kde => ("the KDE reader", "kde"),
+        };
+        ReaderFailure::Platform(format!(
+            "{reader} is not compiled (the `{feature}` feature is off): only the scheme and \
+             motion were read, from `$GTK_THEME`, gsettings' `color-scheme`, `reduced-motion` \
+             and `enable-animations`, and `gtk-3.0/settings.ini`"
+        ))
     }
 }
 
@@ -96,10 +141,12 @@ impl SystemReader {
 /// GNOME and Budgie are read by the GNOME reader under `adwaita`; every
 /// desktop with no reader of its own (Xfce, Cinnamon, MATE, LXQt, the
 /// Wayland compositors, COSMIC, one the refinement leaves unnamed) by the
-/// portal-only read, under `adwaita` too (S16's *Which reader*); either
-/// [`ThemeError::FeatureDisabled`] without the `portal` feature. KDE is read
-/// by the KDE reader under `kde-breeze`, [`ThemeError::FeatureDisabled`]
-/// without the `kde` feature. Linux has
+/// portal-only read, under `adwaita` too (S16's *Which reader*), both with
+/// the `portal` feature. KDE is read by the KDE reader under `kde-breeze`,
+/// with the `kde` feature. Where the desktop's reader is not compiled,
+/// 0.7.0's scheme and motion chain reads the desktop alone under the same
+/// preset ([`SystemReader::Chain`], ADD-A148), never
+/// [`ThemeError::FeatureDisabled`]. Linux has
 /// no generation table: the one preset of the desktop is its only
 /// generation, so `generation` is accepted where it is that preset and is
 /// [`ThemeError::PresetNotForPlatform`] otherwise.
@@ -213,31 +260,30 @@ fn table_preset(
 /// The reader of the Linux desktop `desktop` and its preset, which
 /// `generation` may name ([`select`]).
 #[cfg(target_os = "linux")]
-fn linux_reader(
+pub(crate) fn linux_reader(
     desktop: crate::detect::LinuxDesktop,
     generation: Option<PresetId>,
 ) -> Result<(SystemReader, PresetId), ThemeError> {
-    let (reader, preset) = desktop_reader(desktop)?;
+    let (reader, preset) = desktop_reader(desktop);
     match generation {
         Some(id) if id != preset => Err(ThemeError::PresetNotForPlatform(id)),
         _ => Ok((reader, preset)),
     }
 }
 
-/// The reader of the Linux desktop `desktop` and its preset.
+/// The reader of the Linux desktop `desktop` and its preset; where the
+/// desktop's reader is not compiled, the chain under the same preset.
 #[cfg(target_os = "linux")]
-fn desktop_reader(
-    desktop: crate::detect::LinuxDesktop,
-) -> Result<(SystemReader, PresetId), ThemeError> {
+fn desktop_reader(desktop: crate::detect::LinuxDesktop) -> (SystemReader, PresetId) {
     match desktop {
         crate::detect::LinuxDesktop::Gnome | crate::detect::LinuxDesktop::Budgie => {
             #[cfg(feature = "portal")]
             {
-                Ok((SystemReader::Gnome, PresetId::Adwaita))
+                (SystemReader::Gnome, PresetId::Adwaita)
             }
             #[cfg(not(feature = "portal"))]
             {
-                Err(ThemeError::FeatureDisabled)
+                (SystemReader::Chain(Uncompiled::Gnome), PresetId::Adwaita)
             }
         }
         crate::detect::LinuxDesktop::Xfce
@@ -253,21 +299,21 @@ fn desktop_reader(
         | crate::detect::LinuxDesktop::Unknown => {
             #[cfg(feature = "portal")]
             {
-                Ok((SystemReader::Portal, PresetId::Adwaita))
+                (SystemReader::Portal, PresetId::Adwaita)
             }
             #[cfg(not(feature = "portal"))]
             {
-                Err(ThemeError::FeatureDisabled)
+                (SystemReader::Chain(Uncompiled::Portal), PresetId::Adwaita)
             }
         }
         crate::detect::LinuxDesktop::Kde => {
             #[cfg(feature = "kde")]
             {
-                Ok((SystemReader::Kde, PresetId::KdeBreeze))
+                (SystemReader::Kde, PresetId::KdeBreeze)
             }
             #[cfg(not(feature = "kde"))]
             {
-                Err(ThemeError::FeatureDisabled)
+                (SystemReader::Chain(Uncompiled::Kde), PresetId::KdeBreeze)
             }
         }
     }
@@ -297,7 +343,9 @@ mod tests {
     /// GNOME and Budgie are read by the GNOME reader under `adwaita`, every
     /// desktop with no reader of its own by the portal-only read under
     /// `adwaita`, both with the `portal` feature; KDE by the KDE reader under
-    /// `kde-breeze`, with the `kde` feature.
+    /// `kde-breeze`, with the `kde` feature. Without the reader's feature,
+    /// 0.7.0's chain reads the desktop under the same preset, never
+    /// [`ThemeError::FeatureDisabled`] (S16's *Which reader*, ADD-A148).
     #[test]
     fn the_desktop_chooses_the_reader_and_its_preset() {
         for desktop in [LinuxDesktop::Gnome, LinuxDesktop::Budgie] {
@@ -309,7 +357,7 @@ mod tests {
             #[cfg(not(feature = "portal"))]
             assert_eq!(
                 linux_reader(desktop, None),
-                Err(ThemeError::FeatureDisabled)
+                Ok((SystemReader::Chain(Uncompiled::Gnome), PresetId::Adwaita))
             );
         }
         for desktop in PORTAL_ONLY {
@@ -322,7 +370,7 @@ mod tests {
             #[cfg(not(feature = "portal"))]
             assert_eq!(
                 linux_reader(desktop, None),
-                Err(ThemeError::FeatureDisabled),
+                Ok((SystemReader::Chain(Uncompiled::Portal), PresetId::Adwaita)),
                 "{desktop:?}"
             );
         }
@@ -334,33 +382,68 @@ mod tests {
         #[cfg(not(feature = "kde"))]
         assert_eq!(
             linux_reader(LinuxDesktop::Kde, None),
-            Err(ThemeError::FeatureDisabled)
+            Ok((SystemReader::Chain(Uncompiled::Kde), PresetId::KdeBreeze))
         );
     }
 
-    /// Linux has no generation table: the desktop's preset is its one
-    /// generation, and another is not the platform's (R1.5).
-    #[cfg(feature = "portal")]
+    /// The chain's fallback names the reader not compiled, its feature, and
+    /// what was read instead, so an application tells it from a full read.
+    #[cfg(not(all(feature = "portal", feature = "kde")))]
     #[test]
-    fn a_generation_is_the_desktops_preset_or_refused() {
-        assert_eq!(
-            linux_reader(LinuxDesktop::Gnome, Some(PresetId::Adwaita)),
-            Ok((SystemReader::Gnome, PresetId::Adwaita))
-        );
-        assert_eq!(
-            linux_reader(LinuxDesktop::Gnome, Some(PresetId::MacosTahoe)),
-            Err(ThemeError::PresetNotForPlatform(PresetId::MacosTahoe))
-        );
-        for desktop in PORTAL_ONLY {
-            assert_eq!(
-                linux_reader(desktop, Some(PresetId::Adwaita)),
-                Ok((SystemReader::Portal, PresetId::Adwaita))
-            );
+    fn the_chain_names_the_reader_it_stands_in_for() {
+        let cases = [
+            #[cfg(not(feature = "portal"))]
+            (Uncompiled::Gnome, "the GNOME reader", "`portal`"),
+            #[cfg(not(feature = "portal"))]
+            (Uncompiled::Portal, "the portal-only read", "`portal`"),
+            #[cfg(not(feature = "kde"))]
+            (Uncompiled::Kde, "the KDE reader", "`kde`"),
+        ];
+        for (uncompiled, reader, feature) in cases {
+            let failure = uncompiled.failure();
+            assert!(matches!(failure, ReaderFailure::Platform(_)), "{failure:?}");
+            let text = failure.to_string();
+            assert!(text.starts_with(reader), "{text}");
+            assert!(text.contains(feature), "{text}");
+            for read in [
+                "`$GTK_THEME`",
+                "`color-scheme`",
+                "`reduced-motion`",
+                "`enable-animations`",
+                "`gtk-3.0/settings.ini`",
+            ] {
+                assert!(text.contains(read), "{text}");
+            }
+        }
+    }
+
+    /// Linux has no generation table: the desktop's preset is its one
+    /// generation, and another is not the platform's (R1.5), whichever
+    /// reader the build has.
+    #[test]
+    fn a_generation_is_the_desktops_preset_or_refused() -> Result<(), ThemeError> {
+        let mut desktops = vec![LinuxDesktop::Gnome, LinuxDesktop::Budgie];
+        desktops.extend(PORTAL_ONLY);
+        for desktop in desktops {
+            let chosen = linux_reader(desktop, None)?;
+            assert_eq!(chosen.1, PresetId::Adwaita, "{desktop:?}");
+            assert_eq!(linux_reader(desktop, Some(PresetId::Adwaita)), Ok(chosen));
             assert_eq!(
                 linux_reader(desktop, Some(PresetId::Material3)),
                 Err(ThemeError::PresetNotForPlatform(PresetId::Material3))
             );
         }
+        let chosen = linux_reader(LinuxDesktop::Kde, None)?;
+        assert_eq!(chosen.1, PresetId::KdeBreeze);
+        assert_eq!(
+            linux_reader(LinuxDesktop::Kde, Some(PresetId::KdeBreeze)),
+            Ok(chosen)
+        );
+        assert_eq!(
+            linux_reader(LinuxDesktop::Kde, Some(PresetId::Adwaita)),
+            Err(ThemeError::PresetNotForPlatform(PresetId::Adwaita))
+        );
+        Ok(())
     }
 }
 

@@ -2138,3 +2138,49 @@ fn a_windows_reading_over_other_presets_takes_its_common_part() {
     );
     assert_eq!(root_role(&theme, accent), before);
 }
+
+/// Where the desktop's reader is not compiled (S16's *Which reader*,
+/// ADD-A148): the KDE desktop without `kde`, GNOME and a desktop with no
+/// reader of its own without `portal`. The desktop is read by 0.7.0's chain
+/// under the preset its reader would have used, as `from_system` builds the
+/// theme: the reading validates as the reader layer, the scheme in force
+/// and the motion conditions are the chain's, and the status is the
+/// fallback naming the reader not compiled.
+#[cfg(all(target_os = "linux", not(all(feature = "portal", feature = "kde"))))]
+#[test]
+fn a_desktop_without_its_reader_is_read_by_the_chain() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::detect::LinuxDesktop;
+    use crate::reader::{SystemReader, Uncompiled};
+
+    let desktops = [
+        #[cfg(not(feature = "kde"))]
+        (LinuxDesktop::Kde, Uncompiled::Kde, PresetId::KdeBreeze),
+        #[cfg(not(feature = "portal"))]
+        (LinuxDesktop::Gnome, Uncompiled::Gnome, PresetId::Adwaita),
+        #[cfg(not(feature = "portal"))]
+        (LinuxDesktop::Sway, Uncompiled::Portal, PresetId::Adwaita),
+    ];
+    for (desktop, uncompiled, preset) in desktops {
+        let (reader, own) = crate::reader::linux_reader(desktop, None)?;
+        assert_eq!(
+            (reader, own),
+            (SystemReader::Chain(uncompiled), preset),
+            "{desktop:?}"
+        );
+        let reading = crate::linux_chain::build_reading(
+            Some("Adwaita:dark"),
+            |_: &str, key: &str| (key == "enable-animations").then(|| "false".to_string()),
+            || None,
+            uncompiled.failure(),
+        );
+        let mut theme = synthetic_theme(own);
+        let status = theme.take(reading, own)?;
+        assert_eq!(status, ReaderStatus::Fallback(uncompiled.failure()));
+        assert_eq!(theme.scheme(), Scheme::Dark, "{desktop:?}");
+        let system = theme.system().ok_or("no reader state")?;
+        assert!(system.animations_off && !system.reduced_motion);
+        assert_eq!(system.contrast, None);
+        assert_eq!(system.text_scaling_factor, 1.0);
+    }
+    Ok(())
+}

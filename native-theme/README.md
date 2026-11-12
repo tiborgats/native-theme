@@ -32,7 +32,9 @@ This is the 0.8.0 model while it is being built:
   COSMIC), also over `adwaita`; macOS's (the `macos` feature), over the
   running version's generation, `macos-tahoe` or `macos-monterey`; and
   Windows' (the `windows` feature), over `windows-11`. Each reads what
-  [Feature flags](#feature-flags) says.
+  [Feature flags](#feature-flags) says. On Linux a build without the
+  desktop's reader feature still reads the scheme and motion, as 0.7.0 did
+  (below).
 
 ## How it fits
 
@@ -161,6 +163,15 @@ let breeze_dark = FreedesktopLoader::new(IconRole::ActionCopy)
 ## Feature flags
 
 No feature is needed for the model and its bundled presets.
+
+On Linux, `Theme::from_system` reads a desktop whose reader's feature is off
+(KDE without `kde`; GNOME, Budgie and the desktops with no reader of their own
+without `portal`) through the reads that need no feature, as 0.7.0 did: the
+scheme from `GTK_THEME`, gsettings' `color-scheme` and `gtk-3.0/settings.ini`,
+reduced motion and animations off from gsettings, over the preset that reader
+would have used; its `Theme::reader_status` is `ReaderStatus::Fallback`,
+naming the reader not compiled. On macOS and Windows a build without the
+platform's feature is `ThemeError::FeatureDisabled`.
 
 ```toml
 [dependencies]

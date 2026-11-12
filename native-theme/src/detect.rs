@@ -172,7 +172,7 @@ pub(crate) async fn refined_linux_desktop() -> LinuxDesktop {
 /// Returns the trimmed stdout on success; `None` if the command fails, times
 /// out, or produces empty output. The timeout keeps gsettings from blocking
 /// indefinitely when D-Bus is unresponsive.
-#[cfg(all(target_os = "linux", feature = "portal"))]
+#[cfg(target_os = "linux")]
 pub(crate) fn gsettings_get(
     schema: &str,
     key: &str,

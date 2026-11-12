@@ -69,29 +69,6 @@ use crate::value::{SchemeMap, Value};
 /// identity of S9.4's scaling, not a platform value.
 const UNSCALED: f32 = 1.0;
 
-/// One deadline for all the gsettings reads of one GNOME read together, so
-/// that an unresponsive D-Bus costs it this once rather than once per key.
-/// Ruled equal to the bound [`crate::detect`] gives one subprocess.
-const GSETTINGS_DEADLINE: std::time::Duration = crate::detect::SUBPROCESS_TIMEOUT;
-
-/// Read a single gsettings value within `timeout`, returning None if
-/// gsettings is unavailable, fails or outlives it, or `timeout` is zero.
-///
-/// Single-quote wrapping (gsettings string output format) is stripped from
-/// the result.
-fn read_gsetting(schema: &str, key: &str, timeout: std::time::Duration) -> Option<String> {
-    if timeout.is_zero() {
-        return None;
-    }
-    let raw = crate::detect::gsettings_get(schema, key, timeout)?;
-    let trimmed = raw.trim_matches('\'').to_string();
-    if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed)
-    }
-}
-
 /// What the portal and gsettings gave, in plain types: built from their
 /// reads in production, directly in tests. No ashpd types, no D-Bus access,
 /// no gsettings subprocess calls.
@@ -270,8 +247,7 @@ fn reduced_motion(
 ) -> Option<bool> {
     match portal {
         Some(motion) => Some(matches!(motion, ReducedMotion::ReducedMotion)),
-        None => gsetting("org.gnome.desktop.a11y.interface", "reduced-motion")
-            .map(|value| value == "reduce"),
+        None => crate::linux_chain::reduced_motion(gsetting),
     }
 }
 
@@ -323,7 +299,8 @@ pub(crate) fn build_reading(
 /// session, a sandbox, an old portal), does not answer within
 /// [`PORTAL_DEADLINE`] or lacks the setting, is left to gsettings where
 /// gsettings has it, and otherwise to the no-reader state's value. The
-/// gsettings reads share one [`GSETTINGS_DEADLINE`]. The read cannot fail:
+/// gsettings reads share one
+/// [`GSETTINGS_DEADLINE`](crate::linux_chain::GSETTINGS_DEADLINE). The read cannot fail:
 /// what neither source gives is not stated.
 ///
 /// The text-scaling factor is reported where the toolkit has not applied
@@ -338,20 +315,13 @@ pub(crate) fn build_reading(
 /// *Font DPI*).
 pub(crate) async fn read(own: PresetId) -> Reading {
     let (portal_scheme, accent, contrast, portal_motion) = read_portal().await;
-    let start = std::time::Instant::now();
     build_reading(
         portal_scheme,
         accent,
         contrast,
         portal_motion,
         crate::detect::session_type(),
-        |schema, key| {
-            read_gsetting(
-                schema,
-                key,
-                GSETTINGS_DEADLINE.saturating_sub(start.elapsed()),
-            )
-        },
+        crate::linux_chain::gsettings(),
         own,
     )
 }

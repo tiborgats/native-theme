@@ -36,9 +36,13 @@ impl Theme {
     ///
     /// Refused with [`ThemeError::PresetNotForPlatform`] for a `generation`
     /// that is not one of the running platform's, with
-    /// [`ThemeError::FeatureDisabled`] where the platform's reader feature
-    /// is off and [`ThemeError::PlatformUnsupported`] where this build has
-    /// no reader for it; a failed first read is `Err(ThemeError::Reader)`,
+    /// [`ThemeError::FeatureDisabled`] on macOS and Windows where the
+    /// platform's reader feature is off and
+    /// [`ThemeError::PlatformUnsupported`] where the crate has no reader for
+    /// the platform; on Linux, where the desktop's reader feature is off,
+    /// 0.7.0's scheme and motion chain reads the desktop under that reader's
+    /// preset, [`ReaderStatus::Fallback`] naming the reader not compiled. A
+    /// failed first read is `Err(ThemeError::Reader)`,
     /// with the preset it chose, for [`Theme::from_preset`]; a bundled
     /// preset failing validation is `Err(ThemeError::Preset)`. A read where
     /// one source stood in for another builds the theme, its
