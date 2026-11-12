@@ -629,16 +629,13 @@ The helpers are exactly these, each a `pub(crate)` function of the reader module
 (the GNOME reader's, Pango's `pango_font_description_from_string`, `pango@1.58.2 pango/fonts.c:1613-1729`, read for
 the gsettings font strings), `qfont_from_string` (the KDE reader's, Qt's `QFont::fromString`, `qtbase@6.12.0
 src/gui/text/qfont.cpp:2246-2320`, for kdeglobals' font entries), `adw_accent_nearest` (the GNOME reader's,
-libadwaita's `adw_accent_color_nearest_from_rgba`, `libadwaita@1.10.0 src/adw-accent-color.c:159-199`, S9.3),
+libadwaita's `adw_accent_color_nearest_from_rgba`, `libadwaita@1.10.0 src/adw-accent-color.c:159-199`, S9.3) and
 `kde_color_scheme` (the KDE reader's, Plasma's dark-or-light test of the palette's window colour, plasma-integration's
 `KHintsSettings::determineColorScheme` and xdg-desktop-portal-kde's `readFdoColorScheme` over Qt's `qGray`,
 `plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:469-485`, `xdg-desktop-portal-kde@6.8.2
 src/settings.cpp:259-273`, `qtbase@6.12.0 src/gui/painting/qrgb.h:37-38`, `:40-41`, S9.3; ADD-A140, its lines
-corrected by ADD-A141) and `qxcb_xft_dpi` (the
-KDE reader's, Qt's xcb plugin reading `Xft.dpi` from the X resources, `qtbase@6.12.0
-src/plugins/platforms/xcb/qxcbscreen.cpp:298-314`, `:366-373`, `:856-876`, S9.3; ADD-A140; withdrawn by ADD-A146,
-the KDE reader reporting no font DPI, S9.4's *What the toolkit's scale carries*: listed until its implementation and
-its table are removed, a code follow-up).
+corrected by ADD-A141); the KDE reader's `Xft.dpi` helper, which ADD-A146 withdrew, left with its implementation and
+its table, the KDE reader reporting no font DPI (S9.3, S9.4's *What the toolkit's scale carries*; ADD-A147).
 `check_function_vectors.py` reads this list as it reads S2.2's functions: a listed helper with a table and no
 implementation is reported as waiting (its implementer receives the table first, D10); an implemented one without
 its table or test is a finding, and so is a `reader.` table of a name not listed. A table's columns may take the type

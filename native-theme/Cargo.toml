@@ -26,8 +26,8 @@ targets = [
 [features]
 # Each OS-specific dependency is compiled only on its own target.
 
-# The KDE Plasma reader: kdeglobals as KConfig cascades it, the colour
-# scheme file it names and, on X11, Xft.dpi; and the KDE icon theme (Linux).
+# The KDE Plasma reader: kdeglobals as KConfig cascades it and the colour
+# scheme file it names; and the KDE icon theme (Linux).
 kde = []
 # The GNOME and Budgie reader, and the portal-only read of the Linux desktops
 # with no reader of their own: the XDG Desktop Portal settings and gsettings

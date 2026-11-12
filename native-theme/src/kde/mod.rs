@@ -1,7 +1,7 @@
 //! The KDE reader (the `kde` feature, Linux): kdeglobals as KConfig cascades
-//! it, the colour scheme file it names, the icon theme's sizes and, on X11,
-//! `Xft.dpi`, into a [`ReaderState`] and a reader layer (S8, S9.3, S9.5);
-//! and the icon theme `detect` reports.
+//! it, the colour scheme file it names and the icon theme's sizes, into a
+//! [`ReaderState`] and a reader layer (S8, S9.3, S9.5); and the icon theme
+//! `detect` reports.
 //!
 //! kdeglobals holds what Plasma's `applyScheme()` wrote from the scheme file
 //! and the accent: the results, which the reader states under the scheme it
@@ -37,14 +37,17 @@
 //! Plasma keeps beneath the user's file, then the user's `kdeglobals`, each
 //! in the user's config directory (`$XDG_CONFIG_HOME`, else `~/.config`).
 //!
-//! Three helpers come from the clean room (the 0.8.0 plan's D10, S2.2's
+//! Two helpers come from the clean room (the 0.8.0 plan's D10, S2.2's
 //! *The readers' helpers*), their code placed unchanged in
 //! `src/cleanroom_readers/`, each with an adapter of its own: the font
 //! entries are parsed by Qt's font parser, `qfont_from_string` (`font.rs`;
-//! unchanged but for its panic-free arithmetic); the scheme is Plasma's
-//! dark-or-light test, `kde_color_scheme` (`scheme.rs`); and the font DPI is
-//! the one Qt's xcb plugin forces from `Xft.dpi`, `qxcb_xft_dpi`
-//! (`font_dpi.rs`).
+//! unchanged but for its panic-free arithmetic); and the scheme is Plasma's
+//! dark-or-light test, `kde_color_scheme` (`scheme.rs`).
+//!
+//! The reader reports no font DPI: its own preset's `token.text.font_dpi`
+//! converts the fonts' point sizes, as the toolkit's scale factor already
+//! carries an X11 session's `Xft.dpi` (S9.3, S9.4's *What the toolkit's
+//! scale carries*).
 //!
 //! # Sources
 //!
@@ -68,15 +71,10 @@
 //! - `plasma/look-and-feel/<LookAndFeelPackage>/contents/colors` in the
 //!   data directories: the look-and-feel package's colours, which its
 //!   package writes, read where kdeglobals has no `[Colors:View]` group.
-//! - `Xft.dpi` (`xrdb -query`): the font DPI on X11, read from the X
-//!   server, not from a settings file.
 //! - The icon theme's `index.theme`: its sizes, which the icon theme's
 //!   package writes.
-//! - `$XDG_SESSION_TYPE`: the session type, which decides whether the font
-//!   DPI is read, fixed for a session.
 
 mod font;
-mod font_dpi;
 #[path = "../cleanroom_readers/kde_color_scheme.rs"]
 #[allow(
     clippy::integer_division,
@@ -93,8 +91,6 @@ mod kde_color_scheme;
     reason = "the clean room's parser, its style kept as written (D10): a style lint only"
 )]
 mod qfont_from_string;
-#[path = "../cleanroom_readers/qxcb_xft_dpi.rs"]
-mod qxcb_xft_dpi;
 mod scheme;
 
 use configparser::ini::Ini;
@@ -191,9 +187,6 @@ pub(crate) struct KdeData {
     pub(crate) colors: Option<PaletteColors>,
     /// The scheme file kdeglobals names.
     pub(crate) scheme_file: SchemeFile,
-    /// The font DPI: `Xft.dpi`, on an X11 session
-    /// ([`font_dpi::read_font_dpi`]); `None` elsewhere.
-    pub(crate) font_dpi: Option<f32>,
     /// The icon theme's `index.theme`, where it was found.
     pub(crate) icon_index: Option<Ini>,
 }
@@ -202,12 +195,12 @@ pub(crate) struct KdeData {
 /// under `own` (S9.5). Zero I/O.
 ///
 /// - The state: the scheme ([`scheme::scheme`]); animations off and reduced motion
-///   where `[KDE] AnimationDurationFactor` is 0 (K3.30, K3.90); the font DPI;
+///   where `[KDE] AnimationDurationFactor` is 0 (K3.30, K3.90); no font DPI;
 ///   text unscaled ([`UNSCALED`]).
 /// - The common bases: `input.accent` ([`accent`]); the text-role slots
 ///   `body` (`[General] font`), `monospace` (`fixed`) and `caption`
-///   (`smallestReadableFont`), their point sizes converted by the font DPI,
-///   else `own`'s `token.text.font_dpi` (S9.4).
+///   (`smallestReadableFont`), their point sizes converted by `own`'s
+///   `token.text.font_dpi` (S9.4).
 /// - `for_preset.<own>`, under the scheme read: the results, the scheme
 ///   inputs and their lists, and the `#00000000` accent where kdeglobals
 ///   sets none; beside them the icon theme and its sizes, the animation
@@ -234,7 +227,6 @@ pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
     let factor = animation_duration_factor(ini);
     state.animations_off = factor == Some(0.0);
     state.reduced_motion = state.animations_off;
-    state.font_dpi = data.font_dpi;
 
     let mut layer = Layer::default();
     let mut own_bases = Bases::default();
@@ -251,7 +243,7 @@ pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
         own_bases.inputs.entries.push((InputName::accent(), value));
     }
 
-    let font_dpi = data.font_dpi.or_else(|| own.font_dpi());
+    let font_dpi = own.font_dpi();
     let font = |key: &str| {
         ini.get("General", key)
             .filter(|text| !text.is_empty())
@@ -519,8 +511,7 @@ fn icon_sizes(index: &Ini) -> IconSizeTokensPatch {
 /// as KConfig cascades it ([`read_kconfig_files`] of [`kdeglobals_files`]),
 /// the colours the palette is built from where it has no `[Colors:View]`
 /// group ([`palette_colors`]), the scheme file it names
-/// ([`read_scheme_file`]), the font DPI ([`font_dpi::read_font_dpi`]) and
-/// the icon theme's `index.theme`.
+/// ([`read_scheme_file`]) and the icon theme's `index.theme`.
 ///
 /// Fails only where no kdeglobals file can be read
 /// (`ReaderFailure::Platform`, S9.3); a scheme file that cannot be found or
@@ -548,7 +539,6 @@ pub(crate) fn read(own: PresetId) -> Result<Reading, ReaderFailure> {
         })
     });
     let data = KdeData {
-        font_dpi: font_dpi::read_font_dpi(crate::detect::session_type().as_deref()),
         colors: palette_colors(&kdeglobals, &data_dirs),
         kdeglobals,
         scheme_file,

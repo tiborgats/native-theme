@@ -7,13 +7,11 @@ by the `compiled_source` route, under `native-theme/tests/vectors/`: `kirigami_l
 `QFont::fromString` called through the system's Qt 6.12.0 (`qfont.cpp`) on the strings Qt 6.12 writes for Plasma's
 default fonts (`plasma-integration@6.8.2`) and typical choices, Qt 5's strings and each field's edge cases, each
 result read through `QFont`'s getters and `resolveMask()` (its string cells JSON string literals); and, by the
-`public_api` route through `readers.cpp`, the KDE reader's other two helpers' tables: `reader.kde_color_scheme.tsv`,
+`public_api` route through `readers.cpp`, the KDE reader's other helper's table: `reader.kde_color_scheme.tsv`,
 Plasma's dark-or-light test (kdeglobals' `[Colors:Window] BackgroundNormal` written by the system's KConfig 6.31,
 `KColorScheme::createApplicationPalette` of it, Qt's `qGray` of the palette's window colour against the threshold
 read from plasma-integration's and xdg-desktop-portal-kde's pinned files, each row checked against the installed
-plasma-integration platform theme's `QStyleHints::colorScheme()`), and `reader.qxcb_xft_dpi.tsv`, the DPI Qt's xcb
-plugin forces from the X resources (the system's Qt 6.12.0 on an Xvfb server whose root window's `RESOURCE_MANAGER`
-holds them, read through `QXcbScreen::forcedDpi()`; each input also read back through `xrdb -query`).
+plasma-integration platform theme's `QStyleHints::colorScheme()`).
 
 By the `compiled_source` route through `accent.cpp`, the accent derivation's two tables, `kde_accent.tsv` and
 `kde_accent_wm.tsv`: Plasma's colour scheme applier, `plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp` and
@@ -52,12 +50,12 @@ inputs on which a build fusing `QColor::toRgb`'s `1.0f - (s * f)` gives another 
 them.
 
 Requires g++, bubblewrap, `pkg-config`, Qt 6.12.0's development headers (private ones included) and `moc`, and the KF6
-Config 6.31 headers and libraries; it refuses another Qt or KConfig. The readers' two tables also need the KF6
-ColorScheme 6.31 headers and library (it refuses another), the plasma-integration platform theme, Qt's xcb plugin,
-Xvfb and xrdb. The accent's two tables need the KF6 GuiAddons 6.31 and ColorScheme 6.31 headers and libraries and
-QtDBus's headers (it refuses another KGuiAddons or KColorScheme). The icon table needs Qt's QML, Quick and Quick
-Controls 2 headers and the Noto Sans and Hack fonts (it refuses a substituted family). Run from the repository root,
-the source cache's folder optional (`--only-readers`: the readers' two tables alone; `--only-accent`: the accent's two
-alone; `--only-icon`: the icon table alone):
+Config 6.31 headers and libraries; it refuses another Qt or KConfig. The scheme test's table also needs the KF6
+ColorScheme 6.31 headers and library (it refuses another) and the plasma-integration platform theme. The accent's two
+tables need the KF6 GuiAddons 6.31 and ColorScheme 6.31 headers and libraries and QtDBus's headers (it refuses
+another KGuiAddons or KColorScheme). The icon table needs Qt's QML, Quick and Quick Controls 2 headers and the Noto
+Sans and Hack fonts (it refuses a substituted family). Run from the repository root, the source cache's folder
+optional (`--only-readers`: `reader.kde_color_scheme.tsv` alone; `--only-accent`: the accent's two alone;
+`--only-icon`: the icon table alone):
 
     python3 -I tools/kde-vectors/generate.py [--only-readers | --only-accent | --only-icon] [source cache]

@@ -188,18 +188,9 @@ pub(crate) fn gsettings_get(
 }
 
 /// The session type, `$XDG_SESSION_TYPE` (`x11`, `wayland`, …).
-#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
+#[cfg(all(target_os = "linux", feature = "portal"))]
 pub(crate) fn session_type() -> Option<String> {
     std::env::var("XDG_SESSION_TYPE").ok()
-}
-
-/// The X server's resources, `xrdb -query`'s output within
-/// [`SUBPROCESS_TIMEOUT`], as 0.7.0 read them for `Xft.dpi`
-/// (`2796b26e:native-theme/src/detect.rs:454-471`); `None` where xrdb is
-/// missing, fails or times out.
-#[cfg(all(target_os = "linux", feature = "kde"))]
-pub(crate) fn x_resources() -> Option<String> {
-    stdout_with_timeout("xrdb", &["-query"], SUBPROCESS_TIMEOUT)
 }
 
 /// Reset the process-wide detection caches, so the next detection of the

@@ -49,8 +49,7 @@ pub(crate) enum SystemReader {
     /// the portal, then 0.7.0's scheme and motion chain.
     #[cfg(all(target_os = "linux", feature = "portal"))]
     Portal,
-    /// The KDE reader: kdeglobals, the scheme file it names and, on X11,
-    /// `Xft.dpi`.
+    /// The KDE reader: kdeglobals and the scheme file it names.
     #[cfg(all(target_os = "linux", feature = "kde"))]
     Kde,
     /// The macOS reader: AppKit's appearances, colours and settings.
