@@ -62,7 +62,8 @@
 //!
 //! Each preset's run decides every fact's units by S17's predicate
 //! (`depth::Depth`, ADD-A147) and reports per preset the facts of the
-//! enabled units and those of each later unit. `NT_FACTS_GATE_UNITS`
+//! enabled units, those of each unit they wait for, and those no unit's
+//! names place (unplaced, under no unit). `NT_FACTS_GATE_UNITS`
 //! naming a file of `scripts/check_facts_trace.py --facts`'s output
 //! compares the two attributions for every preset run, each difference a
 //! failure.
@@ -3389,10 +3390,11 @@ fn facts_gate_evidence_root() {
 /// alike).
 const UNITS_VARIABLE: &str = "NT_FACTS_GATE_UNITS";
 
-/// The differences between the run's facts of the enabled units and of each
-/// later unit, per preset it ran, and the `unit` lines of the file at
-/// `path` (`unit\t<preset>\t<unit or (enabled)>\t<facts>\t<pending>`), each
-/// a failure's text; a file that does not read is one.
+/// The differences between the run's facts of the enabled units, of each
+/// unit they wait for and unplaced, per preset it ran, and the `unit` lines
+/// of the file at `path` (`unit\t<preset>\t<unit, (enabled) or
+/// (unplaced)>\t<facts>\t<pending>`), each a failure's text; a file that
+/// does not read is one.
 fn units_differences(path: &Path, report: &run::Report) -> Vec<String> {
     let text = match std::fs::read_to_string(path) {
         Ok(text) => text,
@@ -3420,6 +3422,9 @@ fn units_differences(path: &Path, report: &run::Report) -> Vec<String> {
             ours.insert((preset.to_owned(), unit.to_owned()), (*count, 0));
         }
     }
+    for (preset, count) in &report.unplaced {
+        ours.insert((preset.clone(), "(unplaced)".to_owned()), (*count, 0));
+    }
     let keys: BTreeSet<&(String, String)> = theirs.keys().chain(ours.keys()).collect();
     keys.into_iter()
         .filter(|key| theirs.get(*key) != ours.get(*key))
@@ -3432,6 +3437,60 @@ fn units_differences(path: &Path, report: &run::Report) -> Vec<String> {
             )
         })
         .collect()
+}
+
+/// The units cross-check alone (S17, ADD-A147), with no preset loaded:
+/// each preset `NT_FACTS_GATE_PRESETS` selects (every bundled one where it
+/// is unset) has its facts placed by `depth::Depth` and counted as
+/// `facts_gate` counts them, and the counts are compared with the file
+/// `NT_FACTS_GATE_UNITS` names, which it requires. Ignored: `facts_gate`
+/// makes the same comparison where the presets load; run it with
+/// `-- --ignored --exact facts_units`.
+#[test]
+#[ignore = "the units cross-check alone; needs NT_FACTS_GATE_UNITS"]
+fn facts_units() {
+    let path = std::env::var_os(UNITS_VARIABLE).unwrap_or_else(|| {
+        panic!(
+            "{UNITS_VARIABLE} is unset: it names a file of check_facts_trace.py --facts's output"
+        )
+    });
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/facts");
+    let ids = selected_presets(presets_variable().as_deref())
+        .unwrap_or_else(|error| panic!("{PRESETS_VARIABLE}: {error}"));
+    let units =
+        units::Units::repository().unwrap_or_else(|error| panic!("the units do not read: {error}"));
+    let mut report = run::Report::default();
+    for id in &ids {
+        let directory = DIRECTORIES
+            .iter()
+            .find(|(key, _)| *key == id.key())
+            .map(|(_, directory)| *directory)
+            .unwrap_or_else(|| panic!("{}: no facts directory", id.key()));
+        let platform = run::Platform::read(&root.join(directory), &units, &mut report);
+        run::place_facts(&platform, id.key(), &mut report);
+    }
+    for (preset, (facts, pending)) in &report.at_depth {
+        eprintln!("  at depth: {preset}: {facts} facts of the enabled units, {pending} pending");
+    }
+    for (preset, count) in &report.unplaced {
+        eprintln!("  unplaced (under no unit): {count}: {preset}");
+    }
+    let differences = units_differences(Path::new(&path), &report);
+    eprintln!(
+        "facts units: {} presets placed, {} later-unit counts, {} read failures, {} differences \
+         from {UNITS_VARIABLE}",
+        report.at_depth.len(),
+        report.later_units.len(),
+        report.failures.len(),
+        differences.len()
+    );
+    for line in report.failures.iter().chain(&differences) {
+        eprintln!("    {line}");
+    }
+    assert!(
+        report.failures.is_empty() && differences.is_empty(),
+        "the units cross-check failed (listed above)"
+    );
 }
 
 #[test]
@@ -3564,6 +3623,9 @@ fn facts_gate() {
     }
     for (unit, count) in &report.later_units {
         eprintln!("  later unit: {count}: {unit}");
+    }
+    for (preset, count) in &report.unplaced {
+        eprintln!("  unplaced (under no unit): {count}: {preset}");
     }
     for (entry, count) in &report.combinations {
         eprintln!("  combinations: {entry}: {count}");

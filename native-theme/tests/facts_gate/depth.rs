@@ -1,21 +1,25 @@
-//! S17's predicate of a fact's units and its later unit (ADD-A147), decided
-//! exactly by names as `scripts/check_facts_trace.py`'s class `Depth`
-//! decides them, so the gate and the scripts attribute every fact alike
-//! (`NT_FACTS_GATE_UNITS` compares the two reports).
+//! S17's predicate of a fact's units and the unit a fact not of the enabled
+//! units waits for (ADD-A147), decided as `scripts/check_facts_trace.py`'s
+//! class `Depth` decides them, so the gate and the scripts attribute every
+//! fact alike (`NT_FACTS_GATE_UNITS` compares the two reports).
 //!
-//! A combination of a widget's state model in force (the default flavour's
-//! entry, each flavour's beside it once the flavours unit is enabled) is a
-//! variant set it draws, a state combination, a condition vector, a size and
-//! a density in force, a context (none, or an `axes.contexts` entry whose
-//! widgets are enabled) and a direction, less those a `not_drawn` entry
-//! names. A fact holds where its `when` holds (S11) and its part is drawn
-//! (the last presence fact holding there is not `absent` or a `drawn_as`, a
-//! pending one counting as drawn). Holding is decided exactly: each
-//! dimension is read projected on the names the `when`s read name, each
-//! projection once, and every projected combination is tested.
+//! A combination at depth of a widget's state model in force (the default
+//! flavour's entry, each flavour's beside it once the flavours unit is
+//! enabled) is a variant set it draws of variants at depth, a state
+//! combination of flags at depth, a condition vector of conditions at depth,
+//! a size and a density in force, a context (none, or an `axes.contexts`
+//! entry whose widgets are enabled) and a direction, less those a
+//! `not_drawn` entry names; they are enumerated whole, once per entry and
+//! preset, with no cap. A fact is of the enabled units where its key and the
+//! widgets its positive lists name are held, its names are at depth, and its
+//! `when` holds (S11) in one of them where its part is drawn (the last
+//! presence fact holding there is not `absent` or a `drawn_as`, a pending one
+//! counting as drawn); each distinct `when` is decided once per entry or
+//! part. Any other fact is attributed by names alone ([`Depth::unit`]).
 
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::rc::Rc;
 
 use toml::{Table, Value};
 
@@ -23,13 +27,23 @@ use super::facts::{self, Stated};
 use super::model::{self, Model, strings};
 use super::run::Platform;
 
-/// Where a fact holding in no combination even with every later unit and
-/// every host context is reported: under no unit (S17).
-pub const STRAY: &str = "stray";
-
 /// The unit of a fact drawn only in a context naming no widget: the
 /// identities, with their hosts.
 const HOSTLESS: &str = "identities";
+
+/// Where a fact of a preset stands (S17 *While the units are built*).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Place {
+    /// Of the enabled units: the run checks it.
+    Enabled,
+    /// Waiting for this unit, named by its key, a widget its `when` names,
+    /// the host it is drawn only inside, or the last later unit holding a
+    /// name its `when` lists positively.
+    Later(String),
+    /// Not of the enabled units, and no unit's names place it: reported
+    /// under no unit.
+    Unplaced,
+}
 
 /// An element alone among its siblings: first, last, only and odd.
 fn lone(key: &str, value: &Value) -> bool {
@@ -317,20 +331,98 @@ fn condition_kind(condition: &str) -> String {
     }
 }
 
-/// Which host contexts a space holds: those whose widgets are enabled, and
-/// with them the one at that place.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum Hosts {
-    Held,
-    At(usize),
+/// The variant sets an entry draws, whatever unit holds their names: its
+/// variant options (none, each single variant, each listed set, each set its
+/// products give, less those `requires_variants` excludes) less those a
+/// `not_drawn` entry stating only variants removes (check_facts_trace.py's
+/// `drawn_sets`).
+fn drawn_sets(entry: &Model) -> Vec<Names> {
+    let undrawn: Vec<&Table> = entry
+        .not_drawn
+        .iter()
+        .filter(|table| {
+            !table.is_empty()
+                && table
+                    .keys()
+                    .all(|key| key == "variants" || key == "not_variants")
+        })
+        .collect();
+    model::variant_options(entry)
+        .into_iter()
+        .map(|set| set.into_iter().collect::<Names>())
+        .filter(|set| {
+            !undrawn
+                .iter()
+                .any(|table| set_match(table, "variants", set))
+        })
+        .collect()
 }
+
+/// The default size in force of an element of `entry` holding `variants`
+/// (S10): its first `sizes_by_variant` entry's whose variant it holds, else
+/// the entry's; `None` where it takes no size or the default is pending.
+fn default_size(entry: &Model, variants: &Names) -> Option<String> {
+    let by_variant = entry
+        .sizes_by_variant
+        .iter()
+        .find(|(variant, _, _)| variants.contains(variant));
+    let taken = by_variant.map_or(&entry.sizes, |(_, sizes, _)| sizes);
+    if taken.is_empty() {
+        return None;
+    }
+    match by_variant {
+        Some((_, _, Some(default))) => Some(default.clone()),
+        _ => entry.default_size.clone(),
+    }
+}
+
+/// Whether a presence fact's value leaves its part drawn: not `absent` or a
+/// `drawn_as` (S6.3); a pending one (`None`) does (S17).
+fn draws(value: Option<&Value>) -> bool {
+    match value {
+        Some(Value::String(text)) => text != "absent",
+        Some(Value::Table(table)) => !table.contains_key("drawn_as"),
+        _ => true,
+    }
+}
+
+/// Whether a context entry of a `when` names a widget (its own, or its
+/// `nearest` scope's).
+fn names_widget(entry: &Table) -> bool {
+    entry.get("widget").and_then(Value::as_str).is_some()
+        || entry
+            .get("scope")
+            .and_then(Value::as_table)
+            .is_some_and(|scope| !strings(scope.get("nearest")).is_empty())
+}
+
+/// One presence fact for the preset: its `when` read, as written for the
+/// preset, and its value (`None`: pending).
+type Presence = (Match, Option<Value>, Option<Value>);
+
+/// The combinations at depth of a widget, each with the place of its
+/// entry's [`Space`].
+type Combos = Rc<Vec<(usize, Combo)>>;
 
 /// The predicate over one platform's facts for one preset.
 pub struct Depth<'p> {
     platform: &'p Platform,
     preset: String,
-    spaces: RefCell<HashMap<(String, Vec<String>, Hosts), std::rc::Rc<Vec<Space>>>>,
+    spaces: RefCell<HashMap<String, Rc<Vec<Space>>>>,
+    combos: RefCell<HashMap<String, Combos>>,
+    drawn: RefCell<HashMap<String, Rc<Vec<usize>>>>,
+    holds: RefCell<HashMap<(String, String), bool>>,
+    hosts: RefCell<HashMap<(String, String), Option<String>>>,
+    defaults: RefCell<HashMap<Flavoured<Names>, Rc<BTreeSet<String>>>>,
+    parts: RefCell<HashMap<String, Option<String>>>,
+    sets: RefCell<HashMap<Flavoured<()>, Option<EntrySets>>>,
 }
+
+/// An entry in force and the variant sets it draws ([`drawn_sets`]).
+type EntrySets = Rc<(Model, Vec<Names>)>;
+
+/// A widget, a flavour (`None`: the default) and what else a memo is of.
+type Flavoured<T> = (String, Option<String>, T);
 
 impl<'p> Depth<'p> {
     pub fn new(platform: &'p Platform, preset: &str) -> Depth<'p> {
@@ -338,23 +430,25 @@ impl<'p> Depth<'p> {
             platform,
             preset: preset.to_owned(),
             spaces: RefCell::new(HashMap::new()),
+            combos: RefCell::new(HashMap::new()),
+            drawn: RefCell::new(HashMap::new()),
+            holds: RefCell::new(HashMap::new()),
+            hosts: RefCell::new(HashMap::new()),
+            defaults: RefCell::new(HashMap::new()),
+            parts: RefCell::new(HashMap::new()),
+            sets: RefCell::new(HashMap::new()),
         }
     }
 
-    /// The entries in force: the default flavour's, then each flavour's
-    /// (an entry naming `flavor:<f>`) where the flavours unit is enabled or
-    /// added and its condition is not held off.
-    fn entries(&self, widget: &str, added: &[String]) -> Vec<(Option<String>, Model)> {
-        let units = &self.platform.units;
+    /// The entries in force: the default flavour's, then each flavour's (an
+    /// entry naming `flavor:<f>`), whatever unit holds the flavour.
+    fn entries(&self, widget: &str) -> Vec<(Option<String>, Model)> {
         let mut out: Vec<(Option<String>, Model)> =
             model::in_force(&self.platform.models, &self.preset, None)
                 .into_iter()
                 .filter(|entry| entry.widget == widget && entry.available)
                 .map(|entry| (None, entry.clone()))
                 .collect();
-        if units.flavours_off(added) {
-            return out;
-        }
         for entry in &self.platform.models {
             let Some(flavor) = entry
                 .conditions
@@ -368,72 +462,69 @@ impl<'p> Depth<'p> {
                     .strip_prefix("preset:")
                     .is_none_or(|id| id == self.preset)
             });
-            if entry.widget == widget
-                && entry.available
-                && for_preset
-                && !units.condition_off(flavor, widget, added)
-            {
+            if entry.widget == widget && entry.available && for_preset {
                 out.push((Some(flavor.clone()), entry.clone()));
             }
         }
         out
     }
 
-    fn space(&self, widget: &str, added: &[String], hosts: Hosts) -> std::rc::Rc<Vec<Space>> {
-        let cache_key = (widget.to_owned(), added.to_vec(), hosts);
-        if let Some(found) = self.spaces.borrow().get(&cache_key) {
-            return std::rc::Rc::clone(found);
+    /// The default flavour's entry in force (`flavour` `None`), or the
+    /// flavour's, with the variant sets it draws; computed once.
+    fn entry_for(&self, widget: &str, flavour: Option<&str>) -> Option<EntrySets> {
+        let memo = (widget.to_owned(), flavour.map(str::to_owned), ());
+        if let Some(found) = self.sets.borrow().get(&memo) {
+            return found.clone();
+        }
+        let found = self
+            .entries(widget)
+            .into_iter()
+            .find(|(held, _)| held.as_deref() == flavour)
+            .map(|(_, entry)| {
+                let sets = drawn_sets(&entry);
+                Rc::new((entry, sets))
+            });
+        self.sets.borrow_mut().insert(memo, found.clone());
+        found
+    }
+
+    /// Per entry in force, its dimensions at depth (check_facts_trace.py's
+    /// `space`), computed once per widget.
+    fn space(&self, widget: &str) -> Rc<Vec<Space>> {
+        if let Some(found) = self.spaces.borrow().get(widget) {
+            return Rc::clone(found);
         }
         let units = &self.platform.units;
         let preset = self.preset.as_str();
-        let sized = !units.sizes_off(added);
+        let sized = units.sizes_enabled();
+        let flavours = units.flavours_enabled();
         let mut out = Vec::new();
-        for (flavor, entry) in self.entries(widget, added) {
+        for (flavor, entry) in self.entries(widget) {
+            if flavor
+                .as_ref()
+                .is_some_and(|flavor| !flavours || units.condition_holder(flavor, widget).is_some())
+            {
+                continue;
+            }
             let off: Vec<String> = entry
                 .variants
                 .iter()
-                .filter(|variant| units.name_off(widget, preset, variant, true, added))
+                .filter(|variant| !units.at_depth(widget, preset, variant, true))
                 .cloned()
                 .collect();
-            let restricted = entry.without(&off);
-            let undrawn: Vec<&Table> = entry
-                .not_drawn
-                .iter()
-                .filter(|table| {
-                    !table.is_empty()
-                        && table
-                            .keys()
-                            .all(|key| key == "variants" || key == "not_variants")
-                })
-                .collect();
             let mut sets = Vec::new();
-            for set in model::variant_options(&restricted) {
-                let held: Names = set.iter().cloned().collect();
-                if undrawn
-                    .iter()
-                    .any(|table| set_match(table, "variants", &held))
-                {
-                    continue;
-                }
-                let by_variant = entry
+            for held in drawn_sets(&entry.without(&off)) {
+                let taken = entry
                     .sizes_by_variant
                     .iter()
-                    .find(|(variant, _, _)| held.contains(variant));
-                let taken = by_variant.map_or(&entry.sizes, |(_, sizes, _)| sizes);
-                let sizes: Vec<Option<String>> = if sized {
-                    if taken.is_empty() {
-                        vec![None]
-                    } else {
-                        taken.iter().cloned().map(Some).collect()
-                    }
-                } else if taken.is_empty() {
+                    .find(|(variant, _, _)| held.contains(variant))
+                    .map_or(&entry.sizes, |(_, sizes, _)| sizes);
+                let sizes: Vec<Option<String>> = if sized && !taken.is_empty() {
+                    taken.iter().cloned().map(Some).collect()
+                } else if sized {
                     vec![None]
                 } else {
-                    let default = match by_variant {
-                        Some((_, _, Some(default))) => Some(default.clone()),
-                        _ => entry.default_size.clone(),
-                    };
-                    vec![default]
+                    vec![default_size(&entry, &held)]
                 };
                 if !sets.iter().any(|(held_set, _)| *held_set == held) {
                     sets.push((held, sizes));
@@ -458,7 +549,7 @@ impl<'p> Depth<'p> {
                         .any(|table| set_match(table, "states", set))
                         && !set
                             .iter()
-                            .any(|flag| units.name_off(widget, preset, flag, false, added))
+                            .any(|flag| !units.at_depth(widget, preset, flag, false))
                 })
                 .collect();
             let schemes: Vec<String> = {
@@ -476,7 +567,7 @@ impl<'p> Depth<'p> {
             };
             let mut kinds: Vec<(String, Vec<String>)> = Vec::new();
             for condition in &entry.axis_conditions {
-                if condition.starts_with("scheme:") || units.condition_off(condition, widget, added)
+                if condition.starts_with("scheme:") || !units.condition_at_depth(condition, widget)
                 {
                     continue;
                 }
@@ -517,24 +608,14 @@ impl<'p> Depth<'p> {
                 .filter(|matched| !matched.never)
                 .collect();
             let mut contexts = vec![(Vec::new(), false)];
-            for (at, context) in entry.contexts.iter().enumerate() {
+            for context in &entry.contexts {
                 let chain = ancestors_of(context);
-                let held = chain.iter().all(|ancestor| {
-                    ancestor
-                        .widget
-                        .as_ref()
-                        .is_some_and(|widget| units.hold(widget))
-                });
-                let wanted = match hosts {
-                    Hosts::Held => held,
-                    Hosts::At(place) => place == at || held,
-                };
-                if wanted && !chain.is_empty() {
+                if !chain.is_empty() && self.held(&chain) {
                     contexts.push((chain, true));
                 }
             }
             let mut rtl = vec![false];
-            if !units.direction_off("rtl", added) {
+            if units.direction_holder("rtl").is_none() {
                 rtl.push(true);
             }
             out.push(Space {
@@ -548,16 +629,78 @@ impl<'p> Depth<'p> {
                 rtl,
             });
         }
-        let out = std::rc::Rc::new(out);
+        let out = Rc::new(out);
         self.spaces
             .borrow_mut()
-            .insert(cache_key, std::rc::Rc::clone(&out));
+            .insert(widget.to_owned(), Rc::clone(&out));
         out
     }
 
-    /// The part's presence facts for the preset, in order, each as a Match
-    /// with the value it states (`None`: pending).
-    fn presences(&self, part_key: &str) -> Vec<(Match, Option<Value>)> {
+    /// Whether every ancestor of a host chain names a widget an enabled
+    /// unit holds.
+    fn held(&self, chain: &[Ancestor]) -> bool {
+        chain.iter().all(|ancestor| {
+            ancestor
+                .widget
+                .as_ref()
+                .is_some_and(|widget| self.platform.units.hold(widget))
+        })
+    }
+
+    /// Every combination at depth of the widget's entries in force, with
+    /// the place of its entry's [`Space`]: each choice of a variant set, a
+    /// size, a density, a state combination, a condition vector, a context
+    /// and a direction, less those a `not_drawn` entry names; enumerated
+    /// whole once per widget, with no cap.
+    fn combos(&self, widget: &str) -> Combos {
+        if let Some(found) = self.combos.borrow().get(widget) {
+            return Rc::clone(found);
+        }
+        let mut out = Vec::new();
+        for (at, space) in self.space(widget).iter().enumerate() {
+            for (variants, sizes) in &space.sets {
+                for size in sizes {
+                    for density in &space.densities {
+                        for states in &space.states {
+                            for conditions in &space.vectors {
+                                for (ancestors, siblings) in &space.contexts {
+                                    for rtl in &space.rtl {
+                                        let c = Combo {
+                                            conditions: conditions.clone(),
+                                            states: states.clone(),
+                                            variants: variants.clone(),
+                                            size: size.clone(),
+                                            density: density.clone(),
+                                            rtl: *rtl,
+                                            ancestors: ancestors.clone(),
+                                            siblings: *siblings,
+                                        };
+                                        if !space
+                                            .not_drawn
+                                            .iter()
+                                            .any(|nd| combo_holds(nd, &c, &space.recency))
+                                        {
+                                            out.push((at, c));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let out = Rc::new(out);
+        self.combos
+            .borrow_mut()
+            .insert(widget.to_owned(), Rc::clone(&out));
+        out
+    }
+
+    /// The part's presence facts for the preset, in order, each as a Match,
+    /// its `when` as written for the preset, and the value it states
+    /// (`None`: pending).
+    fn presences(&self, part_key: &str) -> Vec<Presence> {
         self.platform
             .facts
             .iter()
@@ -568,31 +711,44 @@ impl<'p> Depth<'p> {
                     Stated::Value(value) => Some(value.clone()),
                     Stated::Pending(_) => None,
                 };
-                Some((compiled(written.as_ref()), value))
+                Some((compiled(written.as_ref()), written, value))
             })
             .collect()
     }
 
-    fn drawn_in(
-        presences: &[(Match, Option<Value>)],
-        c: &Combo,
-        recency: &[(String, Vec<String>)],
-    ) -> bool {
-        let last = presences
-            .iter()
-            .rev()
-            .find(|(when, _)| combo_holds(when, c, recency));
-        match last.and_then(|(_, value)| value.as_ref()) {
-            Some(Value::String(text)) => text != "absent",
-            Some(Value::Table(table)) => !table.contains_key("drawn_as"),
-            _ => true,
+    /// The places in [`Depth::combos`] of the combinations at depth where
+    /// the part is drawn: the last of its presence facts holding there
+    /// draws it, or none holds there; computed once per part.
+    fn drawn(&self, widget: &str, part: &str) -> Rc<Vec<usize>> {
+        if let Some(found) = self.drawn.borrow().get(part) {
+            return Rc::clone(found);
         }
+        let spaces = self.space(widget);
+        let presences = self.presences(part);
+        let out: Vec<usize> = self
+            .combos(widget)
+            .iter()
+            .enumerate()
+            .filter(|(_, (at, c))| {
+                let recency = spaces.get(*at).map_or(&[][..], |space| &space.recency);
+                presences
+                    .iter()
+                    .rev()
+                    .find(|(when, _, _)| combo_holds(when, c, recency))
+                    .is_none_or(|(_, _, value)| draws(value.as_ref()))
+            })
+            .map(|(place, _)| place)
+            .collect();
+        let out = Rc::new(out);
+        self.drawn
+            .borrow_mut()
+            .insert(part.to_owned(), Rc::clone(&out));
+        out
     }
 
-    /// Whether a fact of a widget's key holds, with the later units `added`
-    /// and the host contexts `hosts`, in a combination its state model in
-    /// force draws where its part is drawn, decided exactly.
-    fn holds_exact(&self, key: &str, when: Option<&Value>, added: &[String], hosts: Hosts) -> bool {
+    /// The widget and the part (`<widget>.<part>`, `None` for a widget
+    /// value, a part's own key or a key of no widget) of a key.
+    fn widget_part(key: &str) -> (&str, Option<String>) {
         let segments: Vec<&str> = key.split('.').collect();
         let widget = segments.first().copied().unwrap_or_default();
         let part = match segments.get(1) {
@@ -601,105 +757,197 @@ impl<'p> Depth<'p> {
             }
             _ => None,
         };
-        let presences = part
-            .as_deref()
-            .map(|part| self.presences(part))
-            .unwrap_or_default();
-        let m = compiled(when);
-        if m.never {
-            return false;
+        (widget, part)
+    }
+
+    /// Whether a fact of a widget's key (its `when` as written for the
+    /// preset) holds in a combination at depth where its part is drawn:
+    /// every such combination read, no cap; each distinct `when` decided
+    /// once per entry or part.
+    fn holds_at(&self, key: &str, written: Option<&Value>) -> bool {
+        let (widget, part) = Self::widget_part(key);
+        let memo = (
+            part.clone().unwrap_or_else(|| widget.to_owned()),
+            written.map(Value::to_string).unwrap_or_default(),
+        );
+        if let Some(found) = self.holds.borrow().get(&memo) {
+            return *found;
         }
-        for space in self.space(widget, added, hosts).iter() {
-            let mut reads: Vec<&Match> = vec![&m];
-            reads.extend(&space.not_drawn);
-            reads.extend(presences.iter().map(|(when, _)| when));
-            let relevant = |at: usize| -> Names {
-                reads
+        let m = compiled(written);
+        let spaces = self.space(widget);
+        let combos = self.combos(widget);
+        let holds = |(at, c): &(usize, Combo)| {
+            spaces
+                .get(*at)
+                .is_some_and(|space| combo_holds(&m, c, &space.recency))
+        };
+        let found = !m.never
+            && match &part {
+                Some(part) => self
+                    .drawn(widget, part)
                     .iter()
-                    .filter_map(|read| read.lists.get(at))
-                    .flat_map(|(pos, neg)| pos.iter().chain(neg))
-                    .cloned()
-                    .collect()
+                    .any(|place| combos.get(*place).is_some_and(holds)),
+                None => combos.iter().any(holds),
             };
-            let (rc, mut rs, rv, rz, rd) = (
-                relevant(0),
-                relevant(1),
-                relevant(2),
-                relevant(3),
-                relevant(4),
-            );
-            if reads.iter().any(|read| !read.latest.is_empty()) {
-                rs.extend(
-                    space
-                        .recency
-                        .iter()
-                        .flat_map(|(_, flags)| flags.iter().cloned()),
-                );
-            }
-            let project =
-                |set: &Names, keep: &Names| -> Names { set.intersection(keep).cloned().collect() };
-            let keep = |value: &Option<String>, within: &Names| {
-                value.clone().filter(|held| within.contains(held))
-            };
-            let fits = |set: &Names, at: usize| {
-                m.lists
-                    .get(at)
-                    .is_some_and(|(pos, neg)| pos.is_subset(set) && neg.is_disjoint(set))
-            };
-            let mut classes: BTreeSet<(Names, Option<String>, Option<String>)> = BTreeSet::new();
-            for (set, sizes) in &space.sets {
-                if !fits(set, 2) {
-                    continue;
-                }
-                for size in sizes {
-                    for density in &space.densities {
-                        classes.insert((project(set, &rv), keep(size, &rz), keep(density, &rd)));
-                    }
-                }
-            }
-            let kinds: BTreeSet<Names> = space
-                .states
-                .iter()
-                .filter(|set| fits(set, 1))
-                .map(|set| project(set, &rs))
-                .collect();
-            let conds: BTreeSet<Names> = space
-                .vectors
-                .iter()
-                .filter(|set| fits(set, 0))
-                .map(|set| project(set, &rc))
-                .collect();
-            for (variants, size, density) in &classes {
-                for states in &kinds {
-                    for conditions in &conds {
-                        for (ancestors, siblings) in &space.contexts {
-                            for rtl in &space.rtl {
-                                let c = Combo {
-                                    conditions: conditions.clone(),
-                                    states: states.clone(),
-                                    variants: variants.clone(),
-                                    size: size.clone(),
-                                    density: density.clone(),
-                                    rtl: *rtl,
-                                    ancestors: ancestors.clone(),
-                                    siblings: *siblings,
-                                };
-                                if combo_holds(&m, &c, &space.recency)
-                                    && !space
-                                        .not_drawn
-                                        .iter()
-                                        .any(|nd| combo_holds(nd, &c, &space.recency))
-                                    && Self::drawn_in(&presences, &c, &space.recency)
-                                {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        self.holds.borrow_mut().insert(memo, found);
+        found
+    }
+
+    /// The sizes the sizes unit does not hold for a `when`: the default in
+    /// force of each variant set holding its variants that its flavour's
+    /// entry draws (the default flavour's where it names none).
+    fn size_defaults(&self, widget: &str, when: &Table) -> Rc<BTreeSet<String>> {
+        let flavour = names(when.get("conditions"))
+            .into_iter()
+            .find(|condition| condition.starts_with("flavor:"));
+        let variants = names(when.get("variants"));
+        let memo = (widget.to_owned(), flavour, variants);
+        if let Some(found) = self.defaults.borrow().get(&memo) {
+            return Rc::clone(found);
         }
-        false
+        let found: BTreeSet<String> = self
+            .entry_for(widget, memo.1.as_deref())
+            .map(|found| {
+                let (entry, sets) = &*found;
+                sets.iter()
+                    .filter(|set| memo.2.is_subset(set))
+                    .filter_map(|set| default_size(entry, set))
+                    .collect()
+            })
+            .unwrap_or_default();
+        let found = Rc::new(found);
+        self.defaults.borrow_mut().insert(memo, Rc::clone(&found));
+        found
+    }
+
+    /// The unit of the host inside which alone the key's entry draws one of
+    /// `variants` (the first in sorted order so drawn), else its part;
+    /// `None` where it draws them outside a host.
+    fn host_unit(&self, key: &str, variants: &Names) -> Option<String> {
+        let (widget, part) = Self::widget_part(key);
+        variants
+            .iter()
+            .find_map(|variant| self.variant_host(widget, variant))
+            .or_else(|| part.and_then(|part| self.part_host(&part)))
+    }
+
+    /// Where the widget's default entry in force draws no variant set
+    /// holding `variant` outside a host context, the unit of the first
+    /// `axes.contexts` entry, of those whose widgets are not all enabled,
+    /// inside which it draws one: the entry's innermost widget, the
+    /// identities where it names none; else `None`. Read from the entry's
+    /// structure alone (its sets and its `not_drawn` entries stating only
+    /// variants and contexts), once per widget and variant.
+    fn variant_host(&self, widget: &str, variant: &str) -> Option<String> {
+        let memo = (widget.to_owned(), variant.to_owned());
+        if let Some(found) = self.hosts.borrow().get(&memo) {
+            return found.clone();
+        }
+        let found = self.entry_for(widget, None).and_then(|found| {
+            let (entry, sets) = &*found;
+            let sets: Vec<&Names> = sets.iter().filter(|set| set.contains(variant)).collect();
+            let gone: Vec<Match> = entry
+                .not_drawn
+                .iter()
+                .filter(|table| {
+                    !table.is_empty()
+                        && table.keys().all(|key| {
+                            ["variants", "not_variants", "context", "not_context"]
+                                .contains(&key.as_str())
+                        })
+                })
+                .map(|table| compiled(Some(&Value::Table(table.clone()))))
+                .collect();
+            let drawn = |ancestors: &[Ancestor]| {
+                sets.iter().any(|set| {
+                    let c = Combo {
+                        conditions: Names::new(),
+                        states: Names::new(),
+                        variants: (*set).clone(),
+                        size: None,
+                        density: None,
+                        rtl: false,
+                        ancestors: ancestors.to_vec(),
+                        siblings: !ancestors.is_empty(),
+                    };
+                    !gone.iter().any(|m| combo_holds(m, &c, &[]))
+                })
+            };
+            if sets.is_empty() || drawn(&[]) {
+                return None;
+            }
+            entry.contexts.iter().find_map(|context| {
+                let chain = ancestors_of(context);
+                if self.held(&chain) || !drawn(&chain) {
+                    return None;
+                }
+                Some(
+                    chain
+                        .iter()
+                        .filter_map(|ancestor| ancestor.widget.clone())
+                        .next_back()
+                        .unwrap_or_else(|| HOSTLESS.to_owned()),
+                )
+            })
+        });
+        self.hosts.borrow_mut().insert(memo, found.clone());
+        found
+    }
+
+    /// Where the part's presence facts draw it only inside a host context
+    /// (after the last one with no `when` that does not draw it, every one
+    /// that draws it names a context, and one does): the widget the first
+    /// such fact's first context entry names, the identities where it
+    /// names none; else `None`.
+    fn part_host(&self, part: &str) -> Option<String> {
+        if let Some(found) = self.parts.borrow().get(part) {
+            return found.clone();
+        }
+        let found = self.part_host_of(part);
+        self.parts
+            .borrow_mut()
+            .insert(part.to_owned(), found.clone());
+        found
+    }
+
+    /// [`Depth::part_host`], computed.
+    fn part_host_of(&self, part: &str) -> Option<String> {
+        let presences = self.presences(part);
+        let unconditional = |written: &Option<Value>| {
+            written.as_ref().is_none_or(|when| {
+                when.as_table().is_some_and(|table| {
+                    table
+                        .values()
+                        .all(|value| value.as_array().is_some_and(Vec::is_empty))
+                })
+            })
+        };
+        let base = presences
+            .iter()
+            .rposition(|(_, written, value)| unconditional(written) && !draws(value.as_ref()))?;
+        let contexts: Vec<Vec<Value>> = presences
+            .iter()
+            .skip(base.saturating_add(1))
+            .filter(|(_, _, value)| draws(value.as_ref()))
+            .map(|(_, written, _)| {
+                written
+                    .as_ref()
+                    .and_then(|when| when.get("context"))
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default()
+            })
+            .collect();
+        if contexts.is_empty() || contexts.iter().any(Vec::is_empty) {
+            return None;
+        }
+        let first = contexts.first().and_then(|context| context.first());
+        Some(
+            first
+                .and_then(|entry| entry.get("widget"))
+                .and_then(Value::as_str)
+                .map_or_else(|| HOSTLESS.to_owned(), str::to_owned),
+        )
     }
 
     /// The widgets a `when`'s positive lists name as an ancestor or a
@@ -732,15 +980,63 @@ impl<'p> Depth<'p> {
         out
     }
 
-    /// `None` where a fact of the preset (its `when` with the preset
-    /// decided, `written`) is of the enabled units; else the later unit it
-    /// waits for, its key's or a context widget's unit where the model does
-    /// not hold them, or [`STRAY`] (check_facts_trace.py's `Depth.unit`).
-    pub fn unit(&self, key: &str, written: Option<&Value>) -> Option<String> {
+    /// The state flags a `when` names positively: its `states` and its
+    /// `latest` flags.
+    fn flags(when: &Table) -> Vec<String> {
+        let mut flags = strings(when.get("states"));
+        if let Some(latest) = when.get("latest").and_then(Value::as_table) {
+            flags.extend(latest.values().filter_map(Value::as_str).map(str::to_owned));
+        }
+        flags
+    }
+
+    /// Whether a fact whose key and named widgets are held is of the
+    /// enabled units: its conditions at depth for its key (of distinct
+    /// kinds for a key of no widget), its variants and flags at depth, and
+    /// its `when` holding in a combination at depth where its part is drawn
+    /// (check_facts_trace.py's `Depth.of_enabled`).
+    fn of_enabled(&self, key: &str, when: &Table, written: Option<&Value>) -> bool {
+        let units = &self.platform.units;
+        let preset = self.preset.as_str();
+        let conditions = strings(when.get("conditions"));
+        if conditions
+            .iter()
+            .any(|condition| !units.condition_at_depth(condition, key))
+        {
+            return false;
+        }
+        let (widget, _) = Self::widget_part(key);
+        if ["role", "token", "input"].contains(&widget) {
+            let kinds: BTreeSet<String> = conditions.iter().map(|c| condition_kind(c)).collect();
+            return kinds.len() == names(when.get("conditions")).len();
+        }
+        if strings(when.get("variants"))
+            .iter()
+            .any(|variant| !units.at_depth(widget, preset, variant, true))
+            || Self::flags(when)
+                .iter()
+                .any(|flag| !units.at_depth(widget, preset, flag, false))
+        {
+            return false;
+        }
+        self.holds_at(key, written)
+    }
+
+    /// Where a fact of the preset (its `when` with the preset decided,
+    /// `written`) stands (check_facts_trace.py's `Depth.unit`): of the
+    /// enabled units ([`Depth::of_enabled`]); else, by names alone, its
+    /// key's unit where the model does not hold the key, a widget its
+    /// positive lists name that the model does not hold, the host inside
+    /// which alone its entry draws a variant it names or its part (where it
+    /// names no context), or the last later unit, in the units file's
+    /// order, that holds a name its `when` lists positively (a variant, a
+    /// flag, a condition or flavour, a size no default in force, a density,
+    /// a direction, a context naming no widget); else unplaced.
+    pub fn unit(&self, key: &str, written: Option<&Value>) -> Place {
         let units = &self.platform.units;
         let preset = self.preset.as_str();
         if !(key.starts_with("input.") || units.hold_on(key, Some(preset))) {
-            return Some(units.key_unit(key));
+            return Place::Later(units.key_unit(key));
         }
         let empty = Table::new();
         let when = written.and_then(Value::as_table).unwrap_or(&empty);
@@ -748,91 +1044,59 @@ impl<'p> Depth<'p> {
             .into_iter()
             .find(|widget| !units.hold(widget))
         {
-            return Some(widget);
+            return Place::Later(widget);
         }
-        let waiting = units.waiting_names();
-        let place = |unit: &str| waiting.iter().position(|held| held == unit);
-        let mut needed: Vec<usize> = strings(when.get("conditions"))
+        if self.of_enabled(key, when, written) {
+            return Place::Enabled;
+        }
+        let (widget, _) = Self::widget_part(key);
+        let entry = !["role", "token", "input"].contains(&widget);
+        let contexts = tables(when.get("context"));
+        let names_context = when
+            .get("context")
+            .and_then(Value::as_array)
+            .is_some_and(|context| !context.is_empty());
+        if entry
+            && !names_context
+            && let Some(host) = self.host_unit(key, &names(when.get("variants")))
+        {
+            return Place::Later(host);
+        }
+        let mut found: Vec<(usize, &str)> = strings(when.get("conditions"))
             .iter()
             .filter_map(|condition| units.condition_holder(condition, key))
-            .filter_map(|(_, unit)| place(unit))
             .collect();
-        let widget = key.split('.').next().unwrap_or_default();
-        if ["role", "token", "input"].contains(&widget) {
-            let conditions = strings(when.get("conditions"));
-            let kinds: BTreeSet<String> = conditions.iter().map(|c| condition_kind(c)).collect();
-            if kinds.len() != conditions.len() {
-                return Some(STRAY.to_owned());
+        if entry {
+            found.extend(
+                strings(when.get("variants"))
+                    .iter()
+                    .filter_map(|variant| units.holder(widget, preset, variant, true)),
+            );
+            found.extend(
+                Self::flags(when)
+                    .iter()
+                    .filter_map(|flag| units.holder(widget, preset, flag, false)),
+            );
+            if let Some(direction) = when.get("direction").and_then(Value::as_str) {
+                found.extend(units.direction_holder(direction));
             }
-            return needed
-                .into_iter()
-                .max()
-                .and_then(|at| waiting.get(at).cloned());
-        }
-        for variant in strings(when.get("variants")) {
-            needed.extend(
-                units
-                    .holder(widget, preset, &variant, true)
-                    .and_then(|(_, unit)| place(unit)),
-            );
-        }
-        let mut flags = strings(when.get("states"));
-        if let Some(latest) = when.get("latest").and_then(Value::as_table) {
-            flags.extend(latest.values().filter_map(Value::as_str).map(str::to_owned));
-        }
-        for flag in flags {
-            needed.extend(
-                units
-                    .holder(widget, preset, &flag, false)
-                    .and_then(|(_, unit)| place(unit)),
-            );
-        }
-        if let Some(direction) = when.get("direction").and_then(Value::as_str) {
-            needed.extend(
-                units
-                    .direction_holder(direction)
-                    .and_then(|(_, unit)| place(unit)),
-            );
-        }
-        if needed.is_empty() && self.holds_exact(key, written, &[], Hosts::Held) {
-            return None;
-        }
-        let added = |upto: usize| -> Vec<String> {
-            waiting
-                .iter()
-                .take(upto.saturating_add(1))
-                .cloned()
-                .collect()
-        };
-        let last = waiting.len().saturating_sub(1);
-        let every = added(last);
-        if !self.holds_exact(key, written, &every, Hosts::Held) {
-            let model = model::in_force(&self.platform.models, preset, None)
-                .into_iter()
-                .find(|entry| entry.widget == widget);
-            for (at, context) in model
-                .iter()
-                .flat_map(|entry| entry.contexts.iter().enumerate())
-            {
-                if self.holds_exact(key, written, &every, Hosts::At(at)) {
-                    let named = ancestors_of(context)
-                        .into_iter()
-                        .filter_map(|ancestor| ancestor.widget)
-                        .next_back();
-                    return Some(named.unwrap_or_else(|| HOSTLESS.to_owned()));
+            if let Some(sizes) = units.sizes_holder() {
+                let defaults = self.size_defaults(widget, when);
+                if !strings(when.get("densities")).is_empty()
+                    || strings(when.get("sizes"))
+                        .iter()
+                        .any(|size| !defaults.contains(size))
+                {
+                    found.push(sizes);
                 }
             }
-            return Some(STRAY.to_owned());
-        }
-        let (mut lo, mut hi) = (needed.into_iter().max().unwrap_or(0), last);
-        while lo < hi {
-            let mid = lo + (hi - lo) / 2;
-            if self.holds_exact(key, written, &added(mid), Hosts::Held) {
-                hi = mid;
-            } else {
-                lo = mid.saturating_add(1);
+            if contexts.iter().any(|context| !names_widget(context)) {
+                found.extend(units.waiting(HOSTLESS));
             }
         }
-        waiting.get(lo).cloned()
+        found
+            .into_iter()
+            .max_by_key(|(at, _)| *at)
+            .map_or(Place::Unplaced, |(_, unit)| Place::Later(unit.to_owned()))
     }
 }
