@@ -458,9 +458,10 @@ def at_depth_when(depth, platform: str, preset: str, key: str, when: dict) -> di
     """The `when` of a fact of the enabled units with every mention of a name not at depth left out (S10, S17,
     ADD-A147; the D6 staging design, 2.3): a negative entry naming one (`not_variants`, `not_states`,
     `not_conditions`, `not_sizes`, `not_densities`, `not_context`) holds wherever the element holds no such name, so
-    it is left out of the rule; a one-of `sizes` list is trimmed to its sizes at depth, not dropped (the fact holds at
-    depth, so one stays). A positive name beyond depth leaves the fact no combination at depth (Depth.of_enabled()), so
-    it never reaches here. A list emptied so goes."""
+    it is left out of the rule, a typed variant at depth that no combination at depth draws among them (the preset's
+    `later`, which S12 refuses in every layer; drawn_variants()); a one-of `sizes` list is trimmed to its sizes at
+    depth, not dropped (the fact holds at depth, so one stays). A positive name beyond depth leaves the fact no
+    combination at depth (Depth.of_enabled()), so it never reaches here. A list emptied so goes."""
     widget = key.split(".")[0] if is_entry_key(key) else None
     sizes = depth_sizes(depth, platform, widget, preset) if widget else None
     out = {}
@@ -470,8 +471,11 @@ def at_depth_when(depth, platform: str, preset: str, key: str, when: dict) -> di
             continue
         if k == "not_conditions":
             v = [c for c in v if not depth.condition_off(c, key)]
-        elif k in ("not_variants", "not_states") and widget:
-            v = [x for x in v if not depth.off(widget, preset, k[4:], x)]
+        elif k == "not_variants" and widget:
+            drawn = drawn_variants(depth, platform, widget, preset)
+            v = [x for x in v if not depth.off(widget, preset, "variants", x) and (x.startswith("@") or x in drawn)]
+        elif k == "not_states" and widget:
+            v = [x for x in v if not depth.off(widget, preset, "states", x)]
         elif k in ("sizes", "not_sizes") and sizes is not None:
             v = [z for z in v if z in sizes]
         elif k == "not_densities" and depth.sizes_off() is not None:
@@ -1150,7 +1154,7 @@ def declare_findings(text: str) -> list:
 def beyond_depth(draft: Draft) -> list:
     """Each mention of a name not at depth the draft makes (S17: "a bundled preset mentions no name outside the
     enabled units'", ADD-A147), as a mismatch: in a rule's `when` (a variant or state flag a later unit holds for the
-    widget, a condition one holds for the key, a size or density of the sizes unit, a direction, a context entry no
+    widget, a typed variant at depth no combination at depth draws, a condition one holds for the key, a size or density of the sizes unit, a direction, a context entry no
     combination at depth holds) and in a widget's own declaration (a flag, exclusive group or recency set naming a
     flag not at depth; a variant not at depth missing from its `later`)."""
     depth, platform, preset = draft.depth, draft.platform, draft.preset
@@ -1162,9 +1166,10 @@ def beyond_depth(draft: Draft) -> list:
         names = [c for k in ("conditions", "not_conditions") for c in when.get(k, []) if depth.condition_off(c, f.key)]
         if widget:
             sizes = depth_sizes(depth, platform, widget, preset)
+            drawn = drawn_variants(depth, platform, widget, preset)
             latest = when.get("latest") if isinstance(when.get("latest"), dict) else {}
             names += [v for k in ("variants", "not_variants") for v in when.get(k, [])
-                      if depth.off(widget, preset, "variants", v)]
+                      if depth.off(widget, preset, "variants", v) or not v.startswith("@") and v not in drawn]
             names += [s for k in ("states", "not_states") for s in when.get(k, []) + (
                 list(latest.values()) if k == "states" else []) if depth.off(widget, preset, "states", s)]
             names += [z for k in ("sizes", "not_sizes") for z in when.get(k, []) if sizes is not None and z not in sizes]
@@ -1845,12 +1850,19 @@ def later_variants(variants: list, widget: str, platform: str, preset: str, dept
     """The declared variants a unit not enabled states (S10 *Later names*, S17, ADD-A147), in their declared order:
     each a later unit not enabled holds for the entry on the preset (a keyed variant beyond depth, a typed variant
     the model holds through another entry's Depth line), and each typed variant at depth that the preset's state model
-    in force draws in no combination at depth (Depth.combos())."""
-    drawn = set()
-    for c in depth.combos(platform, widget, preset)[0]:
-        drawn |= c.variants
+    in force draws in no combination at depth (drawn_variants())."""
+    drawn = drawn_variants(depth, platform, widget, preset)
     return [v for v in variants if depth.off(widget, preset, "variants", v)
             or not v.startswith("@") and v not in drawn]
+
+
+def drawn_variants(depth, platform: str, widget: str, preset: str) -> set:
+    """The variants some combination at depth of the widget's state model in force on the preset holds
+    (Depth.combos()); a typed variant at depth outside them is drawn nowhere, the preset's `later` (S10)."""
+    out = set()
+    for c in depth.combos(platform, widget, preset)[0]:
+        out |= c.variants
+    return out
 
 
 def in_force(model: dict, widget: str, preset: str, depth) -> dict:
@@ -3976,13 +3988,14 @@ def depth_cases(root: Path) -> list:
     if units != {"300ms": "sizes", "#444444": "behaviour", "#555555": "styles", "#666666": "states",
                  "#777777": "sizes"}:
         failures.append(f"depth: the later units' facts {units}")
-    # at_depth_when() itself: each negative entry naming a name beyond depth left out, a negative one at depth kept,
-    # a size list trimmed to the sizes at depth (no fact reaches it with two sizes, as none holds at depth)
-    when = {"not_variants": ["@pill", "@lifted"], "not_states": ["open", "pressed"], "sizes": ["regular", "small"],
-            "not_conditions": ["window_inactive", "scheme:dark"], "not_densities": ["compact"],
-            "not_context": [{"scope": "any", "widget": "toolbar"}], "states": ["hover"]}
+    # at_depth_when() itself: each negative entry naming a name beyond depth left out (a typed variant no combination
+    # at depth draws among them, `toggle`, which the state model lacks), a negative one at depth kept (`flat`, drawn,
+    # `@lifted`), a size list trimmed to the sizes at depth (no fact reaches it with two sizes, as none holds at depth)
+    when = {"not_variants": ["@pill", "@lifted", "flat", "toggle"], "not_states": ["open", "pressed"],
+            "sizes": ["regular", "small"], "not_conditions": ["window_inactive", "scheme:dark"],
+            "not_densities": ["compact"], "not_context": [{"scope": "any", "widget": "toolbar"}], "states": ["hover"]}
     got = at_depth_when(draft.depth, "gnome", "adwaita", "button.body.fill", when)
-    want = {"not_variants": ["@lifted"], "not_states": ["pressed"], "sizes": ["regular"],
+    want = {"not_variants": ["@lifted", "flat"], "not_states": ["pressed"], "sizes": ["regular"],
             "not_conditions": ["scheme:dark"], "states": ["hover"]}
     if got != want:
         failures.append(f"depth: at_depth_when {got}, expected {want}")

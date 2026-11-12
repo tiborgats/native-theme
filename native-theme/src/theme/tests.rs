@@ -126,30 +126,24 @@ fn a_listed_focus_visible_token_a_widget_reads_loads() {
     validates(None, &text).unwrap();
 }
 
-/// `adwaita` while its `[pending]` table lists paths (S17, ADD-A128):
-/// `Theme::from_preset` refuses it with S12's missing field at each listed
-/// path no layer states, and `Theme::from_preset_synthetic` loads it with
-/// one synthetic layer per listed path.
+/// `adwaita` at depth lists no path (its `[pending]` table empty, the
+/// plan's *The depth 0.8.0 states*: `adwaita` 0; S17, ADD-A147): a preset
+/// whose table is empty is complete, so `Theme::from_preset` loads it on
+/// the plain route, S12 finding no missing field, and the synthetic route,
+/// with no synthetic layer, loads it alike (S17, ADD-A128).
 #[test]
-fn adwaita_refused_plain_and_loaded_synthetic() {
-    let file = read_preset(PresetId::Adwaita.source()).unwrap();
-    assert!(!file.pending.is_empty());
-    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
-        super::Theme::from_preset(PresetId::Adwaita, Scheme::Light)
-    else {
-        panic!("adwaita's listed paths are missing on the plain route");
-    };
-    let missing: Vec<String> = problems
-        .iter()
-        .filter(|problem| problem.kind == ProblemKind::Missing)
-        .map(|problem| problem.path.clone())
-        .collect();
-    assert_eq!(missing.len(), file.pending.len(), "{problems:?}");
-    assert_eq!(missing.len(), problems.len(), "{problems:?}");
-    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
-    let theme =
-        super::Theme::from_preset_synthetic(PresetId::Adwaita, Scheme::Light, layers).unwrap();
+fn adwaita_lists_nothing_and_loads_plain() -> Result<(), String> {
+    let file = read_preset(PresetId::Adwaita.source()).map_err(|error| error.to_string())?;
+    assert!(file.pending.is_empty(), "{:?}", file.pending);
+    let theme = super::Theme::from_preset(PresetId::Adwaita, Scheme::Light)
+        .map_err(|error| error.to_string())?;
     assert_eq!(theme.preset(), PresetId::Adwaita);
+    let layers = synthetic_layers(&file.pending, &file.layer)?;
+    assert!(layers.is_empty());
+    let theme = super::Theme::from_preset_synthetic(PresetId::Adwaita, Scheme::Light, layers)
+        .map_err(|error| error.to_string())?;
+    assert_eq!(theme.preset(), PresetId::Adwaita);
+    Ok(())
 }
 
 /// `macos-tahoe` while its `[pending]` table lists paths (S16, S17,
@@ -1909,9 +1903,10 @@ fn kirigami_label_icon_size_over_kde_breeze() {
 
 /// A macOS reading over `macos-tahoe` (S9.3, S9.5): it validates as the
 /// reader layer, its state is the system's, and the resolved theme shows
-/// what it read under the scheme in force: the accent, a role it read, a
-/// keyed system colour, and `role.@selected_control`, which the preset
-/// states as its input.
+/// what it read under the scheme in force: the accent, a role it read and
+/// a keyed system colour; `role.@selected_control`, a keyed role staged
+/// with the keyed roles unit (S6.1, ADD-A147), is stated by neither, so it
+/// resolves to none, though the reader reads its input.
 #[test]
 fn a_macos_reading_over_macos_tahoe() {
     use crate::blocks::part_style::RoleRef;
@@ -1947,8 +1942,9 @@ fn a_macos_reading_over_macos_tahoe() {
     );
     assert_eq!(
         root_role(&theme, RoleRef::Keyed(crate::key!("selected_control"))),
-        read(5)
+        None
     );
+    assert_eq!(root_input(&theme, "selected_control"), Ok(read(5)));
 }
 
 /// Under Increase Contrast a macOS reading's rules and contrast bases show
