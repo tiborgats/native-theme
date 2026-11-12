@@ -14,7 +14,7 @@ use crate::query::{Element, FontMetrics, RootInputs, Styled, Unavailable};
 use crate::resolve::{Stack, WindowConditions, WindowState};
 use crate::selector::{ControlSize, Direction, InputKind, PartRef, Scheme};
 use crate::toml::layer::read_preset;
-use crate::units::{Ms, Px, Size};
+use crate::units::{Px, Size};
 use crate::widgets::{ButtonPart, TypedPart};
 
 /// S19.1's build test: every bundled preset reads, states its own key as
@@ -81,14 +81,14 @@ fn validates(id: Option<PresetId>, text: &str) -> Result<(), String> {
 
 /// A synthetic value S12 refuses: the build test fails with S12's problem
 /// and names the listed paths whose synthetic values the stack holds (S17,
-/// ADD-A131): the listed touch delay's synthetic value, `absent`, read by a
-/// preset rule where a duration may not be absent. A stated delay would be
+/// ADD-A131): the listed subtitle gap's synthetic value, `absent`, read by
+/// a preset rule where a length may not be absent. A stated gap would be
 /// accepted there, so the refusal is the gate's choice of values to fix,
 /// not S17's case of no single accepted value; a listed presence beside it
 /// holds no synthetic value and is not named.
 #[test]
 fn build_test_names_a_refused_synthetic_value() {
-    let rule = "\n[[rules]]\ntarget = \"tokens\"\nset = { caret.blink_on_ms = \"= token.behavior.touch.delay\" }\n";
+    let rule = MIN_WIDTH_READS_THE_GAP;
     let text = format!(
         "{}{rule}",
         listed_preset().replacen(
@@ -100,7 +100,7 @@ fn build_test_names_a_refused_synthetic_value() {
     let refused = validates(None, &text).unwrap_err();
     assert!(refused.contains("may not be absent"), "{refused}");
     assert!(
-        refused.ends_with("the stack holds the synthetic values of tokens.behavior.touch.delay_ms"),
+        refused.ends_with(&format!("the stack holds the synthetic values of {LISTED}")),
         "{refused}"
     );
 }
@@ -299,48 +299,71 @@ fn build_test_takes_both_routes() {
     validates(None, complete).unwrap();
 }
 
-/// Two listed paths, a set-whole block (`Option<KeyRepeat>`) and a leaf
-/// the focus indicator's table, built whole, leaves out (S6.1, S17,
+/// The fixture base with `button.body`'s interaction stated whole but its
+/// ripple's indication box, a set-whole block (`Option<IndicationBox>`),
+/// and its synthetic value `none`'s place (S6.1, S17).
+fn base_with_interaction(base: &str) -> String {
+    base.replacen(
+        "\ninteraction = \"absent\"\n",
+        "\ninteraction = { state_layer = { color = \"#000000\", alpha = 0.1 }, ripple = { \
+         effect = \"absent\", color = \"absent\", alpha = \"absent\", bounded = true, \
+         max_radius_px = \"absent\", padding_px = \"absent\" } }\n",
+        1,
+    )
+}
+
+/// Two listed paths, a set-whole block (`Option<IndicationBox>`) and a
+/// leaf the focus indicator's table, built whole, leaves out (S6.1, S17,
 /// ADD-A128): the reader leaves the indicator a patch, the Checker exempts
 /// both, the synthetic layers, validated all at once, state them, and each
 /// resolves to its synthetic value; one layer alone leaves the other
 /// missing.
 #[test]
-fn synthetic_route_takes_every_layer_at_once() {
+fn synthetic_route_takes_every_layer_at_once() -> Result<(), String> {
     let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
+    let indication = "widgets.button.body.interaction.ripple.indication_box";
     let text = format!(
-        "[pending]\n\"tokens.behavior.key_repeat\" = \"U1\"\n\"tokens.focus.width_px\" = \"U2\"\n{}",
-        base.replacen("\nkey_repeat = \"none\"\n", "\n", 1)
-            .replacen("\nwidth_px = 2\n", "\n", 1)
+        "[pending]\n\"{indication}\" = \"U1\"\n\"tokens.focus.width_px\" = \"U2\"\n{}",
+        base_with_interaction(base).replacen("\nwidth_px = 2\n", "\n", 1)
     );
-    let file = read_preset(&text).unwrap();
-    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    let file = read_preset(&text).map_err(|e| e.to_string())?;
+    let layers = synthetic_layers(&file.pending, &file.layer)?;
     assert_eq!(layers.len(), 2);
-    let stack = synthetic_stack(None, &text, Scheme::Light, layers.clone()).unwrap();
+    let stack =
+        synthetic_stack(None, &text, Scheme::Light, layers.clone()).map_err(|e| e.to_string())?;
     let theme = stack
         .resolve(
             &mut WindowState::default(),
             &WindowConditions::new(InputKind::Mouse),
         )
         .theme;
-    let tokens = theme.tokens(&theme.root_scope(&root())).unwrap();
-    let repeat = tokens.behavior.key_repeat.unwrap();
-    assert_eq!(
-        (repeat.delay, repeat.interval),
-        (Some(Ms(1.0)), Some(Ms(1.0)))
-    );
+    let scope = theme.root_scope(&root());
+    let tokens = theme.tokens(&scope).ok_or("no tokens")?;
     assert_eq!(tokens.focus.width, Some(Px(1.0)));
-    for (alone, other) in [(0, "tokens.focus.width"), (1, "tokens.behavior.key_repeat")] {
+    let body = PartRef::Typed(TypedPart::Button(ButtonPart::Body));
+    let Styled::Style((style, _)) = theme.style(&Element::new(body, &scope, &NoMetrics)) else {
+        return Err("the body is drawn".to_owned());
+    };
+    let ripple = style.interaction.map(|interaction| interaction.ripple);
+    assert_eq!(ripple.map(|ripple| ripple.indication_box), Some(None));
+    let mut missing = Vec::new();
+    for layer in &layers {
         let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
-            synthetic_stack(None, &text, Scheme::Light, vec![layers[alone].clone()])
+            synthetic_stack(None, &text, Scheme::Light, vec![layer.clone()])
         else {
-            panic!("one layer alone leaves the other listed path missing");
+            return Err("one layer alone leaves the other listed path missing".to_owned());
         };
-        assert_eq!(
-            problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
-            [format!("{other}: missing")]
-        );
+        missing.extend(problems.iter().map(ToString::to_string));
     }
+    missing.sort();
+    assert_eq!(
+        missing,
+        [
+            "tokens.focus.width: missing".to_owned(),
+            format!("{indication}: missing")
+        ]
+    );
+    Ok(())
 }
 
 /// Synthetic measurement: every metric zero.
@@ -380,7 +403,8 @@ impl FontMetrics for NoMetrics {
 /// listed by its declaration's path, it is S12's missing default size on
 /// the plain route; the synthetic route states no layer for it, waives the
 /// checks that read it, and answers an element that states no size and
-/// whose default is pending `NotAvailable(Size)`.
+/// whose default is pending `NotAvailable(Size)`, and one stating a size
+/// `NotAvailable(Later)`.
 #[test]
 fn synthetic_route_waives_a_pending_default_size() {
     let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
@@ -414,8 +438,13 @@ fn synthetic_route_waives_a_pending_default_size() {
         theme.style(&element),
         Styled::NotAvailable(Unavailable::Size)
     );
+    // A size it takes is no default in force (the default is pending):
+    // `Later` while the sizes unit is not enabled (S8, S10; ADD-A147).
     let sized = Element::new(body, &scope, &NoMetrics).with_size(ControlSize::Small);
-    assert!(matches!(theme.style(&sized), Styled::Style(_)));
+    assert_eq!(
+        theme.style(&sized),
+        Styled::NotAvailable(Unavailable::Later)
+    );
 }
 
 /// S12 validates a listed path's synthetic value as stated (S17,
@@ -450,27 +479,32 @@ fn a_listed_enum_is_validated_as_stated() {
 }
 
 /// S12 validates a listed block S6.1 sets whole as stated (S17,
-/// ADD-A131): the listed `key_repeat` stated as a block, its delay read
-/// where a duration may not be absent is accepted, as the preset stating
-/// it is, never read as `none` beside the stated block.
+/// ADD-A131): the listed indication box stated as a block, its outset read
+/// where a length may not be absent is accepted, as the preset stating it
+/// is, never read as `none` beside the stated block.
 #[test]
-fn a_listed_option_block_is_validated_as_stated() {
-    let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
-    let line = "\nkey_repeat = \"none\"\n";
+fn a_listed_option_block_is_validated_as_stated() -> Result<(), String> {
+    let base = base_with_interaction(include_str!("../../tests/fixtures/facts_gate/base.toml"));
+    let line = "padding_px = \"absent\" } }\n";
     assert!(base.contains(line));
-    let rule = "\n[[rules]]\ntarget = \"tokens\"\nset = { caret.blink_on_ms = \"= token.behavior.key_repeat.delay\" }\n";
+    let rule = "\n[[rules]]\ntarget = \"button.body\"\nset = { min_width_px = \
+                \"= part.interaction.ripple.indication_box.outset\" }\n";
     let stated = base.replacen(
         line,
-        "\nkey_repeat = { delay_ms = 500, interval_ms = 40 }\n",
+        "padding_px = \"absent\", indication_box = { part = \"icon\", outset_px = 2 } } }\n",
         1,
     );
-    preset_stack(None, &format!("{stated}{rule}"), Scheme::Light).unwrap();
+    preset_stack(None, &format!("{stated}{rule}"), Scheme::Light).map_err(|e| e.to_string())?;
     let text = format!(
-        "[pending]\n\"tokens.behavior.key_repeat\" = \"U1\"\n{}{rule}",
-        base.replacen(line, "\n", 1)
+        "[pending]\n\"widgets.button.body.interaction.ripple.indication_box\" = \"U1\"\n{base}{rule}"
     );
-    let block = synthetic_layer("[tokens.behavior.key_repeat]\ndelay_ms = 1\ninterval_ms = 1\n");
-    synthetic_stack(None, &text, Scheme::Light, vec![block]).unwrap();
+    let block = Layer::from_toml(
+        "[widgets.button.body.interaction.ripple]\nindication_box = { part = \"icon\", \
+         outset_px = 1 }\n",
+    )
+    .map_err(|e| e.to_string())?;
+    synthetic_stack(None, &text, Scheme::Light, vec![block]).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 /// A window's root inputs, synthetic.
@@ -509,16 +543,54 @@ fn invalid_preset_is_a_theme_error() {
 }
 
 /// The facts gate fixtures' base preset (every field stated, every value
-/// synthetic), its touch delay listed in `[pending]` as a register id of
+/// synthetic), its subtitle gap listed in `[pending]` as a register id of
 /// the fixture's (S17, ADD-A128), and the line stating it left out.
 fn listed_preset() -> String {
     let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
-    let line = "\ndelay_ms = \"absent\"\n";
-    assert!(base.contains(line));
+    assert!(base.contains(LISTED_LINE));
     format!(
-        "[pending]\n\"tokens.behavior.touch.delay_ms\" = \"U1\"\n{}",
-        base.replacen(line, "\n", 1)
+        "[pending]\n\"{LISTED}\" = \"U1\"\n{}",
+        base.replacen(LISTED_LINE, "\n", 1)
     )
+}
+
+/// The listed path of [`listed_preset`], as `[pending]` spells it: the
+/// button's subtitle gap, a length that may be absent.
+const LISTED: &str = "widgets.button.values.subtitle_gap_px";
+
+/// [`LISTED`] as a problem at its model path names it.
+const LISTED_AT: &str = "widgets.button.values.subtitle_gap";
+
+/// The base's line stating [`LISTED`].
+const LISTED_LINE: &str = "\nsubtitle_gap_px = \"absent\"\n";
+
+/// A preset rule reading [`LISTED`] where a length may not be absent: the
+/// body's minimum width.
+const MIN_WIDTH_READS_THE_GAP: &str = "\n[[rules]]\ntarget = \"button.body\"\nset = { \
+                                       min_width_px = \"= values.subtitle_gap\" }\n";
+
+/// A layer stating [`LISTED`] as `value`.
+fn gap_layer(value: &str) -> Result<Layer, String> {
+    Layer::from_toml(&format!(
+        "[widgets.button.values]\nsubtitle_gap_px = {value}\n"
+    ))
+    .map_err(|error| error.to_string())
+}
+
+/// The button's subtitle gap `stack` resolves to.
+fn subtitle_gap(stack: &Stack) -> Option<Px> {
+    let theme = stack
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = theme.root_scope(&root());
+    let body = PartRef::Typed(TypedPart::Button(ButtonPart::Body));
+    match theme.values::<crate::widgets::ButtonValues>(&Element::new(body, &scope, &NoMetrics)) {
+        Styled::Style(values) => values.subtitle_gap,
+        Styled::NotDrawn | Styled::DrawnAs { .. } | Styled::NotAvailable(_) => None,
+    }
 }
 
 /// A layer stating the listed path, its value synthetic.
@@ -529,32 +601,35 @@ fn synthetic_layer(text: &str) -> Layer {
 /// The synthetic route checks its layers in one pass, which finds what each
 /// one's check over the layers below it finds only where they state
 /// constant values at disjoint places (S17, ADD-A131): a layer stating the
-/// listed delay as an expression reading itself, which S12 refuses as a
-/// cycle, is refused though a later layer states the delay as a constant
+/// listed gap as an expression reading itself, which S12 refuses as a
+/// cycle, is refused though a later layer states the gap as a constant
 /// and the pass would never meet the expression, and two layers stating one
 /// place with constants are refused.
 #[test]
-fn synthetic_route_refuses_expressions_and_shared_places() {
-    let delay =
-        |value: &str| synthetic_layer(&format!("[tokens.behavior.touch]\ndelay_ms = {value}"));
-    let refused = |layers: Vec<Layer>| -> Vec<String> {
+fn synthetic_route_refuses_expressions_and_shared_places() -> Result<(), String> {
+    let refused = |layers: Vec<Layer>| -> Result<Vec<String>, String> {
         match synthetic_stack(None, &listed_preset(), Scheme::Light, layers) {
-            Ok(_) => Vec::new(),
+            Ok(_) => Ok(Vec::new()),
             Err(ThemeError::Preset(LayerError::Invalid(problems))) => {
-                problems.iter().map(ToString::to_string).collect()
+                Ok(problems.iter().map(ToString::to_string).collect())
             }
-            Err(other) => panic!("{other}"),
+            Err(other) => Err(other.to_string()),
         }
     };
-    let cycle = || delay("\"= token.behavior.touch.delay\"");
-    let expression = "tokens.behavior.touch.delay_ms: an expression in a synthetic layer, which \
-                      states constant values";
-    let shared = "tokens.behavior.touch.delay_ms: a place an earlier synthetic layer states \
-                  too, or one above or below it";
-    assert_eq!(refused(vec![cycle()]), [expression]);
-    assert_eq!(refused(vec![cycle(), delay("1")]), [expression, shared]);
-    assert_eq!(refused(vec![delay("1"), delay("2")]), [shared]);
-    assert_eq!(refused(vec![delay("1")]), Vec::<String>::new());
+    let cycle = || gap_layer("\"= values.subtitle_gap\"");
+    let expression =
+        format!("{LISTED}: an expression in a synthetic layer, which states constant values");
+    let shared = format!(
+        "{LISTED}: a place an earlier synthetic layer states too, or one above or below it"
+    );
+    assert_eq!(refused(vec![cycle()?])?, std::slice::from_ref(&expression));
+    assert_eq!(
+        refused(vec![cycle()?, gap_layer("1")?])?,
+        [expression, shared.clone()]
+    );
+    assert_eq!(refused(vec![gap_layer("1")?, gap_layer("2")?])?, [shared]);
+    assert_eq!(refused(vec![gap_layer("1")?])?, Vec::<String>::new());
+    Ok(())
 }
 
 /// The reader reads `[pending]` with its register ids (S11), one as the
@@ -570,24 +645,19 @@ fn synthetic_route_refuses_expressions_and_shared_places() {
 /// ADD-A128). A path the preset states too it reads: the facts gate fails
 /// that entry.
 #[test]
-fn pending_table_read() {
-    let file = read_preset(&listed_preset()).unwrap();
-    assert_eq!(
-        file.pending,
-        [(
-            "tokens.behavior.touch.delay_ms".to_owned(),
-            vec!["U1".to_owned()]
-        )]
-    );
+fn pending_table_read() -> Result<(), String> {
+    let read = |text: &str| read_preset(text).map_err(|e| e.to_string());
+    let file = read(&listed_preset())?;
+    assert_eq!(file.pending, [(LISTED.to_owned(), vec!["U1".to_owned()])]);
     let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
     let refused = |table: &str| match read_preset(&format!("[pending]\n{table}\n{base}")) {
         Err(LayerError::Invalid(problems)) => {
             problems.iter().map(ToString::to_string).collect::<Vec<_>>()
         }
-        other => panic!("{table}: {other:?}"),
+        other => vec![format!("{table}: {other:?}")],
     };
     let not_an_id = [
-        "pending.\"tokens.behavior.drag_time_ms\": expected a register id, `U<n>`, \
+        "pending.\"widgets.button.values.repeat_delay_ms\": expected a register id, `U<n>`, \
                       or a list of two or more distinct ones",
     ];
     for ids in [
@@ -602,27 +672,29 @@ fn pending_table_read() {
         "[\"U1\", \"V2\"]",
     ] {
         assert_eq!(
-            refused(&format!("\"tokens.behavior.drag_time_ms\" = {ids}")),
+            refused(&format!(
+                "\"widgets.button.values.repeat_delay_ms\" = {ids}"
+            )),
             not_an_id,
             "{ids}"
         );
     }
-    let ids = read_preset(&format!(
-        "[pending]\n\"tokens.behavior.key_repeat\" = [\"U1\", \"U2\"]\n{}",
-        base.replacen("\nkey_repeat = \"none\"\n", "\n", 1)
-    ))
-    .unwrap();
+    let indication = "widgets.button.body.interaction.ripple.indication_box";
+    let ids = read(&format!(
+        "[pending]\n\"{indication}\" = [\"U1\", \"U2\"]\n{}",
+        base_with_interaction(base)
+    ))?;
     assert_eq!(
         ids.pending,
         [(
-            "tokens.behavior.key_repeat".to_owned(),
+            indication.to_owned(),
             vec!["U1".to_owned(), "U2".to_owned()]
         )]
     );
     for path in [
         "tokens.behavior.bogus_ms",
-        "tokens.behavior.touch.delay_px",
-        "tokens.behavior.touch.delay",
+        "widgets.button.values.subtitle_gap_ms",
+        "widgets.button.values.subtitle_gap",
         "inputs.Accent",
         "inputs.Accent.light",
         "inputs.accent",
@@ -637,10 +709,7 @@ fn pending_table_read() {
             [format!("pending.\"{path}\": unknown key")]
         );
     }
-    let stated = read_preset(&format!(
-        "[pending]\n\"tokens.behavior.touch.delay_ms\" = \"U1\"\n{base}"
-    ))
-    .unwrap();
+    let stated = read(&format!("[pending]\n\"{LISTED}\" = \"U1\"\n{base}"))?;
     assert_eq!(stated.pending.len(), 1);
     for path in [
         "colors.light.global.accent",
@@ -648,14 +717,15 @@ fn pending_table_read() {
         "widgets.button.label.text.font.size",
         "widgets.button.label.text.font.size_pt",
         "widgets.button.body.corners.top_left",
-        "tokens.motion.durations.backdrop_ms",
+        "tokens.elevation.level1",
     ] {
         assert!(crate::toml::read::listed_field(path).is_some(), "{path}");
     }
     for path in ["inputs.accent.dark", "widgets.button.label"] {
-        let listed = read_preset(&format!("[pending]\n\"{path}\" = \"U1\"\n{base}")).unwrap();
+        let listed = read(&format!("[pending]\n\"{path}\" = \"U1\"\n{base}"))?;
         assert_eq!(listed.pending.len(), 1, "{path}");
     }
+    Ok(())
 }
 
 /// A pending default size is listed by its declaration's path (S11, S17,
@@ -726,7 +796,7 @@ fn pending_exemption_is_the_listed_leaves() {
         format!(
             "[pending]\n{listed}\n{}\n[tokens.icons.sizes.keyed.check]\nsize_px = 16\n\
              fill = \"#000000\"\nscale = \"absent\"\naxes = {{}}\nstate_effect = \"absent\"\n\
-             symbol_variants = []\nsymbolic_colors = {{}}\nanimation = \"absent\"\n{entry}",
+             symbol_variants = []\nsymbolic_colors = {{}}\n{entry}",
             base.replace("keyed = {}\n[tokens.focus]", "[tokens.focus]")
         )
     };
@@ -902,7 +972,6 @@ fn listed_entry(stated: Option<&str>) -> String {
         "state_effect",
         "symbol_variants",
         "symbolic_colors",
-        "animation",
     ];
     let listed: String = fields
         .iter()
@@ -939,17 +1008,17 @@ fn listed_entry(stated: Option<&str>) -> String {
 /// states its keyed name, so the synthetic route loads it, the name used;
 /// the plain route refuses each listed path.
 #[test]
-fn a_listed_entry_shares_one_synthetic_layer() {
+fn a_listed_entry_shares_one_synthetic_layer() -> Result<(), String> {
     let text = listed_entry(None);
-    let file = read_preset(&text).unwrap();
-    assert_eq!(file.pending.len(), 10);
-    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    let file = read_preset(&text).map_err(|e| e.to_string())?;
+    assert_eq!(file.pending.len(), 9);
+    let layers = synthetic_layers(&file.pending, &file.layer)?;
     assert_eq!(layers.len(), 1);
-    synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+    synthetic_stack(None, &text, Scheme::Light, layers).map_err(|e| e.to_string())?;
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
         preset_stack(None, &text, Scheme::Light)
     else {
-        panic!("the listed fields are missing through the plain route");
+        return Err("the listed fields are missing through the plain route".to_owned());
     };
     let problems: Vec<String> = problems.iter().map(ToString::to_string).collect();
     for (path, _) in &file.pending {
@@ -959,61 +1028,64 @@ fn a_listed_entry_shares_one_synthetic_layer() {
             "{listed}: {problems:?}"
         );
     }
+    Ok(())
 }
 
 /// An entry a base of the preset creates keeps one synthetic layer per
 /// listed path (S17, ADD-A133): the base states its `size`, the layers
 /// state the other fields one each.
 #[test]
-fn an_entry_a_base_creates_keeps_a_layer_per_path() {
+fn an_entry_a_base_creates_keeps_a_layer_per_path() -> Result<(), String> {
     let text = listed_entry(Some("size_px = 16"));
-    let file = read_preset(&text).unwrap();
-    assert_eq!(file.pending.len(), 9);
-    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
-    assert_eq!(layers.len(), 9);
-    synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+    let file = read_preset(&text).map_err(|e| e.to_string())?;
+    assert_eq!(file.pending.len(), 8);
+    let layers = synthetic_layers(&file.pending, &file.layer)?;
+    assert_eq!(layers.len(), 8);
+    synthetic_stack(None, &text, Scheme::Light, layers).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 /// A refused stack holding a shared layer still names each listed path
 /// whose synthetic value it holds (S17, ADD-A131, ADD-A133).
 #[test]
-fn a_refusal_names_each_listed_path_of_a_shared_layer() {
-    let rule = "\n[[rules]]\ntarget = \"tokens\"\nset = { caret.blink_on_ms = \"= token.behavior.touch.delay\" }\n";
+fn a_refusal_names_each_listed_path_of_a_shared_layer() -> Result<(), String> {
     let text = format!(
-        "{}{rule}",
-        listed_entry(None)
-            .replacen("\ndelay_ms = \"absent\"\n", "\n", 1)
-            .replacen(
-                "[pending]\n",
-                "[pending]\n\"tokens.behavior.touch.delay_ms\" = \"U11\"\n",
-                1
-            )
+        "{}{MIN_WIDTH_READS_THE_GAP}",
+        listed_entry(None).replacen(LISTED_LINE, "\n", 1).replacen(
+            "[pending]\n",
+            &format!("[pending]\n\"{LISTED}\" = \"U11\"\n"),
+            1
+        )
     );
-    let refused = validates(None, &text).unwrap_err();
+    let Err(refused) = validates(None, &text) else {
+        return Err("the absent gap is refused where it is read".to_owned());
+    };
     assert!(refused.contains("may not be absent"), "{refused}");
     for path in [
-        "tokens.behavior.touch.delay_ms",
+        LISTED,
         "tokens.icons.sizes.keyed.check.size_px",
-        "tokens.icons.sizes.keyed.check.animation",
+        "tokens.icons.sizes.keyed.check.symbolic_colors",
     ] {
         assert!(refused.contains(path), "{path}: {refused}");
     }
+    Ok(())
 }
 
 /// Through the plain route a listed path is the missing field it is (S16,
 /// S17, ADD-A128): `ThemeError::Preset(LayerError::Invalid)`, its problem
 /// S12's own.
 #[test]
-fn from_preset_refuses_a_listed_path_as_missing() {
+fn from_preset_refuses_a_listed_path_as_missing() -> Result<(), String> {
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
         preset_stack(None, &listed_preset(), Scheme::Light)
     else {
-        panic!("a listed path is missing through the plain route");
+        return Err("a listed path is missing through the plain route".to_owned());
     };
     assert_eq!(
         problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
-        ["tokens.behavior.touch.delay: missing"]
+        [format!("{LISTED_AT}: missing")]
     );
+    Ok(())
 }
 
 /// Through the plain route a listed input the preset does not state at its
@@ -1052,27 +1124,21 @@ fn from_preset_refuses_a_listed_input_as_missing() {
 /// listed path, which then resolves as that layer states it; without one
 /// the listed path is the missing field (S16, S17, ADD-A128).
 #[test]
-fn from_preset_synthetic_validates_and_resolves() {
-    let layer = synthetic_layer("[tokens.behavior.touch]\ndelay_ms = 7\n");
-    let stack = synthetic_stack(None, &listed_preset(), Scheme::Light, vec![layer]).unwrap();
-    let theme = stack
-        .resolve(
-            &mut WindowState::default(),
-            &WindowConditions::new(InputKind::Mouse),
-        )
-        .theme;
-    let tokens = theme.tokens(&theme.root_scope(&root())).unwrap();
-    assert_eq!(tokens.behavior.touch.delay, Some(Ms(7.0)));
+fn from_preset_synthetic_validates_and_resolves() -> Result<(), String> {
+    let stack = synthetic_stack(None, &listed_preset(), Scheme::Light, vec![gap_layer("7")?])
+        .map_err(|e| e.to_string())?;
+    assert_eq!(subtitle_gap(&stack), Some(Px(7.0)));
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
         synthetic_stack(None, &listed_preset(), Scheme::Light, Vec::new())
     else {
-        panic!("a listed path no layer states is missing");
+        return Err("a listed path no layer states is missing".to_owned());
     };
     assert_eq!(
         problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
-        ["tokens.behavior.touch.delay: missing"],
+        [format!("{LISTED_AT}: missing")],
         "the plain route's problem, at its path"
     );
+    Ok(())
 }
 
 /// A theme builds and answers its queries on a small stack: every bundled
@@ -1184,23 +1250,19 @@ fn listed_presence() -> String {
 /// stand-in states is stated (a reader-backed token), and removing that
 /// layer is refused again.
 #[test]
-fn a_listed_path_is_stated_by_a_layer_above() {
-    let mut stack = preset_stack(None, BASE, Scheme::Light).unwrap();
-    assert_eq!(
-        named(switch(&mut stack, &listed_preset())),
-        ["tokens.behavior.touch.delay: missing"]
-    );
-    let delay = Layer::from_toml("[tokens.behavior.touch]\ndelay_ms = 7\n").unwrap();
-    let id = stack.add_layer(delay.clone()).unwrap();
-    switch(&mut stack, &listed_preset()).unwrap();
-    assert_eq!(
-        named(stack.remove_layer(id)),
-        ["tokens.behavior.touch.delay: missing"]
-    );
-    let mut read = preset_stack(None, BASE, Scheme::Light).unwrap();
-    read.set_reader_stand_in(crate::resolve::ReaderState::new(Scheme::Light, 1.0), delay)
-        .unwrap();
-    switch(&mut read, &listed_preset()).unwrap();
+fn a_listed_path_is_stated_by_a_layer_above() -> Result<(), String> {
+    let mut stack = preset_stack(None, BASE, Scheme::Light).map_err(|e| e.to_string())?;
+    let missing = [format!("{LISTED_AT}: missing")];
+    assert_eq!(named(switch(&mut stack, &listed_preset())), missing);
+    let gap = gap_layer("7")?;
+    let id = stack.add_layer(gap.clone()).map_err(|e| e.to_string())?;
+    switch(&mut stack, &listed_preset()).map_err(|e| e.to_string())?;
+    assert_eq!(named(stack.remove_layer(id)), missing);
+    let mut read = preset_stack(None, BASE, Scheme::Light).map_err(|e| e.to_string())?;
+    read.set_reader_stand_in(crate::resolve::ReaderState::new(Scheme::Light, 1.0), gap)
+        .map_err(|e| e.to_string())?;
+    switch(&mut read, &listed_preset()).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 /// A listed presence (S17, ADD-A131): refused through the plain route as
@@ -1273,20 +1335,26 @@ fn a_listed_presence_is_stated_by_an_application_layer() {
 
 /// A synthetic theme keeps the route through its mutations while its
 /// preset is current (S17, ADD-A131): a stand-in, a scheme, a contrast, a
-/// flavour, an accent and a layer added, replaced and removed validate
-/// with the listed default size waived and the listed presence drawn; a `set_preset` to the same preset ends the route,
-/// refused as its listed paths are left unstated, the theme unchanged; one
-/// to a complete preset succeeds and removes the synthetic layers.
+/// flavour (the default, the one `set_flavor` takes while the flavours
+/// unit is not enabled, S16; ADD-A147), an accent and a layer added,
+/// replaced and removed validate with the listed default size waived and
+/// the listed presence drawn; a `set_preset` to the same preset ends the
+/// route, refused as its listed paths are left unstated, the theme
+/// unchanged; one to a complete preset succeeds and removes the synthetic
+/// layers.
 #[test]
 fn a_synthetic_theme_keeps_its_route_until_set_preset() {
     let text = format!(
-        "[pending]\n\"tokens.behavior.touch.delay_ms\" = \"U1\"\n\
+        "[pending]\n\"{LISTED}\" = \"U1\"\n\
          \"declare.widget.button.default_size\" = \"U2\"\n\"widgets.button.subtitle\" = \"U3\"\n{}\n\
          [declare.widget.button]\nsizes = [\"small\", \"regular\"]\n\
-         [[rules]]\nwhen = {{ conditions = [\"flavor:b\"] }}\ntarget = \"button.body\"\n\
+         [[rules]]\nwhen = {{ conditions = [\"flavor:a\"] }}\ntarget = \"button.body\"\n\
          set = {{ opacity = 1 }}\n",
-        BASE.replacen("\ndelay_ms = \"absent\"\n", "\n", 1)
-            .replacen("[declare]\n", "[declare]\nflavors = [\"a\", \"b\"]\n", 1)
+        BASE.replacen(LISTED_LINE, "\n", 1).replacen(
+            "[declare]\n",
+            "[declare]\nflavors = [\"a\", \"b\"]\n",
+            1
+        )
     );
     let file = read_preset(&text).unwrap();
     let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
@@ -1302,7 +1370,11 @@ fn a_synthetic_theme_keeps_its_route_until_set_preset() {
     stack
         .set_contrast(Some(crate::inputs::Contrast::High))
         .unwrap();
-    stack.set_flavor(crate::key!("b")).unwrap();
+    assert_eq!(
+        named(stack.set_flavor(crate::key!("b"))),
+        ["`b` is declared in `flavors`, and a later unit states it"]
+    );
+    assert_eq!(stack.set_flavor(crate::key!("a")), Ok(()));
     let accent = crate::inputs::InputValue::new(crate::value::SchemeMap::one(
         Scheme::Light,
         crate::value::Value::Stated(crate::color::Color::parse("#445566").unwrap()),
@@ -1321,7 +1393,7 @@ fn a_synthetic_theme_keeps_its_route_until_set_preset() {
         refused,
         [
             "declare.widget.button.default_size: no default size where sizes are taken",
-            "tokens.behavior.touch.delay: missing",
+            "widgets.button.values.subtitle_gap: missing",
             "widgets.button.subtitle: missing",
         ]
     );
@@ -1332,7 +1404,7 @@ fn a_synthetic_theme_keeps_its_route_until_set_preset() {
         named(switch(&mut stack, &text)),
         [
             "declare.widget.button.default_size: no default size where sizes are taken",
-            "tokens.behavior.touch.delay: missing",
+            "widgets.button.values.subtitle_gap: missing",
             "widgets.button.subtitle: missing",
         ],
         "the synthetic layers are gone with the route"

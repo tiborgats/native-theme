@@ -15,12 +15,14 @@ dark = "#78aeed"
 [inputs.accent.contrast.increased]
 light = "#1c71d8"
 
-[tokens.caret]
+[tokens.focus]
 width_px = 2
-blink_timeout_ms = "none"
 
-[tokens.motion.durations]
-button_ms = 150
+[tokens.behavior]
+focus_visible_when = { keyboard = { timeout_ms = "none" } }
+
+[tokens.motion]
+speed_factor = 1.5
 
 [widgets.button.body]
 fill = "= surface.background"
@@ -44,7 +46,7 @@ icon_placement = "leading"
 focus_visible_when = { keyboard = {} }
 
 [[rules]]
-when = { states = ["hover"], not_states = ["disabled"], variants = ["flat"] }
+when = { states = ["hover"], not_states = ["disabled"], variants = ["tool"] }
 target = "button.body"
 set = { fill.append = ["= alpha(surface.foreground, 0.08)"] }
 

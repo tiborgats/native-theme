@@ -2,7 +2,6 @@
 
 use native_theme_derive::ThemeParts;
 
-use super::motion::{ResolvedTransition, Transition};
 use super::outline::{Corners, CornersPatch, DashPattern, ResolvedCorners};
 use super::paint::{Paint, PaintPatch, ResolvedPaint};
 use super::shadow::{ResolvedShadow, Shadow};
@@ -10,9 +9,10 @@ use crate::key::Key;
 use crate::units::{Ms, Px, Sides};
 use crate::value::Value;
 
-/// A part's focus indicator, drawn while the element has `FocusVisible`
-/// and, after the flag clears, while its transition out runs; a part with no
-/// indicator states its `focus` `Absent`.
+/// A part's focus indicator, drawn while the element has `FocusVisible`; a
+/// part with no indicator states its `focus` `Absent`. Its own transition,
+/// which draws it on after the flag clears while it runs out, is staged: it
+/// enters with the motion unit (S6.1).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
@@ -46,10 +46,6 @@ pub struct FocusIndicator {
     /// layer.
     #[parts(block = "set", may_be_absent)]
     pub shadow: Value<Shadow>,
-    /// The indicator's own motion, timing every field of the indicator, so
-    /// its `properties` is empty (S2.10, S12).
-    #[parts(block = "fields", may_be_absent)]
-    pub transition: Value<Transition>,
 }
 
 /// When focus becomes visible.

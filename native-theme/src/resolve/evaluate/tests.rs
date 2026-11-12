@@ -86,11 +86,46 @@ fn resolved(layers: &[&str], factor: f32) -> ResolvedTheme {
 
 /// [`resolved`], the stand-in reporting `state`.
 fn resolved_by(layers: &[&str], state: ReaderState) -> ResolvedTheme {
+    resolved_with(layers, state, Declarations::default())
+}
+
+/// [`resolved`] over the declarations `declarations`, a keyed scalar
+/// typed by its group's declared unit (S4.6).
+fn resolved_over(layers: &[&str], declarations: Declarations) -> ResolvedTheme {
+    resolved_with(layers, ReaderState::new(Scheme::Light, 1.0), declarations)
+}
+
+/// A chain of `count` keyed durations, `token.params.chain.d<n>`, each the
+/// next's reference from `d<first>`, the last `d<count>` stated `last`
+/// (synthetic), and its group's declaration.
+fn duration_chain(first: usize, count: usize, last: &str) -> (String, Declarations) {
+    let mut chain = "[tokens.params.chain]\n".to_owned();
+    for index in first..count {
+        chain.push_str(&format!(
+            "d{index} = \"= token.params.chain.d{}\"\n",
+            index + 1
+        ));
+    }
+    chain.push_str(&format!("d{count} = {last}\n"));
+    let keys: Vec<String> = (first..=count).map(|n| format!("\"d{n}\"")).collect();
+    let declare = format!(
+        "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare]\nparams = {{ chain = {{ \
+         unit = \"ms\", keys = [{}] }} }}",
+        keys.join(", ")
+    );
+    let declarations = crate::toml::layer::read_preset(&declare)
+        .map(|file| file.declarations)
+        .unwrap_or_default();
+    (chain, declarations)
+}
+
+/// [`resolved_by`] over the declarations `declarations`.
+fn resolved_with(layers: &[&str], state: ReaderState, declarations: Declarations) -> ResolvedTheme {
     let mut layers = layers.iter().map(|text| Arc::new(toml(text)));
     let preset = layers.next().unwrap_or_default();
     let stack = Stack {
         preset: None,
-        declarations: Declarations::default(),
+        declarations,
         preset_layer: preset,
         derivation: None,
         reader_left_out: None,
@@ -150,7 +185,6 @@ shade = "#808080"
 light = "#aa5500"
 [tokens.motion]
 speed_factor = 0.5
-durations.short_ms = 100
 [tokens.focus]
 width_px = 2
 [tokens.text]
@@ -176,6 +210,7 @@ padding = { top_px = 6, right_px = 6, bottom_px = 6, left_px = 6 }
 text = "= token.text.roles.body"
 [widgets.button.values]
 icon_text_gap_px = 4
+repeat_delay_ms = 100
 "##;
 
 /// `f` over a context evaluating `BODY` for an element of synthetic data,
@@ -248,7 +283,7 @@ fn operands_of_each_kind() {
         Some(Val::Number(0.5))
     );
     assert_eq!(
-        operand(&theme, "token.motion.durations.short"),
+        operand(&theme, "values.repeat_delay"),
         Some(Val::Duration(crate::units::Ms(100.0)))
     );
     assert_eq!(operand(&theme, "token.focus.width"), length(2.0));
@@ -647,19 +682,13 @@ fn cycles_and_too_deep_chains_refused() {
             path: "icon_text_gap".to_owned(),
         }]
     );
-    // Thirty-three durations, each the next's reference, the last stated.
-    let mut chain = "[tokens.motion.durations]\n".to_owned();
-    for index in 0..33 {
-        chain.push_str(&format!(
-            "d{index}_ms = \"= token.motion.durations.d{}\"\n",
-            index + 1
-        ));
-    }
-    chain.push_str("d33_ms = 7\n");
-    let theme = resolved(&[BASE, &chain], 1.0);
+    // Thirty-three keyed durations, each the next's reference, the last
+    // stated (the motion tokens' keyed durations are staged, S6.1).
+    let (chain, declarations) = duration_chain(0, 33, "\"= 7ms\"");
+    let theme = resolved_over(&[BASE, &chain], declarations);
     let long = |start: usize| {
         with_body(&theme, &scope, |cx| {
-            let text = format!("token.motion.durations.d{start}");
+            let text = format!("token.params.chain.d{start}");
             let value = cx.operand_of(&reference(&text), Target::Part(BODY));
             (value, cx.refusals.clone())
         })
@@ -1047,18 +1076,11 @@ fn active_reads_the_bases_throughout() {
 /// references, so a chain of 32 ending in a call is not refused.
 #[test]
 fn sizes_read_outside_the_chain() {
-    let mut chain = "[tokens.motion.durations]\n".to_owned();
-    for index in 2..33 {
-        chain.push_str(&format!(
-            "d{index}_ms = \"= token.motion.durations.d{}\"\n",
-            index + 1
-        ));
-    }
-    chain.push_str("d33_ms = \"= add(7ms, 0ms)\"\n");
-    let theme = resolved(&[BASE, &chain], 1.0);
+    let (chain, declarations) = duration_chain(2, 33, "\"= add(7ms, 0ms)\"");
+    let theme = resolved_over(&[BASE, &chain], declarations);
     let scope = scope();
     let (value, refusals) = with_body(&theme, &scope, |cx| {
-        let value = cx.operand_of(&reference("token.motion.durations.d2"), Target::Part(BODY));
+        let value = cx.operand_of(&reference("token.params.chain.d2"), Target::Part(BODY));
         (value, cx.refusals.clone())
     });
     assert_eq!(value, Some(Val::Duration(crate::units::Ms(7.0))));
@@ -1359,45 +1381,6 @@ transitions = [{ properties = ["fill"], kind = { keyed = { key = "bounce", param
     );
 }
 
-/// A `WinUiAnimatedIcon` engine resolves to the visual its `visual` names,
-/// from `token.icons.animated_visuals`, its duration and markers evaluated,
-/// the entry merged over the layers as any map's (S2.7, S6.1; ADD-A126).
-/// Synthetic values.
-#[test]
-fn animated_visual_resolves_into_engine() {
-    use crate::blocks::motion::{ResolvedAnimatedVisual, ResolvedEngine};
-    use crate::units::Ms;
-    let preset = format!(
-        "{BASE}[tokens.icons.animated_visuals.accept]\n\
-         duration_ms = \"= mul(token.motion.durations.short, 3)\"\n\
-         markers = {{ NormalOnToNormalOff_Start = 0.25, NormalOnToNormalOff_End = 0.5 }}\n"
-    );
-    let over = "[tokens.icons.animated_visuals.accept]\n\
-                markers = { NormalOffToNormalOn_Start = 0.75 }\n\
-                [widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = { keyed = \
-                { key = \"normal_off\", params = {} } }, duration_ms = \"absent\", delay_ms = 0, timing = \"absent\", \
-                engine = { win_ui_animated_icon = { visual = \"accept\" } } }]\n";
-    let theme = resolved(&[&preset, over], 1.0);
-    let scope = scope();
-    let element = Element::new(PartRef::Typed(BODY), &scope, &Metrics);
-    let body = theme
-        .evaluate_part(BODY, &element, &|_| true)
-        .value
-        .unwrap();
-    let transition = body.transitions.first().unwrap();
-    assert_eq!(
-        transition.engine,
-        ResolvedEngine::WinUiAnimatedIcon(ResolvedAnimatedVisual {
-            duration: Ms(300.0),
-            markers: vec![
-                ("NormalOnToNormalOff_Start".to_owned(), 0.25),
-                ("NormalOnToNormalOff_End".to_owned(), 0.5),
-                ("NormalOffToNormalOn_Start".to_owned(), 0.75),
-            ],
-        })
-    );
-}
-
 /// A `Difference` layer resolves as any layer, its blend kept, over the
 /// layers beneath it in stated order (S2.3; ADD-A134): WinUI's caret, a
 /// white layer of `token.caret.color` blended by `difference`.
@@ -1555,7 +1538,7 @@ fn reads_of_synthetic_layers_are_recorded() {
 
 /// Each place evaluation reads a synthetic layer's step through records it
 /// at the field evaluated (S17's synthetic route, ADD-A128): a plain field,
-/// an `Option`'s `None`, a list, a keyed list, an `Option` block, a map
+/// an `Option`'s `None`, a keyed list, an `Option` block, a map
 /// stated empty, a surface map stated empty, the text scaling a font size
 /// is scaled by, the text frame's `font_size`, `line_height` and font
 /// metrics, an enclosing part's bindings (the icon's, read from the body
@@ -1566,8 +1549,7 @@ fn reads_of_synthetic_layers_are_recorded() {
 fn each_recording_site_records_a_synthetic_read() {
     use crate::resolve::evaluate::Resolve;
     use crate::roles::SurfaceRoles;
-    use crate::tokens::{KeyRepeat, MotionTokens, TextScaling};
-    use crate::units::Ms;
+    use crate::tokens::{TextScaling, TextTokens};
     let scope = scope();
     let field = |path: &str| -> Vec<String> { path.split('.').map(str::to_owned).collect() };
     let theme = |layers: &[&str]| {
@@ -1600,38 +1582,22 @@ fn each_recording_site_records_a_synthetic_read() {
     );
     assert!(
         token(
-            "[tokens.caret]\nblink_timeout_ms = \"none\"\n",
-            "caret.blink_timeout",
+            "[tokens.size_classes.compact]\nhorizontal_px = \"none\"\nvertical_px = \"none\"\n",
+            "size_classes.compact.horizontal",
             &|cx, path| {
                 cx.follow(Target::Tokens, path, false, |cx, folds| {
-                    cx.optional::<Ms>(folds, false)
+                    cx.optional::<Px>(folds, false)
                 });
             }
         ),
         "an Option's None"
     );
     assert!(
-        token(
-            "[tokens.behavior]\nkey_repeat = \"none\"\n",
-            "behavior.key_repeat",
-            &|cx, path| {
-                cx.follow(Target::Tokens, path, false, |cx, folds| {
-                    cx.option::<KeyRepeat>(folds)
-                });
-            }
-        ),
-        "an Option block"
-    );
-    assert!(
-        token(
-            "[tokens.motion]\ndurations = {}\n",
-            "motion.durations",
-            &|cx, _| {
-                cx.follow(Target::Tokens, field("motion"), false, |cx, folds| {
-                    MotionTokens::resolve(folds, cx)
-                });
-            }
-        ),
+        token("[tokens.text]\nkeyed = {}\n", "text.keyed", &|cx, _| {
+            cx.follow(Target::Tokens, field("text"), false, |cx, folds| {
+                TextTokens::resolve(folds, cx)
+            });
+        }),
         "a map"
     );
     let surfaces = theme(&[BASE, "[colors.light]\nsurfaces = {}\n"]);
@@ -1666,9 +1632,18 @@ fn each_recording_site_records_a_synthetic_read() {
             .any(|held| held.meets(Target::Part(part), &field(path)))
     };
     let body = |synthetic: &str, path: &str| part(&[BASE, synthetic], &scope, BODY, path);
+    let interaction = "[widgets.button.body.interaction]\nstate_layer = { color = \
+                       \"#000000\", alpha = 0.1 }\nripple = { effect = \"absent\", color = \
+                       \"absent\", alpha = \"absent\", bounded = true, max_radius_px = \
+                       \"absent\", padding_px = \"absent\", indication_box = \"none\" }\n";
     assert!(
-        body("[widgets.button.body]\ntransitions = []\n", "transitions"),
-        "a list"
+        part(
+            &[&format!("{BASE}{interaction}"), interaction],
+            &scope,
+            BODY,
+            "interaction.ripple.indication_box"
+        ),
+        "an Option block"
     );
     assert!(
         body("[widgets.button.body]\nbindings = []\n", "bindings"),
@@ -1716,27 +1691,21 @@ fn each_recording_site_records_a_synthetic_read() {
 
 /// A synthetic layer's step holding a map merged by key reaches the map's
 /// place and the entries it states, and no other (S6.1, S17 *Where a
-/// listed path is found*, ADD-A144): stating a duration and a surface
-/// set's role beside the preset's, it reaches neither the preset's
-/// duration nor the preset's other set, decides the entry it states, and
+/// listed path is found*, ADD-A144): stating a keyed role and a surface
+/// set's role beside the preset's, it reaches neither the preset's keyed
+/// role nor the preset's other set, decides the entry it states, and
 /// decides neither map, which the preset's steps hold too. A synthetic
 /// layer is the stack's third place: the preset, the stand-in, then it.
 #[test]
 fn a_synthetic_step_holding_a_map_reaches_only_what_it_states() {
     use crate::resolve::evaluate::Resolve;
     use crate::roles::ColorRoles;
-    use crate::tokens::Tokens;
     let field = |path: &str| -> Vec<String> { path.split('.').map(str::to_owned).collect() };
-    let synthetic = "[tokens.motion]\ndurations.long_ms = 300\n\
+    let synthetic = "[colors.light.keyed]\nglow = \"#010203\"\n\
                      [colors.light.surfaces.window]\nneutral = \"#010203\"\n";
     let mut theme = resolved(&[BASE, synthetic], 1.0);
     theme.synthetic = vec![2];
     let scope = scope();
-    let tokens = theme.evaluate_in(&scope, None, &|_| true, Target::Tokens, None, |cx| {
-        let folds = cx.roots(Target::Tokens);
-        Tokens::resolve(&folds, cx);
-        cx.reached().to_vec()
-    });
     let roles = theme.evaluate_in(&scope, None, &|_| true, Target::Roles, None, |cx| {
         let folds = cx.roots(Target::Roles);
         ColorRoles::resolve(&folds, cx);
@@ -1751,22 +1720,10 @@ fn a_synthetic_step_holding_a_map_reaches_only_what_it_states() {
             .iter()
             .any(|held| held.meets(target, &path) && held.decides(&path))
     };
-    assert!(
-        !reaches(&tokens, Target::Tokens, "motion.durations.short"),
-        "{tokens:?}"
-    );
-    assert!(
-        decides(&tokens, Target::Tokens, "motion.durations.long"),
-        "{tokens:?}"
-    );
-    assert!(
-        reaches(&tokens, Target::Tokens, "motion.durations"),
-        "{tokens:?}"
-    );
-    assert!(
-        !decides(&tokens, Target::Tokens, "motion.durations"),
-        "{tokens:?}"
-    );
+    assert!(!reaches(&roles, Target::Roles, "keyed.shade"), "{roles:?}");
+    assert!(decides(&roles, Target::Roles, "keyed.glow"), "{roles:?}");
+    assert!(reaches(&roles, Target::Roles, "keyed"), "{roles:?}");
+    assert!(!decides(&roles, Target::Roles, "keyed"), "{roles:?}");
     assert!(
         !reaches(&roles, Target::Roles, "surfaces.button.foreground"),
         "{roles:?}"

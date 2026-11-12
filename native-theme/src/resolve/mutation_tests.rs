@@ -89,7 +89,9 @@ fn mutation_refused_whole() {
         .unwrap();
     let id = stack.add_layer(body(0.5)).unwrap();
     stack.set_accent(Some(full_accent())).unwrap();
-    stack.set_flavor(key!("b")).unwrap();
+    // The default: the one flavour set while the flavours unit is not
+    // enabled (S6.1, S16; ADD-A147).
+    assert_eq!(stack.set_flavor(key!("a")), Ok(()));
     let before = stack.clone();
     let mut bad_state = ReaderState::new(Scheme::Light, 1.0);
     bad_state.font_dpi = Some(0.0);
@@ -196,17 +198,28 @@ fn preset_change_keeps_a_declared_flavor() {
         stack.set_preset(None, declared().declarations, Layer::default(), Vec::new()),
         Err(LayerError::AccentInputsMissing(vec![ramp]))
     );
+    // While the flavours unit is not enabled the flavour set is the
+    // default, and kept only where it is the new preset's default too, the
+    // one flavour `set_flavor` accepts there (S6.1, S16; ADD-A147).
     let mut stack = declared();
-    stack.set_flavor(key!("b")).unwrap();
+    assert_eq!(stack.set_flavor(key!("a")), Ok(()));
     let mut kept = stack.clone();
     kept.switch(
         None,
-        declarations("flavors = [\"c\", \"b\"]\n"),
+        declarations("flavors = [\"a\", \"c\"]\n"),
         body(0.1),
         Vec::new(),
     );
-    assert_eq!(kept.flavor(), Some(&key!("b")));
+    assert_eq!(kept.flavor(), Some(&key!("a")));
     assert_eq!(*kept.preset_layer, body(0.1));
+    let mut later = stack.clone();
+    later.switch(
+        None,
+        declarations("flavors = [\"c\", \"a\"]\n"),
+        Layer::default(),
+        Vec::new(),
+    );
+    assert_eq!(later.flavor(), Some(&key!("c")));
     let mut other = stack.clone();
     other.switch(
         None,
@@ -221,15 +234,23 @@ fn preset_change_keeps_a_declared_flavor() {
     assert_eq!(none.flavor(), None);
 }
 
-/// A flavour the preset declares is set and in force; an undeclared one is
-/// refused, naming it and the declaration (S10, S16). Without one set, the
-/// preset's first is in force.
+/// The preset's default flavour is set and in force; another declared one
+/// is refused with `Later` while the flavours unit is not enabled, and
+/// `flavors` lists the default alone (S6.1, S16; ADD-A147); an undeclared
+/// one is refused, naming it and the declaration (S10, S16). Without one
+/// set, the preset's first is in force.
 #[test]
 fn flavor_set_where_declared() {
     let mut flavored = declared();
     assert_eq!(flavored.flavor(), Some(&key!("a")));
-    flavored.set_flavor(key!("b")).unwrap();
-    assert_eq!(flavored.flavor(), Some(&key!("b")));
+    assert_eq!(flavored.flavors(), [key!("a")]);
+    assert_eq!(
+        problems(flavored.set_flavor(key!("b"))),
+        ["`b` is declared in `flavors`, and a later unit states it"]
+    );
+    assert_eq!(flavored.flavor(), Some(&key!("a")));
+    assert_eq!(flavored.set_flavor(key!("a")), Ok(()));
+    assert_eq!(flavored.flavor(), Some(&key!("a")));
     assert_eq!(
         problems(flavored.set_flavor(key!("c"))),
         ["`c` is not declared in `flavors`"]
