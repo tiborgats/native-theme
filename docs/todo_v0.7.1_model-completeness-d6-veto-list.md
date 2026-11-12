@@ -56,9 +56,9 @@ N"), `register-rows.md` rev. 5 ("register"), `staging-design.md` rev. 4 ("stagin
   - on `macos-*` and `ios-*` the status roles refer to the platform's keyed system colours, as 0.7.0 drew them
     (closes *register row* U456; a register row is one line of the ledger's list of what is not measured yet);
   - on `macos-*` the status text colours (`foreground`) refer to `labelColor`, the colour 0.7.0 drew them in, which
-    the facts state as the window's foreground. On `ios-*` the status text colour stays open (row U755): 0.7.0's was
-    a literal with no source, white and on warning black, neither UIKit's label colour nor another keyed colour,
-    so 0.7.0 gives no pairing to keep. The candidates are the label colour and the filled button's title colour;
+    the facts state as the window's foreground; on `ios-*` it is the filled button's title colour, as
+    `accent_foreground` (row U755), checked again on the second-tint run (U706); 0.7.0's was a literal with no
+    source;
   - the text slots' existing mappings get the same label;
   - on `ios-*`, `accent_foreground` (text on the accent colour) is paired with the colour UIKit draws a filled
     button's title in, measured `#ffffff` in both schemes on both presets, the same value 0.7.0's `ios-13` had. It
@@ -78,8 +78,9 @@ N"), `register-rows.md` rev. 5 ("register"), `staging-design.md` rev. 4 ("stagin
 - *Decided:* the mapping applies to a role or text slot where all three hold: (1) a connector maps it to a toolkit
   field that cannot be left empty (the connectors' contract tables name these); (2) no stated fact gives the value
   (a role cited as the platform's own fact stays a fact, as `windows-11`'s `role.window.negative` and `macos-*`'s
-  `accent_standalone`); (3) the platform has a keyed colour of its own to pair with. The pairing refers to that
-  keyed colour, never to a colour native-theme makes up. Where only (3) fails (`material-3`'s warning, success and
+  `accent_standalone`); (3) the platform has a colour of its own to pair with: a keyed colour it names, or the
+  colour it is measured drawing in that role (as U651's and U755's pairings use the filled button's measured title
+  colour). The pairing refers to that colour, never to a colour native-theme makes up. Where only (3) fails (`material-3`'s warning, success and
   info; `adwaita`'s info; whatever else the contract tables show), the role stays absent, and the connector's
   contract records the toolkit's own colour there as an exception, as item 48 records a toolkit's own look for an
   unavailable widget.
@@ -466,7 +467,7 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 
 - **The individual status-colour pairings (item 3).** The catalogue's *global roles* `status` row lists them
   (`error` `= role.@system_red`, `warning` `@system_orange`, `success` `@system_green`, `info` `@system_blue`, on
-  `macos-*` and `ios-*`), and item 3 now names the macOS status text colours; the iOS status text colour is open
+  `macos-*` and `ios-*`), and item 3 now names the status text colours, on `ios-*` the filled button's title colour
   (U755).
 - **0.7.0's values under `tab`, `card`, `expander`, `status_bar` (item 48).** The query answers "not available"
   where 0.7.0 gave values. No source calls this a loss, so it is not in group B.

@@ -44,10 +44,12 @@ correct this file's outcomes as follows, each open to the maintainer's veto (the
   them with no later name; the staging design's figures are recounted (1,381 pending facts and 687 listed paths on
   0.8.0's path; ledger queue #258; veto list item 1).
 - Outcome 5: the rule's scope is three conditions, a connector maps the role to a toolkit field that cannot be left
-  empty, no stated fact gives it, and the platform has a keyed colour of its own to pair it with; where only the
-  last fails the role stays absent and the connector's contract records the toolkit's own colour as an exception
-  (veto list item 56). On `macos-*` the status text colours refer to `labelColor`, as 0.7.0 drew them; on `ios-*`
-  the status text colour's pairing is open (ledger U755), 0.7.0's having been a literal with no source.
+  empty, no stated fact gives it, and the platform has a colour of its own to pair with: a keyed colour it names, or
+  the colour it is measured drawing in that role (as U651's and U755's pairings use the filled button's measured
+  title colour); where only the last fails the role stays absent and the connector's contract records the toolkit's
+  own colour as an exception (veto list item 56). On `macos-*` the status text colours refer to `labelColor`, as
+  0.7.0 drew them; on `ios-*` they are the filled button's title colour, as `accent_foreground` (ledger U755),
+  checked again on the second-tint run (U706), 0.7.0's having been a literal with no source.
 - Outcome 7: a palette is not offered over a preset whose widget colours are measured literals that follow no role
   (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
 - Outcome 14: Qt Quick's line position (U753) takes the non-breaking form, a field on `Decoration`; QPainter's wavy

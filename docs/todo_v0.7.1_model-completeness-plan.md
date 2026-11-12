@@ -614,7 +614,7 @@ the facts tooling reads it.
     documentation, as read for D6), and grows with every measured fact; the largest facts file,
     `docs/facts/ios/button.toml`, is 34,075,260 bytes. **Decided at D6** (2026-11-10, outcome 8): not committed; CI
     and each release generate it, the gates running the generator and its self-test; `check_facts.py` enforces a
-    split of a facts file by key prefix past 40 MB; the local tools that cite its lines read the facts or a
+    split of a facts file by key prefix past 40 MiB; the local tools that cite its lines read the facts or a
     generated copy (R22 asks that the readable tables are generated from the facts, not that a copy is committed,
     and GitHub renders no file of that size, so the committed copy has no reader). One task early in M2 (*M2*,
     *`docs/platform-facts.md` not committed*); until it merges, the file stays committed and
@@ -645,12 +645,15 @@ the facts tooling reads it.
     - R-3 with R-12, a typed role the platform names no counterpart for: **Decided at D6** (2026-11-10, outcome 5):
       one rule, native-theme's labelled mapping, outside the gate's platform comparison, never absent and never a
       stated fact, where a connector maps the role to a toolkit field that cannot be left empty, no stated fact
-      gives it and the platform has a keyed colour of its own to pair it with (veto list item 56); on `macos-*` and
+      gives it and the platform has a colour of its own to pair with: a keyed colour it names, or the colour it is
+      measured drawing in that role (as U651's and U755's pairings use the filled button's measured title colour;
+      veto list item 56); on `macos-*` and
       `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them, and on `macos-*` the status
       text colours to `labelColor`, the pairings listed in the catalogue's *global roles* (`status`) for the
       maintainer's veto; the text slots' mappings are labelled alike; R25.17 names `ios-*` too (the rationale's
       R5.1, R10, R25.17; the specification's S3, S4.4, S17; veto list item 3). U456 closes with the pairings, the
-      iOS status text colour's pairing split off as U755.
+      iOS status text colours split off as U755 and paired there with the filled button's measured title colour, as
+      U651 (checked again on the second-tint run).
     - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
       staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
       trial measures them (M2's task 1), Apple stating no timings (at `7430a0a2` 21 of the 27 macOS and 43 of the 48
@@ -775,9 +778,10 @@ and `contrast_high` (model-wide: 0.7.0's Windows and GNOME readers give values u
 and the conditions the catalogue's *today's fields* table names; a token path, and a keyed name of any kind, is at
 depth when 0.7.0 has it, a value at depth reads it, the core reads it, a connector reads it to draw a value at depth,
 or a built system reader states it, and every other waits in a parking unit for the first unit that reads it. Every
-other name (the further variants, sizes, host contexts, positions, directions, states and conditions) belongs to a
-named later unit of depth, model-wide, and cannot be asked for meanwhile: a typed variant is no member of `Variant`,
-a keyed one is declared `later`, a size or a flavour is answered `Later`, and a given name is mentioned by no rule of
+other name (the further variants, sizes, densities, host contexts, positions, directions, states and conditions)
+belongs to a named later unit of depth, model-wide, and cannot be asked for meanwhile: a typed variant is no member
+of `Variant`, a keyed one is declared `later`, a size, a density or a flavour is answered `Later` (a density other
+than the default until the sizes unit, as a size is; ADD-A147), and a given name is mentioned by no rule of
 a bundled preset, so an element under it resolves as without it (S6.1, S8, S10, S12). A fact is of the enabled units
 when its `when` holds in a combination of those names that its state model draws, its part drawn there; every other
 fact is a later unit's, and no fact is edited (S17). Rejected: the selector pairs of *Today's fields* alone (a
@@ -976,7 +980,7 @@ among them; a line whose target is a widget's part or value, or a condition only
 waits for that unit's readers step; the iOS and Android lines stay R18's; D6, outcome 4); placement (ending those
 deferrals); the 57 typed widgets the model lacks today, in alphabetical
 batches of about ten; the 28 keyed components; the units of depth of 0.8.0's entries (content, styles, menus, states
-and identities per widget unit; sizes, flavours, increased contrast, window activity, the iPad, accessibility text,
+and identities per widget unit; sizes, with the densities (ADD-A147), flavours, increased contrast, window activity, the iPad, accessibility text,
 interface level, glass, right-to-left), each model-wide and closed on the measured platforms by a designed sample run
 with a composition decision per key (S17's *Sets not yet measured*); the parking units (behaviour, text rendering,
 text styles, icon contexts, elevation, parameters, keyed roles, pointer); and motion. A unit no Apple state model
@@ -1218,7 +1222,8 @@ differs is reported).
 
 *Steps, by file:*
 1. `scripts/widget_units.toml`: every unit of depth with the names it holds per entry (and its presets where it is
-   limited to some: the iPad unit's `hover` and `focus_visible` on `ios-*`), every parking unit with its paths, an
+   limited to some: the iPad unit's `hover` and `focus_visible` on `ios-*`; the sizes unit holding every size but an
+   element's default in force and every declared density, ADD-A147), every parking unit with its paths, an
    `enabled` flag each; `[deferred.button]` gains the values only later names read (the catalogue's Depth line for
    `button`) and the motion unit's part fields (`transitions`, `shown`); `[staged.slice]` gains every token path the
    token rule stages, each to its parking unit or its unit of depth.
@@ -1244,14 +1249,14 @@ differs is reported).
    `ResolvedPartStyle.transitions`' documentation says that no part lists it until the motion unit.
 5. The query and the theme (S8, S16): `Unavailable::Later`, answered for an element holding a `later` variant (a
    content variant included) and, while the sizes unit is not enabled, for a size the element takes other than its
-   default in force; `Theme::set_flavor` refuses a declared flavour but the default while the flavours unit is not
+   default in force and for a declared density; `Theme::set_flavor` refuses a declared flavour but the default while the flavours unit is not
    enabled, with a problem of its own, and `flavors()` lists the default alone.
 6. S12 (`native-theme/src/validate/`): the `later` declaration read; a rule, reference or patch naming a `later`
-   variant, or a size or a flavour of a unit not enabled, refused with `ProblemKind::Later`; `checks::unused`
+   variant, or a size, a density or a flavour of a unit not enabled, refused with `ProblemKind::Later`; `checks::unused`
    exempts a flavour of a unit not enabled with its `[declare.flavor.<f>]` sections; the declarations check compares
    `later.variants`, the trimmed exclusive groups, recency sets and keyed `flags` with the state model (S17).
 7. `scripts/generate_preset.py`: the state model in force in one place, the `models` dict `declarations()` returns
-   (the default flavour's models only; the button's sizes the default in force; no `sizes_by_variant` entry of a
+   (the default flavour's models only; the button's sizes the default in force; no density; no `sizes_by_variant` entry of a
    variant not at depth), which `covering_bases()`, `pending_table()` and `round_trip()` read; the facts of the
    enabled units by the predicate; every mention of a name not at depth left out of a rule (a fact naming it
    positively, a negative entry naming it; exclusive groups and recency sets trimmed to the flags at depth, a group
@@ -1283,10 +1288,10 @@ task does not close until the orchestrator has decided it.
 (`implement`), early in M2, merged before the next large facts merge (task 0's lanes' rounds). The file leaves the
 repository in one commit and is ignored; `check_release.sh`, in every mode, and `ci.yml` run
 `generate_platform_facts.py` into a scratch path and its `--self-test` in place of `--check`; each release generates
-it at its commit (M6); `check_facts.py` fails a facts file past 40 MB, which is split by key prefix (S17's
+it at its commit (M6); `check_facts.py` fails a facts file past 40 MiB, which is split by key prefix (S17's
 *Format*); the local tools that cite the file's lines (the preset validator and the `platform-fact` skill, D9) read
 the facts or a copy generated on demand. *Done:* the file absent from the branch and ignored; `check_facts.py
---self-test` passing a made-up facts file at 40 MB and failing one past it; no facts file past 40 MB at the task's
+--self-test` passing a made-up facts file at 40 MiB and failing one past it; no facts file past 40 MiB at the task's
 base (the largest, `docs/facts/ios/button.toml`, 34,075,260 bytes at `72dd07b4`); `generate_platform_facts.py
 --self-test` and the generation green in `check_release.sh --quick` and in the pull request's CI; neither local
 tool reading a committed copy (by search). Rejected: the file committed per platform in smaller files (D6's package

@@ -602,8 +602,10 @@ fill and stroke tiers.
 
 **Decision:** the third (principle 4). A role the platform does not have is absent there, as the Selection set's
 outline is on `macos-*` (R25.17), unless all three hold: a connector maps it to a toolkit field that cannot be left
-empty (the connectors' contract tables name these), no stated fact gives it, and the platform has a keyed colour of
-its own to pair it with. Then it is native-theme's labelled mapping, a reference to that colour, as the status roles
+empty (the connectors' contract tables name these), no stated fact gives it, and the platform has a colour of its
+own to pair with: a keyed colour it names, or the colour it is measured drawing in that role (as U651's and U755's
+pairings use the filled button's measured title colour). Then it is native-theme's labelled mapping, paired with that
+colour, as the status roles
 are on `macos-*` and `ios-*` (R25.17; ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list
 items 3 and 56).
 
@@ -1811,12 +1813,14 @@ batch ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list 
   changes (veto list item 4).
 - R5.1, R10, R25.17: a typed role or slot the platform names no counterpart for is native-theme's labelled mapping,
   outside the gate's platform comparison, never absent and never a stated fact, where a connector maps it to a
-  toolkit field that cannot be left empty, no stated fact gives it and the platform has a keyed colour of its own to
-  pair it with; where only the last fails, it stays absent and the connector's contract records the toolkit's own
-  colour there as an exception (veto list item 56). On `macos-*` and `ios-*` the status roles refer to the keyed
-  system colours as 0.7.0 drew them, and on `macos-*` the status text colours to `labelColor`, so 0.8.0 no longer
-  loses the macOS status colours (R21); the iOS status text colour's pairing is open; the text slots' mappings are
-  labelled alike (veto list item 3).
+  toolkit field that cannot be left empty, no stated fact gives it and the platform has a colour of its own to pair
+  with: a keyed colour it names, or the colour it is measured drawing in that role (as U651's and U755's pairings use
+  the filled button's measured title colour); where only the last fails, it stays absent and the connector's contract
+  records the toolkit's own colour there as an exception (veto list item 56). On `macos-*` and `ios-*` the status
+  roles refer to the keyed system colours as 0.7.0 drew them, and the status text colours on `macos-*` to
+  `labelColor` and on `ios-*` to the colour UIKit draws a filled button's title in (as `accent_foreground` there,
+  checked again on the second-tint run), so 0.8.0 no longer loses the macOS status colours (R21); the text slots'
+  mappings are labelled alike (veto list item 3).
 - R19: over a preset whose widgets read keyed colours, a palette reaches them by a stated, reviewed mapping method,
   or it is not offered over that preset; nor is it offered over a preset whose widget colours are measured literals
   that follow no role (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
@@ -2019,8 +2023,9 @@ Each is decided from the pinned sources; the specification cites them.
   what is native-theme's is the pairing, which the label says, as R19's labelled picks are. The rule maps a role or
   slot where all three hold: a connector maps it to a toolkit field that cannot be left empty (the connectors'
   contract tables name these); no stated fact gives it (a role cited as the platform's own fact stays a fact, as
-  `windows-11`'s `role.window.negative` and `macos-*`'s `accent_standalone`); and the platform has a keyed colour of
-  its own to pair it with. The pairing refers to that colour, never to a colour native-theme makes up. Where only the
+  `windows-11`'s `role.window.negative` and `macos-*`'s `accent_standalone`); and the platform has a colour of its
+  own to pair with: a keyed colour it names, or the colour it is measured drawing in that role (as U651's and U755's
+  pairings use the filled button's measured title colour). The pairing refers to that colour, never to a colour native-theme makes up. Where only the
   third fails (`material-3`'s warning, success and info, `adwaita`'s info), the role stays absent and the
   connector's contract records the toolkit's own colour there as an exception, as for a widget a preset declares
   unavailable (ADD-A147; D6, decided by logic, awaiting the maintainer's veto: veto list item 56). On `macos-*` and
@@ -2030,9 +2035,11 @@ Each is decided from the pinned sources; the specification cites them.
   values. On `macos-*` each status `foreground`, which the gpui connector holds as a plain colour
   (`danger_foreground` and its three siblings, filled in 0.7.0 from `*_text_color`), refers to AppKit's
   `labelColor`, the colour 0.7.0 drew it in (`v0.7.0:native-theme/src/presets/macos-tahoe.toml:37-47`), which the
-  facts state as `role.window.foreground`; on `ios-*` its pairing is open (the ledger's U755): 0.7.0's status
+  facts state as `role.window.foreground`; on `ios-*` it is the colour UIKit draws a filled button's title in, as
+  `accent_foreground` is there (the ledger's U651, U755), checked again on the second-tint run (U706); 0.7.0's status
   text there was a literal with no source, `#ffffff` and on warning `#000000` in both schemes
-  (`v0.7.0:native-theme/src/presets/ios-13.toml:45-56`), neither UIKit's label colour nor another keyed colour.
+  (`v0.7.0:native-theme/src/presets/ios-13.toml:45-56`), so it gives no pairing to keep (ADD-A147; D6, decided by
+  logic, awaiting the maintainer's veto: veto list item 3).
   `background`, `background_solid`, `neutral` and `destructive`, which 0.7.0's model did not hold, stay absent where
   the catalogue allows it unless a contract table names a toolkit field for them. The text slots' mappings (R10)
   carry the same label. The Selection set's outline stays absent
