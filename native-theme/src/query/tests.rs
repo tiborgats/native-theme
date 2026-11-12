@@ -906,8 +906,13 @@ fn size_density_and_direction_match() {
     let mut inputs = RootInputs::new(size(800.0, 600.0), size(1920.0, 1080.0), Direction::Ltr);
     inputs.density = Some(Density::Compact);
     let compact = theme.root_scope(&inputs);
-    let label = drawn(&theme, &Element::new(LABEL, &compact, &Metrics)).0;
-    assert_eq!(label.padding.top, Some(Px(2.0)));
+    // A declared density in force from the scope, while the sizes unit is
+    // not enabled, is the sizes unit's (S8, S10; ADD-A147); an undeclared one
+    // is ignored.
+    assert_eq!(
+        theme.style(&Element::new(LABEL, &compact, &Metrics)),
+        Styled::NotAvailable(Unavailable::Later)
+    );
     inputs.density = Some(Density::Keyed(key("dense")));
     let dense = theme.root_scope(&inputs);
     let label = drawn(&theme, &Element::new(LABEL, &dense, &Metrics)).0;
