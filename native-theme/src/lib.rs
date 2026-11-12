@@ -64,6 +64,16 @@
 //! `native` on macOS pulls in only the macOS dependencies. The model and its
 //! bundled presets need no feature.
 //!
+//! On Linux, [`Theme::from_system`] reads a desktop whose reader's feature
+//! is off (KDE without `kde`; GNOME, Budgie and the desktops with no reader
+//! of their own without `portal`) through the reads that need no feature,
+//! as 0.7.0 did: the scheme from `GTK_THEME`, gsettings' `color-scheme` and
+//! `gtk-3.0/settings.ini`, reduced motion and animations off from gsettings,
+//! over the preset that reader would have used, its
+//! [`Theme::reader_status`] [`ReaderStatus::Fallback`] naming the reader
+//! not compiled. On macOS and Windows a build without the platform's
+//! feature is [`ThemeError::FeatureDisabled`].
+//!
 //! | Feature | Enables |
 //! |---|---|
 //! | `kde` | The KDE Plasma reader, [`Theme::from_system`]: `kdeglobals` as KConfig cascades it and the colour scheme file it names; and the KDE icon theme (Linux) |
@@ -163,6 +173,10 @@ pub mod icons;
 /// icon theme `detect` reports.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub(crate) mod kde;
+/// 0.7.0's scheme and motion chain (Linux): `GTK_THEME`, gsettings and
+/// `gtk-3.0/settings.ini`, the reads that need no feature.
+#[cfg(target_os = "linux")]
+mod linux_chain;
 pub mod pipeline;
 #[cfg(feature = "watch")]
 pub mod watch;

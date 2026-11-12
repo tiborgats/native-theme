@@ -60,55 +60,27 @@ fn the_portals_scheme_comes_first() {
     }
 }
 
-/// `GTK_THEME` names a dark theme by a `:dark` suffix or `-dark`, in any
-/// case; it is asked before gsettings.
+/// Where the portal gives no scheme, 0.7.0's chain decides
+/// (`crate::linux_chain`'s tests hold its steps): `GTK_THEME`, gsettings'
+/// `color-scheme`, `settings.ini`.
 #[test]
-fn gtk_theme_dark_comes_before_gsettings() {
-    for theme in ["Adwaita:dark", "Adwaita:DARK", "Arc-Dark", "Yaru-dark-blue"] {
-        let reading = read_with(Some(theme), answering("color-scheme", "prefer-light"), None);
-        assert_eq!(reading.state.scheme, Scheme::Dark, "{theme}");
-    }
-    // A light `GTK_THEME` is no answer: the chain goes on.
+fn without_the_portals_scheme_the_chain_decides() {
     let reading = read_with(
-        Some("Adwaita"),
-        answering("color-scheme", "prefer-dark"),
+        Some("Adwaita:dark"),
+        answering("color-scheme", "prefer-light"),
         None,
     );
     assert_eq!(reading.state.scheme, Scheme::Dark);
-}
-
-/// gsettings' `color-scheme`: `prefer-dark` dark, `prefer-light` and
-/// `default` light, each before `settings.ini`; another value is no answer.
-#[test]
-fn gsettings_color_scheme_then_settings_ini() {
-    let dark_ini = Some("[Settings]\ngtk-application-prefer-dark-theme = true\n");
-    for (value, scheme) in [
-        ("prefer-dark", Scheme::Dark),
-        ("prefer-light", Scheme::Light),
-        ("default", Scheme::Light),
-        ("unknown", Scheme::Dark),
-    ] {
-        let reading = read_with(None, answering("color-scheme", value), dark_ini);
-        assert_eq!(reading.state.scheme, scheme, "{value}");
-    }
-}
-
-/// `settings.ini` prefers dark with `1` or `true`; nothing read is light.
-#[test]
-fn settings_ini_is_the_last_step() {
-    for (ini, scheme) in [
-        (Some("gtk-application-prefer-dark-theme=1"), Scheme::Dark),
-        (
-            Some("gtk-application-prefer-dark-theme = TRUE"),
-            Scheme::Dark,
-        ),
-        (Some("gtk-application-prefer-dark-theme=0"), Scheme::Light),
-        (Some("gtk-theme-name=Adwaita-dark"), Scheme::Light),
-        (None, Scheme::Light),
-    ] {
-        let reading = read_with(None, no_gsettings, ini);
-        assert_eq!(reading.state.scheme, scheme, "{ini:?}");
-    }
+    let reading = read_with(None, answering("color-scheme", "prefer-dark"), None);
+    assert_eq!(reading.state.scheme, Scheme::Dark);
+    let reading = read_with(
+        None,
+        no_gsettings,
+        Some("gtk-application-prefer-dark-theme=1"),
+    );
+    assert_eq!(reading.state.scheme, Scheme::Dark);
+    let reading = read_with(None, no_gsettings, None);
+    assert_eq!(reading.state.scheme, Scheme::Light);
 }
 
 /// `settings.ini` is read only where the chain reaches it.

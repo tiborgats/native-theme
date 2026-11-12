@@ -25,6 +25,11 @@ targets = [
 
 [features]
 # Each OS-specific dependency is compiled only on its own target.
+# On Linux, where the desktop's reader feature is off, `Theme::from_system`
+# reads the scheme and motion alone, as 0.7.0 did: `GTK_THEME`, gsettings and
+# `gtk-3.0/settings.ini`, over that reader's preset, its status
+# `ReaderStatus::Fallback`. On macOS and Windows a build without the
+# platform's feature is `ThemeError::FeatureDisabled`.
 
 # The KDE Plasma reader: kdeglobals as KConfig cascades it and the colour
 # scheme file it names; and the KDE icon theme (Linux).
