@@ -786,7 +786,10 @@ Checks the bundled presets' definition comments. A value the specification
 defines, not a fact, carries its section as its comment in place of a
 citation (`font_dpi = 72  # S9.4` on `macos-*` and `ios-*`,
 `animated_visuals = {}  # S4.5` on every preset but `windows-11`, ADD-A125,
-ADD-A131): the comment is accepted for that key, value and presets alone. The
+ADD-A131): the comment is accepted for that key, value and presets alone;
+`# S10` marks a keyed map stated empty (`keyed = {}`, S10's "a map with none
+stated empty", ADD-A147), accepted on one of the maps whose entries the
+units file stages, with `{}`, on any preset. The
 presets are the bundled ones, `native-theme/src/presets/`. Its citation rule
 over the 0.7 presets went with them at the switch; M2.6 rewrites it to read the facts. The
 script's docstring states the whole rule. Prints one line per finding
@@ -1499,10 +1502,22 @@ Generates a draft of a preset's TOML (specification S11) from its verified
 facts, as far as they transcribe: `[declare]` from the state models (S10),
 the facts at rest as bases, every other fact as a rule, facts with an equal
 `when` and target grouped so that the rules keep the facts' order and the
-last matching rule is the last matching fact (S17). It leaves out, and
-counts by reason, pending facts, keys the enabled units do not hold, `read`
-facts, and what S11 cannot spell from a fact alone; S19.2's staged bases
-and the keyed namespaces of `[declare]` are left for hand-writing. Prints
+last matching rule is the last matching fact (S17). It takes exactly the
+facts of the enabled units by S17's predicate (`check_facts_trace.Depth`,
+the depth 0.8.0 states, ADD-A147), every negative entry naming a name
+beyond depth left out of their rules, and leaves out, and counts by reason,
+the later units' facts (by the unit each waits for), pending facts, `read`
+facts, and what S11 cannot spell from a fact alone. The declarations stay
+the state model's whole but for a typed variant the model does not hold,
+with `later = { variants }`, the flags, exclusive groups, recency sets and
+system settings trimmed to the names at depth a rule names, and a keyed map
+no base states written `{}` (`# S10`); the state model in force (the
+default flavour's, each element's default size) is what the covering
+bases, the `[pending]` table and the round trip read. S19.2's staged bases
+and the keyed namespaces of `[declare]` are left for hand-writing, with the
+entries a hand-written `[declare]` must lose listed (`declaration: …`), and
+each value's reference to a keyed entry no base states reported (S12 refuses
+it: the units file stages an entry a value at depth reads). Prints
 on stderr the transcription share per widget and per unit (the 0.8.0
 plan's checkpoint D6), the rule count, the pending facts' register ids and
 a round trip: the draft read back gives every combination the value of
@@ -1514,7 +1529,8 @@ declaration's path, never written in `[declare]`. `--write` points each
 stale citation of the hand-written blocks (a `[declare]` entry's, a `read`
 value's, the generation's source) at the fact naming its subject and lists
 one it cannot find; `--check` fails on either. Exits 1 on a round-trip
-mismatch or such a citation, 2 on an input it cannot read. `--self-test`
+mismatch (a mention of a name beyond depth included), such a citation or
+such a `[declare]` entry, 2 on an input it cannot read. `--self-test`
 compares a fixture's draft with the expected one and runs each rule.
 Offline; not in `check_release.sh`; about four minutes for an iOS preset.
 

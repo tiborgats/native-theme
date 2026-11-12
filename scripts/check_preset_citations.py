@@ -10,7 +10,12 @@ defines, the value, and the presets it is stated on: S9.4's
 `tokens.icons.animated_visuals = {}` on every preset but `windows-11`
 (ADD-A131). The comment is accepted for that key, with that value, on those
 presets alone: on another key, another value or another preset it is a
-finding. A comment naming another section is no definition comment.
+finding. S10's `# S10` marks a keyed map stated empty ("a keyed namespace
+declares only the entries a base states, a map with none stated empty",
+ADD-A147): EMPTIED_MAPS lists the maps whose entries the units file stages
+(`scripts/widget_units.toml`'s `[staged]` paths with `[kept]` entries), and
+the comment is accepted on one of them with the value `{}`, on any preset.
+A comment naming another section is no definition comment.
 
 The presets are the bundled ones, `native-theme/src/presets/*.toml`.
 
@@ -39,6 +44,10 @@ DEFINITIONS = {
     "S9.4": ("tokens.text.font_dpi", 72, lambda p: p.startswith(("macos-", "ios-"))),
     "S4.5": ("tokens.icons.animated_visuals", {}, lambda p: p != "windows-11"),
 }
+# S10 (ADD-A147): (the keyed maps a preset states empty where no base states an entry, the value)
+EMPTIED_MAPS = (("colors.light.keyed", "colors.dark.keyed", "tokens.text.keyed", "tokens.icons.sizes.keyed",
+                 "tokens.elevation", "tokens.params"), {})
+SECTIONS = (*DEFINITIONS, "S10")
 DEFINITION_COMMENT = re.compile(r"^#\s*(S\d+(?:\.\d+)*)\s*$")
 HEADER = re.compile(r"\[([A-Za-z0-9_.-]+)\]")
 VALUE = re.compile(r"([A-Za-z0-9_.]+)\s*=")
@@ -63,7 +72,15 @@ def definition_findings(name: str, text: str) -> list:
     out = []
 
     def judge(n, section, key_path):
-        path, value, on = DEFINITIONS[section]
+        if section == "S10":
+            maps, empty = EMPTIED_MAPS
+            if key_path not in maps:
+                out.append((f"{name}:{n}", key_path or "(no key)", 0,
+                            "`# S10` marks a keyed map stated empty, not this key"))
+                return
+            path, value, on = key_path, empty, lambda p: True
+        else:
+            path, value, on = DEFINITIONS[section]
         if key_path != path:
             out.append((f"{name}:{n}", key_path or "(no key)", 0,
                         f"`# {section}` defines `{path}`, not this key"))
@@ -80,7 +97,7 @@ def definition_findings(name: str, text: str) -> list:
         stripped = line.strip()
         if stripped.startswith("#"):
             m = DEFINITION_COMMENT.match(stripped)
-            if m and m.group(1) in DEFINITIONS:
+            if m and m.group(1) in SECTIONS:
                 pending = (n, m.group(1))
             continue
         if not stripped:
@@ -98,7 +115,7 @@ def definition_findings(name: str, text: str) -> list:
             judge(pending[0], pending[1], key_path)
             pending = None
         trailing = re.search(r"\s#\s*(S\d+(?:\.\d+)*)\s*$", line)
-        if trailing and trailing.group(1) in DEFINITIONS:
+        if trailing and trailing.group(1) in SECTIONS:
             judge(n, trailing.group(1), key_path)
     if pending:
         judge(pending[0], pending[1], None)
@@ -139,7 +156,13 @@ def self_test() -> int:
          [("adwaita.toml:2", "tokens.text.font_dpi", 0, "`# S9.4` is not accepted on adwaita")]),
         ("a section above no key", "adwaita.toml", "# S4.5\n[tokens.icons]\n",
          [("adwaita.toml:1", "(no key)", 0, "`# S4.5` defines `tokens.icons.animated_visuals`, not this key")]),
-        ("another section, no definition comment", "adwaita.toml", "[tokens.text]\nfont_dpi = 96  # S12\n", [])):
+        ("another section, no definition comment", "adwaita.toml", "[tokens.text]\nfont_dpi = 96  # S12\n", []),
+        # a keyed map stated empty (S10, ADD-A147): on one of EMPTIED_MAPS with `{}`, on any preset
+        ("S10 on a keyed map", "ios-13.toml", "[colors.light]\n# S10\nkeyed = {}\n[tokens]\nparams = {}  # S10\n", []),
+        ("S10 on another key", "adwaita.toml", "[tokens.icons]\n# S10\ntheme = {}\n",
+         [("adwaita.toml:2", "tokens.icons.theme", 0, "`# S10` marks a keyed map stated empty, not this key")]),
+        ("S10 on a map with an entry", "adwaita.toml", "[tokens]\nelevation = { level0 = \"absent\" }  # S10\n",
+         [("adwaita.toml:2", "tokens.elevation", 0, "`# S10` defines {}, not {'level0': 'absent'}")])):
         got = definition_findings(preset, text)
         if got != want:
             failures.append(f"definitions, {label}: got {got}, want {want}")
