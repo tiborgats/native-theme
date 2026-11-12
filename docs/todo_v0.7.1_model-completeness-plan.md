@@ -537,7 +537,7 @@ the facts tooling reads it.
     with no variant on `material-3` and `ios-13`, 0.7.0's staying under `tinted` and `@gray`; `material-3`'s checked
     text-button colours; of the two motions 0.7.0 has, one the Apple motion trial does not measure; the icon size of a
     context the platform names none for; the icon theme's name on the presets whose icon set is not freedesktop; on
-    `macos-*` and `ios-*` a status colour whose source read finds none; on `windows-11` egui's error and warning text
+    `macos-*` and `ios-*` a status colour whose source read finds neither a source nor a measurement; on `windows-11` egui's error and warning text
     colours: ADD-A147, veto list items 5 to 8, 32 to 39, 56 and 57) and the widgets a preset declares unavailable where 0.7.0 resolved
     them (`tab`, `card`, `expander`, `status_bar`), which a connector draws by its contract's list (S21.3; D6, outcome
     6; ADD-A147) (what its API does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks
@@ -651,8 +651,8 @@ the facts tooling reads it.
       role (the filled button's title colour, U651, U755), a colour merely in its palette not counting (veto list
       item 56); a text slot the platform names no counterpart for, by a clause of its own, a style or family it
       names; on `macos-*` and
-      `ios-*` the status fills, and the error and warning standalone colours, refer to the keyed system colours as
-      0.7.0 drew them (the success and info standalone colours and `destructive` absent, no connector holding them;
+      `ios-*` the status fills, and the error and warning standalone colours, are paired by their reads with the
+      keyed system colours 0.7.0 drew, or with the colour a measurement finds where it differs (the success and info standalone colours and `destructive` absent, no connector holding them;
       where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on, through that
       task's own spec change), and the status
       text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a filled
@@ -663,11 +663,12 @@ the facts tooling reads it.
       (the rationale's R5.1, R10, R25.17; the specification's S3, S4.4, S17; veto list item 3). U456 closes with the
       pairings, the iOS status text colours split off as U755 and paired there with the filled button's measured
       title colour, as U651, measured on each status fill by the second-tint run, each of the four Apple pairings
-      resting on a read that names the colour for the meaning or measures the role (the ledger's U757–U760), which
+      resting on a read that names the colour for the meaning or measures an element the platform draws for it, in a
+      colour the run does not set, the row naming the element (the ledger's U757–U760), which
       the macOS and iOS lanes make before their facts edit, the facts pending on it until then (S3 for the outcome
       where neither is found: the status's `fill`, its `standalone` where paired, and its `foreground` absent there,
-      a loss of 0.7.0's status colour, veto list item 57), at the latest at M4's pending condition, and the macOS
-      foregrounds on a probe pass over the status fills (U756).
+      a loss of 0.7.0's status colour, veto list item 57), the reads closing at the latest at M4's pending
+      condition, and the macOS foregrounds on a probe pass over the status fills (U756), due at the same condition.
     - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
       staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
       trial measures them (M2's task 1), Apple stating no timings (at `7430a0a2` 21 of the 27 macOS and 43 of the 48
@@ -1510,6 +1511,12 @@ is fixed before task 0 on its own branch, `side-units`.
      (*Widgets 0.7.0 styles through stand-ins*), and the side S21.3 adds, what the connector supplies (its flags and
      their order, content variants, element data, root inputs, font metrics, the presences it reports, a row per
      declared keyed component), which the tables hold from the connectors' port on (ADD-A146);
+   - the roles bundled presets leave absent because no connector held a toolkit field for them (S3's first
+     condition: `success.standalone`, `info.standalone` and `destructive` on `macos-*` and `ios-*`,
+     `info.standalone` on `adwaita`): where a table names a toolkit field that cannot be left empty for one, the
+     design records it and S3's rule is applied to it by a spec change in this task (ADD-A147, decision N3-4);
+     likewise which role a "danger" field reads where a preset states `destructive` apart from `error`
+     (*today's fields*);
    - one linked example per toolkit, `slice-<toolkit>`, an `[[example]]` of its connector crate (egui-widgets'
      widgets in egui's), which draws the slice's button in its states and which each unit's connector task extends
      with the unit's widgets, kept until M5 links the showcases again; its screenshots are compared at M2.1, and at

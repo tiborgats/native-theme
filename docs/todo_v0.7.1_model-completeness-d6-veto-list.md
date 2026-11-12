@@ -54,11 +54,13 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   needs and the platform names no counterpart for is native-theme's own mapping. It is labelled as such, kept out
   of the gate's platform comparison, never absent and never recorded as the platform's fact. It changes R25.17,
   which made the status colours absent on `macos-*`. What it brings:
-  - on `macos-*` and `ios-*` the status roles refer to the platform's keyed system colours, as 0.7.0 drew them
-    (closes *register row* U456; a register row is one line of the ledger's list of what is not measured yet).
-    No pinned Apple source yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success
-    or info, so each pairing waits on a source read that names the colour for the meaning, or a measurement of the
-    platform drawing the role (rows U757–U760), the status's values pending meanwhile; where a read finds neither by
+  - on `macos-*` and `ios-*` the status roles are paired with the platform's keyed system colours 0.7.0 drew, or
+    with the colour a measurement finds where it differs (closes *register row* U456; a register row is one line of
+    the ledger's list of what is not measured yet). No pinned Apple source yet uses systemRed, systemOrange,
+    systemGreen or systemBlue for error, warning, success or info, so each pairing waits on a source read that names
+    the colour for the meaning, or a measurement of an element the platform draws for that meaning, in a colour the
+    run does not set (rows U757–U760, each naming its element), the status's values pending meanwhile; where a read
+    finds neither by
     the release, that status (its fill, its standalone colour where it has one and its text colour) is absent on
     `macos-*` and `ios-*` by item 56's third condition, a catalogue change that loses 0.7.0's status colour there
     (item 57). The pairings take the fill of all four statuses and the standalone colour (the status's text on the
@@ -73,7 +75,8 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
     probe pass (row U756); on `ios-*` to the filled button's measured title colour (row U755), measured on each
     status fill by the second-tint run (U706); 0.7.0's was a literal with no source;
   - the destructive role on `macos-*` and `ios-*` stays absent as the success and info standalone colours do: no
-    connector holds a destructive colour (0.7.0's held none; its "danger" fields read the error status's), so item
+    connector holds a destructive colour (0.7.0's held none; on these presets its "danger" fields read the error
+    status's, a destructive colour only where a preset states one apart, as `adwaita` does), so item
     56's first condition fails and no source read is needed (row U761 closed). Where M2 task 1's contract tables
     name a toolkit field for any of these roles, the rule applies from then on, through that task's own spec
     change;
@@ -98,7 +101,9 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   `destructive`: the decisions N2-1 and N2-2 on its second check (`batch-check/check-N2.md`); the open reads as
   pending values and the success and info standalone colours and `adwaita`'s info standalone colour left absent:
   the decisions N3-1 and N3-3 on its third check (`batch-check/check-N3.md`); `destructive` absent as the success
-  and info standalone colours: the decision N3-4 after that check's fix round.
+  and info standalone colours: the decision N3-4 after that check's fix round; a measurement's pairing with the
+  colour measured and `destructive`'s ground: the decisions N4-1 and N4-2 on its fourth check
+  (`batch-check/check-N4.md`).
 
 **56. Which roles the labelled mapping covers (the scope of item 3).**
 - *Decided:* the mapping applies to a typed role where all three hold: (1) a connector maps it to a toolkit field
@@ -113,7 +118,7 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   them). The pairing refers to the platform's colour or font, never to one native-theme makes up. Where only (3)
   fails (`material-3`'s warning, success and info: Material draws none of those meanings; `windows-11`'s error
   and warning standalone colours, which egui holds and WinUI draws only as fills; an Apple status whose source read
-  finds none, item 57; whatever else the contract tables show), the role stays absent, and the connector's contract records the toolkit's own colour
+  finds neither a source nor a measurement, item 57; whatever else the contract tables show), the role stays absent, and the connector's contract records the toolkit's own colour
   there as an exception, as item 48 records a toolkit's own look for an unavailable widget, and the contract test
   fails a table that lacks one. On `windows-11` this loses egui's error and warning text colours that 0.7.0 filled
   (`#c42b1c`, `#9d5d00`), a loss R21 lists.
@@ -193,12 +198,13 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
 
 **57. The Apple status colours, if no Apple source pairs them (with item 3).**
 - *Decided:* only if a source read finds no Apple documentation that names systemRed, systemOrange, systemGreen or
-  systemBlue for error, warning, success or info, and no measurement shows the platform drawing that role in a
-  colour (rows U757–U760, made by the macOS and iOS lanes before their facts edit, at the latest at M4's pending
+  systemBlue for error, warning, success or info, and no measurement shows an element the platform draws for that
+  role, in a colour the run does not set (rows U757–U760, made by the macOS and iOS lanes before their facts edit, at the latest at M4's pending
   condition before the release): that status (its fill, its standalone colour where it has one and its text
   colour) is absent on `macos-*` and `ios-*`, and each connector fills its toolkit's field with the toolkit's own
-  colour, recorded in its contract. 0.7.0's status colour there is then lost. A read that finds a source pairs it
-  as 0.7.0 drew it, and nothing is lost. Until a read closes, those values are pending, which no release may hold.
+  colour, recorded in its contract. 0.7.0's status colour there is then lost. A source that names the colour pairs
+  it as 0.7.0 drew it; a measurement pairs it with the colour the platform is measured drawing, 0.7.0's where the two
+  are equal. Either way the status keeps a colour. Until a read closes, those values are pending, which no release may hold.
 - *Why:* item 56's third condition: a colour that merely exists in the platform's palette does not count, and
   0.7.0's choice cites no source for the meaning. The same rule leaves `material-3`'s warning, success and info
   absent, where 0.7.0 also drew colours.
@@ -208,8 +214,9 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   WinUI's critical and caution fills) would qualify too, so item 56 changes with it.
 - *Source:* the orchestrator's decision N2-1 on the batch's second check of its fix rounds (`batch-check/check-N2.md`,
   finding 1; `batch-check/decisions.md`), the open reads' pending values by the decision N3-1 on its third
-  (`batch-check/check-N3.md`, finding 1); the specification's S3, the catalogue's *global roles*, `status`; the
-  rationale's R21 and R25.17.
+  (`batch-check/check-N3.md`, finding 1), the measurement's pairing with the colour measured by the decision N4-1
+  on its fourth (`batch-check/check-N4.md`, finding 1); the specification's S3, the catalogue's *global roles*,
+  `status`; the rationale's R21 and R25.17.
 
 ---
 
@@ -528,7 +535,8 @@ staging revision 2's variant list, +197 before the fix round counted `label_posi
 
 - **The individual status-colour pairings (item 3).** The catalogue's *global roles* `status` row lists them
   (`error` `= role.@system_red`, `warning` `@system_orange`, `success` `@system_green`, `info` `@system_blue`, on
-  `macos-*` and `ios-*`), and item 3 now names the status text colours, on `ios-*` the filled button's title colour
+  `macos-*` and `ios-*`, where a source names the colour or a measurement finds it, otherwise the colour measured;
+  rows U757–U760), and item 3 now names the status text colours, on `ios-*` the filled button's title colour
   (U755).
 - **0.7.0's values under `tab`, `card`, `expander`, `status_bar` (item 48).** The query answers "not available"
   where 0.7.0 gave values. No source calls this a loss, so it is not in group B.
