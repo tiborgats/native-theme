@@ -34,6 +34,56 @@ fn every_bundled_preset_validates() {
     }
 }
 
+/// The positive control of the declarations' form at depth (S10 *Later
+/// names*: "a keyed flag or system setting of a unit not enabled is not
+/// declared meanwhile"; the plan's *The depth 0.8.0 states*, its gate):
+/// S12's unused check is what keeps such a name out, so only loading
+/// shows the form holds. `ios-13` and `kde-breeze` each load as bundled,
+/// and each is refused with its name declared but unused once it declares
+/// again what the form left out: `ios-13`'s `@loading` flag, the states
+/// unit's, and `kde-breeze`'s `@single_click` setting, the behaviour
+/// unit's.
+#[test]
+fn a_name_of_a_unit_not_enabled_declared_is_refused() -> Result<(), String> {
+    let cases = [
+        (
+            PresetId::Ios13,
+            "[declare.widget.button]\navailable = true\n",
+            "[declare.widget.button]\navailable = true\nflags = [\"@loading\"]\n",
+            "loading",
+        ),
+        (
+            PresetId::KdeBreeze,
+            "\n[declare]\n",
+            "\n[declare]\nconditions = [\"@single_click\"]\n",
+            "single_click",
+        ),
+    ];
+    for (id, at, declared, name) in cases {
+        let source = id.source();
+        validates(Some(id), source)?;
+        if !source.contains(at) {
+            return Err(format!("{}: no {at:?} to declare `{name}` at", id.key()));
+        }
+        let refused = match validates(Some(id), &source.replacen(at, declared, 1)) {
+            Ok(()) => {
+                return Err(format!(
+                    "{}: `{name}` declared and unused is accepted",
+                    id.key()
+                ));
+            }
+            Err(refused) => refused,
+        };
+        if !refused
+            .lines()
+            .any(|line| line.contains("is declared but unused") && line.contains(name))
+        {
+            return Err(format!("{}: {refused}", id.key()));
+        }
+    }
+    Ok(())
+}
+
 /// Every bundled preset has a display name of its own: a picker listing
 /// `PresetId::all` names each once (S16).
 #[test]
