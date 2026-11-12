@@ -448,7 +448,7 @@ seven. 0.7.0's `from_system` was not measured.
   exist yet (`grep 'fn bundled' src/palette` finds none).
 - The preset is parsed again by `set_preset` (`src/theme/mod.rs:126`) and by `PresetId::font_dpi`
   (`src/presets/mod.rs:80-94`), which the GNOME and KDE readers call at every read (`src/gnome/mod.rs:187`,
-  `src/kde/mod.rs:254`).
+  `src/kde/mod.rs:246`).
 
 **Mutations.** `pick`, `set_contrast`, `set_flavor`, `set_accent`, `add_layer`, `set_reader` and the rest go through
 `Stack::change`, which copies the stack, derives the palette's entry, the accent layer and the accent-derivation
@@ -1130,7 +1130,7 @@ declarations, layer and listed paths). The stack holds that `Arc` (today it hold
 wraps the layer in an `Arc` of its own, `src/resolve/mod.rs:605-606`, `:681`, so a cached `Arc` would drop as soon
 as `from_preset` returned, c2-13); a change's copy of the stack then copies no declarations. `set_preset`,
 `font_dpi` and `from_system` read through the cache; `from_system` takes the preset's `Arc` before the reader reads
-and holds it across the read, so the reader's `font_dpi` (`src/gnome/mod.rs:187`, `src/kde/mod.rs:254`) finds it.
+and holds it across the read, so the reader's `font_dpi` (`src/gnome/mod.rs:187`, `src/kde/mod.rs:246`) finds it.
 
 **E2. The last resolution kept per window**, in `WindowState` (section 4).
 
@@ -1751,8 +1751,8 @@ presets M2's task 0 empties)
     holds one, two themes of one preset holding the same read (`Arc::ptr_eq`), and `set_preset` back to a preset the
     test's live theme holds reading none; and in `from_system`'s path: `from_system_async` and a crate-internal test
     share one function that takes the preset's `Arc` from the cache, runs the read it is given and builds the theme,
-    and the test gives it the KDE and GNOME build functions over their fixtures with fonts set and, for KDE, no
-    `Xft.dpi`, so that `font_dpi` runs, at most one read on the thread (`src/gnome/mod.rs:187`, `src/kde/mod.rs:254`;
+    and the test gives it the KDE and GNOME build functions over their fixtures with fonts set, so that `font_dpi`
+    runs, at most one read on the thread (`src/gnome/mod.rs:187`, `src/kde/mod.rs:246`;
     c2-13); these two are compiled on Linux with the `kde` and `portal` features (`src/lib.rs:144-145`, `:164-165`)
     and run on CI's Linux job (c4-13);
   - a compile-time assertion that `Theme` is `Send`;

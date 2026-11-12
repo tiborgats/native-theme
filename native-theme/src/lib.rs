@@ -66,7 +66,7 @@
 //!
 //! | Feature | Enables |
 //! |---|---|
-//! | `kde` | The KDE Plasma reader, [`Theme::from_system`]: `kdeglobals` as KConfig cascades it, the colour scheme file it names and, on X11, `Xft.dpi`; and the KDE icon theme (Linux) |
+//! | `kde` | The KDE Plasma reader, [`Theme::from_system`]: `kdeglobals` as KConfig cascades it and the colour scheme file it names; and the KDE icon theme (Linux) |
 //! | `macos` | The macOS reader, [`Theme::from_system`]: AppKit's appearances, colours and settings; the running macOS version and its generation, in [`pipeline::diagnose_platform_support`] |
 //! | `windows` | The Windows reader, [`Theme::from_system`]: `UISettings`' colours, text scale and effects, high contrast and its system colours; the running Windows version and its generation, in [`pipeline::diagnose_platform_support`] |
 //! | `portal` | The GNOME and Budgie reader, and the portal-only read of the Linux desktops with no reader of their own, [`Theme::from_system`]: the XDG Desktop Portal and gsettings (Linux) |
@@ -159,8 +159,8 @@ mod gnome;
 /// - The icon-set choice of a settings UI,
 ///   [`IconSetChoice`](icons::IconSetChoice).
 pub mod icons;
-/// The KDE reader: kdeglobals, the scheme file it names and, on X11,
-/// `Xft.dpi` (Linux); the KDE icon theme `detect` reports.
+/// The KDE reader: kdeglobals and the scheme file it names (Linux); the KDE
+/// icon theme `detect` reports.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub(crate) mod kde;
 pub mod pipeline;

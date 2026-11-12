@@ -1,6 +1,6 @@
-// The KDE reader's two helpers' references, called through the system's
+// The KDE reader's scheme test's references, called through the system's
 // libraries: Qt 6.12.0, KConfig 6.31 and KColorScheme 6.31 (generate.py
-// refuses another Qt or KConfig), and Qt's xcb platform plugin.
+// refuses another Qt or KConfig).
 //
 // Reads one input per line on stdin, its UTF-8 bytes in hex, "=" for the empty
 // string, "-" for no input (a key the file leaves unset). The first argument
@@ -26,26 +26,12 @@
 //   <scheme> QStyleHints::colorScheme() (0 unknown, 1 light, 2 dark), which
 //   plasma-integration answers from KHintsSettings::determineColorScheme;
 //   red, green, blue QGuiApplication::palette()'s active window colour.
-//
-// "xcb": the input is the X resources string. The root window's
-//   RESOURCE_MANAGER property of the X server $DISPLAY is set to its bytes
-//   (an empty string: the property deleted), then a child process's
-//   QGuiApplication on the xcb platform reads it as Qt's xcb plugin does at
-//   start. Prints
-//     <forced dpi> <logical dpi> <xrdb>
-//   <forced dpi> QXcbScreen::forcedDpi() of the primary screen (exported by
-//   libQt6XcbQpa, not declared in an installed header: called by its symbol),
-//   the DPI the resources force, 0 for none; <logical dpi> the screen's
-//   QPlatformScreen::logicalDpi().first, which falls back where none is forced;
-//   <xrdb> the hex of what `xrdb -query` prints for the same property, "=" for
-//   nothing, "!" where xrdb fails.
 
 #include <QByteArray>
 #include <QColor>
 #include <QDir>
 #include <QGuiApplication>
 #include <QPalette>
-#include <QScreen>
 #include <QString>
 #include <QStyleHints>
 
@@ -54,19 +40,12 @@
 #include <KConfigGroup>
 #include <KSharedConfig>
 
-#include <qpa/qplatformscreen.h>
-
-#include <xcb/xcb.h>
-
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <dlfcn.h>
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <typeinfo>
 #include <unistd.h>
 
 static void putHex(const QByteArray &bytes)
@@ -217,105 +196,10 @@ static int plasma(const char *dir)
     return 0;
 }
 
-static xcb_atom_t atom(xcb_connection_t *c, const char *name)
-{
-    xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(c, xcb_intern_atom(c, 0, std::strlen(name), name), nullptr);
-    if (!reply) {
-        std::fprintf(stderr, "no atom %s\n", name);
-        std::exit(2);
-    }
-    const xcb_atom_t a = reply->atom;
-    std::free(reply);
-    return a;
-}
-
-static void setResources(const QByteArray &bytes)
-{
-    xcb_connection_t *c = xcb_connect(nullptr, nullptr);
-    if (xcb_connection_has_error(c)) {
-        std::fprintf(stderr, "no X server at $DISPLAY\n");
-        std::exit(2);
-    }
-    const xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(c)).data->root;
-    const xcb_atom_t resourceManager = atom(c, "RESOURCE_MANAGER");
-    xcb_generic_error_t *error = nullptr;
-    if (bytes.isEmpty()) {
-        error = xcb_request_check(c, xcb_delete_property_checked(c, root, resourceManager));
-    } else {
-        error = xcb_request_check(c, xcb_change_property_checked(c, XCB_PROP_MODE_REPLACE, root, resourceManager,
-                                                                 XCB_ATOM_STRING, 8, bytes.size(), bytes.constData()));
-    }
-    if (error) {
-        std::fprintf(stderr, "cannot set RESOURCE_MANAGER\n");
-        std::exit(2);
-    }
-    xcb_disconnect(c);
-}
-
-static void putXrdb()
-{
-    FILE *p = popen("xrdb -query", "r");
-    if (!p) {
-        std::fputs("!", stdout);
-        return;
-    }
-    QByteArray out;
-    char buf[4096];
-    size_t got = 0;
-    while ((got = std::fread(buf, 1, sizeof buf, p)) > 0) {
-        out.append(buf, static_cast<qsizetype>(got));
-    }
-    if (pclose(p) != 0) {
-        std::fputs("!", stdout);
-        return;
-    }
-    putHex(out);
-}
-
-static int xcb(const char *dir)
-{
-    std::string line;
-    int n = 0;
-    while (std::getline(std::cin, line)) {
-        QByteArray value;
-        input(line, &value);
-        setResources(value);
-        const QString home = QStringLiteral("%1/home-%2").arg(QString::fromLocal8Bit(dir)).arg(n++);
-        inChild([&] {
-            isolate(home);
-            setenv("QT_QPA_PLATFORM", "xcb", 1);
-            int argc = 1;
-            char name[] = "kde-vectors";
-            char *argv[] = {name, nullptr};
-            QGuiApplication app(argc, argv);
-            QPlatformScreen *screen = QGuiApplication::primaryScreen()->handle();
-            // QXcbScreen derives from QXcbObject, which has no virtual function, and from
-            // QPlatformScreen (qxcbscreen.h): QPlatformScreen is its primary base, at offset 0.
-            if (std::strcmp(typeid(*screen).name(), "10QXcbScreen") != 0) {
-                std::fprintf(stderr, "the primary screen is a %s\n", typeid(*screen).name());
-                return 2;
-            }
-            void *lib = dlopen("libQt6XcbQpa.so.6", RTLD_NOW | RTLD_NOLOAD);
-            using ForcedDpi = int (*)(const void *);
-            const auto forcedDpi = lib ? reinterpret_cast<ForcedDpi>(dlsym(lib, "_ZNK10QXcbScreen9forcedDpiEv"))
-                                       : nullptr;
-            if (!forcedDpi) {
-                std::fprintf(stderr, "no QXcbScreen::forcedDpi\n");
-                return 2;
-            }
-            std::printf("%d\t%.17g\t", forcedDpi(screen), screen->logicalDpi().first);
-            return 0;
-        });
-        putXrdb();
-        std::fputs("\n", stdout);
-    }
-    return 0;
-}
-
 int main(int argc, char **argv)
 {
     if (argc != 3) {
-        std::fprintf(stderr, "usage: readers palette|plasma|xcb <writable folder>\n");
+        std::fprintf(stderr, "usage: readers palette|plasma <writable folder>\n");
         return 2;
     }
     const std::string mode = argv[1];
@@ -324,9 +208,6 @@ int main(int argc, char **argv)
     }
     if (mode == "plasma") {
         return plasma(argv[2]);
-    }
-    if (mode == "xcb") {
-        return xcb(argv[2]);
     }
     std::fprintf(stderr, "unknown mode %s\n", argv[1]);
     return 2;
