@@ -34,23 +34,30 @@ Nothing that blocks the work. To come, each with its facts when they exist:
 - the caps for M3a, at M2's close (outcome 10);
 - U473, if 0.7.0 turns out to hold the value (outcome 14).
 
-## Corrections of the batch's fix round (2026-11-12)
+## Corrections of the batch's fix rounds (2026-11-12)
 
-The batch that applied these outcomes (ADD-A147) was checked twice; the orchestrator's decisions on the checks
-correct this file's outcomes as follows, each open to the maintainer's veto (the veto list,
-`docs/todo_v0.7.1_model-completeness-d6-veto-list.md`):
+The batch that applied these outcomes (ADD-A147) was checked twice, and its fix rounds once more; the
+orchestrator's decisions on the checks correct this file's outcomes as follows, each open to the maintainer's veto
+(the veto list, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`):
 
 - Outcome 2: `button`'s `label_position`, `repeat_delay` and `repeat_interval` are at depth wherever a preset states
   them with no later name; the staging design's figures are recounted (1,381 pending facts and 687 listed paths on
   0.8.0's path; ledger queue #258; veto list item 1).
-- Outcome 5: the rule's scope is three conditions, a connector maps the role to a toolkit field that cannot be left
-  empty, no stated fact gives it, and the platform has a colour of its own to pair with: a keyed colour it names, or
-  the colour it is measured drawing in that role (as U651's and U755's pairings use the filled button's measured
-  title colour); where only the last fails the role stays absent and the connector's contract records the toolkit's
-  own colour as an exception (veto list item 56). On `macos-*` the status text colours refer to `labelColor`, as
-  0.7.0 drew them; on `ios-*` they are the filled button's title colour, as `accent_foreground` (ledger U755),
-  checked again on the second-tint run (U706), 0.7.0's having been a literal with no source.
+- Outcome 5: the rule's scope for a typed role is three conditions, a connector maps the role to a toolkit field
+  that cannot be left empty, no stated fact gives it a value (a fact stating it `absent` is replaced), and the
+  platform draws that meaning in a colour of its own: a colour its documentation or code uses for that meaning, or
+  the colour it is measured drawing in that role (the filled button's title colour, U651, U755), a colour that
+  merely exists in its palette not counting; where only the last fails (`material-3`'s warning, success and info)
+  the role stays absent and the connector's contract records the toolkit's own colour as an exception (veto list
+  item 56). A text slot is the mapping's by a clause of its own: every slot is filled, by a style or family the
+  platform names. The status text colours, the text on the status fill, refer to the colour the platform draws a
+  filled button's title in: on `macos-*` `= role.global.accent_foreground` (`alternateSelectedControlTextColor`;
+  0.7.0's `labelColor` was the body text beside a status mark); on `ios-*` the filled button's measured title
+  colour, as `accent_foreground` (ledger U755), measured on each status fill by the second-tint run (U706), 0.7.0's
+  having been a literal with no source. On `adwaita` the info role refers to the accent, the colour libadwaita's
+  info bar draws info from (ledger queue #278).
 - Outcome 7: a palette is not offered over a preset whose widget colours are measured literals that follow no role
   (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
+- Outcome 8: 40 MiB (41,943,040 bytes), and GitHub's warning at 50 MiB, not Git's (S17).
 - Outcome 14: Qt Quick's line position (U753) takes the non-breaking form, a field on `Decoration`; QPainter's wavy
   and strike lines are a row of their own, U754 (veto list item 27).

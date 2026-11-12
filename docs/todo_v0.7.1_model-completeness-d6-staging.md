@@ -908,7 +908,7 @@ and S-4's refusal applies to the trimmed list (the check2's minor 13).
 ### 2.4 The form, for paths
 
 - **A widget value** leaves the generated values struct until its unit: S6.1's deferral as it is
-  (`[deferred.button] label_position = "<unit>"`).
+  (`[deferred.button] help_tooltip_on_click = "styles"`).
 - **A part's field** leaves the part's `fields(…)` list until its unit: the same table gains part fields
   (`"body.transitions" = "motion"`); the part then does not list the field, and a layer stating it is refused as
   one stating any field the part does not list. The `PartStyle` type is unchanged.
@@ -1024,7 +1024,7 @@ says. Its result therefore holds, now that high contrast is at depth.
 
 One time: the staging task runs after the spec batch that states the rule and before M2's task 0. Task 0 brings the
 four small tables to empty; with the staging applied first they are those of 1.6 (`adwaita` 0, `kde-breeze` 4,
-`material-3` 9, `windows-11` 54 paths, against 4, 16, 48 and 105 today, plan:998), and the connectors' design (task
+`material-3` 9, `windows-11` 55 paths, against 4, 16, 48 and 105 today, plan:998), and the connectors' design (task
 1) is written against the model 0.8.0 holds. One code and tooling task, which also edits the presets' hand-written
 parts the form changes (the keyed declarations no base states, 2.3; the two blocks of 2.5 *(d)*); its gate is the
 generators' `--check`, the checkers' self-tests, each regenerated preset loading in Rust, and the facts gate green
@@ -1762,7 +1762,7 @@ the next free ADD number (ADD-A147 at `7430a0a2`). The plan's *Spec changes* gai
   (flavours) needs no Apple fact and, adding no enum member, is a patch release (D14) unless a question it carries
   adds a model member (U180's decoration form)."
 - **P-6, M2's task 0, plan:996-1000.** The paths per preset become those at depth: "(`adwaita` 0 paths, `kde-breeze`
-  4, `material-3` 9, `windows-11` 54 once the staging task is merged; …)", and the staging task (2.7), whose text
+  4, `material-3` 9, `windows-11` 55 once the staging task is merged; …)", and the staging task (2.7), whose text
   P-6b gives, is named as its predecessor, with its gate. (Revision 1's P-9 is withdrawn: one time, 2.7.)
 - **P-6b, the staging task, a new entry of M2 before task 0, plan:996** (unnumbered, so that tasks 0 to 7 and M2.1
   keep their numbers; the third check's should-fix 6). The text:

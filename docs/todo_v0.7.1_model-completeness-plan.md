@@ -568,7 +568,7 @@ the facts tooling reads it.
   the repository, and every mention of them in the documents means these files: the outcomes
   (`docs/todo_v0.7.1_model-completeness-d6-outcome.md`), the D6 staging design (`…-d6-staging.md`), the D6 load
   design (`…-d6-load.md`), the D6 register design (`…-d6-register.md`) and the veto list (`…-d6-veto-list.md`),
-  each copied unchanged from the working files where it was checked, with ADD-A147's fix round's corrections; they
+  each copied from the working files where it was checked, changed only by ADD-A147's fix rounds' corrections; they
   are archived with this plan at the last follow-up release (*After 0.8.0*). Their scripts stay outside: the staging task reproduces the figures with
   the project's own tooling (ADD-A147). Where each now stands:
   - **The slice's cost, and the caps.** **Decided at D6** (2026-11-10, outcome 10): no cap is set now. The work runs
@@ -645,15 +645,19 @@ the facts tooling reads it.
     - R-3 with R-12, a typed role the platform names no counterpart for: **Decided at D6** (2026-11-10, outcome 5):
       one rule, native-theme's labelled mapping, outside the gate's platform comparison, never absent and never a
       stated fact, where a connector maps the role to a toolkit field that cannot be left empty, no stated fact
-      gives it and the platform has a colour of its own to pair with: a keyed colour it names, or the colour it is
-      measured drawing in that role (as U651's and U755's pairings use the filled button's measured title colour;
-      veto list item 56); on `macos-*` and
-      `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them, and on `macos-*` the status
-      text colours to `labelColor`, the pairings listed in the catalogue's *global roles* (`status`) for the
-      maintainer's veto; the text slots' mappings are labelled alike; R25.17 names `ios-*` too (the rationale's
-      R5.1, R10, R25.17; the specification's S3, S4.4, S17; veto list item 3). U456 closes with the pairings, the
-      iOS status text colours split off as U755 and paired there with the filled button's measured title colour, as
-      U651 (checked again on the second-tint run).
+      gives it a value (a fact stating it `absent` replaced) and the platform draws that meaning in a colour of its
+      own: a colour its documentation or code uses for that meaning, or the colour it is measured drawing in that
+      role (the filled button's title colour, U651, U755), a colour merely in its palette not counting (veto list
+      item 56); a text slot the platform names no counterpart for, by a clause of its own, a style or family it
+      names; on `macos-*` and
+      `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them, and the status text colours,
+      the text on the status fill, to the colour the platform draws a filled button's title in (on `macos-*` `=
+      role.global.accent_foreground`, AppKit's `alternateSelectedControlTextColor`); on `adwaita` the info role to
+      the accent, as libadwaita's info bar draws it; the pairings listed in the catalogue's *global roles*
+      (`status`) for the maintainer's veto; the text slots' mappings are labelled alike; R25.17 names `ios-*` too
+      (the rationale's R5.1, R10, R25.17; the specification's S3, S4.4, S17; veto list item 3). U456 closes with the
+      pairings, the iOS status text colours split off as U755 and paired there with the filled button's measured
+      title colour, as U651, measured on each status fill by the second-tint run.
     - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
       staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
       trial measures them (M2's task 1), Apple stating no timings (at `7430a0a2` 21 of the 27 macOS and 43 of the 48
@@ -780,8 +784,8 @@ depth when 0.7.0 has it, a value at depth reads it, the core reads it, a connect
 or a built system reader states it, and every other waits in a parking unit for the first unit that reads it. Every
 other name (the further variants, sizes, densities, host contexts, positions, directions, states and conditions)
 belongs to a named later unit of depth, model-wide, and cannot be asked for meanwhile: a typed variant is no member
-of `Variant`, a keyed one is declared `later`, a size, a density or a flavour is answered `Later` (a density other
-than the default until the sizes unit, as a size is; ADD-A147), and a given name is mentioned by no rule of
+of `Variant`, a keyed one is declared `later`, a size, a density or a flavour is answered `Later` (a declared density,
+while the sizes unit is not enabled, as a size is; ADD-A147), and a given name is mentioned by no rule of
 a bundled preset, so an element under it resolves as without it (S6.1, S8, S10, S12). A fact is of the enabled units
 when its `when` holds in a combination of those names that its state model draws, its part drawn there; every other
 fact is a later unit's, and no fact is edited (S17). Rejected: the selector pairs of *Today's fields* alone (a
@@ -1031,7 +1035,8 @@ control (`tab` on `ios-*`, UITabBar being `bottom_tab_bar`; `card` on `macos-*`,
 `windows-11`, `ios-*` and `material-3`), and the query answers `NotAvailable` there. The declarations stay. Each
 connector's contract lists, per preset, the entry it draws its toolkit's widget from there (S21.3): a stand-in entry
 for the widget the catalogue names, until that widget's unit (`bottom_tab_bar` and `group_box`, M3b; `list`'s row
-for `expander`); or, where the catalogue names none (`status_bar`, `card` on `ios-*`), the toolkit's own geometry
+for `expander`); or, where the catalogue names none (`status_bar`; `card` on `ios-*`, where it names two surfaces and
+no one control), the toolkit's own geometry
 with every colour and
 font from the theme's typed roles, never an unthemed toolkit colour. The contract test checks the list is complete.
 The same rule serves a stand-in widget whose unit is enabled on a preset that declares it unavailable. The rows are
@@ -1250,7 +1255,7 @@ differs is reported).
 5. The query and the theme (S8, S16): `Unavailable::Later`, answered for an element holding a `later` variant (a
    content variant included) and, while the sizes unit is not enabled, for a size the element takes other than its
    default in force and for a declared density; `Theme::set_flavor` refuses a declared flavour but the default while the flavours unit is not
-   enabled, with a problem of its own, and `flavors()` lists the default alone.
+   enabled, with `ProblemKind::Later` (S12, S16), and `flavors()` lists the default alone.
 6. S12 (`native-theme/src/validate/`): the `later` declaration read; a rule, reference or patch naming a `later`
    variant, or a size, a density or a flavour of a unit not enabled, refused with `ProblemKind::Later`; `checks::unused`
    exempts a flavour of a unit not enabled with its `[declare.flavor.<f>]` sections; the declarations check compares
@@ -1275,7 +1280,10 @@ differs is reported).
 (no mismatch, no unstated field); the self-tests of `check_facts.py`, `check_facts_trace.py`, `check_ledger.py` and
 `verify_facts.py`; each regenerated preset loaded in Rust through `check_preset`, and as its positive control a test
 that S12's unused check refuses `ios-13` with its `@loading` flag declared and `kde-breeze` with its `@single_click`
-setting declared (the form's definition is what keeps them out, so only the loader shows it holds); the facts gate
+setting declared (the form's definition is what keeps them out, so only the loader shows it holds); a generator test
+with a fixture of two entries, a typed variant on one Depth line and declared on the other entry, which
+`generate_preset.py` writes into the second entry's `later.variants` (at the slice no declared typed variant lies on
+another entry's Depth line, so the presets do not run this path); the facts gate
 green over the eight regenerated presets with the predicate in force; `cargo test --workspace` outside
 `PLAN_EXCLUDED`.
 
@@ -1300,10 +1308,12 @@ GitHub's block); kept as it is (it stands at GitHub's warning and grows with eve
 
 **The iOS second-tint run** (D6, outcome 12; the register's U706; ADD-A147). The iOS lane's host pass on both
 simulators under a second tint, beside M2's tasks, after the staging task, so that what UIKit draws in the tint is a
-measured derivation over the accent (R2.6), as the macOS second-accent pass made it on `macos-*`. *Done:* every
+measured derivation over the accent (R2.6), as the macOS second-accent pass made it on `macos-*`; and the filled
+button's title measured with each status's system colour as the tint (`systemRed`, `systemOrange`, `systemGreen`,
+`systemBlue`), in both schemes, the check of U755's pairings. *Done:* every
 tint-following fact at 0.8.0's depth stated as a derivation over the accent and verified, the default tint's
 literals gone from them, and U706 closed for them; a value that does not follow the tint stays a literal, with the
-run's evidence. It blocks the iOS presets' release, not M2's other tasks.
+run's evidence; each status `foreground` (U755) the title colour measured on its own fill. It blocks the iOS presets' release, not M2's other tasks.
 
 **The KDE reader's `Xft.dpi` read removed** (D6, outcome 12; the ledger's queue #198; ADD-A147). One code task
 (`implement`), beside M2's numbered tasks, since it removes a defect of a built reader (the font DPI applied twice
@@ -1456,7 +1466,8 @@ is fixed before task 0 on its own branch, `side-units`.
    tooling, before the facts that use it: the labelled mapping's form (S17's `mapping`, S11's comment; D6,
    outcome 5) in `check_facts.py`, `check_fact_citations.py`, `generate_preset.py`, `check_preset_citations.py`
    and the gate's report; then the lanes of task 0's presets write their mappings (`windows-11`'s monospace style,
-   U509, and the label on each of their text slots the platform names no style for). The macOS and iOS mappings (the
+   U509; `adwaita`'s `info` record paired with the accent, ledger queue #278; and the label on each of their text
+   slots the platform names no style for). The macOS and iOS mappings (the
    status pairings of the catalogue's *global roles*, `status`, U456 and U755; `ios-*`'s `accent_foreground`, U651;
    their text slots) follow in those lanes' rounds after this step, beside M2's tasks (ledger queue #264, #265), and
    task 1 waits for none of them. A preset whose table it empties takes its plain route's records in
@@ -1500,14 +1511,15 @@ is fixed before task 0 on its own branch, `side-units`.
    animations on macOS 15 and 26 and iOS 18 and 26, at most two harness rounds per Apple harness (D6's budget for the
    trial, not a figure from the slice's evidence, whose Apple lanes needed several correcting rounds each; the
    fallback is a likely outcome); a motion measured on all four is stated on every preset, one that is not leaves
-   0.8.0 on every preset, a loss for the maintainer, each of the two motions decided on its own. Second, if either
-   motion stays, or if the connectors' design shows a connector that cannot keep its application-facing API through
+   0.8.0 on every preset, a loss for the maintainer, each of the two motions decided on its own. Second, if the loop
+   stays, or if the connectors' design shows a connector that cannot keep its application-facing API through
    the motion unit without it (the D6 staging design, 5.6), the motion runtime's interface (spec S2.7, *In 0.8.0*):
    `Motion`, `Places` (empty), `MotionUpdate`, `Drawn` and `Presence`, with `Motion::update` and `Motion::sample`,
    running no transition and, if the loop stays, the loops a part's style and its widget's `loop` value state, with
    a test per clause of S2.7's *A loop*; `MotionUpdate.speed_factor` from the resolved token; the connectors drawing
-   every part through `Motion::sample` from then on (where both motions leave, the connector whose design needs it);
-   a dialog presentation that stays run by the connector's own animation with `timing::evaluate`. Otherwise no
+   every part through `Motion::sample` from then on (where the loop leaves, the connector whose design needs it);
+   a dialog presentation that stays run by the connector's own animation with `timing::evaluate`, needing no
+   `Motion`. Otherwise no
    `Motion` is built, and the interface is the motion unit's (ADD-A147). The engines, `Places`' content, `interpolate_color`, Compose's spring, `ComposeShapeMorph` and
    S4.3's theme change are the motion unit's (*After 0.8.0*), `interpolate_color` earlier only with a stated loop that
    interpolates a colour (ADD-A147). Then the connectors, gpui first, then iced, egui and egui-widgets: each one's old mapping deleted;

@@ -2,9 +2,10 @@
 
 2026-11-12. Everything checkpoint D6 decided that you may veto, in one list. **Every item is already applied as the
 work's basis and stays so unless you veto it**; nothing here blocks the work. Answer by item number: "veto 12", or
-"veto 12: instead …"; an item you do not name stands. Sources, all in `scratch-keep/d6/`: `d6-outcome.md` ("outcome
-N"), `register-rows.md` rev. 5 ("register"), `staging-design.md` rev. 4 ("staging"), `load-design.md` rev. 8
-("load", still being finished), `d6-decisions.md` ("brief", which holds the alternatives).
+"veto 12: instead …"; an item you do not name stands. Sources, all in the repository:
+`docs/todo_v0.7.1_model-completeness-d6-outcome.md` ("outcome N"), `-d6-register.md` ("register"),
+`-d6-staging.md` ("staging"), `-d6-load.md` ("load"); `d6-decisions.md` ("brief", which holds the alternatives)
+and the batch's checks and decisions (`batch-check/`) stay in the project's working files (`scratch-keep/d6/`).
 
 ---
 
@@ -55,10 +56,14 @@ N"), `register-rows.md` rev. 5 ("register"), `staging-design.md` rev. 4 ("stagin
   which made the status colours absent on `macos-*`. What it brings:
   - on `macos-*` and `ios-*` the status roles refer to the platform's keyed system colours, as 0.7.0 drew them
     (closes *register row* U456; a register row is one line of the ledger's list of what is not measured yet);
-  - on `macos-*` the status text colours (`foreground`) refer to `labelColor`, the colour 0.7.0 drew them in, which
-    the facts state as the window's foreground; on `ios-*` it is the filled button's title colour, as
-    `accent_foreground` (row U755), checked again on the second-tint run (U706); 0.7.0's was a literal with no
-    source;
+  - the status text colours (`foreground`, the text on the status fill) refer to the colour the platform draws a
+    filled button's title in, as `accent_foreground` there: on `macos-*` to the colour AppKit draws a filled
+    button's title in (`= role.global.accent_foreground`, AppKit's `alternateSelectedControlTextColor`; 0.7.0 drew
+    `labelColor` there, which its own preset names the body text beside a status mark, not text on the fill); on
+    `ios-*` to the filled button's measured title colour (row U755), measured on each status fill by the second-tint
+    run (U706); 0.7.0's was a literal with no source;
+  - on `adwaita` the info role refers to the accent (`fill`, `foreground` and `standalone` to the accent's three
+    roles), the colour libadwaita's info bar draws info from, as 0.7.0 drew it (item 56);
   - the text slots' existing mappings get the same label;
   - on `ios-*`, `accent_foreground` (text on the accent colour) is paired with the colour UIKit draws a filled
     button's title in, measured `#ffffff` in both schemes on both presets, the same value 0.7.0's `ios-13` had. It
@@ -71,34 +76,44 @@ N"), `register-rows.md` rev. 5 ("register"), `staging-design.md` rev. 4 ("stagin
 - *Veto brings:* the roles stay absent. 0.8.0 keeps losing the macOS status colours, and the rationale needs a rule
   for what a connector puts in a toolkit field the model leaves empty. For U651 alone: a different witness for
   "content on the accent".
-- *Source:* outcome 5; register §2.2, U651, U509, §7 item 4; brief §2 decision 5. The macOS status text colours:
-  the orchestrator's decision A1 at the batch's fix round (`batch-check/decisions.md`), by item 56's scope.
+- *Source:* outcome 5; register §2.2, U651, U509, §7 item 4; brief §2 decision 5. The macOS status text colours
+  and `adwaita`'s info: the orchestrator's decisions N1-1 and N1-2 on the batch's check of its fix rounds
+  (`batch-check/decisions.md`, `batch-check/check-N1.md`), by item 56's scope.
 
 **56. Which roles the labelled mapping covers (the scope of item 3).**
-- *Decided:* the mapping applies to a role or text slot where all three hold: (1) a connector maps it to a toolkit
-  field that cannot be left empty (the connectors' contract tables name these); (2) no stated fact gives the value
-  (a role cited as the platform's own fact stays a fact, as `windows-11`'s `role.window.negative` and `macos-*`'s
-  `accent_standalone`); (3) the platform has a colour of its own to pair with: a keyed colour it names, or the
-  colour it is measured drawing in that role (as U651's and U755's pairings use the filled button's measured title
-  colour). The pairing refers to that colour, never to a colour native-theme makes up. Where only (3) fails (`material-3`'s warning, success and
-  info; `adwaita`'s info; whatever else the contract tables show), the role stays absent, and the connector's
-  contract records the toolkit's own colour there as an exception, as item 48 records a toolkit's own look for an
-  unavailable widget.
+- *Decided:* the mapping applies to a typed role where all three hold: (1) a connector maps it to a toolkit field
+  that cannot be left empty (the connectors' contract tables name these); (2) no stated fact gives it a value (a
+  role cited as the platform's own fact stays a fact, as `windows-11`'s `role.window.negative` and `macos-*`'s
+  `accent_standalone`; a fact stating it `absent` is replaced by the mapping); (3) the platform draws that meaning
+  in a colour of its own: a colour its documentation or code uses for that meaning (libadwaita's info bar draws
+  info from the accent, `_deprecated.scss:174-179`), or the colour it is measured drawing in that role (the filled
+  button's title colour, U651, U755); a colour that merely exists in its palette does not count. A text slot is
+  outside these conditions: every preset fills every slot, so where the platform names no counterpart the slot is
+  the mapping's, by a text style or family the platform names, never a made-up font (U509's monospace slot among
+  them). The pairing refers to the platform's colour or font, never to one native-theme makes up. Where only (3)
+  fails (`material-3`'s warning, success and info: Material draws none of those meanings; whatever else the
+  contract tables show), the role stays absent, and the connector's contract records the toolkit's own colour
+  there as an exception, as item 48 records a toolkit's own look for an unavailable widget, and the contract test
+  fails a table that lacks one.
 - *Why:* item 3's wording ("a role a portable application needs") named no test. Read by its own reason, it would
   cover every field a toolkit holds as a plain colour, also where the platform has nothing to pair with, which
   would make native-theme invent the colour; and it would turn references that the facts cite as the platform's own
   into native-theme's picks.
-- *Veto brings:* either the pairings extended to those roles too (`material-3`'s warning, success and info,
-  `adwaita`'s info: a colour native-theme chooses where the platform has none), or each connector deciding what it
-  puts in a toolkit field whose role is absent.
+- *Veto brings:* either the pairings extended to those roles too (`material-3`'s warning, success and info: a
+  colour native-theme chooses where the platform has none), or each connector deciding what it puts in a toolkit
+  field whose role is absent; for `adwaita`'s info, the role left absent (a colour only a deprecated widget draws
+  not counted as the platform's).
 - *Source:* the batch check B's finding 3 and the orchestrator's decision B3 (`batch-check/check-B.md`,
-  `decisions.md`); the rationale's R5.1 and R25.17, the specification's S3.
+  `decisions.md`), corrected by the check of the fix rounds and the decisions N1-2 and N1-3
+  (`batch-check/check-N1.md`, `decisions.md`); the rationale's R5.1, R10 and R25.17, the specification's S3.
 
 **4. A bundled preset is checked by the crate's tests, not again at load (R2.8, a rationale sentence).**
-- *Decided:* the checks are not run again when a theme loads them for three kinds of data: a bundled preset whose
-  pending table is empty (every one, at a release), a bundled palette, and the layers `Theme` derives from them.
-  The crate's build test and the facts gate run those checks at every commit. What the system and the application
-  add is still checked when added, only where something they read changed. Queries still cannot fail.
+- *Decided:* the preset's own checks and the checks over combinations are not run again when a theme loads them for
+  three kinds of data: a bundled preset whose pending table is empty (every one, at a release), a bundled palette,
+  and the layers `Theme` derives from them. The crate's build test and the facts gate run those checks at every
+  commit. Each layer's own checks still run at every change. What the system and the application add is still
+  checked when added, its checks over combinations only where something they read changed. Queries still cannot
+  fail.
 - *Why:* the same checks already run on the same data at every commit. Running them at each load costs more time and
   memory than items 9 and 10 allow.
 - *Veto brings:* `from_preset` and `set_preset` validate on every load. Items 9 and 10 (load's lines 1 and 2) are
@@ -418,11 +433,12 @@ cannot reach, measured literals that follow no role (`macos-*`, `ios-*`: `macos-
 measured literals of 2,795 fill lines), a recorded limit (the orchestrator's decision at the batch's fix round).
 *Why:* R19 rejects a mixed look, and a method removes the per-pick veto.
 *Veto brings:* typed roles only, with the mixed look recorded (for example the Windows button in WinUI's greys
-under Catppuccin's colours). *Source:* outcome 7; brief decision 7.
+under Catppuccin's colours); over `macos-*` and `ios-*`, the palette offered with the limit recorded (its colours
+beside the platform's measured literals). *Source:* outcome 7; brief decision 7.
 
 **50. `docs/platform-facts.md` is no longer committed (outcome 8).** *Decided:* CI and each release generate it.
-`check_facts.py` splits a facts file by key prefix past 40 MB. Local tools that cite its lines read the facts or a
-generated copy. *Why:* the file is 47.8 MiB, against Git's warning at 50 MiB and GitHub's block at 100 MiB, and it
+`check_facts.py` splits a facts file by key prefix past 40 MiB. Local tools that cite its lines read the facts or a
+generated copy. *Why:* the file is 47.8 MiB, against GitHub's warning at 50 MiB and GitHub's block at 100 MiB, and it
 grows with every fact. *Veto brings:* it is committed per platform in smaller files, or kept as it is. *Source:*
 outcome 8; brief decision 8.
 
