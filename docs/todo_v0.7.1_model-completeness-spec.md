@@ -4846,7 +4846,7 @@ preset's). `Theme` derives the layer for the slot in force on every change of th
 `set_contrast` and a reader's re-read among them, S16), its colour bases and inactive input roles that slot's; S12 holds for it,
 as for the S8 leave-out, at every slot where it can state its roles: S19.1's build test validates each form `Theme`
 can derive over the bundled preset (each set of schemes at which an accent is given, with and without the tinting
-roles), and a theme does not check it again (S8; ADD-A147). Its expressions are evaluated at the slot in force over the accent and the scheme inputs in force there
+roles), and a theme does not run the checks over combinations over it again (S8; ADD-A147, ADD-A148). Its expressions are evaluated at the slot in force over the accent and the scheme inputs in force there
 (S8, S9), as bases, so every rule (the preset's inactive
 rules, a contrast's) and `active(…)` (S2.2) read them as any base, and every layer above replaces the roles it states
 where they apply: at every scheme and contrast the accent in force changes every role Plasma's derivation changes,
@@ -4917,8 +4917,10 @@ literals, shows. The preset's typed sets and global roles reference the keyed ro
 layers above it, it is `kde-breeze`'s (the bullets above, read with Material's roles and no scheme inputs): a reader's
 (the Android reader's, R18, whose roles hold the dynamic scheme the system derived) or a stand-in's stated roles
 replace the layer's, and are left out at a slot where a layer above them gives the accent in force (S8); an
-application layer's role wins over the layer's, as each role a mapping palette states does, and an `md.sys.color`
-role a mapping does not state shows the derivation of the mapping's accent. `kde_accent`'s no-accent branch
+application layer's role wins over the layer's, as each role a mapping palette states does, and a mapping states
+every `md.sys.color` role the preset's values read (S14's *Keyed roles*), so the derivation shows under `set_accent`
+and never under a mapping (ADD-A148; decided by logic at the document pass, awaiting the maintainer's veto: veto
+list item 49). `kde_accent`'s no-accent branch
 has no counterpart, the baseline being the preset's own literals. Rejected: the preset's roles as `= m3_role(@<role>)` with a
 seed as its accent (the baseline is no seed's scheme in any pinned source, so a seed would be a value no fact gives,
 and its roles would not be Compose's tokens); the baseline literals with no derivation (an `Accent` would change no
@@ -4970,7 +4972,8 @@ reads again (S9: an input is replaced slot by slot). Likewise for a contrast: a 
 contrast under which its platform gives the input a value of its own, beside its per-scheme value where it reads
 one, which would otherwise stand under that contrast over the preset's base for it (S9): the macOS reader states its five inputs'
 `contrast.increased` bases from the Aqua and DarkAqua appearances it reads while Increase Contrast is on (MAC-X22;
-*The macOS reader's readings*, below; ADD-A138), as the macOS presets state theirs, and whether the Windows reader states the accent's and the ramp's `contrast.high` bases follows the Windows
+*The macOS reader's readings*, below; ADD-A138), as the macOS presets state theirs once the increased-contrast
+unit is enabled (ADD-A148), and whether the Windows reader states the accent's and the ramp's `contrast.high` bases follows the Windows
 facts' high-contrast inputs (S22's follow-up). A reader states its own preset's accent inputs as one group (S9.2),
 every one at each scheme at which it states any (the macOS reader the five, read under the same appearances; the
 Windows reader the accent with its ramp; the GNOME and KDE readers the accent alone); a reader that cannot read one of
@@ -5154,6 +5157,12 @@ Beside its accent (above) and its scheme inputs (S9.1), it states:
   `breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:8` against `kicontheme.cpp:161`, so a theme without the key
   would show Breeze's size where KDE draws its default); the defaults dropped as no fact holds them (the port; the
   pinned source states them, so facts can).
+- `token.icons.theme` from `[Icons] Theme` under `for_preset.kde-breeze`, a freedesktop theme's name being its own
+  preset's (S9.5), wherever the value is not empty, as read, also where it is no plain path component or names a
+  theme not installed, the lookup then falling back by `theme_fallback` (S4.5), as 0.7.0 read it
+  (`native-theme/src/kde/mod.rs:304-312`, `:706-708`); where kdeglobals has no such key the preset's `breeze` shows
+  (`kiconthemes@6.31.0 src/kicontheme.cpp:686`) (ADD-A148). Rejected: no name stated where no size is, as for the sizes (the name is the
+  user's setting, the sizes a file of the theme it names).
 - no font DPI (`font_dpi: None`) on any session (S9.4; K3.46; ADD-A146). Off X11, Qt's Wayland screen gives the
   logical DPI `kde-breeze`'s `token.text.font_dpi` states unless `QT_WAYLAND_FORCE_DPI` is set (`qtbase@6.12.0
   src/plugins/platforms/wayland/qwaylandscreen.cpp:150-160`,
@@ -5256,7 +5265,8 @@ decides where each read goes:
   off, and the roles as reader rules under `scheme:<s>`, `contrast_increased` and `preset:<own>`.
 The slots it does not read are slots the platform gives none at (above), no `Fallback`: with the flag off, the
 increased-contrast slots, where an application's `set_contrast(ContrastChoice::Increased)` shows the reader's per-scheme inputs
-and the preset's increased-contrast rules on the roles (every layer's bases apply before every layer's rules, S8);
+and the preset's increased-contrast rules on the roles once that unit is enabled (ADD-A148; every layer's bases
+apply before every layer's rules, S8);
 with it on, the slots without a contrast, which only `set_contrast(ContrastChoice::Standard)` reaches (`System`
 takes the reader's contrast, S16; ADD-A146), and the high-contrast slots, which only
 `set_contrast(ContrastChoice::High)` reaches, at both of which the preset's values show, AppKit giving the reader
@@ -5417,7 +5427,7 @@ system font to the other presets as if the user had chosen it); the face's `wght
     WinUI's in the facts, and WinUI's source reads none of those metrics (the same search), so nothing reads
     them: the Win32 scroll bar's metrics are another preset's (W1-066, R1.3; ADD-A146).
   - the icon sizes: `token.icons.sizes.small` and `.large` (the slice) are pending on `windows-11` (U516), and 0.8.0
-    releases with no pending fact (S17). Where U516's facts state them as the Win32 shell's small and large icon
+    releases with no pending fact of its enabled units (S17; ADD-A148). Where U516's facts state them as the Win32 shell's small and large icon
     metrics, the reader reads those, as 0.7.0 did (`GetSystemMetricsForDpi` at the base DPI, inside `windows.rs`'s
     `unsafe` exception, the 0.8.0 plan's D4), each target read from its own preset's fact's source as ADD-A138 has the
     macOS reader read; where they state WinUI's own sizes, it reads nothing: open on U516 (the Windows facts).
@@ -5626,6 +5636,7 @@ accent_ramp = [ … ]
 rendering_engines = [ … ]                      # TextRendering.engine
 lcd_filters = [ … ]
 schemes = ["light", "dark"]                    # a palette's schemes (S14); a palette states them here only
+no_palette = "<reason>"                        # the preset takes no palette (below, S14); hand-written
 
 [declare.widget.button]
 variants = ["primary", "destructive", "flat", "@pill", "@fab"]   # @: keyed
@@ -5716,18 +5727,33 @@ resolves as without it, as in 0.7.0, a keyed flag or system setting of a unit no
 and each connector's contract lists what it draws there and the unit that states it (S21.3, *A deferred entry*). A size that is no element's default in force while the sizes unit is not enabled
 ("a size of a unit not enabled"), a declared density while the sizes unit is not enabled ("a density of a unit not
 enabled": the densities are the sizes unit's, staged as a size is, S6.1), and a flavour of a unit not enabled keep their
-declarations; the query answers `Later` for such a density and, per element, for a size it takes that is not its
+declarations; the query answers `Later` for such a density, the density in force for the element, its own or the
+scope's (an asked name is refused, never ignored; ADD-A148), and, per element, for a size it takes that is not its
 default in force, and `set_flavor` refuses such a flavour (S8, S16). An exclusive group or a recency set lists
-only flags of the enabled units' names; `flags` lists only the keyed flags, and `[declare] conditions` only the system
-settings, that a rule of the enabled units' facts names; a keyed namespace declares only the entries a base states, a
+only flags of the enabled units' names, one left with fewer than two flags not declared, nor a recency set no rule of
+the enabled units' facts names; `flags` lists only the keyed flags, and `[declare] conditions`, `device_models`,
+`container_sizes` beyond each default and `presentation_events` only the names, that a rule (for an event, a
+`presentations` list) of the enabled units' facts names, a setting declared for applications aside (ADD-A148); a keyed namespace declares only the entries a base states, a
 map with none stated empty. **The state model in force:** where the generator, its round trip and the gate read a
 state model for what an element can hold, an element takes its default size in force alone while the sizes unit is
 not enabled, and no density then, the default flavour's model alone is in force while the flavours unit is not
 enabled, and no element holds a variant of a unit not enabled; the declarations stay whole. S12's own combinations (the build test's, and an
 added layer's) still add every
 declared flavour's atom where a state, variant or flavour atom is named (`complete()`,
-`native-theme/src/validate/combos/mod.rs:1838-1846`), a flavour of a unit not enabled included; no rule of a bundled
+`native-theme/src/validate/combos/mod.rs:1858-1867`), a flavour of a unit not enabled included; no rule of a bundled
 preset names such a flavour, so the values under it are the default flavour's.
+
+**A preset that takes no palette** (ADD-A148; decided by logic at the document pass, awaiting the maintainer's
+veto: veto list item 49). A preset whose widget colours are measured literals that follow no role states
+`no_palette` in its `[declare]`, its value the reason, written by hand (no fact states it): `macos-monterey`,
+`macos-tahoe`, `ios-13` and `ios-26`. No mapping reaches such colours, so a palette over the preset would give the
+mixed look R19 rejects: `apply_palette` and `set_preset` are `Err(PaletteNotForPreset)` over it, and
+`Palette::presets` leaves it out (S14, S16). A preset that leaves it out takes palettes as S14 says. Built with M2's
+fourth task, whose design may derive the declaration from the facts instead. Rejected: the preset ids listed in the
+library's code (platform knowledge in code, edited when a preset's facts change); a `[for_preset.<id>]` section
+required for each preset a palette serves (every mapping would carry a section per preset, against "the same file
+on every platform", and a third party's section over `macos-*` would give the mixed look); an S12 check over the
+widgets' literals (it needs the method's design).
 
 Adding a layer rejects any rule, reference or patch naming something undeclared (S12). Which flags form an
 exclusive group comes from the platform's state model (the catalogue names the flags, mapping each platform's own
@@ -5912,6 +5938,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | an input's bases | `[inputs.<name>]` with `light`, `dark` or both (the per-scheme value; a preset states both but a listed scheme, S17), and the per-contrast bases `[inputs.<name>.contrast.increased]`, `[inputs.<name>.contrast.high]`, each with `light`, `dark` or both, a scheme a contrast table leaves out taking the per-scheme value there (S9; ADD-A132) |
 | a path pending in a preset (S17) | `[pending]`, one entry per path, its TOML path quoted and its register id: `"tokens.behavior.touch.delay_ms" = "U151"`, or, where the path's pending facts (or a state model's pending `default_size`) that leave it listed carry two or more ids, the list of them, each id once, in any order (one id is always the string, a list of one being mistyped): a field S6.1 sets whole whose leaves are pending under different ids (`"tokens.behavior.key_repeat" = ["<id>", "<id>"]`), or a field whose pending facts differ by combination (`"widgets.button.body.corners.curve" = ["<id>", "<id>"]`, two facts split by `variants` and `not_variants`; ADD-A131), a pending `default_size` by its declaration's path (`"declare.widget.button.sizes_by_variant.@gray.default_size" = "U<n>"`: a `sizes_by_variant` entry's by its variant's name as the segment, `@` included, a `sizes_by_context` entry's by its position, a flavour's under `declare.flavor.<f>.`; S17), a pending presence by its part's path (`"widgets.button.label" = "U122"`, S17), a pending input by its scheme, `"inputs.<name>.<scheme>"` (`"inputs.accent.dark" = "U<n>"`, the last segment the scheme; only a per-scheme value is listed, a pending contrast base standing over its scheme's per-scheme value, S9, S17; ADD-A132), the path as S11 writes its key, unit suffix included, which the reader maps to the model's path (`token.behavior.touch.delay`), the spelling of the problems and of the synthetic values; a preset's only, written by `generate_preset.py`, empty at the release (ADD-A128) |
 | one preset's part of a layer | `[for_preset.<id>.…]` (bases naming that preset's keyed names, in an application layer or a palette) |
+| a preset that takes no palette | `[declare] no_palette = "<reason>"`, a non-empty string, in a preset alone (S10; ADD-A148) |
 | widget values, component parts | `[widgets.<widget>.values]`, `[components.<key>.<part>]`, `[components.<key>.values]` |
 | a `Breakpoint` (S7.3), an item of a widget's `breakpoints` value | `breakpoints = [{ measured = "window", width = { at_most = <n> }, height = { at_most = <n> }, combine = "any", variant = "bottom_sheet" }]`, among the widget's values or in a `Values` rule's `set`: `measured` by the enum rule (`"allocation"`, `"window"`, `{ part = "<part>" }`, a bare name of the widget's parts); `width` and `height` each a one-key table of the `Comparison`'s snake_case name and the threshold, a number in px or `"= …"` (the key is the comparison, so it takes no unit suffix), one left out where the breakpoint does not test that size; `combine` `"all"` or `"any"`, left out only where fewer than two sizes are tested; `variant` the variant's name, `@` before a keyed one (ADD-A146: the form S10's example showed under `[declare.widget.<w>]`, moved with the value, S7.3) |
 
@@ -5994,13 +6021,14 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   role or an input the palette leaves to the preset), and no colour rule of the palette states that role under every
   combination in which the preset's rule applies. Every layer's bases apply before every layer's rules (S8), so such
   a rule wins over the palette's base: `adwaita`'s sidebar in an inactive window, a literal under `window_inactive`,
-  and `macos-*`'s inactive selection, `= role.@selected_control_secondary`, would show the platform's colour in the
-  palette's window; a rule that follows the palette passes (`adwaita`'s header, `= role.window.background`;
+  would show the platform's colour in the palette's window; a rule that follows the palette passes (`adwaita`'s header, `= role.window.background`;
   `kde-breeze`'s inactive rule where the mapping states the inactive input roles it reads), and a palette's rule
-  that keeps its own base is `= active(role.<set>.<role>)` (S2.2, S11). Over a preset whose widgets read keyed colour
-  roles: a mapping palette's `[for_preset.<id>]` section for the current preset leaves unstated a keyed colour role a
-  value of the preset reads that follows neither the accent nor a role the mapping states (S14's *Keyed roles*;
-  ADD-A147). And on `kde-breeze`: a mapping palette
+  that keeps its own base is `= active(role.<set>.<role>)` (S2.2, S11). A mapping palette leaves unstated a colour
+  role, typed or keyed, that a value of the preset reads and that is not, followed through references alone, a role
+  or an input the mapping states (a derivation or a call is no reference), or states one of a typed role the preset
+  states as a reference to a keyed one and the keyed role but not both alike (S14's *Keyed roles*; ADD-A147;
+  ADD-A148, decided by logic at the document pass, awaiting the maintainer's veto: veto list item 49). And on
+  `kde-breeze`: a mapping palette
   leaves unstated an accent-dependent role (S9.1's list, its tinting entries wherever the
   preset's `token.kde.tint_factor` can be `Some`) or an inactive input role, which the accent-derivation layer would
   derive over Breeze's scheme inputs, a mapping having none, so an
@@ -6039,9 +6067,14 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   reference can bring `Auto` to a field that does not allow it; a `TextStyle`
   token's expression reads `line_height` while that style's line height can be `Auto` (S2.2);
 - an input's expression (S9: a per-scheme value or a contrast base; a scheme input's `= input.…`, an inactive input
-  role's `= kde_accent(…)` or a port's or mapping's `= active(role.<set>.<role>)`, S14) fails a check a colour role's
-  expression fails: it is validated as one, in the root scope with no element and no binding (ADD-A144, task T6a's
-  question), and its cycle check follows `active(ref)` to the role's bases alone, the value S2.2 gives it (evaluation
+  role's `= kde_accent(…)` or a port's or mapping's `= active(role.<set>.<role>)`, S14) fails one of a colour role's
+  expression's own checks (its type, its names, its depth, its calls: it is validated as one, in the root scope with
+  no element and no binding; ADD-A144, task T6a's question), or reads a colour role that can be `Absent` at a scheme
+  and contrast at which that value of the input is in force, judged as the cycle check judges what is in force there
+  (the role's last base and every colour rule that can hold under that scheme and contrast, the other conditions not
+  decided; through `active(…)` its bases alone; ADD-A148), the absent-role check; it and the cycle check
+  (next) are **the input checks**, run beside each other over the stack up to each layer at every change. The cycle
+  check follows `active(ref)` to the role's bases alone, the value S2.2 gives it (evaluation
   following it so too, S2.2, ADD-A145), so an input
   a role's rule reads that reads that role's active value is no cycle (`kde-breeze`'s inactive rule over a port's
   `input.inactive.<set>.<key> = active(role.<set>.<role>)`), while one the role's bases read back is
@@ -6219,7 +6252,8 @@ tokens and roles they read, solved exactly.
 **What a change re-checks** (ADD-A147). The checks over combinations of a layer read the stack up to it only as its
 flattened values: each layer's bases (its part for the current preset among them) and rules with their selectors,
 what it is to the stack and what S8 leaves out of it, the declarations, the preset and whether the reader's accent is
-left out. They read no input but through the input cycle check and a palette's KDE mapping check (S14); a reference
+left out. They read no input but through the input checks (the cycle check and the absent-role check of an input's
+expression, above) and a palette's mapping checks (S14; ADD-A148); a reference
 to an input is read only as a reference, the input's value unread; a stated string, flag or integer is read only as
 stated, its value unread (the flattening's `Unknown`). So after a change they run for
 each layer whose stack up to it differs, each layer compared with its inputs set aside (a palette's kept) and the
@@ -6228,8 +6262,8 @@ before the change, up to each of its layers, so they run, with no layer the syst
 changed, over a reader's structural reading and every layer above it, a bundled palette among them, where a change
 alters what the reading leaves out (a bundled palette applied or removed over it, `set_accent` on `kde-breeze` with
 the KDE reader; the D6 load design, 3.3, *What it leaves*). At every change, each layer above the preset has its own checks (each
-value, patch, rule and reference against the current preset's declarations) and the input cycle check over the
-stack up to it run, and so do the reader's state, the listed paths and the missing inputs; the preset's own checks
+value, patch, rule and reference against the current preset's declarations) and the input checks over the stack up
+to it run, and so do the reader's state, the listed paths and the missing inputs; the preset's own checks
 run when it is loaded, except for a bundled preset whose `[pending]` table is empty on S8's trusted route (S19.1). S19.1's build test and the facts gate run every check
 of every layer, nothing skipped (R2.8). Rejected: every layer's checks over combinations run at every change, as
 before, which runs them over the whole stack where they would read what they read on a stack that passed (the 0.8.0
@@ -6357,31 +6391,44 @@ palette is one variant its project publishes (S19.1). Two sources, each stated i
 
 A palette's bases name typed roles, the `accent` input and the declared inputs of the presets it has sections for; a
 typed role or surface set the current preset does not declare is skipped, not refused (S12). **Keyed roles**
-(ADD-A147; the 0.8.0 plan's D6, outcome 7; R19): over a preset whose widgets read keyed colour roles, a mapping
-reaches them by a stated method, or the palette is not offered over that preset: in its `[for_preset.<id>]`
-section it states each keyed colour role the preset's values read that follows nothing the mapping states, each
-keyed role mapped once to a colour of the project's vocabulary (or a derivation of those, S2.2), the same for every
-variant of the project, its colours named in `[palette.sources]` as the others' are, and the method's table, per
-project and preset, reviewed before a palette is bundled over that preset; a palette without that section for such
-a preset has no source there and is refused on it (`Err(PaletteNotForPreset)`, below). A keyed role that follows the
-accent or another role the mapping states (`material-3`'s, through S9.2's derivation) needs no entry; S12 refuses a
-mapping palette whose section for the current preset leaves unstated a keyed colour role a value of the preset reads
-that follows neither (S12's palette checks). The method
-itself is designed with the palettes (the 0.8.0 plan's M2, task 4). A palette is not offered over a preset whose
-widget colours the mapping method cannot reach, measured literals that follow no role (`macos-*`, `ios-*`): a
-recorded limit (R19; the 0.8.0 plan's M2 task 4; veto list item 49). Rejected: typed roles alone, the mixed look
+(ADD-A147; the 0.8.0 plan's D6, outcome 7; R19; ADD-A148, decided by logic at the document pass, awaiting the
+maintainer's veto: veto list item 49): a mapping states every colour role, typed or keyed, that a value of the
+preset reads, unless that role is, followed through references alone, a role or an input the mapping states (a
+derivation or a call is no reference). So `windows-11`'s `@accent_fill_default`, `= role.global.accent_ramp.dark1`,
+which is `= input.accent_ramp.dark1`, follows an input the mapping states and needs no entry, while `material-3`'s
+ladder, Material's scheme of the seed (S9.2's derivation), is mapped as `windows-11`'s keyed roles are. Where the
+preset states a typed role as a reference to a keyed one (`material-3`'s `role.window.background`, `=
+role.@background`), the mapping states both alike or neither, so no surface is drawn in two colours. The keyed
+roles go in the mapping's `[for_preset.<id>]` section, each mapped once to a colour of the project's vocabulary (or a
+derivation of those, S2.2), the same for every variant of the project, its colours named in `[palette.sources]` as
+the others' are, and the method's table, per project and preset, reviewed before a palette is bundled over that
+preset; a palette without that section for a preset whose values read keyed colour roles has no source there and is
+refused on it (`Err(PaletteNotForPreset)`, below), and S12 refuses one whose section leaves such a role unstated
+(S12's palette checks). The method itself is designed with the palettes (the 0.8.0 plan's M2, task 4). The bundled
+palettes' keyed-role sections are written once, at the plan's M4, when every widget of 0.8.0 is in: until then no
+bundled palette has a source for a preset with keyed tables (`windows-11`, `material-3`), the bundled palettes being
+offered over `adwaita` and `kde-breeze`, and M2's fourth task proves the method on the slice's keyed roles with a
+mapping built in a test (ADD-A148, decided by logic at the document pass, awaiting the maintainer's veto: veto list
+item 63; rejected: each unit's commit extending every bundled palette's tables, a review per project, preset and
+unit). A preset that declares `no_palette` (S10: `macos-monterey`, `macos-tahoe`, `ios-13`, `ios-26`, whose widget
+colours are measured literals that follow no role) takes no palette, no palette having a source there:
+`apply_palette` and `set_preset` are `Err(PaletteNotForPreset)` over it, S17's palette run and S19.1's build test
+leave it out, and `Palette::presets` lists the presets a palette has a source for, which a picker reads (S16): a recorded limit, per
+preset, not per platform (an application on macOS may apply a palette over a preset whose colours follow roles; R19;
+the 0.8.0 plan's M2 task 4; ADD-A148, veto list item 49). Rejected: typed roles alone, the mixed look
 recorded (`windows-11`'s button reads 24 keyed colour roles and no typed one, so it would keep WinUI's greys under
 the project's colours, the mix of two schemes R19 rejects); the keyed colours picked one by one for the maintainer's
-veto (21 picks per palette and scheme for that button alone). A role a mapping states
+veto (21 picks per palette and scheme for that button alone); a keyed role that follows the accent left to the
+preset (over `material-3` the widgets would show Material's scheme of the palette's accent beside the project's
+colours on the typed roles: the same mix). A role a mapping states
 is the mapping's under every condition it applies in (ADD-A146): where a `Colors` rule of the preset would set that
 role there to a value that follows nothing the mapping states (`adwaita`'s inactive window's sidebar, a literal), the
 mapping states the role under that condition by a colour rule of its own, conditioned `preset:<id>`, a reference or
 a derivation as its rules are (S11: `= active(role.<set>.<role>)` keeps its base), and `apply_palette` and
 `set_preset` refuse a mapping that leaves such a rule standing (S12's check, on every preset; the palette run, which
-resolves the base conditions, does not see it, S17). On `windows-11` and
-`macos-*`, whose accent derivations are not published (R2.6), the mapping states the preset's accent
-inputs (S9.1) in a per-preset section (`[for_preset.windows-11.inputs]`), each labelled as native-theme's pick (R19;
-on `ios-*` the accent is the one accent input, S9.1, ADD-A146), and
+resolves the base conditions, does not see it, S17). On `windows-11`, whose accent derivation is not published
+(R2.6), the mapping states the preset's accent inputs (S9.1) in a per-preset section
+(`[for_preset.windows-11.inputs]`), each labelled as native-theme's pick (R19; ADD-A148), and
 `apply_palette` refuses a mapping that lacks one of the current preset's at one of the palette's schemes (its
 per-scheme value there), or that states them otherwise than as one group (S9.2), with `Err(AccentInputsMissing)`, as
 `set_accent` does (S9.2; ADD-A132). On `kde-breeze` (S9.1), a mapping states the accent-dependent roles and the inactive input roles itself, in `[for_preset.kde-breeze]`
@@ -6655,8 +6702,10 @@ impl Theme {
     pub fn set_accent(&mut self, accent: Option<Accent>) -> Result<(), LayerError>;   // None: the system's again
     pub fn apply_palette(&mut self, palette: Option<Palette>) -> Result<(), LayerError>;  // None: removes it;
                                                           // refused as S14 says (a picked scheme it lacks, no
-                                                          // source for the preset, missing accent inputs, a preset
-                                                          // colour rule left standing over a role it states);
+                                                          // source for the preset, one that declares `no_palette`
+                                                          // among them, missing accent inputs, a colour role the
+                                                          // preset's values read left unstated, a preset colour
+                                                          // rule left standing over a role it states; ADD-A148);
                                                           // under a followed scheme it lacks, accepted and
                                                           // suspended (ADD-A146)
     pub fn reader_status(&self) -> ReaderStatus;         // `Fallback` where a read succeeded with a source standing
@@ -6718,6 +6767,10 @@ impl Palette {
                                                           // the file's bytes, decoded as the KDE reader decodes
                                                           // them (ADD-A142)
     pub fn with_port(self, port: Palette) -> Result<Palette, LayerError>;          // S14
+    pub fn presets(&self) -> Vec<PresetId>;               // the bundled presets it has a source for, in
+                                                          // `PresetId::all()`'s order, none that declares
+                                                          // `no_palette` (S10, S14), which a picker reads
+                                                          // (ADD-A148; veto list item 49)
 }
 ```
 
@@ -6808,7 +6861,8 @@ loop.
 - *Preset listing* (`Theme::list_presets`, `list_presets_for_platform`, `PresetInfo`): kept, as `PresetId::all`,
   `PresetId::for_platform` and `PresetId`'s `key` and `display_name` (`PresetInfo`'s fields; the platform tags stay
   internal, read by `for_platform`, whose list *Which presets*, above, states); the community presets, now palettes,
-  are listed by `PaletteId::all`, and a preset's flavours by `Theme::flavors` (ADD-A146). The showcases'
+  are listed by `PaletteId::all`, the presets a palette serves by `Palette::presets` (ADD-A148), and a preset's
+  flavours by `Theme::flavors` (ADD-A146). The showcases'
   pickers and an application's own still need them.
 - *`from_system_with_preset` and the two `_async` constructors:* `from_system_with_preset` is replaced by
   `from_system(Some(generation))`, one constructor with the generation an optional input (R1.5's opt-out; it differs
@@ -7709,8 +7763,8 @@ entry being the project's at its pin with `generations = []`. `check_facts.py` c
 palette's `[palette.sources]` is a palette-fact key, and that every colour literal the palette states is in exactly one
 of `[palette.sources]` and `[palette.picks]` (S11, S14).
 
-**The palette run** (ADD-A146). The gate resolves every bundled palette over each preset it has a source for, under
-each scheme the palette declares, in the no-reader state (S16) with the palette applied and no other layer. On each
+**The palette run** (ADD-A146). The gate resolves every bundled palette over each preset it has a source for (none
+that declares `no_palette`, S10, S14; ADD-A148), under each scheme the palette declares, in the no-reader state (S16) with the palette applied and no other layer. On each
 preset and scheme where the mapping is the palette's source, it compares each colour `[palette.sources]` names, by
 its TOML path, with its palette fact, where the preset declares the path: a typed role or surface set the preset
 does not declare is skipped there (S12, S14), and a `for_preset.<id>.…` path is compared on the preset `<id>`
@@ -7926,7 +7980,8 @@ Catppuccin is four bundled palettes, each with that variant's port (S14). Anothe
 palette, not bundled: an application sets the accent over the bundled one (`set_accent`, S9.2) or builds that
 palette (`Palette::from_toml` with its port, S14) (ADD-A146; rejected: bundling every variant, 56 Catppuccin
 palettes with as many ports, where D13 asks for what 0.7.0 has, four). A build test parses and
-validates every bundled preset and palette (each palette over every preset it has a source for, Dracula's KDE port,
+validates every bundled preset and palette (each palette over every preset it has a source for, none that declares
+`no_palette`, S10, S14, ADD-A148; Dracula's KDE port,
 which lacks two colour groups, among them, S14), so `Theme::from_preset` and `Palette::bundled` never meet their error in a
 release (S16). A theme does not check them again (R2.8, S8), so the test also validates each form of the layers
 `Theme` derives from bundled data alone (S9.2's accent-derivation layer for each set of schemes at which an accent is
@@ -7991,7 +8046,8 @@ under `later`, and the keyed flags of the enabled units (S10; ADD-A147); the rel
 enabled units: the facts
 gate with no fact of those units skipped or pending (S17), `check_ledger.py --final` over them (S17's pending facts,
 the register), every `[pending]` table empty (S17, S19.1), each connector's contract test with no `pending` entry
-(S21.3). The last follow-up release also passes the facts gate with no fact skipped and `check_facts_trace.py` over
+(S21.3). A release that enables units may refuse an application's mapping palette whose section lacks a keyed role
+the new units read (S12, S14); its notes list those roles per preset (ADD-A148). The last follow-up release also passes the facts gate with no fact skipped and `check_facts_trace.py` over
 every trace line. Rejected: one release holding every unit (the plan's D13 (A)); releases by capability (D13 (C)).
 **S21.2** The model's enums are exhaustive (S1), so a connector maps each in full, a new member breaking its build,
 which before 1.0 is the check that it maps it (R21): every enum a layer states, a selector names or the query and
