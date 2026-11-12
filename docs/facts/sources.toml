@@ -1152,6 +1152,80 @@ researched = "2026-11-07"
 proof = "the Wayback Machine's capture of 2025-08-15 13:28:42 UTC (the `id_` form, the archived JSON unchanged), the last capture of the JSON (the CDX API from 2024 on: 15 rows, 2024-01-24 to 2026-10-06) before macOS 26's and iOS 26's release (2025-09-15) and after macOS 15.6's and iOS 18.6's (2025-07-29), the newest releases when it was taken (D12, spec S17); the archive serves it with `Content-Encoding: gzip` as Apple's server sent it, and `file` is the decoded body (`curl --compressed`); sha256sum of the saved file"
 note = "The same page as hig-typography@2026-02-09 a release earlier; the page names no platform release in any capture. Every table dynamic_type and sf_tracking read equals that snapshot's row by row (the size and leading of the twelve Dynamic Type tabs; all three cells of the four tracking tables); the later capture's Dynamic Type tables add an `Emphasized weight` column (its change log: December 16, 2025), and its content sits one index later (the Dynamic Type navigators at #/primaryContentSections/0/content/65 and 67 here, the iOS tracking navigator at 80, the macOS tracking table at 82). The capture of 2025-05-23, before WWDC 2025, carries the same tables and text but for one link's title."
 
+# The HIG's colour pages (the 0.8.0 plan's *The Apple colour pages*; the register's U757–U760): the Color page, and
+# the pages its search found speaking of colour for a status (Feedback, Gauges), one capture from each generation's
+# lifetime (D12), chosen as the Typography page's are.
+
+[[source]]
+id = "hig-color@2026-02-04"
+kind = "snapshot"
+site = "developer.apple.com HIG"
+url = "https://web.archive.org/web/20260204231933id_/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json"
+file = "color.json"
+sha256 = "e91e3dd2544c5e4152629884eb5e43b43296dbf5b3d63cab0479bb34b3f57a4d"
+describes = ["macOS 26", "iOS 26"]
+release = "macOS 26 and iOS 26 (the HIG has no versions; a capture from their lifetime, D12)"
+generations = ["macos-tahoe", "ios-26"]
+researched = "2026-11-12"
+proof = "the Wayback Machine's capture of 2026-02-04 23:19:33 UTC (the `id_` form, the archived JSON unchanged), the capture of the JSON nearest to 2026-02-09 (the CDX API from 2024 on: 28 rows, 25 of them status 200, 2024-01-24 to 2026-10-06; the next after it 2026-03-03), in macOS 26's and iOS 26's lifetime (D12, spec S17); the archive serves it with `Content-Encoding: gzip`, and `file` is the decoded body (`curl --compressed`); sha256sum of the saved file"
+note = "The HIG's Color page as its DocC JSON. It names no system colour for error, warning, success or information (U757–U760's read): its status sentences name none (#/abstract/0/text, #/primaryContentSections/0/content/4/inlineContent/1/text, /24/inlineContent/1/text), its one hue sentence gives a hue no meaning of the four (/14/inlineContent/1/text, \"red communicates danger in some cultures\"), and its system colour table (/61, the SwiftUI API names `red`, `orange`, `green`, `blue` and the rest) lists the palette with no use. Its change log adds \"Updated guidance for Liquid Glass.\" on December 16, 2025."
+
+[[source]]
+id = "hig-color@2025-08-20"
+kind = "snapshot"
+site = "developer.apple.com HIG"
+url = "https://web.archive.org/web/20250820043118id_/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json"
+file = "color.json"
+sha256 = "808f295102bc3601084edd0f3faf6066572734629d060bd4f4cd1c7cb77616c7"
+describes = ["macOS 15", "iOS 18"]
+release = "macOS 15 and iOS 18 (the HIG has no versions; a capture from their lifetime, D12)"
+generations = ["macos-monterey", "ios-13"]
+researched = "2026-11-12"
+proof = "the Wayback Machine's capture of 2025-08-20 04:31:18 UTC (the `id_` form, the archived JSON unchanged), the last capture of the JSON (the CDX API from 2024 on: 28 rows, 25 of them status 200, 2024-01-24 to 2026-10-06; the only one between the two dates) before macOS 26's and iOS 26's release (2025-09-15) and after macOS 15.6's and iOS 18.6's (2025-07-29), as hig-typography@2025-08-15 is chosen (D12, spec S17); the archive serves it with `Content-Encoding: gzip`, and `file` is the decoded body (`curl --compressed`); sha256sum of the saved file"
+note = "The same page as hig-color@2026-02-04 a release earlier. It names no system colour for error, warning, success or information: the same status sentences (#/abstract/0/text, #/primaryContentSections/0/content/4/inlineContent/1/text, /22/inlineContent/1/text) and hue sentence (/13/inlineContent/1/text), the system colour table at /59. Its text differs from the later capture's in the Liquid Glass guidance and the light, dark and increased contrast paragraph (/5), the later capture adding images and the change log's December 16, 2025 row; it already carries the June 9, 2025 change (\"Updated system color values, and added guidance for Liquid Glass.\")."
+
+[[source]]
+id = "hig-feedback@2026-02-04"
+kind = "snapshot"
+site = "developer.apple.com HIG"
+url = "https://web.archive.org/web/20260204232613id_/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/feedback.json"
+file = "feedback.json"
+sha256 = "39d0de85d42ceabf33cd0a17a22badeb6e913a25ed7b4293c31e4fb1bfc10425"
+describes = ["macOS 26", "iOS 26"]
+release = "macOS 26 and iOS 26 (the HIG has no versions; a capture from their lifetime, D12)"
+generations = ["macos-tahoe", "ios-26"]
+researched = "2026-11-12"
+proof = "the Wayback Machine's capture of 2026-02-04 23:26:13 UTC (the `id_` form, the archived JSON unchanged), the capture of the JSON nearest to 2026-02-09 and the only one in macOS 26's and iOS 26's lifetime (the CDX API, every year: 2 rows, 2023-10-07 and this one) (D12, spec S17); `file` is the decoded body (`curl --compressed`); sha256sum of the saved file. The archive holds no capture from macOS 15's and iOS 18's lifetime, so the page has no snapshot for `macos-monterey` and `ios-13`"
+note = "The HIG's Feedback page as its DocC JSON. It lists success, failure and warning among what feedback communicates (#/primaryContentSections/0/content/2/items/1 and /2) and color among the ways to give it (/5/inlineContent/1/text), and names no colour for any of them."
+
+[[source]]
+id = "hig-gauges@2026-02-04"
+kind = "snapshot"
+site = "developer.apple.com HIG"
+url = "https://web.archive.org/web/20260204233153id_/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/gauges.json"
+file = "gauges.json"
+sha256 = "73c7984714c9a3b3ab0d49fa861d1f4ef177784955bd2dc61613c65f97baa1a4"
+describes = ["macOS 26", "iOS 26"]
+release = "macOS 26 and iOS 26 (the HIG has no versions; a capture from their lifetime, D12)"
+generations = ["macos-tahoe", "ios-26"]
+researched = "2026-11-12"
+proof = "the Wayback Machine's capture of 2026-02-04 23:31:53 UTC (the `id_` form, the archived JSON unchanged), the capture of the JSON nearest to 2026-02-09 (the CDX API from 2024 on: 3 rows, 2024-01-08, 2025-02-24 and this one), in macOS 26's and iOS 26's lifetime (D12, spec S17); `file` is the decoded body (`curl --compressed`); sha256sum of the saved file"
+note = "The HIG's Gauges page as its DocC JSON, with macOS's level indicator (NSLevelIndicator). Its capacity indicator's fill is \"green\" by default and may change colour at \"certain levels, such as very low, very high, or just past the middle\" (#/primaryContentSections/0/content/16/inlineContent/1/text); the tiered example's image is described as red, yellow and green segments (#/references/indicators-continuous-tiered.png/alt). It names no system colour and no status meaning (error, warning, success, information) for a level."
+
+[[source]]
+id = "hig-gauges@2025-02-24"
+kind = "snapshot"
+site = "developer.apple.com HIG"
+url = "https://web.archive.org/web/20250224003909id_/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/gauges.json"
+file = "gauges.json"
+sha256 = "1fe1182e636bcc7a8b6ed6cf9eb85f4c315104c04537db76077be3e408226583"
+describes = ["macOS 15", "iOS 18"]
+release = "macOS 15 and iOS 18 (the HIG has no versions; a capture from their lifetime, D12)"
+generations = ["macos-monterey", "ios-13"]
+researched = "2026-11-12"
+proof = "the Wayback Machine's capture of 2025-02-24 00:39:09 UTC (the `id_` form, the archived JSON unchanged): the archive holds no capture of the JSON between 2025-07-29 (macOS 15.6 and iOS 18.6) and 2025-09-15 (macOS 26 and iOS 26), so this is the nearest earlier capture in macOS 15's and iOS 18's lifetime (the CDX API from 2024 on: 3 rows, 2024-01-08, this one and 2026-02-04) (D12, spec S17); `file` is the decoded body (`curl --compressed`); sha256sum of the saved file"
+note = "The same page as hig-gauges@2026-02-04 a release earlier, its text block for block the same (the same pointers, #/primaryContentSections/0/content/16/inlineContent/1/text and #/references/indicators-continuous-tiered.png/alt). Its change log's last entry is September 23, 2022 (\"New page.\")."
+
 # This project's own evidence (spec S17 *The evidence root*): the measured runs the facts cite, kept in the evidence
 # repository and pinned here by commit. Its commit moves with the facts commits that add runs (the 0.8.0 plan's *The
 # evidence repository*), which is no re-pin: D1 freezes the platform sources, not this project's own records.
