@@ -11,6 +11,7 @@ mod tree;
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, PoisonError};
+use std::time::{Duration, Instant};
 
 use ::toml::{Table, Value as Item};
 
@@ -129,6 +130,39 @@ pub fn load(text: &str, scheme: Scheme) -> Result<Option<PresetId>, Refusal> {
         )
     };
     stack.map(|_| id).map_err(Refusal::Layer)
+}
+
+/// What one read of a bundled preset's text cost ([`read_cost`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct ReadCost {
+    /// The read's time.
+    pub time: Duration,
+    /// The bytes the read's result held at its end: the caller's count of
+    /// bytes in use then, less its count before the read; `None` where the
+    /// caller gave no count.
+    pub held: Option<usize>,
+    /// The `[[rules]]` the preset's layer states.
+    pub rules: usize,
+}
+
+/// Times the read of the bundled preset `id`'s text, as `Theme::from_preset`
+/// reads it, the load budget's line 1 on a preset whose `[pending]` table
+/// lists paths (the case `read`, a lower bound: no stack is built, nothing
+/// is validated). `in_use`, a counting allocator's bytes in use, is read
+/// before the read and at its end, while its result is held. Figures only:
+/// the result is dropped before this returns.
+pub fn read_cost(id: PresetId, in_use: Option<&dyn Fn() -> usize>) -> Result<ReadCost, LayerError> {
+    let before = in_use.map(|count| count());
+    let start = Instant::now();
+    let file = read_preset(id.source())?;
+    let time = start.elapsed();
+    let held = in_use
+        .zip(before)
+        .map(|(count, before)| count().saturating_sub(before));
+    let rules = file.layer.rules.len();
+    drop(file);
+    Ok(ReadCost { time, held, rules })
 }
 
 /// A preset the gate checks: its stack, validated as `Theme` validates a
