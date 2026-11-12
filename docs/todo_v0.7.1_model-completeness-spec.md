@@ -7167,7 +7167,8 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   `role.window.negative`, a reference, cites its `published` sources: the documentation or code line that uses the
   colour for the meaning as `published`, its quote showing that use (`adwaita`'s `info.fill`: `_deprecated.scss:174`),
   or the element's measurement as `measured` with no `inputs`, its evidence naming the element and the gate comparing
-  the evidence's colour with the reference resolved under the fact's `when`, within `tolerance`. A measured pairing
+  the evidence's colour with the reference resolved under the fact's `when`, which names the scheme the evidence was
+  measured in (`scheme:<s>`, as a derivation's passes carry it; ADD-A148), within `tolerance`. A measured pairing
   stated as a reference holds in every scheme and contrast the referenced colour states and under a second accent; a
   pairing to a colour that follows the accent is a measured derivation (below), with `inputs = ["input.accent"]`,
   never a literal (it would hold under the measured accent alone). A text slot's pairing that is a reference alone has no `cite`: no source assigns the style to the
@@ -7205,9 +7206,9 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   (`generations = []`, `palette = true`). A citation's `source` is `<id> <path>:<line or range>` (a JSON page:
   `<id> #<JSON pointer>`; an `sdk` header: a path from the Xcode's `Contents/Developer/Platforms/`, which names the SDK),
   and it serves every generation its entry lists. `check_sources.py` checks the form (its docstring holds the id
-  pattern and each kind's fields), that a snapshot's generations describe its `describes`, and that every cited
-  project is pinned, a site or not pinned; it gains the `snapshot` kind, palette entries and `[presets]` when the
-  first of them is written.
+  pattern and each kind's fields) and that every cited project is pinned, a site or not pinned; it has the
+  `snapshot` kind; it gains the `[presets]` table, with the check that a snapshot's generations describe its
+  `describes`, in the 0.8.0 plan's M2 task 0 tooling step, and palette entries with M2's fourth task (ADD-A148).
 - **The quote check.** `quote`, whitespace-normalised, occurs in the cited lines at the pin. For each generation the
   fact covers that has a `published` or `read` citation (a palette fact: over all its citations), every literal of
   `value` (S2.2's numeric, length, duration, angle, font size and colour literals, and a text value, which equals a
@@ -7400,8 +7401,8 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   whose pending facts differ by combination (S11: `"tokens.behavior.touch.delay_ms" = "U151"`; ADD-A131), which
   `generate_preset.py` writes from the pending facts. On every theme but a synthetic one (below;
   `Theme::from_preset`, `from_system`, `set_preset`) a listed path no layer above the preset states is what it is, a
-  field the preset does not state, while one a layer states (a reader-backed token) is stated, as any path a layer
-  states (ADD-A131): `ThemeError::Preset(LayerError::Invalid)` (from
+  field the preset does not state (ADD-A131), and `from_system` builds through `from_preset`, which refuses the
+  preset before any layer is added (ADD-A148): `ThemeError::Preset(LayerError::Invalid)` (from
   `set_preset`, `LayerError::Invalid`) reports it as S12's missing field (a listed `default_size` as S12's missing default size), its `Problem` the existing one, path and kind as they are (a listed input's at
   `inputs.<name>.<scheme>`, S12; ADD-A131, ADD-A132), so no value is invented and no
   type, field or variant is added; the register ids are the `[pending]` table's and the gate's report's. The gate, and
@@ -7560,8 +7561,9 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   from the plan's switch holds no file under `docs/evidence/`. `sources.toml` pins it by one `[[source]]` of kind
   `git` with `evidence = true`: id `native-theme-evidence` (the one id without `@<version>`, so a moved pin keeps its
   checkout), `repository`, `commit`, `tag = "commit"`, `generations = []` and a `note`, and no `project`, `release`,
-  `researched` or `proof`; `check_sources.py` requires exactly one such entry and waives for it alone the rules it
-  breaks (`release`, `researched` and `proof` required, `generations` not empty, the `<name>@<version>` id). A path
+  `researched` or `proof`; `check_sources.py` requires exactly one such entry and waives for it the rules it
+  breaks (`release`, `researched` and `proof` required, `generations` not empty, the `<name>@<version>` id), the empty
+  `generations` being also a palette entry's and an out-of-lifetime snapshot's (*Sources*; ADD-A148). A path
   `docs/evidence/<rest>` (a citation's `evidence`, an analysis output's `input_image`, a vector table's cell, a legacy
   run) names `<root>/docs/evidence/<rest>`, the root being, in this order: a test fixture's root holding its own
   `docs/evidence/`, which needs no git checkout and no pin; else the directory `NATIVE_THEME_EVIDENCE` names; else the
@@ -7647,7 +7649,7 @@ size would then resolve at a size the platform never draws it at, which no fact 
 entry whose selector no `axes.contexts` entry's ancestors match, a declaration no fact checks; where the first default this order
 reaches is pending, no default is in force for that set and context until it is stated (S10's *A pending default*),
 and nothing is checked for it (ADD-A131). Flavours are not an axis: a preset with flavours is checked
-once per flavour (below). A combination is a subset of `axes.states` (each
+once per flavour (below), the default flavour alone while the flavours unit is not enabled (S10; ADD-A148). A combination is a subset of `axes.states` (each
 state a flag) reduced by `exclusive`, for each element the gate queries by the groups that apply to it (S10;
 ADD-A146), and, where it holds two or more flags of a recency set that applies to that element, ordered (one combination
 per order of its flags that belong to a recency set, the orders giving every set the same latest flag counted once;
@@ -7753,15 +7755,16 @@ completion is one the state model does not draw, for a size or a variant its nam
 facts naming `mini`, `small` or `large` and no style, which only the configuration styles take, `sizes_by_variant`;
 52 "not available (Size)" failures in the iOS facts lane's round 5) or by `not_drawn`, it is completed once with each
 variant, or set, the state model draws that makes it drawn (for a size, each `sizes_by_variant` entry whose `sizes`
-hold it), each completion the declarations and `not_drawn` leave drawn checked, an undrawn one no failure; a `when` no completion makes drawn holds in no combination the platform draws, a finding of the
-fact, not a skip (ADD-A141). The gate completes a size by its styles so (`complete`, `native-theme/tests/facts_gate/run.rs`,
+hold it), each completion the declarations and `not_drawn` leave drawn checked, an undrawn one no failure; a `when` no completion makes drawn holds in no combination the platform draws, a stray fact
+(*While the units are built*, below; ADD-A141, ADD-A148). The gate completes a size by its styles so (`complete`, `native-theme/tests/facts_gate/run.rs`,
 with the fixture `own_size_styles`); the completion with each required form, where it takes the first today, and
 with each variant or set where the lack is not a size's are the gate's work at M4 (ADD-A146). Rejected: the first such style alone (the lane's proposal: an
 order the entries happen to have picks the one style that checks a fact claiming them all, and a fact naming a
 condition outside the axes would be checked on that style only); the style required in the `when` (a size's look
 held by every style would be split into a fact per style, the same value each); the combination skipped (a fact
 naming a condition outside the axes would go unchecked). A preset with flavours is checked
-once per flavour, each with its flavour's entries. An entry with
+once per flavour, each with its flavour's entries, the default flavour alone while the flavours unit is not enabled
+(ADD-A148). An entry with
 `preset:` (or `flavor:`) replaces the shared entry of its widget for that preset (or flavour). `check_facts.py` checks
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
 `rows`. **While the units are built** (ADD-A128, ADD-A135), the 0.8.0 plan enables the catalogue's units one by one,
@@ -7770,8 +7773,11 @@ each follow-up release its own (the plan's D13, S21.1). A fact is of the enabled
 enabled unit, every widget its `when`'s positive lists name (`context`, its `scope.nearest`, a `widget`) and the
 widget a `drawn_as` value names are enabled, and its `when` holds in at least one combination of the enabled units'
 names (each entry's Depth line, the units of depth enabled) that its state model draws, its part drawn there; the
-gate skips every other fact, its later unit being the first in the units file's order whose names make it hold
-(ADD-A146, ADD-A147). A key that belongs to no widget (a colour role, an input, a token) is judged under the condition
+gate skips every other fact, its later unit being, of the units whose names it needs, the last in the units file's
+order: the unit at whose enabling, in that order, it first holds (ADD-A146, ADD-A147, ADD-A148). A fact whose `when`
+the names of every unit together do not make hold in a combination its state model draws is a stray fact, no later
+unit's: the gate and `check_facts_trace.py` report it under no unit, and from the plan's M4 `check_facts.py` fails
+it (ADD-A148). A key that belongs to no widget (a colour role, an input, a token) is judged under the condition
 sets the catalogue's *today's fields* table names for it (the scheme and `contrast_high`, `window_inactive` for the
 `selection` set, `animations_off` and `reduced_motion` for the speed factor and the motion values' tokens) and the
 preset's default flavour. A part whose presence fact is pending counts as drawn. A bundled preset mentions no name
@@ -7780,7 +7786,7 @@ outside the enabled units': a negative entry naming one (`not_context`, `not_var
 units' flags. Its negative lists (`not_context`, `not_variants`) never add a unit: `not_context X` applies
 everywhere but inside X, and where X's unit is not enabled no X exists, so the negation holds and the fact applies
 everywhere, in its key's unit alone, as the gate already reads a negation naming a widget the model does not hold
-(the macOS and iOS button facts stated with a `not_context` and no positive context, 1868 and 1574 of them). A skipped fact (a
+(the macOS and iOS button facts stated with a `not_context` and no positive context). A skipped fact (a
 fact whose key the model does not hold yet, *The gate*, below, being one case) is drawn in none of its combinations
 by the gate (as `generate_preset.py` leaves them out); at run time an element under a given name outside the enabled
 units' resolves as without it (S10), the bundled preset mentioning no such name (ADD-A147); a combination that holds
@@ -7789,7 +7795,7 @@ naming a widget whose unit is not enabled, a position, a direction, a condition)
 compares each preset's declarations with the state model's names that the model's types can spell (a typed variant
 no enabled unit holds is skipped, as a fact whose key the model does not hold), its exclusive groups, recency sets
 and keyed `flags` with the state model's restricted to the enabled units' flags (a keyed flag only where a fact of
-the enabled units names it), and its `later.variants` with the state model's keyed variants of units not enabled,
+the enabled units names it; a group or set left with fewer than two flags dropped, ADD-A148), and its `later.variants` with the state model's keyed variants of units not enabled,
 each declared typed variant the model holds that the entry's Depth line does not list, and its typed variants of
 enabled units that it draws in no combination of their names (S10). A variant of the
 enabled units that no fact names draws as the rules that apply give it, with none as the base, which the lane states
@@ -7863,7 +7869,8 @@ fact that applies where its part is not drawn (it adds no check the part's key d
 restatement). It compares every token,
 colour-role and input fact the same way, under its `when`. While the units are built, the gate skips a fact whose key the
 model does not hold yet (the 0.8.0 plan enables its units one by one); each release is made with no fact of its
-enabled units skipped, the gate failing from the plan's M4 on such a fact and on a fact whose key lies in no unit. Where the
+enabled units skipped, the gate failing from the plan's M4 on such a fact and on a fact whose key lies in no unit or
+that names a name, a condition or a staged path no unit holds (ADD-A148). Where the
 fact that applies is pending, the gate compares nothing for that key and combination: it counts it and lists it with
 its register id in its report, apart from the failures, and passes it while the units are built, as a skipped key; the
 perturbed and accent runs skip it too. That list, the register and `check_ledger.py --final` meet at each release:
@@ -8157,14 +8164,21 @@ every keyed flag it sets, every host context it builds and every condition it su
 enabled holds for that entry, and every construct of its toolkit (a variant, a size, a content form) that only such a
 name describes, with what it draws meanwhile (the look at depth, or its 0.7.0 mapping from the values at depth) and
 the unit that states it. The contract test fails a table that lacks one against `scripts/widget_units.toml`, and one
-that keeps an entry whose unit is enabled. A part's `transitions` are such an entry until the motion unit.
+that keeps an entry whose unit is enabled. A part's `transitions` are such an entry until the motion unit; a density
+until the sizes unit, the connector passing none meanwhile (S10); an icon's and a system control rendering's
+direction until the right-to-left unit, looked up and rendered as for a left-to-right element (S15, S16; ADD-A148).
+A state flag of an enabled entry that is not at depth for it (a disabled tab's text, a menu item's keyboard
+highlight) is such an entry too: the connector draws that state as 0.7.0's did, from the typed role 0.7.0's
+`defaults` field maps to (`role.window.disabled.foreground`, the selection roles) (ADD-A148; decided by logic at the
+document pass, awaiting the maintainer's veto: veto list item 64).
 
 **A widget a preset declares unavailable** (ADD-A147; the 0.8.0 plan's D6, outcome 6). Where a bundled preset
 declares an enabled widget `available = false` (S10) and the connector's toolkit has such a widget, the contract
 table lists, for that preset, the entry the connector draws the toolkit's widget from: the widget the catalogue's
 *Available* line names as the platform's control (`bottom_tab_bar` for `tab` on `ios-*`, `group_box` for `card` on
 `macos-*`, a `list` row for `expander` on `material-3` and `ios-*`), as a stand-in entry while that widget's unit is
-not enabled and by its own mapping once it is; or, where the line names none (`status_bar` on `adwaita`,
+not enabled, which on that preset reads no field of the unavailable widget: the toolkit's own geometry, every colour
+and font from the theme's typed roles, as where the line names none (ADD-A148); and by its own mapping once it is; or, where the line names none (`status_bar` on `adwaita`,
 `windows-11`, `ios-*` and `material-3`, `card` on `ios-*`, where the catalogue names two surfaces and no one
 control, and `card` on `kde-breeze` under its default flavour
 `widgets`, the only one in force until the flavours unit), the toolkit's own geometry with every colour and font from the theme's
@@ -8185,6 +8199,14 @@ default theme of the resolved scheme holds in that field, as it lists a widget a
 where no colour is the toolkit's. The contract test fails a table
 that lacks the exception for a pair of a bundled preset and a toolkit field that cannot be left empty whose role the
 preset leaves absent.
+
+**A glyph whose system rendering is absent** (ADD-A148; decided by logic at the document pass, awaiting the
+maintainer's veto: veto list item 60). Where a bundled preset's glyph names a `SystemControl` (S15) and the rendering
+is absent (off macOS, off the main thread, the `macos` feature off), the contract table lists, for that preset, the
+glyph as an exception: the connector draws its toolkit's own check mark, pop-up arrows or disclosure triangle, each
+in the colour from the theme the connectors' design names per glyph (a role or a resolved value), never a colour of
+the toolkit's own, as it lists a toolkit field whose role is absent (above). The contract test fails a table that
+lacks the exception for a pair of a bundled preset and such a glyph its connector draws.
 
 ## S22. Additions register
 
