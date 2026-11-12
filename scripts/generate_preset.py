@@ -918,23 +918,13 @@ def unsuffixed(path: tuple) -> tuple:
     return path
 
 
-def whole_part(section, dotted, value) -> bool:
-    """Whether a base states its part whole (S6.3): `absent = true` or `drawn_as`, not `absent = false`, which draws
-    the part with its own fields."""
-    if section not in ("widgets", "components"):
-        return False
-    return tuple(dotted) == ("drawn_as",) or (tuple(dotted) == ("absent",) and value is True)
-
-
 def based_paths(bases) -> list:
-    """Each base's path as a listed path compares (unsuffixed()); a whole part's (`absent = true`, `drawn_as`) the
-    part's, which holds every field of it (S6.3); a drawn part's (`absent = false`) its own, `<part>.absent`, which
-    no field's path lies above or below."""
-    out = []
-    for section, scheme, header, dotted, value, _ in bases:
-        whole = whole_part(section, dotted, value)
-        out.append(unsuffixed((section,) + ((scheme,) if scheme else ()) + header + (() if whole else tuple(dotted))))
-    return out
+    """Each base's path as a listed path compares (unsuffixed()). A part's presence (`absent = true` or `false`,
+    `drawn_as`) is its own path, `<part>.absent` or `<part>.drawn_as`, which no field's path lies above or below: a
+    presence is no base of its part's fields (S6.3, S17), a field the part's absence hides being judged where the part
+    is drawn (listed_in())."""
+    return [unsuffixed((section,) + ((scheme,) if scheme else ()) + header + tuple(dotted))
+            for section, scheme, header, dotted, _, _ in bases]
 
 
 def by_ckey(facts) -> dict:
@@ -1112,7 +1102,8 @@ def elements(f: Fact, model, off=()) -> list:
 def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> list:
     """The preset's `[pending]` table (S11, S17 *A pending fact with nothing beneath it*, ADD-A128): each path a
     pending fact of the preset states where it applies and the draft writes no base at it, above it (a block stated
-    whole, a whole part) or below it, so the preset's own layer leaves it unstated where that fact applies; a colour
+    whole; a part's presence is none, based_paths()) or below it, so the preset's own layer leaves it unstated where
+    that fact applies; a colour
     role's per scheme the fact applies in; a pending leaf of a set-whole block lists the block, which its bases cannot
     state without it. Each with its pending facts' register id, or the list of their distinct ids in fact order where
     they differ (S11: `"tokens.behavior.key_repeat" = ["<id>", "<id>"]`, the leaves of a field set whole pending under
@@ -1170,7 +1161,7 @@ def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> li
         for path in paths:
             key = unsuffixed(path)
             if presence:
-                beneath = key in based or key + ("absent",) in based
+                beneath = key in based or key + ("absent",) in based or key + ("drawn_as",) in based
             else:
                 beneath = any(b[:len(key)] == key or key[:len(b)] == b for b in based)
             if beneath:
@@ -1183,30 +1174,6 @@ def pending_table(ctx, facts, bases, block_of=None, models=None, off=None) -> li
             seen[key] = [dotted_key(path), [uid], f]
             out.append(seen[key])
     return [(path, uids[0] if len(uids) == 1 else uids, f) for path, uids, f in out]
-
-
-def redrawn_pending(facts, bases) -> list:
-    """The pending facts of a part's field whose part the draft's base states whole (`absent = true` or `drawn_as`)
-    and that a fact draws again (`"present"`, S6.3's `absent = false`): no listed path, as the whole base states the
-    field (based_paths()), and no stated value, so loading refuses the field as S12's missing one "judged under each
-    combination in which its part resolves drawn" where that fact draws it. S17 gives such a field no encoding (task
-    15c's review, minor 10): reported, the draft stating nothing for it. [(key, register id, fact)]"""
-    wholes = {tuple(header) for section, _, header, dotted, value, _ in bases if whole_part(section, dotted, value)}
-    present = {f.ckey for f in facts if f.kind == "widget" and f.status not in (PENDING, SHADOWED)
-               and f.item.data.get("value") == "present"}
-    same = by_ckey(facts)
-    out = []
-    for f in facts:
-        if f.status != PENDING or f.kind != "widget" or not alive(f, same[f.ckey]):
-            continue
-        try:
-            place(f)
-        except Untranscribable:
-            continue
-        part = f.ckey[:len(f.target.split("."))]
-        if len(f.ckey) > len(part) and tuple(f.header) in wholes and part in present:
-            out.append((f.key, f.item.data["pending"], f))
-    return out
 
 
 def covering_bases(facts, models, tree) -> tuple:
@@ -2693,11 +2660,6 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     if draft.pending:
         out.append(f"# [pending]: {len(draft.pending)} listed paths, pending with nothing beneath: " + ", ".join(
             f"{path} ({uid if isinstance(uid, str) else ', '.join(uid)})" for path, uid, _ in draft.pending))
-    redrawn = redrawn_pending(draft.facts, draft.bases)
-    if redrawn:
-        out.append(f"# [pending]: {len(redrawn)} pending fields of a part the base states whole and a `present` fact "
-                   f"draws again, which S17 gives no encoding, left without a value: "
-                   + ", ".join(f"{key} ({uid}, {f.where})" for key, uid, f in redrawn))
     for w, it in draft.left_models:
         out.append(f"# [declare] left out: {w} ({it.file}:{it.line}), a widget the model does not hold")
     for w, vs in draft.dropped:
@@ -4156,11 +4118,13 @@ def self_test() -> int:
     drag = any_fact("token.behavior.drag_time", "U8", "token")
     later = any_fact("token.behavior.drag_time", "", "token", status="rule")
     mode = any_fact("button.icon.icon.rendering_mode", "U9", "widget", widget="button")
+    hidden_icon = any_fact("button.icon", "", "widget", widget="button", status="base")
+    hidden_icon.item.data = {"value": "absent"}
     accent, scheme = any_fact("input.accent", "U10", "input"), any_fact("input.scheme", "U11", "input")
     bases = [("tokens", None, ("text",), ("fallbacks",), {}, families),
              ("tokens", None, ("caret",), ("width_px",), 1, caret),
              ("colors", "light", ("global",), ("status",), {}, status),
-             ("widgets", None, ("button", "icon"), ("absent",), True, mode),
+             ("widgets", None, ("button", "icon"), ("absent",), True, hidden_icon),
              ("inputs", None, ("scheme",), ("light",), "#000000", scheme)]
     earlier = any_fact("token.text.caret_blink", "", "token", {"states": ["focus"]}, status="rule")
     earlier.rule_when = earlier.when
@@ -4172,8 +4136,8 @@ def self_test() -> int:
     label = any_fact("button.label", "U15", "widget", widget="button")
     icon = any_fact("button.icon", "U16", "widget", widget="button")
     bases.append(("widgets", None, ("button", "label"), ("padding",), {}, label))
-    facts = [families, caret, status, drag, later, mode, accent, scheme, earlier, under, narrower, over, selected,
-             label, icon]
+    facts = [families, caret, status, drag, later, hidden_icon, mode, accent, scheme, earlier, under, narrower, over,
+             selected, label, icon]
     got = [(path, uid) for path, uid, _ in pending_table(None, facts, bases, repeat_block)]
     if got != [("colors.dark.global.status", "U7"), ("inputs.accent.light", "U10"), ("inputs.accent.dark", "U10"),
                ("inputs.scheme.dark", "U11"), ("tokens.behavior.double_click", "U13"),
@@ -4181,15 +4145,24 @@ def self_test() -> int:
         failures.append(f"pending_table: {got}, expected the dark scheme's status role, the accent input per scheme, "
                         f"the scheme input's dark, the double click under a narrower rule and the label's presence")
     # a part's base `absent = false` (`"present"`, S6.3) is a presence beneath its pending presence, and states none
-    # of its fields: the pending rendering mode is listed, and no field is reported as drawn again over it
-    drawn = [b if b[5] is not mode else b[:4] + (False, mode) for b in bases]
-    got = [(path, uid) for path, uid, _ in pending_table(None, [mode, icon], drawn, repeat_block)]
+    # of its fields: the pending rendering mode is listed
+    shown_icon = replace(hidden_icon, item=_Item(""))
+    shown_icon.item.data = {"value": "present"}
+    drawn = [b if b[5] is not hidden_icon else b[:4] + (False, shown_icon) for b in bases]
+    got = [(path, uid) for path, uid, _ in pending_table(None, [shown_icon, mode, icon], drawn, repeat_block)]
     if got != [("widgets.button.icon.icon.rendering_mode", "U9")]:
         failures.append(f"pending_table under a drawn part's base: {got}, expected the icon's rendering mode alone")
+    # a part's base `absent = true` is no base of its fields either (S6.3, S17; ledger #149): a pending field of the
+    # part lists nothing where the absence hides it, and is listed where a `present` rule draws the part again
     present = any_fact("button.icon", "", "widget", {"states": ["checked"]}, widget="button", status="rule")
     present.item.data = {"value": "present"}
-    if redrawn_pending([mode, present], drawn):
-        failures.append("redrawn_pending: a field reported under a drawn part's base")
+    present.rule_when = present.when
+    for case_facts, want in (([hidden_icon, mode, icon], []),
+                             ([hidden_icon, mode, icon, present], [("widgets.button.icon.icon.rendering_mode", "U9")])):
+        got = [(path, uid) for path, uid, _ in pending_table(None, case_facts, bases, repeat_block)]
+        if got != want:
+            failures.append(f"pending_table under a part's base `absent = true`, {len(case_facts) - 3} `present` "
+                            f"rule: {got}, expected {want}")
     # macOS's icon-only padding: a pending fact under a variant whose elements take every size has one earlier rule
     # per size beneath it at each, so it lists nothing; one under a variant whose entry takes no size, or a model
     # whose variant sets give one of its elements such a variant, is listed
@@ -4310,15 +4283,6 @@ def self_test() -> int:
         failures.append("pending_table: a component's pending presence listed, expected InputError")
     except InputError:
         pass
-    # a pending field of a part its base states absent is reported where a `present` fact draws the part again
-    got = [(key, uid) for key, uid, _ in redrawn_pending(facts, bases)]
-    if got:
-        failures.append(f"redrawn_pending: {got}, expected none without a `present` fact")
-    present = any_fact("button.icon", "", "widget", {"states": ["checked"]}, widget="button", status="rule")
-    present.item.data = {"value": "present"}
-    got = [(key, uid) for key, uid, _ in redrawn_pending(facts + [present], bases)]
-    if got != [("button.icon.icon.rendering_mode", "U9")]:
-        failures.append(f"redrawn_pending: {got}, expected the icon's rendering mode")
     # the round trip reduces a flavour's combinations by its own state model
     flavored = {("button", None): {"exclusive": []}, ("button", "compact"): {"exclusive": [["pressed"]]}}
     got = [model_of(flavored, "button", {"conditions": ["flavor:compact"]}), model_of(flavored, "button", {}),
