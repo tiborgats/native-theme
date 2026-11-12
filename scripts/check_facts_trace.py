@@ -94,6 +94,7 @@ last's, whose gate can check it).
 """
 import contextlib
 import io
+import json
 import re
 import sys
 import tempfile
@@ -687,6 +688,14 @@ class Depth:
         k = ("space", platform, widget, preset, added, hosts)
         if k in self._combos:
             return self._combos[k]
+        if hosts is not None:
+            # the host's context beside the held ones: the base space, its contexts extended
+            chains = self.host_chains(platform, widget, preset)
+            extra = ancestors_of(chains[hosts]) if 0 <= hosts < len(chains) else ()
+            out = [space[:7] + ((space[7] + [(extra, True)]) if extra else space[7], space[8])
+                   for space in self.space(platform, widget, preset, added)]
+            self._combos[k] = out
+            return out
         out = []
         flavours_on = not any(u.name == "flavours" and not u.enabled and u.name not in added for u in self.later)
         for flavor, model in self.entries(platform, widget, preset):
@@ -727,9 +736,8 @@ class Depth:
                 else:
                     sizes_of[s] = [self.default_size(model, s)]
             chains = [c for c in axes.get("contexts", []) if isinstance(c, (dict, list))]
-            held = [ancestors_of(c) for i, c in enumerate(chains)
-                    if hosts == i
-                    or all(isinstance(a[0], str) and self.held(a[0]) for a in ancestors_of(c))]
+            held = [ancestors_of(c) for c in chains
+                    if all(isinstance(a[0], str) and self.held(a[0]) for a in ancestors_of(c))]
             contexts = [((), False)] + [(a, True) for a in held if a]
             directions = ["ltr"] + [d for d in ("rtl",) if self.direction_off(d, added) is None]
             out.append((rec, sets, states, vectors, sizes_of, densities, nd, contexts, directions))
@@ -797,14 +805,27 @@ class Depth:
                        for s in sets if vp <= s and not vn & s for z in sizes_of[s] for d in densities}
             kinds = {k & rs for k in states if sp <= k and not sn & k}
             conds = {v & rc for v in vectors if cp <= v and not cn & v}
+            # the `not_drawn` entries and presence facts that can still hold, narrowed dimension by dimension (a
+            # `when` holds only where each of its lists does), so each combination tests the few left
+            def fits(x, at, have):
+                pos, neg = x.lists[at]
+                return pos <= have and not neg & have
+
             for s, z, d in classes:
+                one = (s, frozenset([z]) if z else frozenset(), frozenset([d]) if d else frozenset())
+                nd1 = [x for x in nd if all(fits(x, at, h) for at, h in zip((2, 3, 4), one))]
+                pr1 = [(w, f) for w, f in presences if all(fits(w, at, h) for at, h in zip((2, 3, 4), one))]
                 for k in kinds:
+                    nd2 = [x for x in nd1 if fits(x, 1, k)]
+                    pr2 = [(w, f) for w, f in pr1 if fits(w, 1, k)]
                     for v in conds:
+                        nd3 = [x for x in nd2 if fits(x, 0, v)]
+                        pr3 = [(w, f) for w, f in pr2 if fits(w, 0, v)]
                         for ancestors, siblings in contexts:
                             for direction in directions:
                                 c = Combo(s, k, v, z, d, direction, ancestors, siblings)
-                                if (combo_holds(m, c, rec) and not any(combo_holds(x, c, rec) for x in nd)
-                                        and self.drawn_in(presences, c, rec)):
+                                if (combo_holds(m, c, rec) and not any(combo_holds(x, c, rec) for x in nd3)
+                                        and self.drawn_in(pr3, c, rec)):
                                     return True
         return False
 
@@ -850,6 +871,16 @@ class Depth:
                 return STRAY
             needed = [u for u in needed if u]
             return max(needed, key=self.order.get) if needed else None
+        # a widget's facts sharing a part (or none) and a `when` share their unit: decided once
+        memo = ("unit", platform, preset, self.part_of(key) or widget,
+                tuple(p for p in self.at_depth if under(segs(key), segs(p))), json.dumps(when, sort_keys=True))
+        if memo not in self._held:
+            self._held[memo] = self.widget_unit(platform, key, when, preset, needed)
+        return self._held[memo]
+
+    def widget_unit(self, platform: str, key: str, when: dict, preset: str, needed: list) -> str | None:
+        """unit() of a widget's key past its key's and its contexts' units, `needed` its conditions' later units."""
+        widget = key.split(".")[0]
         latest = when.get("latest") if isinstance(when.get("latest"), dict) else {}
         needed += [self.off(widget, preset, "variants", v) for v in listed(when, "variants")]
         needed += [self.off(widget, preset, "states", s) for s in listed(when, "states") | set(latest.values())]
