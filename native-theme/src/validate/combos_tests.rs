@@ -1527,10 +1527,10 @@ fn combination_widget_part_from_the_values() {
     assert_eq!(
         bare(
             "[widgets.button.menu_indicator]\nabsent = true\n[widgets.button.values]\n\
-             menu_indicator_gap_px = \"= widget.menu_indicator.min_width\""
+             subtitle_gap_px = \"= widget.menu_indicator.min_width\""
         ),
         [
-            "widgets.button.values.menu_indicator_gap_px: `widget.menu_indicator` can be absent or drawn as another widget"
+            "widgets.button.values.subtitle_gap_px: `widget.menu_indicator` can be absent or drawn as another widget"
         ]
     );
     let problems = bare(

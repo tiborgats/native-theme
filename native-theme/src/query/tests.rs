@@ -111,7 +111,6 @@ transform = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 5, tran
 focus = "absent"
 cursor = "pointer"
 touch_target_px = "absent"
-transitions = []
 interaction = "absent"
 [widgets.button.label]
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
@@ -127,19 +126,11 @@ icon_text_gap_px = 4
 icon_placement = "leading"
 label_position = "absent"
 subtitle_gap_px = "absent"
-menu_indicator_gap_px = 2
-menu_indicator_anchor = "inline"
-menu_trigger = "absent"
 shows_icon = true
 focus_visible_when = "any_focus"
 repeat_delay_ms = "absent"
 repeat_interval_ms = "absent"
-back_title_fallback = false
-back_display_mode = "absent"
-help_tooltip_on_click = false
 hit_extension = { top_px = 1, right_px = 2, bottom_px = 3, left_px = 4 }
-display_mode = "absent"
-presentations = []
 "##;
 
 fn layer(text: &str) -> Layer {
@@ -503,7 +494,7 @@ fn fields_patch_over_absent_leaves_absent() {
     let icon = "[widgets.button.icon]\nabsent = false\nicon = { replace = { size_px = 16, fill = \
                 \"#000000\", rendering_mode = \"from_icon\", weight = 400, symbolic_colors = {}, axes = \
                 {}, symbol_variants = [], scale = \"absent\", state_effect = \"absent\", animation = \
-                \"absent\" } }\nglyph = \"absent\"\ntransitions = []";
+                \"absent\" } }\nglyph = \"absent\"";
     let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\n\
                 set = { glyph.size_px = 4 }";
     let theme = validated(&[icon, rule]);
@@ -1166,6 +1157,7 @@ fn part_shown_resolves_option() {
 /// only a rule names, in the rules' order; a test stated twice once, a
 /// stated zero's none, a rule the element's variants exclude left out.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn breeze_tests_in_rank_order() {
     use crate::blocks::motion::BreezeTest;
     let breeze = |group: &str, duration: u32, any: &str, none: &str| {
@@ -1236,6 +1228,7 @@ fn breeze_tests_in_rank_order() {
 /// the `Tokens` rules in force, a rule whose conditions do not hold left
 /// out), each in its place among the part's.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn breeze_tests_through_a_token_reference() {
     use crate::blocks::motion::BreezeTest;
     let breeze = |properties: &str, any: &str| {
@@ -1301,6 +1294,7 @@ fn breeze_tests_through_a_token_reference() {
 /// ADD-A134): the body's padding at the keyframe its start one in
 /// right-to-left.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyframes_transition_resolves_and_mirrors() {
     use crate::blocks::motion::{ResolvedEngine, ResolvedTransitionKind};
     let theme = fixture(&[
@@ -1343,7 +1337,7 @@ fn looping(keyframes: &str, layers: &[&str]) -> ResolvedTheme {
         "[widgets.button.body]\nstroke = {{ replace = {{ width_px = 1, paint = \"#000000\", \
          dash = \"solid\", snap = \"to_device_pixel\", position = \"inside\", outset_px = \
          \"absent\", fill_clip = \"box\" }} }}\n[widgets.button.icon]\nabsent = false\n\
-         transitions = []\nglyph = \"absent\"\n[widgets.button.icon.icon]\nsize_px = 16\n\
+         glyph = \"absent\"\n[widgets.button.icon.icon]\nsize_px = 16\n\
          fill = \"absent\"\nrendering_mode = \"original\"\nweight = \"absent\"\nscale = \
          \"absent\"\naxes = {{}}\nstate_effect = \"absent\"\nsymbol_variants = []\n\
          symbolic_colors = {{}}\n[widgets.button.icon.icon.animation]\nperiod_ms = 1000\ntiming = \

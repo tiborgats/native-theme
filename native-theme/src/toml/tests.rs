@@ -118,9 +118,14 @@ fn spelling_stated_value() {
         panic!("a table under an application layer's bases is a `Fields` patch");
     };
     assert!(text.case.is_some() && text.wrap.is_some() && text.font.is_none());
-    let values = layer("[widgets.button.values]\nback_title_fallback = true");
-    let values = values.bases.widgets.button.unwrap().values.unwrap();
-    assert_eq!(values.back_title_fallback, Some(Value::Stated(true)));
+    let values = layer("[widgets.button.values]\nshows_icon = true");
+    let shows_icon = values
+        .bases
+        .widgets
+        .button
+        .and_then(|button| button.values)
+        .and_then(|values| values.shows_icon);
+    assert_eq!(shows_icon, Some(Value::Stated(true)));
 }
 
 #[test]
@@ -694,11 +699,11 @@ fn spelling_drawn_as() {
         layer.bases.widgets.button.unwrap().menu_indicator.unwrap()
     };
     assert_eq!(
-        read("{ widget = \"button\", part = \"icon\", variants = [\"flat\", \"@raised\"] }"),
+        read("{ widget = \"button\", part = \"icon\", variants = [\"tool\", \"@raised\"] }"),
         PartPatch::of_presence(PartPresence::DrawnAs {
             target: WidgetOrPart::Part(button(ButtonPart::Icon)),
             variants: vec![
-                VariantRef::Typed(Variant::Flat),
+                VariantRef::Typed(Variant::Tool),
                 VariantRef::Keyed(key!("raised"))
             ],
         })
@@ -1109,7 +1114,7 @@ fn when_reads_every_selector_part() {
          not_context = [{ widget = \"button\" }]\n\
          position = { among = \"any\", first = true, parity = \"odd\", previous = { widget = \
          \"button\", not_states = [\"checked\"] } }\n\
-         variants = [\"flat\", \"@pill_keyed\"]\nnot_variants = [\"primary\"]\n\
+         variants = [\"tool\", \"@pill_keyed\"]\nnot_variants = [\"primary\"]\n\
          sizes = [\"regular\"]\nnot_sizes = [\"mini\"]\ndensities = [\"compact\", \"@dense\"]\n\
          not_densities = [\"default\"]\nsize_class = { horizontal = [\"compact\"], not_vertical = \
          [\"regular\"] }\ndirection = \"rtl\"\nstates = [\"focus_visible\", \"empty\", \
@@ -1144,7 +1149,7 @@ fn when_reads_every_selector_part() {
     assert_eq!(
         selector.variants.all_of,
         [
-            VariantRef::Typed(Variant::Flat),
+            VariantRef::Typed(Variant::Tool),
             VariantRef::Keyed(key!("pill_keyed"))
         ]
     );
@@ -1242,10 +1247,10 @@ fn declarations_read_s10s_keys() {
          [\"accent\", \"accent_ramp.light1\"]\naccent_inputs = [\"accent\"]\ntransition_kinds = \
          {{ bounce = {{ height = \"px\" }} }}\ncontainer_sizes = {{ button = [\"small\", \
          \"large\"] }}\nmaterial_params = {{ shimmer = \"fraction\" }}\nschemes = [\"light\", \
-         \"dark\"]\n[declare.widget.button]\nvariants = [\"primary\", \"flat\", \"@pill\"]\n\
+         \"dark\"]\n[declare.widget.button]\nvariants = [\"primary\", \"tool\", \"@pill\"]\n\
          sizes = [\"small\", \"regular\"]\ndensities = [\"compact\"]\nflags = \
          [\"@keyboard_focus_change\"]\nexclusive = [[\"disabled\", \"pressed\", \"hover\"]]\n\
-         exclusive_variants = [[\"primary\", \"flat\"]]\nsizes_by_variant = [{{ variant = \
+         exclusive_variants = [[\"primary\", \"tool\"]]\nsizes_by_variant = [{{ variant = \
          \"@pill\", sizes = [\"small\"], default_size = \"small\" }}]\ndefault_size = \"regular\"\n\
          sizes_by_context = [{{ context = {{ scope = \"any\", widget = \"button\", part = \
          \"body\" }}, sizes = [\"small\"], default_size = \"small\" }}]\navailable = \
@@ -1282,7 +1287,7 @@ fn declarations_read_s10s_keys() {
         Some(
             &[
                 VariantRef::Typed(Variant::Primary),
-                VariantRef::Typed(Variant::Flat),
+                VariantRef::Typed(Variant::Tool),
                 VariantRef::Keyed(key!("pill")),
             ][..]
         )
@@ -1357,7 +1362,7 @@ fn declarations_refuse_what_s10_does_not_spell() {
          params = {{ layout = {{ unit = \"em\", keys = [] }} }}\n[declare.widget.button]\n\
          sizes = [\"huge\"]\ndata = {{ knob = [\"width\"], body = [\"heat\"] }}\n\
          default_size_by_variant = []\nsizes_by_context = [{{ context = \"toolbar\", sizes = [] }}]\n\
-         sizes_by_variant = [{{ variant = \"flat\", sizes = [], size = \"small\" }}]\n\
+         sizes_by_variant = [{{ variant = \"tool\", sizes = [], size = \"small\" }}]\n\
          breakpoints = [{{ measured = \"window\", width = {{ at_most = 1 }}, height = {{ \
          at_most = 2 }}, variant = \"@x\" }}]\n[declare.widget.slider]\nsizes = []\n\
          [declare.component.rule_editor]\navailable = true"

@@ -233,7 +233,10 @@ fn refusal_call_not_allowed() {
         bare(&layer("= max(1, 2)")),
         ["widgets.button.values.shows_icon: takes a literal or a reference, not a call"]
     );
-    assert_eq!(bare(&layer("= values.back_title_fallback")), NONE);
+    assert_eq!(
+        bare(&layer("= token.behavior.mnemonic_when_disabled")),
+        NONE
+    );
 }
 
 #[test]
@@ -4187,37 +4190,11 @@ fn icon(icon: IconStylePatch) -> Layer {
     layer
 }
 
-/// A layer whose bases give `button` one presentation of `event` and
-/// `kind`.
-fn presenting(
-    event: crate::blocks::motion::PresentationEvent,
-    kind: crate::blocks::motion::PresentationKind,
-) -> Layer {
-    use crate::blocks::motion::{PresentationStep, PresentationTransition};
-    let mut layer = Layer::default();
-    layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-        values: Some(crate::widgets::ButtonValuesPatch {
-            presentations: Some(vec![PresentationTransition {
-                event,
-                steps: vec![PresentationStep {
-                    part: None,
-                    kind,
-                    duration: Value::Stated(Ms(100.0)),
-                    delay: Value::Stated(Ms(0.0)),
-                    timing: Value::Stated(Timing::Linear),
-                    stagger: Value::Stated(Ms(0.0)),
-                }],
-            }]),
-            ..crate::widgets::ButtonValuesPatch::default()
-        }),
-        ..ButtonPatch::default()
-    }));
-    layer
-}
-
-/// A keyed transition's or presentation step's parameter is typed by its
-/// declared unit, as any other keyed scalar (S2.7, S4.6, S12).
+/// A keyed transition's parameter is typed by its declared unit, as any
+/// other keyed scalar (S2.7, S4.6, S12). (A presentation step's left with
+/// `button`'s `presentations`, the motion unit's.)
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyed_kind_params_are_typed() {
     let expr = |text: &str| Value::Expr(Expr::parse(text).unwrap());
     let keyed = |value: Value<crate::units::Scalar>| {
@@ -4242,24 +4219,6 @@ fn keyed_kind_params_are_typed() {
         ]
     );
     assert_eq!(found(&keyed(expr("4px")), &decl), NONE);
-    let step = |value: Value<crate::units::Scalar>| {
-        presenting(
-            crate::blocks::motion::PresentationEvent::Appear,
-            crate::blocks::motion::PresentationKind::Keyed {
-                key: key!("wipe"),
-                params: vec![(key!("angle"), value)],
-            },
-        )
-    };
-    let decl = declare("presentation_kinds = { wipe = { angle = \"deg\" } }");
-    assert_eq!(
-        found(&step(expr("4px")), &decl),
-        [
-            "widgets.button.values.presentations[0].steps[0].kind.keyed.params.angle: the \
-             expression does not type: a length where an angle is expected"
-        ]
-    );
-    assert_eq!(found(&step(expr("90deg")), &decl), NONE);
 }
 
 /// Every kind of name S10 declares, each refused undeclared and passed
@@ -4267,7 +4226,6 @@ fn keyed_kind_params_are_typed() {
 #[test]
 fn refusal_undeclared_every_kind() {
     use crate::blocks::focus::{FocusIndicatorPatch, FocusKind};
-    use crate::blocks::motion::{PresentationEvent, PresentationKind};
     use crate::blocks::paint::Material;
     let rule = |when: &str| {
         toml(&format!(
@@ -4390,27 +4348,6 @@ fn refusal_undeclared_every_kind() {
             "widgets.button.body.transitions[0].kind.keyed.key: `@bounce` is not declared in \
              `transition_kinds`",
             "transition_kinds = { bounce = {} }",
-        ),
-        (
-            presenting(
-                PresentationEvent::Keyed(key!("expand")),
-                PresentationKind::Fade,
-            ),
-            "widgets.button.values.presentations[0].event.keyed: `@expand` is not declared in \
-             `presentation_events`",
-            "presentation_events = [\"expand\"]",
-        ),
-        (
-            presenting(
-                PresentationEvent::Appear,
-                PresentationKind::Keyed {
-                    key: key!("wipe"),
-                    params: Vec::new(),
-                },
-            ),
-            "widgets.button.values.presentations[0].steps[0].kind.keyed.key: `@wipe` is not \
-             declared in `presentation_kinds`",
-            "presentation_kinds = { wipe = {} }",
         ),
         (
             icon(IconStylePatch {
@@ -4771,6 +4708,7 @@ kinds! {
     OtherElementsPart { .. },
     UndeclaredData { .. },
     Undeclared { .. },
+    Later { .. },
     NotConditions,
     WidgetUnavailable { .. },
     AccentInput,
@@ -5223,6 +5161,17 @@ fn layer_error_every_variant_triggers() {
         (
             V::Undeclared,
             read("[colors.light.global]\naccent = \"= role.window.background\""),
+        ),
+        (
+            V::Later,
+            preset_problems(&format!(
+                "[declare.widget.button]\nvariants = [\"@solo\"]\nlater = {{ variants = [\"@solo\"] }}\n{}",
+                rule(
+                    "{ variants = [\"@solo\"] }",
+                    "button.body",
+                    "{ opacity = 0.5 }"
+                )
+            )),
         ),
         (
             V::NotConditions,

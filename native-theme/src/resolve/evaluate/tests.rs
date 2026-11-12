@@ -764,7 +764,7 @@ fn whole_button_resolves_field_by_field() {
     use crate::blocks::part_style::ResolvedBinding;
     use crate::blocks::transform::ResolvedTransform;
     use crate::units::{Length, Ms, Sides};
-    use crate::widgets::{ButtonValues, IconPlacement, IndicatorAnchor, WidgetKind};
+    use crate::widgets::{ButtonValues, IconPlacement, WidgetKind};
     let parts = r##"
 [widgets.button.body]
 fill = "= surface.background"
@@ -780,7 +780,6 @@ transform = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, tran
 focus = "absent"
 cursor = "pointer"
 touch_target_px = "absent"
-transitions = []
 interaction = "absent"
 [[widgets.button.body.bindings]]
 surface = "button"
@@ -796,19 +795,11 @@ absent = true
 icon_placement = "leading"
 label_position = "absent"
 subtitle_gap_px = "absent"
-menu_indicator_gap_px = 2
-menu_indicator_anchor = "inline"
-menu_trigger = "absent"
 shows_icon = true
 focus_visible_when = "any_focus"
 repeat_delay_ms = "absent"
-repeat_interval_ms = "= token.motion.durations.short"
-back_title_fallback = false
-back_display_mode = "absent"
-help_tooltip_on_click = false
+repeat_interval_ms = "= mul(token.motion.speed_factor, 200ms)"
 hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
-display_mode = "absent"
-presentations = []
 "##;
     let later = "[tokens.text.roles.body.font]\nweight = 700";
     let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
@@ -940,9 +931,6 @@ presentations = []
     assert_eq!(values.icon_placement, Some(IconPlacement::Leading));
     assert_eq!(values.label_position, None);
     assert_eq!(values.subtitle_gap, None);
-    assert_eq!(values.menu_indicator_gap, Some(Px(2.0)));
-    assert_eq!(values.menu_indicator_anchor, Some(IndicatorAnchor::Inline));
-    assert_eq!(values.menu_trigger, None);
     assert_eq!(values.shows_icon, Some(true));
     assert_eq!(
         values.focus_visible_when,
@@ -950,9 +938,6 @@ presentations = []
     );
     assert_eq!(values.repeat_delay, None);
     assert_eq!(values.repeat_interval, Some(Ms(100.0)));
-    assert_eq!(values.back_title_fallback, Some(false));
-    assert_eq!(values.back_display_mode, None);
-    assert_eq!(values.help_tooltip_on_click, Some(false));
     assert_eq!(
         values.hit_extension,
         Sides {
@@ -962,8 +947,6 @@ presentations = []
             left: None
         }
     );
-    assert_eq!(values.display_mode, None);
-    assert_eq!(values.presentations, []);
     // A role read in the scope.
     let accent = theme.evaluate_role(&scope, &reference("role.global.accent"));
     assert_eq!(accent.value, Some(rgb(0x33, 0x66, 0xcc)));
@@ -1309,28 +1292,54 @@ fn text_style_font_resolved_once() {
     assert_eq!(evaluated.refusals.len(), 1, "{:?}", evaluated.refusals);
 }
 
-/// Task 11e's review: a call on a keyed transition's, a keyed
-/// presentation's or a material's parameter evaluates by its declared unit,
-/// as validation types it (S2.2, S2.7, S10).
+/// Task 11e's review: a call on a material's parameter evaluates by its
+/// declared unit, as validation types it (S2.2, S10).
 #[test]
-fn keyed_kind_and_material_params_typed_by_their_unit() {
-    use crate::blocks::motion::{ResolvedPresentationKind, ResolvedTransitionKind};
+fn material_params_typed_by_their_unit() {
     use crate::blocks::paint::ResolvedPaintKind;
     use crate::units::Scalar;
-    use crate::widgets::{ButtonValues, WidgetKind};
     let parts = r##"
 [widgets.button.body]
 fill = { layers = [{ kind = { material = { identity = "mica", blur_radius_px = "absent", tint = "absent", saturation = "absent", luminosity = "absent", noise_opacity = "absent", fallback = "#000000", params = { depth = "= add(1px, 2px)" } } }, blend = "normal" }] }
-transitions = [{ properties = ["fill"], kind = { keyed = { key = "bounce", params = { amplitude = "= add(2px, 2px)" } } }, duration_ms = 100, delay_ms = 0, timing = "linear", engine = "gtk_css" }]
-[widgets.button.values]
-presentations = [{ event = "appear", steps = [{ part = "none", kind = { keyed = { key = "wipe", params = { lag = "= add(10ms, 20ms)" } } }, duration_ms = 100, delay_ms = 0, timing = "linear", stagger_ms = 0 }] }]
 "##;
     let mut theme = resolved(&[BASE, parts], 1.0);
     theme.declarations = crate::toml::layer::read_preset(
         "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare]\nmaterials = [\"mica\"]\n\
-         material_params = { depth = \"px\" }\n\
-         transition_kinds = { bounce = { amplitude = \"px\" } }\n\
-         presentation_kinds = { wipe = { lag = \"ms\" } }\n",
+         material_params = { depth = \"px\" }\n",
+    )
+    .unwrap()
+    .declarations;
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(BODY), &scope, &Metrics);
+    let body = theme
+        .evaluate_part(BODY, &element, &|_| true)
+        .value
+        .unwrap();
+    let layer = body.fill.unwrap().layers.into_iter().next().unwrap();
+    let ResolvedPaintKind::Material(material) = layer.kind else {
+        panic!("a material layer: {layer:?}");
+    };
+    assert_eq!(
+        material.params,
+        [(Key::new("depth").unwrap(), Some(Scalar::Px(Px(3.0))))]
+    );
+}
+
+/// Task 11e's review: a call on a keyed transition's parameter evaluates by
+/// its declared unit, as validation types it (S2.2, S2.7, S10).
+#[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
+fn keyed_transition_params_typed_by_their_unit() {
+    use crate::blocks::motion::ResolvedTransitionKind;
+    use crate::units::Scalar;
+    let parts = r##"
+[widgets.button.body]
+transitions = [{ properties = ["fill"], kind = { keyed = { key = "bounce", params = { amplitude = "= add(2px, 2px)" } } }, duration_ms = 100, delay_ms = 0, timing = "linear", engine = "gtk_css" }]
+"##;
+    let mut theme = resolved(&[BASE, parts], 1.0);
+    theme.declarations = crate::toml::layer::read_preset(
+        "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare]\n\
+         transition_kinds = { bounce = { amplitude = \"px\" } }\n",
     )
     .unwrap()
     .declarations;
@@ -1347,29 +1356,6 @@ presentations = [{ event = "appear", steps = [{ part = "none", kind = { keyed = 
     assert_eq!(
         params,
         &[(Key::new("amplitude").unwrap(), Some(Scalar::Px(Px(4.0))))]
-    );
-    let layer = body.fill.unwrap().layers.into_iter().next().unwrap();
-    let ResolvedPaintKind::Material(material) = layer.kind else {
-        panic!("a material layer: {layer:?}");
-    };
-    assert_eq!(
-        material.params,
-        [(Key::new("depth").unwrap(), Some(Scalar::Px(Px(3.0))))]
-    );
-    let values = theme
-        .evaluate_values::<ButtonValues>(WidgetKind::Button, &element, &|_| true)
-        .value
-        .unwrap();
-    let step = values.presentations.first().unwrap().steps.first().unwrap();
-    let ResolvedPresentationKind::Keyed { params, .. } = &step.kind else {
-        panic!("a keyed presentation: {step:?}");
-    };
-    assert_eq!(
-        params,
-        &[(
-            Key::new("lag").unwrap(),
-            Some(Scalar::Ms(crate::units::Ms(30.0)))
-        )]
     );
 }
 
