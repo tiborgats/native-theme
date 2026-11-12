@@ -36,7 +36,7 @@ Nothing that blocks the work. To come, each with its facts when they exist:
 
 ## Corrections of the batch's fix rounds (2026-11-12)
 
-The batch that applied these outcomes (ADD-A147) was checked twice, and its fix rounds once more; the
+The batch that applied these outcomes (ADD-A147) was checked twice, and its fix rounds twice more; the
 orchestrator's decisions on the checks correct this file's outcomes as follows, each open to the maintainer's veto
 (the veto list, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`):
 
@@ -54,8 +54,13 @@ orchestrator's decisions on the checks correct this file's outcomes as follows, 
   filled button's title in: on `macos-*` `= role.global.accent_foreground` (`alternateSelectedControlTextColor`;
   0.7.0's `labelColor` was the body text beside a status mark); on `ios-*` the filled button's measured title
   colour, as `accent_foreground` (ledger U755), measured on each status fill by the second-tint run (U706), 0.7.0's
-  having been a literal with no source. On `adwaita` the info role refers to the accent, the colour libadwaita's
-  info bar draws info from (ledger queue #278).
+  having been a literal with no source. On `adwaita` the info role refers to the accent's triple, its fill the
+  colour libadwaita's info bar draws info from (ledger queue #278).
+- Outcome 5: the four Apple status pairings rest on source reads (U757–U760), the catalogue allowing each status's
+  fill, standalone and text colour absent there while its read is open, and absent where a read finds none, a loss
+  of 0.7.0's status colour there (veto list item 57); a status's text colour is paired only where its fill is, the
+  macOS one measured over each status fill by a probe pass (U756); `destructive` on Apple stays absent, a source
+  read of its own (U761).
 - Outcome 7: a palette is not offered over a preset whose widget colours are measured literals that follow no role
   (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
 - Outcome 8: 40 MiB (41,943,040 bytes), and GitHub's warning at 50 MiB, not Git's (S17).

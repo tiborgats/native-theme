@@ -651,13 +651,17 @@ the facts tooling reads it.
       item 56); a text slot the platform names no counterpart for, by a clause of its own, a style or family it
       names; on `macos-*` and
       `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them, and the status text colours,
-      the text on the status fill, to the colour the platform draws a filled button's title in (on `macos-*` `=
-      role.global.accent_foreground`, AppKit's `alternateSelectedControlTextColor`); on `adwaita` the info role to
-      the accent, as libadwaita's info bar draws it; the pairings listed in the catalogue's *global roles*
+      the text on the status fill, paired where the fill is, to the colour the platform draws a filled button's
+      title in (on `macos-*` `= role.global.accent_foreground`, AppKit's `alternateSelectedControlTextColor`); on
+      `adwaita` the info role to the accent's triple, its fill the colour libadwaita's info bar draws info from; the pairings listed in the catalogue's *global roles*
       (`status`) for the maintainer's veto; the text slots' mappings are labelled alike; R25.17 names `ios-*` too
       (the rationale's R5.1, R10, R25.17; the specification's S3, S4.4, S17; veto list item 3). U456 closes with the
       pairings, the iOS status text colours split off as U755 and paired there with the filled button's measured
-      title colour, as U651, measured on each status fill by the second-tint run.
+      title colour, as U651, measured on each status fill by the second-tint run, each of the four Apple pairings
+      resting on its source read (the ledger's U757–U760; S3 for the outcome where none is found: the status's
+      `fill`, `standalone` and `foreground` absent there, a loss of 0.7.0's status colour, veto list item 57) and
+      the macOS foregrounds on a probe pass over the status fills (U756), both due at M4's pending condition;
+      `destructive` on `macos-*` and `ios-*` a source read of its own (U761).
     - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
       staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
       trial measures them (M2's task 1), Apple stating no timings (at `7430a0a2` 21 of the 27 macOS and 43 of the 48
@@ -1313,7 +1317,8 @@ button's title measured with each status's system colour as the tint (`systemRed
 `systemBlue`), in both schemes, the check of U755's pairings. *Done:* every
 tint-following fact at 0.8.0's depth stated as a derivation over the accent and verified, the default tint's
 literals gone from them, and U706 closed for them; a value that does not follow the tint stays a literal, with the
-run's evidence; each status `foreground` (U755) the title colour measured on its own fill. It blocks the iOS presets' release, not M2's other tasks.
+run's evidence; each status `foreground` (U755) the title colour measured on its own fill, where its source read
+pairs the fill (U757–U760). It blocks the iOS presets' release, not M2's other tasks.
 
 **The KDE reader's `Xft.dpi` read removed** (D6, outcome 12; the ledger's queue #198; ADD-A147). One code task
 (`implement`), beside M2's numbered tasks, since it removes a defect of a built reader (the font DPI applied twice
@@ -1325,8 +1330,9 @@ search); `check_function_vectors.py`, the KDE reader's tests and `check_release.
 ("load task 1" is not M2's task 1), and the trigger step run beside M2's numbered tasks, each placed by what must
 come before it.
 What they build: **A**, trust (a bundled preset whose `[pending]` table is empty, and the layers `Theme` derives from
-it alone, checked by the build test and the facts gate through the validating construction and not again at run
-time: R2.8, S8, S19.1); **B**, the checks over combinations run only for a layer whose stack, as they read it, the
+it alone, whose preset's own checks and checks over combinations the build test and the facts gate run through the
+validating construction and a theme does not run again, their structural checks and the input cycle search still
+running at every change: R2.8, S8, S19.1); **B**, the checks over combinations run only for a layer whose stack, as they read it, the
 change altered (S12's *What a change re-checks*), with a thread-local differential switch that re-runs a skipped
 change on the full path in the crate's own unit tests; **E1**, one read of a preset per process while a theme holds
 it (a `Weak` per preset); **E2**, `WindowState` keeping the resolution it returned (S8). Each diff gets its `review`
@@ -1468,7 +1474,8 @@ is fixed before task 0 on its own branch, `side-units`.
    and the gate's report; then the lanes of task 0's presets write their mappings (`windows-11`'s monospace style,
    U509; `adwaita`'s `info` record paired with the accent, ledger queue #278; and the label on each of their text
    slots the platform names no style for). The macOS and iOS mappings (the
-   status pairings of the catalogue's *global roles*, `status`, U456 and U755; `ios-*`'s `accent_foreground`, U651;
+   status pairings of the catalogue's *global roles*, `status`, U456 and U755, each resting on its source read,
+   U757–U760; `ios-*`'s `accent_foreground`, U651;
    their text slots) follow in those lanes' rounds after this step, beside M2's tasks (ledger queue #264, #265), and
    task 1 waits for none of them. A preset whose table it empties takes its plain route's records in
    `scripts/cost_budget.toml` if load task P has merged, else load task P records them ("first measured by" this task
