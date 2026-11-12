@@ -22,7 +22,8 @@ wrong command line. A fact file that is no valid TOML is a finding of that file.
 Directories (S17 *Generations*): PLATFORMS maps each directory to the presets it covers: gnome (adwaita), kde
 (kde-breeze), macos (macos-monterey, macos-tahoe), ios (ios-13, ios-26), windows (windows-11), material
 (material-3). `palettes/` holds palette facts, `imported/` and `staged/` are skipped, any other directory or a
-stray file is a finding (a README.md is allowed anywhere).
+stray file is a finding (a README.md is allowed anywhere). A file past 40 MiB (MAX_FILE_BYTES, 41,943,040 bytes) is
+a finding (S17 *A file's size*): it is split by key prefix, each part `docs/facts/<platform>/<stem>-<prefix>.toml`.
 
 A `[[fact]]` (S17 *Fields*):
 
@@ -327,6 +328,7 @@ PALETTES = "palettes"
 IMPORTED = "imported"
 STAGED = "staged"
 STATE_MODELS = "state-models.toml"
+MAX_FILE_BYTES = 40 * 1024 * 1024   # S17 *A file's size*: a file past it is split by key prefix
 ALL_PRESETS = tuple(p for ps in PLATFORMS.values() for p in ps)
 
 FACT_REQUIRED = {"key", "value", "rows", "cite"}
@@ -845,6 +847,11 @@ def load(ctx: Context):
                 findings.append((frel, 1, "not a fact file (`<directory>/<area>.toml`)"))
                 continue
             nfiles += 1
+            size = f.stat().st_size
+            if size > MAX_FILE_BYTES:
+                findings.append((frel, 1, f"{size:,} bytes, past 40 MiB ({MAX_FILE_BYTES:,} bytes): split it by key "
+                                          f"prefix, each part `{p.relative_to(ctx.root).as_posix()}/{f.stem}-<prefix>"
+                                          f".toml` holding the facts of its prefixes (S17 *A file's size*)"))
             try:
                 text = f.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError) as err:
@@ -5290,6 +5297,13 @@ def self_test() -> int:
         got, counts = check(fixture_context(root))
         if got or not summary(counts, 0).startswith("no facts yet: 0 fact files"):
             failures.append(f"empty: got {got}, {summary(counts, len(got))}")
+        # a file's size (S17): a made-up fact file, a comment padded to 40 MiB, passes; a byte more is a finding
+        for size, want in ((MAX_FILE_BYTES, []),
+                           (MAX_FILE_BYTES + 1, ["41,943,041 bytes, past 40 MiB (41,943,040 bytes): split it by key "
+                                                 "prefix, each part `docs/facts/gnome/padded-<prefix>.toml`"])):
+            got = run({**SELF_TEST_FILES, "docs/facts/gnome/padded.toml": "#" + "x" * (size - 2) + "\n"})
+            if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
+                failures.append(f"a fact file of {size:,} bytes: got {got}, want {want}")
         # the closed lists the docstring names
         ctx = fixture_context(root)
         if ctx.functions != {"alpha": (2, 2), "with_alpha": (2, 2), "mix": (3, 3), "kcu_mix": (3, 3),

@@ -1044,7 +1044,9 @@ Checks the form of the 0.8.0 facts (specification S17): every
 `docs/facts/<platform>/*.toml` (gnome, kde, macos, ios, windows, material),
 each platform's `state-models.toml` and the palette facts in
 `docs/facts/palettes/`; `docs/facts/imported/` (lane input) and
-`docs/facts/staged/` (S19.2's staged bases) are skipped.
+`docs/facts/staged/` (S19.2's staged bases) are skipped. A file past 40 MiB
+(41,943,040 bytes) is a finding: it is split by key prefix into
+`docs/facts/<platform>/<stem>-<prefix>.toml` files (S17 *A file's size*).
 A fact has a key the catalogue (through `spec_catalogue.py`) or the core (its
 Rust sketches, as `check_spec_names.py` reads them) defines, without TOML's
 unit suffix (`button.body.min_width`, not `min_width_px`), a value spelled
