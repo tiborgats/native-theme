@@ -738,6 +738,18 @@ impl Env for Operands<'_> {
     }
 }
 
+/// Where `path` names one of a text style's font sizes (S9.4), its
+/// `Font.size`, line height or spacing, how many of its last names lie
+/// below the style: the style's place is the rest, whose role and font
+/// size the text scaling reads there (`Cx::style_path`).
+pub(crate) fn style_font_size(path: &[&str]) -> Option<usize> {
+    match path {
+        [.., "font", "size"] => Some(2),
+        [.., "line_height" | "letter_spacing" | "word_spacing"] => Some(1),
+        _ => None,
+    }
+}
+
 /// A size in points or pixels in logical pixels (S9.4): `pt × dpi / 72`;
 /// `None` for points without a DPI.
 fn convert(size: FontSize, dpi: Option<f32>) -> Option<Px> {
@@ -2040,11 +2052,7 @@ impl<'t> Cx<'t> {
     /// sizes, its `Font.size`, line height or spacing.
     fn style_path(&self) -> Option<Vec<String>> {
         let names: Vec<&str> = self.path.iter().map(String::as_str).collect();
-        let own = match names.as_slice() {
-            [.., "font", "size"] => 2,
-            [.., "line_height" | "letter_spacing" | "word_spacing"] => 1,
-            _ => return None,
-        };
+        let own = style_font_size(&names)?;
         self.path
             .get(..self.path.len().checked_sub(own)?)
             .map(<[String]>::to_vec)

@@ -37,6 +37,7 @@ use crate::key::Key;
 use crate::layer::Layer;
 use crate::presets::PresetId;
 use crate::registry::{self, BlockForm, FieldInfo, FieldType, PartInfo};
+use crate::resolve::evaluate::style_font_size;
 use crate::roles::SurfaceSet;
 use crate::selector::{
     Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, PartRef,
@@ -1044,6 +1045,20 @@ impl<'a> Stack<'a> {
     /// (calls and stated values ending the chain), and how many references
     /// the longest chain followed.
     fn follow<'s>(&'s self, world: &World, found: Found<'s>) -> (Vec<Found<'s>>, usize) {
+        self.follow_to(world, found, None)
+    }
+
+    /// [`Stack::follow`]'s ends; with `fonts`, a reference that reaches a
+    /// text style's font size, line height or spacing ends at that place,
+    /// added there: the text scaling scales the value there by the place's
+    /// kind and its style (S9.4), which the value stated further on does
+    /// not carry.
+    fn follow_to<'s>(
+        &'s self,
+        world: &World,
+        found: Found<'s>,
+        mut fonts: Option<&mut Vec<(Target, String)>>,
+    ) -> (Vec<Found<'s>>, usize) {
         let mut done = Vec::new();
         let mut longest = 0_usize;
         let mut pending = vec![(found, 0_usize)];
@@ -1058,16 +1073,23 @@ impl<'a> Stack<'a> {
                 continue;
             }
             let mut next = Vec::new();
+            let mut stopped = false;
             for place in self.places(world, reference, found.cx) {
-                match place {
-                    Place::Field(target, path, bound) => {
+                match (place, fonts.as_deref_mut()) {
+                    (Place::Field(target, path, _), Some(fonts)) if font_place(&path) => {
+                        fonts.push((target, path));
+                        stopped = true;
+                    }
+                    (Place::Field(target, path, bound), _) => {
                         next.extend(self.value_at(world, target, &path, bound, 0));
                     }
-                    Place::Binding(source, binding) => next.push(binding_found(source, binding)),
-                    Place::Stated => {}
+                    (Place::Binding(source, binding), _) => {
+                        next.push(binding_found(source, binding));
+                    }
+                    (Place::Stated, _) => {}
                 }
             }
-            if next.is_empty() {
+            if next.is_empty() && !stopped {
                 done.push(Found {
                     got: Got::Stated(Fact::Unknown),
                     ..found
@@ -2028,13 +2050,20 @@ fn variant(found: &Found<'_>) -> Option<&'static str> {
     }
 }
 
+/// Whether `path` names one of a text style's font sizes, by the rule the
+/// resolver reads the style from (S9.4).
+fn font_place(path: &str) -> bool {
+    let names: Vec<&str> = path.split('.').collect();
+    style_font_size(&names).is_some()
+}
+
 /// One side's length as the inset and offset checks compare it (S2.4,
 /// S2.10).
 #[derive(Debug)]
 enum SideLen {
     /// A sum: of stated lengths in pixels (an absent side 0), and of terms,
-    /// a stated font size's number in its unit or an expression as
-    /// [`Term`] reads it; a plain reference reaches the value it follows.
+    /// a text style's font size or an expression as [`Term`] reads it; a
+    /// plain reference reaches the value it follows.
     Known(f32, Vec<Term>),
     /// No layer states it: missing, the preset's check (S2.2), so it is no
     /// difference.
@@ -2055,6 +2084,18 @@ enum Term {
     /// A stated number a reference resolves to, in its unit: one number in
     /// two units is two lengths under some DPI or text scaling.
     Number(f32, Unit),
+    /// The value a text style's font size, line height or spacing resolves
+    /// to, at its place: equal only to itself at the same place. The text
+    /// scaling scales what the place states, a number or an expression's
+    /// font size literals, by the place's kind (S9.4: `WinUi` a size alone)
+    /// and by its style: `DynamicType` a size or a line height by the
+    /// style's role, `AndroidNonLinear` a line height by the style's font
+    /// size. Equal kinds and styles make one place, so the place is that
+    /// unit in full: exact for one place, conservative across two, whose
+    /// roles and font sizes would have to be compared. Read from a length's
+    /// place, a font size is always text-scaled (the resolver's
+    /// `font_size`, `line_height` and `widget.<part>` operands).
+    Font(Target, String),
     /// A call of its arguments' terms.
     Call(Func, Vec<Term>),
     /// A reference followed no further (element data, an input, a binding,
@@ -2102,21 +2143,29 @@ impl SideLen {
 }
 
 impl Stack<'_> {
-    /// The length the values found at one place give under `world`.
-    fn side_len(&self, world: &World, founds: &[Found<'_>]) -> SideLen {
+    /// The length the value at `path` of `target` gives under `world`, its
+    /// plain references followed, to a text style's font size at most.
+    fn side_len(&self, world: &World, target: Target, path: &str) -> SideLen {
+        let mut fonts = Vec::new();
+        let founds: Vec<Found<'_>> = self
+            .value_at(world, target, path, Bound::ALL, 0)
+            .into_iter()
+            .flat_map(|found| self.follow_to(world, found, Some(&mut fonts)).0)
+            .collect();
+        let fonts = fonts
+            .into_iter()
+            .map(|(target, path)| SideLen::Known(0.0, vec![Term::Font(target, path)]));
+        let founds = founds.iter().map(|found| match found.got {
+            Got::Stated(Fact::Number(n, Unit::Plain)) => SideLen::Known(n, Vec::new()),
+            Got::Stated(Fact::Number(n, unit)) => SideLen::Known(0.0, vec![Term::Number(n, unit)]),
+            Got::Absent => SideLen::Known(0.0, Vec::new()),
+            Got::Expr(expr) => {
+                SideLen::Known(0.0, vec![self.term(world, expr, found.cx, found.id, 0)])
+            }
+            Got::Auto | Got::Stated(_) => SideLen::Unknown,
+        });
         let mut out: Option<SideLen> = None;
-        for found in founds {
-            let one = match found.got {
-                Got::Stated(Fact::Number(n, Unit::Plain)) => SideLen::Known(n, Vec::new()),
-                Got::Stated(Fact::Number(n, unit)) => {
-                    SideLen::Known(0.0, vec![Term::Number(n, unit)])
-                }
-                Got::Absent => SideLen::Known(0.0, Vec::new()),
-                Got::Expr(expr) => {
-                    SideLen::Known(0.0, vec![self.term(world, expr, found.cx, found.id, 0)])
-                }
-                Got::Auto | Got::Stated(_) => SideLen::Unknown,
-            };
+        for one in founds.chain(fonts) {
             out = match out {
                 None => Some(one),
                 Some(held) if held.same(&one) => Some(held),
@@ -2128,7 +2177,8 @@ impl Stack<'_> {
 
     /// `expr`, stated at the step `id` in `cx`, as a [`Term`] under `world`:
     /// each reference followed to the one value it resolves to, a stated
-    /// number or an expression read in its own context.
+    /// number or an expression read in its own context, or to a text
+    /// style's font size, which ends it.
     fn term(
         &self,
         world: &World,
@@ -2154,13 +2204,18 @@ impl Stack<'_> {
                 let [Place::Field(target, path, bound)] = places.as_slice() else {
                     return opaque();
                 };
+                if font_place(path) {
+                    return Term::Font(*target, path.clone());
+                }
+                let mut fonts = Vec::new();
                 let founds: Vec<Found<'_>> = self
                     .value_at(world, *target, path, *bound, 0)
                     .into_iter()
-                    .flat_map(|found| self.follow(world, found).0)
+                    .flat_map(|found| self.follow_to(world, found, Some(&mut fonts)).0)
                     .collect();
-                match founds.as_slice() {
-                    [found] => match found.got {
+                match (founds.as_slice(), fonts.as_slice()) {
+                    ([], [(target, path)]) => Term::Font(*target, path.clone()),
+                    ([found], []) => match found.got {
                         Got::Stated(Fact::Number(n, unit)) => Term::Number(n, unit),
                         Got::Expr(inner) => {
                             self.term(world, inner, found.cx, found.id, depth.saturating_add(1))
@@ -3456,10 +3511,7 @@ impl Checks<'_, '_> {
                         continue;
                     }
                     let offset = |side: &str| {
-                        stack.side_len(
-                            world,
-                            &stack.effective(world, target, &format!("{focus}.offset.{side}")),
-                        )
+                        stack.side_len(world, target, &format!("{focus}.offset.{side}"))
                     };
                     let vertical = offset(corner_side(corner));
                     let differ = ["left", "right"]
@@ -3541,12 +3593,11 @@ impl Checks<'_, '_> {
                         chain.iter().fold(
                             SideLen::Known(0.0, Vec::new()),
                             |sum, (holder, field)| {
-                                let founds = stack.effective(
+                                sum.plus(stack.side_len(
                                     world,
                                     Target::Part(*holder),
                                     &format!("{field}.{side}"),
-                                );
-                                sum.plus(stack.side_len(world, &founds))
+                                ))
                             },
                         )
                     };

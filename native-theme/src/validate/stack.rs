@@ -89,7 +89,9 @@ pub(super) enum Fact {
 /// scaling.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Unit {
-    /// As stated: a length in pixels, or a number of another kind.
+    /// As stated: a length in pixels, or a number of another kind. A keyed
+    /// scalar's number is one whatever its unit (pixels, milliseconds,
+    /// degrees): the checks comparing lengths reach lengths alone.
     Plain,
     /// A font size, a line height or a spacing in pixels: scaled by the
     /// text scaling.
