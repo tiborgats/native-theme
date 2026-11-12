@@ -21,6 +21,15 @@ The status text colours (U456): on `macos-*` they refer to `role.global.accent_f
 measured drawing as a filled button's title over each status fill (U755, decided), 0.7.0's having been a literal with no source; each paired only where its fill
 is, and pending while that fill's read is open (U757–U760; fix round N3).
 
+**Correction of the document pass (2026-11-12), the orchestrator's decisions on the full document pass after
+ADD-A147** (ADD-A148, each open to the maintainer's veto): in U180's part 4, point 4 (*Typing*), a `<n>px` literal
+beside a font size in either of `if_le`'s pairs, and in `div`, is a font size, converted and scaled as one (S9.4),
+not a length compared as px; `div` is named beside `add`, `sub`, `min` and `max` where a font size meets a length,
+as the code types it (K1-2). U509's Consolas is cited to `fonts.ts:41` alone at M2's task 0, `typography.md:203`
+added once U520's checker notation exists, U520 having left 0.8.0's path by the staging (U509's part 4; L-9). The
+help bezel's member (U314 and U614, part 4) gets a register row of its own, U762, due with the unit that brings
+`help`, in place of U708 gaining it, since U708 retires at M2's task 7 (L's minor 3).
+
 ## Revision 5
 
 Made after the narrow check of revision 4, `scratch-keep/d6/register-rows-check4.md` (nothing serious, 2
