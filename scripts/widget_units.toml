@@ -1,6 +1,9 @@
-# The units of the 0.8.0 model (specification S6.1, ADD-A114; the M1a design,
-# decision 1): scripts/generate_widgets.py generates the typed widgets of the
-# enabled units, and scripts/check_facts_trace.py checks their trace rows.
+# The units of the 0.8.0 model (specification S6.1, S17, ADD-A114, ADD-A147;
+# the M1a design, decision 1; the D6 staging design): scripts/generate_widgets.py
+# generates the typed widgets of the enabled units at their depth, and
+# scripts/check_facts_trace.py, scripts/generate_preset.py, scripts/check_ledger.py,
+# scripts/verify_facts.py and the facts gate (native-theme/tests/facts_gate/units.rs)
+# read which facts and names the enabled units hold.
 
 # An enabled unit: the catalogue entries it holds, the typed widgets the
 # generator writes.
@@ -27,20 +30,353 @@ slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", 
          "token.params.shadow", "token.params.shape", "token.params.motion",
          "token.params.layout"]
 
-# Paths an enabled unit's prefixes hold that it stages to a later unit, each
-# lying in no unit until that unit is enabled: the scroll behaviour to the
-# `scroll_view` unit (spec ADD-A120).
+# Paths an enabled unit's entries or prefixes hold that it stages to a later
+# unit, each lying in no unit until that unit is enabled (a `*` segment stands
+# for any one segment): the scroll behaviour to the `scroll_view` unit (spec
+# ADD-A120); and every token path, keyed entry and leaf of a shared block the
+# token rule stages (S6.1, ADD-A147; the D6 staging design, 1.5): a path no
+# *today's fields* row names, no value at depth reads, the core does not read,
+# no connector reads to draw a value at depth and no built system reader
+# states, each to its parking unit or its unit of depth below, which it waits
+# in until the first unit whose value reads it.
 [staged.slice]
 "token.behavior.scroll" = "scroll_view"
+"token.behavior.double_click_time" = "behaviour"
+"token.behavior.double_click_distance" = "behaviour"
+"token.behavior.double_click_height" = "behaviour"
+"token.behavior.drag_threshold" = "behaviour"
+"token.behavior.drag_time" = "behaviour"
+"token.behavior.drag_min_delay" = "behaviour"
+"token.behavior.hover_time" = "behaviour"
+"token.behavior.key_repeat" = "behaviour"
+"token.behavior.hide_pointer_while_typing" = "behaviour"
+"token.behavior.hide_pointer_delay" = "behaviour"
+"token.behavior.hide_pointer_fade" = "behaviour"
+"token.behavior.long_press" = "behaviour"
+"token.behavior.spring_loading" = "behaviour"
+"token.behavior.single_click_activates" = "behaviour"
+"token.behavior.touch" = "behaviour"
+"token.caret" = "fields"
+"token.params.caret" = "fields"
+"token.text.fallbacks" = "text_rendering"
+"token.text.rendering" = "text_rendering"
+"token.text.roles.body_emphasized" = "text_styles"
+"token.text.roles.callout" = "text_styles"
+"token.text.roles.caption2" = "text_styles"
+"token.text.roles.caption_emphasized" = "text_styles"
+"token.text.roles.display_medium" = "text_styles"
+"token.text.roles.footnote" = "text_styles"
+"token.text.roles.label" = "text_styles"
+"token.text.roles.numeric" = "text_styles"
+"token.text.roles.subheadline" = "text_styles"
+"token.icons.mirroring" = "right_to_left"
+"token.icons.animated_visuals" = "motion"
+"token.motion.durations" = "motion"
+"token.motion.timings" = "motion"
+"token.motion.color_space" = "motion"
+"token.theme_change" = "motion"
+"token.focus.transition" = "motion"
+"token.icons.sizes.*.animation" = "motion"
+"token.icons.sizes.keyed.*.animation" = "motion"
+"button.body.focus.transition" = "motion"
+"button.icon.icon.animation" = "motion"
+"token.text.keyed" = "text_styles"
+"token.icons.sizes.keyed" = "icon_contexts"
+"token.elevation" = "elevation"
+"token.params" = "parameters"
+"role.@*" = "keyed_roles"
 
-# Values an enabled unit defers, per widget, each to the named later unit,
-# whose commit ends the deferral: the button's `Placement` values to S13's
-# placement unit (M3).
+# The entries of a keyed map an enabled unit's `[staged]` path covers that lie
+# in that unit on a preset all the same (an entry of a keyed map is each
+# preset's own, S6.1, ADD-A147; the D6 staging design, 1.5): per preset, the
+# keyed text styles, icon contexts, elevation entries, parameter keys and
+# keyed colour roles a value at depth reads, directly or through another
+# value at depth (the token rule's clause 2), or a built system reader states
+# (clause 5: on `kde-breeze` the styles `toolbar` and `menu`, the context
+# `main_toolbar`, the four `@wm_*` roles and `token.params.color`'s two keys;
+# on `macos-*` the five keyed roles of 2.6; on `windows-11` the eight
+# `@system_*` roles); a key of the same name on another preset waits with
+# its map.
+[kept.slice]
+"adwaita" = ["token.params.opacity.border", "token.params.opacity.dim", "token.params.opacity.disabled",
+             "token.params.opacity.focus_border", "token.text.keyed.body", "token.text.keyed.caption",
+             "token.text.keyed.heading", "token.text.keyed.monospace", "token.text.keyed.title_1",
+             "token.text.keyed.title_2"]
+"ios-13" = ["token.params.opacity.disabled", "token.text.keyed.body", "token.text.keyed.caption_1",
+            "token.text.keyed.headline", "token.text.keyed.title_1"]
+"ios-26" = ["token.params.opacity.disabled", "token.text.keyed.body", "token.text.keyed.caption_1",
+            "token.text.keyed.headline", "token.text.keyed.title_1"]
+"kde-breeze" = ["role.@wm_active_background", "role.@wm_active_foreground", "role.@wm_inactive_background",
+                "role.@wm_inactive_foreground", "token.icons.sizes.keyed.main_toolbar", "token.params.color.contrast",
+                "token.params.color.frame_contrast", "token.text.keyed.default", "token.text.keyed.fixed",
+                "token.text.keyed.heading_1", "token.text.keyed.heading_3", "token.text.keyed.menu",
+                "token.text.keyed.smallest_readable", "token.text.keyed.toolbar"]
+"macos-monterey" = ["role.@selected_control_secondary", "role.@system_blue", "role.@system_green",
+                    "role.@system_orange", "role.@system_red", "token.params.pointer_repeat.delay",
+                    "token.params.pointer_repeat.interval", "token.text.keyed.body", "token.text.keyed.caption_1",
+                    "token.text.keyed.headline", "token.text.keyed.large_title", "token.text.keyed.title_1"]
+"macos-tahoe" = ["role.@selected_control_secondary", "role.@system_blue", "role.@system_green",
+                 "role.@system_orange", "role.@system_red", "token.params.pointer_repeat.delay",
+                 "token.params.pointer_repeat.interval", "token.text.keyed.body", "token.text.keyed.caption_1",
+                 "token.text.keyed.headline", "token.text.keyed.large_title", "token.text.keyed.title_1"]
+"material-3" = ["role.@background", "role.@error", "role.@error_container", "role.@on_background", "role.@on_error",
+                "role.@on_primary", "role.@on_secondary_container", "role.@on_surface", "role.@on_surface_variant",
+                "role.@outline_variant", "role.@primary", "role.@scrim", "role.@secondary",
+                "role.@secondary_container", "role.@shadow", "token.elevation.level0", "token.elevation.level1",
+                "token.params.opacity.disabled", "token.params.opacity.focus", "token.params.opacity.hover",
+                "token.params.opacity.pressed", "token.text.keyed.body_large", "token.text.keyed.body_small",
+                "token.text.keyed.display_small", "token.text.keyed.headline_small", "token.text.keyed.label_large",
+                "token.text.keyed.monospace"]
+"windows-11" = ["role.@accent_fill_default", "role.@accent_fill_disabled", "role.@accent_fill_secondary",
+                "role.@accent_fill_selected_text_background", "role.@accent_fill_tertiary",
+                "role.@accent_text_fill_primary", "role.@control_fill_default", "role.@control_fill_disabled",
+                "role.@control_fill_secondary", "role.@control_fill_tertiary", "role.@control_fill_transparent",
+                "role.@control_stroke_default", "role.@control_stroke_on_accent_default",
+                "role.@control_stroke_on_accent_secondary", "role.@control_stroke_secondary",
+                "role.@focus_stroke_inner", "role.@focus_stroke_outer", "role.@smoke_fill_default",
+                "role.@solid_background_fill_base", "role.@subtle_fill_disabled", "role.@subtle_fill_secondary",
+                "role.@subtle_fill_tertiary", "role.@subtle_fill_transparent", "role.@system_base_high",
+                "role.@system_base_low", "role.@system_base_medium_low", "role.@system_button_face",
+                "role.@system_button_text", "role.@system_chrome_white", "role.@system_control_background_base_low",
+                "role.@system_control_background_base_medium_low", "role.@system_control_background_chrome_white",
+                "role.@system_control_disabled_base_medium_low", "role.@system_control_disabled_transparent",
+                "role.@system_control_foreground_accent", "role.@system_control_foreground_base_high",
+                "role.@system_control_foreground_transparent", "role.@system_control_highlight_accent",
+                "role.@system_control_highlight_alt_accent", "role.@system_control_highlight_alt_base_high",
+                "role.@system_control_highlight_alt_chrome_white", "role.@system_control_highlight_alt_transparent",
+                "role.@system_control_highlight_base_high", "role.@system_control_highlight_base_medium_low",
+                "role.@system_control_highlight_list_low", "role.@system_control_highlight_list_medium",
+                "role.@system_control_highlight_transparent", "role.@system_control_hyperlink_text",
+                "role.@system_control_transparent", "role.@system_fill_attention",
+                "role.@system_fill_attention_background", "role.@system_fill_caution",
+                "role.@system_fill_caution_background", "role.@system_fill_critical",
+                "role.@system_fill_critical_background", "role.@system_fill_neutral",
+                "role.@system_fill_neutral_background", "role.@system_fill_solid_attention_background",
+                "role.@system_fill_solid_neutral_background", "role.@system_fill_success",
+                "role.@system_fill_success_background", "role.@system_gray_text", "role.@system_highlight",
+                "role.@system_highlight_text", "role.@system_hotlight", "role.@system_list_low",
+                "role.@system_list_medium", "role.@system_window", "role.@system_window_text",
+                "role.@text_fill_disabled", "role.@text_fill_inverse", "role.@text_fill_primary",
+                "role.@text_fill_secondary", "role.@text_on_accent_fill_disabled", "role.@text_on_accent_fill_primary",
+                "role.@text_on_accent_fill_secondary", "role.@text_on_accent_fill_selected_text",
+                "token.params.shape.control_corner_radius", "token.text.keyed.body", "token.text.keyed.caption",
+                "token.text.keyed.display", "token.text.keyed.subtitle", "token.text.keyed.title"]
+
+# Values and part fields an enabled unit defers, per widget, each to the named
+# later unit, whose commit ends the deferral (a `<part>.<field>` key is a
+# part's field, any other a widget value): the button's `Placement` values to
+# S13's placement unit (M3); the values only names of later units read (the
+# catalogue's Depth line for `button`); its `presentations` and its parts'
+# `transitions`, the motion unit's (S6.1, ADD-A147; no part of `button` lists
+# `shown`, the motion unit's other part field).
 [deferred.button]
 menu_placement = "placement"
 scaffold_placement = "placement"
+help_tooltip_on_click = "styles"
+menu_indicator_gap = "menus"
+menu_indicator_anchor = "menus"
+menu_trigger = "menus"
+back_title_fallback = "identities"
+back_display_mode = "identities"
+display_mode = "identities"
+presentations = "motion"
+"body.transitions" = "motion"
+"icon.transitions" = "motion"
+"menu_indicator.transitions" = "motion"
 
 # The units written by hand, never generated, each enabled or not: S13's
 # placement (its data types are in; its strategies and `place()` come at M3).
 [hand_written]
 placement = false
+
+# The conditions at depth for the keys of no widget (a colour role, an input,
+# a token) that a later unit below holds for every other key, by key prefix:
+# the catalogue's *today's fields* table (*Colour roles and text ramp*):
+# 0.7.0's `selection_inactive_background`, and the speed factor under
+# 0.7.0's `reduce_motion` (S17, ADD-A147). The scheme, `contrast_high` and the
+# preset's default flavour are at depth for every key: no unit holds them.
+[at_depth]
+"role.selection" = ["window_inactive"]
+"token.motion.speed_factor" = ["animations_off", "reduced_motion"]
+
+# The later units (S6.1, S17, ADD-A147; the D6 staging design, section 3), in
+# the order S17's later unit reads (the order of readiness, 3.4, not a
+# schedule): a fact waiting for a unit not enabled is reported under the first
+# here whose names it needs. `kind = "depth"`: a unit of depth, holding names
+# of entries whose own unit is enabled; `kind = "parking"`: a parking unit,
+# where the token paths [staged.slice] maps to it wait for the first unit that
+# reads them. Each holds, model-wide, the `conditions` and `directions` it
+# lists (`sizes = true`: every size but an element's default in force and
+# every declared density, S10), and, per catalogue entry, the variants and
+# state flags it lists there, on the presets a group's `presets` names (on
+# every preset where it names none). Every name of every state model, every
+# condition a fact names and every staged token path lies in exactly one
+# place: an entry's Depth line, one unit below, or `[at_depth]`
+# (scripts/check_facts.py). `enabled` turns true in the commit whose presets
+# state the unit.
+
+# The flavours unit (3.4, 2): every flavour but a preset's default.
+[[later]]
+name = "flavours"
+kind = "depth"
+enabled = false
+conditions = ["flavor:kirigami", "flavor:expressive"]
+
+# The buttons and toggles unit's content: the content variants beyond depth.
+[[later]]
+name = "content"
+kind = "depth"
+enabled = false
+button = [{ variants = ["icon_only", "@custom_child", "@arrow_only", "@with_arrow", "@image_text_box",
+                        "@tab_overflow"] }]
+
+# Its styles: each platform's styles beyond depth, typed and keyed.
+[[later]]
+name = "styles"
+kind = "depth"
+enabled = false
+button = [{ variants = ["flat", "destructive", "warning", "pill", "circular", "help",
+                        "@raised", "@osd", "@opaque", "@card", "@tab_button",
+                        "@highlighted", "@command_link", "@inline_small", "@inline_large", "@key_sequence", "@float",
+                        "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar",
+                        "@accessory_bar_action", "@badge", "@bordered", "@rounded_rectangle",
+                        "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "@corner_dynamic",
+                        "@cancel", "@role_primary",
+                        "@repeat",
+                        "@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary",
+                        "@surface", "@primary_container", "@secondary_container", "@tertiary_container", "@square",
+                        "@narrow", "@wide", "@branded"] }]
+
+# Its menus: the menu variants.
+[[later]]
+name = "menus"
+kind = "depth"
+enabled = false
+button = [{ variants = ["menu", "@menu_on_hold", "@indicator_popup", "@arrow_up", "@arrow_start", "@arrow_end",
+                        "@arrow_none"] }]
+
+# Its states: the state flags beyond depth, typed and keyed.
+[[later]]
+name = "states"
+kind = "depth"
+enabled = false
+button = [{ states = ["open", "drop_target", "indeterminate", "selected", "dragged", "route_active", "@loading",
+                      "@keyboard_focus_change"] }]
+
+# The sizes unit: every size but an element's default in force, and every
+# declared density (S10).
+[[later]]
+name = "sizes"
+kind = "depth"
+enabled = false
+sizes = true
+
+[[later]]
+name = "window_activity"
+kind = "depth"
+enabled = false
+conditions = ["window_inactive", "not_main", "app_inactive"]
+
+[[later]]
+name = "increased_contrast"
+kind = "depth"
+enabled = false
+conditions = ["contrast_increased"]
+
+[[later]]
+name = "accessibility_text"
+kind = "depth"
+enabled = false
+conditions = ["bold_text", "button_shapes", "tint_dimmed"]
+
+[[later]]
+name = "interface_level"
+kind = "depth"
+enabled = false
+conditions = ["elevated"]
+
+# The identities, with each host: the nested-control variants (the host
+# contexts, positions and directions they are drawn in come with the hosts'
+# units, which S17's rule already waits for).
+[[later]]
+name = "identities"
+kind = "depth"
+enabled = false
+button = [{ variants = ["close", "back", "previous", "next", "overflow", "add", "remove", "done", "clear_field",
+                        "reveal", "pane_toggle", "play", "volume", "full_screen", "frame_step", "maximize",
+                        "minimize", "restore", "route",
+                        "@info", "@contact_add", "@share", "@paste_control", "@ka_download", "@ka_floating",
+                        "@accept", "@dismiss", "@query", "@first", "@last", "@page_number", "@zoom_out"] }]
+
+# The iPad: the idiom axis, and on `ios-*` the states UIKit draws on the iPad
+# alone (register rows U112, U113) and the pointer variants.
+[[later]]
+name = "ipad"
+kind = "depth"
+enabled = false
+conditions = ["idiom:pad", "idiom:phone"]
+button = [{ presets = ["ios-13", "ios-26"], states = ["hover", "focus_visible"] },
+          { variants = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }]
+
+# Motion (section 5): the transitions under these conditions, and the paths
+# [staged.slice] and [deferred.button] map to it.
+[[later]]
+name = "motion"
+kind = "depth"
+enabled = false
+conditions = ["animations_off", "reduced_motion"]
+
+[[later]]
+name = "glass"
+kind = "depth"
+enabled = false
+button = [{ variants = ["glass", "clear"] }]
+
+[[later]]
+name = "behaviour"
+kind = "parking"
+enabled = false
+conditions = ["input:touch", "system_setting:single_click"]
+
+[[later]]
+name = "text_rendering"
+kind = "parking"
+enabled = false
+conditions = ["unit_scale"]
+
+[[later]]
+name = "text_styles"
+kind = "parking"
+enabled = false
+
+[[later]]
+name = "icon_contexts"
+kind = "parking"
+enabled = false
+
+[[later]]
+name = "elevation"
+kind = "parking"
+enabled = false
+
+[[later]]
+name = "parameters"
+kind = "parking"
+enabled = false
+
+[[later]]
+name = "keyed_roles"
+kind = "parking"
+enabled = false
+
+[[later]]
+name = "pointer"
+kind = "parking"
+enabled = false
+
+# Right-to-left: a unit of depth that also takes a staged path.
+[[later]]
+name = "right_to_left"
+kind = "depth"
+enabled = false
+directions = ["rtl"]
