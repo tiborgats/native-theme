@@ -285,6 +285,8 @@ ref      := "role." set "." path        typed colour role of a surface set, a pa
                                           caret_height (a caret part's own caret, S4.2),
                                           and char_width (the average), max_char_width (the
                                           widest glyph), font_x_height, font_height,
+                                          font_descent (positive below the baseline;
+                                          ADD-A147),
                                           font_underline_offset,
                                           font_underline_thickness,
                                           font_strikeout_offset,
@@ -293,6 +295,7 @@ ref      := "role." set "." path        typed colour role of a surface set, a pa
                                           text measures another part's font as
                                           `widget.<part>.char_width`, `.max_char_width`,
                                           `.font_x_height`, `.font_height`,
+                                          `.font_descent`,
                                           `.font_underline_offset`, … , `.font_size`,
                                           `.line_height`)                              (R25.3)
           | "body_font_height"            the `body` slot's font's height (ascent plus descent,
@@ -461,7 +464,8 @@ refuses nothing that check would pass, and the check refuses what the merge cann
 | `kde_shade(c, role: KdeShadeRole, contrast)` | colour | `KColorScheme::shade(color, role, contrast)` with no chroma adjustment, to `kcolorscheme@6.31.0 src/kcolorscheme.cpp:566-616`. `contrast` is kdeglobals' `[KDE] contrast` as the file stores it (an integer step, `breeze@6.8.2 colors/BreezeLight.colors:199`); the function first scales it by 0.1, as `KColorScheme::contrastF` does (`kcolorscheme.cpp:519-527`, `:526`), then clamps the result to `-1..=1`, as `shade` does (`:569`); then by the colour's luma it takes one of three branches (a very dark colour, `:574`, a very light one, `:588`, the rest, `:601`), each a `KColorUtils::shade` by an amount of the luma and the contrast, and in the third branch alone `ShadowShade` is darkened after that shade (`KColorUtils::darken`, `:614`); `KdeShadeRole = Light \| Midlight \| Mid \| Dark \| Shadow` (KColorScheme's `LightShade` … `ShadowShade`, `kcolorscheme.h:250-254`); the `role.@shade_*` roles are `= kde_shade(role.window.background, <role>, token.params.color.contrast)`, as `createApplicationPalette` computes Qt's `Light` … `Shadow` from the Window set (`:683-687`) (ADD-A121) |
 | `adw_standalone(c, scheme)` | colour | libadwaita's standalone colour as its stylesheet has GTK compute it (ADD-A128): CSS's relative colour of `c` in OKLab, its lightness L limited to at most 0.5 in the light scheme and at least 0.85 in the dark one (`libadwaita@1.10.0 src/stylesheet/_colors.scss:146`, `:151`, `:166-170`; `.osd` and toasts take the dark limit in either scheme, `_common.scss:48-54`, `widgets/_misc.scss:44-50`), as `gtk@4.24.1` computes it with the origin a named colour, as the eight roles' origins are (each background variable, `--accent-bg-color` among them, holds the named colour of that background, `_colors.scss:166-194`; `.osd`'s accent background alone is a literal, `_common.scss:45`, whose standalone colour no role derives): `c` into OKLab (`gtk/gtkcsscolorvalue.c:2207-2237`, `gtk/gtkcsscolor.c:641-665`, `gtk/gtkcolorutils.c:348-355`, `:383-398`), L limited by CSS's `min` or `max` and stored as a single, a, b and the alpha kept (the alpha clamped to `0..=1`, which leaves it unchanged; L not clamped, `gtkcsscolorvalue.c:636-677`), and at once back to sRGB (`:907-931`, `gtkcsscolor.c:641-665`, `gtkcolorutils.c:339-346`, `:357-372`, `:418-425`): the colour GTK's style holds, which every later CSS function and `gtk_widget_get_color` read; each step in GTK's precision (channels and OKLab coordinates as singles, the sRGB curve evaluated in double, a channel below the curve's threshold, a negative one included, on its linear piece) and **unclamped**, a channel outside `0..=1` kept (S2.1, below). Not libadwaita's `adw_rgba_to_standalone` (`src/adw-accent-color.c:130-157`), an application API the stylesheet does not call, which clamps each channel (`:153-155`) |
 | `m3_role(role)` | colour | material-color-utilities' dynamic scheme, the role of that scheme; it reads `input.accent` (the seed), `token.material.{variant, spec_version, contrast_level}` and the colours' scheme itself, listed as its operands; stated by `material-3`'s accent-derivation layer where a layer above the preset gives the accent, the preset stating Compose's baseline scheme (S9.1, S9.2; ADD-A134) |
-| `mul(x, y)`, `div(x, y)`, `add(x, y)`, `sub(x, y)`, `min(x, y)`, `max(x, y)`, `floor(x)`, `round(x)` | number, length, duration or font size | arithmetic (a token times the speed factor; a font size times a factor) (ADD-A56). `floor` rounds toward negative infinity; `round` to the nearest integer, a half away from zero, as Qt's `qRound` does (`qtbase@6.12.0 src/corelib/global/qnumeric.h:535-550`, `:570-573`) and Rust's `f32::round` (ADD-A122). Both work in their operand's unit as it reaches the function: a length in px, a duration in ms, a font size in px, as every font size reaches a function (below), whichever unit states it, so the preset's `10pt` and the reader's same size in px round alike; a size rounded in whole points is `round_pt`'s (ADD-A131). A source's integer arithmetic is written with them: a non-negative real converted to an integer, as `QVariantAnimation::setDuration(int)` takes one, is `floor` (K1.17); `qRound` is `round`; a non-negative integer divided by a positive integer in C++ is `floor(div(…))` (Q3.24); a fallback `k` for a non-negative integer `n` that is zero, `n > 0 ? n : k`, is `add(n, mul(k, sub(1, min(n, 1))))`, its `1`s the form's own constants (S17's quote check; S4.2's blink timeout; ADD-A134) |
+| `mul(x, y)`, `div(x, y)`, `add(x, y)`, `sub(x, y)`, `min(x, y)`, `max(x, y)`, `floor(x)`, `ceil(x)`, `round(x)` | number, length, duration or font size | arithmetic (a token times the speed factor; a font size times a factor) (ADD-A56). `floor` rounds toward negative infinity; `ceil` rounds toward positive infinity, as C++'s `std::ceil` (QPainter's underline offset, `qtbase@6.12.0 src/gui/painting/qpainter.cpp:6128`, U180; ADD-A147); `round` to the nearest integer, a half away from zero, as Qt's `qRound` does (`qtbase@6.12.0 src/corelib/global/qnumeric.h:535-550`, `:570-573`) and Rust's `f32::round` (ADD-A122). All three work in their operand's unit as it reaches the function: a length in px, a duration in ms, a font size in px, as every font size reaches a function (below), whichever unit states it, so the preset's `10pt` and the reader's same size in px round alike; a size rounded in whole points is `round_pt`'s (ADD-A131). A source's integer arithmetic is written with them: a non-negative real converted to an integer, as `QVariantAnimation::setDuration(int)` takes one, is `floor` (K1.17); `qRound` is `round`; a non-negative integer divided by a positive integer in C++ is `floor(div(…))` (Q3.24) |
+| `if_le(a, b, x, y)` | number, length, duration or font size | `x` where `a ≤ b`, else `y`: a C++ `a <= b ? x : y`, as QPainter tests its underline's offset against the descent (`qtbase@6.12.0 src/gui/painting/qpainter.cpp:6129`) and WinUI its blink count against zero (`microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/native/text/Controls/TextBoxView.cpp:2756`); `a` equal to `b` selects `x`. `a` and `b` are compared, and `x` and `y` returned, in their units as they reach the function, as `floor` takes them; the result is `x` or `y` unchanged. The other orders are written with it by exchange: `a < b ? x : y` is `if_le(b, a, y, x)`, `a >= b` is `if_le(b, a, x, y)`, `a > b` is `if_le(a, b, y, x)`. Both `x` and `y` are operands: S12 checks them as every function's, and their element data are the expression's (S10), whichever is selected. A C++ fallback `n <= 0 ? k : n` is `if_le(n, 0, k, n)` (S4.2's blink timeout). `a` and `b` are of one type, a number, length, duration or font size, typed apart from the type the place expects; `x` and `y` are of one such type, typed as the place expects; a font size and a length in either pair are taken as px. `if_le` states a comparison the platform's code makes between two values the model holds, and the fact's citations quote it; where the platform's value changes with a state, a setting or a condition the model names (S7.1, S7.2), the value is a rule under that condition, not an `if_le` on the token that condition sets (R9's speed factor among them) (ADD-A147) |
 | `round_pt(x)` | font size | `x` rounded to whole points, as Qt's `QFont::pointSize()` rounds the application font's point size (`qtbase@6.12.0 src/gui/text/qfont.cpp:899-902`, `qRound`), which KTitleWidget multiplies by its level's factor (`kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`): stated only in an expression on a `Font.size`, `x` a reference to a font size (S12), which reaches it converted and not yet scaled (below), as the application font's point size is unscaled: `x` in px, converted to points by S9.4's DPI (`ReaderState.font_dpi` where the reader reports one, else `token.text.font_dpi`, which it reads itself, listed as its operand), computed in f64, rounded as `round`, a value within a relative 2^-21 (about 4.8e-7) of a half point taken as that half, and converted back by the same DPI, `round(x · 72 / dpi) · dpi / 72`: 2^-21 lies above the error S9.4's conversion leaves in a single-precision `Px` (S1; the point size, its product by the DPI and its quotient by 72, three roundings of at most 2^-24 each) and below 1e-6, which every size `QFont::toString` writes (six significant digits, `qtbase@6.12.0 src/gui/text/qfont.cpp:2165`, as KConfig stores the font, `kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:169`) lies farther than from a half point other than itself, so it gives what `qRound` gives on the stored point size (its unit tests: 10.5 pt at 97 dpi gives 11 pt, 10.4999 pt at 96 dpi 10 pt). A reader's size applied under another preset (S9.5) rounds by S9.4's DPI in force under that preset (the reader's where it reports one, else that preset's token), the points that preset's platform reads the size as, not the DPI its source converted it by, so the reader's size in px and the preset's in points give the same whole points (ADD-A131). The model's own arithmetic, not a platform function: `kde-breeze`'s KTitleWidget levels state `= mul(round_pt(token.text.roles.body.font.size), <factor>)`. Rejected: rounding in the unit a font size is stated in (it rounds the reader's px where the preset rounds points, and is written `mul(mul(1pt, round(div(<size>, 1pt))), <factor>)` to escape that, whose `1pt` the quote check matches only through the source's `%1pt` placeholder); an S17 quote-check exemption for unit literals (a `1pt` or `1px` operand can be a platform value, and which role a literal plays is no notation the checker reads) |
 | `qt_lighter(c, factor)`, `qt_darker(c, factor)` | colour | `QColor::lighter`, `QColor::darker` in HSV, to qtbase `qcolor.cpp` (ADD-A50); `factor` is QColor's integer percent (`150` lightens by half), so a stated factor is a whole number; QML's `Qt.lighter`/`Qt.darker` take a real factor, which QML rounds to percent (`qRound(factor * 100)`, `qquickvaluetypes.cpp:52`), stated here as that integer |
 | `kcu_overlay(under, over)` | colour | `KColorUtils::overlayColors`, to `kcolorutils.cpp` (ADD-A51) |
@@ -543,10 +547,10 @@ set the function's parameter names (`design: TrackingDesign`, `group: KdeGroup`,
 `kde_shade`'s `role: KdeShadeRole`, `uikit_prominence`'s `prominence: UiProminence`, `shadow_extent`'s `side: BoxSide`,
 `kde_accent_wm`'s `key: KdeWmKey`;
 `m3_role`'s `role` is a declared keyed colour role, `uifm_scaled`'s `text_role` a `TextRoles` slot or a declared text
-style); in `add`, `sub`, `min` and `max`, and only there, a bare number takes the type of
-the other operand (*Typing*; in `mul` and `div` a number operand stays a number, so `div(4px, 2)` is a length; ADD-A146); `mul(T, number)`, `div(T, number)`, `div(T, T)` (a number), `add(T, T)`, `sub(T, T)`, `min(T, T)`, `max(T, T)`, `floor(T)` and `round(T)` give a `T`, and `round_pt` takes and gives a font size;
-where one operand of `add`, `sub`, `min` or `max` is a font size and the other a length, the length is taken as px
-and the result is a font size (S2.2's operand types, as M1a task 2 implemented it, ADD-A121);
+style); in `add`, `sub`, `min`, `max` and each of `if_le`'s two pairs (`a` with `b`, `x` with `y`), and only there, a bare number takes the type of
+the other operand (*Typing*; in `mul` and `div` a number operand stays a number, so `div(4px, 2)` is a length; ADD-A146); `mul(T, number)`, `div(T, number)`, `div(T, T)` (a number), `add(T, T)`, `sub(T, T)`, `min(T, T)`, `max(T, T)`, `floor(T)`, `ceil(T)` and `round(T)` give a `T`, `if_le(T, T, U, U)` a `U`, and `round_pt` takes and gives a font size;
+where one operand of `add`, `sub`, `min` or `max`, or of either of `if_le`'s pairs, is a font size and the other a length, the length is taken as px
+and the result is a font size (S2.2's operand types, as M1a task 2 implemented it, ADD-A121): in `if_le` the result of `(x, y)`, its `(a, b)` giving no result, so that there the rule says only how the two are compared (ADD-A147);
 a mismatch is an error when the layer is added (S12). A function that reads inputs or reader values itself
 (`kde_accent` reads `input.accent`, `input.kde_scheme.<set>.<key>`, `.<set>.inactive.<key>`, `.<set>.background_normal`,
 `.window.<key>`, `.window.background_normal`, `.view.background_normal`, `.groups`, `.inactive_groups` and
@@ -561,7 +565,7 @@ category, S8, S9.4; `round_pt` `token.text.font_dpi` and the reader's `font_dpi`
 pixels, converted and scaled (S9.4), except in an expression stated on a `Font.size` (a part's `text.font.size`, a
 text style token's), where every font-size operand (another style's or slot's `font.size`, `widget.<part>.font_size`)
 is converted and not yet scaled, and the result is scaled once (S9.4); a `FontSize` widget value, not text-scaled
-(S1), reads its font-size operands converted only. `floor` and `round` take a font size so, in px; `round_pt` rounds it in points (the table above; ADD-A131).
+(S1), reads its font-size operands converted only. `floor`, `ceil` and `round` take a font size so, in px, and `if_le` compares one so (ADD-A147); `round_pt` rounds it in points (the table above; ADD-A131).
 
 **Totality** (the query cannot fail, R2.8): `alpha` clamps the resulting alpha to `0..=1`, as CSS Color 5's relative
 colours do (a factor above one is valid: libadwaita multiplies a shade's alpha by more, GN-1.210); `with_alpha` clamps `a` to `0..=1`, as
@@ -572,7 +576,9 @@ negative where the field cannot be negative is zero; a computed `Material.satura
 spring `time_scale` below zero is zero; a number that becomes an integer (a `Value<u16>` weight, a `Value<u32>`
 count) is floored and clamped to the integer type's range, a negative one to zero; a loop whose period evaluates to
 zero does not run (the part shows its style without the loop's keyframes: R9's animations off sets the speed factor,
-and so a scaled period, to zero); a non-finite result, or non-finite element data, is zero. A platform function
+and so a scaled period, to zero); `if_le` compares two finite values, every operand being finite (a non-finite
+result, or non-finite element data, is zero, below), so it always selects (ADD-A147); a non-finite result, or
+non-finite element data, is zero. A platform function
 follows its source's own clamping first. No function clamps a colour's channels unless its source does, `Color`
 holding them outside `0..=1` (S2.1): `alpha` and `mix` keep them, as GTK's `alpha()` and `color-mix()` do
 (`gtk@4.24.1 gtk/gtkcsscolorvalue.c:556-564`, `gtk/gtkcsscolor.c:919-970`). An expression naming `element.<data>` is re-evaluated by each
@@ -584,7 +590,7 @@ pinned upstream source compiled unchanged in a CI tool that calls the internal f
 Where the reference is closed, measured inputs and outputs, each with its evidence (S17), are the table; where a
 platform publishes a table (Apple's tracking), that table is the vector table, its rows carrying S17's citations.
 S9.4's scaling curves (`AndroidNonLinear`, `DynamicType`, `WinUi`) are checked the same way. The model's own arithmetic
-(`alpha`, `with_alpha`, `mix`, `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `round`, `round_pt`, `pick`) is not a platform function: its unit tests
+(`alpha`, `with_alpha`, `mix`, `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `ceil`, `round`, `round_pt`, `if_le`, `pick`; ADD-A147) is not a platform function: its unit tests
 follow this section's definitions; every other function of the table above is one. A vector table, under `native-theme/tests/vectors/`,
 holds rows of inputs and outputs. Each row is traceable to the reference as a fact is (S17): generated by it (the
 generator a CI tool at a pinned source), published by it (citations whose quotes hold the row's literals), or
@@ -2382,11 +2388,11 @@ text control that parses it draws the line, GTK's label through Pango's markup p
 `libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62`, with `absent = ["text-decoration", "text-decoration-line"]`;
 `material-3`'s `TypographyTokens` entry, with `absent = []`), and a token reads no element data (S2.2) in any case. The
 part whose text takes a mnemonic states it: per leaf where the platform draws one (`adwaita`'s above; `kde-breeze`'s
-`button.label`, QPainter's underline in the text's pen, its offset and thickness register U180's), and where it draws
+`button.label`, QPainter's underline in the text's pen, its offset and thickness by QPainter's rule, below, ADD-A147), and where it draws
 none `"absent"` (`macos-*`'s `button.label`) or, where the part's text follows a style, that style's leaf by reference, as
 every leaf that follows it (`material-3`'s `button.label.text.mnemonic_decoration = "= token.text.keyed.label_large.mnemonic_decoration"`,
 S17). A platform that underlines its mnemonic from the font's own position states a plain `Underline` (below);
-Qt's drawn offset is register U180's (below). Rejected: an
+Qt's drawn offset is QPainter's, stated by S2.2's arithmetic, or Qt Quick's, register U180's (below; ADD-A147). Rejected: an
 `origin` field on every decoration (a field every decoration of every lane would state, and one that could put an
 ink-bottom origin on an overline or a strike line, which no platform draws); an element datum for the ink's bottom
 (one per query, where the mnemonic's run is one character and a spelling underline's another word); a fixed offset
@@ -2410,9 +2416,16 @@ the line's position to the nearest pixel and keeps the thickness unrounded, take
 underlined runs, places the strike line's top a third of the ascent above the baseline (`qtdeclarative@6.12.0
 src/quick/items/qquicktextnodeengine.cpp:208-218`, `:411-427`), and caps a wavy line's stroke at 0.8 of the larger
 of one and its thickness (`src/quick/scenegraph/qsgrhiinternaltextnode.cpp:78-100`, `:137-143`). Neither is
-`QFontMetrics`' `underlinePos` or `strikeOutPos`, and the model's operands do not give them (no ceiling, no ascent or
-descent alone), so `kde-breeze`'s decorations are register U180's until the value phase states each path's
-form. The split is by drawing path, not flavour: a part QStyle draws takes QPainter's form (every Qt Widgets part,
+`QFontMetrics`' `underlinePos` or `strikeOutPos`. With the descent, `element.font_descent` (S8; the ascent is
+`sub(element.font_height, element.font_descent)`), S2.2's arithmetic states QPainter's underline: its thickness
+`max(round(element.font_underline_thickness), 1px)` without antialiasing and `element.font_underline_thickness` with
+it for a font whose underline thickness is positive (QPen ignores a negative width and draws a zero one as a 1 px
+cosmetic pen, `qtbase@6.12.0 src/gui/painting/qpen.cpp:488-490`, `:658-663`), its offset
+`if_le(element.font_underline_offset, element.font_descent, min(ceil(element.font_underline_offset),
+sub(element.font_descent, <the thickness>)), ceil(element.font_underline_offset))` (`qtbase@6.12.0
+src/gui/painting/qpainter.cpp:6121-6130`; ADD-A147). QPainter's wavy and strike lines and Qt Quick's lines are
+register U180's until the value phase states each one's form: Qt Quick rounds the line's position in the item
+(`qtdeclarative@6.12.0 src/quick/items/qquicktextnodeengine.cpp:213`, `:276`), which no font metric gives. The split is by drawing path, not flavour: a part QStyle draws takes QPainter's form (every Qt Widgets part,
 and under `cond flavor:kirigami` every Kirigami control whose label qqc2's style item draws through QStyle, for example the button's
 (`CE_PushButton`), the tool button's (`CC_ToolButton`), the delay button's (`CE_ToolButtonLabel`), the tab's
 (`CE_TabBarTab`), the header view's (`CE_Header`) and the combo box's (`CC_ComboBox`, `CE_ComboBoxLabel`),
@@ -3445,19 +3458,19 @@ for one, so the period is `blink_on` plus `blink_off`, and stops
 after as many whole periods as fit in `TextSelectionSettings`' blink timeout (`src/dxaml/xcp/core/text/common/TextSelectionSettings.cpp:39`),
 or after a fixed fallback count of periods where none fits (`src/dxaml/xcp/core/native/text/Controls/TextBoxView.cpp:2742-2763`): a C++
 integer count of a non-negative quotient, with a fallback where it is zero. S2.2's arithmetic writes both, the count
-as `floor(div(…))` and the fallback with `min`, as a source's integer arithmetic is written (S2.2): with `p` the
+as `floor(div(…))` and the fallback with `if_le`, as a source's integer arithmetic is written (S2.2): with `p` the
 period, `add(token.caret.blink_on, token.caret.blink_off)`, and `n` the count, `floor(div(<the timeout>, p))`,
-`windows-11`'s `blink_timeout` is `= mul(p, add(n, mul(<the fallback count>, sub(1, min(n, 1)))))`, each of `p` and
-`n` written out where it stands, as the grammar has no names for subexpressions: `sub(1, min(n, 1))` is 1 where `n`
-is 0 and 0 where it is a positive integer, so the factor is `n` where a period fits and the fallback count where
-none does, whatever the count. WinUI's `nPeriods = -1` (`TextBoxView.cpp:2745`) is a sentinel, the timeout off where
-the timeout or the period is not positive, which its `nPeriods <= 0` test folds into the fallback (`:2756-2760`), as
-the form's zero `n` does; its `1`s are the form's constants, not WinUI's literals (S17's quote check). On a caret that does not blink (`blink_off` zero, the catalogue's *token.caret*) the timeout stops
+`windows-11`'s `blink_timeout` is `= mul(p, if_le(n, 0, <the fallback count>, n))`, `p` and `n` written out where
+they stand, as the grammar has no names for subexpressions: WinUI's `nPeriods <= 0` (`:2756`) is `if_le(n, 0, …)`
+(ADD-A147). WinUI's `nPeriods = -1` (`TextBoxView.cpp:2745`) is a sentinel, the timeout off where
+the timeout or the period is not positive, which its `nPeriods <= 0` test folds into the fallback (`:2756-2760`), the
+test the fact states. On a caret that does not blink (`blink_off` zero, the catalogue's *token.caret*) the timeout stops
 nothing; a period of zero makes `div` non-finite, so `n` is 0 (S2.2's totality) and the timeout 0. Rejected: a platform function (S2.2's closed set: a function, a
 vector table, a generator or published rows and a test, for a rule the existing operators state exactly, and it
-would hide the timeout and the fallback, two values the facts can cite, inside code); a conditional expression (a
-general grammar construct, a comparison operator and S12's conservative checks over both branches, for one use,
-where a conditional count's fallback is arithmetic); the timeout as a reader value (the reader would compute
+would hide the timeout and the fallback, two values the facts can cite, inside code); a conditional as a grammar
+construct (a boolean type, comparison operators and branches in the grammar), where S2.2's `if_le` is a function
+call with one comparison, which U180 uses too; the zero-fallback arithmetic `add(n, mul(k, sub(1, min(n, 1))))`,
+whose `1`s no WinUI line holds, which S17 would have to exempt (ADD-A147); the timeout as a reader value (the reader would compute
 WinUI's rule in its code, where the preset's expression shows it and the gate checks it).
 
 Widget-specific timings (tooltip delays, submenu delay and sloppy close, scroll-bar auto-hide and trough click,
@@ -4499,6 +4512,8 @@ pub trait FontMetrics { fn char_width(&self, font: &ResolvedFont) -> Px;      //
                         fn max_char_width(&self, font: &ResolvedFont) -> Px;  // the widest glyph (KCharSelect)
                         fn x_height(&self, font: &ResolvedFont) -> Px;
                         fn height(&self, font: &ResolvedFont) -> Px;          // ascent plus descent
+                        fn descent(&self, font: &ResolvedFont) -> Px;         // the font's descent, positive
+                                                                              // below the baseline (ADD-A147)
                         fn line_spacing(&self, font: &ResolvedFont) -> Px;    // plus leading
                         fn underline_offset(&self, font: &ResolvedFont) -> Px;      // the font's own decoration
                         fn underline_thickness(&self, font: &ResolvedFont) -> Px;   // lines, in `Decoration`'s
@@ -5600,8 +5615,8 @@ A `data` list (per part, and `values` for the widget's or the component's values
 `Element.metrics` (S8), one entry per operand: an `element.` operand by its name (`width`, `progress`, `char_width`,
 `font_underline_offset`, …); `line_spacing`, the own font's line spacing that the `line_height` operand reads under
 `auto` (S2.2); `body_font_height`; and another part's font metric as `widget.<part>.<metric>` (`char_width`,
-`max_char_width`, `font_x_height`, `font_height`, `font_underline_offset`, `font_underline_thickness`,
-`font_strikeout_offset`, `font_strikeout_thickness`, `font_size`, `line_height`). The root's inputs
+`max_char_width`, `font_x_height`, `font_height`, `font_descent` (ADD-A147), `font_underline_offset`,
+`font_underline_thickness`, `font_strikeout_offset`, `font_strikeout_thickness`, `font_size`, `line_height`). The root's inputs
 (`element.window_width`, `window_height`, `screen_width`, `screen_height`) need none (S8). The declarations are the
 preset's, as every `[declare]` is: an application layer's or a palette's expressions may read the element data a
 part's declaration names, and no other (S12), so `data_needs` is the same for every stack over that preset.
@@ -6962,9 +6977,7 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   part (Pango's `'Adwaita Sans 11'`, read as Pango's font-description parser does), an unquoted INI value
   (`Theme=breeze`), from the checker's closed text notations — whitespace-normalised and
   case-sensitive; references and names are left to the verifier, a `Timing::Platform` curve's name among them, S2.7;
-  and the constants of S2.2's named integer forms, the `1`s of the zero-fallback form `add(n, mul(k, sub(1, min(n,
-  1))))`, which are the form's, not the platform's, the checker recognising the form by its shape and checking `k`
-  and `n`'s operands as any literal, ADD-A134) equals a literal of the union of those citations' quotes, as written or after a citation's
+  no literal is exempt as a form's constant, S2.2's arithmetic stating a fallback with `if_le`, ADD-A147) equals a literal of the union of those citations' quotes, as written or after a citation's
   `conversion`, which the checker applies to its quote's literals; a generation with only `measured` citations is
   held by the evidence check alone. A quote's literals are read by its source file's notation, from closed lists
   that `scripts/check_fact_citations.py` holds, documents in its docstring and tests in its self-test: the number
