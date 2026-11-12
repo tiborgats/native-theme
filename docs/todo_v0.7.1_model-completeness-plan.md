@@ -1277,8 +1277,9 @@ differs is reported).
    (*M3*'s gate per unit; ADD-A148). `check_facts.py` checks that every name of every state model, every condition a
    fact names and every token path a fact names lies in exactly one place: an entry's Depth line, one unit of depth,
    one parking unit or one widget unit not yet enabled (ADD-A148).
-3. `scripts/generate_widgets.py`: reads the Depth lines (`--check`: each line's catalogue part against the *Today's
-   fields* selectors that name a target in the entry; no deferral to an enabled unit) and writes `Variant`'s
+3. `scripts/generate_widgets.py`: reads the Depth lines (`--check`: each line's variants and state flags against the *Today's fields* selectors that
+   name a target in the entry, its host contexts, positions and conditions being queue #290's task; no deferral to
+   an enabled unit) and writes `Variant`'s
    members, each widget's `variants` and `content_variants` from the enabled entries' Depth lines and the enabled
    units of depth, the enabled flags of the sizes and flavours units, and the values structs less the deferred
    values (`native-theme/src/widgets/gen_index.rs`, `gen_button.rs`); the tests and gate fixtures that name a
@@ -1366,8 +1367,8 @@ gate:
   format*; ledger queue #290), before M3a's first unit's step 0: the check holds each Depth line's host contexts,
   positions and conditions, beside its variants and state flags, against the *Today's fields* selectors, skipping a
   context whose host's unit is not enabled, a name the comparison brings to depth read from the selector it enters
-  on (M3's step 3). *Done:* its self-test both ways (a context of a host whose unit is not enabled skipped; a context,
-  position or condition that no selector names failing); `--check` green on the catalogue.
+  on (M3's step 3). *Done:* its self-test both ways (a context of a host whose unit is not enabled skipped; a context, position or condition that a selector names for a target in the entry and the Depth line does not
+  list failing); `--check` green on the catalogue.
 - **The later-unit attribution over the drawn sets** (S17; ledger queue #289), before M4, in
   `check_facts_trace.py` and the gate's `depth.rs`. *Done:* each of the 309 facts under a unit, or unplaced with its
   reason; the cross-check of the gate's units against `check_facts_trace.py` at 0 differences on the eight presets.
