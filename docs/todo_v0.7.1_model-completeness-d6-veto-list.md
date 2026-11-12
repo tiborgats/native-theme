@@ -55,7 +55,11 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   of the gate's platform comparison, never absent and never recorded as the platform's fact. It changes R25.17,
   which made the status colours absent on `macos-*`. What it brings:
   - on `macos-*` and `ios-*` the status roles refer to the platform's keyed system colours, as 0.7.0 drew them
-    (closes *register row* U456; a register row is one line of the ledger's list of what is not measured yet);
+    (closes *register row* U456; a register row is one line of the ledger's list of what is not measured yet).
+    No pinned Apple source yet uses systemRed, systemOrange, systemGreen or systemBlue for error, warning, success
+    or info, so each pairing waits on a source read (rows U757–U760); where a read finds none, that status stays
+    absent on `macos-*` and `ios-*` by item 56's third condition, losing 0.7.0's status colour there, so this
+    outcome depends on those rows;
   - the status text colours (`foreground`, the text on the status fill) refer to the colour the platform draws a
     filled button's title in, as `accent_foreground` there: on `macos-*` to the colour AppKit draws a filled
     button's title in (`= role.global.accent_foreground`, AppKit's `alternateSelectedControlTextColor`; 0.7.0 drew

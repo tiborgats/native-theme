@@ -3197,10 +3197,12 @@ those meanings), the role stays absent,
 and the contract table of a connector that holds it in such a field records the toolkit's own colour there as an
 exception, as for a widget a preset declares unavailable (S21.3; ADD-A147; D6, decided by logic, awaiting the
 maintainer's veto: veto list item 56). On `macos-*` and `ios-*` the status records' `fill` and `standalone` refer to
-the keyed system colours as 0.7.0 drew them, and their `foreground`, the text on the status fill, to the colour the
-platform draws a filled button's title in, as `accent_foreground` there: on `macos-*` `=
-role.global.accent_foreground` (AppKit's `alternateSelectedControlTextColor`, measured), on `ios-*` U651's measured
-colour (the register's U651, U755). On `adwaita` the `info` record refers to the accent, the colour libadwaita's
+the keyed system colours as 0.7.0 drew them, each pending a source read of Apple documentation that uses that colour
+for that meaning (the register's U757–U760; where none exists, the role stays absent by the third condition), and
+their `foreground`, the text on the status fill, to the colour the platform draws a filled button's title in, as
+`accent_foreground` there: on `macos-*` `= role.global.accent_foreground` (AppKit's
+`alternateSelectedControlTextColor`, measured; the pairing measured over a status fill by the register's U756), on
+`ios-*` U651's measured colour (the register's U651, U755). On `adwaita` the `info` record refers to the accent, the colour libadwaita's
 info bar draws info in, as libadwaita maps a status to an accent triple (`libadwaita@1.10.0
 src/stylesheet/widgets/_labels.scss:21-29`): `fill` `= role.global.accent`, `foreground` `=
 role.global.accent_foreground`, `standalone` `= role.global.accent_standalone`. The catalogue's *global roles*,
