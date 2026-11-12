@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 86f01bcab85b30689dc6b5a5cd2dee5493518e8d6145bf9f58d518e97a9865f4
+# generated lines: sha256 51ce66fcbb3ce63e9445309392bfb37934086bd63173fe7850dd2d602c048260
 
 [preset]
 id = "windows-11"
@@ -101,6 +101,7 @@ text_styles = [
     "body",  # docs/facts/windows/tokens.toml:792
     "subtitle",  # docs/facts/windows/tokens.toml:1546
     "title",  # docs/facts/windows/tokens.toml:1737
+    "title_large",  # docs/facts/windows/tokens.toml:1928
     "display",  # docs/facts/windows/tokens.toml:2119
 ]
 accent_ramp = [
@@ -248,6 +249,12 @@ data = { body = ["widget.label.line_height"] }
 "tokens.text.keyed.title.font.features" = "U518"
 # docs/facts/windows/tokens.toml:3363
 "tokens.text.keyed.title.scaling_role" = "U518"
+# docs/facts/windows/tokens.toml:3390
+"tokens.text.keyed.title_large.font.width" = "U518"
+# docs/facts/windows/tokens.toml:3395
+"tokens.text.keyed.title_large.font.features" = "U518"
+# docs/facts/windows/tokens.toml:3400
+"tokens.text.keyed.title_large.scaling_role" = "U518"
 # docs/facts/windows/tokens.toml:3427
 "tokens.text.keyed.display.font.width" = "U518"
 # docs/facts/windows/tokens.toml:3432
@@ -1288,6 +1295,32 @@ keyed.title.mnemonic_decoration = "absent"
 keyed.title.fill = "absent"
 # docs/facts/windows/tokens.toml:1918
 keyed.title.font.axes = { opsz = "follows_size" }
+# docs/facts/windows/tokens.toml:1928
+keyed.title_large.font.family = "Segoe UI Variable"
+# docs/facts/windows/tokens.toml:1953
+keyed.title_large.font.size_px = 40
+# docs/facts/windows/tokens.toml:1973
+keyed.title_large.font.weight = 600
+# docs/facts/windows/tokens.toml:1993
+keyed.title_large.font.style = "normal"
+# docs/facts/windows/tokens.toml:2003
+keyed.title_large.letter_spacing_px = 0
+# docs/facts/windows/tokens.toml:2013
+keyed.title_large.line_height = "auto"
+# docs/facts/windows/tokens.toml:2028
+keyed.title_large.decoration = "absent"
+# docs/facts/windows/tokens.toml:2038
+keyed.title_large.elision = "end"
+# docs/facts/windows/tokens.toml:2048
+keyed.title_large.wrap = "word"
+# docs/facts/windows/tokens.toml:2058
+keyed.title_large.max_lines = "absent"
+# docs/facts/windows/tokens.toml:2075
+keyed.title_large.mnemonic_decoration = "absent"
+# docs/facts/windows/tokens.toml:2092
+keyed.title_large.fill = "absent"
+# docs/facts/windows/tokens.toml:2109
+keyed.title_large.font.axes = { opsz = "follows_size" }
 # docs/facts/windows/tokens.toml:2119
 keyed.display.font.family = "Segoe UI Variable"
 # docs/facts/windows/tokens.toml:2144
@@ -1352,6 +1385,10 @@ keyed.subtitle.word_spacing_px = 0
 keyed.title.case = "mixed"
 # docs/facts/windows/tokens.toml:3342
 keyed.title.word_spacing_px = 0
+# docs/facts/windows/tokens.toml:3368
+keyed.title_large.case = "mixed"
+# docs/facts/windows/tokens.toml:3379
+keyed.title_large.word_spacing_px = 0
 # docs/facts/windows/tokens.toml:3405
 keyed.display.case = "mixed"
 # docs/facts/windows/tokens.toml:3416

@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 1bdeaed70a02314661b57b61d121c9cde03bb1c6ce194b87d41666f902f9e776
+# generated lines: sha256 fa31d777845f1d00c20f1714429dc477ab6c11710418e0f7190d2620aff2c4c4
 
 [preset]
 id = "ios-13"
@@ -20,7 +20,10 @@ surface_sets = [
     "selection",  # docs/facts/ios/roles.toml:7208
 ]
 text_styles = [
+    "large_title",  # docs/facts/ios/tokens.toml:15
     "title_1",  # docs/facts/ios/tokens.toml:65
+    "title_2",  # docs/facts/ios/tokens.toml:115
+    "title_3",  # docs/facts/ios/tokens.toml:165
     "headline",  # docs/facts/ios/tokens.toml:215
     "body",  # docs/facts/ios/tokens.toml:315
     "caption_1",  # docs/facts/ios/tokens.toml:465
@@ -412,8 +415,14 @@ sizes_by_variant = [{ variant = "@gray", sizes = ["mini", "small", "regular", "l
 "tokens.icons.sizes.panel.weight" = "U127"
 # docs/facts/ios/tokens.toml:1755
 "tokens.icons.sizes.panel.scale" = "U127"
+# docs/facts/ios/tokens.toml:2308
+"tokens.text.keyed.large_title.font.width" = "U463"
 # docs/facts/ios/tokens.toml:2633
 "tokens.text.keyed.title_1.font.width" = "U463"
+# docs/facts/ios/tokens.toml:2958
+"tokens.text.keyed.title_2.font.width" = "U463"
+# docs/facts/ios/tokens.toml:3283
+"tokens.text.keyed.title_3.font.width" = "U463"
 # docs/facts/ios/tokens.toml:3608
 "tokens.text.keyed.headline.font.width" = "U463"
 # docs/facts/ios/tokens.toml:4258
@@ -1114,10 +1123,22 @@ disabled.background_positive = "absent"
 keyed = {}
 
 [tokens.text]
+# docs/facts/ios/tokens.toml:15
+keyed.large_title.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:40
+keyed.large_title.font.size_px = 34
 # docs/facts/ios/tokens.toml:65
 keyed.title_1.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/tokens.toml:90
 keyed.title_1.font.size_px = 28
+# docs/facts/ios/tokens.toml:115
+keyed.title_2.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:140
+keyed.title_2.font.size_px = 22
+# docs/facts/ios/tokens.toml:165
+keyed.title_3.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:190
+keyed.title_3.font.size_px = 20
 # docs/facts/ios/tokens.toml:215
 keyed.headline.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/tokens.toml:240
@@ -1130,6 +1151,14 @@ keyed.body.font.size_px = 17
 keyed.caption_1.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/tokens.toml:490
 keyed.caption_1.font.size_px = 12
+# docs/facts/ios/tokens.toml:565
+keyed.large_title.font.weight = 400
+# docs/facts/ios/tokens.toml:581
+keyed.large_title.line_height_px = 41
+# docs/facts/ios/tokens.toml:597
+keyed.large_title.scaling_role = "large_title"
+# docs/facts/ios/tokens.toml:613
+keyed.large_title.mnemonic_decoration = "absent"
 # docs/facts/ios/tokens.toml:644
 keyed.title_1.font.weight = 400
 # docs/facts/ios/tokens.toml:660
@@ -1138,6 +1167,22 @@ keyed.title_1.line_height_px = 34
 keyed.title_1.scaling_role = "title1"
 # docs/facts/ios/tokens.toml:692
 keyed.title_1.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:723
+keyed.title_2.font.weight = 400
+# docs/facts/ios/tokens.toml:739
+keyed.title_2.line_height_px = 28
+# docs/facts/ios/tokens.toml:755
+keyed.title_2.scaling_role = "title2"
+# docs/facts/ios/tokens.toml:771
+keyed.title_2.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:802
+keyed.title_3.font.weight = 400
+# docs/facts/ios/tokens.toml:818
+keyed.title_3.line_height_px = 25
+# docs/facts/ios/tokens.toml:834
+keyed.title_3.scaling_role = "title3"
+# docs/facts/ios/tokens.toml:850
+keyed.title_3.mnemonic_decoration = "absent"
 # docs/facts/ios/tokens.toml:881
 keyed.headline.font.weight = 590
 # docs/facts/ios/tokens.toml:897
@@ -1178,6 +1223,28 @@ roles.headline = "= token.text.keyed.headline"
 roles.body = "= token.text.keyed.body"
 # docs/facts/ios/tokens.toml:1896
 roles.caption = "= token.text.keyed.caption_1"
+# docs/facts/ios/tokens.toml:2051
+keyed.large_title.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:2089
+keyed.large_title.fill = "absent"
+# docs/facts/ios/tokens.toml:2118
+keyed.large_title.decoration = "absent"
+# docs/facts/ios/tokens.toml:2147
+keyed.large_title.case = "mixed"
+# docs/facts/ios/tokens.toml:2176
+keyed.large_title.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:2205
+keyed.large_title.elision = "absent"
+# docs/facts/ios/tokens.toml:2234
+keyed.large_title.wrap = "absent"
+# docs/facts/ios/tokens.toml:2263
+keyed.large_title.max_lines = "absent"
+# docs/facts/ios/tokens.toml:2293
+keyed.large_title.font.style = "normal"
+# docs/facts/ios/tokens.toml:2313
+keyed.large_title.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:2328
+keyed.large_title.font.features = {}
 # docs/facts/ios/tokens.toml:2379
 keyed.title_1.letter_spacing = "= sf_tracking(font_size, sf_pro)"
 # docs/facts/ios/tokens.toml:2415
@@ -1200,6 +1267,50 @@ keyed.title_1.font.style = "normal"
 keyed.title_1.font.axes = { opsz = "follows_size" }
 # docs/facts/ios/tokens.toml:2653
 keyed.title_1.font.features = {}
+# docs/facts/ios/tokens.toml:2704
+keyed.title_2.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:2740
+keyed.title_2.fill = "absent"
+# docs/facts/ios/tokens.toml:2769
+keyed.title_2.decoration = "absent"
+# docs/facts/ios/tokens.toml:2798
+keyed.title_2.case = "mixed"
+# docs/facts/ios/tokens.toml:2827
+keyed.title_2.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:2856
+keyed.title_2.elision = "absent"
+# docs/facts/ios/tokens.toml:2885
+keyed.title_2.wrap = "absent"
+# docs/facts/ios/tokens.toml:2914
+keyed.title_2.max_lines = "absent"
+# docs/facts/ios/tokens.toml:2943
+keyed.title_2.font.style = "normal"
+# docs/facts/ios/tokens.toml:2963
+keyed.title_2.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:2978
+keyed.title_2.font.features = {}
+# docs/facts/ios/tokens.toml:3029
+keyed.title_3.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:3065
+keyed.title_3.fill = "absent"
+# docs/facts/ios/tokens.toml:3094
+keyed.title_3.decoration = "absent"
+# docs/facts/ios/tokens.toml:3123
+keyed.title_3.case = "mixed"
+# docs/facts/ios/tokens.toml:3152
+keyed.title_3.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:3181
+keyed.title_3.elision = "absent"
+# docs/facts/ios/tokens.toml:3210
+keyed.title_3.wrap = "absent"
+# docs/facts/ios/tokens.toml:3239
+keyed.title_3.max_lines = "absent"
+# docs/facts/ios/tokens.toml:3268
+keyed.title_3.font.style = "normal"
+# docs/facts/ios/tokens.toml:3288
+keyed.title_3.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:3303
+keyed.title_3.font.features = {}
 # docs/facts/ios/tokens.toml:3354
 keyed.headline.letter_spacing = "= sf_tracking(font_size, sf_pro)"
 # docs/facts/ios/tokens.toml:3390
