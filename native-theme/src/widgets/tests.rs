@@ -430,15 +430,7 @@ fn a_drawn_as_part_keeps_its_style_until_brought_back() {
 /// format*), generated: typed, and GTK's keyed ones with their `@`.
 #[test]
 fn button_content_variants_match_catalogue() {
-    assert_eq!(
-        button().content_variants,
-        [
-            (None, "icon_only"),
-            (None, "with_icon"),
-            (None, "@custom_child"),
-            (None, "@arrow_only"),
-            (None, "@with_arrow"),
-            (None, "@tab_overflow")
-        ]
-    );
+    // The content variants at depth (S6.1, ADD-A147): the others are the
+    // content unit's (scripts/widget_units.toml).
+    assert_eq!(button().content_variants, [(None, "with_icon")]);
 }
