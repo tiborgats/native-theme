@@ -100,7 +100,8 @@ Usage: scripts/check_release.sh [--commit | --quick] [--no-cache]
                  generate_dynamic_type.py --check,
                  check_function_vectors.py, check_facts.py,
                  check_fact_citations.py,
-                 generate_platform_facts.py --check, check_spec_names.py,
+                 generate_platform_facts.py into a scratch directory and
+                 its --self-test, check_spec_names.py,
                  check_spec_entries.py, check_spec_trace.py, check_ledger.py);
                  like --commit, it skips the steps PLAN_EXCLUDED lists
   --no-cache     with --commit or --quick: run every step, the step cache
@@ -923,7 +924,9 @@ fi
 # (native-theme's build.rs its icons/, native-theme-derive no file).
 CACHE_HOST_PROBES="pkg-config cc cmake bindgen system-deps vcpkg metadeps"
 CACHE_TRUSTED_BUILD_CODE="native-theme native-theme-derive"
-PY_DATA_INPUTS="scripts docs native-theme/src native-theme/tests ROADMAP.md"
+# docs/platform-facts.md, ignored, is a local copy the generator wrote: no
+# step reads it.
+PY_DATA_INPUTS="scripts docs !docs/platform-facts.md native-theme/src native-theme/tests ROADMAP.md"
 EVIDENCE_PIN="docs/facts/sources.toml"
 STRICT_PANIC_INPUTS="scripts/check_strict_panic.sh"
 GATE_CFG_INPUTS="scripts/check_gate_cfg.py native-theme/src native-theme/tests native-theme/build.rs native-theme-derive/src"
@@ -948,7 +951,8 @@ for crate in $WORKSPACE_CRATES; do
     CACHE_INPUTS["docs, private items ($crate)"]="@rust:$crate"
 done
 for check in "the generated widgets match the catalogue" "every platform function has its vectors" \
-    "the facts are well formed" "docs/platform-facts.md is generated from the facts" \
+    "the facts are well formed" "docs/platform-facts.md generates from the facts (a scratch copy)" \
+    "platform-facts generator self-test" \
     "the specification's names" "the specification's entries" "the specification's traceability" \
     "the 0.8.0 ledger triages every open item" "the enabled units' trace lines are carried"; do
     CACHE_INPUTS["$check"]="$PY_DATA_INPUTS"
@@ -1044,6 +1048,19 @@ facts_gate_steps() {
     done
 }
 
+# docs/platform-facts.md is not committed (specification S17; the 0.8.0
+# plan's M2 task *docs/platform-facts.md not committed*): every mode
+# generates it from the facts into a scratch directory, removed afterwards,
+# and runs the generator's self-test. CI's parity job runs the same two;
+# each release generates the document at its commit (M6).
+platform_facts_generated() {
+    local scratch status=0
+    scratch=$(mktemp -d) || return
+    python3 scripts/generate_platform_facts.py --out "$scratch/platform-facts.md" || status=$?
+    rm -rf -- "$scratch"
+    return "$status"
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # --quick: the per-task gate (the header lists it), then its summary.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1081,8 +1098,8 @@ if [[ $QUICK_MODE ]]; then
     run_check "every platform function has its vectors" python3 scripts/check_function_vectors.py
     run_check "the facts are well formed" python3 scripts/check_facts.py
     run_check "the facts' citations hold at their pins" python3 scripts/check_fact_citations.py
-    run_check "docs/platform-facts.md is generated from the facts" \
-        python3 scripts/generate_platform_facts.py --check
+    run_check "docs/platform-facts.md generates from the facts (a scratch copy)" platform_facts_generated
+    run_check "platform-facts generator self-test" python3 scripts/generate_platform_facts.py --self-test
     run_check "the specification's names" python3 scripts/check_spec_names.py
     run_check "the specification's entries" python3 scripts/check_spec_entries.py
     run_check "the specification's traceability" python3 scripts/check_spec_trace.py
@@ -1905,9 +1922,9 @@ run_check "data documents: the enabled units' trace lines are carried" \
 run_check "data documents: facts trace self-test" \
     python3 scripts/check_facts_trace.py --self-test
 # docs/platform-facts.md (specification S17, S18): generated from the
-# verified facts, never edited.
-run_check "data documents: docs/platform-facts.md is generated from the facts" \
-    python3 scripts/generate_platform_facts.py --check
+# verified facts, never edited, not committed (platform_facts_generated).
+run_check "data documents: docs/platform-facts.md generates from the facts (a scratch copy)" \
+    platform_facts_generated
 run_check "data documents: platform-facts generator self-test" \
     python3 scripts/generate_platform_facts.py --self-test
 # The citations of today's platform-facts.md and the deleted

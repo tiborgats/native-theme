@@ -609,12 +609,18 @@ jobs:
       - run: python3 scripts/check_preset_citations.py
       - run: python3 scripts/check_preset_citations.py --self-test
       # The 0.8.0 model's facts checks that need nothing beyond the repository:
-      # the platform functions' vector tables, and the enabled units' trace lines
-      # each carried by a fact.
+      # the platform functions' vector tables, the enabled units' trace lines
+      # each carried by a fact, and the platform-facts document.
       - run: python3 scripts/check_function_vectors.py
       - run: python3 scripts/check_function_vectors.py --self-test
       - run: python3 scripts/check_facts_trace.py --enabled
       - run: python3 scripts/check_facts_trace.py --self-test
+      # docs/platform-facts.md is not committed (specification S17): the
+      # generator writes it from the facts into a scratch path the runner
+      # removes, and its self-test runs, as scripts/check_release.sh runs them.
+      - name: The platform-facts document generates from the facts
+        run: python3 scripts/generate_platform_facts.py --out "$RUNNER_TEMP/platform-facts.md"
+      - run: python3 scripts/generate_platform_facts.py --self-test
       # The verifiers' tooling on its fixtures (a temporary git repository).
       - run: python3 scripts/verify_facts.py --self-test
       # The line citations of today's platform-facts.md and the deleted
