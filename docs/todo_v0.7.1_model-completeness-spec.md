@@ -6552,15 +6552,18 @@ derivation names none, its operands being checked where they are mapped (ADD-A11
 ## S15. System control rendering (R11)
 
 ```rust
+// native_theme::system_control (ADD-A148)
 pub enum SystemControl { AppKitCheckbox, AppKitRadio, AppKitDisclosure, AppKitPushDisclosure, AppKitPopUp }
-pub struct ControlImage { pub width: u32, pub height: u32, pub pixels: Vec<[f32; 4]>,  // extended sRGB, straight
-                          pub alignment: Rect }       // alpha (S2.1); the control's alignment rect inside the
-                                                      // image, in logical px from its top-left corner (below)
+pub struct ControlImage { pub width: u32, pub height: u32, // device pixels, logical × `scale`
+                          pub pixels: Vec<[f32; 4]>,  // extended sRGB, straight alpha (S2.1)
+                          pub alignment: Rect }       // the control's alignment rect inside the image, in
+                                                      // logical px from its top-left corner (below)
 pub struct SystemAppearance { pub scheme: Scheme, pub increased_contrast: bool }   // AppKit's four appearances
 pub fn render_system_control(control: SystemControl, states: StateFlags, size: ControlSize,
                              appearance: SystemAppearance, key_window: bool, direction: Direction,
                              scale: f32,
-                             width: Option<Px>) -> Option<ControlImage>;   // width: a content-sized control's
+                             width: Option<Px>) -> Option<Arc<ControlImage>>;
+                             // width: a content-sized control's alignment rect's width (below)
 ```
 
 It returns `None` for a `ControlSize` AppKit has no size for on the running macOS (which sizes it has per version is
@@ -6571,7 +6574,11 @@ What each image covers: `AppKitCheckbox`, `AppKitRadio`, the box and mark; `AppK
 as AppKit draws it, and `ControlImage.alignment` the control's alignment rect inside it: AppKit holds a control's
 frame and its alignment rect apart (`alignmentRectForFrame:`, `alignmentRectInsets`, `NSLayoutConstraint.h:297-302`
 at xcode@26.6), and the facts measure a control's box from the alignment rect (S17's evidence rule, AppKit's
-padding), so the connector lays the image with that rect over the box of the parts it replaces (ADD-A146). The
+padding), so the connector lays the image with that rect over the box of the parts it replaces (ADD-A146).
+`width` is the alignment rect's width, so `alignment`'s width is `width`. Where the alignment rect and the box of the
+parts it replaces differ in size (another version of the generation, a preset of another generation), the connector
+centres the alignment rect on the box, unscaled, and its contract records the limit (ADD-A148; rejected: `None`
+unless `Theme::version_match()` is `Exact`, which loses every check mark on a new macOS until its preset exists). The
 pop-up's arrow area is no field of the image: the connector places it from the resolved values, its width
 `arrow_area.min_width` and its inset from the image's end `body.padding`'s end (the catalogue's `combo_box` layout,
 MAC-CB01's measurements), the SDK declaring no rect for it (`NSPopUpButtonCell.h:95` declares `arrowPosition` alone,
@@ -6593,23 +6600,43 @@ element that takes the press (the disclosure's own, MAC-L10, MAC-EX03; the combo
 and `Checked` from the widget's own element. `direction` sets the cell's
 `userInterfaceLayoutDirection` (`NSCell.h:197-199`), which otherwise follows the application's (`NSView.h:354`) and
 not the element's (S8); whether AppKit mirrors the pop-up's arrow side and the disclosure triangle by it is the
-same row's reading, the parameter deciding the image either way.
+same row's reading, the parameter deciding the image either way. Until the right-to-left unit the connector passes
+`Ltr`, as `ResolvedTheme::icon` looks up (S16; ADD-A148). `key_window`: whether a control rendered off screen can be
+drawn in the key and in the non-key look, by which route, and which of the two the plain route gives is the same
+row's third reading, made before the 0.8.0 plan's M2 task 7, which is specified in full only after it (the
+`cacheDisplayInRect:` route the macOS probe renders these controls by draws no key-window state,
+`tools/os-probe/src/macos.rs:1598-1599`). Where a route exists, this paragraph cites it as it cites `state` and
+`userInterfaceLayoutDirection`; where none does, `key_window` leaves the signature and the cache key, the image is
+the one look AppKit gives off screen (named from the reading), and the connector's contract records as a limit
+(R23) that the rendering does not follow the window's key state (ADD-A148).
 
-On macOS's main thread it renders; anywhere else, and off macOS, it returns `None`, so connectors need no `cfg` of
-their own. Cached per (control, states, size, appearance, key, direction, scale, width), and emptied whenever the
-reader reads again (`reload_reader`, S16, which the application calls on the watcher's notification): AppKit's
+The module `native_theme::system_control` is in every build on every target; it renders only with the `macos`
+feature and returns `None` without it, as off macOS (ADD-A148; rejected: `system-icons`, which brings the icon
+loaders' dependencies for no use, where the cache's emptying is the reader's). On macOS's main thread it renders;
+anywhere else, and off macOS, it returns `None`, so connectors need no `cfg` of their own. Cached per (control, the
+states the cell reads, `checked`, `indeterminate`, `open`, `pressed` and `disabled`, size, appearance, key,
+direction, scale, width), at most a bound the 0.8.0 plan's M2 task 7 states with its reason, the least recently used
+image first out (ADD-A148), and emptied whenever the reader reads again (`reload_reader`, S16, which the application
+calls on the watcher's notification, on every theme, one no system read built included): AppKit's
 drawing follows settings the key does not hold, the system's accent among them, so a cached checkbox would keep the
 old accent while every role follows the new one (ADD-A146; rejected: the accent in the key, one of the settings the
-drawing follows, not all of them). **Approved by the maintainer (2026-10-29):** rendering through AppKit uses `unsafe` objc2 calls under the same
+drawing follows, not all of them). A connector calls it each time it draws and keeps its toolkit's image beside the
+handle, replacing it where the handle differs (`Arc::ptr_eq`), so an emptied cache reaches every connector with no
+further signal (ADD-A148; rejected: an owned image per call, copied at every hit, whose emptying no connector sees
+where the change leaves the next `resolve` `Unchanged`). **Approved by the maintainer (2026-10-29):** rendering through AppKit uses `unsafe` objc2 calls under the same
 exception as the SF Symbols loader (`native-theme/src/sficons.rs`): module-scoped, each block with its safety
 argument. A glyph naming a system control
 (`GlyphSource::SystemControl { control, replaces }`) states the parts the rendering replaces (the checkbox's box and
 mark together, R11), on a part drawn in every state, the one whose glyph it is (`checkbox.box`, `radio.ring`, MAC-C06,
 MAC-C07), never on one hidden by state, which would hide the rendering of an unchecked control. Where the rendering
 is not drawn, the parts it replaces draw their modelled style: the box, and on the radio its measured dot, while the
-checkbox's mark has no model (R11), so without the rendering no mark is drawn and a checked and a mixed checkbox
-differ only where their measured box fills do (the mixed fill a measurement, MAC-C01), the limit the
-connector records (R23; ADD-A126). Whether AppKit draws these controls differently in an emphasized selected table row
+checkbox's mark, the pop-up's arrows and the disclosure triangle have no model (R11): where the rendering is absent
+(off macOS, off the main thread, the `macos` feature off) the connector draws its toolkit's own mark, arrows and
+triangle, each in a colour from the theme (the role or value the connectors' design names per glyph), an exception
+its contract records (S21.3, *A glyph whose system rendering is absent*; ADD-A126; ADD-A148, decided by logic at the
+document pass, awaiting the maintainer's veto: veto list item 60). Rejected: no mark drawn there, a checked and a
+mixed checkbox differing only where their measured box fills do (a loss of the mark 0.7.0 drew on `macos-*` presets
+everywhere, against the 0.8.0 plan's D13; its D6 outcome 6 rules a look the theme gives no geometry for). Whether AppKit draws these controls differently in an emphasized selected table row
 (`NSTableCellView`'s background style) is MAC-L17†'s measurement; if it does, the cache key needs the background style
 (the catalogue's Open items, ADD-A125). The list of `SystemControl`s is the traceability's rows that need it.
 
@@ -6716,7 +6743,10 @@ impl Theme {
     pub fn reload_reader(&mut self) -> ReaderStatus;     // re-read the system into the reader layer in place
                                                           // (a failure keeps the old layer); the application calls it
                                                           // from its event loop on the watcher's `on_theme_change`;
-                                                          // it empties S15's rendering cache
+                                                          // it empties S15's rendering cache, on every theme, one
+                                                          // no system read built included: AppKit draws the images
+                                                          // under the system's current accent whatever built the
+                                                          // theme (ADD-A148)
     pub async fn reload_reader_async(&mut self) -> ReaderStatus;   // the same, awaited (as `from_system_async`)
     pub fn system(&self) -> Option<&ReaderState>;         // the conditions the reader or stand-in reports, for what
                                                           // an application acts on itself (Windows' ShowSounds,
@@ -6734,9 +6764,14 @@ impl ResolvedTheme {
                                                           // variants, axes; its fill where the set recolours), for the
                                                           // direction and language in `scope` (the scope the part's
                                                           // query returned, which carries the element's own) and the
-                                                          // role's `token.icons.mirroring` (S2.9, R25.8); None where
+                                                          // role's `token.icons.mirroring` (S2.9, R25.8) from the
+                                                          // right-to-left unit on, which stages that token (S6.1);
+                                                          // until then looked up as for a left-to-right element,
+                                                          // as 0.7.0's `icon` was, a deferred entry of each
+                                                          // connector's contract (S21.3; ADD-A148); None where
                                                           // the set has no such icon or lacks its feature
 }
+// native_theme::system_control: SystemControl, ControlImage, SystemAppearance, render_system_control (S15; ADD-A148)
 impl PresetId {
     pub fn all() -> &'static [PresetId];                  // every bundled preset, in a stable order
     pub fn for_platform() -> Vec<PresetId>;               // the presets to offer on the running platform and
@@ -6798,7 +6833,7 @@ on Linux, the desktop `XDG_CURRENT_DESKTOP` names, refined where it names none b
 backend runs (within the readers' D-Bus deadline), then by the user's `kdeglobals` (with the `kde` feature), as
 `PresetId::for_system` chooses. On Linux:
 - GNOME and Budgie are read by the GNOME reader under `adwaita` (S9.3), KDE by the KDE reader under `kde-breeze`;
-  `Err(FeatureDisabled)` where the build lacks the reader's feature;
+  where the build lacks the reader's feature, by 0.7.0's chain alone (below);
 - every other desktop (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors, COSMIC, one the refinement leaves
   unnamed) has no reader of its own and is read under the preset `PresetId::for_system` gives (`adwaita`), in its
   common bases and conditions only, nothing under `for_preset`: the portal's `org.freedesktop.appearance` settings
@@ -6812,9 +6847,16 @@ backend runs (within the readers' D-Bus deadline), then by the user's `kdeglobal
   (`:952-967`, `:976-988`): the model holds the two apart (S7.1), so an application checking reduced motion there
   sees `enable-animations` as `animations_off` now.
   `kdeglobals`, which 0.7.0 also asked there, stays the KDE reader's. The read cannot fail, a setting none of these
-  gives keeping the no-reader state's value (no flag); it needs the `portal` feature as the GNOME reader does
-  (`Err(FeatureDisabled)` without it). So these desktops keep what 0.7.0 gave them, the preset in the scheme and
+  gives keeping the no-reader state's value (no flag); the portal's reading needs the `portal` feature, as the GNOME
+  reader does. So these desktops keep what 0.7.0 gave them, the preset in the scheme and
   motion the desktop set, with the portal's reading first (the 0.8.0 plan's D13: nothing 0.7.0 has is lost);
+- where the reader of the desktop is not compiled (no `portal` for GNOME, Budgie and the desktops of the item above,
+  no `kde` for KDE), `from_system` reads that chain alone, the reads that need no feature, under the preset
+  `PresetId::for_system` gives (`kde-breeze` on KDE, `adwaita` elsewhere), in its common bases and conditions, as
+  0.7.0's `linux_fallback` gave the platform's preset in the detected scheme (`native-theme/src/pipeline.rs:1103-1110`,
+  `:622-627` at `v0.7.0`), never `Err(FeatureDisabled)` (ADD-A148; decided by logic at the document pass, awaiting the
+  maintainer's veto: veto list item 59; rejected: `Err(FeatureDisabled)` there, the loss listed in R21, which D13's
+  "nothing 0.7.0 has is lost" does not allow);
 - Linux has no generation table, so the one preset of the desktop is its only generation: `from_system(Some(id))`
   takes that preset and is `Err(PresetNotForPlatform(id))` for any other.
 A platform this build reads nothing on is `Err(PlatformUnsupported)`, never a preset in an assumed scheme. The
