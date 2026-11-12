@@ -167,8 +167,8 @@ slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", 
 # part's field, any other a widget value): the button's `Placement` values to
 # S13's placement unit (M3); the values only names of later units read (the
 # catalogue's Depth line for `button`); its `presentations` and its parts'
-# `transitions`, the motion unit's (S6.1, ADD-A147; no part of `button` lists
-# `shown`, the motion unit's other part field).
+# `transitions`, the motion unit's (S6.1, ADD-A147; a part's `shown` stays,
+# with its rest meaning).
 [deferred.button]
 menu_placement = "placement"
 scaffold_placement = "placement"
