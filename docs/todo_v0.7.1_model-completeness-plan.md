@@ -5,7 +5,7 @@ below); draft 12. Eleven independent reviews; draft 11 consolidated
 their fixes into one text, and draft 12 applies the eleventh review's. Draft 13 (2026-11-06) applies the maintainer's
 scope decision D13 (0.8.0 covers what 0.7.0 covers, the rest of the catalogue follows in later releases) and D14,
 settled by logic (the follow-up releases numbered by SemVer), with an independent check's fixes. Draft 14
-(2026-11-09) applies the document check's fixes (spec batch ADD-A146), its amendments awaiting D6. Draft 15
+(2026-11-09) applies the document check's fixes (spec batch ADD-A146), its amendments confirmed at D6. Draft 15
 (2026-11-12) applies the outcomes of the checkpoint D6 (spec batch ADD-A147), each open to the maintainer's veto.
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
@@ -68,10 +68,14 @@ closed (R21, D13; 0.7.x patches, D11); each follow-up release has its own branch
      (`ci.yml`'s `facts-gate` and `facts-gate-listed` jobs). The unsharded release run (`FACTS_GATE_RELEASE=1`,
      *M4*) is M4's and each release's, run once, on the thread count the machine's memory holds
      (`NT_FACTS_GATE_THREADS`).
-  2. *The limits.* No CI shard and no local per-preset step runs past a stated time, and no local run past a
-     stated memory. The document check proposes 3 h a shard, and 1 h and 12 GB a preset step; D6 sets the
-     numbers. `ci.yml`'s shard count is one list (the `facts-gate` matrix), lengthened in the commit of the unit
-     that would pass the limit, within the account's limit on concurrent jobs (D6 records its number beside D3's).
+  2. *The limits* (D6, outcome 9; ADD-A147). No CI shard runs past 3 h, and no local per-preset step past 1 h or
+     12 GB. `ci.yml`'s shard count is one list (the `facts-gate` matrix), lengthened in the commit of the unit
+     that would pass the limit, within the account's limit on concurrent jobs (not in D6's data; the ledger records
+     it beside D3's when a run shows it). The release run stays one unsharded local run (the ledger's queue #213),
+     timed at M1b's close at 459 min on 8 threads with a peak of 7.65 GB. The limits are reviewed with the first
+     widget unit's measured times (3, below). Rejected: past 30 runner hours a push, only the touched units' gates
+     with the whole gate nightly (that case arises only where every combination is measured, which *The depth 0.8.0
+     states* excludes); a speed target the gate must meet before M3a.
   3. *The calibration.* After M3a's first unit that holds widgets (window and chrome), the gate's time per preset
      and step (`NT_FACTS_GATE_TIMING=1`) is recorded in the ledger and the later units' times are extrapolated from
      it; a unit that would pass a limit at the largest shard count stops the series queue for a gate-speed task
@@ -218,7 +222,8 @@ them, which is false); a lenient validation mode (it hides the gaps the gate exi
   deleting the uncited files now (a lane converting a row may need another render of the same run); a warning instead
   of a failure (nothing would catch an uncited file after M4).
 - **`platform-facts.md`** becomes generated at the switch, from the verified facts only; today's presets and the
-  `platform_facts_xref.rs` test go then.
+  `platform_facts_xref.rs` test go then. From M2's task *`docs/platform-facts.md` not committed* it leaves the
+  repository, CI and each release generating it (D6, outcome 8; ADD-A147).
 - **Citations of today's `platform-facts.md` by line.** They are rewritten to `platform-facts.md@<sha>:LINE`, `<sha>`
   being the commit `v0.8.0-rc1` is cut from: in M0 for the gap maps and `docs/todo.md`; at the switch for every other
   tracked file (the CHANGELOG included: an `@<sha>` makes a released entry's citation exact without changing its
@@ -438,7 +443,7 @@ the facts tooling reads it.
 - **D5 — `v0.7.1-rc1` to `main` first** (approved by the maintainer, 2026-10-29): the maintainer merges the v0.7.1 documents and scripts (no code
   change) before `v0.8.0-rc1` is cut, so `main`'s ROADMAP states the next work and the 0.8.0 pull request holds only
   0.8.0's work. The alternative, cutting from `v0.7.1-rc1` and merging both at 0.8.0, also works.
-- **D7 — the budget for M0–M1b** (approved by the maintainer, 2026-10-29; the cap lifted by the maintainer on 2026-10-30): a cap of +15,000k tokens until then, and no token cap since: D6 presents the extrapolated cost, and the maintainer may set caps per milestone there (ADD-A146). An estimate, not a measurement: one
+- **D7 — the budget for M0–M1b** (approved by the maintainer, 2026-10-29; the cap lifted by the maintainer on 2026-10-30): a cap of +15,000k tokens until then, and no token cap since. D6 set none (outcome 10; ADD-A147): the work runs to M2's close, whose report gives M2's cost, the gate's time and the load cost, and M3a's approval is asked there with the first real unit costs, where the maintainer may set caps per milestone; no lane writes facts ahead for M3b's units meanwhile. An estimate, not a measurement: one
   independent review of this plan used 180k to 270k tokens (eleven so far); M0–M1b holds six spikes, eight presets' slice facts with
   their verifiers, two implementation milestones with a reviewer per task, and the reviews.
 - **D9 — the project's own guards** (the maintainer's configuration; the recommendations approved, 2026-10-29).
@@ -483,6 +488,17 @@ the facts tooling reads it.
     (a); the bundled KDE port files shipped with their licence notices; the tools written from the settings the references pin, not their
     code, though a CI tool may compile a pinned upstream source unchanged to call an internal function (it never ships
     in the crate).
+  - **Extended at D6** (2026-11-12, outcome 11; ADD-A147; open to the maintainer's veto, veto list item 41): D10 names
+    four classes of reference. An LGPL or a GPL reference goes through the clean room, (a): the clean room carries
+    no code of the reference, so it serves a GPL reference exactly as an LGPL one (M2.1's `Breeze` engine follows
+    Breeze's kstyle, GPL-2.0-or-later). An Apache-2.0 or an MIT reference may be ported, the ported file under a
+    file-level licence with its notice (`src/platform/android_non_linear.rs` and `src/ripple.rs` port AOSP and
+    androidx under Apache-2.0, `src/platform/win_ui.rs` microsoft-ui-xaml under MIT). The crate's `license` is the
+    manifest's expression as it stands, `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT`
+    (`native-theme/Cargo.toml`). A risk judgement, as D10's first part is, not a legal conclusion: accepting "AND
+    Apache-2.0" for a ported file already gave up a crate usable with no notice to carry, and MIT's obligation (keep
+    the notice) is of the same kind and no wider. Rejected: no code that carries a notice (the MIT and Apache-2.0
+    ports redone through the clean room, the licence back to `MIT OR Apache-2.0 OR 0BSD`).
 - **D11 — 0.7.x releases during the work** (approved by the maintainer, 2026-10-29): no planned 0.7.x release; `docs/todo.md`'s `[v0.7.x]` items
   are triaged into this plan or carried past its releases, and ROADMAP's *Also in the 0.7.x releases* is updated at M0.
   An emergency (an upstream release breaking 0.7.0, as gpui-kit 0.6.4 broke 0.5.8) is fixed on its own `v0.7.N-rc1`
@@ -506,15 +522,21 @@ the facts tooling reads it.
 
 - **D13 — 0.8.0's scope** (decided by the maintainer, 2026-11-06: (B)). 0.8.0 ships when the new model covers what
   0.7.0 covers: every widget, colour role, token and value 0.7.0's model holds is in the new model, on every preset
-  0.7.0 ships for, with the connectors running on it. The rest of the catalogue follows in later releases, the
+  0.7.0 ships for, a widget on every preset whose platform draws the widget (restated at D6, outcome 6; ADD-A147),
+  with the connectors running on it. The rest of the catalogue follows in later releases, the
   follow-up releases ("0.8.x" in the decision; D14 numbers them). "Cover everything visible" stays the goal; only its
   release timing changes. Within each unit a release enables, the rigor stays as it is: verified facts, the facts
   gate, one rule for every field.
   - **(A)** the whole catalogue in 0.8.0, as R21 had it. Against: users wait for the widgets 0.7.0 never had.
-  - **(B)** 0.8.0 at 0.7.0's coverage, then the other units. For: users lose nothing of 0.7.0's model but the status
-    colours on `macos-*` (R25.17), the invented light variants (R19) and, until D6 decides it (W3-3), the widgets a
-    preset declares unavailable where 0.7.0 resolved them (`tab`, `card`, `expander`, `status_bar`) (what its API
-    does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks
+  - **(B)** 0.8.0 at 0.7.0's coverage, then the other units. For: users lose nothing of 0.7.0's model but the
+    invented light variants (R19), the further losses D6 records on R21's list (the `button` values 0.7.0 stated with
+    no source or against its own cited source, and those its preset's reference rule restates; the look of a button
+    with no variant on `material-3` and `ios-13`, 0.7.0's staying under `tinted` and `@gray`; `material-3`'s checked
+    text-button colours; of the two motions 0.7.0 has, one the Apple motion trial does not measure; the icon size of a
+    context the platform names none for; the icon theme's name on the presets whose icon set is not freedesktop:
+    ADD-A147, veto list items 5 to 8 and 32 to 39) and the widgets a preset declares unavailable where 0.7.0 resolved
+    them (`tab`, `card`, `expander`, `status_bar`), which a connector draws by its contract's list (S21.3; D6, outcome
+    6; ADD-A147) (what its API does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks
     earlier (the maintainer's estimate: about 3–4 weeks against 5–7). Against: several releases, each with its own gate run; D14 (*Settled by
     logic*).
   - **(C)** releases by capability (rules, then shadows, …), R21's rejected stages: each would break the connectors
@@ -533,146 +555,100 @@ the facts tooling reads it.
 
 ### Scheduled
 
-- **D6 — the checkpoint after M1b.** The maintainer approves the scale-up from:
-  - the slice's measured cost per widget and platform (facts written, hours, harness rounds, tokens), extrapolated
-    first to 0.8.0's units (D13: 0.8.0's date and budget), then to the later units (the follow-up releases), with
-    any cap per milestone the maintainer then sets (none since 2026-10-30, D7). A pending fact is counted apart from
-    a stated or measured one: its measuring is not in the slice's cost (*The slice's pending facts*, below;
-    ADD-A146);
-  - the evidence's size, extrapolated (with it the evidence repository's growth and CI's checkout time). Where it
-    lives was decided early, by the maintainer on 2026-11-08: a separate evidence repository pinned by commit (*The
-    evidence repository*), over keeping it in this repository (recommended up to about 500 MB, which the open facts
-    branches already pass) and Git LFS (rejected for its quota and bandwidth costs);
-  - the facts gate's run time, the build's time and the docs.rs build, with a budget: for the gate, the numbers of
-    *The facts gate's cost*'s limits (*Global constraints*; ADD-A146);
-  - the presets' generation (ADD-A146). Every bundled preset is generated from its verified facts
-    (`generate_preset.py`, since M1a; each one's `--check` is a step of `check_release.sh` in every mode): the facts
-    carry S11's `when` and the platform's order, so there is less work and no drift, against longer presets. D6
-    confirms it, over presets written by hand with the gate as a second derivation of them (which the gate no
-    longer is, *How values are checked*), and decides what stays hand-written: today `[preset] generation`, the
-    `[declare]` keyed namespaces and the `read` facts' values, in the generator's marked blocks, and S19.2's bases;
-  - the audit sample's rate, from the slice's measured rate of agreed but wrong facts;
-  - the spikes' results and the unmeasured register's open entries, by kind (*How values are checked*): a row with
-    no route is the maintainer's to decide, a measurement to make the lanes' queue.
-
-  The document check of 2026-11-09 (spec batch ADD-A146) adds these, each a choice the plan's rules leave as they
-  are until the maintainer makes it:
-  - **The slice's pending facts:** whether they are closed before the scale-up. At M1b's close the facts hold
-    45,766 pending of 74,029 (gnome 4, kde 30, windows 119, material 75, macos 16,781, ios 28,757), the eight
-    presets' `[pending]` tables 1,508 paths (`adwaita` 4, `kde-breeze` 16, `material-3` 48, `windows-11` 105,
-    `macos-tahoe` 221, `macos-monterey` 358, `ios-13` 375, `ios-26` 381) and the register 235 rows, none decided:
-    for one widget, the roles and the slice's tokens. Each unit's pending condition (*M3*) reaches the slice's
-    `button` only with the buttons and toggles unit, and its roles and tokens only at M4. The four small tables are
-    M2's task 0 either way. For the Apple presets, which hold 45,538 of the pending facts: (a) their measurement
-    rows closed first, so that the cost above holds a whole widget's measuring and the
-    pipeline's last stage is proven where it is largest; or (b) the scale-up approved on the debt stated as a number
-    (pending facts per platform, the rounds they need) with the cost of closing a measured sample of it.
-  - **The depth of a unit:** whether 0.8.0 states each widget at the depth 0.7.0's model distinguishes, the further
-    variant sets deferred to a named later unit as S6.1 defers `Placement`, an option D13 did not weigh beside (A),
-    (B) and (C). D13's criterion is what 0.7.0's model holds, while a unit enters whole (*One rule for every model
-    field*), so `button` enters with every variant set, size and container its platforms' state models list (1,209
-    variant sets on `macos-tahoe`, the register's U695), which is where almost all the pending facts lie. For:
-    D13's own two reasons; it takes most of the pending facts off 0.8.0's path. Against: a class 2 spec change (the
-    deferral of variant sets, which must not state that the platform lacks them, *One rule for every model field*);
-    a typed variant added later is a breaking release (D14); a platform's variant is missing meanwhile. Without it,
-    a register row with no route ends only in a model change or a blocked release. **Decided at D6** (2026-11-10,
-    outcome 2; the D6 staging design; ADD-A147): each entry at that depth, the rest in named later units of depth
-    (*The depth 0.8.0 states*; *One rule for every model field*).
+- **D6 — the checkpoint after M1b** (spec batch ADD-A147). The maintainer was to approve the scale-up from the slice's
+  figures and the choices the document check of 2026-11-09 added (ADD-A146). Its fifteen outcomes are settled by
+  logic from the maintainer's earlier decisions (D10, D13, D14, R19), the project's rules and the slice's
+  measurements, three design notes working out those that needed design (the D6 staging, load and register
+  designs), each checked independently until a check found nothing serious. Each outcome is the work's basis and
+  open to the maintainer's veto, which the D6 veto list numbers. Where each now stands:
+  - **The slice's cost, and the caps.** **Decided at D6** (2026-11-12, outcome 10): no cap is set now. The work runs
+    to M2's close, whose report gives M2's cost, the gate's time and the load cost, and M3a's approval is asked
+    there with the first real unit costs; no lane writes facts ahead for M3b's units meanwhile (D7; *M2*'s milestone
+    gate; *M3*; *How the work runs*; veto list item 51). A cap from an estimate last wrong by a factor of 12.8 (the
+    slice's measured usage against the estimate at the plan's approval) would not bind or would trip at once.
+  - **The evidence's size.** Where it lives was decided by the maintainer on 2026-11-08: a separate evidence
+    repository pinned by commit (*The evidence repository*), over keeping it in this repository (recommended up to
+    about 500 MB, which the open facts branches already pass) and Git LFS (rejected for its quota and bandwidth
+    costs).
+  - **The facts gate's run time and its limits.** **Decided at D6** (2026-11-12, outcome 9): 3 h a shard on CI,
+    1 h and 12 GB a local preset step, the release run one unsharded local run (the ledger's queue #213), reviewed
+    with the first widget unit's measured times (*The facts gate's cost*; veto list item 25). It sets no budget for
+    the build's time or the docs.rs build.
+  - **The presets' generation, the audit rate and the plan's amendments.** **Decided at D6** (2026-11-12,
+    outcome 13): they stand. Every bundled preset is generated from its verified facts (`generate_preset.py`, its
+    `--check` a step of `check_release.sh` in every mode); hand-written stay `[preset] generation`, the `[declare]`
+    keyed namespaces and the `read` facts' values, in the generator's marked blocks, and S19.2's bases (veto list
+    item 44). The audit sample is 5 % of each lane's agreed facts per unit, at least ten, every measured fact
+    recomputed (*How values are checked*; item 45): the audits found 0 wrong of 430 and 1 of 74, the recomputation
+    the larger defects. The document check's amendments of this plan stand where each is marked `(ADD-A146)`
+    (item 43).
+  - **The register's open entries, by kind.** **Decided at D6** (2026-11-12, outcome 14; the D6 register design):
+    of the rows of kind `d`, the fifteen the checkpoint examined: fourteen settled from the sources (U180 and U504
+    in part), U555 moved with `single_click_activates` to the containers unit (*The units 0.8.0 enables*), and U473
+    by D13's criterion the parking unit *behaviour*'s, 0.7.0's model holding no key repeat; their outcomes in the
+    ledger, each open to the maintainer's veto (veto list items 3, 7, 8, 26 to 30 and 52).
+  - **The slice's pending facts and the depth of a unit** (ADD-A146): whether the slice's 45,766 pending facts of
+    74,029 (the eight `[pending]` tables 1,508 paths, the register 235 rows at M1b's close) are closed before the
+    scale-up, and whether 0.8.0 states each widget at the depth 0.7.0's model distinguishes, the further variant
+    sets deferred to a named later unit as S6.1 defers `Placement`. **Decided at D6** (2026-11-12, outcome 2; the D6
+    staging design): each entry at that depth, the rest in named later units of depth (*The depth 0.8.0 states*;
+    *One rule for every model field*), the facts already written staying and `ios-26` staying (D13). So 1,376 of
+    the pending facts and 682 of the listed paths stay on 0.8.0's path, the four small tables M2's task 0's, the rest
+    closed by each unit's pending condition (*M3*) and at M4 (veto list item 1).
   - **`docs/platform-facts.md`** (the ledger's queue #170): whether the generated file stays committed. It is
-    50,426,216 bytes (62,500 lines) at the slice, against 9.98 MB when the queue row was written at M1a's switch,
-    and grows with the facts, which M3a's units multiply; the largest facts files grow the same way
-    (`docs/facts/ios/button.toml` 34,070,328 bytes, `docs/facts/macos/button.toml` 20,129,128, most of their facts
-    pending, and a measured fact carries the citations a pending one lacks). Both are to be judged against GitHub's
-    per-file limit, read from GitHub's documentation at D6. The document check recommends: the file not committed
-    but generated per platform and widget by CI and at each release (R22 asks that the readable tables are generated
-    from the facts, not that a copy is committed), the gates then running the generator and its self-test; and a
-    rule that splits a facts file by key prefix past a stated size, which `check_facts.py` enforces. Until decided,
-    the file stays committed and `generate_platform_facts.py --check` stays in the gates.
-  - **The model's cost to an application,** which no gate measures: per preset, in a release build, the time of
-    `Theme::from_preset` and `from_system`, the time and peak memory of `Theme::resolve` for one window, and the
-    bytes the preset adds to a binary, beside 0.7.0's figures for the same calls, with a budget the maintainer
-    sets. Known at the slice, none of it a release build's figure: every preset is embedded as text
-    (`native-theme/src/presets/mod.rs`), 5,377,881 bytes in all, `macos-tahoe` 2,154,006, and parsed at each
-    `from_preset` and `set_preset`; the gate's documentation gives about 0.9 GB for one `macos-tahoe` resolution
-    being built (`native-theme/tests/facts_gate/run.rs`, `thread_count`). The measurement is made on the slice for
-    D6, through the synthetic route while no bundled preset builds a theme. With a budget set, the per-unit gate
-    gains its check; if the slice already misses it, a task before M3a (a compact preset form built at compile time,
-    or resolution by need) costs less than one after it. **Decided at D6** (2026-11-10, outcome 1; the D6 load
-    design; ADD-A147): the slice misses it (four presets profiled loaded in 259 ms to 17.6 s and peaked at 18 to
-    1,827 MiB above the load's start, where 0.7.0 loads in under 1 ms), so the budget is *The load budget*, its
-    numbers applying as proposed until the maintainer changes one, and the repair is M2's load path, before M3a's
-    first widget unit.
-  - **D10's licence classes:** whether the decision covers what the crate ships. D10 decides for LGPL references
-    and for an own port of Apache-2.0 material-color-utilities, and gives the expression `(MIT OR Apache-2.0 OR
-    0BSD) AND Apache-2.0`. The crate's `license` is `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT`
-    (`native-theme/Cargo.toml`): `src/platform/win_ui.rs` ports microsoft-ui-xaml under MIT with its notice,
-    `src/platform/android_non_linear.rs` and `src/ripple.rs` port AOSP and androidx under Apache-2.0; and M2.1's
-    `Breeze` engine follows Breeze's kstyle, GPL-2.0-or-later, through the clean room. To confirm, or to decide
-    otherwise: the clean room for every LGPL and GPL reference; an own port of an Apache-2.0 or MIT reference under
-    a file-level licence with its notice; the crate's `license` as the manifest has it.
-  - **The readers unit:** whether it belongs to M3a. Its stated need (*The units 0.8.0 enables*) was met at M1b:
-    the condition `overlay_scrollbars` is in the model since M1a and the GNOME and macOS readers set it
-    (`src/gnome/mod.rs`, `src/macos.rs`); the KDE reader reads `smallestReadableFont`, `toolBarFont`, `menuFont`
-    and the icon theme's `*Default` sizes (`src/kde/mod.rs`). Of the gsettings and kdeglobals keys 0.7.0's GNOME
-    and KDE readers read (at `2796b26e`), the document check found today's lacking only `titlebar-font` and
-    `activeFont`, whose target is `window`, so they wait for that unit's readers step; the macOS and Windows
-    readers are still to be compared. D6's package lists every read 0.7.0 makes that M1b did not port, with its
-    target's unit; then either the unit's need is restated with what is left, or the unit moves to M3b's start and
-    M3a keeps each unit's readers step alone, by D13's own test and this plan's argument against adding units to
-    M3a (their cost against D13's timing).
-  - **The plan's amendments** of the same check, for the maintainer's confirmation: what corrected a fact, an order
-    that could not run as written or a missing step was applied, each marked `(ADD-A146)` where it stands: the
-    closing cadence, the parallel code tasks and the usage rules as the maintainer last set them (*Global
-    constraints*, *Where the work happens*, *How the work runs*); the facts gate's cost (*Global constraints*); the
-    two kinds of register row and each unit's pending condition (*How values are checked*, *M3*); M2's task 0, the
-    connectors' design before their code, and its task 5 in the connectors (*M2*); M3's alignment step and the
-    check that an enabled unit's facts were verified (*M3*, *M4*); the gate's release mode and the drift run's
-    record (*M4*); M5's two comparisons; the package's exclusion and size check (*M2*); the readers unit's scope and
-    where a condition key is declared (*The units 0.8.0 enables*); the generated presets' steps and the scripts
-    table; the corrected rows of *0.8.0's scope* and of *The module inventory*; and what follows the same batch's
-    changes of the specification: a fact's units including the widget a `drawn_as` value names (*Global
-    constraints*); the runtime task's Compose spring evaluator and `ComposeShapeMorph`, the contract tables'
-    supplied side, and task 4's mapping check on every preset, followed-scheme rule and palette run (*M2*); the
-    catalogue's 87 typed widgets, `font_button` the new one (*The units 0.8.0 enables*).
-  - **The rationale's amendments** of the same check, for the maintainer's confirmation (a change to a rationale
-    decision is the maintainer's, *Spec changes*; the two that reverse a recorded decision are marked in the rationale as awaiting it): `ios-*`'s accent
-    alone, with measured tint derivations after a second-tint pass (R2.6, R4, R19; U706); a palette suspended, not
-    refused, under a followed scheme it lacks (R19); the bundled palettes' accents, each the variant whose accent
-    0.7.0's preset states (R19); `#[non_exhaustive]` error enums (R21); no font DPI read (R10).
-  - **The rationale's open questions** the same check left to the maintainer, none decided:
-    - R-1, R21's release condition and R4's Apple list against the slice's numbers (the Apple presets hold 45,538
-      of the 45,766 pending facts, `ios-26`, which 0.7.0 does not ship, about a third of them): (a) as decided;
-      (b) a unit staged by its variant sets, sizes, contexts and conditions as by widget (*The depth of a unit*,
-      above); (c) `ios-26` to the first follow-up release; (d) (b) and (c). The check recommends (d), or at least
-      (c), with the cost argument stated in R4 and R21 and the reason of the choice recorded.
-    - R-3 with R-12, a typed role the platform names no counterpart for (the status roles absent on `macos-*` by
-      R25.17, against D13 and the connectors' need at M2.1; U456 leaves `ios-*` open for the same reason): (a)
-      absent, R23 gaining what a connector puts in a toolkit field the model leaves absent; (b) one rule: such a
-      role is native-theme's mapping, labelled as R19's picks are, outside the gate's platform comparison, never
-      absent and never a `published` fact, the status roles on `macos-*` and `ios-*` referencing the keyed system
-      colours as 0.7.0 drew them and R10's text-slot mappings labelled alike; (c) per-preset connector code reading
-      the keyed roles. The check recommends (b); R-12 holds under any: R25.17 names `ios-*` too, or the source that
-      makes iOS differ.
-    - R-9, motion not weighed for deferral as placement was: (a) as decided, motion in 0.8.0; (b) a motion unit
-      after 0.8.0 (the runtime, the connectors' use and the Apple measurements), 0.8.0's widgets changing state at
-      once as 0.7.0's do, the model's types and the written facts staying. The check recommends weighing (b), and
-      if (a) stays, an Apple motion spike before M2.1. **Decided at D6** (2026-11-10, outcome 3; the D6 staging
-      design; ADD-A147): (b), 0.8.0 keeping the two motions 0.7.0 has where the Apple motion trial measures them
-      (M2's task 1).
-    - K4-2, what a mapping states for the keyed roles a preset's values read (S14, open): (A) per preset section,
-      the keyed colour roles that preset's values read and that follow nothing the mapping states, each a published
-      colour, a derivation or a labelled pick, S12 refusing a mapping that leaves an opaque one to the preset; (B)
-      typed roles and inputs only, S14 and R19 recording what that leaves on each preset. The check recommends (A)
-      on `windows-11`, (B) with S9.2's seed derivation on `material-3`, and the measured literals of `macos-*` and
-      `ios-*` a recorded limit.
-    - W3-3 with W5-15, what a connector draws on `NotAvailable(Widget)`, where a preset declares unavailable a
-      widget 0.7.0 resolved there (`tab`, `card`, `expander`, `status_bar`) or a stand-in widget whose unit is
-      enabled (`group_box`, `stepper`, `menu_bar`, `redaction`): (a) the *Available* lines stay, as true of the
-      platforms, D13's sentence restated to the presets whose platform draws the widget, the stand-in table gaining
-      `bottom_tab_bar` and `group_box` (M3b), and S21.3 one rule: the contract lists per preset the entry the
-      connector draws its toolkit's widget from, or the toolkit's own look where the catalogue names none, the
-      contract test checking the list complete; (b) `bottom_tab_bar` and `group_box` moved into M3a, the rule still
-      missing. The check recommends (a), the stand-in widgets under the same rule.
+    50,121,732 bytes since `72dd07b4`, where a push to GitHub is warned at 50 MiB and blocked at 100 MiB (GitHub's
+    documentation, as read for D6), and grows with every measured fact; the largest facts file,
+    `docs/facts/ios/button.toml`, is 34,075,260 bytes. **Decided at D6** (2026-11-12, outcome 8): not committed; CI
+    and each release generate it, the gates running the generator and its self-test; `check_facts.py` enforces a
+    split of a facts file by key prefix past 40 MB; the local tools that cite its lines read the facts or a
+    generated copy (R22 asks that the readable tables are generated from the facts, not that a copy is committed,
+    and GitHub renders no file of that size, so the committed copy has no reader). One task early in M2 (*M2*,
+    *`docs/platform-facts.md` not committed*); until it merges, the file stays committed and
+    `generate_platform_facts.py --check` stays in the gates (veto list item 50).
+  - **The model's cost to an application,** which no gate measured: per preset, in a release build, the load, the
+    resolution, the query, the memory and the bytes a preset adds, beside 0.7.0's figures. **Decided at D6**
+    (2026-11-12, outcome 1; the D6 load design): the slice misses any budget (four presets profiled loaded in 259 ms
+    to 17.6 s and peaked at 18 to 1,827 MiB above the load's start, where 0.7.0 loads in under 1 ms), so the budget
+    is *The load budget*, its numbers applying as proposed until the maintainer changes one (veto list items 9 to
+    23), and the repair is M2's load path, before M3a's first widget unit (item 46).
+  - **D10's licence classes:** whether D10 covers what the crate ships (an MIT port, `src/platform/win_ui.rs`, and
+    a GPL reference, Breeze's kstyle for M2.1's `Breeze` engine). **Decided at D6** (2026-11-12, outcome 11): D10
+    names four classes (*D10*, *Extended at D6*; veto list item 41).
+  - **The readers unit:** whether it belongs to M3a, its stated need having been met at M1b. **Decided at D6**
+    (2026-11-12, outcome 4): it moves to the start of M3b, and M3a keeps each unit's own readers step (*The units
+    0.8.0 enables*; *M3*): the comparison of all four readers with 0.7.0's at `2796b26e` found no read whose target
+    lies outside 0.8.0's other units (veto list item 47).
+  - **The rationale's amendments** of the document check (ADD-A146). **Decided at D6** (2026-11-12, outcome 12):
+    the five stand, as the rationale now states them: `ios-*`'s accent alone, what UIKit draws in the tint a measured
+    derivation over it, U706's second-tint run scheduled in M2 (R2.6, R4, R19); a palette suspended, not refused,
+    under a followed scheme it lacks (R19); the ten bundled palettes 0.7.0's ten schemes, each the variant with
+    0.7.0's accent (R19); `#[non_exhaustive]` error enums (R21); no font DPI read where the toolkit's scale carries
+    it, the KDE reader's `Xft.dpi` read going (R10) (veto list item 42).
+  - **The rationale's open questions** the document check left (ADD-A146), each answered by an outcome:
+    - R-1, R21's release condition and R4's Apple list against the slice's numbers (the Apple presets held 45,538
+      of the 45,766 pending facts): **Decided at D6** (2026-11-12, outcome 2): a unit staged by its depth (*The depth
+      0.8.0 states*), `ios-26` staying in 0.8.0 (D13; the rationale's R4 and R21; veto list item 1).
+    - R-3 with R-12, a typed role the platform names no counterpart for: **Decided at D6** (2026-11-12, outcome 5):
+      one rule, native-theme's labelled mapping, outside the gate's platform comparison, never absent and never a
+      stated fact; on `macos-*` and `ios-*` the status roles refer to the keyed system colours as 0.7.0 drew them,
+      the pairings listed in the catalogue's *global roles* (`status`) for the maintainer's veto; the text slots'
+      mappings are labelled alike; R25.17 names `ios-*` too (the rationale's R5.1, R10, R25.17; the specification's
+      S3, S4.4, S17; veto list item 3). U456 closes with the pairings.
+    - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-12, outcome 3; the D6
+      staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
+      trial measures them (M2's task 1), Apple stating no timings (at `7430a0a2` 21 of the 27 macOS and 43 of the 48
+      iOS motion facts pending, by the D6 staging design's count) (veto list items 2 and 6).
+    - K4-2, what a palette states for the keyed roles a preset's values read: **Decided at D6** (2026-11-12,
+      outcome 7): over a preset whose widgets read keyed colours, a palette reaches them by a stated mapping method,
+      or it is not offered over that preset, built with the palettes in M2's task 4 (the specification's S14, the
+      rationale's R19; veto list item 49).
+    - W3-3 with W5-15, what a connector draws where a preset declares unavailable a widget 0.7.0 resolved there
+      (`tab`, `card`, `expander`, `status_bar`) or a stand-in widget whose unit is enabled: **Decided at D6**
+      (2026-11-12, outcome 6): the declarations stay, D13's sentence restated to the presets whose platform draws
+      the widget, and the connectors' contract lists per preset the entry a connector draws its toolkit's widget
+      from (the specification's S21.3; *Widgets 0.7.0 styles through stand-ins*; veto list item 48).
+  - **The documents' next check.** **Decided at D6** (2026-11-12, outcome 15): a full pass over all documents after
+    the batch that applies D6, then each unit's batch as it is written (*Spec changes*; veto list item 53).
 
 ### Settled by logic (recorded)
 
@@ -936,24 +912,24 @@ no rule selects on, and the reader's read of it comes with that unit's readers s
 overlay_scrollbars` (0.7.0's `overlay_mode`) needs no unit, the condition being in the model since M1a and set by the
 GNOME and macOS readers since M1b.
 
-1. **readers** (ADD-A146): every desktop `reader` line of the traces whose target (a role, a token, an input, a
-   text slot or a condition) lies in an enabled unit, the lines of the catalogue's *readers* list among them (that
-   list holds the reads of the catalogue's group 8's rows, not the full set; the iOS and Android lines stay
-   R18's). A line whose target is a widget's part or value, or a condition only a later unit's rule selects on,
-   waits for that unit's readers step. Rejected: the catalogue's list as the unit's scope (it lacks reads the core
-   gives this unit, the macOS keyed roles of MAC-DF01 to MAC-DF05† and the user's fonts of MAC-I07 among them).
-   Needed: 0.7.0 reads KDE's `smallestReadableFont`, `menuFont` and `toolBarFont` (`kde/fonts.rs:149-204`, K3.46),
-   the icon theme's `*Default` sizes (`kde/mod.rs:104`, K3.63) and the overlay-scrollbar settings
-   (`gnome/mod.rs:554-556`, `macos.rs:245-250`; GN-1.85, MAC-S01); whether that need still stands after M1b is D6's
-   item (*The readers unit*).
-2. **window and chrome**: `window`.
-3. **overlays**: `dialog`, `popover`, `tooltip`, `menu`.
-4. **buttons and toggles**: `button` (enabled by the slice), `link`, `segmented_control`, `switch`, `checkbox`,
+The readers unit is M3b's first (D6, outcome 4; ADD-A147): the comparison of all four readers with 0.7.0's at
+`2796b26e` found every value 0.7.0 reads and M1b's port does not either replaced or the target of an M3a unit, so
+each unit's readers step (*M3*, step 5) reads it. For window and chrome: GNOME's `titlebar-font` (GN-1.19), KDE's
+`[WM] activeFont`, macOS's `windowFrameTextColor` and Windows' `SM_CXSMICON` for the title bar's icon (W1-010); for
+fields: macOS's `placeholderTextColor`; for indicators: macOS's scroller width (MAC-S07); for containers: macOS's
+`headerTextColor` and `gridColor`. KDE's `activeFont` and the four macOS colours have no trace `reader` line yet, which their units' lanes
+add; Windows' `SM_CXSMICON` and `SM_CXICON` for `token.icons.sizes` wait on the register's U516; KDE's
+`forceFontDPI` and `xrandr` reads the specification drops (S9.3). Rejected: the readers unit in M3a (208 trace rows
+whose reads 0.7.0 does not make, against D13's timing).
+
+1. **window and chrome**: `window`.
+2. **overlays**: `dialog`, `popover`, `tooltip`, `menu`.
+3. **buttons and toggles**: `button` (enabled by the slice), `link`, `segmented_control`, `switch`, `checkbox`,
    `radio`, `radio_group` (no 0.7.0 field, though 0.7.0's showcases draw a radio group, `basic.radios`; it joins with
    its unit).
-5. **fields**: `input`, `text_area`, `combo_box`, `slider`.
-6. **indicators**: `spinner`, `progress_bar`, `scrollbar`.
-7. **containers**: `scroll_view` (no 0.7.0 field, though 0.7.0's showcases scroll their pages, `basic.page`; the
+4. **fields**: `input`, `text_area`, `combo_box`, `slider`.
+5. **indicators**: `spinner`, `progress_bar`, `scrollbar`.
+6. **containers**: `scroll_view` (no 0.7.0 field, though 0.7.0's showcases scroll their pages, `basic.page`; the
    slice's staged `token.behavior.scroll` ends here), `list`, `tab`,
    `sidebar`, `toolbar`, `status_bar`, `splitter`, `separator`, `card`, `expander`, `layout`. With `list` the unit
    decides `token.behavior.single_click_activates` (D6, outcome 14; the register's U504 and U555, the token's keys
@@ -974,7 +950,11 @@ window_menu_placement, title_menu_placement, keyboard_avoidance}`, `dialog.value
 0.7.0 places nothing, and S13's strategies each need a vector table from their reference (the GTK and Qt containers,
 Compose's code, the WinUI host) or measured AppKit and UIKit frames.
 
-**After 0.8.0 (M3b):** placement (ending those deferrals); the 57 typed widgets the model lacks today, in alphabetical
+**After 0.8.0 (M3b):** the readers unit (ADD-A146's scope: every desktop `reader` line of the traces whose target,
+a role, a token, an input, a text slot or a condition, lies in an enabled unit, the catalogue's *readers* list
+among them; a line whose target is a widget's part or value, or a condition only a later unit's rule selects on,
+waits for that unit's readers step; the iOS and Android lines stay R18's; D6, outcome 4); placement (ending those
+deferrals); the 57 typed widgets the model lacks today, in alphabetical
 batches of about ten; the 28 keyed components; the units of depth of 0.8.0's entries (content, styles, menus, states
 and identities per widget unit; sizes, flavours, increased contrast, window activity, the iPad, accessibility text,
 interface level, glass, right-to-left), each model-wide and closed on the measured platforms by a designed sample run
@@ -1020,6 +1000,22 @@ then the widget is unmapped as its source widgets are, a state of the build no r
 in 0.8.0's units. Rejected: the entry written at M2.1 from what exists and extended by each later unit (a stand-in
 drawn from part of its sources, a look 0.7.0 never drew, and an entry several units rewrite).
 
+**Widgets a preset declares unavailable** (D6, outcome 6; ADD-A147). 0.7.0 resolved `tab`, `card`, `expander` and
+`status_bar` on every preset; the catalogue declares them, truthfully, unavailable where the platform has no such
+control (`tab` on `ios-*`, UITabBar being `bottom_tab_bar`; `card` on `macos-*`, NSBox being `group_box`, and on
+`ios-*`; `expander` on `material-3` and `ios-*`, their expandable item a list row; `status_bar` on `adwaita`,
+`windows-11`, `ios-*` and `material-3`), and the query answers `NotAvailable` there. The declarations stay. Each
+connector's contract lists, per preset, the entry it draws its toolkit's widget from there (S21.3): a stand-in entry
+for the widget the catalogue names, until that widget's unit (`bottom_tab_bar` and `group_box`, M3b; `list`'s row
+for `expander`); or, where the catalogue names none (`status_bar`, `card` on `ios-*`), the toolkit's own geometry
+with every colour and
+font from the theme's typed roles, never an unthemed toolkit colour. The contract test checks the list is complete.
+The same rule serves a stand-in widget whose unit is enabled on a preset that declares it unavailable. The rows are
+written in the containers unit's connector task, which enables the four widgets. 0.7.0's values under those names
+(the iOS tab bar's height of 49, the macOS box margins) return with `bottom_tab_bar` and `group_box`. Rejected:
+`bottom_tab_bar` and `group_box` moved into 0.8.0 (two more units against D13's timing, and the rule still missing
+where the catalogue names no control); each connector deciding alone (against "connectors follow the theme's data").
+
 ### 0.7.0's public features the new model keeps
 
 | 0.7.0 feature (at `2796b26e`) | In the new model | Planned in |
@@ -1027,7 +1023,7 @@ drawn from part of its sources, a look 0.7.0 never drew, and an entry several un
 | the seven platform presets (`presets.rs:58-64`) | the presets from facts; `ios-26` added | M1a (`adwaita`, `macos-tahoe`), **M1b** (the other six), each unit |
 | the ten community presets of seven projects (`presets.rs:66-75`) | palettes from the projects' published colours (S14) | **M2.4** |
 | `Theme::preset`, `merge`, `resolve`, `resolve_with`, `list_presets`, `list_presets_for_platform` (`model/mod.rs:578`, `:340`, `:487`, `:515`, `:718`, `:741`); `SystemTheme::pick`, `with_overlay` (`lib.rs:735`, `:890`) | `Theme::from_preset`, `add_layer`, `pick`, `resolve` and the query, `PresetId::all`; `PresetId::for_platform` for `list_presets_for_platform` (S16; ADD-A146) | M1a; `PresetId::for_platform` at **M2.5** (S16 complete) |
-| the readers: `SystemTheme::from_system`, `from_system_async`, `from_system_with_preset` (`lib.rs:959-1017`); features `kde`, `portal`, `macos`, `windows` and their aliases | `Theme::from_system(None)`, `from_system_async`, `from_system(Some(generation))` and `reload_reader`; `Theme::system()` is the accessor of the reader's state (S16; ADD-A146) | **M1b** (the slice's scope), the readers unit, each unit's readers step |
+| the readers: `SystemTheme::from_system`, `from_system_async`, `from_system_with_preset` (`lib.rs:959-1017`); features `kde`, `portal`, `macos`, `windows` and their aliases | `Theme::from_system(None)`, `from_system_async`, `from_system(Some(generation))` and `reload_reader`; `Theme::system()` is the accessor of the reader's state (S16; ADD-A146) | **M1b** (the slice's scope), each unit's readers step; the readers unit after 0.8.0 (M3b; D6, outcome 4) |
 | `detect`'s scheme and motion functions (`detect.rs:211-948`), `AccessibilityPreferences` | conditions and `ReaderState` | **M1b** |
 | `watch::on_theme_change` (`watch/mod.rs:435`), feature `watch` | the same, ported to S9.5 | **M1b** |
 | `icons`: `load_icon`, `load_custom_icon(_in)`, the five loaders, `colorize_monochrome_svg`, `fill_current_color`, `IconSetChoice`, `default_icon_choice`, the freedesktop theme lists (`icons.rs:112-1480`, less `load_icon_indicator`); `IconSet`, `IconRole`, `IconData`, `IconProvider`; features `system-icons`, `material-icons`, `lucide-icons` | kept in place, repointed (the inventory) | M1a's switch |
@@ -1263,6 +1259,27 @@ staying: `adwaita` 0, `kde-breeze` 4, `macos-monterey` 93, `macos-tahoe` 76, `io
 `windows-11` 54, `material-3` 9 (682 in all). A table that differs is reported with the paths that differ, and the
 task does not close until the orchestrator has decided it.
 
+**`docs/platform-facts.md` not committed** (D6, outcome 8; the ledger's queue #170; ADD-A147). One tooling task
+(`implement`), early in M2, merged before the next large facts merge (task 0's lanes' rounds). The file leaves the
+repository in one commit and is ignored; `check_release.sh`, in every mode, and `ci.yml` run
+`generate_platform_facts.py` into a scratch path and its `--self-test` in place of `--check`; each release generates
+it at its commit (M6); `check_facts.py` fails a facts file past 40 MB, which is split by key prefix (S17's
+*Format*); the local tools that cite the file's lines (the preset validator and the `platform-fact` skill, D9) read
+the facts or a copy generated on demand. *Done:* the file absent from the branch and ignored; `check_facts.py
+--self-test` passing a made-up facts file at 40 MB and failing one past it; no facts file past 40 MB at the task's
+base (the largest, `docs/facts/ios/button.toml`, 34,075,260 bytes at `72dd07b4`); `generate_platform_facts.py
+--self-test` and the generation green in `check_release.sh --quick` and in the pull request's CI; neither local
+tool reading a committed copy (by search). Rejected: the file committed per platform in smaller files (D6's package
+projected, for M3a's units at full depth, about 125 MiB for the iOS file and 104 MiB for the macOS one, each past
+GitHub's block); kept as it is (it stands at GitHub's warning and grows with every measured fact).
+
+**The iOS second-tint run** (D6, outcome 12; the register's U706; ADD-A147). The iOS lane's host pass on both
+simulators under a second tint, beside M2's tasks, so that what UIKit draws in the tint is a measured derivation over
+the accent (R2.6), as the macOS second-accent pass made it on `macos-*`. *Done:* every tint-following fact at 0.8.0's
+depth stated as a derivation over the accent and verified, the default tint's literals gone from them, and U706
+closed for them; a value that does not follow the tint stays a literal, with the run's evidence. It blocks the iOS
+presets' release, not M2's other tasks.
+
 **The load path** (D6, outcome 1; the D6 load design; ADD-A147). The load tasks, named as the design names them
 ("load task 1" is not M2's task 1), and the trigger step run beside M2's numbered tasks, each placed by what must
 come before it.
@@ -1398,7 +1415,18 @@ is fixed before task 0 on its own branch, `side-units`.
    presets whose table is small are brought to an empty one by their lanes' rounds (`adwaita` 0 paths, `kde-breeze`
    4, `material-3` 9, `windows-11` 54 once the staging task is merged; a row with no route among theirs goes to the
    maintainer first, *How values are checked*), so that at least `adwaita` and `kde-breeze` build
-   through `from_preset`. A preset whose table it empties takes its plain route's records in
+   through `from_preset`. Its first step is code (`implement`; ADD-A147), before the facts of U180 and U505 are
+   written: S2.2's operators `ceil` and `if_le` and the font metric `font_descent` (S8's `FontMetrics::descent`,
+   S10's data list) in the model's code, with unit tests from S2.2's definitions whose vectors are the exactness
+   checks of the D6 register design's `u180_ops_check.py` (QPainter's underline over its grid of inputs in 1/64 px
+   and its ties, on both pen paths; WinUI's blink timeout for every blink time from 0 to 10,000 ms; the script's
+   three positive controls each failing), and the scripts that read the operators and the metric
+   (`check_facts.py`, `check_function_vectors.py`, `verify_facts.py`, `generate_preset.py`). Its second step is
+   tooling, before the facts that use it: the labelled mapping's form (S17's `mapping`, S11's comment; D6,
+   outcome 5) in `check_facts.py`, `check_fact_citations.py`, `generate_preset.py`, `check_preset_citations.py`
+   and the gate's report; then the lanes write the mappings: `windows-11`'s monospace style (U509), the status
+   pairings of `macos-*` and `ios-*` (the catalogue's *global roles*, `status`; U456), `ios-*`'s `accent_foreground`
+   (U651), and the label on each text slot a platform names no style for. A preset whose table it empties takes its plain route's records in
    `scripts/cost_budget.toml` ("first measured by" this task until then), and its synthetic route's cases and line
    1's `read` leave the file (*The load budget*, *Who makes records*; ADD-A147). Until a preset's table is empty, a connector's tests reach it
    through the hidden `native_theme::gate`, which gains one function returning the synthetic `Theme` of a bundled
@@ -1466,7 +1494,11 @@ is fixed before task 0 on its own branch, `side-units`.
    picks (the guide's own example value where it gives one, else the middle of the stated range; the picks listed in
    the ledger for the maintainer's veto); the KDE ports, with their measured facts added to the accent run; the
    projects' published colours as facts (a palette lane and its verifier); the gate's palette run, by S17's *The
-   palette run* (each pick skipped). The build test's trusted forms gain each bundled palette's source over each
+   palette run* (each pick skipped). Over a preset whose widgets read keyed colours, a palette reaches them by S14's
+   stated mapping method, or it is not offered over that preset (D6, outcome 7; ADD-A147): per project and preset,
+   each keyed colour role the preset's values read that follows nothing the palette states, mapped once to the
+   project's vocabulary, the table reviewed by a `review` agent before a palette is bundled over that preset; the
+   design of the method is this task's first step. The build test's trusted forms gain each bundled palette's source over each
    preset it serves, under each contrast condition (S19.1), and line 4's case of a bundled palette applied or removed
    takes its first record ("first measured by" this task until then; *The load budget*; ADD-A147).
    Beside it, `material-3`'s accent-derivation layer (its `m3_role` statements and S8's leave-out, S9.2; its forms
@@ -1494,24 +1526,30 @@ unit, S4.7 with the pointer unit, both after 0.8.0), and S13's placement with it
   (ADD-A146).
   **Milestone gate:** `cargo test --workspace` (outside `PLAN_EXCLUDED`; a connector's tests reaching a preset as
   task 0 says), `check_function_vectors.py`, the palette run, and no `pending` contract entry.
+  **At M2's close** (D6, outcome 10; ADD-A147): a report to the maintainer of M2's cost, the gate's time and the
+  load cost; M3a's approval is asked with the first real unit costs, and the maintainer may set caps per milestone
+  then. Until that approval no lane writes facts ahead for M3b's units.
 
 ## M3 — Units (the per-unit pipeline)
 
-The units, in order: placement (S13: the types and every strategy with
+The units, in order: readers (the traces' desktop `reader` lines whose targets are enabled, *The units 0.8.0
+enables*; ADD-A146); placement (S13: the types and every strategy with
 its vector table, generated by the reference where one runs: the GTK and Qt containers, Compose's code, the WinUI host
 for microsoft-ui-xaml's strategies; measured by the probe and the iOS host for AppKit and UIKit, anchor, size and window
-in, frame out); readers (the traces' desktop `reader` lines whose targets are enabled, *The units 0.8.0 enables*;
-ADD-A146); window and chrome; overlays; buttons and toggles; fields;
+in, frame out); window and chrome; overlays; buttons and toggles; fields;
 indicators; containers; the typed widgets the model lacks today, in alphabetical batches of about ten entries; the
 keyed components; the units of depth, the parking units and motion (*After 0.8.0*; ADD-A147).
 
-D13 splits them. M3a's units keep this order; placement moves after them, the first of M3b, so 0.8.0's `Placement`
-values stay deferred until its commit; M3b's other units keep this order:
+D13 splits them. M3a's units keep this order; readers and placement move after them, the first two of M3b (readers
+by D6, outcome 4, *The units 0.8.0 enables*; ADD-A147), so 0.8.0's `Placement` values stay deferred until
+placement's commit; M3b's units keep this order:
 
-- **M3a, before M4:** 0.8.0's units (*0.8.0's scope*): readers, window and chrome, overlays, buttons and toggles,
-  fields, indicators, containers (the token groups entering by S6.1's rule; ADD-A147).
-- **M3b, after M6:** placement, the typed-widget batches, the keyed components, in the follow-up releases (*After
-  0.8.0*). The lanes may write their facts ahead, within the usage caps; the gate skips them until their unit.
+- **M3a, before M4:** 0.8.0's units (*0.8.0's scope*): window and chrome, overlays, buttons and toggles, fields,
+  indicators, containers (the token groups entering by S6.1's rule; each unit's readers step reading what 0.7.0
+  read for its targets; ADD-A147).
+- **M3b, after M6:** readers, placement, the typed-widget batches, the keyed components, in the follow-up releases
+  (*After 0.8.0*). The lanes may write their facts ahead, within the usage caps, once the maintainer has approved
+  M3a at M2's close; until then none does (D6, outcome 10; ADD-A147). The gate skips them until their unit.
 - **Every unit listed** (a code and script task at M3a's start, before its first unit's commit): today
   `scripts/widget_units.toml` lists only the enabled units, so a key in no listed unit is a later unit's or a stray,
   and `tests/facts_gate/units.rs` answers only held or not held. The file then lists every unit of M3's order with
@@ -1655,7 +1693,8 @@ dev-dependencies and modules linked again.
 - The CHANGELOG's 0.8.0 entry completed and dated; the READMEs, ROADMAP (the follow-up releases and their units,
   D13), `docs/todo.md`'s closed entries,
   `docs/COMPATIBILITY.toml` (`update_compatibility.sh`), `docs/new-os-version-guide.md` (facts per generation, the
-  harnesses), the docs.rs build, `generate_assets_release.sh` and the provenance stamps, the full `check_release.sh`.
+  harnesses), the docs.rs build, `generate_assets_release.sh` and the provenance stamps, `docs/platform-facts.md`
+  generated at the release's commit (not committed; D6, outcome 8; ADD-A147), the full `check_release.sh`.
 - The two superseded connector plans (`docs/todo_gpui-full-theme.md`, `docs/todo_iced-full-theme-geometry.md`) archived
   to `docs/archive/`, which the later units do not need, their triage rows removed with them (`check_ledger.py` reads
   their items only while the files exist), and the links to them repointed in the same commit (ROADMAP's *Later —
@@ -1667,7 +1706,8 @@ dev-dependencies and modules linked again.
 
 ## After 0.8.0 — M3b and the follow-up releases
 
-- **The units:** M3b's, in M3's order: placement (its commit ends 0.8.0's deferred `Placement` values), the typed
+- **The units:** M3b's, in M3's order: readers (D6, outcome 4; ADD-A147), placement (its commit ends 0.8.0's
+  deferred `Placement` values), the typed
   widgets the model lacks today in alphabetical batches, the keyed components, the units of depth, the parking units
   and motion (*0.8.0's scope*; ADD-A147). Each runs M3's per-unit pipeline and
   its per-unit gate, its connector task included, unchanged.
@@ -1688,7 +1728,8 @@ dev-dependencies and modules linked again.
     stand-in entry; its units' widgets in the showcases, with their element lists, parity gates and screenshots;
     `PLAN_EXCLUDED` empty;
   - M6's steps: its CHANGELOG entry, the READMEs, ROADMAP, `docs/todo.md`, `docs/COMPATIBILITY.toml`, the docs.rs
-    build, the assets and stamps, the full `check_release.sh` (its semver checks deciding the number by D14), the
+    build, the assets and stamps, the generated `docs/platform-facts.md`, the full `check_release.sh` (its semver
+    checks deciding the number by D14), the
     memory, `sweep-target.sh`; the maintainer's merge, tag, release and publish.
 - **The last follow-up release** (the one that enables the catalogue's last unit) also runs the gates the plan first set
   for M4: `check_facts_trace.py` with no option (every trace line) and the facts gate with no fact skipped; then the
@@ -1723,7 +1764,8 @@ dev-dependencies and modules linked again.
 | `check_facts.py` | M0 | yes | kept |
 | `check_fact_citations.py` | M0 | the full run fails without the cache; `--commit` skips it, by name, only when the cache is absent; the SDK-header citations run in a macOS job of `os-probe.yml` | kept |
 | `check_function_vectors.py` | M1a | yes | kept |
-| `generate_platform_facts.py` | M1a | `--check`, from the switch | kept |
+| `generate_platform_facts.py` | M1a | `--check`, from the switch; from M2's task *`docs/platform-facts.md` not committed* a generation and `--self-test`, in every mode (D6, outcome 8; ADD-A147) | kept |
+| `check_cost_budget.py` and its lines, `cost_budget.toml` (*The load budget*; ADD-A147) | M2's load task P | from load task 6: the release run in the full run; the unit run in each unit's gate (*M3*), on the measuring machine only; `--self-test` | kept, a release gate |
 | `update_sources.sh` | M0 | `--verify` in the full run | kept |
 | `measure_kde_accent.sh`, the harnesses and hosts under `tools/` | M0 spikes | no (CI) | kept, for the next OS version |
 
@@ -1746,8 +1788,8 @@ dev-dependencies and modules linked again.
   state model and declarations from the sources, without the lane's, and the two are compared mechanically (a
   combination the lane missed would otherwise never be checked); then, for the agreed combinations, it reports a value
   and a citation for each key, never seeing the lane's, and both are compared mechanically. Each disagreement goes to a
-  tie-breaker agent with both citations and the source. An audit sample of the agreed facts (during the slice 5 % per
-  lane and unit, at least ten; D6 sets the rate) goes to the tie-breaker too, to measure how often a lane and its
+  tie-breaker agent with both citations and the source. An audit sample of the agreed facts (5 % per lane and unit,
+  at least ten, as during the slice; kept at D6, outcome 13; ADD-A147) goes to the tie-breaker too, to measure how often a lane and its
   verifier agree on a wrong value. The orchestrator reads the tie-breakers' summaries and every verdict that changes the
   catalogue or the specification. A low agreement or audit rate (below 95 %) starts a search for the systematic cause
   (a wrong pin, a misread format), not a blind re-run. For `measured` facts the verifier checks the evidence and the
@@ -1955,6 +1997,14 @@ classes:
 After each batch the orchestrator runs the spec checkers and `generate_widgets.py --check` and tells the running
 tasks; the generator's drift check makes the code follow.
 
+**The documents' checks** (D6, outcome 15; ADD-A147). After the batch that applies D6 (ADD-A147), one full pass of
+independent checks over all the documents (the rationale, the specification with its catalogue and traces, this
+plan and the ledger); its fixes are checked until a check finds nothing serious, each further pass reading the
+documents the fixes changed and what the findings implicate, not the whole set again. From then on each unit's batch
+is checked as it is written (class 2, above). Rejected: a full pass before the batch (it would read texts the batch
+rewrites); no further full pass (the maintainer's document standard asks for checks until a pass finds nothing
+serious). A full pass with its fixes costs about 16 M of usage (D6's package), hence one, then passes by need.
+
 ## How the work runs
 
 - **Roles:** an Opus session orchestrates; code tasks run in `implement` agents with a failing test, a compile or a
@@ -1971,9 +2021,9 @@ tasks; the generator's drift check makes the code follow.
   the gates on `v0.8.0-rc1` stay sequential.
 - **Usage** (ADD-A146): as many agents and build slots at once as the maintainer last set, which the ledger records
   (on 2026-11-09 four agents, six where two of them run no `cargo`, and two build slots, the gate and one `-p` build;
-  an agent waiting on a CI run does not count). No token cap since 2026-10-30 (D7), so the lanes work ahead into M3's
-  units within the agent limit alone; D6 presents the extrapolated cost, and the maintainer may set caps per
-  milestone there.
+  an agent waiting on a CI run does not count). No token cap since 2026-10-30 (D7), and none set at D6 (outcome 10;
+  ADD-A147): the lanes work ahead into M3a's units within the agent limit alone, and into M3b's only once the
+  maintainer has approved M3a at M2's close, where the maintainer may set caps per milestone.
 - **Disk:** `~/.claude/scripts/sweep-target.sh` at each milestone's close and whenever the build folder passes about
   200 GB.
 - **Progress** is recorded in the ledger and the project memory.
@@ -1986,7 +2036,8 @@ tasks; the generator's drift check makes the code follow.
 - [x] Spikes M · G · K · I · W · A (2026-10-30, all yes)
 - [x] M1a slice core (2026-11-06)
 - [x] M1b slice complete (2026-11-10)
-- [ ] D6 checkpoint
+- [ ] D6 checkpoint (its outcomes applied as the work's basis, ADD-A147; the veto list with the maintainer)
+- [ ] The full document pass after ADD-A147 (D6, outcome 15)
 - [x] D6's evidence item: the evidence repository (the maintainer, 2026-11-08)
 - [x] The evidence repository's switch (the tooling task, then *The evidence repository*'s steps; 2026-11-08)
 - [x] D13 0.8.0's scope, (B) (2026-11-06)
