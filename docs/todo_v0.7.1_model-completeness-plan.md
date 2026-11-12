@@ -585,7 +585,8 @@ the facts tooling reads it.
     (item 43).
   - **The register's open entries, by kind.** **Decided at D6** (2026-11-10, outcome 14; the D6 register design):
     of the register's rows of kind `d`, the fifteen choices of model form the checkpoint examined are fourteen
-    settled from the sources (U180 and U504 in part) and U555, moved with `single_click_activates` to the containers
+    settled from the sources (U504 in part; U180, its open rest, Qt Quick's line position, split off as U753 and due
+    with the flavours unit) and U555, moved with `single_click_activates` to the containers
     unit (*The units 0.8.0 enables*); U473 is by D13's criterion the parking unit *behaviour*'s, 0.7.0's model
     holding no key repeat; the outcomes are in the ledger, each open to the maintainer's veto (veto list items 3, 7,
     8, 26 to 30 and 52).
@@ -963,7 +964,7 @@ interface level, glass, right-to-left), each model-wide and closed on the measur
 with a composition decision per key (S17's *Sets not yet measured*); the parking units (behaviour, text rendering,
 text styles, icon contexts, elevation, parameters, keyed roles, pointer); and motion. A unit no Apple state model
 names (flavours) needs no Apple fact and, adding no enum member, is a patch release (D14) unless a question it
-carries adds a model member (U180's decoration form) (ADD-A147).
+carries adds a model member (U753's decoration form) (ADD-A147).
 
 ### Widgets 0.7.0 styles through stand-ins
 
@@ -1835,9 +1836,10 @@ dev-dependencies and modules linked again.
     or a source read. It is the lane's queue, needs no decision, and is closed by the lane's next round, the measured
     or cited fact replacing the pending one;
   - a **decision** (`d`): a value with no route (no pinned source states it and no supported runner can measure
-    it), or a choice between a measurement, a model form and a catalogue correction. It is the maintainer's
-    decision, among another setup (real hardware, another image), a catalogue or model correction, and a release
-    blocker.
+    it), or a choice between a measurement, a model form and a catalogue correction. A choice of model form the
+    orchestrator settles from the sources and the project's rules and lists on the maintainer's veto list (D6,
+    outcome 14; ADD-A147); a pure preference, or a value only the maintainer can supply (another setup: real
+    hardware, another image), is the maintainer's decision. Either, while open, is a release blocker.
 
   A row that waits on a class 1 or 2 change (*Spec changes*) is the orchestrator's to apply, whatever its kind.
 

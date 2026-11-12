@@ -2086,10 +2086,11 @@ spaces:
   `ios-*` `hover` and `focus_visible` are the iPad's, U112, U113); the default size in force; no host context
   (`toolbar.bar` from the containers unit, `toolbar`'s item); the scheme and `contrast_high`. On `material-3`
   `toggle` is `later` (drawn only with `icon_only` or under `expressive`), and on `ios-*` `tool` (drawn only in the
-  ink toolbar). Values of later names: `label_position` and `help_tooltip_on_click` (styles), `menu_indicator_gap_px`,
+  ink toolbar). Values of later names: `help_tooltip_on_click` (styles), `menu_indicator_gap_px`,
   `menu_indicator_anchor`, `menu_trigger` (`menu`), `back_title_fallback`, `back_display_mode` (`back`),
-  `display_mode` (`@paste_control`), `repeat_delay_ms`, `repeat_interval_ms` (`@repeat`); `presentations` and each
-  part's `transitions` are the motion unit's.
+  `display_mode` (`@paste_control`). Values 0.7.0's model holds none of, deferred by D13 although `kde-breeze` states all
+  three, and `macos-*` the two repeat values, outside later names (ledger queue #258): `label_position` (styles), `repeat_delay_ms`, `repeat_interval_ms`
+  (styles, with `@repeat`). `presentations` and each part's `transitions` are the motion unit's.
 - **Notes:**
   - Toolbar items are `button` elements in `context toolbar.bar` (a toggle item `toggle`, a menu item `menu`, a split
     item a `split_button`); their states are `button` rules there (K1.152, W1-099, W1-100, MAC-TL02, TB-6, P3-3†,
@@ -2965,8 +2966,8 @@ spaces:
   `button`'s presentations), the completion popup an `autocomplete` in `context input` (MAC-P3-7†). The decorations
   of `preedit`, `misspelling`, `grammar_mark` and `correction` follow the font (S2.8): where the platform draws the
   line from the font's own metrics (Pango's, AppKit's `NSFont`, DirectWrite's, Android's `Paint`; Qt draws its own
-  adjustment of them, S2.8, ADD-A130: QPainter's underline in S2.2's arithmetic, its wavy line and Qt Quick's
-  lines register U180's, ADD-A147), their `thickness` and `offset` are the references the
+  adjustment of them, S2.8, ADD-A130: QPainter's underline in S2.2's arithmetic, its wavy line register U180's,
+  Qt Quick's lines register U753's, ADD-A147), their `thickness` and `offset` are the references the
   parts state, and a number is stated only where the
   platform draws a fixed line (macOS's spelling and grammar dots, MAC-X28); the value phase states which per preset
   from the facts (GN-1.281†, K1.49†, W1-151†, MAT-I18†). Provenance: group
@@ -7729,8 +7730,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `emphasis`, `strong`, `underline`, `strikethrough`, `subscript`, `superscript` (Compose's HTML underline,
     MAT-P3-20†): `text`. The underline's and the strike line's `text.decoration` follow the run's font where the
     platform draws them from its metrics (AppKit, Android's `Paint`, S2.8; Qt's drawn underline and strike line,
-    `kde-breeze`'s, are S2.8's, ADD-A130: QPainter's underline in S2.2's arithmetic, its strike line and Qt Quick's
-    lines register U180's, ADD-A147): `thickness` `=
+    `kde-breeze`'s, are S2.8's, ADD-A130: QPainter's underline in S2.2's arithmetic, its strike line register U180's,
+    Qt Quick's lines register U753's, ADD-A147): `thickness` `=
     element.font_underline_thickness` and `offset` `= element.font_underline_offset` on `underline`,
     `element.font_strikeout_thickness` and `element.font_strikeout_offset` on `strikethrough`, which the parts
     declare, `data = { underline = ["font_underline_offset", "font_underline_thickness"], strikethrough =
