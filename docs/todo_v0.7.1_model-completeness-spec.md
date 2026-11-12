@@ -1988,6 +1988,13 @@ an activation sets the switch's state (`take_slide_end` reporting it), a press s
 while it holds and a press within the frame (`pressed_through`) leaves it at 0, a key change sets the AnimatedIcon at its new state's end marker with its queue cleared, and a replay
 draws its end; no toolkit read crossfades, so this is the model's choice (S4.3).
 
+**In 0.8.0** (ADD-A147; the 0.8.0 plan's D6, whose Apple motion trial runs before M2.1's runtime task): if the trial
+measures the loop, the runtime is its interface and the loop: no part lists `transitions` or `shown`,
+`FocusIndicator.transition`, `IconStyle.animation` and the widgets' `presentations` but the dialog's are the motion
+unit's (S6.1), so `update` starts no transition and `sample` returns the style after with the loops drawn over it;
+`Places` is an empty struct until that unit, and `take_slide_end`, `layout_fraction` and the engines come with it. If
+it does not, 0.8.0 holds no `Motion`, and every motion is the motion unit's.
+
 The connector keeps, per element part, the runs `native_theme::transitions` steps, with its previous query results:
 
 ```rust
@@ -2030,13 +2037,16 @@ pub struct MotionUpdate<'a> {
                                                             // from an origin the connector fixes for the window
                                                             // (one origin for every `Motion` and `Places` of it),
                                                             // monotonic; never an `Ms` (S1; ADD-A146)
-    pub key: u64,                                           // the element's id among its widget instance's (`Places`)
+    pub key: u64,                                           // the element's id among its widget instance's (`Places`);
+                                                            // staged: enters with the motion unit (S6.1; ADD-A147)
     pub presence: Presence,                                 // the element's presence in this frame (above)
     pub speed_factor: f32,                                  // `token.motion.speed_factor` resolved (Compose's scale)
     pub color_space: ColorInterpolation,                    // `token.motion.color_space` resolved in the element's
                                                             // scope (*Colour interpolation*, above); a run moves
                                                             // its colours in the space of the update that starts
-                                                            // it (ADD-A146)
+                                                            // it (ADD-A146); staged: enters with the motion unit,
+                                                            // or with the first unit whose stated loop or
+                                                            // presentation interpolates a colour (S6.1; ADD-A147)
     pub before: Option<&'a ResolvedPartStyle>, pub after: Option<&'a ResolvedPartStyle>,   // the last query result,
                                                             // under the old resolution, and this one; `None`: the
                                                             // part `NotDrawn` there (`Absent`, below)
@@ -2044,19 +2054,25 @@ pub struct MotionUpdate<'a> {
                                                             // conditions and data before and after, both at the
                                                             // current layout (`Geometry`, above); `None` with its
                                                             // style, the part `NotDrawn` there
-    pub kept_before: StateFlags, pub kept_after: StateFlags,   // both under the resolution after (above)
-    pub conditions_before: &'a WindowConditions, pub conditions_after: &'a WindowConditions,   // S8
+    pub kept_before: StateFlags, pub kept_after: StateFlags,   // both under the resolution after (above); staged:
+                                                            // enter with the motion unit (S6.1; ADD-A147)
+    pub conditions_before: &'a WindowConditions, pub conditions_after: &'a WindowConditions,   // S8; staged: enter
+                                                            // with the motion unit (S6.1; ADD-A147)
     pub change: Change,                                     // `Resolution.change` (S8)
     pub theme_change: &'a ResolvedThemeChange,              // the new resolution's token (S4.3); staged: enters
-                                                            // with the tokens unit, as the token does (S6.1)
+                                                            // with the motion unit, as the token does (S6.1;
+                                                            // ADD-A147)
     pub suspended_until: Option<Duration>,                  // the end of the window's `Suspend` window, on `at`'s
                                                             // clock, kept by the connector with its `WindowState`
                                                             // from `Resolution.suspends` (S4.3); staged likewise
     pub activated: bool, pub slide_to: Option<Rect>,        // a `GtkSwitch`'s activation, and its other end on every
-                                                            // update while a slide runs (above)
-    pub replayed: bool,                                     // an `AdwAnimation { replays }`'s widget inputs changed
+                                                            // update while a slide runs (above); staged: enter
+                                                            // with the motion unit (S6.1; ADD-A147)
+    pub replayed: bool,                                     // an `AdwAnimation { replays }`'s widget inputs changed;
+                                                            // staged: enters with the motion unit (S6.1; ADD-A147)
     pub pressed_through: bool,                              // a press and its release within this update
-                                                            // (`ComposeHeld`, above)
+                                                            // (`ComposeHeld`, above); staged: enters with the
+                                                            // motion unit (S6.1; ADD-A147)
     pub widget_loop: Option<(&'a ResolvedLoop, PartRef)>,   // the widget's or component's resolved `loop` value
                                                             // where one is stated, and the part this `Motion`
                                                             // draws, whose keyframes it takes (*A loop*, above;
@@ -2508,7 +2524,8 @@ pub struct IconStyle { pub size: Value<Px>, pub fill: Value<Paint>, pub renderin
                        pub symbolic_colors: Vec<(Key, Value<Paint>)>,  // the colours an icon's marked paths take
                                                                        // beyond `fill`, by the platform's mark
                                                                        // names (ADD-A37, ADD-A130)
-                       pub animation: Value<Loop> }        // a repeating icon animation; may be absent (R25.12)
+                       pub animation: Value<Loop> }        // a repeating icon animation; may be absent (R25.12);
+                                                           // staged: enters with the motion unit (S6.1; ADD-A147)
 pub enum RenderingMode { Template, Monochrome, Hierarchical, Palette, Multicolor, Original,
                          FromIcon }   // the icon's own colouring, path by path (ADD-A130)
 pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>,   // absent on a `SystemControl` source (S6.3)
@@ -3187,7 +3204,7 @@ value is evaluated in the scope outside it (R5.2). Colour-role definitions do no
 ```rust
 pub struct Tokens {
     pub motion: MotionTokens,              // durations, timings (keyed), the speed factor
-    pub theme_change: ThemeChange,         // S4.3; staged: enters with the tokens unit (S6.1)
+    pub theme_change: ThemeChange,         // S4.3; staged: enters with the motion unit (S6.1; ADD-A147)
     pub elevation: Vec<(Key, Vec<ShadowLayer>)>,   // the platform's ramp, or empty (R8)
     pub text: TextTokens,
     pub icons: IconTokens,                 // S4.5
@@ -3552,7 +3569,8 @@ the value engines' transitions of the values it changes and turns the Breeze tes
 conditions separately (S8), so a reader re-read that changes only a condition is a condition change. The new
 resolution's `token.theme_change` governs a theme change, as the style after a change governs a transition (S2.7):
 a `set_preset` from a preset that suspends to one that crossfades crossfades, and a rule that restates the token
-under a condition (reduced motion) governs every theme change made while it holds.
+under a condition (reduced motion) governs every theme change made while it holds. Staged with the motion unit
+(S6.1): until then a theme change is drawn at once (ADD-A147).
 
 What each kind does to transitions (ADD-A126; ledger queue #95). Under `Instant` there is no window effect, and the
 change is an update like any other, each engine running by its rules (S2.7): the value engines start from the value
@@ -3878,12 +3896,22 @@ catalogue the same way (S5.1), as data, its parts' styles being `PartStyle`. The
 widgets' values structs (`ButtonValues`) and the components' tables are themselves generated from the catalogue by
 `scripts/generate_widgets.py` (ADD-A114), which emits the units its list enables (a unit: a set of catalogue entries
 the list names (the list also names the hand-written units, S13's placement among them, each enabled or not), less
-the values it defers, each to a named later unit — the button's `Placement` values to the
-placement unit, ADD-A120 — a deferral ending in that unit's commit, and `--check` refusing a deferral to a unit
-already enabled), so a unit enters the model in the commit whose presets state it; a hand-written token field a
+what it defers, each to a named later unit, a deferral ending in that unit's commit, and `--check` refusing a
+deferral to a unit already enabled. It defers: a value (the button's `Placement` values to the placement unit,
+ADD-A120); a part's field, or a leaf of a shared block (a part's `transitions`, `IconStyle.animation`, to the motion
+unit); and of an entry's names every typed variant its **Depth** line (the catalogue's *Entry format*) does not list,
+to the unit of depth the units file names. The generator writes `Variant`'s members, and each widget's `variants`
+and `content_variants`, from the Depth lines of the enabled entries and the units of depth enabled, and the enabled
+flags of the sizes and flavours units (S8, S16); ADD-A147), so a unit enters the model in the commit whose presets
+state it; a hand-written token field a
 later unit's type needs is staged with that unit (`Behavior.scroll`, the wheel's steps among its fields, ADD-A130, the `ScrollPhysics` and `ScrollDecay` types and
 their functions with the unit that holds the `scroll_view` widget), and that unit's commit adds it to the connectors' tables by hand, as S21.3 requires of
-any new resolved field; its `--check`
+any new resolved field. A token path is staged so wherever no *today's fields* row names it, no value at depth reads
+it, the core does not read it (`token.size_classes`, `token.text.font_dpi`, `token.text.scaling`, `token.kde`,
+`token.material`), no connector reads it to draw a value at depth (S4.2's `mnemonics` and `mnemonic_when_disabled`),
+and no system reader states it (S9.3); it waits in the parking unit the units file names until the first unit whose
+value reads it. A keyed entry is declared by a preset with the first unit whose value reads it, or with the reader
+that states it (ADD-A147). The generator's `--check`
 fails when the checked-in code differs from what the catalogue states, until the catalogue is archived, after which
 the generated code is the source. Rejected: a proc macro reading the catalogue (it lies outside the crate and is
 archived); hand-written entries with no drift check.
@@ -4422,7 +4450,8 @@ window's background).
 ```rust
 pub enum Styled<T> { Style(T), NotDrawn, DrawnAs { target: WidgetOrPart, variants: Vec<VariantRef> },
                      NotAvailable(Unavailable) }   // R2.7's answer; not an error
-pub enum Unavailable { Widget, Size, Variant, Part }
+pub enum Unavailable { Widget, Size, Variant, Part, Later }   // `Later`: the platform has the variant or the
+                                                         // size, and a later unit states it (S10; ADD-A147)
 impl ResolvedTheme {
     pub fn root_scope(&self, root: &RootInputs) -> Scope;
     pub fn style(&self, element: &Element) -> Styled<(ResolvedPartStyle, Scope)>;  // the scope for its children
@@ -4498,7 +4527,10 @@ differ by rule (S7.3; ADD-A146); and every other variant in `Element.variants` (
 same name on another widget or part included: `vertical` on `slider`) is one the application asked for. The
 declarations in force are the preset's, a flavour's section replacing the keys it states (S10). The query: ignores a
 content or breakpoint variant the widget does not declare (as an undeclared density), and a keyed flag the widget does not declare selects nothing; answers `NotAvailable` for a size the element does not take (S10: its variant's and its context's), for no size where the sizes the element takes (S10) are not empty and its default is pending (S10's *A pending default*; on a synthetic theme alone, S17), an element that takes no size resolving with none (S10; ADD-A131), for an undeclared variant the
-application asked for, an unavailable widget, an element holding none of
+application asked for (and `NotAvailable(Later)` for an element holding a variant, a content variant included, that
+its widget's declarations in force list under `later` (S10), or asking a size it takes that is not its default in
+force while the sizes unit is not enabled (S6.1), an answer that comes before every other but an unavailable
+widget's; ADD-A147), an unavailable widget, an element holding none of
 its widget's `requires_variants` (S10), or a part the widget does not have, and `NotDrawn` for a part whose style resolved `Absent` (the children of
 a `NotDrawn` or `NotAvailable` element take the parent's scope), and `NotAvailable(Variant)` for an element holding two
 variants of one exclusive variant group (S10); drops excluded flags by the exclusive groups (S10),
@@ -5501,6 +5533,8 @@ schemes = ["light", "dark"]                    # a palette's schemes (S14); a pa
 
 [declare.widget.button]
 variants = ["primary", "destructive", "flat", "@pill", "@fab"]   # @: keyed
+later = { variants = ["@pill"] }                           # the platform has them; a later unit states them
+                                                           # (below, ADD-A147)
 sizes = ["small", "regular", "large"]
 densities = ["compact"]
 flags = ["@<flag>"]
@@ -5573,6 +5607,23 @@ that flavour, and each key it states replaces the widget's or component's own wh
 sizes, availability, flags, and its own variant set (`variants`, the whole set under that flavour, the variants
 every flavour draws included), so a variant only one flavour draws is declared in that flavour's set alone and the
 other flavour answers `NotAvailable` for it (S8).
+
+**Later names** (ADD-A147). `later = { variants = […] }` in a widget's or a component's declaration lists the
+declared variants the platform has and a unit not yet enabled states: the keyed variants of a unit of depth, and a
+typed variant at depth that the preset's state model draws in no combination of the enabled units' names. The
+declarations stay the state model's whole, a typed variant the model does not hold yet left out (it has no
+spelling). A `later` variant selects nothing and is refused in every layer (S12); the query answers
+`NotAvailable(Later)` for it (S8). A size or a flavour of a unit not enabled keeps its declaration; the query answers
+`Later` for such a size and `set_flavor` refuses such a flavour (S8, S16). An exclusive group or a recency set lists
+only flags of the enabled units' names; `flags` lists only the keyed flags, and `[declare] conditions` only the system
+settings, that a rule of the enabled units' facts names; a keyed namespace declares only the entries a base states, a
+map with none stated empty. **The state model in force:** where the generator, its round trip and the gate read a
+state model for what an element can hold, an element takes its default size in force alone while the sizes unit is
+not enabled, the default flavour's model alone is in force while the flavours unit is not enabled, and no element
+holds a variant of a unit not enabled; the declarations stay whole. S12's own combinations at load still add every
+declared flavour's atom where a state, variant or flavour atom is named (`complete()`,
+`native-theme/src/validate/combos/mod.rs:1838-1846`), a flavour of a unit not enabled included; no rule of a bundled
+preset names such a flavour, so the values under it are the default flavour's.
 
 Adding a layer rejects any rule, reference or patch naming something undeclared (S12). Which flags form an
 exclusive group comes from the platform's state model (the catalogue names the flags, mapping each platform's own
@@ -5814,6 +5865,9 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   no part, so each keyframe names the part it sets (S2.7);
 - a name is undeclared (S10), except a palette's typed role or surface set the current preset does not declare,
   which is skipped (S14); or a `Colors` or `Tokens` rule has non-condition selector parts;
+- a variant a `later` list holds, or a size or a flavour of a unit not enabled, in a positive or a negative list of a
+  selector, a reference or a patch, is refused with a problem of its own: the theme declares the name, and a later
+  unit states it (`ProblemKind::Later`, S16's diagnostic enums; S10's *Later names*, ADD-A147);
 - a `DrawnAs` names a widget the preset does not make available, a part that widget does not have, or a variant it
   does not declare (S6.1); `DrawnAs` patches form a cycle under some combination (a part drawn as another widget's
   part that is drawn, followed through `DrawnAs`, as the first);
@@ -5995,7 +6049,8 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `surface.` (S3.3);
 - a keyed selector name (a variant, flag, condition, container size or recency set) is declared but no rule selects on it, or a
   declared keyed name no base states (a synthetic layer's base states it, S17, ADD-A133), or a declared event that no `presentations` list uses (a typo's sign); exempt:
-  the default flavour, each container-size set's default, variants named in `requires_variants` and
+  the default flavour, a flavour of a unit not enabled (S6.1), with its `[declare.flavor.<f>]` sections (it cannot be
+  asked for, S16, and the clause above refuses any rule naming it; ADD-A147), each container-size set's default, variants named in `requires_variants` and
   `sizes_by_variant`, what a connector sets (a content variant on the widget or *(element)* part its catalogue pair
   names, S8, and breakpoint variants), a `SystemSetting` declared for
   applications to read (`for_applications = true` in `[declare] conditions`, S10; `Theme::system`), and a variant a
@@ -6427,13 +6482,18 @@ impl Theme {
                                                           // stand-in's scheme, else the one `from_preset` was given;
                                                           // under a palette as S14 says (Some: refused for a scheme
                                                           // it lacks; None: suspends it while the system's is one)
-    pub fn set_flavor(&mut self, flavor: Key) -> Result<(), LayerError>;          // undeclared: refused
+    pub fn set_flavor(&mut self, flavor: Key) -> Result<(), LayerError>;          // undeclared: refused; a declared
+                                                          // flavour but the default while the flavours unit is not
+                                                          // enabled (S6.1): refused, with a problem of its own
+                                                          // (ADD-A147)
     pub fn preset(&self) -> PresetId;                     // the current preset
     pub fn flavor(&self) -> Option<Key>;                  // the flavour in force: set, or the preset's default;
                                                           // None on a preset that declares no flavours (R1.6)
-    pub fn flavors(&self) -> Vec<Key>;                    // the current preset's declared flavours, its default
-                                                          // first (S10), the keys `set_flavor` accepts; empty
-                                                          // where it declares none (ADD-A146)
+    pub fn flavors(&self) -> Vec<Key>;                    // the current preset's declared flavours (the default
+                                                          // alone while the flavours unit is not enabled, S6.1;
+                                                          // ADD-A147), its default first (S10), the keys
+                                                          // `set_flavor` accepts; empty where it declares none
+                                                          // (ADD-A146)
     pub fn scheme(&self) -> Scheme;                       // the scheme in force: `pick`ed, else the reader's or
                                                           // stand-in's, else the one `from_preset` was given
     pub fn version_match(&self) -> Option<VersionMatch>; // how the running OS version relates to the current
@@ -7049,7 +7109,8 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
     part not drawn*, below; ADD-A130), so such a field is listed only from a combination that draws its part;
   - a pending fact leaves a path listed only in a combination where it applies (*Which fact applies*, below), no later
     fact of its key, or of a block holding it, holding there; one that several later facts shadow between them, each
-    in some of its combinations, applies nowhere and lists nothing.
+    in some of its combinations, applies nowhere and lists nothing; a pending fact leaves a path listed only from a
+    combination of the enabled units' names; a path a unit stages or defers is no listed path (ADD-A147).
   `generate_preset.py` reads the facts the same way, so the table it writes is the paths the gate finds: a pending
   fact's combinations those no later fact of its key or of a block holding it holds in, the later facts taken together
   over the combinations the gate draws (a widget's from its state models, as its beneath rules are judged, *State
@@ -7425,26 +7486,33 @@ once per flavour, each with its flavour's entries. An entry with
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
 `rows`. **While the units are built** (ADD-A128, ADD-A135), the 0.8.0 plan enables the catalogue's units one by one,
 a unit entering the model in the commit whose presets state it (S6.1), 0.8.0 releasing the units of its scope and
-each follow-up release its own (the plan's D13, S21.1). A fact belongs to the unit of its key, to the unit of every widget its
-`when`'s positive lists name (`context`, its `scope.nearest`, a `widget`) and to the unit of the widget a `drawn_as`
-value names, and the gate skips it while any of those units is not enabled (ADD-A146). Its negative lists (`not_context`, `not_variants`) never add a unit: `not_context X` applies
+each follow-up release its own (the plan's D13, S21.1). A fact is of the enabled units when its key lies in an
+enabled unit, every widget its `when`'s positive lists name (`context`, its `scope.nearest`, a `widget`) and the
+widget a `drawn_as` value names are enabled, and its `when` holds in at least one combination of the enabled units'
+names (each entry's Depth line, the units of depth enabled) that its state model draws, its part drawn there; the
+gate skips every other fact, its later unit being the first in the units file's order whose names make it hold
+(ADD-A146, ADD-A147). A key that belongs to no widget (a colour role, an input, a token) is judged under the condition
+sets the catalogue's *today's fields* table names for it (the scheme and `contrast_high`, `window_inactive` for the
+`selection` set, `animations_off` and `reduced_motion` for the speed factor and the motion values' tokens) and the
+preset's default flavour. A part whose presence fact is pending counts as drawn. A bundled preset mentions no name
+outside the enabled units': a negative entry naming one (`not_context`, `not_variants`, `not_states`,
+`not_conditions`, `not_sizes`) is left out of its rule, and its exclusive groups and recency sets list the enabled
+units' flags. Its negative lists (`not_context`, `not_variants`) never add a unit: `not_context X` applies
 everywhere but inside X, and where X's unit is not enabled no X exists, so the negation holds and the fact applies
 everywhere, in its key's unit alone, as the gate already reads a negation naming a widget the model does not hold
 (the macOS and iOS button facts stated with a `not_context` and no positive context, 1868 and 1574 of them). A skipped fact (a
-fact whose key the model does not hold yet, *The gate*, below, being one case) takes with it every combination where
-it applies, so that no earlier fact
-applies there in its place (as `generate_preset.py` leaves such a fact's combinations out); a combination that holds
-a skipped variant, or a set holding one, or a context naming a widget whose unit is not enabled is skipped too. The
-declarations check skips a state-model variant only where facts name it
-and every one of them is skipped, counting it as it counts facts naming a preset not bundled yet (the M1a design's
-decision 7), neither failing it nor requiring it as a declaration: libadwaita's `@raised`, whose facts' `when`s name
-widgets of units not enabled yet. A variant no fact names yet is checked as any other, so the preset declares it, and
-it draws as the rules that apply give it: with none, as the base (libadwaita's `toggle` and `pane_toggle`); `close`,
-`previous`, `next`, `add`, `clear_field`, `reveal`, `play` and `volume` by their contexts' rules (GN-1.120,
-GN-2.21–2.54); `@tab_button`, whose inner button is an image button (`libadwaita@1.10.0 src/adw-tab-button.ui:33`),
-its stylesheet styling only its counter and indicator (`src/stylesheet/widgets/_buttons.scss:647-662`), as
-`icon_only`, the set `[@tab_button, icon_only]` that the GNOME facts' state model is to state (once facts name it,
-GN-2.37's badge, it is skipped or checked as those facts are). Every unit of a release is enabled by that release, so
+fact whose key the model does not hold yet, *The gate*, below, being one case) is drawn in none of its combinations
+by the gate (as `generate_preset.py` leaves them out); at run time an element under a given name outside the enabled
+units' resolves as without it (S10), the bundled preset mentioning no such name (ADD-A147); a combination that holds
+a name outside the enabled units' (a variant or a set holding one, a size, a state, a host context or one naming a
+widget whose unit is not enabled, a position, a direction, a condition) is not drawn. The declarations check
+compares each preset's declarations with the state model's names that the model's types can spell (a typed variant
+no enabled unit holds is skipped, as a fact whose key the model does not hold), its exclusive groups, recency sets
+and keyed `flags` with the state model's restricted to the enabled units' flags (a keyed flag only where a fact of
+the enabled units names it), and its `later.variants` with the state model's keyed variants of units not enabled
+and its typed variants of enabled units that it draws in no combination of their names (S10). A variant of the
+enabled units that no fact names draws as the rules that apply give it, with none as the base, which the lane states
+by leaving it so (libadwaita's unchecked `toggle`) (ADD-A147). Every unit of a release is enabled by that release, so
 no fact of the enabled units is skipped then, a fact of a later release's unit skipped as before; from the last
 follow-up release no fact is skipped.
 
@@ -7726,7 +7794,10 @@ rows share them, the trace's header gives them once and every row written so tak
 the units of its scope, everything 0.7.0's model holds (the plan's *0.8.0's scope*); then follow-up releases, each on
 its own `v<version>-rc1` branch, its number by SemVer against the previous release (a breaking one the next minor),
 each enabling further units, until the catalogue's last. At every release every platform preset, `ios-26` included,
-states every field the model then holds, and the release passes the same gates over its enabled units: the facts
+states every field the model then holds, under every combination of the names its enabled units hold, and declares
+every variant, size and flavour its platform has that the model's types can spell, a variant of a unit not enabled
+under `later`, and the keyed flags of the enabled units (S10; ADD-A147); the release passes the same gates over its
+enabled units: the facts
 gate with no fact of those units skipped or pending (S17), `check_ledger.py --final` over them (S17's pending facts,
 the register), every `[pending]` table empty (S17, S19.1), each connector's contract test with no `pending` entry
 (S21.3). The last follow-up release also passes the facts gate with no fact skipped and `check_facts_trace.py` over
@@ -7764,7 +7835,8 @@ toolkit's pinned source, and in the third case the limit and its size. egui's `C
 them itself) each connector states when it ports to `Color` (the 0.8.0 plan's M2.1), the toolkits' sources not being
 in the facts' source cache. The table also holds what the connector supplies (ADD-A146), each entry supplied, with
 the toolkit lines it is read from, or listed with the reason the toolkit cannot give it: every `StateFlag`, and
-whether it reports their order (`state_order`, S7.2); every content-variant pair of the catalogue (S8); every
+whether it reports their order (`state_order`, S7.2); every content-variant pair of the catalogue whose variant an
+enabled unit holds (S8; ADD-A147); every
 `ElementData` and `RootInputs` field, and the font metrics (`Element.metrics`, S8); the `Presence` members it
 reports (S2.7); and one row per keyed component a bundled preset declares, drawn, its parts and values
 mapped as a typed widget's are, or not drawn, with the reason. A flag or a datum a connector never supplies turns
@@ -7790,6 +7862,13 @@ that unit is made with no stand-in entry for it. The showcases' element lists dr
 entry (S18). Rejected: the widgets dropped until their units (each loses what 0.7.0 shows); `pending` entries for them
 (a `pending` entry is a resolved field not mapped yet, and these are mappings of a widget the model does not hold);
 their units in 0.8.0 (the plan rejects it, against D13's timing).
+
+**A deferred entry** (ADD-A147). For each enabled entry the contract table lists every state the connector reports,
+every keyed flag it sets, every host context it builds and every condition it supplies that a unit of depth not yet
+enabled holds for that entry, and every construct of its toolkit (a variant, a size, a content form) that only such a
+name describes, with what it draws meanwhile (the look at depth, or its 0.7.0 mapping from the values at depth) and
+the unit that states it. The contract test fails a table that lacks one against `scripts/widget_units.toml`, and one
+that keeps an entry whose unit is enabled. A part's `transitions` are such an entry until the motion unit.
 
 ## S22. Additions register
 
