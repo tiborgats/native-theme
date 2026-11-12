@@ -24,6 +24,30 @@ presets (a fact of two presets), U517 on `windows-11`; and their listed path `wi
 on `macos-monterey`, `macos-tahoe`, `ios-13`, `ios-26` and `windows-11`. The figures below are corrected where they
 describe revision 4's rule; those that record an earlier revision or a check stay as they were.
 
+## Correction of the document pass (2026-11-12)
+
+The full document pass after ADD-A147 and the orchestrator's decision per finding (ADD-A148, each open to the
+maintainer's veto, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`) change this design as follows; the body
+below is not rewritten. Only verified facts reach the branch: the gate lists every new or changed fact since a
+platform's verified commit, whatever its unit, and `verify_facts.py units` stays unit-blind, so "and
+`verify_facts.py units`" is withdrawn from 2.5's *Who checks it* and from 6.4's step 2 (P-3). The units file lists
+the units of depth and the parking units in 3.4's order, the order S17 reads, and a fact that needs names of two
+units is reported under the last of them in that order, the unit at whose enabling it first holds, not the first
+(2.5, 3.1; P-4, K4-8). A part's `shown` stays in 0.8.0 with its rest meaning alone and is not the motion unit's
+(2.4, 5.3, 5.4 (a), 6.4's step 1), and every widget's `loop` but the spinner's is the motion unit's (K2-1, K2-7;
+veto list item 61). `full_keyboard_access` is at depth model-wide, as `contrast_high` is (1.3 point 6, 1.4; C-4,
+item 62). `idiom:phone` is the iPad unit's with `idiom:pad`, so combinations at depth hold no idiom (1.4, 3.1's
+table; C-7). The trimming (2.3) also leaves undeclared an exclusive group or a recency set left with fewer than two
+flags, a recency set no rule of the enabled units' facts names, and `device_models`, `container_sizes` beyond each
+default and `presentation_events` that no rule (for an event, a `presentations` list) of the enabled units' facts
+names, a setting declared for applications aside (K3-6). The tests a part's deferred `transitions` leaves without a
+part that lists it (the plan's staging task, its step on tests): a check that is a function of the block alone is tested on the block; a check
+that needs a part listing the field keeps its tests, compiled and `#[ignore]`d with the motion unit as the reason,
+recorded in the ledger as that unit's and un-ignored at its enabling; a test that used the field only as an example
+moves to a field at depth; the checks and tests of a staged token field that leaves its struct leave with it, listed
+by the unit that brings it back (O-1). The figures below are not recomputed for these changes; the increment that
+brings `full_keyboard_access` to depth reports any change of the done-tables (ledger queue #283).
+
 ## Revision 4
 
 Revision 3 was checked independently (`scratch-keep/d6/staging-design-check3.md`, "the third check": nothing

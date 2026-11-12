@@ -7,6 +7,21 @@ and a query's result, orders the work, and lists what would defeat the design.
 One sentence of it changes a rationale rule (R2.8), a class-3 change the maintainer decides; like D6's other outcomes
 it is applied as proposed and open to the maintainer's veto ([O]:5-6, :30).
 
+## Correction of the document pass (2026-11-12)
+
+The full document pass after ADD-A147 and the orchestrator's decision per finding (ADD-A148, open to the
+maintainer's veto) change this design in two places; the body below is not rewritten. **The input checks**
+(revision 4's item for c3-14, 1.2, 3.8): where this note says "the input cycle check", read "the input checks": the
+cycle check and the absent-role check of an input's expression (an input whose expression reads a colour role that
+can be `Absent` at a scheme and contrast at which that value of the input is in force is refused), both run over the
+stack up to each layer at every change, beside each other; B's premise, that the checks over combinations read no
+input, stays true (K3-1; the code a task of its own after the staging task merges and before load task 1, ledger
+queue #280). **Task P and the trigger step** (3.5, 5): line 1 is `Theme::from_preset` timed whole on a preset whose
+table is empty and, on every preset until load task 1 has merged, the read alone as the case `read`; line 1's
+trigger is evaluated on the case `read` while load task 1 has not merged, a whole load over its line then taking a
+named miss whose cause is load task 1 and firing nothing (P-9). Task P closes on its code, its script and the
+self-test; its recorded runs are made once, at the trigger step, on the regenerated presets (P-19).
+
 ## Revision 8
 
 The seventh independent check (`load-design-check7.md`, "check 7", 0 serious, 3 should-fix, 10 minor; cited c7-1 to
