@@ -973,6 +973,37 @@ python3 scripts/check_ledger.py --self-test
 python3 scripts/check_ledger.py --final --staged-file <path>
 ```
 
+## check_cost_budget.py
+
+The load budget's step (the 0.8.0 plan's *The load budget*): the probe's
+times (`native-theme/tests/timings.rs`, `bundled_preset_costs`) and bytes
+(`native-theme/tests/cost_bytes.rs`, `bundled_preset_bytes`, under
+`peak_alloc`'s counting allocator) against `scripts/cost_budget.toml`, which
+holds each budget line's number and, per case (line, preset and route), its
+record, "first measured by" a named task or "not binding", and the named
+misses. `--unit` (a unit's gate) and `--release` (the release run) set nice
+19 and idle I/O, build the two test binaries (release, all features), ask
+the probe for its list of measurable cases and, by name, for every armed
+case: three sweeps over the times, each pass judged by the mean runnable
+count the probe samples over it (`/proc/loadavg`'s fourth field), the
+release run sweeping again over the times with fewer than two passes that
+count, none started past the bound. It prints every figure beside its line
+and its record, a case with no record as "no record yet", and exits 0 or 1
+by the plan's four rules. It never writes `cost_budget.toml`. `--check-file`
+checks the file alone; `--self-test` runs every outcome of the four rules on
+made-up figures, per-pass means and sweep start times and checks that
+`cost_budget.toml` stays byte for byte the same. Run on the measuring machine
+only; not yet wired into `check_release.sh` (the plan's load task 6).
+
+Requires Python 3.11+ (for `tomllib`) and `ionice`.
+
+```sh
+python3 scripts/check_cost_budget.py --self-test
+python3 scripts/check_cost_budget.py --check-file
+python3 scripts/check_cost_budget.py --unit
+python3 scripts/check_cost_budget.py --release
+```
+
 ## citations.py
 
 Finds every citation in the 0.8.0 planning documents (the core, the

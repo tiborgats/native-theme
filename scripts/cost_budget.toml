@@ -1,0 +1,308 @@
+# The load budget (the 0.8.0 plan's *The load budget*; ADD-A147; the reasoning in
+# docs/todo_v0.7.1_model-completeness-d6-load.md, 2.4), which scripts/check_cost_budget.py
+# applies to the probe's figures (native-theme/tests/timings.rs, native-theme/tests/cost_bytes.rs).
+# Changed only by a deliberate act with its ledger row: a line's number by the maintainer, a
+# record or a named miss by the acts *Who makes records* lists. No run of the step writes it.
+#
+# Every number is a judgment, applying until the maintainer changes it (D6's veto list items 9 to
+# 23). A case is `<line>.<preset>.<route>[.<what>]`, as the probe names it; it states one of:
+#   record = <figure in the line's unit>, tolerance = <fraction>, row = "<ledger row>"  (armed)
+#   first_measured_by = "<the named task that makes its first record>"
+#   not_binding = "<reason>", row = "<ledger row that shows it>"
+# A named miss, keyed by one case, its cause(s) a task or a section of the D6 load design:
+#   [[misses]]
+#   case = "<case>"
+#   causes = ["<task or section>"]
+#   row = "<ledger row>"
+
+[step]
+# Rule 2: a pass counts where the mean runnable count over it is at most this, the step's own
+# threads included.
+load_limit = 10
+# Rule 2: the release run starts no sweep later than this many minutes after the build's end.
+bound_minutes = 30
+# Rule 3: a measured figure's tolerance is at least this fraction (and at most 20 %).
+tolerance_floor = 0.05
+
+[lines]
+1 = { what = "Theme::from_preset, a preset's first load in the process", budget = 16, unit = "ms" }
+2 = { what = "peak memory during that load, above the level before it", budget = 16, unit = "MiB" }
+3 = { what = "memory kept: the theme and one window's resolution", budget = 8, unit = "MiB" }
+4 = { what = "a change every application makes: a reader's re-read accepted, pick, set_flavor, set_contrast, set_accent, a bundled palette applied or removed, set_preset to a preset a live theme holds", budget = 0.5, unit = "ms" }
+5 = { what = "Theme::resolve, something changed", budget = 1, unit = "ms" }
+6 = { what = "Theme::resolve, nothing changed", budget = 10, unit = "us" }
+7 = { what = "a styled query, computed", budget = 50, unit = "us" }
+8 = { what = "a styled query, repeated in one resolution", budget = 2, unit = "us" }
+9 = { what = "bytes a preset adds to a binary", budget = 256, unit = "KiB", exact = true }
+10 = { what = "Theme::from_system, the theme's own part (the read of the preset and the acceptance of the reading)", budget = 16, unit = "ms" }
+11 = { what = "peak memory during Theme::resolve, above the level before it", budget = 8, unit = "MiB" }
+12 = { what = "the cost of adding an application layer that states structure: reported, no line", unit = "ms" }
+
+# Every case the probe can measure (rule 4), and the plain route's cases of the four presets
+# whose [pending] table M2's task 0 empties. Lines 1 to 3 are `read` on every preset (the read
+# alone, a lower bound); the synthetic route's cases and the `read` of a preset leave the file
+# as the plan says once its table is empty and load task 1 has merged.
+[cases]
+# adwaita
+"1.adwaita.read" = { first_measured_by = "the trigger step" }
+"2.adwaita.read" = { first_measured_by = "the trigger step" }
+"3.adwaita.read" = { first_measured_by = "the trigger step" }
+"3.adwaita.synthetic" = { first_measured_by = "the trigger step" }
+"4.adwaita.synthetic.pick" = { first_measured_by = "the trigger step" }
+"4.adwaita.synthetic.set_accent" = { first_measured_by = "the trigger step" }
+"4.adwaita.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
+"5.adwaita.synthetic" = { first_measured_by = "the trigger step" }
+"6.adwaita.synthetic" = { first_measured_by = "the trigger step" }
+"7.adwaita.synthetic.hover" = { first_measured_by = "the trigger step" }
+"7.adwaita.synthetic.rest" = { first_measured_by = "the trigger step" }
+"8.adwaita.synthetic.hover" = { first_measured_by = "the trigger step" }
+"8.adwaita.synthetic.rest" = { first_measured_by = "the trigger step" }
+"9.adwaita.file" = { first_measured_by = "the trigger step" }
+"11.adwaita.synthetic" = { first_measured_by = "the trigger step" }
+"12.adwaita.synthetic.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.adwaita.synthetic.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.adwaita.synthetic.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.adwaita.synthetic.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.adwaita.synthetic.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# macos-tahoe
+"1.macos-tahoe.read" = { first_measured_by = "the trigger step" }
+"2.macos-tahoe.read" = { first_measured_by = "the trigger step" }
+"3.macos-tahoe.read" = { first_measured_by = "the trigger step" }
+"3.macos-tahoe.synthetic" = { first_measured_by = "the trigger step" }
+"4.macos-tahoe.synthetic.pick" = { first_measured_by = "the trigger step" }
+"4.macos-tahoe.synthetic.set_accent" = { first_measured_by = "the trigger step" }
+"4.macos-tahoe.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
+"5.macos-tahoe.synthetic" = { first_measured_by = "the trigger step" }
+"6.macos-tahoe.synthetic" = { first_measured_by = "the trigger step" }
+"7.macos-tahoe.synthetic.hover" = { first_measured_by = "the trigger step" }
+"7.macos-tahoe.synthetic.rest" = { first_measured_by = "the trigger step" }
+"8.macos-tahoe.synthetic.hover" = { first_measured_by = "the trigger step" }
+"8.macos-tahoe.synthetic.rest" = { first_measured_by = "the trigger step" }
+"9.macos-tahoe.file" = { first_measured_by = "the trigger step" }
+"11.macos-tahoe.synthetic" = { first_measured_by = "the trigger step" }
+"12.macos-tahoe.synthetic.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.macos-tahoe.synthetic.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.macos-tahoe.synthetic.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.macos-tahoe.synthetic.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.macos-tahoe.synthetic.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# macos-monterey
+"1.macos-monterey.read" = { first_measured_by = "the trigger step" }
+"2.macos-monterey.read" = { first_measured_by = "the trigger step" }
+"3.macos-monterey.read" = { first_measured_by = "the trigger step" }
+"3.macos-monterey.synthetic" = { first_measured_by = "the trigger step" }
+"4.macos-monterey.synthetic.pick" = { first_measured_by = "the trigger step" }
+"4.macos-monterey.synthetic.set_accent" = { first_measured_by = "the trigger step" }
+"4.macos-monterey.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
+"5.macos-monterey.synthetic" = { first_measured_by = "the trigger step" }
+"6.macos-monterey.synthetic" = { first_measured_by = "the trigger step" }
+"7.macos-monterey.synthetic.hover" = { first_measured_by = "the trigger step" }
+"7.macos-monterey.synthetic.rest" = { first_measured_by = "the trigger step" }
+"8.macos-monterey.synthetic.hover" = { first_measured_by = "the trigger step" }
+"8.macos-monterey.synthetic.rest" = { first_measured_by = "the trigger step" }
+"9.macos-monterey.file" = { first_measured_by = "the trigger step" }
+"11.macos-monterey.synthetic" = { first_measured_by = "the trigger step" }
+"12.macos-monterey.synthetic.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.macos-monterey.synthetic.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.macos-monterey.synthetic.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.macos-monterey.synthetic.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.macos-monterey.synthetic.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# material-3
+"1.material-3.read" = { first_measured_by = "the trigger step" }
+"2.material-3.read" = { first_measured_by = "the trigger step" }
+"3.material-3.read" = { first_measured_by = "the trigger step" }
+"3.material-3.synthetic" = { first_measured_by = "the trigger step" }
+"4.material-3.synthetic.pick" = { first_measured_by = "the trigger step" }
+"4.material-3.synthetic.set_accent" = { first_measured_by = "the trigger step" }
+"4.material-3.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
+"4.material-3.synthetic.set_flavor" = { first_measured_by = "the trigger step" }
+"5.material-3.synthetic" = { first_measured_by = "the trigger step" }
+"6.material-3.synthetic" = { first_measured_by = "the trigger step" }
+"7.material-3.synthetic.hover" = { first_measured_by = "the trigger step" }
+"7.material-3.synthetic.rest" = { first_measured_by = "the trigger step" }
+"8.material-3.synthetic.hover" = { first_measured_by = "the trigger step" }
+"8.material-3.synthetic.rest" = { first_measured_by = "the trigger step" }
+"9.material-3.file" = { first_measured_by = "the trigger step" }
+"11.material-3.synthetic" = { first_measured_by = "the trigger step" }
+"12.material-3.synthetic.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.material-3.synthetic.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.material-3.synthetic.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.material-3.synthetic.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.material-3.synthetic.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# ios-26
+"1.ios-26.read" = { first_measured_by = "the trigger step" }
+"2.ios-26.read" = { first_measured_by = "the trigger step" }
+"3.ios-26.read" = { first_measured_by = "the trigger step" }
+"3.ios-26.synthetic" = { first_measured_by = "the trigger step" }
+"4.ios-26.synthetic.pick" = { first_measured_by = "the trigger step" }
+"4.ios-26.synthetic.set_accent" = { first_measured_by = "the trigger step" }
+"4.ios-26.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
+"5.ios-26.synthetic" = { first_measured_by = "the trigger step" }
+"6.ios-26.synthetic" = { first_measured_by = "the trigger step" }
+"7.ios-26.synthetic.hover" = { first_measured_by = "the trigger step" }
+"7.ios-26.synthetic.rest" = { first_measured_by = "the trigger step" }
+"8.ios-26.synthetic.hover" = { first_measured_by = "the trigger step" }
+"8.ios-26.synthetic.rest" = { first_measured_by = "the trigger step" }
+"9.ios-26.file" = { first_measured_by = "the trigger step" }
+"11.ios-26.synthetic" = { first_measured_by = "the trigger step" }
+"12.ios-26.synthetic.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.ios-26.synthetic.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.ios-26.synthetic.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.ios-26.synthetic.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.ios-26.synthetic.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# ios-13
+"1.ios-13.read" = { first_measured_by = "the trigger step" }
+"2.ios-13.read" = { first_measured_by = "the trigger step" }
+"3.ios-13.read" = { first_measured_by = "the trigger step" }
+"3.ios-13.synthetic" = { first_measured_by = "the trigger step" }
+"4.ios-13.synthetic.pick" = { first_measured_by = "the trigger step" }
+"4.ios-13.synthetic.set_accent" = { first_measured_by = "the trigger step" }
+"4.ios-13.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
+"5.ios-13.synthetic" = { first_measured_by = "the trigger step" }
+"6.ios-13.synthetic" = { first_measured_by = "the trigger step" }
+"7.ios-13.synthetic.hover" = { first_measured_by = "the trigger step" }
+"7.ios-13.synthetic.rest" = { first_measured_by = "the trigger step" }
+"8.ios-13.synthetic.hover" = { first_measured_by = "the trigger step" }
+"8.ios-13.synthetic.rest" = { first_measured_by = "the trigger step" }
+"9.ios-13.file" = { first_measured_by = "the trigger step" }
+"11.ios-13.synthetic" = { first_measured_by = "the trigger step" }
+"12.ios-13.synthetic.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.ios-13.synthetic.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.ios-13.synthetic.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.ios-13.synthetic.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.ios-13.synthetic.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# kde-breeze
+"1.kde-breeze.read" = { first_measured_by = "the trigger step" }
+"2.kde-breeze.read" = { first_measured_by = "the trigger step" }
+"3.kde-breeze.read" = { first_measured_by = "the trigger step" }
+"3.kde-breeze.synthetic" = { first_measured_by = "the trigger step" }
+"4.kde-breeze.synthetic.pick" = { first_measured_by = "the trigger step" }
+"4.kde-breeze.synthetic.set_accent" = { first_measured_by = "the trigger step" }
+"4.kde-breeze.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
+"4.kde-breeze.synthetic.set_flavor" = { first_measured_by = "the trigger step" }
+"5.kde-breeze.synthetic" = { first_measured_by = "the trigger step" }
+"6.kde-breeze.synthetic" = { first_measured_by = "the trigger step" }
+"7.kde-breeze.synthetic.hover" = { first_measured_by = "the trigger step" }
+"7.kde-breeze.synthetic.rest" = { first_measured_by = "the trigger step" }
+"8.kde-breeze.synthetic.hover" = { first_measured_by = "the trigger step" }
+"8.kde-breeze.synthetic.rest" = { first_measured_by = "the trigger step" }
+"9.kde-breeze.file" = { first_measured_by = "the trigger step" }
+"11.kde-breeze.synthetic" = { first_measured_by = "the trigger step" }
+"12.kde-breeze.synthetic.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.kde-breeze.synthetic.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.kde-breeze.synthetic.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.kde-breeze.synthetic.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.kde-breeze.synthetic.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# windows-11
+"1.windows-11.read" = { first_measured_by = "the trigger step" }
+"2.windows-11.read" = { first_measured_by = "the trigger step" }
+"3.windows-11.read" = { first_measured_by = "the trigger step" }
+"3.windows-11.synthetic" = { first_measured_by = "the trigger step" }
+"4.windows-11.synthetic.pick" = { first_measured_by = "the trigger step" }
+"4.windows-11.synthetic.set_accent" = { first_measured_by = "the trigger step" }
+"4.windows-11.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
+"5.windows-11.synthetic" = { first_measured_by = "the trigger step" }
+"6.windows-11.synthetic" = { first_measured_by = "the trigger step" }
+"7.windows-11.synthetic.hover" = { first_measured_by = "the trigger step" }
+"7.windows-11.synthetic.rest" = { first_measured_by = "the trigger step" }
+"8.windows-11.synthetic.hover" = { first_measured_by = "the trigger step" }
+"8.windows-11.synthetic.rest" = { first_measured_by = "the trigger step" }
+"9.windows-11.file" = { first_measured_by = "the trigger step" }
+"11.windows-11.synthetic" = { first_measured_by = "the trigger step" }
+"12.windows-11.synthetic.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.windows-11.synthetic.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.windows-11.synthetic.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.windows-11.synthetic.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.windows-11.synthetic.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# adwaita, the plain route, once M2's task 0 has emptied its [pending] table
+"1.adwaita.plain" = { first_measured_by = "M2's task 0" }
+"2.adwaita.plain" = { first_measured_by = "M2's task 0" }
+"3.adwaita.plain" = { first_measured_by = "M2's task 0" }
+"4.adwaita.plain.pick" = { first_measured_by = "M2's task 0" }
+"4.adwaita.plain.set_accent" = { first_measured_by = "M2's task 0" }
+"4.adwaita.plain.set_contrast" = { first_measured_by = "M2's task 0" }
+"4.adwaita.plain.set_preset" = { first_measured_by = "M2's task 0" }
+"5.adwaita.plain" = { first_measured_by = "M2's task 0" }
+"6.adwaita.plain" = { first_measured_by = "M2's task 0" }
+"7.adwaita.plain.hover" = { first_measured_by = "M2's task 0" }
+"7.adwaita.plain.rest" = { first_measured_by = "M2's task 0" }
+"8.adwaita.plain.hover" = { first_measured_by = "M2's task 0" }
+"8.adwaita.plain.rest" = { first_measured_by = "M2's task 0" }
+"11.adwaita.plain" = { first_measured_by = "M2's task 0" }
+"12.adwaita.plain.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.adwaita.plain.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.adwaita.plain.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.adwaita.plain.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.adwaita.plain.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# kde-breeze, the plain route, once M2's task 0 has emptied its [pending] table
+"1.kde-breeze.plain" = { first_measured_by = "M2's task 0" }
+"2.kde-breeze.plain" = { first_measured_by = "M2's task 0" }
+"3.kde-breeze.plain" = { first_measured_by = "M2's task 0" }
+"4.kde-breeze.plain.pick" = { first_measured_by = "M2's task 0" }
+"4.kde-breeze.plain.set_accent" = { first_measured_by = "M2's task 0" }
+"4.kde-breeze.plain.set_contrast" = { first_measured_by = "M2's task 0" }
+"4.kde-breeze.plain.set_flavor" = { first_measured_by = "M2's task 0" }
+"4.kde-breeze.plain.set_preset" = { first_measured_by = "M2's task 0" }
+"5.kde-breeze.plain" = { first_measured_by = "M2's task 0" }
+"6.kde-breeze.plain" = { first_measured_by = "M2's task 0" }
+"7.kde-breeze.plain.hover" = { first_measured_by = "M2's task 0" }
+"7.kde-breeze.plain.rest" = { first_measured_by = "M2's task 0" }
+"8.kde-breeze.plain.hover" = { first_measured_by = "M2's task 0" }
+"8.kde-breeze.plain.rest" = { first_measured_by = "M2's task 0" }
+"11.kde-breeze.plain" = { first_measured_by = "M2's task 0" }
+"12.kde-breeze.plain.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.kde-breeze.plain.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.kde-breeze.plain.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.kde-breeze.plain.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.kde-breeze.plain.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# material-3, the plain route, once M2's task 0 has emptied its [pending] table
+"1.material-3.plain" = { first_measured_by = "M2's task 0" }
+"2.material-3.plain" = { first_measured_by = "M2's task 0" }
+"3.material-3.plain" = { first_measured_by = "M2's task 0" }
+"4.material-3.plain.pick" = { first_measured_by = "M2's task 0" }
+"4.material-3.plain.set_accent" = { first_measured_by = "M2's task 0" }
+"4.material-3.plain.set_contrast" = { first_measured_by = "M2's task 0" }
+"4.material-3.plain.set_flavor" = { first_measured_by = "M2's task 0" }
+"4.material-3.plain.set_preset" = { first_measured_by = "M2's task 0" }
+"5.material-3.plain" = { first_measured_by = "M2's task 0" }
+"6.material-3.plain" = { first_measured_by = "M2's task 0" }
+"7.material-3.plain.hover" = { first_measured_by = "M2's task 0" }
+"7.material-3.plain.rest" = { first_measured_by = "M2's task 0" }
+"8.material-3.plain.hover" = { first_measured_by = "M2's task 0" }
+"8.material-3.plain.rest" = { first_measured_by = "M2's task 0" }
+"11.material-3.plain" = { first_measured_by = "M2's task 0" }
+"12.material-3.plain.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.material-3.plain.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.material-3.plain.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.material-3.plain.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.material-3.plain.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+
+# windows-11, the plain route, once M2's task 0 has emptied its [pending] table
+"1.windows-11.plain" = { first_measured_by = "M2's task 0" }
+"2.windows-11.plain" = { first_measured_by = "M2's task 0" }
+"3.windows-11.plain" = { first_measured_by = "M2's task 0" }
+"4.windows-11.plain.pick" = { first_measured_by = "M2's task 0" }
+"4.windows-11.plain.set_accent" = { first_measured_by = "M2's task 0" }
+"4.windows-11.plain.set_contrast" = { first_measured_by = "M2's task 0" }
+"4.windows-11.plain.set_preset" = { first_measured_by = "M2's task 0" }
+"5.windows-11.plain" = { first_measured_by = "M2's task 0" }
+"6.windows-11.plain" = { first_measured_by = "M2's task 0" }
+"7.windows-11.plain.hover" = { first_measured_by = "M2's task 0" }
+"7.windows-11.plain.rest" = { first_measured_by = "M2's task 0" }
+"8.windows-11.plain.hover" = { first_measured_by = "M2's task 0" }
+"8.windows-11.plain.rest" = { first_measured_by = "M2's task 0" }
+"11.windows-11.plain" = { first_measured_by = "M2's task 0" }
+"12.windows-11.plain.absent" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.windows-11.plain.auto" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.windows-11.plain.expression" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.windows-11.plain.presence" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
+"12.windows-11.plain.rule" = { not_binding = "line 12 is a figure reported, no line", row = "ADD-A147" }
