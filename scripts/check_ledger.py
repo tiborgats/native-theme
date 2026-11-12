@@ -98,7 +98,8 @@ Also:
   passes this gate over the units `scripts/widget_units.toml` enables, read
   and matched as scripts/check_facts_trace.py reads and matches them
   (read_units, in_unit; an `input.…` key that is no part or value of the
-  `input` widget is an S9 input, never that widget). A pending fact is of the
+  `input` widget is an S9 input, never that widget, and the model's core,
+  lying in every enabled unit's set). A pending fact is of the
   enabled units where its key lies in one and S17's predicate holds it on a
   preset of its platform (ADD-A147; check_facts_trace.Depth: its `when`
   holds in a combination of the names at depth its state model draws, its
@@ -562,7 +563,7 @@ def enabled(entry: tuple, units: list | None, input_parts: frozenset | set = fro
     if units is None:
         return True
     path, kind = unit_path(entry, input_parts)
-    if not any(check_facts_trace.in_unit(path, kind, u) for u in units):
+    if kind != "input" and not any(check_facts_trace.in_unit(path, kind, u) for u in units):
         return False
     return predicate is None or entry[4:5] == ("pending declaration",) or predicate.holds(entry)
 
@@ -960,8 +961,9 @@ default_size = "regular"
             ("s.toml", 4, "button.sizes_by_variant.@gray.default_size", "U9")]:
         failures.append("pending declarations: a stated default size is no pending declaration")
     # --final over the enabled units (S17, S21.3; ADD-A135): a pending fact by its key's unit, a state model's
-    # pending entry by its widget's, an `input.…` S9 input never the `input` widget's; a register row of a unit not
-    # enabled where every pending fact naming it is
+    # pending entry by its widget's, an `input.…` S9 input never the `input` widget's but the model's core, of the
+    # enabled units by its conditions (S17, ADD-A147); a register row of a unit not enabled where every pending fact
+    # naming it is
     units = [check_facts_trace.Unit("slice", ("button", "input", "role", "token.motion"),
                                     ("token.motion.scroll",))]
     scoped = [("f.toml", 8, "button.body.fill", "U1"), ("f.toml", 9, "menu.body.shadow", "U2"),
@@ -971,13 +973,13 @@ default_size = "regular"
               ("s.toml", 4, "button.sizes_by_variant.@gray.default_size", "U5", "pending declaration")]
     got = [(f, n) for f, n, _ in pending_problems("L", ledger, scoped, True, units, frozenset({"field"}))
            if "a release is made" in _]
-    if got != [("f.toml", 8), ("f.toml", 11), ("s.toml", 4)]:
+    if got != [("f.toml", 8), ("f.toml", 10), ("f.toml", 11), ("s.toml", 4)]:
         failures.append(f"pending, --final over the enabled units: got {got}")
     if pending_problems("L", ledger, scoped[:1], True, []) or not pending_problems("L", ledger, scoped[:1], True):
         failures.append("pending, --final: no unit enabled, or every entry (units None), read wrong")
     got = outside_ids(scoped, units, frozenset({"field"}))
-    if got != {"U2", "U4"}:
-        failures.append(f"outside ids: got {sorted(got)}, want ['U2', 'U4']")
+    if got != {"U4"}:
+        failures.append(f"outside ids: got {sorted(got)}, want ['U4']")
     if outside_ids(scoped, None) or outside_ids([("f.toml", 1, "menu.body.fill", 7)], units):
         failures.append("outside ids: every entry enabled, or a malformed id, gave an id")
     # the predicate of a fact's units (S17, ADD-A147): a pending fact whose `when` a later unit's name holds in is that
