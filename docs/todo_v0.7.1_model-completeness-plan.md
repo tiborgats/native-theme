@@ -955,7 +955,15 @@ GNOME and macOS readers since M1b.
 6. **indicators**: `spinner`, `progress_bar`, `scrollbar`.
 7. **containers**: `scroll_view` (no 0.7.0 field, though 0.7.0's showcases scroll their pages, `basic.page`; the
    slice's staged `token.behavior.scroll` ends here), `list`, `tab`,
-   `sidebar`, `toolbar`, `status_bar`, `splitter`, `separator`, `card`, `expander`, `layout`.
+   `sidebar`, `toolbar`, `status_bar`, `splitter`, `separator`, `card`, `expander`, `layout`. With `list` the unit
+   decides `token.behavior.single_click_activates` (D6, outcome 14; the register's U504 and U555, the token's keys
+   under U472, U329 and U609 beside them): which views the token speaks of, how a view is read (its default
+   configuration, a documented one that is not the default, its documentation against its code), whether AppKit's
+   `NSWorkspace` decides an item's activation, whether the Kirigami flavour reads the style hint or its delegates,
+   and the token's form (one bool per platform, a `list` value per variant, or both); `absent` is no option where
+   the views exist and activate. The evidence by platform is the record the ledger's U555 row names. 0.7.0's model
+   holds no activation value, so the token stays in the parking unit *behaviour* unless the unit shows a value at
+   depth reads it (ADD-A147).
 
 30 of the catalogue's 87 typed widgets. Their 15 `Placement` values are deferred to the placement unit (S6.1, as the
 slice defers the button's; the M1a design's decision 1): `window.values.{caption_button_menu_placement,
