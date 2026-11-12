@@ -36,7 +36,7 @@ Nothing that blocks the work. To come, each with its facts when they exist:
 
 ## Corrections of the batch's fix rounds (2026-11-12)
 
-The batch that applied these outcomes (ADD-A147) was checked twice, and its fix rounds four times more; the
+The batch that applied these outcomes (ADD-A147) was checked twice, and its fix rounds five times more; the
 orchestrator's decisions on the checks correct this file's outcomes as follows, each open to the maintainer's veto
 (the veto list, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`):
 
@@ -56,9 +56,12 @@ orchestrator's decisions on the checks correct this file's outcomes as follows, 
   colour, as `accent_foreground` (ledger U755), measured on each status fill by the second-tint run (U706), 0.7.0's
   having been a literal with no source. On `adwaita` the info role's fill and text colour refer to the accent's, its
   fill the colour libadwaita's info bar draws info from (ledger queue #278).
-- Outcome 5: the four Apple status pairings rest on source reads (U757–U760), each closed by a source that names
-  the colour for the meaning or by a measurement of an element the platform draws for it, in a colour the run does
-  not set, which pairs the role with the colour measured, 0.7.0's keyed colour where the two are equal; each
+- Outcome 5: the four Apple status pairings rest on reads (U757–U760), each closed by a source that names a colour
+  for the meaning, which pairs that colour, or by a measurement of an element the platform itself colours for it, in
+  a colour the run does not set, which pairs the role with the colour measured, a keyed colour (0.7.0's or another)
+  where the two are equal in both schemes; the facts lane names the element and the tie-break decides whether it
+  counts, and confirms a survey that finds none; a fill pairs the fill alone, a standalone colour only one named or
+  measured as text or a mark on the surface, absent otherwise as `windows-11`'s; each
   status's fill, its standalone colour where paired, and its text colour pending while its read is open, and absent
   where a read finds neither, a loss of 0.7.0's status colour there (veto list item 57); a status's text colour is paired only where its fill is, the macOS one measured over each status fill by
   a probe pass (U756). The success and info standalone colours and `destructive` on `macos-*` and `ios-*`, and

@@ -537,7 +537,8 @@ the facts tooling reads it.
     with no variant on `material-3` and `ios-13`, 0.7.0's staying under `tinted` and `@gray`; `material-3`'s checked
     text-button colours; of the two motions 0.7.0 has, one the Apple motion trial does not measure; the icon size of a
     context the platform names none for; the icon theme's name on the presets whose icon set is not freedesktop; on
-    `macos-*` and `ios-*` a status colour whose source read finds neither a source nor a measurement; on `windows-11` egui's error and warning text
+    `macos-*` and `ios-*` a status colour whose read finds neither a source nor a measurement, and an error or warning
+    standalone colour no read pairs by text or a mark on the surface; on `windows-11` egui's error and warning text
     colours: ADD-A147, veto list items 5 to 8, 32 to 39, 56 and 57) and the widgets a preset declares unavailable where 0.7.0 resolved
     them (`tab`, `card`, `expander`, `status_bar`), which a connector draws by its contract's list (S21.3; D6, outcome
     6; ADD-A147) (what its API does not keep is *Not kept*, below; ADD-A146); they get the new model about 2–3 weeks
@@ -652,7 +653,9 @@ the facts tooling reads it.
       item 56); a text slot the platform names no counterpart for, by a clause of its own, a style or family it
       names; on `macos-*` and
       `ios-*` the status fills, and the error and warning standalone colours, are paired by their reads with the
-      keyed system colours 0.7.0 drew, or with the colour a measurement finds where it differs (the success and info standalone colours and `destructive` absent, no connector holding them;
+      keyed system colour a source names or a measurement finds equal in both schemes (0.7.0's or another), or with
+      the colour measured where it equals none, a fill pairing the fill alone and a standalone colour paired only by
+      one named or measured as text or a mark on the surface (the success and info standalone colours and `destructive` absent, no connector holding them;
       where M2 task 1's contract tables name a toolkit field for one, the rule applies from then on, through that
       task's own spec change), and the status
       text colours, the text on the status fill, paired where the fill is, to the colour the platform draws a filled
@@ -663,11 +666,13 @@ the facts tooling reads it.
       (the rationale's R5.1, R10, R25.17; the specification's S3, S4.4, S17; veto list item 3). U456 closes with the
       pairings, the iOS status text colours split off as U755 and paired there with the filled button's measured
       title colour, as U651, measured on each status fill by the second-tint run, each of the four Apple pairings
-      resting on a read that names the colour for the meaning or measures an element the platform draws for it, in a
-      colour the run does not set, the row naming the element (the ledger's U757–U760), which
+      resting on a read that names the colour for the meaning or measures an element the platform itself colours for
+      it, in a colour the run does not set, the facts lane naming the element in the fact's evidence and the verifier
+      and the tie-break deciding whether it counts (*Facts, independently*; the ledger's U757–U760), which
       the macOS and iOS lanes make before their facts edit, the facts pending on it until then (S3 for the outcome
-      where neither is found: the status's `fill`, its `standalone` where paired, and its `foreground` absent there,
-      a loss of 0.7.0's status colour, veto list item 57), the reads closing at the latest at M4's pending
+      where neither is found, the lane's survey finding no candidate and the tie-break confirming it: the status's
+      `fill`, its `standalone` where paired, and its `foreground` absent there, a loss of 0.7.0's status colour, veto
+      list item 57; a `standalone` no read pairs by text or a mark on the surface absent alone), the reads closing at the latest at M4's pending
       condition, and the macOS foregrounds on a probe pass over the status fills (U756), due at the same condition.
     - R-9, motion not weighed for deferral as placement was: **Decided at D6** (2026-11-10, outcome 3; the D6
       staging design): a motion unit after 0.8.0, 0.8.0 keeping the two motions 0.7.0 has where the Apple motion
@@ -1481,7 +1486,7 @@ is fixed before task 0 on its own branch, `side-units`.
    and the gate's report; then the lanes of task 0's presets write their mappings (`windows-11`'s monospace style,
    U509; `adwaita`'s `info` record paired with the accent, ledger queue #278; and the label on each of their text
    slots the platform names no style for). The macOS and iOS mappings (the
-   status pairings of the catalogue's *global roles*, `status`, U456 and U755, each after its source read,
+   status pairings of the catalogue's *global roles*, `status`, U456 and U755, each after its read,
    U757–U760, which the lane makes first, the facts pending on it until then; `ios-*`'s `accent_foreground`, U651;
    their text slots) follow in those lanes' rounds after this step, beside M2's tasks (ledger queue #264, #265), and
    task 1 waits for none of them. A preset whose table it empties takes its plain route's records in

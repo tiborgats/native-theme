@@ -19,7 +19,7 @@ The status text colours (U456): on `macos-*` they refer to `role.global.accent_f
 (`alternateSelectedControlTextColor`), measured over each status fill by U756 (fix round N1, withdrawing
 `labelColor`, which 0.7.0's preset names the body text beside a status mark); on `ios-*` to the filled button's
 measured title colour (U755, decided), 0.7.0's having been a literal with no source; each paired only where its fill
-is, and pending while that fill's source read is open (U757–U760; fix round N3).
+is, and pending while that fill's read is open (U757–U760; fix round N3).
 
 ## Revision 5
 
