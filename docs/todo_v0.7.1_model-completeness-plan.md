@@ -657,8 +657,8 @@ the facts tooling reads it.
       text slot the platform names no style for by a style or family it names (the specification's S3; the
       rationale's R5.1, R10, R25.17; veto list item 3); where the platform draws the meaning in no colour, the role
       absent and the connector's contract recording the toolkit's own colour there (S21.3; veto list item 56); on
-      `adwaita` the info role's fill and text colour the accent's; on `macos-*` and `ios-*` the statuses read by the
-      ledger's U757–U760, their foregrounds by U755 and U756, which the macOS and iOS lanes make before their facts
+      `adwaita` the info role's fill and text colour the accent's; on `macos-*` and `ios-*` the statuses, each `standalone`
+      too (S3), read by the ledger's U757–U760, their foregrounds by U755 and U756, which the macOS and iOS lanes make before their facts
       edit, the facts pending on them until then, a status a row closes with no witness a loss of 0.7.0's status
       colour (veto list item 57), the rows closing at the latest at M4's pending condition; U456 closes with the
       pairings.

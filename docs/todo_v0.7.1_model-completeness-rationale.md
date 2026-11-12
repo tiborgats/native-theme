@@ -2049,9 +2049,9 @@ Each is decided from the pinned sources; the specification cites them.
   by logic, awaiting the maintainer's veto: veto list item 3). On `adwaita` the `info` record's `fill` and
   `foreground` refer to the accent's, as libadwaita's info bar draws info (`_deprecated.scss:174`) and as 0.7.0 drew
   it (`v0.7.0:native-theme/src/presets/adwaita.toml:42-45`) (ADD-A147; D6, decided by logic, awaiting the
-  maintainer's veto: veto list item 56). `destructive`, a status's `standalone` the platform is not found drawing as
-  text or a mark, `background`, `background_solid` and `neutral` stay absent where the catalogue allows it: no
-  committed source or measurement shows the platform drawing them at 0.8.0's depth. The Selection set's outline stays
+  maintainer's veto: veto list item 56). A status's `standalone` waits on its row as its fill does (the
+  specification's S3). `destructive`, `background`, `background_solid` and `neutral` stay absent where the catalogue
+  allows it: no committed source or measurement shows the platform drawing them at 0.8.0's depth. The Selection set's outline stays
   absent on `macos-*`; macOS's destructive buttons keep their system red, its level indicator its own fills (U757's
   and U758's candidates).
 - *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that

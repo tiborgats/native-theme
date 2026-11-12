@@ -52,11 +52,11 @@ orchestrator's decisions on the checks correct this file's outcomes as follows, 
   (`material-3`'s warning, success and info) the role is absent and the connector's contract records the toolkit's
   own colour there, an exception to following the theme's data (veto list item 56). The status text colours are
   the colour the platform is measured drawing over the status fill (ledger U756, U755); on `adwaita` the info
-  role's fill and text colour refer to the accent's (ledger queue #278). On `macos-*` and `ios-*` each status waits
-  on its read (U757–U760), its values pending meanwhile and absent where a read finds no witness, a loss of 0.7.0's
-  status colour there (veto list item 57); `destructive`, and a status's standalone colour the platform is not
-  found drawing as text or a mark, stay absent, no committed source or measurement showing them (U761 retired); the
-  set text colours refer to the status's colour, its fill where no text colour is paired, on every preset.
+  role's fill and text colour refer to the accent's (ledger queue #278). On `macos-*` and `ios-*` each status, its
+  standalone colour too (the specification's S3), waits on its read (U757–U760), its values pending meanwhile and
+  absent where a read finds no witness, a loss of 0.7.0's status colour there (veto list item 57); `destructive`
+  stays absent, no committed source or measurement showing it (U761 retired); the set text colours refer to the
+  status's colour, its fill where no text colour is paired, on every preset.
 - Outcome 7: a palette is not offered over a preset whose widget colours are measured literals that follow no role
   (`macos-*`, `ios-*`), a recorded limit (veto list item 49).
 - Outcome 8: 40 MiB (41,943,040 bytes), and GitHub's warning at 50 MiB, not Git's (S17).

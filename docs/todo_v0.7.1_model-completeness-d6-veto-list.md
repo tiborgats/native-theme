@@ -70,9 +70,10 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
     a probe pass (row U756) finds it equal, as the default push button's title is (0.7.0 drew `labelColor` there,
     which its own preset names the body text beside a status mark); on `ios-*` the filled button's measured title
     colour (row U755), checked on the second-tint run (U706); 0.7.0's was a literal with no source;
-  - the destructive role, and a status's text colour on the surface where the platform is not found drawing the
-    status as text or a mark, stay absent on `macos-*` and `ios-*`: no committed source or measurement shows them
-    (row U761 retired). The set text colours (`negative`, `neutral`, `positive`) refer to the status's colour there,
+  - a status's text colour on the surface (its `standalone`) waits on the same read as its fill, for all four
+    statuses, paired where the platform is found drawing the status as text or a mark and absent otherwise (the
+    specification's S3); the destructive role stays absent on `macos-*` and `ios-*`: no committed source or
+    measurement shows it (row U761 retired). The set text colours (`negative`, `neutral`, `positive`) refer to the status's colour there,
     its fill where no text colour is paired, as on `windows-11`, so a connector's error-text field still gets the
     platform's colour;
   - on `adwaita` the info role's fill and text colour refer to the accent's fill and its foreground, the fill the
@@ -93,7 +94,8 @@ and the batch's checks and decisions (`batch-check/`) stay in the project's work
   "content on the accent".
 - *Source:* outcome 5; register §2.2, U651, U509, §7 item 4; brief §2 decision 5; the orchestrator's decisions on
   the batch's checks N1 to N6 and F1 (`batch-check/decisions.md`, the checks in `batch-check/`), the rule's present
-  form, the set text colours and the destructive role's ground by the decisions F1-1, F1-3 and F1-4.
+  form, the set text colours and the destructive role's ground by the decisions F1-1, F1-3 and F1-4, the four
+  `standalone`s alike by F1-21.
 
 **56. Which roles the labelled mapping covers (the scope of item 3).**
 - *Decided:* the mapping applies to a typed role that no source of the platform states, where the platform draws
@@ -202,7 +204,8 @@ model form, by your earlier decisions and the project's rules.**
 - *Decided:* a status whose read (rows U757–U760) finds on a preset neither Apple documentation naming a system
   colour for that meaning nor a measurement of an element the platform itself colours for it is absent on that
   preset, and each connector fills its toolkit's field with the toolkit's own colour, recorded in its contract;
-  0.7.0's status colour there is then lost. The macOS and iOS lanes make the reads before their facts edit, at the
+  0.7.0's status colour there is then lost. A status's text colour on the surface (its `standalone`) waits on the
+  same read, for all four statuses alike (item 3). The macOS and iOS lanes make the reads before their facts edit, at the
   latest at M4's pending condition, beginning with the HIG's colour pages; the rows state how a colour found is
   paired (the specification's S3 states the rule). Until a read closes, those values are pending, which no release
   may hold. What the evidence in hand gives: a candidate element only for macOS's error and warning (the level
@@ -217,7 +220,7 @@ model form, by your earlier decisions and the project's rules.**
   alternative in item 56 (a keyed colour 0.7.0 drew for that meaning), by which `material-3`'s info (`#6750a4`, its
   primary) would qualify too, so item 56 changes with it.
 - *Source:* the orchestrator's decisions N2-1, N3-1, N4-1, N5-1, N5-3, N6-2, N6-4 and N6-5 on the batch's checks of
-  its fix rounds and the check F1's finding 7 (`batch-check/decisions.md`, the checks in `batch-check/`); the
+  its fix rounds, the check F1's finding 7 and the decision F1-21 (`batch-check/decisions.md`, the checks in `batch-check/`); the
   specification's S3, the catalogue's *global roles*, `status`; the rationale's R21 and R25.17.
 
 ---
