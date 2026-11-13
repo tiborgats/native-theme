@@ -774,6 +774,8 @@ class Draft:
     read_tables: list = field(default_factory=list)  # (section, scheme or None, header): a `read` fact's base table
     read_rules: list = field(default_factory=list)   # `read` facts whose `when` is no base (read_tables())
     items: list = field(default_factory=list)        # every item check_facts.load() reads (the citations', Citations)
+    size_reports: list = field(default_factory=list)  # ("note" or "mismatch", text): the default sizes in force's
+                                                      # (sizes_in_force())
 
 
 def accent_run(d) -> bool:
@@ -888,7 +890,9 @@ def analyse(ctx, items, preset: str, depth, staged: int) -> Draft:
             f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
         bases = [b for b in bases if b[5] not in split]
         rules = group_rules([f for f in facts if f.status == "rule" or f.hand])
-    declare, conditions, models, left_models, waiting = declarations(ctx, items, platform, preset, depth, facts, rules)
+    reports = []
+    declare, conditions, models, left_models, waiting = declarations(ctx, items, platform, preset, depth, facts, rules,
+                                                                     reports)
     covering, gaps = covering_bases(facts, models, tree)
     bases += covering
     # a covering base can state a set-whole block's leaf alone: split again, the base dropped (its rules stay)
@@ -905,7 +909,7 @@ def analyse(ctx, items, preset: str, depth, staged: int) -> Draft:
     defined = definitions(preset, tree, lambda path: depth.held(model_key(path), preset))
     defined += empty_maps(tree, listed, tables)
     return Draft(preset, platform, every, rules, bases, declare, conditions, models, left_models, staged, depth,
-                 listed, gaps, defined, tables, read_rules, items)
+                 listed, gaps, defined, tables, read_rules, items, reports)
 
 
 def read_tables(facts) -> tuple:
@@ -1712,11 +1716,12 @@ def group_rules(facts: list) -> list:
     return rules
 
 
-def declarations(ctx, items, platform, preset, depth, facts, rules):
+def declarations(ctx, items, platform, preset, depth, facts, rules, reports):
     """([declare] tables, `[declare] conditions`, the state models in force, the entries left out, the pending default
     sizes' listed paths) from the platform's state models (S10, S17 *State models*) at depth (S10 *Later names*,
     ADD-A147): each declaration as declared(), and the `models` dict the generator's readers take (covering_bases(),
-    pending_table(), round_trip()), each widget's default flavour's entry in force on the preset alone (in_force()),
+    pending_table(), round_trip()), each widget's default flavour's entry in force on the preset alone (in_force(),
+    its reports of the default sizes in force appended to `reports`),
     the flavours unit's flavours left out while it is not enabled. `[declare] conditions` lists the system settings
     (`system_setting:<key>`, as `@<key>`) that a rule of the preset (`rules`) names, positive or negative."""
     entries = {}
@@ -1754,7 +1759,7 @@ def declarations(ctx, items, platform, preset, depth, facts, rules):
                 kvs.append(("data", data))
             declare.append((header, kvs, it, read_by))
             if flavor is None:
-                models[(widget, None)] = in_force(d, widget, preset, depth)
+                models[(widget, None)] = in_force(d, widget, preset, depth, reports)
     settings = [c for r in rules for k in ("conditions", "not_conditions") for c in (r.when or {}).get(k, [])
                 if isinstance(c, str)]
     conditions = list(dict.fromkeys("@" + c[len("system_setting:"):] for c in settings
@@ -1867,13 +1872,13 @@ def drawn_variants(depth, platform: str, widget: str, preset: str) -> set:
     return out
 
 
-def in_force(model: dict, widget: str, preset: str, depth) -> dict:
+def in_force(model: dict, widget: str, preset: str, depth, reports: list) -> dict:
     """The state model in force of an entry's default flavour on the preset (S10 *Later names*, S17, ADD-A147; the
     gate's in_force_at_depth): its variants, `exclusive_variants` groups and `sizes_by_variant` entries those at depth
     (no element holds another: a typed one has no member, a `later` one is refused); its flags, exclusive groups,
     recency sets and axis states those at depth (a group or set left with fewer than two dropped); while the sizes unit
-    is not enabled, an element takes its default size in force alone (the widget's `sizes` its stated default where it
-    takes it; each `sizes_by_variant` entry's its own default, else the widget's, where it takes it) and no density;
+    is not enabled, an element takes its default size in force alone, as the facts' predicate takes it
+    (sizes_in_force(), which reports a pending default and one not among its sizes in `reports`), and no density;
     its `sizes_by_context` entries those naming only enabled widgets (held_contexts())."""
     out = dict(model)
 
@@ -1895,19 +1900,44 @@ def in_force(model: dict, widget: str, preset: str, depth) -> dict:
         out["axes"] = {**axes, "states": [x for x in axes.get("states", []) if isinstance(x, str) and flag(x)]}
     entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict) and at(e.get("variant"))]
     if depth.sizes_off() is not None:
-        sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
-        default = model.get("default_size")
-        if isinstance(default, str) and default in sizes:
-            out["sizes"] = [default]
-        for i, e in enumerate(entries):
-            own = e.get("default_size", default)
-            if isinstance(e.get("sizes"), list) and isinstance(own, str) and own in e["sizes"]:
-                entries[i] = {**e, "sizes": [own]}
+        sizes, entries = sizes_in_force(model, widget, entries, depth, reports)
+        if "sizes" in model:
+            out["sizes"] = sizes
         out["densities"] = []
     out["sizes_by_variant"] = entries
     out["sizes_by_context"] = dict(held_contexts([("sizes_by_context", model.get("sizes_by_context", []))],
                                                  depth))["sizes_by_context"]
     return out
+
+
+def sizes_in_force(model: dict, widget: str, entries: list, depth, reports: list) -> tuple:
+    """(the widget's `sizes`, its `sizes_by_variant` entries) as in force while the sizes unit is not enabled: each
+    the default in force alone, as the facts' predicate takes it (Depth.default_size(): an entry's own default, else the
+    widget's), none where that default is pending (the query answers `Later` for every size then); a list the element
+    takes no size from kept. A pending default is reported (`reports`, ("note", text)), and so is a default not among
+    the sizes it is the default of (("mismatch", text)), each by its declaration's name."""
+    sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
+
+    def one(variants, listed, name):
+        default = depth.default_size(model, variants)
+        if default is None:
+            return listed
+        if default == check_facts_trace.PENDING_SIZE:
+            reports.append(("note", f"[declare.widget.{widget}] {name}: its default size is pending, so no size is "
+                                    f"in force (S10's *A pending default*)"))
+            return []
+        if default not in listed:
+            reports.append(("mismatch", f"[declare.widget.{widget}] {name}: its default size in force `{default}` is "
+                                        f"not among its sizes {listed} (S10)"))
+        return [default]
+
+    out = []
+    for e in entries:
+        listed = e.get("sizes")
+        if isinstance(listed, list) and listed:
+            e = {**e, "sizes": one(frozenset([e.get("variant")]), listed, f"sizes_by_variant `{e.get('variant')}`")}
+        out.append(e)
+    return (one(frozenset(), sizes, "sizes") if sizes else sizes), out
 
 
 def element_data(widget: str, facts) -> tuple:
@@ -3338,6 +3368,7 @@ def generate(ctx, preset: str):
     text = render(draft)
     trip = round_trip(draft, text)
     trip.mismatches += beyond_depth(draft)
+    trip.mismatches += [text for kind, text in draft.size_reports if kind == "mismatch"]
     return draft, text, trip, units
 
 
@@ -4001,6 +4032,26 @@ def depth_cases(root: Path) -> list:
             "not_conditions": ["scheme:dark"], "states": ["hover"]}
     if got != want:
         failures.append(f"depth: at_depth_when {got}, expected {want}")
+    # the sizes in force are the facts' predicate's (Depth.default_size()): a pending widget default leaves no size in
+    # force, reported; a variant's entry stating no default takes the widget's, reported where its sizes lack it
+    fab = {"variant": "@fab", "sizes": ["small", "large"]}
+    for label, model, want in (
+            ("a pending default", {"sizes": ["small", "regular"], "default_size": {"pending": "U1"}},
+             ([], [], [("note", "[declare.widget.button] sizes: its default size is pending")])),
+            ("an entry's default not among its sizes", {"variants": ["@fab"], "sizes": ["small", "regular"],
+                                                        "default_size": "regular", "sizes_by_variant": [fab]},
+             (["regular"], [{**fab, "sizes": ["regular"]}],
+              [("mismatch", "[declare.widget.button] sizes_by_variant `@fab`: its default size in force `regular` "
+                            "is not among its sizes ['small', 'large']")])),
+            ("an entry's own default", {"variants": ["@fab"], "sizes": ["small", "regular"], "default_size": "small",
+                                        "sizes_by_variant": [{**fab, "default_size": "large"}]},
+             (["small"], [{**fab, "default_size": "large", "sizes": ["large"]}], []))):
+        reports = []
+        got = in_force(model, "button", "adwaita", draft.depth, reports)
+        got = (got.get("sizes"), got.get("sizes_by_variant"), reports)
+        if got[:2] != want[:2] or len(reports) != len(want[2]) or not all(
+                k == wk and w in t for (k, t), (wk, w) in zip(reports, want[2])):
+            failures.append(f"depth: the sizes in force, {label}: got {got}, expected {want}")
     # beyond_depth() finds a name beyond depth written into a rule or a declaration
     draft.facts[[f.item.data.get("value") for f in draft.facts].index("#222222")].rule_when = {"states": ["open"]}
     draft.declare[0][1].append(("flags", ["@loading"]))
@@ -5406,6 +5457,9 @@ def run(ctx, preset: str, mode, out) -> int:
         return 1
     for line in share_lines(draft, trip):
         print(line, file=sys.stderr)
+    for kind, line in draft.size_reports:
+        if kind == "note":
+            print(f"# {line}", file=sys.stderr)
     if unread is not None:
         print(f"# the bundled preset's hand-written parts not read for the fields below: {unread}", file=sys.stderr)
     for line in fields:
