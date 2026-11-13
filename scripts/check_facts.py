@@ -3733,7 +3733,7 @@ def depth_place_problems(ctx: Context, items) -> list:
         head = d.get("widget") if it.table == "model" else d.get("key")
         if not isinstance(head, str):
             continue
-        widget = head.split(".")[0]
+        widget = check_facts_trace.entry_of(head)
         if it.table == "model" and widget in entries and d.get("available") is not False:
             axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
             names = [("variants", v) for v in d.get("variants", []) if isinstance(v, str)]
