@@ -4114,6 +4114,17 @@ def depth_cases(root: Path) -> list:
                   + [f"{decl}`{n}`, beyond depth" for n in ("@loading", "open", "open", "primary")])
     if sorted(beyond_depth(draft)) != want:
         failures.append(f"depth: beyond_depth {sorted(beyond_depth(draft))}, expected {want}")
+    # a fact the predicate leaves out that the attribution places among the enabled units is an input error
+    real = check_facts_trace.Depth.unit
+    check_facts_trace.Depth.unit = lambda self, *args: None
+    try:
+        generate(fixture_context(root, catalogue), "adwaita")
+        failures.append("depth: of_enabled() and unit() disagreeing: not refused")
+    except InputError as err:
+        if "the two must agree" not in str(err):
+            failures.append(f"depth: of_enabled() and unit() disagreeing: {err}")
+    finally:
+        check_facts_trace.Depth.unit = real
     got = declare_findings(FINDINGS_PRESET)
     if got != FINDINGS_WANT:
         failures.append(f"declare_findings: {got}, expected {FINDINGS_WANT}")
