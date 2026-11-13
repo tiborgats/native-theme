@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 2d280ba7471d36acc74878ea0a7325c0bad79364cbe3715558b88ac497710282
+# generated lines: sha256 dd9a763fe3dae801f4b83a1c0b2df1d4020caa49d04f77ef22fdf5b32d81604c
 
 [preset]
 id = "macos-monterey"
@@ -28,6 +28,8 @@ color_roles = [
 text_styles = [
     "large_title",  # docs/facts/macos/tokens.toml:2502
     "title_1",  # docs/facts/macos/tokens.toml:2538
+    "title_2",  # docs/facts/macos/tokens.toml:2574
+    "title_3",  # docs/facts/macos/tokens.toml:2610
     "headline",  # docs/facts/macos/tokens.toml:2646
     "body",  # docs/facts/macos/tokens.toml:2718
     "caption_1",  # docs/facts/macos/tokens.toml:2826
@@ -1010,6 +1012,10 @@ selected_control_secondary = "#464646"
 keyed.large_title.font.size_px = 26
 # docs/facts/macos/tokens.toml:2538
 keyed.title_1.font.size_px = 22
+# docs/facts/macos/tokens.toml:2574
+keyed.title_2.font.size_px = 17
+# docs/facts/macos/tokens.toml:2610
+keyed.title_3.font.size_px = 15
 # docs/facts/macos/tokens.toml:2646
 keyed.headline.font.size_px = 13
 # docs/facts/macos/tokens.toml:2718
@@ -1024,6 +1030,14 @@ keyed.large_title.font.weight = 400
 keyed.title_1.font.family = ".AppleSystemUIFont"
 # docs/facts/macos/tokens.toml:3207
 keyed.title_1.font.weight = 400
+# docs/facts/macos/tokens.toml:3228
+keyed.title_2.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:3264
+keyed.title_2.font.weight = 400
+# docs/facts/macos/tokens.toml:3285
+keyed.title_3.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:3321
+keyed.title_3.font.weight = 400
 # docs/facts/macos/tokens.toml:3342
 keyed.headline.font.family = ".AppleSystemUIFont"
 # docs/facts/macos/tokens.toml:3378
@@ -1070,6 +1084,26 @@ keyed.title_1.letter_spacing = "= sf_tracking(font_size, sf_pro)"
 keyed.title_1.word_spacing_px = 0
 # docs/facts/macos/tokens.toml:20558
 keyed.title_1.case = "mixed"
+# docs/facts/macos/tokens.toml:20600
+keyed.title_2.decoration = "absent"
+# docs/facts/macos/tokens.toml:20642
+keyed.title_2.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:20699
+keyed.title_2.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:20730
+keyed.title_2.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:20772
+keyed.title_2.case = "mixed"
+# docs/facts/macos/tokens.toml:20814
+keyed.title_3.decoration = "absent"
+# docs/facts/macos/tokens.toml:20856
+keyed.title_3.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:20913
+keyed.title_3.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:20944
+keyed.title_3.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:20986
+keyed.title_3.case = "mixed"
 # docs/facts/macos/tokens.toml:21028
 keyed.headline.decoration = "absent"
 # docs/facts/macos/tokens.toml:21070
@@ -1140,6 +1174,46 @@ keyed.title_1.wrap = "absent"
 keyed.title_1.max_lines = "absent"
 # docs/facts/macos/tokens.toml:26744
 keyed.title_1.scaling_role = "none"
+# docs/facts/macos/tokens.toml:26760
+keyed.title_2.font.style = "normal"
+# docs/facts/macos/tokens.toml:26781
+keyed.title_2.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:26802
+keyed.title_2.font.features = {}
+# docs/facts/macos/tokens.toml:26823
+keyed.title_2.font.width = 100
+# docs/facts/macos/tokens.toml:26844
+keyed.title_2.line_height = "auto"
+# docs/facts/macos/tokens.toml:26865
+keyed.title_2.fill = "absent"
+# docs/facts/macos/tokens.toml:26907
+keyed.title_2.elision = "absent"
+# docs/facts/macos/tokens.toml:26949
+keyed.title_2.wrap = "absent"
+# docs/facts/macos/tokens.toml:26991
+keyed.title_2.max_lines = "absent"
+# docs/facts/macos/tokens.toml:27033
+keyed.title_2.scaling_role = "none"
+# docs/facts/macos/tokens.toml:27049
+keyed.title_3.font.style = "normal"
+# docs/facts/macos/tokens.toml:27070
+keyed.title_3.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:27091
+keyed.title_3.font.features = {}
+# docs/facts/macos/tokens.toml:27112
+keyed.title_3.font.width = 100
+# docs/facts/macos/tokens.toml:27133
+keyed.title_3.line_height = "auto"
+# docs/facts/macos/tokens.toml:27154
+keyed.title_3.fill = "absent"
+# docs/facts/macos/tokens.toml:27196
+keyed.title_3.elision = "absent"
+# docs/facts/macos/tokens.toml:27238
+keyed.title_3.wrap = "absent"
+# docs/facts/macos/tokens.toml:27280
+keyed.title_3.max_lines = "absent"
+# docs/facts/macos/tokens.toml:27322
+keyed.title_3.scaling_role = "none"
 # docs/facts/macos/tokens.toml:27338
 keyed.headline.font.style = "normal"
 # docs/facts/macos/tokens.toml:27359

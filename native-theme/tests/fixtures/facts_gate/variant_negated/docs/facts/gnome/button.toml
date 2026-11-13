@@ -1,4 +1,4 @@
-# Synthetic facts (S17): `@raised` named only by a fact whose negative list names a toolbar, a widget whose
+# Synthetic facts (S17): `@probe_lifted` named only by a fact whose negative list names a toolbar, a widget whose
 # unit is not enabled: the negation holds, so the fact applies in its key's unit alone (ADD-A128).
 
 [[fact]]
@@ -13,7 +13,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -91,7 +91,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@raised"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { variants = ["@probe_lifted"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 value = "#ffffff"
 rows = []
 

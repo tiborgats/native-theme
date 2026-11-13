@@ -1,16 +1,16 @@
-# Synthetic facts (S17, ADD-A144): the body's fill pending but on the flat button, which the preset's
+# Synthetic facts (S17, ADD-A144): the body's fill pending but on the tool button, which the preset's
 # rule sets; on hover under an id of its own, where the preset's rule appends over the synthetic paint:
 # still a listed path there, an `Append` stating no paint.
 
 [[fact]]
 key = "button.body.fill"
-when = { not_variants = ["flat"] }
+when = { not_variants = ["tool"] }
 pending = "U50"
 rows = []
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -21,7 +21,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { states = ["hover"], not_variants = ["flat"] }
+when = { states = ["hover"], not_variants = ["tool"] }
 pending = "U51"
 rows = []
 

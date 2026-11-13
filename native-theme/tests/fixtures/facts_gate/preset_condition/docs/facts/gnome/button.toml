@@ -1,4 +1,4 @@
-# Synthetic facts (S17): every key the preset states, by the combinations it draws; the flat
+# Synthetic facts (S17): every key the preset states, by the combinations it draws; the tool
 # fill's `when` names the fixture's preset, as a directory shared by two presets' facts does.
 
 [[fact]]
@@ -13,7 +13,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["preset:adwaita"], variants = ["flat"] }
+when = { conditions = ["preset:adwaita"], variants = ["tool"] }
 value = "#00000000"
 rows = []
 

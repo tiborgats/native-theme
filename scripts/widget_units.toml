@@ -101,32 +101,37 @@ slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", 
 "adwaita" = ["token.params.opacity.border", "token.params.opacity.dim", "token.params.opacity.disabled",
              "token.params.opacity.focus_border", "token.text.keyed.body", "token.text.keyed.caption",
              "token.text.keyed.heading", "token.text.keyed.monospace", "token.text.keyed.title_1",
-             "token.text.keyed.title_2"]
+             "token.text.keyed.title_2", "token.text.keyed.title_3", "token.text.keyed.title_4"]
 "ios-13" = ["token.params.opacity.disabled", "token.text.keyed.body", "token.text.keyed.caption_1",
-            "token.text.keyed.headline", "token.text.keyed.title_1"]
+            "token.text.keyed.headline", "token.text.keyed.large_title", "token.text.keyed.title_1",
+            "token.text.keyed.title_2", "token.text.keyed.title_3"]
 "ios-26" = ["token.params.opacity.disabled", "token.text.keyed.body", "token.text.keyed.caption_1",
-            "token.text.keyed.headline", "token.text.keyed.title_1"]
+            "token.text.keyed.headline", "token.text.keyed.large_title", "token.text.keyed.title_1",
+            "token.text.keyed.title_2", "token.text.keyed.title_3"]
 "kde-breeze" = ["role.@wm_active_background", "role.@wm_active_foreground", "role.@wm_inactive_background",
                 "role.@wm_inactive_foreground", "token.icons.sizes.keyed.main_toolbar", "token.params.color.contrast",
                 "token.params.color.frame_contrast", "token.text.keyed.default", "token.text.keyed.fixed",
-                "token.text.keyed.heading_1", "token.text.keyed.heading_3", "token.text.keyed.menu",
-                "token.text.keyed.smallest_readable", "token.text.keyed.toolbar"]
+                "token.text.keyed.heading_1", "token.text.keyed.heading_2", "token.text.keyed.heading_3",
+                "token.text.keyed.menu", "token.text.keyed.smallest_readable", "token.text.keyed.toolbar"]
 "macos-monterey" = ["role.@selected_control_secondary", "role.@system_blue", "role.@system_green",
                     "role.@system_orange", "role.@system_red", "token.params.pointer_repeat.delay",
                     "token.params.pointer_repeat.interval", "token.text.keyed.body", "token.text.keyed.caption_1",
-                    "token.text.keyed.headline", "token.text.keyed.large_title", "token.text.keyed.title_1"]
+                    "token.text.keyed.headline", "token.text.keyed.large_title", "token.text.keyed.title_1",
+                    "token.text.keyed.title_2", "token.text.keyed.title_3"]
 "macos-tahoe" = ["role.@selected_control_secondary", "role.@system_blue", "role.@system_green",
                  "role.@system_orange", "role.@system_red", "token.params.pointer_repeat.delay",
                  "token.params.pointer_repeat.interval", "token.text.keyed.body", "token.text.keyed.caption_1",
-                 "token.text.keyed.headline", "token.text.keyed.large_title", "token.text.keyed.title_1"]
+                 "token.text.keyed.headline", "token.text.keyed.large_title", "token.text.keyed.title_1",
+                 "token.text.keyed.title_2", "token.text.keyed.title_3"]
 "material-3" = ["role.@background", "role.@error", "role.@error_container", "role.@on_background", "role.@on_error",
                 "role.@on_primary", "role.@on_secondary_container", "role.@on_surface", "role.@on_surface_variant",
                 "role.@outline_variant", "role.@primary", "role.@scrim", "role.@secondary",
                 "role.@secondary_container", "role.@shadow", "token.elevation.level0", "token.elevation.level1",
                 "token.params.opacity.disabled", "token.params.opacity.focus", "token.params.opacity.hover",
                 "token.params.opacity.pressed", "token.text.keyed.body_large", "token.text.keyed.body_small",
-                "token.text.keyed.display_small", "token.text.keyed.headline_small", "token.text.keyed.label_large",
-                "token.text.keyed.monospace"]
+                "token.text.keyed.display_large", "token.text.keyed.display_small",
+                "token.text.keyed.headline_medium", "token.text.keyed.headline_small", "token.text.keyed.label_large",
+                "token.text.keyed.monospace", "token.text.keyed.title_large"]
 "windows-11" = ["role.@accent_fill_default", "role.@accent_fill_disabled", "role.@accent_fill_secondary",
                 "role.@accent_fill_selected_text_background", "role.@accent_fill_tertiary",
                 "role.@accent_text_fill_primary", "role.@control_fill_default", "role.@control_fill_disabled",
@@ -160,7 +165,8 @@ slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", 
                 "role.@text_fill_secondary", "role.@text_on_accent_fill_disabled", "role.@text_on_accent_fill_primary",
                 "role.@text_on_accent_fill_secondary", "role.@text_on_accent_fill_selected_text",
                 "token.params.shape.control_corner_radius", "token.text.keyed.body", "token.text.keyed.caption",
-                "token.text.keyed.display", "token.text.keyed.subtitle", "token.text.keyed.title"]
+                "token.text.keyed.display", "token.text.keyed.subtitle", "token.text.keyed.title",
+                "token.text.keyed.title_large"]
 
 # Values and part fields an enabled unit defers, per widget, each to the named
 # later unit, whose commit ends the deferral (a `<part>.<field>` key is a

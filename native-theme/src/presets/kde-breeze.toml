@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 e56d91245ef0a7551238823698b1a21800c55441be8fc941e64e90074e510da8
+# generated lines: sha256 ec3ec7f26dcbbb4783dc8a9b9b4a6f31c682e6772173b820737f5c8aecc46c58
 
 [preset]
 id = "kde-breeze"
@@ -35,6 +35,7 @@ text_styles = [
     "menu",  # docs/facts/kde/tokens.toml:2825
     "smallest_readable",  # docs/facts/kde/tokens.toml:3048
     "heading_1",  # docs/facts/kde/tokens.toml:3271
+    "heading_2",  # docs/facts/kde/tokens.toml:4043
     "heading_3",  # docs/facts/kde/tokens.toml:4815
 ]
 icon_contexts = [
@@ -3578,6 +3579,42 @@ keyed.heading_1.wrap = "absent"
 keyed.heading_1.max_lines = "absent"
 # docs/facts/kde/tokens.toml:3590
 keyed.heading_1.mnemonic_decoration = "absent"
+# docs/facts/kde/tokens.toml:4043
+keyed.heading_2.font.family = "= token.text.roles.body.font.family"
+# docs/facts/kde/tokens.toml:4064
+keyed.heading_2.font.size = "= mul(token.text.roles.body.font.size, 1.20)"
+# docs/facts/kde/tokens.toml:4079
+keyed.heading_2.font.weight = 400
+# docs/facts/kde/tokens.toml:4099
+keyed.heading_2.font.style = "= token.text.roles.body.font.style"
+# docs/facts/kde/tokens.toml:4120
+keyed.heading_2.line_height = "auto"
+# docs/facts/kde/tokens.toml:4130
+keyed.heading_2.letter_spacing = "= token.text.roles.body.letter_spacing"
+# docs/facts/kde/tokens.toml:4151
+keyed.heading_2.word_spacing = "= token.text.roles.body.word_spacing"
+# docs/facts/kde/tokens.toml:4172
+keyed.heading_2.font.axes = "= token.text.roles.body.font.axes"
+# docs/facts/kde/tokens.toml:4193
+keyed.heading_2.font.features = "= token.text.roles.body.font.features"
+# docs/facts/kde/tokens.toml:4214
+keyed.heading_2.case = "= token.text.roles.body.case"
+# docs/facts/kde/tokens.toml:4235
+keyed.heading_2.decoration = "= token.text.roles.body.decoration"
+# docs/facts/kde/tokens.toml:4259
+keyed.heading_2.font.width = "= token.text.roles.body.font.width"
+# docs/facts/kde/tokens.toml:4280
+keyed.heading_2.scaling_role = "= token.text.roles.body.scaling_role"
+# docs/facts/kde/tokens.toml:4301
+keyed.heading_2.fill = "= surface.foreground"
+# docs/facts/kde/tokens.toml:4311
+keyed.heading_2.elision = "absent"
+# docs/facts/kde/tokens.toml:4328
+keyed.heading_2.wrap = "absent"
+# docs/facts/kde/tokens.toml:4345
+keyed.heading_2.max_lines = "absent"
+# docs/facts/kde/tokens.toml:4362
+keyed.heading_2.mnemonic_decoration = "absent"
 # docs/facts/kde/tokens.toml:4815
 keyed.heading_3.font.family = "= token.text.roles.body.font.family"
 # docs/facts/kde/tokens.toml:4836

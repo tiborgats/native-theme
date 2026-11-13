@@ -405,22 +405,23 @@ fn gate_role_map_fact_whole() {
     assert!(ramp(&extra) > 0, "{:?}", extra.failures);
 }
 
-/// A plain map's fact (`token.icons.mirroring`, a `Vec<(K, V)>` stated
+/// A plain map's fact (`token.size_classes`, a `Vec<(K, V)>` stated
 /// whole) is the value too (S17, the T6 review's S1): the fact `{}` fails
 /// a preset whose map holds an entry and agrees with one holding none; a
 /// fact of that entry agrees with the preset holding it and fails one
 /// holding none.
 #[test]
 fn gate_plain_map_fact_whole() {
-    let mirroring = |report: &run::Report| failing(report, "icons.mirroring").len();
+    let classes = |report: &run::Report| failing(report, "token.size_classes").len();
     let empty = fixture_report("map_whole_plain");
     assert_eq!(empty.failures, Vec::<String>::new());
+    assert!(empty.compared > 0, "{empty:?}");
     let extra = fixture_report_with("map_whole_plain", "preset_extra.toml");
-    assert!(mirroring(&extra) > 0, "{:?}", extra.failures);
+    assert!(classes(&extra) > 0, "{:?}", extra.failures);
     let entry = fixture_report("map_whole_plain_entry");
     assert_eq!(entry.failures, Vec::<String>::new());
     let none = fixture_report_with("map_whole_plain_entry", "preset_empty.toml");
-    assert!(mirroring(&none) > 0, "{:?}", none.failures);
+    assert!(classes(&none) > 0, "{:?}", none.failures);
 }
 
 /// The negative control's pair: facts stating one wrong value per key
@@ -500,7 +501,7 @@ fn gate_fixture_whole_block_over_leaf_facts() {
 /// A block stated per leaf and whole after its leaves under a narrower
 /// `when` (S17 *Which fact applies*): where the block's fact does not hold,
 /// its leaves' facts state it, so the block is no key without a fact
-/// there; on a flat button the block's `absent` applies.
+/// there; on a tool button the block's `absent` applies.
 #[test]
 fn gate_fixture_block_beside_its_leaves() {
     let report = fixture_report("block_beside_leaves");
@@ -588,16 +589,18 @@ fn gate_fixture_text_style_element_operand() {
 }
 
 /// An icon-size context's leaves stated per leaf (`token.icons.sizes.keyed.
-/// status_page.size`): each fact states its leaf below the keyed entry, the
-/// entry's other leaves the preset's, so the gate reads the fact's value
-/// there and a preset stating another size fails at the size alone.
+/// main_toolbar.size`, the context `kde-breeze` keeps at depth): each fact
+/// states its leaf below the keyed entry, the entry's other leaves the
+/// preset's, so the gate reads the fact's value there and a preset stating
+/// another size fails at the size alone.
 #[test]
 fn gate_fixture_icon_size_keyed() {
     let report = fixture_report("icon_size_keyed");
     assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
     let wrong = fixture_report_with("icon_size_keyed", "wrong.toml");
     assert!(
-        !failing(&wrong, "`token.icons.sizes.keyed.status_page.size` at").is_empty(),
+        !failing(&wrong, "`token.icons.sizes.keyed.main_toolbar.size` at").is_empty(),
         "{:?}",
         wrong.failures
     );
@@ -605,7 +608,7 @@ fn gate_fixture_icon_size_keyed() {
         wrong
             .failures
             .iter()
-            .all(|failure| failure.contains("`token.icons.sizes.keyed.status_page.size` at")),
+            .all(|failure| failure.contains("`token.icons.sizes.keyed.main_toolbar.size` at")),
         "{:?}",
         wrong.failures
     );
@@ -614,9 +617,10 @@ fn gate_fixture_icon_size_keyed() {
 /// A token key of a unit not enabled (S17 *While 0.8.0 is built*: "the
 /// gate skips it while any of those units is not enabled"): the units are
 /// `scripts/widget_units.toml`'s, as check_facts_trace.py reads them, whose
-/// slice holds `token.params.pointer_repeat`, `.color` and `.opacity` and
-/// no other parameter group, so `token.params.caret`'s fact is skipped and
-/// counted, never compared, though the model holds the keyed map.
+/// slice stages `token.params` to the parameters unit but for the entries
+/// a preset keeps (`[kept]`: `token.params.pointer_repeat.delay` on
+/// `macos-*`, S6.1, ADD-A147), so `token.params.caret`'s fact is skipped
+/// and counted, never compared, though the model holds the keyed map.
 #[test]
 fn gate_fixture_token_of_unit_not_enabled() {
     let report = fixture_report("unit_not_enabled");
@@ -631,7 +635,9 @@ fn gate_fixture_token_of_unit_not_enabled() {
     );
     let units = units::Units::repository().unwrap();
     assert!(units.hold("token.params.pointer_repeat.delay"));
-    assert!(units.hold("token.params"));
+    assert!(units.hold_on("token.params.pointer_repeat.delay", Some("macos-tahoe")));
+    assert!(!units.hold_on("token.params.pointer_repeat.delay", Some("adwaita")));
+    assert!(!units.hold("token.params"));
     assert!(!units.hold("token.params.caret.aspect_ratio"));
     assert!(!units.hold("token.behavior.scroll.lines_per_step"));
     assert!(!units.hold("button.values.menu_placement"));
@@ -838,7 +844,7 @@ fn gate_shapes_probe_as_styles() -> Result<(), String> {
             "states = [\"pressed\"]\nnot_states = [\"disabled\"]",
             "button.body.min_width",
         ),
-        ("variants = [\"flat\"]", "button.body.fill"),
+        ("variants = [\"tool\"]", "button.body.fill"),
         ("sizes = [\"small\"]", "button.label"),
         ("context = [{ widget = \"button\" }]", "button.body.fill"),
         ("states = [\"focus_visible\"]", "button.icon"),
@@ -1015,7 +1021,7 @@ fn gate_fixture_requires_variant_own_when() {
 
 /// A part the preset leaves out where no part fact applies fails at the
 /// part's own key, which with no part fact is expected drawn; its field's
-/// fact, which applies only where the button is flat, compares nothing
+/// fact, which applies only where the button is tool, compares nothing
 /// where the part is not drawn and fails nothing (S17, ADD-A130).
 #[test]
 fn gate_fixture_part_not_drawn() {
@@ -1042,8 +1048,9 @@ fn gate_fixture_part_not_drawn() {
 }
 
 /// libadwaita's menu indicator pattern (S17, ADD-A130): the part's own
-/// facts state where it is absent (`not_variants = ["flat"]`, and `flat`
-/// without `@with_arrow`), its field's fact holds without a `when`. A
+/// facts state where it is absent (`not_variants = ["tool"]`, and `tool`
+/// without `@probe_arrow`, a synthetic keyed variant at depth), its field's
+/// fact holds without a `when`. A
 /// preset drawing the part exactly where the facts do passes, its field
 /// compared where drawn and nothing compared where not; one leaving the
 /// part out where the facts draw it fails at the part's key alone.
@@ -1059,7 +1066,7 @@ fn gate_fixture_part_absent_by_its_own_facts() {
             .failures
             .iter()
             .all(|failure| failure.contains("`button.subtitle` at")
-                && failure.contains("[\"@with_arrow\", \"flat\"]")),
+                && failure.contains("[\"@probe_arrow\", \"tool\"]")),
         "{:?}",
         dropped.failures
     );
@@ -1071,7 +1078,7 @@ fn gate_fixture_part_absent_by_its_own_facts() {
 /// `absent = false` where the facts do passes, its field compared there,
 /// as its twin drawing it there with another text fails at that field
 /// alone; its twin patching the part's field alone there leaves it absent
-/// and fails at the part's key alone, under the flat button.
+/// and fails at the part's key alone, under the tool button.
 #[test]
 fn gate_fixture_present() {
     let report = fixture_report("present");
@@ -1083,7 +1090,7 @@ fn gate_fixture_present() {
         text.failures
             .iter()
             .all(|failure| failure.contains("`button.subtitle.text` at")
-                && failure.contains("[\"flat\"]")),
+                && failure.contains("[\"tool\"]")),
         "{:?}",
         text.failures
     );
@@ -1094,7 +1101,7 @@ fn gate_fixture_present() {
             .failures
             .iter()
             .all(|failure| failure.contains("`button.subtitle` at")
-                && failure.contains("[\"flat\"]")
+                && failure.contains("[\"tool\"]")
                 && failure.contains("NotDrawn")),
         "{:?}",
         fields.failures
@@ -1118,7 +1125,7 @@ fn gate_fixture_whole_table_over_absent_base() {
             .failures
             .iter()
             .all(|failure| failure.contains("`button.icon.glyph` at")
-                && failure.contains("[\"flat\"]")),
+                && failure.contains("[\"tool\"]")),
         "{:?}",
         absent.failures
     );
@@ -1169,7 +1176,7 @@ fn gate_declarations_each_compared() {
     };
     let model_of = |extra: &str| {
         let entry = merged(
-            "widget = \"button\"\navailable = true\nvariants = [\"flat\", \"primary\"]\n\
+            "widget = \"button\"\navailable = true\nvariants = [\"tool\", \"primary\"]\n\
              sizes = []\ndensities = []\nexclusive = []\nrows = []\n\
              axes = { states = [\"hover\", \"pressed\"], conditions = [], contexts = [] }\n",
             extra,
@@ -1182,7 +1189,7 @@ fn gate_declarations_each_compared() {
         ("available", String::new(), "available = false\n".to_owned()),
         (
             "variants",
-            "variants = [\"flat\"]\n".to_owned(),
+            "variants = [\"tool\"]\n".to_owned(),
             String::new(),
         ),
         ("sizes", sized.to_owned(), "sizes = []\n".to_owned()),
@@ -1194,11 +1201,11 @@ fn gate_declarations_each_compared() {
         (
             "sizes_by_variant",
             format!(
-                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\", \"regular\"], \
+                "{sized}sizes_by_variant = [{{ variant = \"tool\", sizes = [\"small\", \"regular\"], \
                  default_size = \"small\" }}]\n"
             ),
             format!(
-                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\", \"regular\"] }}]\n"
+                "{sized}sizes_by_variant = [{{ variant = \"tool\", sizes = [\"small\", \"regular\"] }}]\n"
             ),
         ),
         (
@@ -1219,7 +1226,7 @@ fn gate_declarations_each_compared() {
         ),
         (
             "exclusive_variants",
-            "exclusive_variants = [[\"flat\", \"primary\"]]\n".to_owned(),
+            "exclusive_variants = [[\"tool\", \"primary\"]]\n".to_owned(),
             String::new(),
         ),
         (
@@ -1234,13 +1241,13 @@ fn gate_declarations_each_compared() {
         ),
         (
             "requires_variants",
-            "requires_variants = [\"flat\", \"primary\"]\n".to_owned(),
+            "requires_variants = [\"tool\", \"primary\"]\n".to_owned(),
             String::new(),
         ),
         (
             "sizes_by_variant",
             format!(
-                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\"], \
+                "{sized}sizes_by_variant = [{{ variant = \"tool\", sizes = [\"small\"], \
                  default_size = \"small\" }}]\n"
             ),
             sized.to_owned(),
@@ -1248,12 +1255,12 @@ fn gate_declarations_each_compared() {
         (
             "sizes_by_variant",
             format!(
-                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\"], \
+                "{sized}sizes_by_variant = [{{ variant = \"tool\", sizes = [\"small\"], \
                  default_size = \"small\" }}, {{ variant = \"primary\", sizes = [\"regular\"] }}]\n"
             ),
             format!(
                 "{sized}sizes_by_variant = [{{ variant = \"primary\", sizes = [\"regular\"] }}, \
-                 {{ variant = \"flat\", sizes = [\"small\"], default_size = \"small\" }}]\n"
+                 {{ variant = \"tool\", sizes = [\"small\"], default_size = \"small\" }}]\n"
             ),
         ),
         (
@@ -1277,7 +1284,7 @@ fn gate_declarations_each_compared() {
         ),
     ];
     for (declaration, declared, stated) in &cases {
-        let button = merged("variants = [\"flat\", \"primary\"]\n", declared);
+        let button = merged("variants = [\"tool\", \"primary\"]\n", declared);
         // A declared flag or recency set is one a rule selects on (S12).
         let rules = match *declaration {
             "flags" => {
@@ -1316,17 +1323,17 @@ fn gate_declarations_each_compared() {
     // default*, ADD-A131).
     let pending = |listed: &str, stated: &str| {
         let declare = format!(
-            "[declare.widget.button]\nvariants = [\"flat\", \"primary\"]\n\
+            "[declare.widget.button]\nvariants = [\"tool\", \"primary\"]\n\
              sizes = [\"small\", \"regular\"]\n\
-             sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\", \"regular\"] }}]\n\
-             [pending]\n\"declare.widget.button.sizes_by_variant.flat.default_size\" = \"{listed}\"\n\
+             sizes_by_variant = [{{ variant = \"tool\", sizes = [\"small\", \"regular\"] }}]\n\
+             [pending]\n\"declare.widget.button.sizes_by_variant.tool.default_size\" = \"{listed}\"\n\
              \"declare.widget.button.default_size\" = \"U1\"\n"
         );
         let preset = Preset::from_toml(&format!("{base}\n{declare}"))
             .unwrap_or_else(|error| panic!("{declare}: {error}"));
         let stated = format!(
             "sizes = [\"small\", \"regular\"]\ndefault_size = {{ pending = \"U1\" }}\n\
-             sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\", \"regular\"], \
+             sizes_by_variant = [{{ variant = \"tool\", sizes = [\"small\", \"regular\"], \
              default_size = {stated} }}]\n"
         );
         let platform = run::Platform {
@@ -1346,7 +1353,7 @@ fn gate_declarations_each_compared() {
     // alone, it is recorded with its ids (S17, ADD-A131).
     let listed = |stated: &str| {
         let preset = Preset::from_toml(&format!(
-            "{base}\n[declare.widget.button]\nvariants = [\"flat\", \"primary\"]\nsizes = [\"small\"]\n\
+            "{base}\n[declare.widget.button]\nvariants = [\"tool\", \"primary\"]\nsizes = [\"small\"]\n\
              {stated}[pending]\n\"declare.widget.button.default_size\" = \"U4\"\n"
         ))
         .unwrap();
@@ -1398,7 +1405,7 @@ fn gate_declarations_each_compared() {
         );
     }
     let preset = Preset::from_toml(&format!(
-        "{base}\n[declare.widget.button]\nvariants = [\"flat\"]\n"
+        "{base}\n[declare.widget.button]\nvariants = [\"tool\"]\n"
     ))
     .unwrap();
     let platform = run::Platform {
@@ -1432,14 +1439,14 @@ fn gate_declarations_skip_unheld_context() -> Result<(), String> {
     let base = std::fs::read_to_string(fixtures.join("base.toml")).map_err(failed)?;
     let sized = "sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n";
     let preset = Preset::from_toml(&format!(
-        "{base}\n[declare.widget.button]\nvariants = [\"flat\"]\n{sized}"
+        "{base}\n[declare.widget.button]\nvariants = [\"tool\"]\n{sized}"
     ))
     .map_err(failed)?;
     let failures = |contexts: &str| -> Result<Vec<String>, String> {
         let models = model::Model::read(
             "gnome/state-models.toml",
             &format!(
-                "[[model]]\nwidget = \"button\"\navailable = true\nvariants = [\"flat\"]\n{sized}\
+                "[[model]]\nwidget = \"button\"\navailable = true\nvariants = [\"tool\"]\n{sized}\
                  densities = []\nexclusive = []\nrows = []\n\
                  axes = {{ states = [\"hover\"], conditions = [], contexts = [] }}\n\
                  sizes_by_context = [{contexts}]\n"
@@ -1488,19 +1495,22 @@ fn gate_selector_empty_list_spelled_as_none() {
     );
 }
 
-/// The declarations run and the combinations are the state model's
-/// projected onto what the enabled units' facts name (ADD-A128): a variant
-/// only skipped facts name (their `when` names a toolbar, whose unit is not
-/// enabled) is left out and counted, neither failed nor queried; a variant
-/// no fact names is checked like any other, passing where the preset
-/// declares it and failing where it does not.
+/// The declarations run compares the state model's declarations whole and
+/// the combinations are its state model in force at depth (S10 *Later
+/// names*, S17, ADD-A147): a variant a later unit holds (`@raised`, the
+/// styles unit's) is declared, listed under `later` and drawn in no
+/// combination, its fact a later unit's; a typed variant the model does not
+/// hold (`flat`) has no spelling, so it is left out of the declarations and
+/// counted; a keyed variant at depth no fact names (`@probe_lifted`) is
+/// checked like any other, passing where the preset declares it and failing
+/// where it does not.
 #[test]
 fn gate_fixture_variants_of_units_not_enabled() {
     let skipped = fixture_report("variant_skipped");
     assert_eq!(skipped.failures, Vec::<String>::new());
     assert_eq!(
         skipped.variants_not_held.iter().collect::<Vec<_>>(),
-        ["gnome/state-models.toml button @raised"]
+        ["gnome/state-models.toml button flat"]
     );
     assert!(skipped.queried > 0, "{skipped:?}");
     let unnamed = fixture_report("variant_unnamed");
@@ -1520,9 +1530,10 @@ fn gate_fixture_variants_of_units_not_enabled() {
 
 /// A fact whose only list naming a widget of a unit not enabled is
 /// negative (`not_context` a toolbar) belongs to its key's unit alone: the
-/// negation holds, so the variant it names is not projected out, and the
-/// fact applies (S17, ADD-A128's unit membership). A preset stating its
-/// value passes; one leaving it unstated fails there.
+/// negation holds, so the fact naming a keyed variant at depth
+/// (`@probe_lifted`) is of the enabled units and applies (S17's
+/// predicate). A preset stating its value passes; one leaving it unstated
+/// fails there.
 #[test]
 fn gate_fixture_negative_list_adds_no_unit() {
     let report = fixture_report("variant_negated");
@@ -1540,7 +1551,7 @@ fn gate_fixture_negative_list_adds_no_unit() {
     assert!(
         failures
             .iter()
-            .all(|failure| failure.contains("variants: [\"@raised\"]")),
+            .all(|failure| failure.contains("variants: [\"@probe_lifted\"]")),
         "{failures:?}"
     );
 }
@@ -1569,31 +1580,42 @@ fn gate_fixture_refused_key_skips_no_variant() {
 /// `conditions` naming another) is no combination of that flavour's run
 /// (S10, S17): its variant `@main_only`, the default flavour's alone, is
 /// checked in the default flavour's run, where the preset states it, and
-/// never queried under `flavor:alt`, whose declarations lack it.
+/// never queried under `flavor:alt`, whose declarations lack it. While the
+/// flavours unit is not enabled no flavour but the default runs and S12
+/// refuses the preset's rule naming `flavor:alt` (S10 *Later names*).
 #[test]
+#[ignore = "flavours unit: a flavour's run and a rule naming a flavour wait until it is enabled (D6 staging, 2.3)"]
 fn gate_fixture_flavor_excluded_fact() {
     let report = fixture_report("flavor_excluded");
     assert_eq!(report.failures, Vec::<String>::new());
     assert!(report.compared > 0, "{report:?}");
 }
 
-/// Each rule of the projection (ADD-A128), one variant each: a variant
-/// only skipped facts name goes, out of its three-member exclusive group
-/// too, which keeps its other two; one a kept fact names as well stays;
-/// one only a fact of a key the model does not hold names goes; a content
-/// variant S12 exempts stays. A preset declaring what is left passes.
+/// Each rule of the state model in force (S10 *Later names*, S17,
+/// ADD-A147; ADD-A128's projection by the facts that name a variant gone),
+/// one variant each: a variant a later unit holds (`@raised`) stays in the
+/// declarations, its three-member exclusive group with it, and under
+/// `later`; a variant at depth stays whatever facts name it, a later unit's
+/// fact beside one of the enabled units (`@both`), only a fact of a key the
+/// model does not hold (`@unheld`), only a later unit's fact (`with_icon`,
+/// a content variant); a typed variant the model does not hold (`flat`)
+/// alone is left out and counted. A preset declaring them so passes, and
+/// one leaving `@raised` out of its `later` fails the declarations.
 #[test]
 fn gate_fixture_projection_rules() {
     let report = fixture_report("variant_projection");
     assert_eq!(report.failures, Vec::<String>::new());
     assert_eq!(
         report.variants_not_held.iter().collect::<Vec<_>>(),
-        [
-            "gnome/state-models.toml button @raised",
-            "gnome/state-models.toml button @unheld"
-        ]
+        ["gnome/state-models.toml button flat"]
     );
     assert!(report.queried > 0, "{report:?}");
+    let unlisted = fixture_report_with("variant_projection", "no_later.toml");
+    assert!(
+        !failing(&unlisted, "`button` later.variants under").is_empty(),
+        "{:?}",
+        unlisted.failures
+    );
 }
 
 /// A pending fact is listed with its register id and its key, apart from
@@ -1732,7 +1754,7 @@ fn gate_fixture_not_drawn_skipped() {
 }
 
 /// A `not_drawn` entry's context is matched as the query matches one (S7),
-/// not by equality: `{ widget = "button" }` names the axis' flat button,
+/// not by equality: `{ widget = "button" }` names the axis' tool button,
 /// inside which the preset's wrong value is never queried.
 #[test]
 fn gate_fixture_not_drawn_context() {
@@ -1744,7 +1766,7 @@ fn gate_fixture_not_drawn_context() {
 /// An `axes.contexts` entry that lists selectors is a chain of ancestors,
 /// outermost first, each the element inside the one before (S17): the
 /// preset's rule naming both ancestors holds in it, and the fact naming the
-/// nearest button the inner, flat one; a value wrong there alone fails, in
+/// nearest button the inner, tool one; a value wrong there alone fails, in
 /// the chain's combinations, on the key and never on the context's reading.
 #[test]
 fn gate_fixture_context_chain() {
@@ -1854,10 +1876,11 @@ fn gate_fixture_not_drawn_unavailable() {
 }
 
 /// A fact naming a size and no style, where only the styles take the size
-/// (`sizes_by_variant`), is completed once with each style whose sizes hold
-/// it (S17, ADD-A141): checked on the flat style, the primary style's
-/// completion, which `not_drawn` names, no failure, and none failed as not
-/// available. The wrong twin's value fails on the flat style alone.
+/// (`sizes_by_variant`, each style's default in force), is completed once
+/// with each style whose sizes hold it (S17, ADD-A141): checked on the tool
+/// style, the primary style's completion, which `not_drawn` names (so the
+/// preset lists `primary` under `later`, S10), no failure, and none failed
+/// as not available. The wrong twin's value fails on the tool style alone.
 #[test]
 fn gate_fixture_own_size_completed_by_styles() -> Result<(), String> {
     let report = fixture_report("own_size_styles");
@@ -1870,7 +1893,7 @@ fn gate_fixture_own_size_completed_by_styles() -> Result<(), String> {
         || wrong.failures.len() != failures.len()
         || !failures.iter().all(|failure| {
             failure.contains("size: Some(\"small\")")
-                && failure.contains("\"flat\"")
+                && failure.contains("\"tool\"")
                 && !failure.contains("\"primary\"")
         })
     {
@@ -2021,23 +2044,27 @@ fn gate_fixture_tolerance_edge() {
     );
 }
 
-/// A block S6.1 sets whole (`Option<KeyRepeat>`) has its facts stated per
-/// leaf (S17): the gate composes the leaves' applying facts into one value
-/// per combination. The preset stating both leaves passes; one stating
-/// another interval fails at that leaf; a leaf with no fact fails as a key
-/// with no fact.
+/// The set-whole block of the fixtures (`Option<IndicationBox>`, S6.1).
+const INDICATION_BOX: &str = "button.body.interaction.ripple.indication_box";
+
+/// A block S6.1 sets whole (`Option<IndicationBox>`) has its facts stated
+/// per leaf (S17): the gate composes the leaves' applying facts into one
+/// value per combination, read at the block's place. The preset stating
+/// both leaves passes; one stating another outset fails at that leaf
+/// alone; a leaf with no fact fails as a key with no fact.
 #[test]
 fn gate_fixture_set_whole_composed() {
     let report = fixture_report("set_whole");
     assert_eq!(report.failures, Vec::<String>::new());
     assert!(report.unread.is_empty(), "{:?}", report.unread);
+    assert!(report.compared > 0, "{report:?}");
     let differs = fixture_report("set_whole_differs");
     let failures = failing(&differs, "Normal:");
     assert!(!failures.is_empty(), "{:?}", differs.failures);
     assert!(
         failures
             .iter()
-            .all(|failure| failure.contains("token.behavior.key_repeat.interval")),
+            .all(|failure| failure.contains(&format!("`{INDICATION_BOX}.outset` at"))),
         "{failures:?}"
     );
     let missing = fixture_report("set_whole_missing");
@@ -2045,17 +2072,18 @@ fn gate_fixture_set_whole_composed() {
     assert!(
         failures
             .iter()
-            .any(|failure| failure.contains("`token.behavior.key_repeat.interval`")),
+            .any(|failure| failure.contains(&format!("`{INDICATION_BOX}.part`"))),
         "{:?}",
         missing.failures
     );
 }
 
-/// A set-whole block's leaves compose per combination (ADD-A128): a delay
-/// under high contrast beside an unconditional interval gives two values,
-/// so a preset stating each class passes and one stating the base class's
-/// delay under high contrast fails there; a preset stating the field
-/// `"none"` where the facts state both leaves fails as a resolved `None`.
+/// A set-whole block's leaves compose per combination (ADD-A128): an
+/// outset under high contrast beside an unconditional part gives two
+/// values, so a preset stating each class passes and one stating the base
+/// class's outset under high contrast fails there; a preset stating the
+/// field `"none"` where the facts state both leaves fails as a resolved
+/// `None`.
 #[test]
 fn gate_fixture_set_whole_per_combination() {
     let report = fixture_report("set_whole_classes");
@@ -2068,19 +2096,19 @@ fn gate_fixture_set_whole_per_combination() {
         failures
             .iter()
             .all(|failure| failure.contains("contrast_high")
-                && failure.contains("token.behavior.key_repeat.delay")),
+                && failure.contains(&format!("`{INDICATION_BOX}.outset` at"))),
         "{failures:?}"
     );
     let none = fixture_report_with("set_whole", "none.toml");
     assert!(
-        !failing(&none, "Normal: `token.behavior.key_repeat.").is_empty(),
+        !failing(&none, &format!("Normal: `{INDICATION_BOX}.")).is_empty(),
         "{:?}",
         none.failures
     );
     assert!(
         none.failures
             .iter()
-            .all(|failure| failure.contains("`token.behavior.key_repeat.")),
+            .all(|failure| failure.contains(&format!("`{INDICATION_BOX}."))),
         "{:?}",
         none.failures
     );
@@ -2095,7 +2123,7 @@ fn gate_fixture_set_whole_pending_leaf() {
     assert_eq!(report.failures, Vec::<String>::new());
     assert!(
         report.pending.values().any(|(id, key, count)| id == "U3"
-            && key == "token.behavior.key_repeat.interval"
+            && *key == format!("{INDICATION_BOX}.part")
             && *count > 0),
         "{:?}",
         report.pending
@@ -2103,7 +2131,7 @@ fn gate_fixture_set_whole_pending_leaf() {
     let unchecked: Vec<_> = report.unchecked.values().collect();
     assert_eq!(unchecked.len(), 1, "{:?}", report.unchecked);
     let (key, pending, count) = unchecked[0];
-    assert_eq!(key, "token.behavior.key_repeat.delay");
+    assert_eq!(*key, format!("{INDICATION_BOX}.outset"));
     assert!(pending.starts_with("U3 at "), "{pending}");
     assert!(*count > 0);
 }
@@ -2113,15 +2141,15 @@ fn gate_fixture_set_whole_pending_leaf() {
 /// listed path where its pending fact applies with nothing beneath,
 /// compares the path where the preset's rule states it (high contrast),
 /// and skips and reports a fact whose evaluation reaches the synthetic
-/// value (the long press reading the delay), comparing it where the rule
-/// gives the value.
+/// value (the focus offset's top reading the width), comparing it where
+/// the rule gives the value.
 #[test]
 fn gate_fixture_pending_listed() {
     let report = fixture_report("pending_listed");
     assert_eq!(report.failures, Vec::<String>::new());
     assert_eq!(
         report.listed.keys().collect::<Vec<_>>(),
-        ["probe token.behavior.touch.delay"]
+        ["probe token.focus.width"]
     );
     assert_eq!(
         report.listed.values().next().map(|(ids, _)| ids_of(ids)),
@@ -2130,7 +2158,7 @@ fn gate_fixture_pending_listed() {
     let skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
     assert_eq!(
         skipped,
-        ["token.behavior.long_press"],
+        ["token.focus.offset.top"],
         "{:?}",
         report.synthetic
     );
@@ -2138,16 +2166,16 @@ fn gate_fixture_pending_listed() {
 }
 
 /// A field S6.1 sets whole listed with a list of ids, its leaves pending
-/// under different ones (S11: `"tokens.behavior.key_repeat" = ["<id>",
-/// "<id>"]`): found with both; listed with one of them, it fails, naming
-/// both.
+/// under different ones (S11: `"widgets.button.body.interaction.ripple.
+/// indication_box" = ["<id>", "<id>"]`): found with both; listed with one
+/// of them, it fails, naming both.
 #[test]
 fn gate_fixture_pending_ids() {
     let report = fixture_report("pending_ids");
     assert_eq!(report.failures, Vec::<String>::new());
     assert_eq!(
         report.listed.keys().collect::<Vec<_>>(),
-        ["probe token.behavior.key_repeat"]
+        [&format!("probe {INDICATION_BOX}")]
     );
     assert_eq!(
         report.listed.values().next().map(|(ids, _)| ids_of(ids)),
@@ -2156,11 +2184,10 @@ fn gate_fixture_pending_ids() {
     let one = fixture_report_with("pending_ids", "one_id.toml");
     assert_eq!(
         failing(&one, "[pending]"),
-        [
-            &"probe: `tokens.behavior.key_repeat` is listed as U3 in its [pending] table, and \
-           its pending facts are U3, U4"
-                .to_owned()
-        ],
+        [&format!(
+            "probe: `widgets.{INDICATION_BOX}` is listed as U3 in its [pending] table, and its \
+             pending facts are U3, U4"
+        )],
         "{:?}",
         one.failures
     );
@@ -2168,7 +2195,7 @@ fn gate_fixture_pending_ids() {
 
 /// A `Value` of a map listed as pending (`Font.axes`) where the preset's
 /// rule patches it on hover (S6.1: a stated map in a patch over nothing is
-/// the map): the later pending fact on the flat button's hover has that
+/// the map): the later pending fact on the tool button's hover has that
 /// rule beneath it, an earlier fact of its key the preset states (S17 *A
 /// pending fact with nothing beneath it*), so only the fact with nothing
 /// beneath leaves the path listed, though the rule's patch merges over the
@@ -2274,32 +2301,38 @@ fn gate_fixture_pending_presence() {
 }
 
 /// A value the specification defines is compared with its definition
-/// (S17, ADD-A125, ADD-A131): the base's `font_dpi` of 96 fails on an
-/// Apple preset, which defines 72, and its empty `animated_visuals` agrees
-/// on every preset but `windows-11`, which states its own.
+/// where an enabled unit holds its path (S17, ADD-A125, ADD-A131,
+/// ADD-A147): the base's `font_dpi` of 96 fails on an Apple preset, which
+/// defines 72; S4.5's `animated_visuals`, staged with the motion unit, is
+/// compared on no preset.
 #[test]
-fn gate_definitions_compared() {
+fn gate_definitions_compared() -> Result<(), String> {
     let (_, presets) = fixture("passes", "preset.toml");
-    let (_, preset) = &presets[0];
-    let conditions = native_theme::gate::Conditions::new("light").unwrap();
-    let resolved = preset
-        .resolve(&conditions, &native_theme::Layer::default())
-        .unwrap();
+    let (_, preset) = presets.first().ok_or("the fixture has no preset")?;
+    let conditions = native_theme::gate::Conditions::new("light")?;
+    let resolved = preset.resolve(&conditions, &native_theme::Layer::default())?;
     let root = run::root_inputs();
+    let units = units::Units::repository()?;
     let failures = |id: &str| {
         let mut report = run::Report::default();
-        run::definitions(id, &resolved, &root, &mut report, &|| "[]".to_owned());
+        run::definitions(id, &units, &resolved, &root, &mut report, &|| {
+            "[]".to_owned()
+        });
         (report.failures, report.compared)
     };
-    assert_eq!(failures("probe"), (Vec::new(), 1));
+    assert_eq!(failures("probe"), (Vec::new(), 0));
     assert_eq!(failures("windows-11"), (Vec::new(), 0));
     let (apple, compared) = failures("ios-26");
-    assert_eq!(compared, 2);
+    assert_eq!(compared, 1);
     assert_eq!(apple.len(), 1, "{apple:?}");
     assert!(
-        apple[0].contains("token.text.font_dpi") && apple[0].contains("the definition of S9.4"),
+        apple
+            .iter()
+            .all(|failure| failure.contains("token.text.font_dpi")
+                && failure.contains("the definition of S9.4")),
         "{apple:?}"
     );
+    Ok(())
 }
 
 /// An Apple preset's `font_dpi` is compared with S9.4's definition, 72,
@@ -2422,16 +2455,16 @@ fn gate_measured_colour_drawn_only_from_pixels() {
 }
 
 /// A whole map listed as pending is found (S17: "U150's
-/// `token.text.fallbacks.per_language` … on `adwaita`"): the map's
-/// synthetic value is empty, so reading it reads the synthetic layer's step
-/// though it states no entry.
+/// `token.text.fallbacks.per_language` … on `adwaita`", here the size
+/// classes' map, at depth): the map's synthetic value is empty, so reading
+/// it reads the synthetic layer's step though it states no entry.
 #[test]
 fn gate_fixture_pending_map() {
     let report = fixture_report("pending_map");
     assert_eq!(report.failures, Vec::<String>::new());
     assert_eq!(
         report.listed.keys().collect::<Vec<_>>(),
-        ["probe token.text.fallbacks.per_language"]
+        ["probe token.size_classes"]
     );
     assert_eq!(
         report.listed.values().next().map(|(ids, _)| ids_of(ids)),
@@ -2465,9 +2498,8 @@ fn gate_fixture_pending_sibling_field() {
 /// A fact reading a listed path through a function that maps many values
 /// to one (`max`, `min`, `floor`, `round`, a `mix` all the way to its
 /// second colour, a `pick`) is skipped and reported (S17, ADD-A128): its
-/// evaluation reaches the synthetic value, whatever value it gives; so is
-/// an input whose value reads a listed token; each listed path, a colour
-/// role's per scheme among them, is found.
+/// evaluation reaches the synthetic value, whatever value it gives; each
+/// listed path, a colour role's per scheme among them, is found.
 #[test]
 fn gate_fixture_pending_reached_through_functions() {
     let report = fixture_report("pending_reached");
@@ -2476,8 +2508,7 @@ fn gate_fixture_pending_reached_through_functions() {
         report.listed.keys().collect::<Vec<_>>(),
         [
             "probe role.global.selection_text_background",
-            "probe token.caret.blink_on",
-            "probe token.caret.color",
+            "probe token.focus.width",
             "probe token.motion.speed_factor",
         ]
     );
@@ -2486,13 +2517,12 @@ fn gate_fixture_pending_reached_through_functions() {
     assert_eq!(
         skipped,
         [
-            "input.accent",
+            "button.body.transform.scale_x",
+            "button.body.transform.scale_y",
             "role.global.drop_highlight",
             "role.global.scrim",
-            "token.behavior.hover_time",
-            "token.behavior.long_press",
-            "token.text.rendering.contrast",
-            "token.text.rendering.gamma",
+            "token.focus.offset.bottom",
+            "token.focus.offset.top",
         ],
         "{:?}",
         report.synthetic
@@ -2512,7 +2542,7 @@ fn gate_fixture_pending_widget_paths() {
         report.listed.keys().collect::<Vec<_>>(),
         [
             "probe button.body.min_width",
-            "probe button.values.menu_indicator_gap",
+            "probe button.values.icon_text_gap",
         ]
     );
     let mut skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
@@ -2545,15 +2575,12 @@ fn gate_fixture_pending_table_both_ways() {
     let base = std::fs::read_to_string(fixtures.join("base.toml")).unwrap();
     let case = fixtures.join("pending_listed");
     let error = Preset::from_toml(&fixture_text(&case, &base, "unlisted.toml")).unwrap_err();
-    assert!(
-        error.contains("tokens.behavior.touch.delay: missing"),
-        "{error}"
-    );
+    assert!(error.contains("tokens.focus.width: missing"), "{error}");
     let extra = fixture_report_with("pending_listed", "extra.toml");
     assert_eq!(
         failing(&extra, "[pending]"),
         [
-            &"probe: `tokens.behavior.drag_time_ms` (U6) is in its [pending] table, and no \
+            &"probe: `tokens.motion.speed_factor` (U6) is in its [pending] table, and no \
            combination leaves it to a pending fact with nothing beneath"
                 .to_owned()
         ],
@@ -2563,9 +2590,11 @@ fn gate_fixture_pending_table_both_ways() {
     let stated = fixture_report_with("pending_listed", "stated.toml");
     assert_eq!(
         failing(&stated, "[pending]"),
-        [&"probe: `tokens.behavior.drag_time_ms` (U6) is in its [pending] table, and the preset \
+        [
+            &"probe: `tokens.motion.speed_factor` (U6) is in its [pending] table, and the preset \
            states it"
-            .to_owned()],
+                .to_owned()
+        ],
         "{:?}",
         stated.failures
     );
@@ -2573,8 +2602,8 @@ fn gate_fixture_pending_table_both_ways() {
     assert_eq!(
         failing(&wrong, "[pending]"),
         [
-            &"probe: `tokens.behavior.touch.delay_ms` is listed as U7 in its [pending] table, and \
-           its pending fact is U5"
+            &"probe: `tokens.focus.width_px` is listed as U7 in its [pending] table, and its \
+           pending fact is U5"
                 .to_owned()
         ],
         "{:?}",
@@ -2591,13 +2620,15 @@ fn expected(holds: bool, report: &run::Report) -> Result<(), String> {
     }
 }
 
-/// The register ids the report found the listed path `key` of the probe
-/// preset with; an error naming what it found where it found none.
+/// The register ids the report found the listed path `key` of the
+/// fixture's preset with, whatever its id; an error naming what it found
+/// where it found none.
 fn listed_ids<'r>(report: &'r run::Report, key: &str) -> Result<Vec<&'r str>, String> {
     report
         .listed
-        .get(&format!("probe {key}"))
-        .map(|(ids, _)| ids_of(ids))
+        .iter()
+        .find(|(listed, _)| listed.split_once(' ').is_some_and(|(_, path)| path == key))
+        .map(|(_, (ids, _))| ids_of(ids))
         .ok_or_else(|| format!("no listed `{key}` in {:?}", report.listed))
 }
 
@@ -2608,7 +2639,7 @@ fn listed_ids<'r>(report: &'r run::Report, key: &str) -> Result<Vec<&'r str>, St
 #[test]
 fn gate_fixture_listed_map_rule_entry() -> Result<(), String> {
     let report = fixture_report("listed_map_rule_entry");
-    let ids = listed_ids(&report, "token.text.fallbacks.per_language")?;
+    let ids = listed_ids(&report, "token.size_classes")?;
     expected(report.failures.is_empty() && ids == ["U150"], &report)
 }
 
@@ -2714,15 +2745,19 @@ fn gate_fixture_measured_derivation() {
     );
 }
 
-/// The derivations run refuses a pass it cannot evaluate where its fact
-/// says (S17 *A measured derivation*, task 15): a fact whose `when` names
-/// no combination the state model draws, and one whose combination the
-/// state model's `not_drawn` names.
+/// A measured derivation's pass is evaluated only where its fact says
+/// (S17 *A measured derivation*, task 15): the derivations run refuses one
+/// whose own combination the state model's `not_drawn` names (the fact
+/// holding where pressed and hovered, drawn); a fact whose `when` names no
+/// combination the state model draws holds in no combination at depth, so
+/// S17's predicate places it in no unit, counted unplaced, and no pass of
+/// it is evaluated.
 #[test]
 fn gate_fixture_measured_derivation_refused() {
     let report = fixture_report("derivation_refused");
+    assert_eq!(report.unplaced.get("probe"), Some(&1), "{report:?}");
     assert!(
-        report.failures.iter().any(
+        !report.failures.iter().any(
             |failure| failure.contains("its `when` names no combination the state model draws")
         ),
         "{:?}",
@@ -2747,8 +2782,8 @@ fn own_combination_completed_by_the_filters() {
     let models = model::Model::read(
         "probe",
         "[[model]]\nwidget = \"button\"\navailable = true\n\
-         variants = [\"flat\", \"primary\", \"@x\"]\nsizes = []\ndensities = []\nexclusive = []\n\
-         exclusive_variants = [[\"flat\", \"@x\"]]\nrequires_variants = [\"flat\", \"primary\"]\n\
+         variants = [\"tool\", \"primary\", \"@x\"]\nsizes = []\ndensities = []\nexclusive = []\n\
+         exclusive_variants = [[\"tool\", \"@x\"]]\nrequires_variants = [\"tool\", \"primary\"]\n\
          rows = []\n",
     )
     .unwrap();
@@ -2763,9 +2798,9 @@ fn own_combination_completed_by_the_filters() {
             .collect::<Vec<_>>()
     };
     let plain = when("");
-    assert_eq!(completed(&[], &plain), vec![vec!["flat".to_owned()]]);
-    let not_flat = when("not_variants = [\"flat\"]");
-    assert_eq!(completed(&[], &not_flat), vec![vec!["primary".to_owned()]]);
+    assert_eq!(completed(&[], &plain), vec![vec!["tool".to_owned()]]);
+    let not_tool = when("not_variants = [\"tool\"]");
+    assert_eq!(completed(&[], &not_tool), vec![vec!["primary".to_owned()]]);
     assert_eq!(
         completed(&["@x"], &plain),
         vec![vec!["@x".to_owned(), "primary".to_owned()]]
@@ -2783,9 +2818,9 @@ fn own_combination_completed_by_the_styles_taking_its_size() -> Result<(), Strin
     let models = model::Model::read(
         "probe",
         "[[model]]\nwidget = \"button\"\navailable = true\n\
-         variants = [\"flat\", \"primary\", \"tinted\", \"toggle\"]\nsizes = [\"regular\"]\n\
-         densities = []\nexclusive = []\nexclusive_variants = [[\"flat\", \"primary\", \"tinted\"]]\n\
-         sizes_by_variant = [{ variant = \"flat\", sizes = [\"small\", \"regular\"] }, \
+         variants = [\"tool\", \"primary\", \"tinted\", \"toggle\"]\nsizes = [\"regular\"]\n\
+         densities = []\nexclusive = []\nexclusive_variants = [[\"tool\", \"primary\", \"tinted\"]]\n\
+         sizes_by_variant = [{ variant = \"tool\", sizes = [\"small\", \"regular\"] }, \
          { variant = \"primary\", sizes = [\"small\", \"regular\"] }, \
          { variant = \"tinted\", sizes = [\"regular\"] }]\nrows = []\n",
     )?;
@@ -2809,13 +2844,13 @@ fn own_combination_completed_by_the_styles_taking_its_size() -> Result<(), Strin
     };
     assert_eq!(
         completed(&[], "small", "")?,
-        names(&[&["flat"], &["primary"]])
+        names(&[&["tool"], &["primary"]])
     );
     assert_eq!(
-        completed(&["toggle"], "small", "not_variants = [\"flat\"]")?,
+        completed(&["toggle"], "small", "not_variants = [\"tool\"]")?,
         names(&[&["toggle", "primary"]])
     );
-    assert_eq!(completed(&["flat"], "small", "")?, names(&[&["flat"]]));
+    assert_eq!(completed(&["tool"], "small", "")?, names(&[&["tool"]]));
     assert_eq!(completed(&["tinted"], "small", "")?, names(&[&["tinted"]]));
     assert_eq!(completed(&[], "large", "")?, names(&[&[]]));
     Ok(())

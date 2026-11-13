@@ -11,6 +11,6 @@ source = "probe@1 probe.css:1"
 quote = "synthetic"
 
 [[fact]]
-key = "token.text.fallbacks.per_language"
+key = "token.size_classes"
 pending = "U150"
 rows = []

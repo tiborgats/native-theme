@@ -1,13 +1,13 @@
 # A synthetic state model (S17): a button with one variant it always holds and two flags, not drawn
-# where pressed.
+# where pressed without hover (drawn where pressed and hovered).
 [[model]]
 widget = "button"
 available = true
-variants = ["flat"]
+variants = ["tool"]
 sizes = []
 densities = []
 axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
 exclusive = []
-requires_variants = ["flat"]
-not_drawn = [{ states = ["pressed"] }]
+requires_variants = ["tool"]
+not_drawn = [{ states = ["pressed"], not_states = ["hover"] }]
 rows = []

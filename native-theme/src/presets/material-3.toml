@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 1933597a715e0e4b15e635cb20e1775beb4ecfe939e7090ed9b6153f85023cb3
+# generated lines: sha256 ff6c2ae2ca31b3f249057577cd53725ff26f7fd364caab0626c913b8eca8031f
 
 [preset]
 id = "material-3"
@@ -37,9 +37,12 @@ color_roles = [
 text_styles = [
     "body_large",  # docs/facts/material/tokens.toml:1894
     "body_small",  # docs/facts/material/tokens.toml:2368
+    "display_large",  # docs/facts/material/tokens.toml:2605
     "display_small",  # docs/facts/material/tokens.toml:3079
+    "headline_medium",  # docs/facts/material/tokens.toml:3553
     "headline_small",  # docs/facts/material/tokens.toml:3790
     "label_large",  # docs/facts/material/tokens.toml:4027
+    "title_large",  # docs/facts/material/tokens.toml:4738
     "monospace",  # docs/facts/material/tokens.toml:9007
 ]
 elevation = [
@@ -874,6 +877,42 @@ keyed.body_small.wrap = "absent"
 keyed.body_small.max_lines = "absent"
 # docs/facts/material/tokens.toml:2587
 keyed.body_small.fill = "absent"
+# docs/facts/material/tokens.toml:2605
+keyed.display_large.font.family = "Roboto"
+# docs/facts/material/tokens.toml:2620
+keyed.display_large.font.size_px = 57
+# docs/facts/material/tokens.toml:2630
+keyed.display_large.font.weight = 400
+# docs/facts/material/tokens.toml:2645
+keyed.display_large.font.style = "normal"
+# docs/facts/material/tokens.toml:2661
+keyed.display_large.font.width = 100
+# docs/facts/material/tokens.toml:2672
+keyed.display_large.font.axes = {}
+# docs/facts/material/tokens.toml:2683
+keyed.display_large.font.features = {}
+# docs/facts/material/tokens.toml:2694
+keyed.display_large.line_height_px = 64.0
+# docs/facts/material/tokens.toml:2704
+keyed.display_large.letter_spacing_px = -0.2
+# docs/facts/material/tokens.toml:2714
+keyed.display_large.decoration = "absent"
+# docs/facts/material/tokens.toml:2725
+keyed.display_large.case = "mixed"
+# docs/facts/material/tokens.toml:2738
+keyed.display_large.scaling_role = "none"
+# docs/facts/material/tokens.toml:2750
+keyed.display_large.word_spacing_px = 0
+# docs/facts/material/tokens.toml:2761
+keyed.display_large.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:2772
+keyed.display_large.elision = "absent"
+# docs/facts/material/tokens.toml:2789
+keyed.display_large.wrap = "absent"
+# docs/facts/material/tokens.toml:2806
+keyed.display_large.max_lines = "absent"
+# docs/facts/material/tokens.toml:2824
+keyed.display_large.fill = "absent"
 # docs/facts/material/tokens.toml:3079
 keyed.display_small.font.family = "Roboto"
 # docs/facts/material/tokens.toml:3094
@@ -910,6 +949,42 @@ keyed.display_small.wrap = "absent"
 keyed.display_small.max_lines = "absent"
 # docs/facts/material/tokens.toml:3298
 keyed.display_small.fill = "absent"
+# docs/facts/material/tokens.toml:3553
+keyed.headline_medium.font.family = "Roboto"
+# docs/facts/material/tokens.toml:3568
+keyed.headline_medium.font.size_px = 28
+# docs/facts/material/tokens.toml:3578
+keyed.headline_medium.font.weight = 400
+# docs/facts/material/tokens.toml:3593
+keyed.headline_medium.font.style = "normal"
+# docs/facts/material/tokens.toml:3609
+keyed.headline_medium.font.width = 100
+# docs/facts/material/tokens.toml:3620
+keyed.headline_medium.font.axes = {}
+# docs/facts/material/tokens.toml:3631
+keyed.headline_medium.font.features = {}
+# docs/facts/material/tokens.toml:3642
+keyed.headline_medium.line_height_px = 36.0
+# docs/facts/material/tokens.toml:3652
+keyed.headline_medium.letter_spacing_px = 0.0
+# docs/facts/material/tokens.toml:3662
+keyed.headline_medium.decoration = "absent"
+# docs/facts/material/tokens.toml:3673
+keyed.headline_medium.case = "mixed"
+# docs/facts/material/tokens.toml:3686
+keyed.headline_medium.scaling_role = "none"
+# docs/facts/material/tokens.toml:3698
+keyed.headline_medium.word_spacing_px = 0
+# docs/facts/material/tokens.toml:3709
+keyed.headline_medium.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:3720
+keyed.headline_medium.elision = "absent"
+# docs/facts/material/tokens.toml:3737
+keyed.headline_medium.wrap = "absent"
+# docs/facts/material/tokens.toml:3754
+keyed.headline_medium.max_lines = "absent"
+# docs/facts/material/tokens.toml:3772
+keyed.headline_medium.fill = "absent"
 # docs/facts/material/tokens.toml:3790
 keyed.headline_small.font.family = "Roboto"
 # docs/facts/material/tokens.toml:3805
@@ -982,6 +1057,42 @@ keyed.label_large.wrap = "absent"
 keyed.label_large.max_lines = "absent"
 # docs/facts/material/tokens.toml:4246
 keyed.label_large.fill = "absent"
+# docs/facts/material/tokens.toml:4738
+keyed.title_large.font.family = "Roboto"
+# docs/facts/material/tokens.toml:4753
+keyed.title_large.font.size_px = 22
+# docs/facts/material/tokens.toml:4763
+keyed.title_large.font.weight = 400
+# docs/facts/material/tokens.toml:4778
+keyed.title_large.font.style = "normal"
+# docs/facts/material/tokens.toml:4794
+keyed.title_large.font.width = 100
+# docs/facts/material/tokens.toml:4805
+keyed.title_large.font.axes = {}
+# docs/facts/material/tokens.toml:4816
+keyed.title_large.font.features = {}
+# docs/facts/material/tokens.toml:4827
+keyed.title_large.line_height_px = 28.0
+# docs/facts/material/tokens.toml:4837
+keyed.title_large.letter_spacing_px = 0.0
+# docs/facts/material/tokens.toml:4847
+keyed.title_large.decoration = "absent"
+# docs/facts/material/tokens.toml:4858
+keyed.title_large.case = "mixed"
+# docs/facts/material/tokens.toml:4871
+keyed.title_large.scaling_role = "none"
+# docs/facts/material/tokens.toml:4883
+keyed.title_large.word_spacing_px = 0
+# docs/facts/material/tokens.toml:4894
+keyed.title_large.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:4905
+keyed.title_large.elision = "absent"
+# docs/facts/material/tokens.toml:4922
+keyed.title_large.wrap = "absent"
+# docs/facts/material/tokens.toml:4939
+keyed.title_large.max_lines = "absent"
+# docs/facts/material/tokens.toml:4957
+keyed.title_large.fill = "absent"
 # docs/facts/material/tokens.toml:9007
 keyed.monospace.font.family = "monospace"
 # docs/facts/material/tokens.toml:9017

@@ -1,5 +1,5 @@
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 recency = { lift = ["pressed", "hover"] }
 
 [[rules]]
@@ -13,6 +13,6 @@ target = "button.body"
 set = { opacity = 1 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

@@ -697,6 +697,16 @@ impl<'p> Depth<'p> {
         out
     }
 
+    /// The variants some combination at depth of the widget holds
+    /// ([`Depth::combos`]; check_facts_trace.py's `combos`, which
+    /// scripts/generate_preset.py's `later_variants()` reads).
+    pub fn drawn_variants(&self, widget: &str) -> Names {
+        self.combos(widget)
+            .iter()
+            .flat_map(|(_, combo)| combo.variants.iter().cloned())
+            .collect()
+    }
+
     /// The part's presence facts for the preset, in order, each as a Match,
     /// its `when` as written for the preset, and the value it states
     /// (`None`: pending).

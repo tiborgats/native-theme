@@ -11,8 +11,8 @@ source = "probe@1 probe.css:1"
 quote = "synthetic"
 
 [[fact]]
-key = "token.icons.mirroring"
-value = { action_save = "always" }
+key = "token.size_classes"
+value = { compact = { horizontal_px = 0, vertical_px = 0 } }
 rows = []
 
 [[fact.cite]]

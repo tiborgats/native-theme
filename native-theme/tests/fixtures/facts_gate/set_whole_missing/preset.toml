@@ -1,5 +1,12 @@
+# The body's interaction stated, its ripple's indication box (`Option<IndicationBox>`, a set-whole block, S6.1)
+# none in the base and stated whole by a rule.
+# base without: interaction = "absent"
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
+
+[widgets.button.body.interaction]
+state_layer = { color = "#000000", alpha = 0.1 }
+ripple = { effect = "absent", color = "absent", alpha = "absent", bounded = true, max_radius_px = "absent", padding_px = "absent", indication_box = "none" }
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -7,11 +14,10 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }
 
-# The key repeat, a set-whole block, stated whole (S6.1).
 [[rules]]
-target = "tokens"
-set = { behavior.key_repeat = { delay_ms = 500, interval_ms = 40 } }
+target = "button.body"
+set = { interaction.ripple.indication_box = { part = "icon", outset_px = 2 } }

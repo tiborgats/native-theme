@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 ca93a6f8b779a45753f3639c078f871d9efabdf7f676b627d88ac4e6657ec3ba
+# generated lines: sha256 3fa805e63b88321bd7f4a87d0be8023eeb70e1ffb642d27b1d1284fb5aa47dc3
 
 [preset]
 id = "ios-26"
@@ -20,7 +20,10 @@ surface_sets = [
     "selection",  # docs/facts/ios/roles.toml:7230
 ]
 text_styles = [
+    "large_title",  # docs/facts/ios/tokens.toml:15
     "title_1",  # docs/facts/ios/tokens.toml:65
+    "title_2",  # docs/facts/ios/tokens.toml:115
+    "title_3",  # docs/facts/ios/tokens.toml:165
     "headline",  # docs/facts/ios/tokens.toml:215
     "body",  # docs/facts/ios/tokens.toml:315
     "caption_1",  # docs/facts/ios/tokens.toml:465
@@ -425,8 +428,14 @@ sizes_by_context = []
 "tokens.icons.sizes.panel.weight" = "U127"
 # docs/facts/ios/tokens.toml:1755
 "tokens.icons.sizes.panel.scale" = "U127"
+# docs/facts/ios/tokens.toml:2308
+"tokens.text.keyed.large_title.font.width" = "U463"
 # docs/facts/ios/tokens.toml:2633
 "tokens.text.keyed.title_1.font.width" = "U463"
+# docs/facts/ios/tokens.toml:2958
+"tokens.text.keyed.title_2.font.width" = "U463"
+# docs/facts/ios/tokens.toml:3283
+"tokens.text.keyed.title_3.font.width" = "U463"
 # docs/facts/ios/tokens.toml:3608
 "tokens.text.keyed.headline.font.width" = "U463"
 # docs/facts/ios/tokens.toml:4258
@@ -1127,10 +1136,22 @@ disabled.background_positive = "absent"
 keyed = {}
 
 [tokens.text]
+# docs/facts/ios/tokens.toml:15
+keyed.large_title.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:40
+keyed.large_title.font.size_px = 34
 # docs/facts/ios/tokens.toml:65
 keyed.title_1.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/tokens.toml:90
 keyed.title_1.font.size_px = 28
+# docs/facts/ios/tokens.toml:115
+keyed.title_2.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:140
+keyed.title_2.font.size_px = 22
+# docs/facts/ios/tokens.toml:165
+keyed.title_3.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:190
+keyed.title_3.font.size_px = 20
 # docs/facts/ios/tokens.toml:215
 keyed.headline.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/tokens.toml:240
@@ -1143,6 +1164,14 @@ keyed.body.font.size_px = 17
 keyed.caption_1.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/tokens.toml:490
 keyed.caption_1.font.size_px = 12
+# docs/facts/ios/tokens.toml:565
+keyed.large_title.font.weight = 400
+# docs/facts/ios/tokens.toml:581
+keyed.large_title.line_height_px = 41
+# docs/facts/ios/tokens.toml:597
+keyed.large_title.scaling_role = "large_title"
+# docs/facts/ios/tokens.toml:613
+keyed.large_title.mnemonic_decoration = "absent"
 # docs/facts/ios/tokens.toml:644
 keyed.title_1.font.weight = 400
 # docs/facts/ios/tokens.toml:660
@@ -1151,6 +1180,22 @@ keyed.title_1.line_height_px = 34
 keyed.title_1.scaling_role = "title1"
 # docs/facts/ios/tokens.toml:692
 keyed.title_1.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:723
+keyed.title_2.font.weight = 400
+# docs/facts/ios/tokens.toml:739
+keyed.title_2.line_height_px = 28
+# docs/facts/ios/tokens.toml:755
+keyed.title_2.scaling_role = "title2"
+# docs/facts/ios/tokens.toml:771
+keyed.title_2.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:802
+keyed.title_3.font.weight = 400
+# docs/facts/ios/tokens.toml:818
+keyed.title_3.line_height_px = 25
+# docs/facts/ios/tokens.toml:834
+keyed.title_3.scaling_role = "title3"
+# docs/facts/ios/tokens.toml:850
+keyed.title_3.mnemonic_decoration = "absent"
 # docs/facts/ios/tokens.toml:881
 keyed.headline.font.weight = 590
 # docs/facts/ios/tokens.toml:897
@@ -1191,6 +1236,28 @@ roles.headline = "= token.text.keyed.headline"
 roles.body = "= token.text.keyed.body"
 # docs/facts/ios/tokens.toml:1896
 roles.caption = "= token.text.keyed.caption_1"
+# docs/facts/ios/tokens.toml:2013
+keyed.large_title.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:2089
+keyed.large_title.fill = "absent"
+# docs/facts/ios/tokens.toml:2118
+keyed.large_title.decoration = "absent"
+# docs/facts/ios/tokens.toml:2147
+keyed.large_title.case = "mixed"
+# docs/facts/ios/tokens.toml:2176
+keyed.large_title.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:2205
+keyed.large_title.elision = "absent"
+# docs/facts/ios/tokens.toml:2234
+keyed.large_title.wrap = "absent"
+# docs/facts/ios/tokens.toml:2263
+keyed.large_title.max_lines = "absent"
+# docs/facts/ios/tokens.toml:2293
+keyed.large_title.font.style = "normal"
+# docs/facts/ios/tokens.toml:2313
+keyed.large_title.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:2328
+keyed.large_title.font.features = {}
 # docs/facts/ios/tokens.toml:2343
 keyed.title_1.letter_spacing = "= sf_tracking(font_size, sf_pro)"
 # docs/facts/ios/tokens.toml:2415
@@ -1213,6 +1280,50 @@ keyed.title_1.font.style = "normal"
 keyed.title_1.font.axes = { opsz = "follows_size" }
 # docs/facts/ios/tokens.toml:2653
 keyed.title_1.font.features = {}
+# docs/facts/ios/tokens.toml:2668
+keyed.title_2.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:2740
+keyed.title_2.fill = "absent"
+# docs/facts/ios/tokens.toml:2769
+keyed.title_2.decoration = "absent"
+# docs/facts/ios/tokens.toml:2798
+keyed.title_2.case = "mixed"
+# docs/facts/ios/tokens.toml:2827
+keyed.title_2.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:2856
+keyed.title_2.elision = "absent"
+# docs/facts/ios/tokens.toml:2885
+keyed.title_2.wrap = "absent"
+# docs/facts/ios/tokens.toml:2914
+keyed.title_2.max_lines = "absent"
+# docs/facts/ios/tokens.toml:2943
+keyed.title_2.font.style = "normal"
+# docs/facts/ios/tokens.toml:2963
+keyed.title_2.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:2978
+keyed.title_2.font.features = {}
+# docs/facts/ios/tokens.toml:2993
+keyed.title_3.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:3065
+keyed.title_3.fill = "absent"
+# docs/facts/ios/tokens.toml:3094
+keyed.title_3.decoration = "absent"
+# docs/facts/ios/tokens.toml:3123
+keyed.title_3.case = "mixed"
+# docs/facts/ios/tokens.toml:3152
+keyed.title_3.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:3181
+keyed.title_3.elision = "absent"
+# docs/facts/ios/tokens.toml:3210
+keyed.title_3.wrap = "absent"
+# docs/facts/ios/tokens.toml:3239
+keyed.title_3.max_lines = "absent"
+# docs/facts/ios/tokens.toml:3268
+keyed.title_3.font.style = "normal"
+# docs/facts/ios/tokens.toml:3288
+keyed.title_3.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:3303
+keyed.title_3.font.features = {}
 # docs/facts/ios/tokens.toml:3318
 keyed.headline.letter_spacing = "= sf_tracking(font_size, sf_pro)"
 # docs/facts/ios/tokens.toml:3390
@@ -1735,7 +1846,7 @@ target = "button.body"
 fill = "#0088ffcc"
 
 [[rules]]
-when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1743,7 +1854,7 @@ target = "button.body"
 fill = "absent"
 
 [[rules]]
-when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1751,7 +1862,7 @@ target = "button.body"
 fill = "absent"
 
 [[rules]]
-when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1759,7 +1870,7 @@ target = "button.body"
 fill = "absent"
 
 [[rules]]
-when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1899,7 +2010,7 @@ shadow = "absent"
 opacity = 1.0
 
 [[rules]]
-when = { states = ["disabled", "pressed"], not_states = ["checked"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled", "pressed"], not_states = ["checked"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1911,7 +2022,7 @@ shadow = "absent"
 opacity = 1.0
 
 [[rules]]
-when = { states = ["checked", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_variants = ["@gray", "tinted", "primary", "with_icon", "tool"], sizes = ["regular"] }
+when = { states = ["checked", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_variants = ["@gray", "tinted", "primary", "with_icon"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1923,7 +2034,7 @@ shadow = "absent"
 opacity = 1.0
 
 [[rules]]
-when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1935,7 +2046,7 @@ shadow = "absent"
 opacity = 1.0
 
 [[rules]]
-when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1947,7 +2058,7 @@ shadow = "absent"
 opacity = 1.0
 
 [[rules]]
-when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -1959,7 +2070,7 @@ shadow = "absent"
 opacity = 1.0
 
 [[rules]]
-when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -2003,7 +2114,7 @@ min_width_px = "auto"
 min_height_px = "auto"
 
 [[rules]]
-when = { states = ["disabled", "pressed"], not_states = ["checked"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled", "pressed"], not_states = ["checked"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -2021,7 +2132,7 @@ min_width_px = "auto"
 min_height_px = "auto"
 
 [[rules]]
-when = { states = ["checked", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_variants = ["@gray", "tinted", "primary", "with_icon", "tool"], sizes = ["regular"] }
+when = { states = ["checked", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_variants = ["@gray", "tinted", "primary", "with_icon"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -2039,7 +2150,7 @@ min_width_px = "auto"
 min_height_px = "auto"
 
 [[rules]]
-when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -2057,7 +2168,7 @@ min_width_px = "auto"
 min_height_px = "auto"
 
 [[rules]]
-when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -2075,7 +2186,7 @@ min_width_px = "auto"
 min_height_px = "auto"
 
 [[rules]]
-when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
@@ -2381,7 +2492,7 @@ target = "button.label"
 text.fill = "#86868673"
 
 [[rules]]
-when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2389,7 +2500,7 @@ target = "button.label"
 text.fill = "#0088ff"
 
 [[rules]]
-when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2397,7 +2508,7 @@ target = "button.label"
 text.fill = "#0091ff"
 
 [[rules]]
-when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2405,7 +2516,7 @@ target = "button.label"
 text.fill = "#0088ff"
 
 [[rules]]
-when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2413,7 +2524,7 @@ target = "button.label"
 text.fill = "#0091ff"
 
 [[rules]]
-when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2421,7 +2532,7 @@ target = "button.label"
 text.fill = "#0087ff33"
 
 [[rules]]
-when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2429,7 +2540,7 @@ target = "button.label"
 text.fill = "#0091ff66"
 
 [[rules]]
-when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2437,7 +2548,7 @@ target = "button.label"
 text.fill = "#86868673"
 
 [[rules]]
-when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2565,7 +2676,7 @@ target = "button.label"
 text.font.family = ".AppleSystemUIFont"
 
 [[rules]]
-when = { states = ["disabled", "pressed"], not_states = ["checked"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled", "pressed"], not_states = ["checked"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2573,7 +2684,7 @@ target = "button.label"
 text.font.family = ".AppleSystemUIFont"
 
 [[rules]]
-when = { states = ["checked", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_variants = ["@gray", "tinted", "primary", "with_icon", "tool"], sizes = ["regular"] }
+when = { states = ["checked", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_variants = ["@gray", "tinted", "primary", "with_icon"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2581,7 +2692,7 @@ target = "button.label"
 text.font.family = ".AppleSystemUIFont"
 
 [[rules]]
-when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2589,7 +2700,7 @@ target = "button.label"
 text.font.family = ".AppleSystemUIFont"
 
 [[rules]]
-when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2597,7 +2708,7 @@ target = "button.label"
 text.font.family = ".AppleSystemUIFont"
 
 [[rules]]
-when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2641,7 +2752,7 @@ text.wrap = "none"
 text.max_lines = 1
 
 [[rules]]
-when = { states = ["disabled", "pressed"], not_states = ["checked"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled", "pressed"], not_states = ["checked"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2649,7 +2760,7 @@ target = "button.label"
 text.font.size_px = 15
 
 [[rules]]
-when = { states = ["checked", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_variants = ["@gray", "tinted", "primary", "with_icon", "tool"], sizes = ["regular"] }
+when = { states = ["checked", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_variants = ["@gray", "tinted", "primary", "with_icon"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2657,7 +2768,7 @@ target = "button.label"
 text.font.size_px = 15
 
 [[rules]]
-when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2665,7 +2776,7 @@ target = "button.label"
 text.font.size_px = 15
 
 [[rules]]
-when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2673,7 +2784,7 @@ target = "button.label"
 text.font.size_px = 15
 
 [[rules]]
-when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
@@ -2921,7 +3032,7 @@ target = "button.icon"
 icon.fill = "#ffffffbf"
 
 [[rules]]
-when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
@@ -2929,7 +3040,7 @@ target = "button.icon"
 icon.fill = "#0088ff"
 
 [[rules]]
-when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
@@ -2937,7 +3048,7 @@ target = "button.icon"
 icon.fill = "#0091ff"
 
 [[rules]]
-when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:light"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
@@ -2945,7 +3056,7 @@ target = "button.icon"
 icon.fill = "#0088ff"
 
 [[rules]]
-when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:dark"], not_states = ["pressed", "disabled", "checked"], variants = ["with_icon", "toggle"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
@@ -2953,7 +3064,7 @@ target = "button.icon"
 icon.fill = "#0091ff"
 
 [[rules]]
-when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
@@ -2961,7 +3072,7 @@ target = "button.icon"
 icon.fill = "#0087ff33"
 
 [[rules]]
-when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
@@ -2969,7 +3080,7 @@ target = "button.icon"
 icon.fill = "#0091ff66"
 
 [[rules]]
-when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
@@ -2977,7 +3088,7 @@ target = "button.icon"
 icon.fill = "#85858573"
 
 [[rules]]
-when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary", "tool"], sizes = ["regular"] }
+when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], not_variants = ["@gray", "tinted", "primary"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
@@ -2985,7 +3096,7 @@ target = "button.icon"
 icon.fill = "#8c8c8c59"
 
 [[rules]]
-when = { not_variants = ["@gray", "tinted", "primary", "tool"] }
+when = { not_variants = ["@gray", "tinted", "primary"] }
 target = "button.values"
 
 [rules.set]
@@ -3233,7 +3344,7 @@ target = "button.subtitle"
 text.fill = "#ffffffbf"
 
 [[rules]]
-when = { not_variants = ["@gray", "tinted", "primary", "tool"] }
+when = { not_variants = ["@gray", "tinted", "primary"] }
 target = "button.subtitle"
 
 [rules.set]
@@ -3319,7 +3430,7 @@ icon.scale = "large"
 glyph = "absent"
 
 [[rules]]
-when = { not_variants = ["with_icon", "tool"] }
+when = { not_variants = ["with_icon"] }
 target = "button.icon"
 
 [rules.set]

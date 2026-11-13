@@ -12,7 +12,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -31,11 +31,11 @@ kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
 
-# Inside the chain, where a hovered button is an ancestor and the nearest button ancestor is the flat
+# Inside the chain, where a hovered button is an ancestor and the nearest button ancestor is the tool
 # one, the inner.
 [[fact]]
 key = "button.body.min_width"
-when = { context = [{ widget = "button", states = ["hover"] }, { scope = { nearest = ["button"] }, widget = "button", variants = ["flat"] }] }
+when = { context = [{ widget = "button", states = ["hover"] }, { scope = { nearest = ["button"] }, widget = "button", variants = ["tool"] }] }
 value = "60px"
 rows = []
 

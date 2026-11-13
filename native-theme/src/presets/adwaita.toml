@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 71aa898066b2d0203a8063ed840e5ea473f606a3e6236f7f34e0f6544fa1ec8b
+# generated lines: sha256 ff1d4be8fa17bc92bbdb15a85d36f3979a65a52adbe60d7da8abd6328b3607de
 
 [preset]
 id = "adwaita"
@@ -28,6 +28,8 @@ surface_sets = [
 text_styles = [
     "title_1",  # docs/facts/gnome/tokens.toml:2885
     "title_2",  # docs/facts/gnome/tokens.toml:3165
+    "title_3",  # docs/facts/gnome/tokens.toml:3445
+    "title_4",  # docs/facts/gnome/tokens.toml:3725
     "heading",  # docs/facts/gnome/tokens.toml:4005
     "body",  # docs/facts/gnome/tokens.toml:4283
     "caption",  # docs/facts/gnome/tokens.toml:4834
@@ -2114,6 +2116,78 @@ keyed.title_2.wrap = "absent"
 keyed.title_2.max_lines = "absent"
 # docs/facts/gnome/tokens.toml:3434
 keyed.title_2.fill = "absent"
+# docs/facts/gnome/tokens.toml:3445
+keyed.title_3.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:3462
+keyed.title_3.font.size = "= mul(token.text.roles.body.font.size, 1.36)"
+# docs/facts/gnome/tokens.toml:3474
+keyed.title_3.font.weight = 700
+# docs/facts/gnome/tokens.toml:3485
+keyed.title_3.font.style = "normal"
+# docs/facts/gnome/tokens.toml:3501
+keyed.title_3.line_height = "auto"
+# docs/facts/gnome/tokens.toml:3518
+keyed.title_3.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3534
+keyed.title_3.case = "mixed"
+# docs/facts/gnome/tokens.toml:3550
+keyed.title_3.decoration = "absent"
+# docs/facts/gnome/tokens.toml:3562
+keyed.title_3.font.width = 100
+# docs/facts/gnome/tokens.toml:3594
+keyed.title_3.font.axes = {}
+# docs/facts/gnome/tokens.toml:3616
+keyed.title_3.font.features = {}
+# docs/facts/gnome/tokens.toml:3638
+keyed.title_3.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:3649
+keyed.title_3.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3662
+keyed.title_3.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:3680
+keyed.title_3.elision = "absent"
+# docs/facts/gnome/tokens.toml:3691
+keyed.title_3.wrap = "absent"
+# docs/facts/gnome/tokens.toml:3702
+keyed.title_3.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:3714
+keyed.title_3.fill = "absent"
+# docs/facts/gnome/tokens.toml:3725
+keyed.title_4.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:3742
+keyed.title_4.font.size = "= mul(token.text.roles.body.font.size, 1.18)"
+# docs/facts/gnome/tokens.toml:3754
+keyed.title_4.font.weight = 700
+# docs/facts/gnome/tokens.toml:3765
+keyed.title_4.font.style = "normal"
+# docs/facts/gnome/tokens.toml:3781
+keyed.title_4.line_height = "auto"
+# docs/facts/gnome/tokens.toml:3798
+keyed.title_4.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3814
+keyed.title_4.case = "mixed"
+# docs/facts/gnome/tokens.toml:3830
+keyed.title_4.decoration = "absent"
+# docs/facts/gnome/tokens.toml:3842
+keyed.title_4.font.width = 100
+# docs/facts/gnome/tokens.toml:3874
+keyed.title_4.font.axes = {}
+# docs/facts/gnome/tokens.toml:3896
+keyed.title_4.font.features = {}
+# docs/facts/gnome/tokens.toml:3918
+keyed.title_4.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:3929
+keyed.title_4.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3942
+keyed.title_4.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:3960
+keyed.title_4.elision = "absent"
+# docs/facts/gnome/tokens.toml:3971
+keyed.title_4.wrap = "absent"
+# docs/facts/gnome/tokens.toml:3982
+keyed.title_4.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:3994
+keyed.title_4.fill = "absent"
 # docs/facts/gnome/tokens.toml:4005
 keyed.heading.font.family = "= token.text.roles.body.font.family"
 # docs/facts/gnome/tokens.toml:4021

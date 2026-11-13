@@ -13,7 +13,7 @@ quote = "synthetic"
 # An icon-size context's size and weight, each stated per leaf below its keyed entry (S17: a key below a map's
 # entry states that leaf; the entry's other leaves are the preset's).
 [[fact]]
-key = "token.icons.sizes.keyed.status_page.size"
+key = "token.icons.sizes.keyed.main_toolbar.size"
 value = "128px"
 rows = []
 
@@ -23,7 +23,7 @@ source = "probe@1 probe.css:1"
 quote = "synthetic"
 
 [[fact]]
-key = "token.icons.sizes.keyed.status_page.weight"
+key = "token.icons.sizes.keyed.main_toolbar.weight"
 value = 300
 rows = []
 

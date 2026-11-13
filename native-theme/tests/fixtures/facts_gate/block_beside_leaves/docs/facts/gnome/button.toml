@@ -12,7 +12,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -89,7 +89,7 @@ kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
 
-# The focus ring stated per leaf, and the whole block absent after its leaves on a flat button (S17 *Which fact
+# The focus ring stated per leaf, and the whole block absent after its leaves on a tool button (S17 *Which fact
 # applies*: where the block's fact does not hold, its leaves' facts state it).
 [[fact]]
 key = "button.body.focus.kind"
@@ -243,7 +243,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.focus"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "absent"
 rows = []
 
