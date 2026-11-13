@@ -68,6 +68,32 @@ moves to a field at depth; the checks and tests of a staged token field that lea
 by the unit that brings it back (O-1). The figures below are not recomputed for these changes; the increment that
 brings `full_keyboard_access` to depth reports any change of the done-tables (ledger queue #283).
 
+## Correction of the staging task (2026-11-13)
+
+The staging task (the plan's M2, *Before task 0: the depth 0.8.0 states*; merged at `5891414e`) measured more on
+0.8.0's path than this design counts; the body below is not rewritten, and wherever it states the path's figures
+(0's point 4, 1.6, 2.7, 4, 6.4's quotes of the plan, 7, 8's point 8; and the fix round's correction above) they are
+the design's count. **The figures.** Listed
+paths that stay: 696, per preset `adwaita` 0, `kde-breeze` 4, `macos-monterey` 94, `macos-tahoe` 77, `ios-13` 224,
+`ios-26` 230, `windows-11` 58, `material-3` 9; facts of the enabled units, pending in brackets, per facts directory:
+gnome 800 (0), kde 1,146 (5), macos 2,378 (778), ios 1,569 (539), windows 1,064 (57), material 525 (8), in all 7,482
+(1,387). The reason: fifteen keyed text styles that text-role slots at depth reference were staged in this design's
+count (`adwaita` `title_3`, `title_4`; `kde-breeze` `heading_2`; `macos-*` `title_2`, `title_3`; `ios-*`
+`large_title`, `title_2`, `title_3`; `windows-11` `title_large`; `material-3` `display_large`, `headline_medium`,
+`title_large`); by the token rule (a value at depth reads them, 1.5) they are at depth, and
+`scripts/widget_units.toml`'s `[kept.slice]` holds them. The listed paths they add are
+`tokens.text.keyed.{large_title,title_2,title_3}.font.width` on `ios-13` and `ios-26` (register row U463) and
+`tokens.text.keyed.title_large.{font.features,font.width,scaling_role}` on `windows-11` (U518); the plan's *The
+depth 0.8.0 states* states the measured figures. **A `when`'s `sizes` list is all-of** (S7's `SetMatch`; an element
+has one control size), not one-of: 2.3's "a one-of list (`sizes`) is trimmed to its names at depth" and 6.4's
+quoted step 7, "a one-of `sizes` list trimmed", are withdrawn: a `sizes` list of two holds nowhere, so nothing is
+trimmed. **The units file's forms** (2.5, 3.1), as the task settled them: a keyed map is staged whole, with a
+per-preset `[kept.slice]` list of its entries at depth (names conflict across platforms); `token.params` is staged
+whole; `idiom:phone` and `idiom:pad` are the iPad unit's, `@tab_button` the styles unit's, `full_screen` and
+`frame_step` the identities unit's; a table `[unit_names]` lists the M3a units' names, the values a `[staged]` or
+`[deferred]` entry may hold beside the `[[later]]` names, the `[hand_written]` names and the catalogue's entries,
+every reader refusing another value.
+
 ## Revision 4
 
 Revision 3 was checked independently (`scratch-keep/d6/staging-design-check3.md`, "the third check": nothing

@@ -628,8 +628,9 @@ the facts tooling reads it.
     scale-up, and whether 0.8.0 states each widget at the depth 0.7.0's model distinguishes, the further variant
     sets deferred to a named later unit as S6.1 defers `Placement`. **Decided at D6** (2026-11-10, outcome 2; the D6
     staging design): each entry at that depth, the rest in named later units of depth (*The depth 0.8.0 states*;
-    *One rule for every model field*), the facts already written staying and `ios-26` staying (D13). So 1,381 of
-    the pending facts and 687 of the listed paths stay on the path at the slice's scope, the four small tables M2's
+    *One rule for every model field*), the facts already written staying and `ios-26` staying (D13). So 1,387 of
+    the pending facts and 696 of the listed paths stay on the path at the slice's scope (as the staging task measured
+    them, *The depth 0.8.0 states*), the four small tables M2's
     task 0's (*M2*, task 0), the rest closed by each unit's pending condition (*M3*): the button's with *buttons and
     toggles*, the roles' and the tokens' with M3a's first unit, the stragglers at M4 (veto list item 1; ADD-A148);
     the 19 pending
@@ -837,7 +838,16 @@ default flavour, `contrast_high` and `full_keyboard_access` (ADD-A148). On
 
 **The counts** at `7430a0a2`, by the design's rule (the D6 staging design's scripts, with `button`'s
 `label_position`, `repeat_delay` and `repeat_interval` at depth, ledger queue #258; counts by a stated rule, not measurements; a fact of two presets counted for each in the first table and once in the
-second; "deferred" a fact of a later unit, "staged" a token path the rule stages):
+second; "deferred" a fact of a later unit, "staged" a token path the rule stages). The columns *Listed paths that
+stay*, *At depth* with its *of them pending*, and *All* hold the staging task's measured figures (merged at
+`5891414e`; the facts of the enabled units by `check_facts_trace.py --facts`, per facts directory, a fact once), the
+other columns the design's counts. They differ from the design's because fifteen keyed text styles that text-role
+slots at depth reference were staged in the D6 staging design's count (`adwaita` `title_3`, `title_4`; `kde-breeze`
+`heading_2`; `macos-*` `title_2`, `title_3`; `ios-*` `large_title`, `title_2`, `title_3`; `windows-11`
+`title_large`; `material-3` `display_large`, `headline_medium`, `title_large`): by the token rule (a value at depth
+reads them) they are at depth, and `scripts/widget_units.toml`'s `[kept.slice]` holds them. The listed paths they
+add are `tokens.text.keyed.{large_title,title_2,title_3}.font.width` on `ios-13` and `ios-26` (register row U463)
+and `tokens.text.keyed.title_large.{font.features,font.width,scaling_role}` on `windows-11` (U518).
 
 | Preset | Button facts at depth | pending | deferred | pending | Roles and inputs at depth | pending | deferred | pending | Tokens at depth | pending | staged or deferred | pending | Listed paths that stay | leave |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -845,20 +855,20 @@ second; "deferred" a fact of a later unit, "staged" a token path the rule stages
 | `kde-breeze` | 177 | 5 | 511 | 12 | 715 | 0 | 77 | 0 | 236 | 0 | 478 | 11 | 4 | 12 |
 | `macos-monterey` | 407 | 172 | 8,569 | 4,586 | 209 | 1 | 114 | 0 | 172 | 58 | 922 | 233 | 94 | 264 |
 | `macos-tahoe` | 1,139 | 488 | 18,903 | 11,021 | 209 | 1 | 115 | 0 | 172 | 58 | 922 | 100 | 77 | 144 |
-| `ios-13` | 539 | 201 | 15,149 | 14,042 | 236 | 72 | 200 | 37 | 154 | 55 | 822 | 122 | 221 | 154 |
-| `ios-26` | 551 | 218 | 16,362 | 15,484 | 236 | 72 | 199 | 37 | 154 | 56 | 822 | 122 | 227 | 154 |
-| `windows-11` | 537 | 19 | 349 | 26 | 369 | 1 | 150 | 0 | 140 | 34 | 144 | 38 | 55 | 50 |
+| `ios-13` | 539 | 201 | 15,149 | 14,042 | 236 | 72 | 200 | 37 | 154 | 55 | 822 | 122 | 224 | 154 |
+| `ios-26` | 551 | 218 | 16,362 | 15,484 | 236 | 72 | 199 | 37 | 154 | 56 | 822 | 122 | 230 | 154 |
+| `windows-11` | 537 | 19 | 349 | 26 | 369 | 1 | 150 | 0 | 140 | 34 | 144 | 38 | 58 | 50 |
 | `material-3` | 154 | 0 | 1,112 | 15 | 142 | 1 | 36 | 2 | 175 | 7 | 591 | 50 | 9 | 39 |
 
 | Facts directory | Facts | At depth | of them pending | Deferred or staged | of them pending | Other units' | of them pending |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| `gnome` | 1,401 | 764 | 0 | 637 | 4 | 0 | 0 |
-| `kde` | 2,220 | 1,128 | 5 | 1,066 | 23 | 26 | 2 |
-| `macos` | 31,940 | 2,306 | 778 | 29,545 | 15,940 | 89 | 63 |
-| `ios` | 32,848 | 1,512 | 536 | 31,262 | 28,217 | 74 | 4 |
-| `windows` | 1,690 | 1,046 | 54 | 643 | 64 | 1 | 1 |
-| `material` | 2,210 | 471 | 8 | 1,739 | 67 | 0 | 0 |
-| **all** | 72,309 | 7,227 | 1,381 | 64,892 | 44,315 | 190 | 70 |
+| `gnome` | 1,401 | 800 | 0 | 637 | 4 | 0 | 0 |
+| `kde` | 2,220 | 1,146 | 5 | 1,066 | 23 | 26 | 2 |
+| `macos` | 31,940 | 2,378 | 778 | 29,545 | 15,940 | 89 | 63 |
+| `ios` | 32,848 | 1,569 | 539 | 31,262 | 28,217 | 74 | 4 |
+| `windows` | 1,690 | 1,064 | 57 | 643 | 64 | 1 | 1 |
+| `material` | 2,210 | 525 | 8 | 1,739 | 67 | 0 | 0 |
+| **all** | 72,309 | 7,482 | 1,387 | 64,892 | 44,315 | 190 | 70 |
 
 The 1,720 facts not in the tables are the KDE accent run's (`scheme_file` and `accent`, S17; 880 role and 840 input
 facts, all measured), which stay with the roles: 72,309 + 1,720 = 74,029 facts, and 1,381 + 44,315 + 70 = 45,766
@@ -872,13 +882,13 @@ pending. "Other units'" are the facts the lanes wrote ahead for widgets not enab
 | `kde-breeze` | 4 | 0 | 0 | 0 | 4 |
 | `macos-monterey` | 34 | 2 | 0 | 58 | 94 |
 | `macos-tahoe` | 17 | 2 | 0 | 58 | 77 |
-| `ios-13` | 34 | 132 | 0 | 55 | 221 |
-| `ios-26` | 39 | 132 | 0 | 56 | 227 |
-| `windows-11` | 19 | 2 | 0 | 34 | 55 |
+| `ios-13` | 34 | 132 | 0 | 55 | 224 |
+| `ios-26` | 39 | 132 | 0 | 56 | 230 |
+| `windows-11` | 19 | 2 | 0 | 34 | 58 |
 | `material-3` | 0 | 0 | 2 | 7 | 9 |
-| **all** | 147 | 270 | 2 | 268 | 687 |
+| **all** | 147 | 270 | 2 | 268 | 696 |
 
-Of the 1,508 listed paths at M1b's close 687 stay: 147 of 315 button paths, 270 of 278 colour-role paths (60 on each
+Of the 1,508 listed paths at M1b's close 696 stay: 147 of 315 button paths, 270 of 278 colour-role paths (60 on each
 iOS preset U456's status roles), both inputs, 268 of 913 token paths.
 
 **The comparison with 0.7.0**, run for `button`: per preset and scheme, 0.7.0's value of every field its *Today's
@@ -1251,7 +1261,10 @@ placement unit, spec ADD-A120); S7; S8 without
 task, after the spec batch that states the depth rule and its form (ADD-A147: R21's amendment, S6.1, S8, S10, S12,
 S16, S17, S21's lines, the catalogue's Depth lines and *Today's fields* corrections) and before task 0. It brings the
 slice's model, its generators and checkers and the eight bundled presets to the depth 0.7.0's model and readers
-distinguish (*The depth 0.8.0 states*). No fact is edited.
+distinguish (*The depth 0.8.0 states*). No fact is edited. **Done 2026-11-13** (merged at `5891414e`; ledger queue
+#257): the nine facts-gate steps pass, each in 49 to 89 seconds on 8 threads (they took between 2 min 24 s and
+162 min before the depth), and the per-fact cross-check of the gate against `check_facts_trace.py` finds 0
+differences over 74,961 fact lines.
 
 *Inputs:* the catalogue's Depth lines and *Today's fields* mappings as ADD-A147 leaves them; the facts at the task's
 base; the D6 staging design's tables, whose figures the task reproduces (it does not fit to them: a count that
@@ -1268,13 +1281,21 @@ differs is reported).
    `[deferred.button]` gains the values only later names read (the catalogue's Depth line for `button`) and the
    motion unit's part field `transitions`, `shown` staying (*The depth 0.8.0 states*; ADD-A148); `[staged.slice]`
    gains every token path the token rule stages, each to its parking unit, its unit of depth or the widget unit not
-   yet enabled whose value first reads it.
+   yet enabled whose value first reads it. The forms the task settled: a keyed map is staged whole, with a
+   per-preset `[kept.slice]` list of its entries at depth (names conflict across platforms); `token.params` is
+   staged whole; `idiom:phone` and `idiom:pad` are the iPad unit's, `@tab_button` the styles unit's, `full_screen`
+   and `frame_step` the identities unit's; a table `[unit_names]` lists the M3a units' names, the values a
+   `[staged]` or `[deferred]` entry may hold beside the `[[later]]` names, the `[hand_written]` names and the
+   catalogue's entries, every reader refusing another value.
 2. The predicate of a fact's units (S17) in the four readers of the units file, by one rule (the first rule exactly;
    the later unit by the names a fact lists positively, its key's path and the host rule; the attribution over the
    drawn sets is queue #289's task): the gate
-   (`native-theme/tests/facts_gate/units.rs`, `run.rs`), `scripts/check_facts_trace.py`,
+   (`native-theme/tests/facts_gate/units.rs`, `depth.rs`, `run.rs`), `scripts/check_facts_trace.py`,
    `scripts/generate_preset.py`; `check_ledger.py` by the same predicate; `verify_facts.py units` stays unit-blind
-   (*M3*'s gate per unit; ADD-A148). `check_facts.py` checks that every name of every state model, every condition a
+   (*M3*'s gate per unit; ADD-A148). `check_facts_trace.py`'s `Depth` and the gate's `depth.rs` decide a fact of the
+   enabled units exactly, over the combinations at depth, and are compared per fact: `check_facts_trace.py --facts`
+   writes one `fact` line per fact and preset, which the gate's ignored test `facts_units` reads from the file
+   `NT_FACTS_GATE_UNITS` names. `check_facts.py` checks that every name of every state model, every condition a
    fact names and every token path a fact names lies in exactly one place: an entry's Depth line, one unit of depth,
    one parking unit or one widget unit not yet enabled (ADD-A148).
 3. `scripts/generate_widgets.py`: reads the Depth lines (`--check`: each line's variants and state flags against the *Today's fields* selectors that
@@ -1314,7 +1335,8 @@ differs is reported).
    variant not at depth), which `covering_bases()`, `pending_table()` and `round_trip()` read; the facts of the
    enabled units by the predicate; every mention of a name not at depth left out of a rule (a fact naming it
    positively, a negative entry naming it; exclusive groups and recency sets trimmed to the flags at depth, a group
-   of one dropped; a one-of `sizes` list trimmed); `later.variants` written from the state model and the units file;
+   of one dropped; a `when`'s `sizes` list is all-of, S7's `SetMatch`, an element having one control size, so a
+   list of two holds nowhere and nothing is trimmed); `later.variants` written from the state model and the units file;
    `flags` and `[declare] conditions` from the trimmed facts; each keyed namespace's declaration trimmed to the
    entries a base states (a stated base, or a listed path the synthetic route's bases state), a map with none stated
    empty (`{}`).
@@ -1336,11 +1358,11 @@ another entry's Depth line, so the presets do not run this path); the facts gate
 green over the eight regenerated presets with the predicate in force; `cargo test --workspace` outside
 `PLAN_EXCLUDED`.
 
-*Done when* the gate is green and the eight `[pending]` tables hold exactly the listed paths the design gives as
-staying: `adwaita` 0, `kde-breeze` 4, `macos-monterey` 94, `macos-tahoe` 77, `ios-13` 221, `ios-26` 227,
-`windows-11` 55, `material-3` 9 (687 in all; ledger queue #258), and the gate's report by unit (or
-`check_ledger.py`) gives, per facts directory, the facts at depth and those pending as *The counts*' second table
-has them (7,227 and 1,381 in all; ADD-A148). A table or a count that differs is reported with the paths or facts
+*Done when* the gate is green and the eight `[pending]` tables hold exactly the listed paths that stay:
+`adwaita` 0, `kde-breeze` 4, `macos-monterey` 94, `macos-tahoe` 77, `ios-13` 224, `ios-26` 230,
+`windows-11` 58, `material-3` 9 (696 in all, the fifteen keyed text styles at depth, *The counts*; ledger queue
+#258), and the gate's report by unit (or `check_ledger.py`) gives, per facts directory, the facts at depth and those
+pending as *The counts*' second table has them (7,482 and 1,387 in all; ADD-A148). A table or a count that differs is reported with the paths or facts
 that differ, and the task does not close until the orchestrator has decided it.
 
 **After the staging task merges** (ADD-A148), each a code task (`implement`) on the merged branch, in the per-task
@@ -1582,7 +1604,7 @@ is fixed before task 0 on its own branch, `side-units`.
    path: `Theme::from_preset` refuses it (S17), `from_system` builds through `from_preset`, and the tables are empty
    only at a release (S21.1). So before the first connector's code (task 1), and after the staging task above (its gate green; ADD-A147), the
    presets whose table is small are brought to an empty one by their lanes' rounds (`adwaita` 0 paths, `kde-breeze`
-   4, `material-3` 9, `windows-11` 55 once the staging task is merged; a row with no route among theirs goes to the
+   4, `material-3` 9, `windows-11` 58 since the staging task merged; a row with no route among theirs goes to the
    maintainer first, *How values are checked*), so that `adwaita` and `kde-breeze` build
    through `from_preset` first. Two of the four wait on more than a round (ADD-A148). `kde-breeze`'s
    `button.body.transform.origin` (U422) waits on a class 2 change (a conversion of S17's closed list for Qt

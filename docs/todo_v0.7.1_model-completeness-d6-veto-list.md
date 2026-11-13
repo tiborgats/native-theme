@@ -22,11 +22,13 @@ its findings cited by their ids, K4-7 and so on).
   named later *units* (a unit is a group of widgets or values that enters the model in one commit, on every preset
   at once) and cannot be asked for until then. *Facts* already written stay (a fact is one platform value for one
   key under one combination, with its proof; a *pending* fact has its combination written down, not its value).
-  `ios-26` stays. This changes R21's "a unit enters whole". Result: 1,381 of the slice's 45,766 pending facts
-  (3.0 %) and 687 of its 1,508 listed paths (the paths that keep a preset from loading) stay on 0.8.0's path. These
-  figures count `button`'s `label_position`, `repeat_delay` and `repeat_interval` at depth where a button with no
-  later name reads them (the fix round's recount, ledger queue #258; ADD-A148; with the three deferred they were
-  1,376 and 682).
+  `ios-26` stays. This changes R21's "a unit enters whole". Result: 1,387 of the slice's 45,766 pending facts
+  (3.0 %) and 696 of its 1,508 listed paths (the paths that keep a preset from loading) stay on 0.8.0's path, as the
+  staging task measured them (2026-11-13; the plan's *The depth 0.8.0 states* gives why they exceed the design's
+  count: fifteen keyed text styles that text-role slots at depth reference are at depth). These figures count
+  `button`'s `label_position`, `repeat_delay` and `repeat_interval` at depth where a button with no later name reads
+  them (the fix round's recount, ledger queue #258; ADD-A148; with the three deferred the design counted 1,376 and
+  682).
 - *Why:* D13 ("0.8.0 ships when the new model covers what 0.7.0 covers", taken for time: about 3–4 weeks against
   5–7). Measuring every combination was priced at 814 to 2,958 M of usage, 3 to 11 weeks for the facts alone;
   99.95 % of the pending button facts lie beyond 0.7.0's depth.
