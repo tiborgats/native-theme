@@ -1,342 +1,352 @@
-# Updating Platform Constants for New OS Versions
+# Updating the Platform Facts for a New OS Version
 
-native-theme ships platform-specific constants extracted from authoritative sources
-(KDE Breeze metrics, Apple HIG measurements, WinUI3 Fluent specs, libadwaita/GTK4
-defaults). When a new OS version ships (e.g., KDE Plasma 7, Windows 12, the next macOS or
-GNOME release), these constants may need updating.
+native-theme takes its platform values from **facts** in
+`docs/facts/<platform>/` (specification S17,
+[`todo_v0.7.1_model-completeness-spec.md`](todo_v0.7.1_model-completeness-spec.md)):
+a bundled preset is generated from its platform's facts, and the few lines no
+fact states (its generation, its declarations) are written by hand, each
+citing its source. When a new OS version
+or a new release of a platform's toolkit ships (KDE Plasma 7, the next macOS,
+a libadwaita release, a Windows App SDK release), the facts are checked
+against it: the sources are pinned to the new release, what changed becomes a
+fact, the preset is regenerated, and the gates say when it is done.
 
-This guide covers the update procedure for each platform.
+This guide covers that procedure, then each platform's sources and
+measurements.
+
+---
+
+## The facts
+
+One directory per platform, each covering its presets
+(`scripts/check_facts.py`'s `PLATFORMS`):
+
+| Directory | Presets |
+|---|---|
+| `docs/facts/gnome/` | `adwaita` |
+| `docs/facts/kde/` | `kde-breeze` |
+| `docs/facts/macos/` | `macos-monterey`, `macos-tahoe` |
+| `docs/facts/ios/` | `ios-13`, `ios-26` |
+| `docs/facts/windows/` | `windows-11` |
+| `docs/facts/material/` | `material-3` |
+
+A fact is a `[[fact]]` table: the model `key` it states (a path without the
+unit suffix, `button.body.min_height`), its `value` as a preset spells it, the
+gap-map `rows` it settles, an optional `when` (the conditions, variants and
+states it holds under; `preset:<id>` where one generation of the directory
+differs from the other), and at least one `[[fact.cite]]` of one of three
+kinds:
+
+- `published`: a source pinned in `docs/facts/sources.toml`, its file and
+  lines, and a `quote` that occurs there (`absent` names what the lines must
+  not hold);
+- `read`: an API a reader calls, its definition cited as a `published` one is;
+- `measured`: an evidence file under `docs/evidence/<harness>/<date>-run-<id>/`
+  with the path of the value in it and a `tolerance`; the run's `run.toml`
+  maps each runner image to the preset it measures, and the file records the
+  exact OS and toolkit builds. The path names a file of the evidence
+  repository,
+  [`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence),
+  at the commit `docs/facts/sources.toml` pins (its `evidence = true` entry):
+  the checkers and the facts gate read it from a clean checkout at that
+  commit, `NATIVE_THEME_EVIDENCE`'s or the source cache's
+  (`./scripts/update_sources.sh --only native-theme-evidence`).
+
+For example, adwaita's button height (`docs/facts/gnome/button.toml`):
+
+```toml
+[[fact]]
+key = "button.body.min_height"
+value = "= add(24px, add(part.padding.top, part.padding.bottom))"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:20"
+quote = "min-height: 24px;"
+```
+
+Where no source gives a value and nothing has measured it yet, the fact is
+**pending**: `pending = "U<n>"` in place of the value, naming its entry in the
+unmeasured register of the plan's ledger
+([`todo_v0.7.1_model-completeness-ledger.md`](todo_v0.7.1_model-completeness-ledger.md)),
+and the preset lists the path in its `[pending]` table. A value is never
+estimated, copied from another platform or left to a toolkit's default.
+
+`docs/platform-facts.md` lists every value the facts state, per preset, with
+its citations. It is generated (`scripts/generate_platform_facts.py`), never
+edited and not committed: CI and each release generate it, and a local copy
+is written on demand; the hand-written document it replaced, which the planning
+documents cite by line, is the one commit `fc6109d1` holds
+(`platform-facts.md@fc6109d1:N`).
 
 ---
 
 ## A new generation, a new preset
 
 One platform preset per visual generation. A new OS version of the same
-generation updates the platform's preset; a new visual generation gets a new
-preset beside it, whose key is the vendor's own name for the generation's
-first OS version:
+generation updates the facts of the platform's preset; a new visual
+generation gets a new preset beside it, whose key is the vendor's own name
+for the generation's first OS version:
 
 | Platform | The key names | Example |
 |---|---|---|
 | macOS | Apple's codename | `macos-monterey`, `macos-tahoe` |
 | Windows | Microsoft's version number | `windows-11` |
-| iOS | the iOS version number | `ios-13` (the flat look of iOS 13 to 18) |
+| iOS | the iOS version number | `ios-13` (the flat look of iOS 13 to 18), `ios-26` |
 | Material | the design version | `material-3` |
 | KDE, GNOME | the style, not the desktop | `kde-breeze`, `adwaita` |
 
-The preset file's first lines state which OS versions it covers and which
-versions its values were verified on, matching the version tags in
-`docs/platform-facts.md` (a version-tagged cell gives each value to its
-version's preset; see its Conventions). Both are written only from a
-version map and checks with sources for that platform, never guessed; until
-then the header names the generation and states no range. The style presets
-keep their style names, and their headers name the style version they pin
-(Breeze v6.7.5 and libadwaita 1.10.0, checked in M2e of
-`docs/archive/todo_v0.7.0_code-review-plan.md` on 2026-10-11): the KDE and GNOME readers
-read the installed style, so the style, not the desktop's version, is the
-generation.
+The style presets keep their style names: the KDE and GNOME readers read the
+installed style, so the style, not the desktop's version, is the generation.
+A preset describes the newest release of its generation that a supported
+runner measures (the plan's D12), and its `[preset]` table's `generation`
+(`libadwaita-1.10`, `macos-26`) names it, written by hand with its
+`docs/facts/sources.toml` entry cited.
+
+On macOS and Windows the running OS version chooses the generation, through
+the generation tables in `native-theme/src/pipeline.rs`
+(`MACOS_GENERATIONS`, `WINDOWS_GENERATIONS`): each row is a preset, the first
+OS version of its look and the newest version its facts were verified on
+(`last_verified`). A newer version of the same generation, once its facts are
+checked, raises its row's `last_verified`; until then `version_match` reports
+`PresetOlder` on it. A new generation is a new row.
 
 ---
 
-## The OS probe (macOS, Windows)
+## The procedure
 
-Where Apple's or Microsoft's documentation gives no exact value, measure it.
-`tools/os-probe` (`native-theme-os-probe`, never published) records what macOS
-or Windows reports (fonts, colours, control sizes, system metrics) in a
-`probe.toml`, and on macOS renders each control. It runs through
-`.github/workflows/os-probe.yml`, dispatched by hand (`gh workflow run
-os-probe.yml`), on each macOS and Windows runner image in the workflow's
-matrix, and uploads one artifact per image, `os-probe-<image>`.
+### 1. Pin the release
 
-For a new OS version:
+`docs/facts/sources.toml` pins every platform source to one release set: one
+`[[source]]` per source and generation, its id `<name>@<version>` (a commit
+pin's version is its commit's first eight hex digits), its `generations` the
+presets it serves. Unversioned documentation is a dated snapshot whose
+`describes` states the release it describes, and serves only the presets that
+describe that release. Add or move the entries for the new release, then:
 
-1. Add its runner image to the matrix once GitHub offers one.
-2. Run the workflow and copy the run's artifacts into a new
-   `docs/evidence/os-probe/<date>-run-<id>/`, with a `README.md` of its own and
-   a row in `docs/evidence/README.md`'s table: GitHub deletes a run's artifacts
-   after 90 days, and a recorded file is never edited afterwards.
-3. Cite the probe's lines from `docs/platform-facts.md` with the new version's
-   tag, and the preset's values from those rows.
+```sh
+python3 scripts/check_sources.py        # the file's form, and every cited project pinned
+./scripts/update_sources.sh             # fetch the new pins into the source cache
+./scripts/update_sources.sh --verify    # every checkout at its pin (offline)
+```
 
----
+The evidence entry is no platform source: its commit is this project's own,
+moved by the facts commits that add runs (step 3), never by a re-pin.
 
-## KDE (Breeze)
+While the 0.8.0 plan runs, the release set is frozen until the catalogue's
+last unit is released (the plan's D1, D13), so that every unit's facts
+describe one release set. A re-pin then is recorded in the ledger, and every
+enabled unit's facts are checked again at the new pin; a new OS version that
+waits for the freeze to end is recorded in `docs/todo.md`, as macOS 27 and
+iOS 27 are.
 
-**Source:** `breezemetrics.h` from the KDE Breeze repository
-(<https://invent.kde.org/plasma/breeze>)
+### 2. Re-check the facts at the new pin
 
-**Files to update:**
+Move each fact's citations to the new source ids, then let the citation check
+say which no longer hold:
 
-- `native-theme/src/kde/metrics.rs` -- the `populate_widget_sizing()` function
-  (button sizes, checkbox dimensions, scrollbar widths, etc.)
-- `native-theme/src/kde/mod.rs` -- KDE reader logic (rarely changes between versions)
-- `native-theme/src/presets/kde-breeze.toml` -- bundled preset data
+```sh
+python3 scripts/check_fact_citations.py   # each quote at its pin, each measured value in its evidence
+```
 
-**What to look for:**
+A quote that no longer occurs at the cited lines is a source that moved or
+changed: find the value in the new release and correct the fact, its value,
+its lines and its quote. Within a generation the preset describes its newest
+release, so a changed value replaces the fact. Two generations of one
+platform share their directory's facts where both hold; where they differ,
+each fact names its generation, `when = { conditions = ["preset:<id>"] }`.
 
-- Changed default values in `breezemetrics.h` for button height, checkbox size,
-  scrollbar width, slider groove thickness, menu item height, etc.
-- New constants added to `breezemetrics.h` that map to existing per-widget sizing fields.
-- Changes to color group names or key names in `kdeglobals` format.
-- The tooltip show delay (Qt's `SH_ToolTip_WakeUpDelay` and Kirigami's
-  `Units.toolTipDelay`, 700: `tooltip.show_delay_ms`), the in-window dialog's
-  entrance (`Kirigami.Dialog` fades in while it rises: `dialog.entrance =
-  "fade_rise"`), and whether a table header still sizes to its content
-  (Breeze's `Header_MarginWidth`; `list.header_height_px` stays unset while
-  it does): `docs/platform-facts.md` §2.7, §2.22 and §2.15.
+### 3. Measure what no source gives
 
-**Process:**
+The measurements run on CI, never on a developer's desktop (the plan's D2,
+D3):
 
-1. Clone or pull the latest Breeze source from <https://invent.kde.org/plasma/breeze>.
-2. Compare the new `kstyle/breezemetrics.h` with the values in `populate_widget_sizing()`.
-3. Update any changed constants in `native-theme/src/kde/metrics.rs`.
-4. Update `native-theme/src/presets/kde-breeze.toml` by hand if colors, geometry,
-   or spacing defaults changed, each value from its `docs/platform-facts.md` row.
-   `native-theme/src/presets/documented_sizes.rs` checks the documented sizes in
-   the preset alone and with `metrics.rs`'s constants merged over it.
-5. Run the full test suite: `cargo test -p native-theme --features kde`.
+- `tools/os-probe` (`native-theme-os-probe`, never published) records what
+  macOS or Windows reports (fonts, colours, control sizes, system metrics) and
+  on macOS renders each control, on each runner image of
+  `.github/workflows/os-probe.yml`'s matrix. Add the new OS version's runner
+  image once GitHub offers it as generally available (a preview image's run
+  may fail without failing the workflow, so it measures nothing a preset may
+  rely on).
+- The 0.8.0 plan's harnesses: the KDE and GNOME containers (Plasma and
+  libadwaita under a pinned distribution snapshot, the KDE accent run, the
+  KDE render host, the GNOME harness and vector generator), the Android
+  emulator host, the WinUI host and the iOS simulator host. They are jobs of
+  the same workflow on the `v0.8.0-tools` branch, chosen by its `jobs` and
+  `images` inputs:
 
----
+  ```sh
+  gh workflow run os-probe.yml --ref v0.8.0-tools -f jobs=probe -f images='["macos-26"]'
+  ```
 
-## Windows
+Copy the run's artifacts into a new `docs/evidence/<harness>/<date>-run-<id>/`
+of the evidence repository,
+[`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence),
+never of this one, with its `README.md` and `run.toml`, and add the run to its
+`docs/evidence/README.md`'s table: GitHub deletes a run's artifacts after 90
+days, and a recorded file is never edited afterwards (a later reading is a new
+run). Commit the run on the evidence repository's branch of the same name as
+this repository's branch (cut from the commit `docs/facts/sources.toml` pins),
+push it, then cite the files from `measured` facts in a commit that moves the
+pin (`commit` of the `evidence = true` entry) to that branch's head; the
+checks read the new run once the cache's checkout is at the new pin
+(`./scripts/update_sources.sh --only native-theme-evidence`, or a clone of
+your own named by `NATIVE_THEME_EVIDENCE` in a worktree). When the branch
+merges, the evidence branch merges into the target's pinned commit too (never
+a rebase or a squash) and the merge pins the result (the 0.8.0 plan's *The
+evidence repository*).
 
-**Source:** Windows SDK headers, `GetSystemMetricsForDpi` API documentation,
-WinUI3 Fluent Design specifications, the OS probe's reads
-([The OS probe](#the-os-probe-macos-windows))
+### 4. Verify independently
 
-**Files to update:**
+Each unit's facts of a platform are checked by a verifier that is not their
+author, from the pinned sources alone (the plan's *How values are checked*):
+it derives the unit's state model and declarations first, then a value and a
+citation for each key, without seeing the facts, and the two are compared
+mechanically. Each disagreement goes to a tie-breaker with both citations and
+the source, and so does an audit sample of the agreed facts, which measures
+how often an author and a verifier agree on a wrong value.
 
-- `native-theme/src/windows.rs` -- system metric mappings and `read_widget_sizing()`,
-  which reads the system metrics at 96 DPI, in logical pixels; the reader states
-  no WinUI3 design sizes
-- `native-theme/src/presets/windows-11.toml` -- bundled preset data, WinUI3's spacing
-  and sizes included; a new Windows generation is a preset plus a row in
-  `WINDOWS_GENERATIONS` (`native-theme/src/pipeline.rs`)
+### 5. Regenerate the preset
 
-**What to look for:**
+```sh
+python3 scripts/generate_preset.py <preset-id> --write   # the preset from its facts, the hand-written blocks carried over
+python3 scripts/generate_preset.py <preset-id> --check   # whether --write would change the file
+python3 scripts/generate_platform_facts.py               # docs/platform-facts.md from the facts, a local copy (not committed)
+```
 
-- New system metric indices added to `GetSystemMetricsForDpi`.
-- Changed WinUI3 Fluent Design spacing values (padding, margins, control sizes).
-- New `UIColorType` variants for additional system colors.
-- Changes to default font (Segoe UI Variable) or font size.
-- Changes to default corner radius values.
-- The tooltip show delay (`ToolTipService` waits 2 × `SPI_GETMOUSEHOVERTIME`,
-  800 at the hover time of 400 the OS probe reads: `tooltip.show_delay_ms`),
-  `ContentDialog`'s entrance (scale and fade: `dialog.entrance =
-  "scale_fade"`), and whether WinUI has gained a column header
-  (`list.header_height_px` stays unset while it has none):
-  `docs/platform-facts.md` §2.7, §2.22 and §2.15.
+`--write` regenerates every line of `native-theme/src/presets/<id>.toml`
+outside its hand-written blocks (`[preset] generation`, the `[declare]` keyed
+namespaces and the bases the `read` facts give) and reports on stderr what
+the facts leave pending and which model fields the preset leaves unstated.
+[`native-theme/src/presets/README.md`](../native-theme/src/presets/README.md)
+describes the blocks.
 
-**Process:**
+A new preset also needs:
 
-1. Review Windows SDK release notes for new `GetSystemMetrics` indices.
-2. Review WinUI3 Fluent Design specs for updated spacing/sizing values.
-3. Update system metric mappings in `native-theme/src/windows.rs`.
-4. Update `native-theme/src/presets/windows-11.toml`, or, for a new visual
-   generation, create its preset as
-   [A new generation, a new preset](#a-new-generation-a-new-preset) says.
-5. Test on the target Windows version: `cargo test -p native-theme --features windows`.
+- its entry in the `presets!` list of `native-theme/src/presets/mod.rs`
+  (`PresetId`: the variant, its key and its file), which `PresetId::all`
+  gives the build test and the facts gate;
+- its directory's entry in `scripts/check_facts.py`'s `PLATFORMS`, if the
+  directory does not name it yet;
+- its row in the generation table, on macOS and Windows.
 
-**Note:** The Windows reader reads its system metrics (scrollbar width and thumb
-length, border width, icon sizes) through `GetSystemMetricsForDpi`
-at 96 DPI (`USER_DEFAULT_SCREEN_DPI`), which gives the unscaled value in logical
-pixels, the model's unit; at the system DPI it would be device pixels. Verify
-these still return correct values on the new Windows version. The fonts
-(`NONCLIENTMETRICSW`) are likewise read through `SystemParametersInfoForDpi` at
-96 DPI, and the reader reports a `font_dpi` of 96, so a point resolves to 96/72
-logical pixels at any display scale.
+### 6. Run the gates
 
----
+```sh
+python3 scripts/check_facts.py                 # the facts' form
+python3 scripts/check_fact_citations.py        # what their citations say, at the pins
+python3 scripts/check_facts_trace.py --enabled # each trace line of the enabled units carried by a fact or a verdict
+python3 scripts/check_function_vectors.py      # every platform function the facts call has its vector table
+cargo test -p native-theme                     # the facts gate (tests/facts_gate.rs) and the build test
+./scripts/check_release.sh --commit
+```
 
-## macOS
-
-**Source:** Apple Human Interface Guidelines (HIG), AppKit release notes, the OS
-probe's API reads and renders (`tools/os-probe`)
-
-**Files to update:**
-
-- `native-theme/src/macos.rs` -- the `MacosReader` reader, which states only what macOS
-  reports (`read_appearance_colors()` holds the `NSColor` mappings) and no design size
-- `native-theme/src/presets/macos-monterey.toml` -- bundled preset data, AppKit's sizes
-  included (a new visual
-  generation gets a preset of its own, named as
-  [A new generation, a new preset](#a-new-generation-a-new-preset) says)
-- `native-theme/src/presets/macos-tahoe.toml` -- the Liquid Glass generation's preset (macOS 26)
-- `native-theme/src/pipeline.rs` -- `MACOS_GENERATIONS`, the generation table: a new
-  generation is a preset plus a row (its first version and the newest version its values
-  were verified on); a newer version of the same generation, once checked against the
-  preset, raises its row's `last_verified`. Until then `SystemTheme::version_match`
-  reports `PresetOlder` on it.
-
-**What to look for:**
-
-- Changed default sizes in HIG (button heights, control padding, font sizes).
-- New or renamed `NSColor` semantic color names.
-- Changes to default system font family or size.
-- Changes to default corner radius (`defaults.border.corner_radius_px`: 5 in
-  `macos-monterey`, 6 in `macos-tahoe`).
-- New accessibility or Dynamic Type behaviors.
-- A documented tooltip delay or dialog motion: AppKit states neither, so
-  `tooltip.show_delay_ms` and `dialog.entrance` stay unset; and the
-  `NSTableHeaderView` height the OS probe reads (28 on macOS 14, 15 and 26:
-  `list.header_height_px`): `docs/platform-facts.md` §2.7, §2.22 and §2.15.
-
-**Process:**
-
-1. Review Apple HIG for the new macOS version at
-   <https://developer.apple.com/design/human-interface-guidelines/>.
-2. Review AppKit release notes for changed/deprecated `NSColor` names.
-3. Measure updated control sizes with the OS probe
-   ([The OS probe](#the-os-probe-macos-windows)) where the HIG gives no exact value.
-4. If semantic color names changed, update the NSColor mappings in
-   `read_appearance_colors()`, which `MacosReader` calls.
-5. Update the preset TOML file, or create the new generation's preset.
-6. Test on the target macOS version: `cargo test -p native-theme --features macos`.
-
-**Note:** The macOS module is compiled on every OS. The reader holds no fallback
-values and no design constants: the `build_theme` tests run cross-platform on colours
-and fonts the tests construct, so basic testing works on any OS, and a value macOS does
-not report comes from the generation's preset.
+The facts gate resolves each preset with no reader and compares every
+widget's state-model combinations and every token, colour-role and input fact
+with the fact that applies; the build test (`every_bundled_preset_validates`)
+reads and validates every bundled preset. A platform function a fact calls
+(`kcu_mix`, `adw_standalone`, …) is implemented in
+`native-theme/src/platform/` only with a vector table generated from its
+reference implementation; a function an LGPL project defines only through the
+clean room, from a reviewed written description, never from its code (the
+plan's D10).
 
 ---
 
-## GNOME (Adwaita / libadwaita)
+## The platforms
 
-**Source:** libadwaita source code (<https://gitlab.gnome.org/GNOME/libadwaita>),
-GTK4 source, freedesktop portal specification
+Each platform's release set is its entries in `docs/facts/sources.toml`; the
+list below names what a new release usually touches.
 
-**Files to update:**
+### KDE (Breeze)
 
-- `native-theme/src/gnome/mod.rs` -- the `GnomeReader` reader: it overlays the
-  portal's and gsettings' values (accent, color scheme, contrast, fonts,
-  accessibility) onto the bundled `adwaita` preset in `build_theme()` and
-  `build_gnome_variant_pure()`; it holds no color or size constants
-- `native-theme/src/presets/adwaita.toml` -- bundled preset data
+**Release set:** one dated Arch Linux Archive snapshot (`archlinux@<date>`)
+carries the Plasma release (`breeze`, `kwin`, `plasma-workspace`, …), KDE
+Frameworks (`kcolorscheme`, `kirigami`, `qqc2-desktop-style`, …), Qt
+(`qtbase`, `qtdeclarative`) and kirigami-addons, each pinned at the
+snapshot's version.
 
-**What to look for:**
+**What to look for:** `kstyle/breezemetrics.h` and the style's drawing code
+(sizes, paddings, frame widths), the colour schemes and KColorScheme's
+derivations, Kirigami's units and qqc2-desktop-style's QML controls, and the
+`kdeglobals` keys the reader reads.
 
-- Changed default values in libadwaita CSS or SCSS source files (colors, padding,
-  corner radius, font sizes).
-- Changed default font family (GNOME 48+ uses "Adwaita Sans" / "Adwaita Mono";
-  earlier versions used "Cantarell" / "Source Code Pro").
-- New CSS custom properties (`--window-bg-color`, `--accent-bg-color`, etc.).
-- New freedesktop portal settings (accent-color, color-scheme, contrast).
-- GTK's tooltip `HOVER_TIMEOUT` (500: `tooltip.show_delay_ms`), the floating
-  `AdwDialog`'s entrance (scale and fade: `dialog.entrance = "scale_fade"`),
-  and the column view's title button, `min-height` 24 plus its padding
-  (30: `list.header_height_px`): `docs/platform-facts.md` §2.7, §2.22 and
-  §2.15.
+**Measurements:** the KDE container, its accent run
+(`scripts/measure_kde_accent.sh`: Plasma's accent derivation per scheme and
+accent) and its render host for QML and Qt Widgets. The KDE colour functions
+(`kcu_mix`, `kcu_tint`, `kirigami_tint`, …) have vector tables from
+`tools/kde-vectors`; a release that changes KColorUtils or Kirigami's tint
+regenerates them.
 
-**Process:**
+### GNOME (Adwaita / libadwaita)
 
-1. Clone or pull latest libadwaita from <https://gitlab.gnome.org/GNOME/libadwaita>.
-2. Compare CSS variable defaults with the colors in `adwaita.toml`.
-3. Compare widget sizing values with those in `adwaita.toml`.
-4. Update any changed values.
-5. If the portal or gsettings keys changed, update `gnome/mod.rs`.
-6. Run the test suite: `cargo test -p native-theme --features portal`.
+**Release set:** libadwaita and GTK (`libadwaita`, `gtk`), the gsettings
+schemas, the shell and portal, at one Arch Linux Archive snapshot.
+
+**What to look for:** libadwaita's SCSS (`src/stylesheet/`: the colours,
+paddings, radii and font sizes of each widget), GTK's CSS defaults where
+libadwaita states nothing, new CSS custom properties, and the portal settings
+the reader reads (accent colour, colour scheme, contrast).
+
+**Measurements:** the GNOME container's harness (GTK 4 under mutter's
+headless display, the scheme, contrast, accent and fonts pinned) and its
+vector generator for libadwaita's colour functions (`adw_standalone`).
+
+### macOS and iOS
+
+**Release set:** each generation's Xcode on its GitHub runner image
+(`xcode@16.4` for `macos-monterey` and `ios-13`, `xcode@26.6` for
+`macos-tahoe` and `ios-26`), WebKit (for `macos-tahoe`), and dated snapshots
+of Apple's documentation (the HIG, the developer documentation as its DocC
+JSON).
+
+**What to look for:** the SDK headers (`NSColor`'s and `UIColor`'s semantic
+colours, the controls' declarations), the HIG's typography and layout, the
+AppKit and UIKit release notes.
+
+**Measurements:** the OS probe on the `macos-*` images (API reads, control
+renders in a key window, the accessibility passes) and the iOS simulator
+host. Apple's documentation is unversioned: a snapshot taken during a
+release's lifetime describes that release only, so a page counts for a
+generation's fact only when a snapshot from its lifetime, the pinned SDK
+headers or a measurement confirms it (the plan's D12).
+
+### Windows
+
+**Release set:** the microsoft-ui-xaml commit of a Windows App SDK release
+(`microsoft-ui-xaml`, `WindowsAppSDK`), the Windows Community Toolkit, and
+Microsoft Learn's public source repositories at a commit
+(`windows-dev-docs`, `win32`, `sdk-api`, …).
+
+**What to look for:** WinUI 3's theme resources and control templates
+(`*_themeresources.xaml`: colours, sizes, paddings, corner radii), the
+system metrics and `UIColorType` values the reader reads, the default font.
+
+**Measurements:** the OS probe and the WinUI host on the `windows-11-arm`
+image.
+
+### Material (Android)
+
+**Release set:** material-web's token set (the primary reference), a Compose
+Material 3 release (`androidx` at a commit), material-color-utilities by
+commit, Android's AOSP tag and the emulator's system image.
+
+**What to look for:** the token files
+(`tokens/versions/latest/sass/_md-*.scss`), Compose's component defaults and
+the dynamic-colour scheme.
+
+**Measurements:** the Android emulator host at the pinned system image.
 
 ---
 
-## Updating Preset TOML Files
+## Adding a new platform
 
-After updating reader constants, also update the corresponding preset TOML files in
-`native-theme/src/presets/`. Presets should reflect the platform's default appearance.
-
-Steps:
-
-1. Update color values in the `[light.defaults]` and `[dark.defaults]` sections
-   and the per-widget tables (`[light.button]`, `[dark.input]`, …).
-2. Update geometry values in `[light.defaults.border]` / `[dark.defaults.border]`
-   (`corner_radius_px`, `corner_radius_lg_px`, `shadow_enabled`, etc.).
-3. Update the per-widget tables (`[light.button]`, `[light.button.border]`, …)
-   if widget sizing changed. State a new or changed size only from a source in
-   `docs/platform-facts.md`. Where the platform documents none, leave it
-   unstated only if it is a gated size (a padding side, a menu or list
-   `row_height`, the list `header_height`, the toolbar `bar_height` and
-   `item_gap`, the tab `item_gap`, `active_indicator_width` and
-   `active_outward_corner_radius`, the combobox `arrow_area_width`, the
-   expander `arrow_gap` and `content_indent`, the
-   checkbox `radio_indicator_width`, `radio_dot_diameter` and
-   `check_mark_stroke_width`, the switch `unchecked_thumb_diameter`;
-   `native-theme/src/presets/documented_sizes.rs` checks them). The switch's
-   `track_border_line_width` and `thumb_border_line_width` are stated
-   only where the platform draws that outline (`docs/platform-facts.md`
-   §2.21), and unset draw none. Every other size is required, and those the
-   presets state today without a source are listed in `docs/todo.md`, Table B.
-4. Run the full test suite: `cargo test -p native-theme` (no feature flags needed
-   for preset-only changes).
-
-Community color presets (Catppuccin, Nord, Dracula, etc.) state sizes of their
-own, taken from no platform, and are not affected by platform-specific changes.
-
----
-
-## Adding a New Platform
-
-To add support for a new platform (e.g., a new Linux desktop environment):
-
-COSMIC is used as the running example below because it is the closest real case:
-`LinuxDesktop::CosmicDe` is already detected, but `linux_reader_kind()` in
-`native-theme/src/pipeline.rs` returns `None` for it, so COSMIC gets no reader:
-`from_system()` gives the `adwaita` preset, which `linux_preset_for_de()` maps
-every desktop but KDE to, in the OS's light or dark mode.
-
-1. **Feature flag:** Add a new feature in `native-theme/Cargo.toml` with any
-   required dependencies.
-2. **Reader module:** Create a new module — a single `native-theme/src/cosmic.rs`,
-   or a `cosmic/` directory if it needs submodules the way `kde/` does. Define a
-   zero-size unit struct and implement the `ThemeReader` trait from
-   `native-theme/src/reader.rs`:
-
-   ```rust,ignore
-   #[async_trait::async_trait]
-   impl crate::reader::ThemeReader for CosmicReader {
-       async fn read(&self) -> crate::Result<crate::ReaderResult> { /* ... */ }
-   }
-   ```
-
-   The trait is `pub(crate)` and consumed as `Box<dyn ThemeReader>`, hence
-   `async_trait` rather than native async-fn-in-trait. A synchronous backend
-   does its work in the async body with no `.await` points; the future then
-   resolves immediately.
-
-   Return `ReaderOutput::Single` if the platform reports only the active mode —
-   the pipeline fills the other variant from the preset — or `ReaderOutput::Dual`
-   if it reports both, as macOS does. `Dual`'s `is_dark` is the OS's active
-   appearance, which the reader reads uncached (the macOS reader calls
-   `detect::detect_is_dark()`).
-3. **Widget metrics:** If the platform has well-defined widget sizing constants,
-   add a `populate_widget_sizing(&mut ThemeMode)` function next to the reader.
-   See `native-theme/src/kde/metrics.rs` for the pattern.
-4. **Preset file:** Create `native-theme/src/presets/cosmic.toml` with default
-   light and dark variants.
-5. **Register preset:** Add its line (key, display name, platform tags) to the
-   `bundled_presets!` table in `native-theme/src/presets.rs`; the display name
-   must equal the TOML's `name`. `Theme::preset()` and `Theme::list_presets()`
-   in `native-theme/src/model/mod.rs` read from that table — neither needs
-   editing.
-6. **Update dispatch:** Add a variant to `LinuxDesktop` in
-   `native-theme/src/detect.rs` if the desktop is not recognised yet;
-   `linux_reader_kind()` and the icon-theme detection's `icon_theme_source()`
-   in `native-theme/src/detect/icon_theme.rs` name every variant, so the
-   compiler asks for their arms. Then, in
-   `native-theme/src/pipeline.rs`:
-   - add a variant for your reader to the `LinuxReader` enum, gated on your
-     feature flag;
-   - give the desktop an arm in `linux_reader_kind()` returning that variant,
-     gated on your feature flag, and a `#[cfg(not(feature = "..."))]` arm
-     returning `None`;
-   - box your reader in `linux_reader()`'s match on the variant;
-   - map the desktop to your preset in `linux_preset_for_de()`.
-
-   `select_reader()` needs no change: on Linux it returns `linux_reader()`'s
-   reader and preset. The theme watcher picks its backend by desktop too, in
-   `linux_backend()` in `native-theme/src/watch/mod.rs`, whose wildcard arm
-   leaves a desktop it does not name unwatched.
-   `SystemTheme::from_system()` and `from_system_async()` in
-   `native-theme/src/lib.rs` both route through `pipeline::from_system_inner()`,
-   so neither needs a per-platform change.
-7. **Tests:** Add tests for the new reader and preset.
-8. **CI:** Add the platform to the CI matrix in `.github/workflows/ci.yml` if
-   a runner is available.
+A new platform (a Linux desktop with its own style, a new OS) is a new
+facts directory and a new preset, entered as every preset is: its sources
+pinned, its facts written and verified, the preset generated and registered
+(steps 1 to 6), and its directory added to `scripts/check_facts.py`'s
+`PLATFORMS`. Its reader, the code that reads the running system's settings
+into the reader layer (specification S9), follows the platform readers the
+0.8.0 plan restores at M1b; until then the readers are unlinked, and a
+platform is supported through its preset alone (`Theme::from_preset`).

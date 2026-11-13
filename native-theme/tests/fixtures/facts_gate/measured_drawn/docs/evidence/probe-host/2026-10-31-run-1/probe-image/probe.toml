@@ -1,0 +1,5 @@
+# A synthetic analysis output (S17 *`evidence`*): a colour read from the pixels of its input image, drawn.
+input_image = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/probe.png"
+
+[body]
+fill = "srgb(0, 0.5, 0.5, 0.5)"

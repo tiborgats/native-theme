@@ -1,0 +1,19 @@
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+# The focus offset the base's, its top 1px in the dark scheme: a patch over the block (S2.2), as the facts
+# state the block and then its leaf.
+[[rules]]
+when = { conditions = ["scheme:dark"] }
+target = "tokens"
+set = { focus.offset.top_px = 1 }

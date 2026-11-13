@@ -1,0 +1,23 @@
+# A synthetic preset (S17, ADD-A144): the body's fill listed, set by the tool rule, and a hover rule
+# appending a layer over the synthetic paint, which states no paint.
+# base without: fill = "#e0e0e0"
+[pending]
+"widgets.button.body.fill" = ["U50", "U51"]
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { states = ["hover"], not_variants = ["tool"] }
+target = "button.body"
+set = { fill.append = ["#11223344"] }

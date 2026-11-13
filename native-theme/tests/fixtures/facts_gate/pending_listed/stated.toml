@@ -1,0 +1,27 @@
+# A synthetic preset (S17, ADD-A128): its focus width listed, and its speed factor, which it states too.
+# base without: width_px = 2
+[pending]
+"tokens.focus.width_px" = "U5"
+"tokens.motion.speed_factor" = "U6"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "tokens"
+set = { focus.width_px = 3 }
+
+[[rules]]
+target = "tokens"
+set = { focus.offset.top_px = "= token.focus.width" }

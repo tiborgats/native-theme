@@ -1,0 +1,25 @@
+# The icon part drawn, its glyph absent in the base and stated whole under `tool` (S2.2, S11: a rule
+# states a whole `Value` struct block by `{ replace = { … } }`), as the fact's table states the whole block (S17).
+# base without: [widgets.button.icon]
+# base without: absent = true
+[declare.widget.button]
+variants = ["tool"]
+
+[widgets.button.icon]
+icon = { size_px = 16, fill = "#000000", rendering_mode = "from_icon", weight = 400, symbolic_colors = {}, axes = {}, symbol_variants = [], scale = "absent", state_effect = "absent" }
+glyph = "absent"
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.icon"
+set = { glyph = { replace = { source = { theme_icon = { name = "probe-symbolic", fallbacks = [] } }, size_px = 16, fill = "#000000", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" } } }

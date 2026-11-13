@@ -1,143 +1,89 @@
 //! # native-theme
 //!
-//! Cross-platform native theme detection and loading for Rust GUI applications.
+//! A theme model for Rust GUI toolkits: a bundled platform preset with the
+//! application's layers over it, resolved for each window into the style of
+//! each part of each widget, which a connector hands its toolkit.
 //!
-//! Any Rust GUI app can look native on any platform by loading a single theme
-//! file or reading live OS settings, without coupling to any specific toolkit.
-//!
-//! A [`Theme`] is sparse and TOML-shaped: every field is an `Option`, and it
-//! holds a light and a dark variant. Resolving one variant fills every field
-//! the model requires and checks its ranges, giving a [`ResolvedTheme`] that
-//! UI code reads without unwrapping. Most applications use a toolkit
-//! connector, which does this and converts the result:
-//! `native-theme-iced`, `native-theme-gpui` or `native-theme-egui`.
-//!
-//! # Quick start
-//!
-//! Read the OS theme and pick its active variant (the OS readers need the
-//! `native` feature, or `kde`, `portal`, `macos`, `windows`):
-//!
-//! ```no_run
-//! use native_theme::SystemTheme;
-//!
-//! let sys = SystemTheme::from_system()?;
-//! let active = sys.pick(sys.mode); // &ResolvedTheme
-//! let _accent = active.defaults.accent_color;
-//! # Ok::<(), native_theme::Error>(())
-//! ```
-//!
-//! Load a bundled preset and resolve one mode (no features needed):
-//!
-//! ```
-//! use native_theme::{ColorMode, Theme};
-//!
-//! let resolved = Theme::preset("nord")?.resolve(ColorMode::Dark)?;
-//! assert_eq!(resolved.mode, ColorMode::Dark);
-//! let _background = resolved.variant.defaults.background_color;
-//! # Ok::<(), native_theme::Error>(())
-//! ```
-//!
-//! Apply an overlay to the OS theme; the overlay states only what it changes:
+//! - [`Theme`] owns the stack: a preset ([`PresetId`]), the application's
+//!   [`Layer`]s, the accent and the application's conditions.
+//!   [`Theme::from_preset`] builds one under a [`Scheme`]; every change
+//!   validates the whole stack and is refused whole ([`LayerError`]), the
+//!   theme staying as it was.
+//! - [`Layer::from_toml`] reads a layer in the presets' format; a layer
+//!   built in Rust is its [`Bases`] and its [`Rule`]s, each a [`Selector`]
+//!   and what it sets.
+//! - [`Theme::resolve`] resolves the theme for one window, which its
+//!   [`WindowState`] records, under its [`WindowConditions`]: a
+//!   [`Resolution`], whose [`ResolvedTheme`] the connector queries:
+//!   [`ResolvedTheme::style`] of an [`Element`]'s part,
+//!   [`ResolvedTheme::values`] of a widget, [`ResolvedTheme::tokens`],
+//!   [`ResolvedTheme::role`] and [`ResolvedTheme::size_classes`]. A query
+//!   answers [`Styled`]: the style, or why there is none to draw.
+//! - The blocks a style is made of ([`Paint`], [`Stroke`], [`Corners`],
+//!   [`Shadow`], [`TextStyle`], [`IconStyle`], [`Transition`], …), their
+//!   units ([`Px`], [`Ms`], [`Deg`], [`Fraction`]) and colours ([`Color`],
+//!   extended sRGB); the typed widgets (the button: [`ButtonPart`],
+//!   [`ButtonValues`]).
+//! - What a connector computes itself, at layout or per frame: [`corners`],
+//!   [`shapes`], [`transitions`], [`timing`], [`ripple`] and
+//!   [`color::composite_over`]; [`expr`], the expressions a value may derive
+//!   by; [`placement`], where a popup goes against its anchor.
 //!
 //! ```no_run
-//! use native_theme::{SystemTheme, Theme};
+//! use native_theme::{InputKind, Layer, PresetId, Scheme, Theme, WindowConditions, WindowState};
 //!
-//! let sys = SystemTheme::from_system()?;
-//! let overlay = Theme::from_toml(r##"
-//!     [light.defaults]
-//!     accent_color = "#ff6600"
-//!
-//!     [dark.defaults]
-//!     accent_color = "#ff6600"
-//! "##)?;
-//! let customised = sys.with_overlay(&overlay)?;
-//! # Ok::<(), native_theme::Error>(())
+//! let mut theme = Theme::from_preset(PresetId::Adwaita, Scheme::Light)?;
+//! theme.add_layer(Layer::from_toml(
+//!     r#"
+//!     [[rules]]
+//!     when = { states = ["hover"] }
+//!     target = "button.body"
+//!     set = { opacity = 0.5 }
+//!     "#,
+//! )?)?;
+//! let mut window = WindowState::default();
+//! let resolved = theme
+//!     .resolve(&mut window, &WindowConditions::new(InputKind::Mouse))
+//!     .theme;
+//! # let _ = resolved;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! Hand the result to a connector: `native-theme-iced`, `native-theme-gpui`
-//! and `native-theme-egui` each have `from_system` and `from_preset`, which do
-//! the steps above, and `to_theme`, which converts a [`ResolvedTheme`] you
-//! resolved yourself into the toolkit's theme.
-//!
-//! Watch for OS theme changes (the `watch` feature). The callback runs on a
-//! background thread and carries no theme: clear the detection caches, which
-//! hold the font DPI, dark mode and icon theme the reader uses, and read the
-//! OS theme again. Keep the subscription alive; dropping it stops watching:
-//!
-//! ```no_run
-//! # #[cfg(feature = "watch")]
-//! # {
-//! let _subscription = native_theme::watch::on_theme_change(|_event| {
-//!     // Tell the UI thread to call `detect::invalidate_caches()`, then
-//!     // `SystemTheme::from_system()` again.
-//! })?;
-//! # }
-//! # Ok::<(), native_theme::Error>(())
-//! ```
-//!
-//! # Presets
-//!
-//! 17 presets are bundled, each a TOML file with a light and a dark variant,
-//! loaded by key with [`Theme::preset`] and listed by
-//! [`Theme::list_presets`] (or [`Theme::list_presets_for_platform`], the ones
-//! offered on the running platform):
-//!
-//! - Platform: `kde-breeze`, `adwaita`, `windows-11`, `macos-monterey`
-//!   (macOS 12 Monterey to 15 Sequoia), `macos-tahoe` (macOS 26 Tahoe),
-//!   `material-3` and `ios-13` (the flat look of iOS 13 to 18).
-//! - Community: `catppuccin-latte`, `catppuccin-frappe`,
-//!   `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`,
-//!   `gruvbox`, `solarized`, `tokyo-night` and `one-dark`.
-//!
-//! `material-3` and `ios-13` have no OS reader; an application chooses them
-//! as a look. `ios-13`'s SF Symbols icons load only on macOS (with
-//! `system-icons`); elsewhere its icons are `None`, never another set's.
-//!
-//! # Platform readers
-//!
-//! [`SystemTheme::from_system`] reads the OS theme with the running
-//! platform's reader and merges what it reads over that platform's preset; a
-//! field the reader does not supply keeps the preset's value. Both variants
-//! are resolved, so [`SystemTheme::pick`] serves either mode.
-//!
-//! | Platform | Feature | Reads | Preset |
-//! |---|---|---|---|
-//! | KDE Plasma | `kde` | `kdeglobals`, `kcmfonts`; with `portal`, the portal's accent colour | `kde-breeze` |
-//! | GNOME, Budgie | `portal` | the XDG Desktop Portal settings and gsettings | `adwaita` |
-//! | macOS 11 and later | `macos` | `NSColor` under both appearances, `NSFont`, the scroller style and the accessibility options | `macos-monterey` before 26 (it covers 12 to 15), `macos-tahoe` from 26 |
-//! | Windows | `windows` | `UISettings`, the system metrics and fonts | `windows-11` |
-//!
-//! The KDE, GNOME and Windows readers read the active variant only, and the
-//! other variant is the preset's; the macOS reader reads both. On another
-//! Linux desktop, or without the desktop's reader feature, `from_system`
-//! returns the desktop's preset (`kde-breeze` on KDE, `adwaita` elsewhere)
-//! with no live reading, in the mode [`detect::detect_is_dark`] reads. On macOS and Windows without the reader feature it returns
-//! [`Error::FeatureDisabled`], and on other platforms
-//! [`Error::PlatformUnsupported`].
-//!
-//! On macOS and Windows the preset is the one of the running OS version's
-//! visual generation. [`SystemTheme::version_match`] tells how the running
-//! version relates to it ([`VersionMatch`]): macOS 27, which has no preset of
-//! its own yet, gets `macos-tahoe` as [`VersionMatch::PresetOlder`], and
-//! Windows 10 gets `windows-11` as [`VersionMatch::PresetNewer`].
-//! [`SystemTheme::from_system_with_preset`] merges over another generation of
-//! the running platform instead. [`pipeline::platform_preset_name`] names the
-//! preset without reading the theme, and
-//! [`pipeline::diagnose_platform_support`] reports what detection can see.
+//! The model is being built: the eight bundled presets ([`PresetId::all`])
+//! still list fields whose facts are pending, and [`Theme::from_preset`]
+//! refuses a preset with a pending field ([`ThemeError::Preset`]), so none
+//! builds a theme yet; the one typed widget is the button; the platform
+//! readers are back ([`Theme::from_system`]): KDE's (the `kde` feature),
+//! GNOME's (the `portal` feature), with the portal-only read of the Linux
+//! desktops that have no reader of their own, macOS's (the `macos` feature)
+//! and Windows' (the `windows` feature).
 //!
 //! # Feature flags
 //!
-//! No feature is needed to load, merge and resolve presets and TOML files.
 //! Each OS-specific dependency is compiled only on its own target, so
-//! `native` on macOS pulls in only the macOS dependencies.
+//! `native` on macOS pulls in only the macOS dependencies. The model and its
+//! bundled presets need no feature.
+//!
+//! On Linux, [`Theme::from_system`] reads a desktop whose reader's feature
+//! is off (KDE without `kde`; GNOME, Budgie and the desktops with no reader
+//! of their own without `portal`) through the reads that need no feature,
+//! as 0.7.0 did: the scheme from `GTK_THEME`, gsettings' `color-scheme` and
+//! `gtk-3.0/settings.ini`, reduced motion and animations off from gsettings,
+//! over the preset that reader would have used, its
+//! [`Theme::reader_status`] [`ReaderStatus::Fallback`] naming the reader
+//! not compiled. On macOS and Windows a build without the platform's
+//! feature is [`ThemeError::FeatureDisabled`].
 //!
 //! | Feature | Enables |
 //! |---|---|
-//! | `kde`, `portal`, `macos`, `windows` | The platform readers above |
+//! | `kde` | The KDE Plasma reader, [`Theme::from_system`]: `kdeglobals` as KConfig cascades it and the colour scheme file it names; and the KDE icon theme (Linux) |
+//! | `macos` | The macOS reader, [`Theme::from_system`]: AppKit's appearances, colours and settings; the running macOS version and its generation, in [`pipeline::diagnose_platform_support`] |
+//! | `windows` | The Windows reader, [`Theme::from_system`]: `UISettings`' colours, text scale and effects, high contrast and its system colours; the running Windows version and its generation, in [`pipeline::diagnose_platform_support`] |
+//! | `portal` | The GNOME and Budgie reader, and the portal-only read of the Linux desktops with no reader of their own, [`Theme::from_system`]: the XDG Desktop Portal and gsettings (Linux) |
+//! | `watch` | `watch::on_theme_change`, OS theme-change notifications: KDE (with `kde`), GNOME and the portal-only desktops (with `portal`), macOS (with `macos`) and Windows (with `windows`) |
 //! | `linux-kde`, `linux-portal` | Aliases of `kde` and `portal` |
 //! | `linux` | `linux-kde` and `linux-portal` |
-//! | `native` | `linux`, `macos` and `windows`: every reader |
-//! | `watch` | `watch::on_theme_change`, for the platforms whose reader feature is on |
+//! | `native` | `linux`, `macos` and `windows` |
 //! | `material-icons`, `lucide-icons` | The bundled Material Symbols and Lucide icon sets |
 //! | `system-icons` | The platform icon sets: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent Icons and stock icons (Windows); also enables `material-icons` |
 //! | `svg-rasterize` | `rasterize::rasterize_svg`, SVG icons to RGBA through resvg |
@@ -145,29 +91,17 @@
 //!
 //! The minimum supported Rust version is 1.88.0.
 //!
-//! # Modules
+//! # Modules beside the model
 //!
-//! - The crate root: [`Theme`], [`ColorMode`], [`SystemTheme`],
-//!   [`ResolvedTheme`], [`Resolved`], [`ResolutionContext`],
-//!   [`AccessibilityPreferences`], [`Rgba`], [`Error`] and [`Result`], and
-//!   from [`pipeline`] [`VersionMatch`], [`PlatformPreset`] and
-//!   [`DiagnosticEntry`].
-//! - [`prelude`]: the ten most-used items, for a glob import.
-//! - [`theme`]: the data model, the sparse types and their resolved
-//!   counterparts, widget by widget.
-//! - [`presets`]: [`PresetInfo`](presets::PresetInfo), the description of a
-//!   bundled preset that [`Theme::list_presets`] returns; [`Theme::preset`]
-//!   loads one.
-//! - [`resolve`]: the resolution-time inputs.
-//! - [`detect`]: OS detection: dark mode, reduced motion, accessibility
-//!   preferences, icon theme and set, desktop environment.
-//! - [`icons`]: the per-set icon loaders, the icon data types and the
-//!   icon-set choice.
+//! - The crate root: [`Error`] and [`Result`], the platform APIs' errors, and
+//!   from [`pipeline`] [`VersionMatch`] and [`DiagnosticEntry`].
+//! - [`detect`]: OS detection: the Linux desktop environment, and the
+//!   detection caches.
+//! - [`icons`]: the icon roles and sets, the per-set icon loaders, the icon
+//!   data types and the icon-set choice.
 //! - [`fonts`]: font face matching; the platform's own typeface with the
 //!   `system-fonts` feature.
-//! - [`pipeline`]: the running platform's preset and a diagnosis of its
-//!   theme support.
-//! - [`error`] and [`color`]: the error and colour types.
+//! - [`pipeline`]: a diagnosis of the platform's theme support.
 //! - `watch` (the `watch` feature): OS theme-change notifications.
 //! - `rasterize` (the `svg-rasterize` feature): SVG icons to RGBA.
 
@@ -180,150 +114,80 @@
 #[cfg(doctest)]
 pub struct ReadmeDoctests;
 
-/// Generates `merge()` and `is_empty()` methods for theme structs.
-///
-/// Three field categories:
-/// - `option { field1, field2, ... }` -- `Option<T>` leaf fields
-/// - `nested { field1, field2, ... }` -- nested struct fields with their own `merge()`
-/// - `optional_nested { field1, field2, ... }` -- `Option<T>` where T has its own `merge()`
-///
-/// For `option` fields, `Some` values in the overlay replace the
-/// corresponding fields in self; `None` fields are left unchanged.
-/// For `nested` fields, merge is called recursively.
-/// For `optional_nested` fields: if both base and overlay are `Some`, the inner values
-/// are merged recursively. If base is `None` and overlay is `Some`, overlay is cloned.
-/// If overlay is `None`, the base field is preserved unchanged.
-///
-/// # Examples
-///
-/// ```ignore
-/// impl_merge!(MyColors {
-///     option { accent, background }
-/// });
-/// ```
-macro_rules! impl_merge {
-    (
-        $struct_name:ident {
-            $(option { $($opt_field:ident),* $(,)? })?
-            $(nested { $($nest_field:ident),* $(,)? })?
-            $(optional_nested { $($on_field:ident),* $(,)? })*
-        }
-    ) => {
-        impl $struct_name {
-            /// Merge an overlay into this value. `Some` fields in the overlay
-            /// replace the corresponding fields in self; `None` fields are
-            /// left unchanged. Nested structs are merged recursively.
-            pub fn merge(&mut self, overlay: &Self) {
-                $($(
-                    if overlay.$opt_field.is_some() {
-                        self.$opt_field = overlay.$opt_field.clone();
-                    }
-                )*)?
-                $($(
-                    self.$nest_field.merge(&overlay.$nest_field);
-                )*)?
-                $($(
-                    match (&mut self.$on_field, &overlay.$on_field) {
-                        (Some(base), Some(over)) => base.merge(over),
-                        (None, Some(over)) => self.$on_field = Some(over.clone()),
-                        _ => {}
-                    }
-                )*)*
-            }
-
-            /// Returns true if all fields are at their default (None/empty) state.
-            pub fn is_empty(&self) -> bool {
-                true
-                $($(&& self.$opt_field.is_none())*)?
-                $($(&& self.$nest_field.is_empty())*)?
-                $($(&& self.$on_field.as_ref().map_or(true, |v| v.is_empty()))*)*
-            }
-        }
-    };
-}
-
-/// Color types and sRGB utilities.
+mod blocks;
 pub mod color;
+mod declare;
+mod error;
+pub mod expr;
+#[doc(hidden)]
+pub mod gate;
+mod inputs;
+mod kde_config;
+mod key;
+mod layer;
+mod palette;
+pub mod placement;
+#[doc(hidden)]
+pub mod platform;
+mod presets;
+mod query;
+mod reader;
+mod registry;
+mod resolve;
+pub mod ripple;
+mod roles;
+#[cfg(test)]
+mod roles_tokens_tests;
+mod selector;
+mod theme;
+mod tokens;
+mod toml;
+mod units;
+mod validate;
+mod value;
+mod widgets;
+
 pub mod detect;
-/// Error types for theme operations.
-pub mod error;
 pub mod fonts;
-/// GNOME portal theme reader.
-///
-/// Requires the `portal` feature, and Linux.
+/// The GNOME reader and the portal-only read: the XDG Desktop Portal and
+/// gsettings (Linux).
 #[cfg(all(target_os = "linux", feature = "portal"))]
-pub(crate) mod gnome;
+mod gnome;
 /// Icon loading.
 ///
-/// - The semantic roles, [`IconRole`], and the icon data, [`IconData`] and
-///   [`AnimatedIcon`].
-/// - A typed loader per icon set ([`IconSet`]): [`MaterialLoader`] and
-///   [`LucideLoader`] for the bundled sets, [`FreedesktopLoader`] (Linux),
-///   [`SfSymbolsLoader`] (macOS) and [`SegoeFluentLoader`] (Windows) for the
+/// - The semantic roles, [`IconRole`], the icon sets, [`IconSet`], and the
+///   icon data, [`IconData`](icons::IconData).
+/// - A typed loader per icon set: [`MaterialLoader`](icons::MaterialLoader)
+///   and [`LucideLoader`](icons::LucideLoader) for the bundled sets,
+///   [`FreedesktopLoader`](icons::FreedesktopLoader) (Linux),
+///   [`SfSymbolsLoader`](icons::SfSymbolsLoader) (macOS) and
+///   [`SegoeFluentLoader`](icons::SegoeFluentLoader) (Windows) for the
 ///   platform sets. Each needs its set's feature, `material-icons`,
 ///   `lucide-icons` or `system-icons`, and gives `None` without it.
-/// - [`load_icon`] and [`load_icon_indicator`], which load from whichever set
-///   they are given.
+/// - [`load_icon`](icons::load_icon), which loads from whichever set it is
+///   given.
 /// - The icon-set choice of a settings UI,
 ///   [`IconSetChoice`](icons::IconSetChoice).
 pub mod icons;
+/// The KDE reader: kdeglobals and the scheme file it names (Linux); the KDE
+/// icon theme `detect` reports.
 #[cfg(all(target_os = "linux", feature = "kde"))]
-pub mod kde;
-/// Breeze widget sizing constants. Compiled on every target and feature set,
-/// so the preset gate sees the values the KDE reader states.
-#[path = "kde/metrics.rs"]
-pub(crate) mod kde_metrics;
-/// Theme data model types, public through [`theme`].
-mod model;
+pub(crate) mod kde;
+/// 0.7.0's scheme and motion chain (Linux): `GTK_THEME`, gsettings and
+/// `gtk-3.0/settings.ini`, the reads that need no feature.
+#[cfg(target_os = "linux")]
+mod linux_chain;
 pub mod pipeline;
-pub mod presets;
-/// Internal `ThemeReader` trait (see module docs for Option A rationale).
-///
-/// Consumed by `pipeline::select_reader` as `Box<dyn ThemeReader>`; the
-/// trait and every impl are `pub(crate)` — not part of the public API.
-mod reader;
-/// Theme resolution engine (inheritance + validation).
-///
-/// Public surface: [`resolve::ResolutionContext`] — the resolution-time
-/// inputs struct consumed by
-/// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved).
-/// Inheritance rules, validation machinery, and the range-check helpers
-/// are all crate-internal (no stability guarantee).
-pub mod resolve;
-#[cfg(any(
-    feature = "material-icons",
-    feature = "lucide-icons",
-    feature = "system-icons"
-))]
-mod spinners;
 #[cfg(feature = "watch")]
 pub mod watch;
-
-pub mod prelude;
-
-/// Theme data model: types, defaults, fonts, borders, widgets.
-///
-/// Core types: [`Theme`], [`ThemeMode`],
-/// [`ResolvedTheme`], [`ResolvedDefaults`].
-pub mod theme {
-    pub use crate::model::widgets::*;
-    pub use crate::model::{
-        ArrowSide, ColorMode, DefaultsBorderSpec, DialogButtonOrder, DialogEntranceStyle, FontSize,
-        FontSpec, FontStyle, IconSet, IconSizes, Resolved, ResolvedDefaults,
-        ResolvedDefaultsBorder, ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding,
-        ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ResolvedWidgetBorder,
-        TabIndicatorSide, TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode,
-        WidgetBorderSpec, intern_font_family,
-    };
-    pub use crate::presets::PresetInfo;
-}
 
 /// Freedesktop icon theme lookup (Linux).
 ///
 /// Requires the `system-icons` feature, and Linux.
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 pub(crate) mod freedesktop;
-/// macOS platform helpers.
+/// The macOS reader and platform helpers; the reader's build from what
+/// AppKit gave is compiled on every platform, for its tests.
 pub(crate) mod macos;
 /// SVG-to-RGBA rasterization utilities.
 ///
@@ -335,12 +199,8 @@ pub mod rasterize;
 /// Requires the `system-icons` feature, and macOS.
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub(crate) mod sficons;
-/// Windows platform theme reader.
-#[cfg(target_os = "windows")]
-#[cfg_attr(not(feature = "windows"), allow(dead_code))]
-pub(crate) mod windows;
-#[cfg(not(target_os = "windows"))]
-#[allow(dead_code, unused_variables)]
+/// The Windows reader and the running Windows version; the reader's build
+/// from what Windows gave is compiled on every platform, for its tests.
 pub(crate) mod windows;
 /// Windows Segoe Fluent / stock icon loader.
 ///
@@ -351,1137 +211,145 @@ pub(crate) mod winicons;
 #[allow(dead_code, unused_imports)]
 pub(crate) mod winicons;
 
-use std::borrow::Cow;
-
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, error::Error>;
 
 // Internal re-exports: keep crate::Type paths working for internal modules
-// without exposing them in the public API. External users access types via
-// native_theme::theme::*, native_theme::icons::*, native_theme::detect::*, etc.
-#[allow(unused_imports)]
-pub(crate) use color::ParseColorError;
-pub use color::Rgba;
-#[cfg(target_os = "linux")]
-#[allow(unused_imports)]
-pub(crate) use detect::LinuxDesktop;
-#[cfg(target_os = "linux")]
-#[allow(unused_imports)]
-pub(crate) use detect::detect_linux_desktop;
-#[allow(unused_imports)]
-pub(crate) use detect::{detect_icon_theme, system_icon_set, system_icon_theme};
-#[allow(unused_imports)]
-pub(crate) use detect::{
-    detect_is_dark, detect_reduced_motion, invalidate_caches, prefers_reduced_motion,
-    system_is_dark,
-};
-pub use error::Error;
-#[allow(unused_imports)]
-pub(crate) use error::{ErrorKind, RangeViolation};
-#[allow(unused_imports)]
-pub(crate) use icons::{
-    FreedesktopLoader, IconId, LucideLoader, MaterialLoader, SegoeFluentLoader, SfSymbolsLoader,
-    is_freedesktop_theme_available, load_icon, load_icon_indicator,
-};
-#[allow(unused_imports)]
-pub(crate) use model::icons::icon_name;
-#[allow(unused_imports)]
-pub(crate) use model::{
-    AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme, DefaultsBorderSpec,
-    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
-    IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme,
-    MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedDefaults, ResolvedDefaultsBorder,
-    ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding, ResolvedTextScale,
-    ResolvedTextScaleEntry, ResolvedWidgetBorder, ScrollbarTheme, SegmentedControlTheme,
-    SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme,
-    SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults, ThemeMode, ToolbarTheme,
-    TooltipTheme, TransformAnimation, WidgetBorderSpec, WindowTheme, bundled_icon_by_name,
-    bundled_icon_svg,
-};
-pub use pipeline::{DiagnosticEntry, PlatformPreset, VersionMatch};
-#[allow(unused_imports)]
-pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
-pub use resolve::ResolutionContext;
-pub use theme::{ColorMode, Resolved, ResolvedTheme, Theme};
+// without exposing them in the public API. External users access the icon
+// types via native_theme::icons::*.
+pub(crate) use icons::{IconRole, IconSet};
+pub use pipeline::{DiagnosticEntry, VersionMatch};
 
-/// OS-detected accessibility preferences.
-///
-/// A single copy lives on [`SystemTheme`], shared across light and dark
-/// variants. These are runtime values detected from the OS -- not stored
-/// in TOML presets. Outside this crate, start from
-/// [`AccessibilityPreferences::DEFAULT`] (or `default()`) and set fields.
-#[derive(Clone, Debug, PartialEq)]
-#[non_exhaustive]
-pub struct AccessibilityPreferences {
-    /// Text scaling factor (1.0 = no scaling): the factor of the user's
-    /// preference for larger text that the toolkit has not applied. Multiply
-    /// font sizes by it ([`scaled`](Self::scaled)) to honour the preference.
-    /// Where the toolkit's own scale factor carries the preference, it is
-    /// 1.0: on a GNOME or Budgie X11 session, where winit and gpui take their
-    /// scale factor from the `Xft.dpi` gnome-settings-daemon writes as
-    /// 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon
-    /// 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`,
-    /// `:797-798`; winit 0.30.13 `src/platform_impl/linux/x11/util/randr.rs:41-53`,
-    /// `:145-146`; gpui-pre-linux 0.3.10 `src/linux/x11/client.rs:2674-2681`).
-    /// They do so only while `WINIT_X11_SCALE_FACTOR` and
-    /// `GPUI_X11_SCALE_FACTOR` are unset (`randr.rs:112-154`,
-    /// `client.rs:2623-2669`); with an override the application owns the
-    /// scale, and the factor is applied nowhere.
-    pub text_scaling_factor: f32,
-    /// Whether the user has requested reduced motion.
-    pub reduce_motion: bool,
-    /// Whether a high-contrast mode is active.
-    pub high_contrast: bool,
-    /// Whether the user has requested reduced transparency.
-    pub reduce_transparency: bool,
+pub mod corners {
+    //! The pure functions a connector computes a `Full`, `Ellipse`,
+    //! `Concentric` or `FollowPart` corner with at layout, from its own
+    //! layout's numbers (S2.4).
+
+    pub use super::blocks::outline::{concentric, ellipse, follow_part, full};
 }
 
-impl Default for AccessibilityPreferences {
-    fn default() -> Self {
-        Self::DEFAULT
-    }
-}
+pub mod shapes {
+    //! Shapes replacing a part's corners' outline, as code (S2.4).
 
-impl AccessibilityPreferences {
-    /// No text scaling and no flag set: what [`Default::default`] returns,
-    /// usable in a `const` or `static`.
-    pub const DEFAULT: Self = Self {
-        text_scaling_factor: 1.0,
-        reduce_motion: false,
-        high_contrast: false,
-        reduce_transparency: false,
+    pub use super::blocks::outline::{
+        MaterialShape, Outline, OutlineCorners, Path, PathCommand, ShapeKind, outline,
     };
-
-    /// Read the OS accessibility preferences without resolving a theme.
-    ///
-    /// Runs the same platform reader [`SystemTheme::from_system`] runs (KDE
-    /// `kdeglobals`, GNOME portal + gsettings, macOS `NSWorkspace`, Windows
-    /// `UISettings`) and takes its accessibility block, blocking on it with
-    /// `pollster::block_on`. Fields no reader supplies keep their defaults.
-    /// Never fails: with no reader or a failing reader the defaults are
-    /// returned, with `reduce_motion` the platform's read
-    /// ([`crate::detect::detect_reduced_motion`], the one the readers make).
-    ///
-    /// Use it on the preset path, where accessibility is orthogonal to the
-    /// theme choice (a user with large text wants it under a preset too).
-    #[must_use]
-    pub fn from_system() -> Self {
-        pollster::block_on(pipeline::reader_accessibility())
-    }
-
-    /// The text-scaling multiplier the toolkit has not applied:
-    /// [`text_scaling_factor`](Self::text_scaling_factor) when it is finite
-    /// and positive, else `1.0`, so a factor no platform could mean (NaN,
-    /// zero, negative, infinite) leaves text at its size.
-    #[must_use]
-    pub fn text_scale_factor(&self) -> f32 {
-        let s = self.text_scaling_factor;
-        if s.is_finite() && s > 0.0 { s } else { 1.0 }
-    }
-
-    /// A text size times [`text_scale_factor`](Self::text_scale_factor).
-    ///
-    /// For every text size alike: a widget's font, a `text_scale` role's
-    /// size, the default fonts. No other length is scaled. Where the product
-    /// is not a normal positive number (a finite factor large enough to
-    /// overflow `f32`, or one small enough to make it subnormal or zero),
-    /// `size` is returned unscaled, as for a factor that is not finite and
-    /// positive.
-    #[must_use]
-    pub fn scaled(&self, size: f32) -> f32 {
-        let product = size * self.text_scale_factor();
-        if product.is_normal() && product > 0.0 {
-            product
-        } else {
-            size
-        }
-    }
 }
 
-/// Complete reader result for the pipeline.
-///
-/// Bundles the type-safe [`ReaderOutput`] with reader metadata
-/// (name, icon_set, layout, font_dpi, accessibility) so that
-/// `run_pipeline` accepts a single struct instead of many arguments.
-#[derive(Clone, Debug)]
-pub(crate) struct ReaderResult {
-    /// The reader's variant data.
-    pub(crate) output: ReaderOutput,
-    /// Theme name from reader (e.g. "BreezeDark", "GNOME", "macOS").
-    pub(crate) name: Cow<'static, str>,
-    /// Shared icon_set from reader.
-    pub(crate) icon_set: Option<IconSet>,
-    /// Shared layout from reader.
-    pub(crate) layout: LayoutTheme,
-    /// Font DPI captured at detection time (None = auto-detect).
-    pub(crate) font_dpi: Option<f32>,
-    /// OS-detected accessibility preferences.
-    pub(crate) accessibility: AccessibilityPreferences,
+pub mod transitions {
+    //! Which of a style's transitions governs a change (S2.7).
+
+    pub use super::blocks::motion::governing;
 }
 
-/// Output contract for platform readers.
-///
-/// Expresses single-vs-dual variant semantics explicitly:
-/// - `Single`: KDE, GNOME, and Windows readers report only the OS-active mode.
-///   The pipeline fills the inactive variant from the platform preset.
-/// - `Dual`: macOS reads both light and dark appearances in a single call.
-///   The pipeline uses both reader-provided variants directly.
-///
-/// Both carry `is_dark`, the OS-active mode, from which the pipeline sets
-/// [`SystemTheme::mode`].
-#[derive(Clone, Debug)]
-pub(crate) enum ReaderOutput {
-    /// Reader provides only the OS-active variant. The pipeline fills the
-    /// inactive variant from the platform preset.
-    #[cfg_attr(all(target_os = "windows", not(feature = "windows")), allow(dead_code))]
-    Single {
-        /// The reader-provided variant (OS-active).
-        mode: Box<ThemeMode>,
-        /// Which color mode this variant represents.
-        is_dark: bool,
-    },
-    /// Reader provides both light and dark variants (macOS).
-    #[allow(dead_code)]
-    Dual {
-        /// The light variant from the reader.
-        light: Box<ThemeMode>,
-        /// The dark variant from the reader.
-        dark: Box<ThemeMode>,
-        /// Whether the OS-active appearance is the dark one.
-        is_dark: bool,
-    },
+pub mod timing {
+    //! A timing's value at an elapsed fraction, the platforms' own curves
+    //! among them, and a spring's damping coefficient from its damping ratio
+    //! (S2.7).
+
+    pub use super::blocks::motion::{damping_coefficient, evaluate, spring_duration};
 }
 
-impl ReaderOutput {
-    /// The OS-active color mode, as `is_dark` reports it.
-    pub(crate) fn mode(&self) -> ColorMode {
-        let (ReaderOutput::Single { is_dark, .. } | ReaderOutput::Dual { is_dark, .. }) = self;
-        if *is_dark {
-            ColorMode::Dark
-        } else {
-            ColorMode::Light
-        }
-    }
-
-    /// Reconstruct a [`Theme`] from this reader output (for overlay replay
-    /// and merge compatibility).
-    pub(crate) fn to_theme(
-        &self,
-        name: &str,
-        icon_set: Option<IconSet>,
-        layout: &LayoutTheme,
-    ) -> Theme {
-        let (light, dark) = match self {
-            ReaderOutput::Single { mode, is_dark } => {
-                if *is_dark {
-                    (None, Some(ThemeMode::clone(mode)))
-                } else {
-                    (Some(ThemeMode::clone(mode)), None)
-                }
-            }
-            ReaderOutput::Dual { light, dark, .. } => {
-                (Some(ThemeMode::clone(light)), Some(ThemeMode::clone(dark)))
-            }
-        };
-        Theme {
-            name: std::borrow::Cow::Owned(name.to_string()),
-            light,
-            dark,
-            layout: layout.clone(),
-            icon_set,
-            // Readers keep Theme-level icon_theme = None and rely on either
-            // the preset's value (tier 2) or system detect (tier 3). Readers
-            // that need to override per color mode use ThemeDefaults::icon_theme
-            // on the variant (tier 1, e.g. the KDE reader for breeze/breeze-dark).
-            icon_theme: None,
-        }
-    }
-}
-
-/// Data needed to replay the merge+resolve pipeline for overlay support.
-///
-/// Stores the reader's output, the preset name and every overlay applied so
-/// far (merged into one [`Theme`]), so that [`SystemTheme::with_overlay()`]
-/// rebuilds the pre-resolve variants (preset, then reader, then overlays)
-/// and resolves them again.
-#[derive(Clone, Debug)]
-pub(crate) struct OverlaySource {
-    /// The reader's variant data for replay.
-    pub(crate) reader_output: ReaderOutput,
-    /// Theme name from reader.
-    pub(crate) name: Cow<'static, str>,
-    /// Shared icon_set from reader.
-    pub(crate) icon_set: Option<IconSet>,
-    /// Shared layout from reader.
-    pub(crate) layout: LayoutTheme,
-    /// The platform preset name (e.g. "kde-breeze").
-    pub(crate) preset_name: String,
-    /// Resolution-time inputs captured at detection time. Replaces the
-    /// old `font_dpi: Option<f32>` field; the context bundles
-    /// `font_dpi` + `button_order` + detected `icon_theme` and is cloned
-    /// into `with_overlay` replays so resolution is deterministic across
-    /// overlay applications.
-    pub(crate) context: crate::resolve::ResolutionContext,
-    /// Every overlay applied so far, merged in order; `None` before the
-    /// first [`SystemTheme::with_overlay()`].
-    pub(crate) overlay: Option<Theme>,
-}
-
-/// Result of the OS-first pipeline. Holds both resolved variants.
-///
-/// Produced by [`SystemTheme::from_system()`] and [`SystemTheme::from_system_async()`].
-/// Both light and dark are always populated: the OS-active variant
-/// comes from the reader + preset + resolve, the inactive variant
-/// comes from the preset + resolve.
-#[derive(Clone, Debug)]
-pub struct SystemTheme {
-    /// Theme name: the reader's (the KDE colour scheme's, such as
-    /// `"BreezeDark"`, or `"GNOME"`, `"macOS"`, `"Windows"`), or the preset's
-    /// where no reader ran.
-    //
-    // # Ownership type
-    //
-    // This field uses `Cow<'static, str>`, not `Arc<str>`. The v0.5.7 API
-    // review recommended uniform `Arc<str>` across `name`, `icon_theme`,
-    // `ReaderOutput::name`, and `ResolvedFontSpec::family`. The audit in
-    // `docs/archive/v0.5.7_gaps.md` §G9 concluded that the
-    // uniform recommendation should be adopted ONLY for
-    // [`ResolvedFontSpec::family`](crate::model::font::ResolvedFontSpec)
-    // (where 26 widgets × connectors genuinely share font families), and
-    // should be REVERSED for `name` / `icon_theme` because:
-    //
-    // - Each resolved theme carries exactly ONE `name` — no dedup benefit.
-    // - Bundled preset names are `&'static str` literals; `Cow::Borrowed(static_lit)`
-    //   is zero allocation, zero refcount. `Arc<str>` would require at least one
-    //   allocation per unique string at construction time, paying allocation cost
-    //   for a dedup benefit that is structurally absent.
-    //
-    // The same reasoning applies symmetrically to
-    // [`SystemTheme::icon_theme`](Self::icon_theme),
-    // [`Theme::name`](crate::theme::Theme), and
-    // [`ThemeDefaults::icon_theme`](crate::model::defaults::ThemeDefaults).
-    //
-    // See `docs/archive/v0.5.7_gaps.md` §G9 for the full audit.
-    pub name: Cow<'static, str>,
-    /// The OS color mode preference (light or dark).
-    pub mode: ColorMode,
-    /// Resolved light variant (always populated).
-    pub light: ResolvedTheme,
-    /// Resolved dark variant (always populated).
-    pub dark: ResolvedTheme,
-    /// Data for replaying the pipeline on overlay (replaces light_variant/dark_variant).
-    pub(crate) overlay_source: OverlaySource,
-    /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-tahoe").
-    pub preset: String,
-    /// How the running OS version relates to the generation of
-    /// [`preset`](Self::preset): `None` where the platform has no generation
-    /// table (Linux, whose readers read the installed style) or no reader ran.
-    /// On macOS 27 under `macos-tahoe`, which no preset of its own covers yet,
-    /// it is `Some(VersionMatch::PresetOlder)`; on Windows 10 under
-    /// `windows-11`, `Some(VersionMatch::PresetNewer)`. Early macOS 26 betas
-    /// reported version 16 to a binary built against the macOS 15 SDK; a
-    /// major version 16 gets `macos-monterey` with
-    /// `Some(VersionMatch::PresetOlder)` (sources in the macOS generation
-    /// table, `pipeline.rs`).
-    pub version_match: Option<VersionMatch>,
-    /// Which icon loading mechanism to use for this theme.
-    pub icon_set: IconSet,
-    /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`):
-    /// the active variant's, else the theme's, else the detected system
-    /// icon theme. `None` where the theme states none and detection fails;
-    /// [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
-    /// reason.
-    //
-    // # Ownership type
-    //
-    // `Cow<'static, str>` is used here per the same principled deviation
-    // documented on `SystemTheme::name` — see `docs/archive/v0.5.7_gaps.md`
-    // §G9. Each resolved theme carries a single icon-theme name (KDE has
-    // exactly two across light/dark variants — `"breeze"` / `"breeze-dark"`;
-    // other platforms have one), so the `Arc<str>` dedup benefit does not apply.
-    pub icon_theme: Option<Cow<'static, str>>,
-    /// Each variant's icon theme, resolved by the same three tiers as
-    /// [`icon_theme`](Self::icon_theme), kept by variant rather than relative
-    /// to [`mode`](Self::mode), a public field a caller may change. Read
-    /// through [`icon_theme_for`](Self::icon_theme_for).
-    pub(crate) light_icon_theme: Option<Cow<'static, str>>,
-    /// The dark variant's counterpart of [`light_icon_theme`](Self::light_icon_theme).
-    pub(crate) dark_icon_theme: Option<Cow<'static, str>>,
-    /// Layout spacing shared by both variants: the platform reader's values
-    /// merged field-wise over the preset's, the same precedence the pipeline
-    /// uses for colours. `None` in a field means neither the platform nor the
-    /// preset specifies it (platform-facts §2.20); nothing is invented.
-    pub layout: LayoutTheme,
-    /// OS-detected accessibility preferences (shared across variants).
-    pub accessibility: AccessibilityPreferences,
-}
-
-impl SystemTheme {
-    /// Pick a resolved variant by color mode.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use native_theme::theme::ColorMode;
-    ///
-    /// let sys = native_theme::SystemTheme::from_system()?;
-    /// let dark = sys.pick(ColorMode::Dark);
-    /// let active = sys.pick(sys.mode);
-    /// # Ok::<(), native_theme::error::Error>(())
-    /// ```
-    #[must_use]
-    pub fn pick(&self, mode: ColorMode) -> &ResolvedTheme {
-        match mode {
-            ColorMode::Light => &self.light,
-            ColorMode::Dark => &self.dark,
-        }
-    }
-
-    /// The icon-theme name for one colour mode, resolved for that mode's
-    /// variant by the same three tiers as [`icon_theme`](Self::icon_theme)
-    /// (its `defaults.icon_theme`, then the theme's, then the detected system
-    /// theme); for the mode the theme was built in it equals `icon_theme` as
-    /// built. KDE names one theme per variant (`breeze`, `breeze-dark`); a
-    /// toolkit that keeps a style per colour scheme needs both. `None` where
-    /// that variant states none and detection failed; nothing is invented.
-    #[must_use]
-    pub fn icon_theme_for(&self, mode: ColorMode) -> Option<&str> {
-        match mode {
-            ColorMode::Light => self.light_icon_theme.as_deref(),
-            ColorMode::Dark => self.dark_icon_theme.as_deref(),
-        }
-    }
-
-    /// Load an icon from this theme's [`icon_set`](Self::icon_set), in
-    /// `color`, for one colour mode's variant: a freedesktop icon comes from
-    /// that variant's theme, [`icon_theme_for(mode)`](Self::icon_theme_for)
-    /// (`breeze` or `breeze-dark` under `kde-breeze`), so an application can
-    /// draw the variant that is not the OS's.
-    ///
-    /// `color` is honoured as in
-    /// [`load_custom_icon`](crate::icons::load_custom_icon): an SF Symbol or
-    /// a Segoe glyph loads in it, and a Material or Lucide SVG (or a
-    /// provider's own SVG) is coloured through
-    /// [`colorize_monochrome_svg`](crate::icons::colorize_monochrome_svg). A
-    /// freedesktop icon takes it where it has a foreground left to the
-    /// caller: a symbolic icon's placeholders
-    /// ([`FreedesktopLoader::color`](crate::icons::FreedesktopLoader::color))
-    /// and a `currentColor` the document sets no `color` for
-    /// ([`fill_current_color`](crate::icons::fill_current_color)). An icon
-    /// whose own stylesheet sets the `color` its `currentColor` takes
-    /// (Breeze's `current-color-scheme`) keeps that colour, as it is not yet
-    /// rewritten from the theme as KDE's own icon loader does, and a
-    /// full-colour icon keeps its palette. `None` leaves each icon in the
-    /// colour it loads in. A system set's icon loads at its loader's default
-    /// size (a freedesktop icon looked up at 24
-    /// pixels, an SF Symbol at 24 points, a Segoe glyph at 32 pixels);
-    /// [`load_custom_icon`](crate::icons::load_custom_icon) takes a size.
-    ///
-    /// `None` where the set has no such icon, or without the set's feature
-    /// (see the loaders in [`icons`]).
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use native_theme::icons::IconRole;
-    ///
-    /// let sys = native_theme::SystemTheme::from_system()?;
-    /// let fg = sys.pick(sys.mode).defaults.text_color;
-    /// let _icon = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg));
-    /// # Ok::<(), native_theme::Error>(())
-    /// ```
-    #[must_use]
-    pub fn icon<'a>(
-        &self,
-        id: impl Into<IconId<'a>>,
-        mode: ColorMode,
-        color: Option<Rgba>,
-    ) -> Option<IconData> {
-        self.with_icon_source(mode, |set, theme| {
-            icons::load_icon_in(id.into(), set, theme, color, None)
-        })
-    }
-
-    /// Load this theme's [`icon_set`](Self::icon_set) animated loading
-    /// indicator for one colour mode's variant: a freedesktop spinner comes
-    /// from [`icon_theme_for(mode)`](Self::icon_theme_for), as in
-    /// [`icon`](Self::icon). See
-    /// [`load_icon_indicator`].
-    #[must_use]
-    pub fn icon_indicator(&self, mode: ColorMode) -> Option<AnimatedIcon> {
-        self.with_icon_source(mode, icons::load_icon_indicator)
-    }
-
-    /// Run `load` on the set and the freedesktop theme that [`icon`](Self::icon)
-    /// and [`icon_indicator`](Self::icon_indicator) load from for `mode`.
-    fn with_icon_source<'s, R>(
-        &'s self,
-        mode: ColorMode,
-        load: impl FnOnce(IconSet, Option<&'s str>) -> R,
-    ) -> R {
-        load(self.icon_set, self.icon_theme_for(mode))
-    }
-
-    /// Apply an app-level TOML overlay and re-resolve.
-    ///
-    /// Merges the overlay onto the pre-resolve [`ThemeMode`] (not the
-    /// already-resolved [`ResolvedTheme`]) so that changed source fields
-    /// propagate correctly through `resolve()`. For example, changing
-    /// `defaults.accent_color` in the overlay will cause `button.primary_background`,
-    /// `checkbox.checked_background`, `slider.fill`, etc. to be re-derived from
-    /// the new accent color where the theme does not state them: windows-11
-    /// states its accent fills, `button.primary_background` among them, and
-    /// those keep their values.
-    ///
-    /// Overlays stack: each call applies its overlay over the ones applied
-    /// before it, so `sys.with_overlay(&a)?.with_overlay(&b)?` keeps what `a`
-    /// states unless `b` states it too.
-    ///
-    /// The overlay's `icon_set`, `icon_theme` and `[layout]` apply too, by
-    /// the precedence [`from_system()`](Self::from_system) uses: a variant's
-    /// `defaults.icon_theme`, then the theme's `icon_theme`, then the
-    /// detected one. So an overlay's top-level `icon_theme` loses to a
-    /// variant's own, such as the KDE reader's `breeze` and `breeze-dark`;
-    /// to replace those, state `[light.defaults] icon_theme` and
-    /// `[dark.defaults] icon_theme`.
-    ///
-    /// The result's `light`, `dark`, `layout`, `icon_set` and `icon_theme`
-    /// (with [`icon_theme_for`](Self::icon_theme_for)'s per-variant names)
-    /// are rebuilt from the theme's sources and the overlays, not copied
-    /// from `self`, so a change the caller made to one of those public fields
-    /// is lost. `name`, `mode`, `preset`, `version_match` and `accessibility`
-    /// are kept from `self`.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::ResolutionInvalid`] when a value the overlay states,
-    /// or one that inherits it, is out of range. Each path is the TOML key,
-    /// as [`Error::ResolutionIncomplete`] describes: a variant's value under
-    /// its variant table (`light.button.min_height_px`), a `[layout]` value
-    /// with no variant (`layout.widget_gap_px`).
-    ///
-    /// # Examples
-    ///
-    /// An overlay is a theme file that states only what it changes; it needs
-    /// no `name`:
-    ///
-    /// ```
-    /// let overlay = native_theme::Theme::from_toml(r##"
-    ///     [light.defaults]
-    ///     accent_color = "#ff6600"
-    ///     [dark.defaults]
-    ///     accent_color = "#ff6600"
-    /// "##)?;
-    /// # Ok::<(), native_theme::Error>(())
-    /// ```
-    ///
-    /// Then apply it to the live OS theme:
-    ///
-    /// ```no_run
-    /// # let overlay = native_theme::Theme::default();
-    /// let system = native_theme::SystemTheme::from_system()?;
-    /// let customized = system.with_overlay(&overlay)?;
-    /// // customized.pick(customized.mode).defaults.accent_color is now #ff6600
-    /// // and all accent-derived fields are updated
-    /// # Ok::<(), native_theme::Error>(())
-    /// ```
-    pub fn with_overlay(&self, overlay: &Theme) -> crate::Result<Self> {
-        let mut source = self.overlay_source.clone();
-        // The earlier overlays go under this one
-        source.overlay = Some(match source.overlay.take() {
-            Some(mut stacked) => {
-                stacked.merge(overlay);
-                stacked
-            }
-            None => overlay.clone(),
-        });
-        Ok(SystemTheme {
-            name: self.name.clone(),
-            preset: self.preset.clone(),
-            version_match: self.version_match,
-            ..pipeline::replay(source, self.mode, self.accessibility.clone())?
-        })
-    }
-
-    /// Load the OS theme synchronously.
-    ///
-    /// Detects the platform and desktop environment, reads the current theme
-    /// settings, merges with a platform preset, and returns a fully resolved
-    /// [`SystemTheme`] with both light and dark variants.
-    ///
-    /// The return value goes through the full pipeline: reader output ->
-    /// resolve -> validate -> [`SystemTheme`] with both light and dark
-    /// [`ResolvedTheme`] variants.
-    ///
-    /// On every platform `pollster::block_on` drives the async implementation
-    /// that [`from_system_async`](Self::from_system_async) awaits.
-    ///
-    /// # Platform Behavior
-    ///
-    /// - **macOS:** with the `macos` feature, reads both light and dark
-    ///   variants via NSAppearance and merges them with the preset of the
-    ///   running version's generation, `macos-monterey` on 12 to 15 and
-    ///   `macos-tahoe` on 26 and later ([`version_match`](Self::version_match)
-    ///   reports macOS 27 as `PresetOlder`); the active mode comes from
-    ///   [`detect::detect_is_dark`].
-    /// - **Linux:** the async implementation handles portal D-Bus calls when
-    ///   the `portal` feature is enabled. Without a reader for the detected
-    ///   desktop (feature disabled, or a desktop with no reader), returns the
-    ///   desktop's platform preset with no live reading (`kde-breeze` on KDE,
-    ///   `adwaita` elsewhere, as [`pipeline::platform_preset_name`] names
-    ///   it), resolved in the light/dark mode [`detect::detect_is_dark`]
-    ///   reads.
-    /// - **Windows:** with the `windows` feature, reads the active variant and
-    ///   merges it with the `windows-11` preset, the one Windows generation
-    ///   ([`version_match`](Self::version_match) reports Windows 10 as
-    ///   `PresetNewer`).
-    /// - **Other platforms:** Returns `Error::PlatformUnsupported`.
-    ///
-    /// # Errors
-    ///
-    /// - `Error::FeatureDisabled` on macOS or Windows when the `macos` /
-    ///   `windows` feature is not enabled.
-    /// - `Error::PlatformUnsupported` if the platform has no reader at all.
-    /// - `Error::ReaderFailed` if the platform reader cannot access theme data.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// let sys = native_theme::SystemTheme::from_system()?;
-    /// let theme = sys.pick(sys.mode);
-    /// // Icon set and theme are on SystemTheme, shared across variants
-    /// let _icon_set = sys.icon_set;
-    /// let _icon_theme = &sys.icon_theme;
-    /// # Ok::<(), native_theme::error::Error>(())
-    /// ```
-    pub fn from_system() -> crate::Result<Self> {
-        pollster::block_on(pipeline::from_system_inner())
-    }
-
-    /// Async version of [`from_system()`](Self::from_system).
-    ///
-    /// On Linux, this enables portal D-Bus calls (e.g. GNOME settings portal,
-    /// KDE portal backend detection) via `.await`. On macOS and Windows, the
-    /// future completes immediately -- no actual async operations occur.
-    ///
-    /// Returns a [`SystemTheme`] with both resolved light and dark variants,
-    /// same as [`from_system()`](Self::from_system).
-    pub async fn from_system_async() -> crate::Result<Self> {
-        pipeline::from_system_inner().await
-    }
-
-    /// Load the OS theme over a chosen generation's preset: the platform
-    /// reader runs as in [`from_system()`](Self::from_system), and its values
-    /// merge over `preset` instead of the running version's generation.
-    ///
-    /// `preset` must be a generation of the running platform: `macos-monterey`
-    /// or `macos-tahoe` on macOS, `windows-11` on Windows. Any other name, and
-    /// any name on a platform without a generation table (Linux, whose readers
-    /// read the installed style, BSD and other platforms), is
-    /// `Error::UnknownPreset`, where [`from_system()`](Self::from_system) may
-    /// return `Error::PlatformUnsupported` (BSD and other platforms).
-    ///
-    /// The result is a hybrid, not the older OS's look: the chosen
-    /// generation's geometry and design colours under the running OS's
-    /// colours, fonts and accessibility settings, which the reader reads live
-    /// (on macOS 26 with `macos-monterey`, `NSColor` gives macOS 26's
-    /// colours). [`version_match`](Self::version_match) reports the chosen
-    /// generation against the running OS: `PresetOlder` for an older one,
-    /// `PresetNewer` for a newer one.
-    ///
-    /// # Errors
-    ///
-    /// - `Error::UnknownPreset` for a name that is not a generation of the
-    ///   running platform, and for any name on a platform without a
-    ///   generation table.
-    /// - `Error::FeatureDisabled` on macOS or Windows when the `macos` /
-    ///   `windows` feature is not enabled.
-    /// - `Error::ReaderFailed` if the platform reader cannot access theme data.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// // Keep the Monterey-to-Sequoia look on a Mac running macOS 26.
-    /// let sys = native_theme::SystemTheme::from_system_with_preset("macos-monterey")?;
-    /// assert_eq!(sys.preset, "macos-monterey");
-    /// # Ok::<(), native_theme::error::Error>(())
-    /// ```
-    pub fn from_system_with_preset(preset: &str) -> crate::Result<Self> {
-        pollster::block_on(pipeline::from_system_with_preset_inner(preset))
-    }
-
-    /// Async version of
-    /// [`from_system_with_preset()`](Self::from_system_with_preset).
-    pub async fn from_system_with_preset_async(preset: &str) -> crate::Result<Self> {
-        pipeline::from_system_with_preset_inner(preset).await
-    }
-}
-
-// =============================================================================
-// Tests -- SystemTheme public API (active, pick, platform_preset_name)
-// =============================================================================
-
-#[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::field_reassign_with_default
-)]
-mod system_theme_tests {
-    use super::*;
-
-    // --- SystemTheme::active() / pick() tests ---
-
-    #[test]
-    fn test_system_theme_pick_dark_mode() {
-        let preset = Theme::preset("catppuccin-mocha").unwrap();
-        let mut light_v = preset.light.clone().unwrap();
-        let mut dark_v = preset.dark.clone().unwrap();
-        // Give them distinct accents so we can tell them apart
-        // (test fixture values -- not production hardcoded colors)
-        light_v.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
-        dark_v.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
-        light_v.resolve_all();
-        dark_v.resolve_all();
-        let light_resolved = light_v.validate().unwrap();
-        let dark_resolved = dark_v.validate().unwrap();
-
-        let st = SystemTheme {
-            name: "test".into(),
-            mode: ColorMode::Dark,
-            light: light_resolved.clone(),
-            dark: dark_resolved.clone(),
-            overlay_source: OverlaySource {
-                reader_output: ReaderOutput::Dual {
-                    light: Box::new(ThemeMode::default()),
-                    dark: Box::new(ThemeMode::default()),
-                    is_dark: false,
-                },
-                name: Cow::Borrowed(""),
-                icon_set: None,
-                layout: LayoutTheme::default(),
-                preset_name: "catppuccin-mocha".into(),
-                context: crate::resolve::ResolutionContext::for_tests(),
-                overlay: None,
-            },
-            preset: "catppuccin-mocha".into(),
-            version_match: None,
-            icon_set: IconSet::Lucide,
-            icon_theme: Some("lucide".into()),
-            light_icon_theme: None,
-            dark_icon_theme: Some("lucide".into()),
-            layout: LayoutTheme::default(),
-            accessibility: AccessibilityPreferences::default(),
-        };
-        assert_eq!(
-            st.pick(st.mode).defaults.accent_color,
-            dark_resolved.defaults.accent_color
-        );
-    }
-
-    #[test]
-    fn test_system_theme_pick_light_mode() {
-        let preset = Theme::preset("catppuccin-mocha").unwrap();
-        let mut light_v = preset.light.clone().unwrap();
-        let mut dark_v = preset.dark.clone().unwrap();
-        light_v.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
-        dark_v.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
-        light_v.resolve_all();
-        dark_v.resolve_all();
-        let light_resolved = light_v.validate().unwrap();
-        let dark_resolved = dark_v.validate().unwrap();
-
-        let st = SystemTheme {
-            name: "test".into(),
-            mode: ColorMode::Light,
-            light: light_resolved.clone(),
-            dark: dark_resolved.clone(),
-            overlay_source: OverlaySource {
-                reader_output: ReaderOutput::Dual {
-                    light: Box::new(ThemeMode::default()),
-                    dark: Box::new(ThemeMode::default()),
-                    is_dark: false,
-                },
-                name: Cow::Borrowed(""),
-                icon_set: None,
-                layout: LayoutTheme::default(),
-                preset_name: "catppuccin-mocha".into(),
-                context: crate::resolve::ResolutionContext::for_tests(),
-                overlay: None,
-            },
-            preset: "catppuccin-mocha".into(),
-            version_match: None,
-            icon_set: IconSet::Lucide,
-            icon_theme: Some("lucide".into()),
-            light_icon_theme: Some("lucide".into()),
-            dark_icon_theme: None,
-            layout: LayoutTheme::default(),
-            accessibility: AccessibilityPreferences::default(),
-        };
-        assert_eq!(
-            st.pick(st.mode).defaults.accent_color,
-            light_resolved.defaults.accent_color
-        );
-    }
-
-    #[test]
-    fn test_system_theme_pick_explicit() {
-        let preset = Theme::preset("catppuccin-mocha").unwrap();
-        let mut light_v = preset.light.clone().unwrap();
-        let mut dark_v = preset.dark.clone().unwrap();
-        light_v.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
-        dark_v.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
-        light_v.resolve_all();
-        dark_v.resolve_all();
-        let light_resolved = light_v.validate().unwrap();
-        let dark_resolved = dark_v.validate().unwrap();
-
-        let st = SystemTheme {
-            name: "test".into(),
-            mode: ColorMode::Light,
-            light: light_resolved.clone(),
-            dark: dark_resolved.clone(),
-            overlay_source: OverlaySource {
-                reader_output: ReaderOutput::Dual {
-                    light: Box::new(ThemeMode::default()),
-                    dark: Box::new(ThemeMode::default()),
-                    is_dark: false,
-                },
-                name: Cow::Borrowed(""),
-                icon_set: None,
-                layout: LayoutTheme::default(),
-                preset_name: "catppuccin-mocha".into(),
-                context: crate::resolve::ResolutionContext::for_tests(),
-                overlay: None,
-            },
-            preset: "catppuccin-mocha".into(),
-            version_match: None,
-            icon_set: IconSet::Lucide,
-            icon_theme: Some("lucide".into()),
-            light_icon_theme: Some("lucide".into()),
-            dark_icon_theme: None,
-            layout: LayoutTheme::default(),
-            accessibility: AccessibilityPreferences::default(),
-        };
-        assert_eq!(
-            st.pick(ColorMode::Dark).defaults.accent_color,
-            dark_resolved.defaults.accent_color
-        );
-        assert_eq!(
-            st.pick(ColorMode::Light).defaults.accent_color,
-            light_resolved.defaults.accent_color
-        );
-    }
-
-    // --- platform_preset_name() pure tests ---
-    // Tests the same logic path (parse_linux_desktop -> linux_preset_for_de) without env var mocking.
-
-    /// Prove that the sync `from_system()` API works without any async runtime.
-    /// On Linux with KDE feature: exercises pollster::block_on(from_system_inner()).
-    /// This acts as a compile-time and runtime gate that the sync path works.
-    #[test]
-    #[cfg(target_os = "linux")]
-    #[cfg(feature = "kde")]
-    fn sync_consumer_no_async_runtime() {
-        // Call the actual from_system() entry point.
-        // This exercises the pollster::block_on(pipeline::from_system_inner()) path.
-        // We don't assert Ok because the test environment may lack KDE config files,
-        // but the call must not panic and must return a Result (not hang or deadlock).
-        let _result = SystemTheme::from_system();
-    }
-
-    #[test]
-    #[cfg(target_os = "linux")]
-    fn test_platform_preset_name_kde() {
-        let preset = pipeline::linux_preset_for_de(detect::parse_linux_desktop("KDE"));
-        assert_eq!(preset.name, "kde-breeze");
-    }
-
-    #[test]
-    #[cfg(target_os = "linux")]
-    fn test_platform_preset_name_gnome() {
-        let preset = pipeline::linux_preset_for_de(detect::parse_linux_desktop("GNOME"));
-        assert_eq!(preset.name, "adwaita");
-    }
-
-    /// §11.2: `from_system()` is an extraction of the reader path, so it must
-    /// agree with `SystemTheme::from_system()` wherever both succeed, and it
-    /// must never return a non-finite or non-positive text scale.
-    #[test]
-    fn accessibility_preferences_from_system_is_consistent_with_system_theme() {
-        let prefs = AccessibilityPreferences::from_system();
-        assert!(prefs.text_scaling_factor.is_finite());
-        assert!(prefs.text_scaling_factor > 0.0);
-
-        // CI has no desktop; only compare when the full pipeline also works.
-        if let Ok(sys) = SystemTheme::from_system() {
-            assert_eq!(
-                prefs.text_scaling_factor,
-                sys.accessibility.text_scaling_factor
-            );
-            assert_eq!(prefs.high_contrast, sys.accessibility.high_contrast);
-            assert_eq!(
-                prefs.reduce_transparency,
-                sys.accessibility.reduce_transparency
-            );
-            assert_eq!(prefs.reduce_motion, sys.accessibility.reduce_motion);
-        }
-    }
-}
-
-// =============================================================================
-// Tests -- with_overlay
-// =============================================================================
-
-#[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod overlay_tests {
-    use super::*;
-
-    /// Helper: build a SystemTheme from a preset via pipeline::run_pipeline.
-    /// Uses test-only Result handling (module has #[allow(clippy::unwrap_used)]).
-    fn default_system_theme() -> crate::Result<SystemTheme> {
-        let preset = Theme::preset("catppuccin-mocha")?;
-        let reader = ReaderResult {
-            output: ReaderOutput::Dual {
-                light: Box::new(preset.light.clone().unwrap_or_default()),
-                dark: Box::new(preset.dark.clone().unwrap_or_default()),
-                is_dark: false,
-            },
-            name: preset.name,
-            icon_set: preset.icon_set,
-            layout: preset.layout,
-            font_dpi: None,
-            accessibility: AccessibilityPreferences::default(),
-        };
-        pipeline::run_pipeline(reader, "catppuccin-mocha")
-    }
-
-    /// The range-violation paths of `result`'s error.
-    fn violation_paths(result: crate::Result<SystemTheme>) -> Vec<String> {
-        let Err(crate::Error::ResolutionInvalid { errors }) = result else {
-            panic!("expected ResolutionInvalid, got {:?}", result.err());
-        };
-        errors.into_iter().map(|rv| rv.path).collect()
-    }
-
-    #[test]
-    fn test_overlay_error_names_the_variant() -> crate::Result<()> {
-        let st = default_system_theme()?;
-        let overlay = Theme::from_toml("name = \"overlay\"\n[dark.button]\nmin_height_px = -1.0")?;
-        assert_eq!(
-            violation_paths(st.with_overlay(&overlay)),
-            ["dark.button.min_height_px"]
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_pipeline_error_names_the_variant() -> crate::Result<()> {
-        let preset = Theme::preset("catppuccin-mocha")?;
-        let mut light = preset.light.clone().unwrap_or_default();
-        light.button.min_height = Some(-1.0);
-        let reader = ReaderResult {
-            output: ReaderOutput::Dual {
-                light: Box::new(light),
-                dark: Box::new(preset.dark.clone().unwrap_or_default()),
-                is_dark: true,
-            },
-            name: preset.name,
-            icon_set: preset.icon_set,
-            layout: preset.layout,
-            font_dpi: None,
-            accessibility: AccessibilityPreferences::default(),
-        };
-        assert_eq!(
-            violation_paths(pipeline::run_pipeline(reader, "catppuccin-mocha",)),
-            ["light.button.min_height_px"]
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_overlay_accent_propagates() -> crate::Result<()> {
-        let st = default_system_theme()?;
-        let new_accent = Rgba::rgb(255, 0, 0);
-
-        // Build overlay with accent on both light and dark
-        let mut overlay = Theme::default();
-        let mut light_v = ThemeMode::default();
-        light_v.defaults.accent_color = Some(new_accent);
-        let mut dark_v = ThemeMode::default();
-        dark_v.defaults.accent_color = Some(new_accent);
-        overlay.light = Some(light_v);
-        overlay.dark = Some(dark_v);
-
-        let result = st.with_overlay(&overlay)?;
-
-        // Accent itself
-        assert_eq!(result.light.defaults.accent_color, new_accent);
-        // Accent-derived widget fields
-        assert_eq!(result.light.button.primary_background, new_accent);
-        assert_eq!(result.light.checkbox.checked_background, new_accent);
-        assert_eq!(result.light.slider.fill_color, new_accent);
-        assert_eq!(result.light.progress_bar.fill_color, new_accent);
-        assert_eq!(result.light.switch.checked_background, new_accent);
-        // Additional accent-derived fields re-resolved via safety nets
-        assert_eq!(
-            result.light.spinner.fill_color, new_accent,
-            "spinner.fill should re-derive from new accent"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_overlay_preserves_unrelated_fields() -> crate::Result<()> {
-        let st = default_system_theme()?;
-        let original_bg = st.light.defaults.background_color;
-
-        // Apply overlay changing only accent
-        let mut overlay = Theme::default();
-        let mut light_v = ThemeMode::default();
-        light_v.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
-        overlay.light = Some(light_v);
-
-        let result = st.with_overlay(&overlay)?;
-        assert_eq!(
-            result.light.defaults.background_color, original_bg,
-            "background should be unchanged"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_overlay_empty_noop() -> crate::Result<()> {
-        let st = default_system_theme()?;
-        let original_light_accent = st.light.defaults.accent_color;
-        let original_dark_accent = st.dark.defaults.accent_color;
-        let original_light_bg = st.light.defaults.background_color;
-
-        // Empty overlay
-        let overlay = Theme::default();
-        let result = st.with_overlay(&overlay)?;
-
-        assert_eq!(result.light.defaults.accent_color, original_light_accent);
-        assert_eq!(result.dark.defaults.accent_color, original_dark_accent);
-        assert_eq!(result.light.defaults.background_color, original_light_bg);
-        Ok(())
-    }
-
-    #[test]
-    fn test_overlay_both_variants() -> crate::Result<()> {
-        let st = default_system_theme()?;
-        let red = Rgba::rgb(255, 0, 0);
-        let green = Rgba::rgb(0, 255, 0);
-
-        let mut overlay = Theme::default();
-        let mut light_v = ThemeMode::default();
-        light_v.defaults.accent_color = Some(red);
-        let mut dark_v = ThemeMode::default();
-        dark_v.defaults.accent_color = Some(green);
-        overlay.light = Some(light_v);
-        overlay.dark = Some(dark_v);
-
-        let result = st.with_overlay(&overlay)?;
-        assert_eq!(
-            result.light.defaults.accent_color, red,
-            "light accent = red"
-        );
-        assert_eq!(
-            result.dark.defaults.accent_color, green,
-            "dark accent = green"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_overlay_font_family() -> crate::Result<()> {
-        let st = default_system_theme()?;
-
-        let mut overlay = Theme::default();
-        let mut light_v = ThemeMode::default();
-        light_v.defaults.font.family = Some("Comic Sans".into());
-        overlay.light = Some(light_v);
-
-        let result = st.with_overlay(&overlay)?;
-        assert_eq!(result.light.defaults.font.family.as_ref(), "Comic Sans");
-        Ok(())
-    }
-
-    #[test]
-    fn test_overlay_roundtrip_via_overlay_source() -> crate::Result<()> {
-        let st = default_system_theme()?;
-        // Apply overlay and verify accent propagates
-        let new_accent = Rgba::rgb(255, 0, 0);
-        let mut overlay = Theme::default();
-        let mut light_v = ThemeMode::default();
-        light_v.defaults.accent_color = Some(new_accent);
-        overlay.light = Some(light_v);
-
-        let result = st.with_overlay(&overlay)?;
-        assert_eq!(result.light.defaults.accent_color, new_accent);
-        // The dark variant should be unchanged from original
-        assert_eq!(
-            result.dark.defaults.accent_color,
-            st.dark.defaults.accent_color
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_overlay_source_no_variant_fields() -> crate::Result<()> {
-        // Verify overlay_source exists on SystemTheme (compile-time structural check).
-        // If light_variant or dark_variant fields still existed, this test would
-        // need updating -- documenting the structural change.
-        let st = default_system_theme()?;
-        let _ = &st.overlay_source; // overlay_source exists
-        Ok(())
-    }
-}
-
-// =============================================================================
-// Tests -- AccessibilityPreferences text scaling
-// =============================================================================
-
-#[cfg(test)]
-mod accessibility_tests {
-    use super::*;
-
-    fn prefs(text_scaling_factor: f32) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor,
-            ..AccessibilityPreferences::default()
-        }
-    }
-
-    #[test]
-    fn text_scale_factor_keeps_a_finite_positive_factor() {
-        assert_eq!(prefs(2.0).text_scale_factor(), 2.0);
-        assert_eq!(prefs(2.0).scaled(10.0), 20.0);
-        assert_eq!(AccessibilityPreferences::default().text_scale_factor(), 1.0);
-    }
-
-    #[test]
-    fn text_scale_factor_ignores_a_factor_that_is_not_finite_and_positive() {
-        for f in [f32::NAN, 0.0, -0.0, -1.0, f32::INFINITY, f32::NEG_INFINITY] {
-            assert_eq!(prefs(f).text_scale_factor(), 1.0, "{f}");
-            assert_eq!(prefs(f).scaled(10.0), 10.0, "{f}");
-        }
-    }
-
-    #[test]
-    fn scaled_keeps_a_size_whose_product_is_not_a_normal_positive_number() {
-        // A finite factor whose product overflows f32, one whose product is
-        // subnormal, and one whose product underflows to zero.
-        assert_eq!(prefs(f32::MAX).scaled(13.0), 13.0);
-        assert_eq!(prefs(3e37).scaled(13.0), 13.0);
-        assert!((13.0 * 1e-45_f32).is_subnormal());
-        assert_eq!(prefs(1e-45).scaled(13.0), 13.0);
-        assert_eq!(
-            prefs(f32::MIN_POSITIVE).scaled(f32::MIN_POSITIVE),
-            f32::MIN_POSITIVE
-        );
-        // A product that stays finite and positive is scaled, however large.
-        assert_eq!(prefs(2e37).scaled(13.0), 13.0 * 2e37);
-    }
-}
+pub use blocks::focus::{
+    FocusIndicator, FocusIndicatorPatch, FocusKind, FocusVisibleWhen, ResolvedFocusIndicator,
+    ResolvedFocusVisibleWhen,
+};
+pub use blocks::icon::{
+    Glyph, GlyphMirroring, GlyphPatch, GlyphSource, GlyphStroke, GlyphStrokePatch, IconStyle,
+    IconStylePatch, Mirroring, RenderingMode, ResolvedGlyph, ResolvedGlyphStroke,
+    ResolvedIconStyle, SystemControl,
+};
+pub use blocks::interaction::{
+    IndicationBox, IndicationBoxPatch, Interaction, InteractionPatch, ResolvedIndicationBox,
+    ResolvedInteraction, ResolvedRippleStyle, ResolvedStateLayerStyle, RippleEffect, RippleStyle,
+    RippleStylePatch, StateLayerStyle, StateLayerStylePatch,
+};
+pub use blocks::motion::{
+    AdwEasing, AnimatedVisual, AnimatedVisualPatch, BreezeTest, BreezeTestPatch, EdgeSide,
+    Keyframe, KeyframePatch, Loop, LoopPatch, PlatformCurve, PresentationEvent, PresentationKind,
+    PresentationStep, PresentationStepPatch, PresentationTransition, PresentationTransitionPatch,
+    PropertyGroup, QtEasing, ResolvedAnimatedVisual, ResolvedEngine, ResolvedKeyframe,
+    ResolvedLoop, ResolvedPlatformCurve, ResolvedPresentationKind, ResolvedPresentationStep,
+    ResolvedPresentationTransition, ResolvedTiming, ResolvedTransition, ResolvedTransitionKind,
+    RevealOrigin, StepJump, Timing, Transition, TransitionEngine, TransitionKind, TransitionPatch,
+};
+pub use blocks::outline::{
+    CornerCurve, Corners, CornersPatch, DashPattern, Edge, EdgePatch, FillClip, LineCap, LineJoin,
+    PixelSnap, Radius, ResolvedCorners, ResolvedEdge, ResolvedRadius, ResolvedStroke, Stroke,
+    StrokePatch, StrokePosition,
+};
+pub use blocks::paint::{
+    BlendMode, Material, MaterialPatch, Paint, PaintKind, PaintLayer, PaintLayerPatch, PaintPatch,
+    Pattern, QtBrushStyle, ResolvedMaterial, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer,
+    ResolvedStop, Stop, StopPatch,
+};
+pub use blocks::part_style::{
+    Binding, CursorShape, PartStyle, PartStylePatch, ResolvedBinding, ResolvedPartStyle,
+    ResolvedPartStylePatch, RoleRef,
+};
+pub use blocks::shadow::{
+    ResolvedShadow, ResolvedShadowLayer, Shadow, ShadowFalloff, ShadowLayer, ShadowLayerPatch,
+};
+pub use blocks::text::{
+    AxisTag, AxisValue, Decoration, DecorationLine, DecorationPatch, DecorationStyle, Elision,
+    FadeLength, FadeUnder, FeatureTag, Font, FontPatch, FontStyle, LanguageTag, ResolvedDecoration,
+    ResolvedElision, ResolvedFadeLength, ResolvedFont, ResolvedTextStyle, TextCase, TextRole,
+    TextStyle, TextStylePatch, Wrap,
+};
+pub use blocks::transform::{ResolvedTransform, Transform, TransformPatch};
+pub use blocks::{Block, BlockPatch, FieldsBlock};
+pub use color::Color;
+pub use declare::{DataName, FontMetric};
+pub use error::{
+    Error, KeyError, LayerError, PortError, Problem, ProblemKind, ReaderFailure, ReaderStatus,
+    ThemeError,
+};
+pub use expr::{Expr, ParseError};
+pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
+pub use key::Key;
+pub use layer::{Bases, Layer, LayerId};
+pub use palette::Palette;
+pub use presets::PresetId;
+pub use query::{
+    DataNeeds, Element, ElementData, FontMetrics, RootInputs, Scope, Sibling, Styled, Unavailable,
+    Widget,
+};
+pub use resolve::{
+    Change, ContentSizeCategory, ReaderState, Resolution, ResolvedTheme, WindowConditions,
+    WindowState,
+};
+pub use roles::{
+    ColorRoles, ColorRolesPatch, DisabledRoles, DisabledRolesPatch, GlobalRole, GlobalRoles,
+    GlobalRolesPatch, ResolvedColorRoles, ResolvedDisabledRoles, ResolvedGlobalRoles,
+    ResolvedStatusColors, ResolvedStatusRoles, ResolvedSurfaceRoles, StatusColors,
+    StatusColorsPatch, StatusRoles, StatusRolesPatch, SurfaceRole, SurfaceRoles, SurfaceRolesPatch,
+    SurfaceSet,
+};
+pub use selector::{
+    Breakpoint, Combine, Comparison, Condition, ContextMatch, ContextScope, ControlSize, Density,
+    Direction, Idiom, InputKind, Measured, Parity, PartRef, PositionMatch, Posture, Rule, RuleBody,
+    Scheme, Selector, SetMatch, SharedFlag, SiblingMatch, SiblingScope, SizeClass, SizeClassMatch,
+    SizeClasses, SizeMatch, StateFlag, StateFlags, TiledEdges, ValuesPatch, VariantRef,
+    WidgetOrPart, WidgetRef,
+};
+pub use theme::Theme;
+pub use tokens::{
+    Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, ColorInterpolation,
+    FontFallbacks, FontFallbacksPatch, Hinting, IconSizeTokens, IconSizeTokensPatch, IconTokens,
+    IconTokensPatch, KdeColorEffect, KdeContrastEffect, KdeEffects, KdeEffectsPatch, KdeGroup,
+    KdeIntensityEffect, KdeRoleKind, KdeTokens, KdeTokensPatch, KeyRepeat, KeyRepeatPatch,
+    MaterialScheme, MaterialSchemePatch, MaterialVariant, Mnemonics, MotionTokens,
+    MotionTokensPatch, PointerTokens, PointerTokensPatch, ResolvedBehavior, ResolvedCaret,
+    ResolvedFontFallbacks, ResolvedIconSizeTokens, ResolvedIconTokens, ResolvedKdeEffects,
+    ResolvedKdeTokens, ResolvedKeyRepeat, ResolvedMaterialScheme, ResolvedMnemonics,
+    ResolvedMotionTokens, ResolvedPointerTokens, ResolvedSizeClassThreshold, ResolvedTextRendering,
+    ResolvedTextRoles, ResolvedTextTokens, ResolvedThemeChange, ResolvedTokens,
+    ResolvedTouchBehavior, SizeClassThreshold, SizeClassThresholdPatch, SubpixelOrder,
+    TextRendering, TextRenderingPatch, TextRoles, TextRolesPatch, TextScaling, TextTokens,
+    TextTokensPatch, ThemeChange, Tokens, TokensPatch, TouchBehavior, TouchBehaviorPatch,
+};
+pub use units::{
+    Axes, Deg, FontSize, Fraction, Length, Ms, Point, Px, Rect, Scalar, Sides, Size, ViewBox,
+};
+pub use value::{SchemeMap, SurfaceMap, Value};
+pub use widgets::*;

@@ -1,0 +1,22 @@
+# Facts of `menu` on macos-tahoe and macos-monterey ahead of its unit (the 0.8.0 plan enables it later; until then
+# the gate and generate_preset.py skip these facts, spec S17 *While 0.8.0 is built*). Only what the spec batches
+# ADD-A126 and ADD-A127 ask of the macOS lane is stated here: the combo list's selected-item glyph (MAC-MN05, queue #135). The widget's state model and its other
+# facts are its unit's lane's.
+
+# Whether AppKit's pop-up button marks its selected item in its menu (`NSPopUpButtonCell.altersStateOfSelectedItem`,
+# not in the cached SDK headers): pending (U194), in the NSPopUpButton list only (not the pull-down, not the
+# editable NSComboBox's list). The absent rule beneath it (MAC-MN05: the mark `Absent` in `context any combo_box`
+# and, outside it, unchecked, written after the lane's glyph rules) comes with the menu unit's glyph facts,
+# whose sources (NSMenuItem.h, NSPopUpButtonCell.h) the cached headers do not hold.
+
+[[fact]]
+key = "menu.check_indicator.glyph"
+when = { conditions = ["preset:macos-tahoe"], states = ["selected"], context = [{ scope = "any", widget = "combo_box", not_variants = ["editable", "@pull_down"] }] }
+pending = "U194"
+rows = ["MAC-MN05"]
+
+[[fact]]
+key = "menu.check_indicator.glyph"
+when = { conditions = ["preset:macos-monterey"], states = ["selected"], context = [{ scope = "any", widget = "combo_box", not_variants = ["editable", "@pull_down"] }] }
+pending = "U194"
+rows = ["MAC-MN05"]

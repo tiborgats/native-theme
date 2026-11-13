@@ -1,0 +1,18 @@
+# A synthetic preset (S17, ADD-A144): the body's opacity listed, its hover fact shadowed by two later
+# pending facts between them, the tool button's and the others'.
+# base without: opacity = 1
+[pending]
+"widgets.button.body.opacity" = ["U71", "U72", "U73"]
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }

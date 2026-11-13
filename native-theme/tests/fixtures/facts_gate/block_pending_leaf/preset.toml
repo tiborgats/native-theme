@@ -1,0 +1,30 @@
+# A synthetic preset (S17, ADD-A128): the focus offset's and the button body's margin's left leaves
+# listed, each block's other leaves stated as the block's fact states them.
+# base without: offset = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+# base without: margin = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+[pending]
+"tokens.focus.offset.left_px" = "U8"
+"widgets.button.body.margin.left_px" = "U9"
+
+[tokens.focus.offset]
+top_px = 0
+right_px = 0
+bottom_px = 0
+
+[widgets.button.body.margin]
+top_px = 0
+right_px = 0
+bottom_px = 0
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

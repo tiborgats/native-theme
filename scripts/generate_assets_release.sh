@@ -12,8 +12,7 @@ set -euo pipefail
 # assets came from. scripts/check_release.sh and the crates.io workflow's release gate
 # verify that stamp against HEAD.
 #
-# Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland),
-# ImageMagick 7;
+# Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland);
 # HEAD pushed and the asset sources committed (captures run on HEAD).
 #
 # Usage: bash scripts/generate_assets_release.sh
@@ -23,7 +22,6 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ICED_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
 GPUI_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
 EGUI_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
-NT_DIR="$PROJECT_ROOT/native-theme/docs/assets"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -49,7 +47,7 @@ echo ""
 info "Checking prerequisites..."
 command -v gh >/dev/null 2>&1 || fail "gh CLI not found"
 command -v python3 >/dev/null 2>&1 || fail "python3 not found"
-# Step 6's scripts/check_showcase_parity.py and the last step's
+# Step 5's scripts/check_showcase_parity.py and the last step's
 # scripts/check_widget_coverage.py (update_compatibility.sh run) import tomllib,
 # which needs Python 3.11; fail here rather than after the captures.
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
@@ -59,16 +57,13 @@ for tool in kscreen-doctor qdbus6 dbus-monitor dbus-send; do
     command -v "$tool" >/dev/null 2>&1 || fail "$tool not found (scripts/capture_window.sh needs it for the Linux captures)"
 done
 python3 -c "from PIL import Image" 2>/dev/null || fail "Pillow not installed (pip install Pillow)"
-# Step 2's generate_gifs_spinners.py rasterizes the spinner SVGs with ImageMagick
-# 7's `magick`; fail here rather than after the CI screenshots run was dispatched.
-command -v magick >/dev/null 2>&1 || fail "magick (ImageMagick 7) not found (scripts/generate_gifs_spinners.py needs it for the spinner GIFs)"
 gh auth status >/dev/null 2>&1 || fail "gh CLI not authenticated"
 ok "Prerequisites OK"
 echo ""
 
 # ── Step 1: Trigger CI early (runs in parallel with local work) ──────
 
-echo "=== Step 1/7: Trigger macOS & Windows screenshots via CI ==="
+echo "=== Step 1/6: Trigger macOS & Windows screenshots via CI ==="
 echo ""
 
 # Ensure local changes are pushed so CI uses the latest code. The workflow runs
@@ -125,17 +120,12 @@ echo ""
 
 # ── Step 2: Local Linux assets (while CI runs) ──────────────────────
 
-echo "=== Step 2/7: Spinner GIFs ==="
-python3 "$SCRIPT_DIR/generate_gifs_spinners.py"
-ok "Spinner GIFs generated"
-echo ""
-
 # Each Linux screenshot's run also writes its layout dump, at rest, with the
-# capture beside it, here, for Step 6's comparison; kept when the comparison
+# capture beside it, here, for Step 5's comparison; kept when the comparison
 # fails, for the comparator's --merge.
 DUMP_DIR=$(mktemp -d)
 
-# linux_screenshots KIND LABEL: Step 3, 4 or 5. A step that fails leaves dumps
+# linux_screenshots KIND LABEL: Step 2, 3 or 4. A step that fails leaves dumps
 # of part of the run, which no comparison reads, so DUMP_DIR is named and
 # removed before the script stops.
 linux_screenshots() {
@@ -147,27 +137,27 @@ linux_screenshots() {
     echo ""
 }
 
-echo "=== Step 3/7: Iced Linux screenshots ==="
+echo "=== Step 2/6: Iced Linux screenshots ==="
 linux_screenshots iced Iced
 
-echo "=== Step 4/7: gpui Linux screenshots ==="
+echo "=== Step 3/6: gpui Linux screenshots ==="
 linux_screenshots gpui gpui
 
-echo "=== Step 5/7: egui Linux screenshots ==="
+echo "=== Step 4/6: egui Linux screenshots ==="
 linux_screenshots egui egui
 
 # The three showcases at rest under the six captured presets, element by
 # element: sizes, positions and the colours of their captures, each difference
 # either within the comparator's rules or listed with its reason in
 # docs/showcase-exceptions.toml.
-echo "=== Step 6/7: Showcase parity at rest ==="
+echo "=== Step 5/6: Showcase parity at rest ==="
 python3 "$SCRIPT_DIR/check_showcase_parity.py" "$DUMP_DIR" \
     || fail "The showcases differ where docs/showcase-exceptions.toml lists no reason (the dumps and captures are in $DUMP_DIR; scripts/check_showcase_parity.py --merge proposes the exceptions)"
 rm -rf "$DUMP_DIR"
 ok "The three showcases agree at rest"
 echo ""
 
-echo "=== Step 7/7: Theme-switching GIFs (iced + gpui + egui) ==="
+echo "=== Step 6/6: Theme-switching GIFs (iced + gpui + egui) ==="
 bash "$SCRIPT_DIR/generate_gifs_theme_switching.sh"
 ok "Theme-switching GIFs generated"
 echo ""
@@ -283,7 +273,7 @@ ok "docs/COMPATIBILITY.toml and the connector READMEs refreshed"
 echo ""
 echo "=== Pre-release assets complete ==="
 echo ""
-for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR" "$NT_DIR"; do
+for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR"; do
     [ -d "$dir" ] || continue
     rel=$(realpath --relative-to="$PROJECT_ROOT" "$dir")
     count=$(find "$dir" -maxdepth 1 -type f \( -name '*.png' -o -name '*.gif' \) 2>/dev/null | wc -l)
@@ -294,4 +284,4 @@ for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR" "$NT_DIR"; do
     echo ""
 done
 
-info "Review the assets, then commit: git add docs/assets/PROVENANCE.toml docs/COMPATIBILITY.toml native-theme/docs/assets/ connectors/native-theme-*/docs/assets/ connectors/native-theme-*/README.md && git commit -m 'docs: regenerate visual assets and refresh the compatibility stamp'"
+info "Review the assets, then commit: git add docs/assets/PROVENANCE.toml docs/COMPATIBILITY.toml connectors/native-theme-*/docs/assets/ connectors/native-theme-*/README.md && git commit -m 'docs: regenerate visual assets and refresh the compatibility stamp'"

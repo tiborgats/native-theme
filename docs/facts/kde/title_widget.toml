@@ -1,0 +1,411 @@
+# kde-breeze's KTitleWidget title (component.title_widget, Qt Widgets only; K1.270, K2.15; ledger queue #130,
+# ADD-A125): KTitleWidget's own level styles, not Kirigami's heading_<n>. The title is a QLabel whose style sheet sets
+# only its size, the application font's whole point size times the level's factor (1.35, 1.20, 1.15, 1.10; level 1 by
+# default), and its colour, the palette's WindowText; every other font attribute is the label's inherited one, the
+# application font, `token.text.roles.body`, its weight included. Written by the KDE facts lane.
+
+[[fact]]
+key = "component.title_widget.title.text.font.family"
+value = "= token.text.roles.body.font.family"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = ["font-family"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.font.weight"
+value = "= token.text.roles.body.font.weight"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = ["font-weight"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.font.style"
+value = "= token.text.roles.body.font.style"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = ["font-style"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.font.width"
+value = "= token.text.roles.body.font.width"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.font.features"
+value = "= token.text.roles.body.font.features"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.scaling_role"
+value = "= token.text.roles.body.scaling_role"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.line_height"
+value = "= token.text.roles.body.line_height"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = ["line-height"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.case"
+value = "= token.text.roles.body.case"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact]]
+key = "component.title_widget.title.text.decoration"
+value = "= token.text.roles.body.decoration"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+absent = ["text-decoration"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+# the size: QFont::pointSize() rounds the application font's point size to a whole number, then the factor, the
+# style sheet's size in points; the rounding is in whole points, S2.2's `round_pt` (ADD-A131), whatever unit the
+# field holds (the KDE reader states it in px, S9.4)
+[[fact]]
+key = "component.title_widget.title.text.font.size"
+value = "= mul(round_pt(token.text.roles.body.font.size), 1.35)"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor; return QStringLiteral(\"QLabel { font-size: %1pt; color: %2 }\").arg(QString::number(fontSize), q->palette().color(QPalette::WindowText).name());"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:38-39"
+quote = "case 1: factor = 1.35;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:112"
+quote = "int level = 1;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:899-902"
+quote = "int QFont::pointSize() const { return qRound(d->request.pointSize); }"
+
+[[fact]]
+key = "component.title_widget.title.text.font.size"
+when = { variants = ["@level_2"] }
+value = "= mul(round_pt(token.text.roles.body.font.size), 1.2)"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor; return QStringLiteral(\"QLabel { font-size: %1pt; color: %2 }\").arg(QString::number(fontSize), q->palette().color(QPalette::WindowText).name());"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:41-42"
+quote = "case 2: factor = 1.20;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:899-902"
+quote = "int QFont::pointSize() const { return qRound(d->request.pointSize); }"
+
+[[fact]]
+key = "component.title_widget.title.text.font.size"
+when = { variants = ["@level_3"] }
+value = "= mul(round_pt(token.text.roles.body.font.size), 1.15)"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor; return QStringLiteral(\"QLabel { font-size: %1pt; color: %2 }\").arg(QString::number(fontSize), q->palette().color(QPalette::WindowText).name());"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:44-45"
+quote = "case 3: factor = 1.15;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:899-902"
+quote = "int QFont::pointSize() const { return qRound(d->request.pointSize); }"
+
+[[fact]]
+key = "component.title_widget.title.text.font.size"
+when = { variants = ["@level_4"] }
+value = "= mul(round_pt(token.text.roles.body.font.size), 1.1)"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor; return QStringLiteral(\"QLabel { font-size: %1pt; color: %2 }\").arg(QString::number(fontSize), q->palette().color(QPalette::WindowText).name());"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:47-48"
+quote = "case 4: factor = 1.10;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:899-902"
+quote = "int QFont::pointSize() const { return qRound(d->request.pointSize); }"
+
+# the four drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): the style sheet's colour, the palette's
+# WindowText; a QLabel elides nothing, sets no line limit, and wraps only under wordWrap, which KTitleWidget
+# sets on its comment alone (its selectable text's document takes ManualWrap then)
+[[fact]]
+key = "component.title_widget.title.text.fill"
+value = "= role.window.foreground"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54"
+quote = "const double fontSize = QApplication::font().pointSize() * factor; return QStringLiteral(\"QLabel { font-size: %1pt; color: %2 }\").arg(QString::number(fontSize), q->palette().color(QPalette::WindowText).name());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "component.title_widget.title.text.elision"
+value = "none"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlabel.h:20-137"
+quote = "class Q_WIDGETS_EXPORT QLabel : public QFrame"
+absent = ["elide", "ElideMode"]
+
+[[fact]]
+key = "component.title_widget.title.text.wrap"
+value = "none"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlabel_p.h:112"
+quote = "int align = Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlabel.cpp:1547-1550"
+quote = "if (this->align & Qt::TextWordWrap) opt.setWrapMode(QTextOption::WordWrap); else opt.setWrapMode(QTextOption::ManualWrap);"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:163-165"
+quote = "d->textLabel = new QLabel(this); d->textLabel->setVisible(false); d->textLabel->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);"
+
+[[fact]]
+key = "component.title_widget.title.text.max_lines"
+value = "none"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlabel.h:20-137"
+quote = "class Q_WIDGETS_EXPORT QLabel : public QFrame"
+absent = ["maximumLineCount"]
+
+# the mnemonic's underline where the title has a buddy: the selectable label's text control underlines the shortcut
+# character in its format (shown as the style's SH_UnderlineShortcut allows), which QPainter draws in the text's pen;
+# its position and thickness QPainter's form, register U180 (S2.8, ADD-A130)
+[[fact]]
+key = "component.title_widget.title.text.mnemonic_decoration.line"
+value = "underline"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlabel.cpp:1018-1025"
+quote = "const bool underline = static_cast<bool>(style->styleHint(QStyle::SH_UnderlineShortcut, nullptr, this, nullptr)); if (d->shortcutId != 0 && underline != d->shortcutCursor.charFormat().fontUnderline()) { QTextCharFormat fmt; fmt.setFontUnderline(underline); d->shortcutCursor.mergeCharFormat(fmt); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:236-238"
+quote = "void KTitleWidget::setBuddy(QWidget *buddy) { d->textLabel->setBuddy(buddy);"
+
+[[fact]]
+key = "component.title_widget.title.text.mnemonic_decoration.style"
+value = "solid"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlabel.cpp:1018-1025"
+quote = "const bool underline = static_cast<bool>(style->styleHint(QStyle::SH_UnderlineShortcut, nullptr, this, nullptr)); if (d->shortcutId != 0 && underline != d->shortcutCursor.charFormat().fontUnderline()) { QTextCharFormat fmt; fmt.setFontUnderline(underline); d->shortcutCursor.mergeCharFormat(fmt); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:6132-6136"
+quote = "QColor uc = charFormat.underlineColor(); if (uc.isValid()) pen.setColor(uc); pen.setStyle((Qt::PenStyle)(underlineStyle));"
+
+[[fact]]
+key = "component.title_widget.title.text.mnemonic_decoration.by_word"
+value = false
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlabel.cpp:1018-1025"
+quote = "const bool underline = static_cast<bool>(style->styleHint(QStyle::SH_UnderlineShortcut, nullptr, this, nullptr)); if (d->shortcutId != 0 && underline != d->shortcutCursor.charFormat().fontUnderline()) { QTextCharFormat fmt; fmt.setFontUnderline(underline); d->shortcutCursor.mergeCharFormat(fmt); }"
+
+[[fact]]
+key = "component.title_widget.title.text.mnemonic_decoration.paint"
+value = "= part.text.fill"
+rows = ["K1.270", "K2.15"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:6132-6136"
+quote = "QColor uc = charFormat.underlineColor(); if (uc.isValid()) pen.setColor(uc); pen.setStyle((Qt::PenStyle)(underlineStyle));"
+
+[[fact]]
+key = "component.title_widget.title.text.mnemonic_decoration.thickness"
+pending = "U180"
+rows = ["K1.270", "K2.15"]
+
+[[fact]]
+key = "component.title_widget.title.text.mnemonic_decoration.offset"
+pending = "U180"
+rows = ["K1.270", "K2.15"]

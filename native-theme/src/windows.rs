@@ -1,13 +1,31 @@
-//! Windows theme reader: reads light or dark, the accent color and its shades,
-//! per-widget fonts from NONCLIENTMETRICSW, accessibility from UISettings and
-//! SystemParametersInfoW, icon sizes from GetSystemMetricsForDpi, and the
-//! scrollbar and border metrics. Outside high contrast it writes no other
-//! colour, as the `windows-11` preset states what WinUI 3 draws; under high
-//! contrast it writes the GetSysColor colours WinUI 3's HighContrast theme
-//! dictionaries draw with (see `apply_sys_colors`). Every system metric is read
-//! in logical pixels (see `logical_system_metric`), and the fonts are read at
-//! 96 DPI and reported with a `font_dpi` of 96, so their points resolve to
-//! logical pixels too (see `LOGICAL_DPI`).
+//! The Windows reader: light or dark, the accent and its ramp, high
+//! contrast and its system colours, the animation and transparency effects
+//! and the text scale, into a [`ReaderState`] and a reader layer (S8, S9.3,
+//! S9.5); and the running Windows version, for the generation table. The
+//! reader's build from what Windows gave is compiled on every platform, for
+//! its tests.
+//!
+//! The accent is a setting Windows defines independently of the scheme, so
+//! it is stated under both schemes (S9.3), with its ramp as one group
+//! (S9.2): `input.accent` in the common bases, which any preset takes, the
+//! six `input.accent_ramp.*` shades under `for_preset.<own>`, the preset's
+//! own inputs (S9.5). A colour of the group that cannot be read drops the
+//! whole group, reported as the status's fallback, naming the input.
+//!
+//! Under high contrast the reader states the eight system colours WinUI's
+//! `HighContrast` dictionaries draw with, `GetSysColor` of each index
+//! (`role.@system_window` … `role.@system_gray_text`), as a reader rule under
+//! `contrast_high` and `preset:<own>`; the preset's bases for them are
+//! WinUI's placeholders (ADD-A135). Outside high contrast those indices hold
+//! classic Win32 colours WinUI does not draw, so they are not read, and the
+//! high-contrast slots are ones the platform gives none at, no `Fallback`
+//! (S9.3, ADD-A138).
+//!
+//! The reader patches no text-role slot: WinUI draws its own type ramp, and
+//! Windows' text-size setting is the text-scaling factor (S9.4, S9.5). It
+//! reads no icon size: `windows-11`'s small and large sizes are pending
+//! (U516), whose facts decide whether they are the shell's metrics the
+//! reader would read or WinUI's own sizes (S9.3, ADD-A140).
 //!
 //! # Sources
 //!
@@ -18,11 +36,9 @@
 //!   foreground, which tells light from dark (`UISettings::ColorValuesChanged`).
 //! - `UISettings.TextScaleFactor`: the text scale
 //!   (`UISettings::TextScaleFactorChanged`).
-//! - `SPI_GETCLIENTAREAANIMATION`: reduced motion
-//!   (`UISettings::AnimationsEnabledChanged`, Windows 10 2004 and later).
-//!   No Microsoft page says `UISettings.AnimationsEnabled` is the same
-//!   setting; it read the same as `SPI_GETCLIENTAREAANIMATION` on the three
-//!   Windows probe images (`docs/platform-facts.md`, `reduce_motion`).
+//! - `UISettings.AnimationsEnabled`: animations off and reduced motion, the
+//!   *Animation effects* setting turned off (`UISettings::AnimationsEnabledChanged`, Windows 10
+//!   2004 and later).
 //! - `UISettings.AdvancedEffectsEnabled`: reduced transparency, the
 //!   *Transparency effects* setting turned off
 //!   (`UISettings::AdvancedEffectsEnabledChanged`, Windows 10 1703 and later,
@@ -37,7 +53,6 @@
 //! and `WM_SYSCOLORCHANGE`
 //! (<https://learn.microsoft.com/en-us/windows/win32/gdi/wm-syscolorchange>).
 //!
-//! - `SPI_GETNONCLIENTMETRICS`: the fonts.
 //! - `SPI_GETHIGHCONTRAST`: high contrast. Its WinRT event,
 //!   `AccessibilitySettings::HighContrastChanged`, "never fires" outside UWP:
 //!   it relies on the `CoreWindow` to handle `WM_THEMECHANGED`, and a Win32
@@ -46,19 +61,38 @@
 //!   the watcher subscribes to it where Windows accepts the registration
 //!   (GitHub's `windows-latest` image refuses it with "Element not found").
 //! - `GetSysColor`: the high-contrast colours.
+//! - The running Windows version: the generation, fixed for a process.
 
-#[cfg(all(target_os = "windows", feature = "windows"))]
-use ::windows::UI::ViewManagement::{UIColorType, UISettings};
-#[cfg(all(target_os = "windows", feature = "windows"))]
-use ::windows::Win32::UI::HiDpi::{GetSystemMetricsForDpi, SystemParametersInfoForDpi};
-#[cfg(all(target_os = "windows", feature = "windows"))]
-use ::windows::Win32::UI::WindowsAndMessaging::{
-    NONCLIENTMETRICSW, SM_CXBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL, SM_CYVTHUMB,
-    SPI_GETNONCLIENTMETRICS, SYSTEM_METRICS_INDEX, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
-    SystemParametersInfoW, USER_DEFAULT_SCREEN_DPI,
-};
+// Win32 FFI through the `windows` crate: `SystemParametersInfoW` and
+// `GetSysColor` have no safe binding.
+#![allow(unsafe_code)]
 
-use crate::model::FontSpec;
+use crate::color::Color;
+use crate::error::ReaderFailure;
+use crate::inputs::{Contrast, InputName, InputValue};
+use crate::key::Key;
+use crate::layer::{Bases, Layer};
+use crate::presets::PresetId;
+use crate::reader::Reading;
+use crate::resolve::ReaderState;
+use crate::roles::ColorRolesPatch;
+use crate::selector::{Condition, Rule, RuleBody, Scheme, Selector, SetMatch};
+use crate::value::{SchemeMap, Value};
+
+/// The text-scaling factor of unscaled text, S16's no-reader state's: the
+/// identity of S9.4's scaling, not a platform value.
+const UNSCALED: f32 = 1.0;
+
+/// The ramp's shades, in the presets' `accent_ramp` order: each input's key
+/// and the `UIColorType` read for it.
+const RAMP: [(&str, &str); 6] = [
+    ("dark1", "AccentDark1"),
+    ("dark2", "AccentDark2"),
+    ("dark3", "AccentDark3"),
+    ("light1", "AccentLight1"),
+    ("light2", "AccentLight2"),
+    ("light3", "AccentLight3"),
+];
 
 /// The running Windows version, from the `windows-version` crate's safe
 /// `OsVersion::current()` (`RtlGetVersion`), for the generation table:
@@ -70,229 +104,376 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
     crate::pipeline::OsVersion::new(v.major, v.minor, v.build)
 }
 
-/// Per-widget fonts extracted from NONCLIENTMETRICSW.
+/// COM's multithreaded apartment, kept for the process from the first call
+/// to the process's end: `CoIncrementMTAUsage`, once, on a thread of its
+/// own, its cookie never given back; the failure where it failed. Called
+/// before every stock icon load (`winicons`) and every start of the Windows
+/// watcher (`watch::windows`).
 ///
-/// Windows exposes four named LOGFONTW fields:
-/// - `lfMessageFont` -- default UI font (messages, dialogs)
-/// - `lfCaptionFont` -- title bar font
-/// - `lfMenuFont` -- menu item font
-/// - `lfStatusFont` -- status bar and tooltip font
-struct AllFonts {
-    msg: FontSpec,
-    caption: FontSpec,
-    menu: FontSpec,
-    status: FontSpec,
+/// When the last thread uninitializes COM in the process, COM unloads the
+/// servers it loaded (`ProcessUninitialize`, `CleanUpDllsForProcess`) and
+/// refuses COM work starting on other threads meanwhile. A stock icon load
+/// runs on the caller's thread, which this crate does not own: on one that
+/// has not initialized COM, the load uses the MTA another thread keeps ("A
+/// thread has an implicit MTA apartment type if it does not initialize the
+/// COM apartment itself, and if another thread has already initialized the
+/// MTA in the process",
+/// <https://learn.microsoft.com/en-us/windows/win32/api/objidlbase/ne-objidlbase-apttypequalifier>),
+/// and the shell's server it runs in (`thumbcache.dll`) was unloaded under
+/// it, an access violation (CI run 42554706381, the Windows watcher's thread
+/// uninitializing). The Windows watcher's thread initializes and
+/// uninitializes its own apartment: its start failed where another
+/// thread's uninitialization was the last (0x8000000E, "the application is
+/// exiting", and 0x80080008, `CO_E_SERVER_STOPPING`; CI run 42556588847),
+/// and its own, where it was the last, shut COM down under the process's
+/// other COM work. `CoIncrementMTAUsage` is COM's call for an API that
+/// "requires COM to be initialized, but has no information about whether
+/// the current thread is already in an apartment, and does not need the
+/// current thread to go into a particular apartment"; it "ensures that the
+/// system doesn't free resources related to MTA support, even if the MTA
+/// thread count goes to 0"
+/// (<https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coincrementmtausage>).
+/// Kept for the process, no thread's uninitialization is the last.
+#[cfg(all(
+    target_os = "windows",
+    any(feature = "system-icons", all(feature = "windows", feature = "watch"))
+))]
+pub(crate) fn mta_kept() -> Result<(), &'static str> {
+    static KEPT: std::sync::OnceLock<Result<(), String>> = std::sync::OnceLock::new();
+    KEPT.get_or_init(|| {
+        // On a thread of its own: the call puts a thread in no apartment
+        // into the MTA, and the caller's thread is left as it is. The usage
+        // outlives the thread (its cookie may be given back from any other).
+        let keeper = std::thread::Builder::new()
+            .spawn(|| {
+                // SAFETY: CoIncrementMTAUsage writes its cookie into a value
+                // the binding owns and returns; it is not called during
+                // process shutdown or from DllMain, which its documentation
+                // rules out. The cookie is dropped without
+                // CoDecrementMTAUsage: the usage is kept for the process, on
+                // purpose.
+                unsafe { ::windows::Win32::System::Com::CoIncrementMTAUsage() }
+                    .map(|_kept_for_the_process| ())
+                    .map_err(|err| err.to_string())
+            })
+            .map_err(|err| format!("no thread to call it on: {err}"))?;
+        keeper
+            .join()
+            .map_err(|_| "its thread panicked".to_owned())?
+    })
+    .as_ref()
+    .copied()
+    .map_err(String::as_str)
 }
 
-/// The GetSysColor colours WinUI 3's HighContrast dictionaries draw with,
-/// each the `SystemColor*Color` resource of its index (`COLOR_WINDOW` is
-/// `SystemColorWindowColor`, see `apply_sys_colors`).
-///
-/// COLORREF format: 0x00BBGGRR (blue in high byte, red in low byte).
-struct SysColors {
-    window_bg: crate::Rgba,
-    window_text: crate::Rgba,
-    btn_face: crate::Rgba,
-    btn_text: crate::Rgba,
-    highlight: crate::Rgba,
-    highlight_text: crate::Rgba,
-    hotlight: crate::Rgba,
-    gray_text: crate::Rgba,
+/// Runs `test` while another thread joins the process's multithreaded
+/// apartment and leaves it again and again, as other COM users of a process
+/// may: each leaving is the process's last uninitialization of COM unless
+/// something keeps it ([`mta_kept`]).
+#[cfg(all(
+    test,
+    target_os = "windows",
+    any(feature = "system-icons", all(feature = "windows", feature = "watch"))
+))]
+pub(crate) fn while_another_thread_leaves_the_mta<R>(test: impl FnOnce() -> R) -> R {
+    use ::windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize};
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    /// Sets its flag when dropped: the test's end, or its unwinding.
+    struct SetOnDrop<'a>(&'a AtomicBool);
+    impl Drop for SetOnDrop<'_> {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::Relaxed);
+        }
+    }
+
+    let done = AtomicBool::new(false);
+    std::thread::scope(|scope| {
+        scope.spawn(|| {
+            while !done.load(Ordering::Relaxed) {
+                // SAFETY: a successful CoInitializeEx, S_FALSE included, is
+                // balanced by one CoUninitialize on this thread, with no COM
+                // object created between them.
+                unsafe {
+                    if CoInitializeEx(None, COINIT_MULTITHREADED).is_ok() {
+                        CoUninitialize();
+                    }
+                }
+            }
+        });
+        let _running = SetOnDrop(&done);
+        test()
+    })
 }
 
-/// Accessibility data from UISettings and SystemParametersInfoW.
-struct AccessibilityData {
-    text_scaling_factor: Option<f32>,
-    high_contrast: Option<bool>,
-    reduce_motion: Option<bool>,
-    /// `UISettings.AdvancedEffectsEnabled`: the *Transparency effects* setting.
-    advanced_effects_enabled: Option<bool>,
+/// The eight `GetSysColor` colours WinUI's `HighContrast` theme dictionaries
+/// draw with, each a `SystemColor*Color` resource, `GetSysColor` of its
+/// index (`microsoft-ui-xaml@2.5.1
+/// src/dxaml/xcp/components/theming/FrameworkTheming.cpp:145-158`, `:219-232`;
+/// `src/dxaml/xcp/components/theminginterop/SystemThemingInterop.cpp:202`), and the keyed role it
+/// is (ADD-A135, the Windows trace's W3-35).
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(
+    not(all(target_os = "windows", feature = "windows")),
+    allow(dead_code, reason = "the Windows reader's: not linked in this build")
+)]
+pub(crate) struct SystemColors {
+    /// `COLOR_WINDOW`: `role.@system_window`.
+    pub(crate) window: Color,
+    /// `COLOR_WINDOWTEXT`: `role.@system_window_text`.
+    pub(crate) window_text: Color,
+    /// `COLOR_BTNFACE`: `role.@system_button_face`.
+    pub(crate) button_face: Color,
+    /// `COLOR_BTNTEXT`: `role.@system_button_text`.
+    pub(crate) button_text: Color,
+    /// `COLOR_HIGHLIGHT`: `role.@system_highlight`.
+    pub(crate) highlight: Color,
+    /// `COLOR_HIGHLIGHTTEXT`: `role.@system_highlight_text`.
+    pub(crate) highlight_text: Color,
+    /// `COLOR_HOTLIGHT`: `role.@system_hotlight`.
+    pub(crate) hotlight: Color,
+    /// `COLOR_GRAYTEXT`: `role.@system_gray_text`.
+    pub(crate) gray_text: Color,
 }
 
-/// Convert a `windows::UI::Color` to our `Rgba` type.
-#[cfg(all(target_os = "windows", feature = "windows"))]
-pub(crate) fn win_color_to_rgba(c: ::windows::UI::Color) -> crate::Rgba {
-    crate::Rgba::new(c.R, c.G, c.B, c.A)
-}
-
-/// Detect dark mode from the system foreground color luminance.
-///
-/// Uses BT.601 luminance coefficients. A light foreground (luminance > 128)
-/// indicates a dark background, i.e., dark mode.
-pub(crate) fn is_dark_mode(fg: &crate::Rgba) -> bool {
-    let luma = 0.299 * (fg.r as f32) + 0.587 * (fg.g as f32) + 0.114 * (fg.b as f32);
-    luma > 128.0
-}
-
-/// Read accent shade colors from UISettings with graceful per-shade fallback.
-///
-/// Returns `[AccentDark1, AccentDark2, AccentDark3, AccentLight1, AccentLight2, AccentLight3]`.
-/// Each shade is individually wrapped in `.ok()` so a failure on one shade does not
-/// prevent reading the others (PLAT-05 graceful fallback).
-#[cfg(all(target_os = "windows", feature = "windows"))]
-fn read_accent_shades(settings: &UISettings) -> [Option<crate::Rgba>; 6] {
-    let variants = [
-        UIColorType::AccentDark1,
-        UIColorType::AccentDark2,
-        UIColorType::AccentDark3,
-        UIColorType::AccentLight1,
-        UIColorType::AccentLight2,
-        UIColorType::AccentLight3,
-    ];
-    variants.map(|ct| settings.GetColorValue(ct).ok().map(win_color_to_rgba))
-}
-
-/// The reader's `font_dpi`: 96, `USER_DEFAULT_SCREEN_DPI` (100 % scaling).
-///
-/// The model's sizes are logical pixels, and WinUI's effective pixels are
-/// logical pixels, at 96 per inch: a point is 96/72 of them at any display
-/// scale. The fonts are read at this DPI too, so their points are the
-/// unscaled ones.
-pub(crate) const LOGICAL_DPI: u32 = 96;
-
-/// Convert a LOGFONTW read at [`LOGICAL_DPI`] to a FontSpec.
-///
-/// Extracts font family from `lfFaceName` (null-terminated UTF-16),
-/// size in points from `abs(lfHeight) * 72 / 96`, and weight from `lfWeight`
-/// (already CSS 100-900 scale, clamped), with `FW_DONTCARE` (0) no weight.
-#[cfg(all(target_os = "windows", feature = "windows"))]
-fn logfont_to_fontspec(lf: &::windows::Win32::Graphics::Gdi::LOGFONTW) -> FontSpec {
-    logfont_to_fontspec_raw(&lf.lfFaceName, lf.lfHeight, lf.lfWeight)
-}
-
-/// Testable core of logfont_to_fontspec: takes raw field values.
-fn logfont_to_fontspec_raw(face_name: &[u16; 32], lf_height: i32, lf_weight: i32) -> FontSpec {
-    // Truncate at the NUL terminator without panic-prone slicing: `slice::split`
-    // on the sentinel yields the pre-NUL prefix as its first item, fallback to
-    // the full name if there is no NUL (per LOGFONTW's 32-char fixed buffer).
-    let trimmed = face_name.split(|&c| c == 0).next().unwrap_or(face_name);
-    let family = String::from_utf16_lossy(trimmed);
-    let points = lf_height.unsigned_abs() as f32 * 72.0 / LOGICAL_DPI as f32;
-    // FW_DONTCARE is 0 (windows 0.62.2 Win32/Graphics/Gdi/mod.rs:4998): the
-    // default weight, which the preset states.
-    let weight = (lf_weight > 0).then(|| lf_weight.clamp(100, 900) as u16);
-    FontSpec {
-        family: Some(family.into()),
-        size: Some(crate::model::font::FontSize::Pt(points)),
-        weight,
-        ..Default::default()
+#[cfg_attr(
+    not(all(target_os = "windows", feature = "windows")),
+    allow(dead_code, reason = "the Windows reader's: not linked in this build")
+)]
+impl SystemColors {
+    /// The keyed roles, each its colour.
+    fn roles(&self) -> Vec<(Key, Value<Color>)> {
+        [
+            (crate::key!("system_window"), self.window),
+            (crate::key!("system_window_text"), self.window_text),
+            (crate::key!("system_button_face"), self.button_face),
+            (crate::key!("system_button_text"), self.button_text),
+            (crate::key!("system_highlight"), self.highlight),
+            (crate::key!("system_highlight_text"), self.highlight_text),
+            (crate::key!("system_hotlight"), self.hotlight),
+            (crate::key!("system_gray_text"), self.gray_text),
+        ]
+        .into_iter()
+        .map(|(key, color)| (key, Value::Stated(color)))
+        .collect()
     }
 }
 
-/// Read all system fonts from NONCLIENTMETRICSW (WIN-01), at [`LOGICAL_DPI`].
+/// What Windows gave, in plain types: built from its reads on Windows,
+/// directly in tests. A colour read that failed holds what failed.
+#[cfg_attr(
+    not(all(target_os = "windows", feature = "windows")),
+    allow(dead_code, reason = "the Windows reader's: not linked in this build")
+)]
+pub(crate) struct WindowsData {
+    /// `UISettings.GetColorValue(Foreground)`.
+    pub(crate) foreground: Color,
+    /// `UISettings.GetColorValue(Accent)`.
+    pub(crate) accent: Result<Color, String>,
+    /// The ramp's shades, in [`RAMP`]'s order.
+    pub(crate) ramp: [Result<Color, String>; 6],
+    /// `SPI_GETHIGHCONTRAST`'s `HCF_HIGHCONTRASTON`; `None`: the call failed.
+    pub(crate) high_contrast: Option<bool>,
+    /// The system colours, read under high contrast only.
+    pub(crate) system_colors: Option<SystemColors>,
+    /// `UISettings.AnimationsEnabled`; `None`: not given.
+    pub(crate) animations_enabled: Option<bool>,
+    /// `UISettings.AdvancedEffectsEnabled`; `None`: not given.
+    pub(crate) advanced_effects_enabled: Option<bool>,
+    /// `UISettings.TextScaleFactor`; `None`: not given.
+    pub(crate) text_scale_factor: Option<f64>,
+}
+
+/// The scheme the foreground tells, as Microsoft's guide for Win32 apps
+/// tells it: dark where the foreground "can be classified as light",
+/// `((5 * clr.G) + (2 * clr.R) + clr.B) > (8 * 128)` ("Support Dark and
+/// Light themes in Win32 apps", ms.date 2026-06-16, `IsColorLight`,
+/// `windows-dev-docs@f54166ed
+/// hub/apps/desktop/modernize/ui/apply-windows-themes.md:5`, `:75-78`,
+/// `:88`), "If the foreground is light, then Dark mode is enabled". In `f32`, whose
+/// sums of these 8-bit products are exact.
+#[cfg_attr(
+    not(all(target_os = "windows", feature = "windows")),
+    allow(dead_code, reason = "the Windows reader's: not linked in this build")
+)]
+fn scheme(foreground: Color) -> Scheme {
+    let [r, g, b, _] = foreground.to_srgb8_clamped().map(f32::from);
+    if 5.0 * g + 2.0 * r + b > 8.0 * 128.0 {
+        Scheme::Dark
+    } else {
+        Scheme::Light
+    }
+}
+
+/// The reader's state and layer from what Windows gave, its own preset's
+/// part under `own` (S9.5). Zero I/O.
 ///
-/// Extracts lfMessageFont, lfCaptionFont, lfMenuFont, and lfStatusFont
-/// as FontSpec values. `SystemParametersInfoForDpi` at 96 DPI gives the
-/// unscaled fonts; `SystemParametersInfoW` in a DPI-aware process would give
-/// them at the system DPI. Returns default fonts if the system call fails.
+/// - The state: the scheme ([`scheme`]); `Contrast::High` under high
+///   contrast; animations off and reduced motion where *Animation effects*
+///   is off, the one setting standing for both (W3-37); reduced
+///   transparency where *Transparency effects* is; the text-scaling factor
+///   where it is finite and above zero, else unscaled ([`UNSCALED`]); no
+///   font DPI, the reader reading no font (S9.4).
+/// - The accent group at both schemes, the accent in the common bases and
+///   its ramp under `for_preset.<own>`; none of it where one of the seven
+///   failed, the status's fallback naming it (S9.2, S9.3).
+/// - Under high contrast, a rule on the system colours under
+///   `contrast_high` and `preset:<own>`.
+#[cfg_attr(
+    not(all(target_os = "windows", feature = "windows")),
+    allow(dead_code, reason = "the Windows reader's: not linked in this build")
+)]
+pub(crate) fn build_reading(data: &WindowsData, own: PresetId) -> Reading {
+    let high_contrast = data.high_contrast == Some(true);
+    let factor = data
+        .text_scale_factor
+        .map(|factor| factor as f32)
+        .filter(|factor| factor.is_finite() && *factor > 0.0);
+    let mut state = ReaderState::new(scheme(data.foreground), factor.unwrap_or(UNSCALED));
+    state.contrast = high_contrast.then_some(Contrast::High);
+    state.animations_off = data.animations_enabled == Some(false);
+    state.reduced_motion = state.animations_off;
+    state.reduced_transparency = data.advanced_effects_enabled == Some(false);
+
+    let mut layer = Layer::default();
+    let group = std::iter::once(("accent".to_owned(), "Accent", &data.accent)).chain(
+        RAMP.iter()
+            .zip(&data.ramp)
+            .map(|((key, kind), color)| (format!("accent_ramp.{key}"), *kind, color)),
+    );
+    let mut read = Vec::new();
+    let mut fallback = None;
+    for (path, kind, color) in group {
+        match (color, InputName::new(&path)) {
+            (Ok(color), Ok(name)) => read.push((name, *color)),
+            (Err(why), _) => {
+                fallback = Some(ReaderFailure::Platform(format!(
+                    "input.{path}: UISettings.GetColorValue({kind}) failed: {why}"
+                )));
+                break;
+            }
+            (Ok(_), Err(error)) => {
+                fallback = Some(ReaderFailure::Platform(format!("input.{path}: {error}")));
+                break;
+            }
+        }
+    }
+    let mut own_bases = Bases::default();
+    if fallback.is_none() {
+        for (name, color) in read {
+            let value = InputValue::new(SchemeMap::new(Value::Stated(color), Value::Stated(color)));
+            let bases = if name == InputName::accent() {
+                &mut layer.bases
+            } else {
+                &mut own_bases
+            };
+            bases.inputs.entries.push((name, value));
+        }
+    }
+    if own_bases != Bases::default() {
+        layer.for_preset.push((own, own_bases));
+    }
+
+    if let (true, Some(colors)) = (high_contrast, &data.system_colors) {
+        let selector = Selector {
+            conditions: SetMatch {
+                all_of: vec![Condition::ContrastHigh, Condition::Preset(own)],
+                none_of: Vec::new(),
+            },
+            ..Selector::default()
+        };
+        let roles = ColorRolesPatch {
+            keyed: Some(colors.roles()),
+            ..ColorRolesPatch::default()
+        };
+        layer
+            .rules
+            .push(Rule::new(selector, RuleBody::Colors(Box::new(roles))));
+    }
+
+    Reading {
+        state,
+        layer,
+        fallback,
+    }
+}
+
+/// A WinRT colour as the model's colour.
 #[cfg(all(target_os = "windows", feature = "windows"))]
-#[allow(unsafe_code)]
-fn read_all_system_fonts() -> AllFonts {
-    let mut ncm = NONCLIENTMETRICSW {
-        cbSize: std::mem::size_of::<NONCLIENTMETRICSW>() as u32,
-        ..Default::default()
+fn win_color(c: ::windows::UI::Color) -> Color {
+    Color {
+        r: f32::from(c.R) / 255.0,
+        g: f32::from(c.G) / 255.0,
+        b: f32::from(c.B) / 255.0,
+        a: f32::from(c.A) / 255.0,
+    }
+}
+
+/// A Win32 COLORREF (`0x00BBGGRR`, red in the low byte) as the model's
+/// colour, opaque.
+#[cfg_attr(
+    not(all(target_os = "windows", feature = "windows")),
+    allow(dead_code, reason = "the Windows reader's: not linked in this build")
+)]
+fn colorref(c: u32) -> Color {
+    let [r, g, b, _] = c.to_le_bytes();
+    Color {
+        r: f32::from(r) / 255.0,
+        g: f32::from(g) / 255.0,
+        b: f32::from(b) / 255.0,
+        a: 1.0,
+    }
+}
+
+/// Whether high contrast is on: `SPI_GETHIGHCONTRAST`'s
+/// `HCF_HIGHCONTRASTON`; `None` when the call fails.
+#[cfg(all(target_os = "windows", feature = "windows"))]
+fn read_high_contrast() -> Option<bool> {
+    use ::windows::Win32::UI::Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW};
+    use ::windows::Win32::UI::WindowsAndMessaging::{
+        SPI_GETHIGHCONTRAST, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW,
     };
 
-    // SAFETY: `ncm` is a live NONCLIENTMETRICSW whose `cbSize` is its size, as
-    // SPI_GETNONCLIENTMETRICS requires of `uiParam`, and `pvParam` points to it; the
-    // DPI is passed explicitly, so no process awareness is read
-    // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfofordpi).
-    let success = unsafe {
-        SystemParametersInfoForDpi(
-            SPI_GETNONCLIENTMETRICS.0,
-            ncm.cbSize,
-            Some(&mut ncm as *mut _ as *mut _),
-            0,
-            USER_DEFAULT_SCREEN_DPI,
+    let mut hc = HIGHCONTRASTW {
+        cbSize: u32::try_from(std::mem::size_of::<HIGHCONTRASTW>()).ok()?,
+        ..Default::default()
+    };
+    // SAFETY: `hc` is a live HIGHCONTRASTW whose `cbSize` is its size, as
+    // SPI_GETHIGHCONTRAST requires of `uiParam`, and `pvParam` points to it
+    // for the whole call; only `dwFlags` is read afterwards
+    // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow).
+    let read = unsafe {
+        SystemParametersInfoW(
+            SPI_GETHIGHCONTRAST,
+            hc.cbSize,
+            Some(std::ptr::from_mut(&mut hc).cast()),
+            SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
         )
     };
-
-    if success.is_ok() {
-        AllFonts {
-            msg: logfont_to_fontspec(&ncm.lfMessageFont),
-            caption: logfont_to_fontspec(&ncm.lfCaptionFont),
-            menu: logfont_to_fontspec(&ncm.lfMenuFont),
-            status: logfont_to_fontspec(&ncm.lfStatusFont),
-        }
-    } else {
-        AllFonts {
-            msg: FontSpec::default(),
-            caption: FontSpec::default(),
-            menu: FontSpec::default(),
-            status: FontSpec::default(),
-        }
-    }
+    read.is_ok()
+        .then(|| hc.dwFlags.contains(HCF_HIGHCONTRASTON))
 }
 
-// REMOVED(spacing): // WinUI3 Fluent Design spacing scale removed -- ThemeSpacing_DELETED deleted in Plan 01.
-
-/// Read a system metric in logical pixels, the unit of every length in the
-/// model.
-///
-/// `GetSystemMetricsForDpi` scales a metric to the DPI it is given. At
-/// `USER_DEFAULT_SCREEN_DPI` (96, 100 % scaling) that is the unscaled metric,
-/// in logical pixels; at the system DPI of a DPI-aware process it would be
-/// device pixels (26 instead of 17 for `SM_CXVSCROLL` at 150 %).
+/// The eight high-contrast system colours ([`SystemColors`]).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-#[allow(unsafe_code)]
-fn logical_system_metric(index: SYSTEM_METRICS_INDEX) -> f32 {
-    // SAFETY: GetSystemMetricsForDpi takes the index and the DPI by value, with
-    // no pointer; 96 is a valid DPI and an unknown index returns 0
-    // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsystemmetricsfordpi).
-    unsafe { GetSystemMetricsForDpi(index, USER_DEFAULT_SCREEN_DPI) as f32 }
-}
+fn read_system_colors() -> SystemColors {
+    use ::windows::Win32::Graphics::Gdi::{
+        COLOR_BTNFACE, COLOR_BTNTEXT, COLOR_GRAYTEXT, COLOR_HIGHLIGHT, COLOR_HIGHLIGHTTEXT,
+        COLOR_HOTLIGHT, COLOR_WINDOW, COLOR_WINDOWTEXT, GetSysColor, SYS_COLOR_INDEX,
+    };
 
-/// Read the scrollbar and border metrics, in logical pixels.
-///
-/// `SM_CXBORDER` is the Windows source of `defaults.border.line_width`
-/// (`docs/platform-facts.md:1118`). The focus ring's width is not read:
-/// `SM_CXFOCUSBORDER` is 1, and WinUI 3 draws a 2 px ring, which the preset
-/// states.
-#[cfg(all(target_os = "windows", feature = "windows"))]
-fn read_widget_sizing(variant: &mut crate::ThemeMode) {
-    variant.scrollbar.groove_width = Some(logical_system_metric(SM_CXVSCROLL));
-    variant.scrollbar.min_thumb_length = Some(logical_system_metric(SM_CYVTHUMB));
-    variant.defaults.border.line_width = Some(logical_system_metric(SM_CXBORDER));
-}
-
-/// The scrollbar and border metrics at 96 DPI (non-Windows testable version).
-#[cfg(not(all(target_os = "windows", feature = "windows")))]
-fn read_widget_sizing(variant: &mut crate::ThemeMode) {
-    variant.scrollbar.groove_width = Some(17.0);
-    // SM_CYVTHUMB at 96 DPI on the OS probe's three Windows images (platform-facts.md:386)
-    variant.scrollbar.min_thumb_length = Some(17.0);
-    variant.defaults.border.line_width = Some(1.0); // SM_CXBORDER default, platform-facts.md:382
-}
-
-/// Convert a Win32 COLORREF (0x00BBGGRR) to Rgba.
-///
-/// COLORREF stores colors as blue in the high byte, red in the low byte.
-/// This is the inverse of typical RGB ordering.
-pub(crate) fn colorref_to_rgba(c: u32) -> crate::Rgba {
-    let r = (c & 0xFF) as u8;
-    let g = ((c >> 8) & 0xFF) as u8;
-    let b = ((c >> 16) & 0xFF) as u8;
-    crate::Rgba::rgb(r, g, b)
-}
-
-/// Read the GetSysColor colours WinUI 3's HighContrast dictionaries use.
-#[cfg(all(target_os = "windows", feature = "windows"))]
-#[allow(unsafe_code)]
-fn read_sys_colors() -> SysColors {
-    use ::windows::Win32::Graphics::Gdi::*;
-
-    fn sys_color(index: SYS_COLOR_INDEX) -> crate::Rgba {
+    fn sys_color(index: SYS_COLOR_INDEX) -> Color {
         // SAFETY: GetSysColor takes a colour index by value and touches no
-        // memory of the caller's.
-        let c = unsafe { GetSysColor(index) };
-        colorref_to_rgba(c)
+        // memory of the caller's
+        // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor).
+        colorref(unsafe { GetSysColor(index) })
     }
 
-    SysColors {
-        window_bg: sys_color(COLOR_WINDOW),
+    SystemColors {
+        window: sys_color(COLOR_WINDOW),
         window_text: sys_color(COLOR_WINDOWTEXT),
-        btn_face: sys_color(COLOR_BTNFACE),
-        btn_text: sys_color(COLOR_BTNTEXT),
+        button_face: sys_color(COLOR_BTNFACE),
+        button_text: sys_color(COLOR_BTNTEXT),
         highlight: sys_color(COLOR_HIGHLIGHT),
         highlight_text: sys_color(COLOR_HIGHLIGHTTEXT),
         hotlight: sys_color(COLOR_HOTLIGHT),
@@ -300,1409 +481,52 @@ fn read_sys_colors() -> SysColors {
     }
 }
 
-/// Apply the high-contrast colours: each field takes the system colour that
-/// WinUI 3's `HighContrast` theme dictionary gives the brush drawing it.
+/// Reads the Windows settings, its own preset's part under `own`: the
+/// colours, the text scale and the effects from `UISettings`, high
+/// contrast from `SPI_GETHIGHCONTRAST` and, under it, the system colours
+/// from `GetSysColor`.
 ///
-/// Lines are microsoft-ui-xaml 8463f45's: `controls/dev/CommonStyles/*.xaml`,
-/// and `dxaml/xcp/dxaml/themes/generic.xaml` (its `HighContrast` dictionary is
-/// :1970-3930) for the `SystemControl*` brushes and the keys a control's
-/// dictionary leaves out, which the lookup reaches last, as the platform
-/// resources ("Lookup behavior for XAML resource references",
-/// <https://learn.microsoft.com/en-us/windows/apps/develop/platform/xaml/xaml-resource-dictionary>,
-/// updated 2026-08-28). A `SystemColor*Color` resource is GetSysColor of its
-/// index (`dxaml/xcp/components/theming/FrameworkTheming.cpp:145-157`,
-/// `:219-231`; `theminginterop/SystemThemingInterop.cpp:202`).
-fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
-    // TextFillColorPrimaryBrush (Common_themeresources_any.xaml:416).
-    variant.defaults.text_color = Some(colors.window_text);
-    // SolidBackgroundFillColorBaseBrush, Mica's fallback (Common_themeresources_any.xaml:486).
-    variant.defaults.background_color = Some(colors.window_bg);
-    // CardBackgroundFillColorDefaultBrush (Common_themeresources_any.xaml:474).
-    variant.defaults.surface_color = Some(colors.window_bg);
-    // TextFillColorDisabledBrush (Common_themeresources_any.xaml:419).
-    variant.defaults.disabled_text_color = Some(colors.gray_text);
-    // TextControlSelectionHighlightColor = SystemControlHighlightAccentBrush
-    // (generic.xaml:2666, :2055); COLOR_HIGHLIGHT, docs/platform-facts.md:1059.
-    variant.defaults.selection_background = Some(colors.highlight);
-    // COLOR_HIGHLIGHTTEXT, docs/platform-facts.md:1060; no style in the theme resources or
-    // generic.xaml sets a selected-text foreground (a text box sets only
-    // SelectionHighlightColor, TextBox_themeresources.xaml:183).
-    variant.defaults.selection_text_color = Some(colors.highlight_text);
-    // SystemControlHighlightAccentBrush (generic.xaml:2055), the accent button's and the
-    // checked ToggleButton's fill below; the fills that inherit the accent follow it.
-    variant.defaults.accent_color = Some(colors.highlight);
-    // The text on that accent: AccentButtonForeground = SystemControlHighlightAltAccentBrush
-    // (generic.xaml:2056). TextOnAccentFillColorPrimaryBrush is WindowText under high contrast
-    // (Common_themeresources_any.xaml:426), but there it is text on the AccentFill brushes,
-    // which are COLOR_WINDOW (:453), not on the COLOR_HIGHLIGHT accent above.
-    variant.defaults.accent_text_color = Some(colors.highlight_text);
-    // HyperlinkForeground = SystemControlHyperlinkTextBrush (Hyperlink_themeresources.xaml:10;
-    // generic.xaml:2083), SystemColorHotlightColor.
-    variant.defaults.link_color = Some(colors.hotlight);
-    // SystemFillColorAttentionBrush (Common_themeresources_any.xaml:493).
-    variant.defaults.info_color = Some(colors.window_text);
-    // SystemControlFocusVisualPrimaryBrush = FocusStrokeColorOuterBrush
-    // (Common_themeresources.xaml:43; Common_themeresources_any.xaml:472).
-    variant.defaults.focus_ring_color = Some(colors.window_text);
-    // ButtonBackground = SystemControlBackgroundBaseLowBrush (Button_themeresources.xaml:78;
-    // generic.xaml:2010), ButtonForeground = SystemColorButtonTextColorBrush
-    // (Button_themeresources.xaml:82; Common_themeresources_any.xaml:512).
-    variant.button.background_color = Some(colors.btn_face);
-    variant.button.font.get_or_insert_default().color = Some(colors.btn_text);
-    // AccentButtonBackground = SystemControlHighlightAccentBrush, AccentButtonForeground =
-    // SystemControlHighlightAltAccentBrush (Button_themeresources.xaml:54, :58;
-    // generic.xaml:2055, :2056).
-    variant.button.primary_background = Some(colors.highlight);
-    variant.button.primary_text_color = Some(colors.highlight_text);
-    // ToggleButtonBackgroundChecked = SystemControlHighlightAccentBrush,
-    // ToggleButtonForegroundChecked = SystemControlHighlightAltChromeWhiteBrush
-    // (ToggleButton_themeresources.xaml:69, :81; generic.xaml:2055, :2067).
-    variant.button.checked_background = Some(colors.highlight);
-    variant.button.checked_text_color = Some(colors.highlight_text);
-    // TextBox_themeresources.xaml's HighContrast dictionary leaves out the three keys:
-    // TextControlBackground = SystemControlBackgroundAltMediumLowBrush (generic.xaml:2652,
-    // :2008), TextControlForeground = SystemControlForegroundBaseHighBrush (:2648, :2039),
-    // TextControlPlaceholderForeground = SystemControlPageTextBaseMediumBrush (:2660, :2097).
-    variant.input.background_color = Some(colors.btn_face);
-    variant.input.font.get_or_insert_default().color = Some(colors.btn_text);
-    variant.input.placeholder_color = Some(colors.window_text);
-    // MenuFlyoutPresenterBackground = SystemColorWindowColorBrush, MenuFlyoutItemForeground =
-    // SystemColorButtonTextColorBrush (MenuFlyout_themeresources.xaml:123, :94).
-    variant.menu.background_color = Some(colors.window_bg);
-    variant.menu.font.get_or_insert_default().color = Some(colors.btn_text);
-    // DefaultToolTipStyle's ToolTipBackgroundBrush = SystemColorWindowColorBrush and
-    // ToolTipForegroundBrush = SystemColorWindowTextColorBrush (ToolTip_themeresources.xaml:43-44,
-    // :26, :25).
-    variant.tooltip.background_color = Some(colors.window_bg);
-    variant.tooltip.font.get_or_insert_default().color = Some(colors.window_text);
-    // ListViewItemBackgroundSelected, ListViewItemForegroundSelected
-    // (ListViewItem_themeresources.xaml:85, :91).
-    variant.list.selection_background = Some(colors.highlight);
-    variant.list.selection_text_color = Some(colors.highlight_text);
-    // The TitleBar control is transparent over the window's backdrop (TitleBar.xaml:12),
-    // which under high contrast is the user's background in place of Mica,
-    // SolidBackgroundFillColorBaseBrush above, active and inactive; its title text is
-    // TitleBarForegroundBrush = SystemControlForegroundBaseHighBrush, inactive
-    // TitleBarDeactivatedForegroundBrush = SystemControlDisabledBaseMediumLowBrush
-    // (TitleBar_themeresources.xaml:54-55; generic.xaml:2039, :2026; docs/platform-facts.md:1160-1167).
-    variant.window.title_bar_background = Some(colors.window_bg);
-    variant.window.inactive_title_bar_background = Some(colors.window_bg);
-    variant.window.title_bar_font.get_or_insert_default().color = Some(colors.btn_text);
-    variant.window.inactive_title_bar_text_color = Some(colors.gray_text);
-    // CardStrokeColorDefaultBrush = SystemColorWindowTextColor (Common_themeresources_any.xaml:464),
-    // the text colour itself, so the line opacity is 1 (docs/platform-facts.md:1055, :1120).
-    variant.defaults.border.color = Some(colors.window_text);
-    variant.defaults.border.opacity = Some(1.0);
-    // ProgressBarBorderThemeThickness is 1 in HighContrast, ProgressBarBorderBrush =
-    // SystemColorWindowTextColor and ProgressBarBackground = SystemColorWindowColor
-    // (ProgressBar_themeresources.xaml:13, :16, :15; docs/platform-facts.md:1340).
-    let progress_border = variant.progress_bar.border.get_or_insert_default();
-    progress_border.line_width = Some(1.0);
-    progress_border.color = Some(colors.window_text);
-    variant.progress_bar.track_color = Some(colors.window_bg);
-    // The accent controls' fills: a checked checkbox `SystemColorHighlightColor`
-    // (CheckBox_themeresources.xaml:145), an on switch the same (ToggleSwitch :87), a
-    // progress bar the same (ProgressBar_themeresources.xaml:14), and a slider's value
-    // `SystemControlHighlightAccentBrush` (Slider_themeresources.xaml:71; generic.xaml:2055).
-    // The radio's checked fill is `SystemColorHighlightTextColor` (RadioButton :88), which
-    // the field the two share cannot also hold: the checkbox's stands
-    // (docs/platform-facts.md:1239).
-    variant.checkbox.checked_background = Some(colors.highlight);
-    variant.switch.checked_background = Some(colors.highlight);
-    variant.slider.fill_color = Some(colors.highlight);
-    variant.progress_bar.fill_color = Some(colors.highlight);
-    // A ProgressRing, `SystemControlHighlightAccentBrush` (ProgressRing_themeresources.xaml:13;
-    // generic.xaml:2055), the highlight.
-    variant.spinner.fill_color = Some(colors.highlight);
-    // The segmented control, the Windows Community Toolkit Segmented's
-    // (docs/platform-facts.md §2.25, v8.2.251219): the group the button face, edged in
-    // the highlight (Segmented.xaml:26-29); an item lettered in the button text and,
-    // selected, the highlight lettered in its text (SegmentedItem.xaml:269-270, :247-248,
-    // :273-274). A hovered item is the highlight (:249-250) under a foreground of its own
-    // (:271-272), which the model cannot carry: it has no hovered segment text, and the
-    // button text would stay on the highlight, so the hover is not written, as the button's
-    // is not; the preset's stands. Outside high contrast these are WinUI's fixed
-    // brushes, which no user setting moves: the preset's stand.
-    variant.segmented_control.background_color = Some(colors.btn_face);
-    variant
-        .segmented_control
-        .border
-        .get_or_insert_default()
-        .color = Some(colors.highlight);
-    variant.segmented_control.font.get_or_insert_default().color = Some(colors.btn_text);
-    variant.segmented_control.active_background = Some(colors.highlight);
-    variant.segmented_control.active_text_color = Some(colors.highlight_text);
-    // A hovered on switch, `ToggleSwitchFillOnPointerOver` = `SystemColorButtonFaceColor`
-    // (ToggleSwitch_themeresources.xaml:88), a replacing fill.
-    variant.switch.hover_checked_background = Some(colors.btn_face);
-    // A focused text box's line: the TextBox HighContrast dictionary has no key of its own
-    // (TextBox_themeresources.xaml:67-110), so `TextControlBorderBrushFocused` is
-    // generic.xaml's, SystemControlHighlightAccentBrush (generic.xaml:2658, :2055),
-    // COLOR_HIGHLIGHT.
-    variant.input.focus_border_color = Some(colors.highlight);
-}
-
-/// Read accessibility settings (WIN-04).
+/// Fails where `UISettings` cannot be created (before Windows 10) or the
+/// foreground, which decides the scheme, cannot be read
+/// (`ReaderFailure::Platform`); an accent or shade that cannot be read is
+/// the status's fallback.
 #[cfg(all(target_os = "windows", feature = "windows"))]
-#[allow(unsafe_code)]
-fn read_accessibility(settings: &UISettings) -> AccessibilityData {
-    // TextScaleFactor from UISettings
-    let text_scaling_factor = settings.TextScaleFactor().ok().map(|f| f as f32);
+pub(crate) fn read(own: PresetId) -> Result<Reading, ReaderFailure> {
+    use ::windows::UI::ViewManagement::{UIColorType, UISettings};
 
-    // SPI_GETHIGHCONTRAST
-    let high_contrast = {
-        use ::windows::Win32::UI::Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW};
-        use ::windows::Win32::UI::WindowsAndMessaging::*;
-        let mut hc = HIGHCONTRASTW {
-            cbSize: std::mem::size_of::<HIGHCONTRASTW>() as u32,
-            ..Default::default()
-        };
-        // SAFETY: `hc` is a live HIGHCONTRASTW whose `cbSize` is its size, as
-        // SPI_GETHIGHCONTRAST requires of `uiParam`, and `pvParam` points to it; only
-        // `dwFlags` is read afterwards
-        // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow).
-        let success = unsafe {
-            SystemParametersInfoW(
-                SPI_GETHIGHCONTRAST,
-                hc.cbSize,
-                Some(&mut hc as *mut _ as *mut _),
-                SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
-            )
-        };
-        if success.is_ok() {
-            Some(hc.dwFlags.contains(HCF_HIGHCONTRASTON))
-        } else {
-            None
-        }
+    let settings = UISettings::new()
+        .map_err(|e| ReaderFailure::Platform(format!("UISettings unavailable: {e}")))?;
+    let color = |kind: UIColorType| {
+        settings
+            .GetColorValue(kind)
+            .map(win_color)
+            .map_err(|e| e.to_string())
     };
-
-    AccessibilityData {
-        text_scaling_factor,
-        high_contrast,
-        reduce_motion: read_reduce_motion(),
-        advanced_effects_enabled: settings.AdvancedEffectsEnabled().ok(),
-    }
-}
-
-/// Whether the user asks for reduced motion: client-area animations are off
-/// (`SPI_GETCLIENTAREAANIMATION`), as the reader reads it, for
-/// [`crate::detect::detect_reduced_motion`]; `None` when the call fails.
-#[cfg(all(target_os = "windows", feature = "windows"))]
-#[allow(unsafe_code)]
-pub(crate) fn read_reduce_motion() -> Option<bool> {
-    use ::windows::Win32::UI::WindowsAndMessaging::SPI_GETCLIENTAREAANIMATION;
-    let mut animation_enabled = ::windows::core::BOOL(1);
-    // SAFETY: SPI_GETCLIENTAREAANIMATION writes one BOOL through `pvParam`,
-    // which points to `animation_enabled`, a live BOOL for the whole call.
-    let success = unsafe {
-        SystemParametersInfoW(
-            SPI_GETCLIENTAREAANIMATION,
-            0,
-            Some(&mut animation_enabled as *mut _ as *mut _),
-            SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
-        )
-    };
-    success.is_ok().then(|| !animation_enabled.as_bool())
-}
-
-/// Read icon sizes from GetSystemMetricsForDpi, in logical pixels (WIN-05).
-#[cfg(all(target_os = "windows", feature = "windows"))]
-fn read_icon_sizes() -> (f32, f32) {
-    (
-        logical_system_metric(SM_CXSMICON),
-        logical_system_metric(SM_CXICON),
-    )
-}
-
-/// Testable core: given the accent and its shades, the foreground, fonts,
-/// system colours and sizing data, build a `Theme` with a sparse `ThemeMode`.
-///
-/// Determines light/dark variant based on foreground luminance, then populates
-/// the appropriate variant with the accent colours, per-widget fonts and
-/// sizing, and, under high contrast only, the system colours
-/// (`apply_sys_colors`). Only one variant is ever populated (matching KDE/GNOME
-/// reader pattern).
-fn build_theme(
-    accent: crate::Rgba,
-    fg: crate::Rgba,
-    accent_shades: [Option<crate::Rgba>; 6],
-    fonts: AllFonts,
-    sys_colors: Option<&SysColors>,
-    icon_sizes: Option<(f32, f32)>,
-    accessibility: Option<&AccessibilityData>,
-) -> crate::ReaderResult {
-    let dark = is_dark_mode(&fg);
-
-    // `accent_shades` is [Dark1, Dark2, Dark3, Light1, Light2, Light3]; WinUI 3's
-    // SystemAccentColor* resources are those UISettings shades
-    // (SystemThemingInterop.cpp:262-291, microsoft-ui-xaml 8463f45).
-    let [dark1, dark2, dark3, _, light2, light3] = accent_shades;
-    let high_contrast = accessibility.and_then(|a| a.high_contrast) == Some(true);
-
-    let mut variant = crate::ThemeMode::default();
-
-    // --- The accent colours, which the user sets ---
-    variant.defaults.accent_color = Some(accent);
-    // The accent button and a checked ToggleButton are filled with
-    // `AccentFillColorDefault`: AccentDark1 light, AccentLight2 dark
-    // (docs/platform-facts.md:1188, :1194); the accent if the shade is unavailable.
-    let primary_bg = if dark { light2 } else { dark1 }.unwrap_or(accent);
-    variant.button.primary_background = Some(primary_bg);
-    variant.button.checked_background = Some(primary_bg);
-    // Every accent control is filled with the same `AccentFillColorDefault`: a checked
-    // checkbox and radio, an on switch, a slider's value and a progress bar
-    // (CheckBox_themeresources.xaml:233, RadioButton_themeresources.xaml:146,
-    // ToggleSwitch_themeresources.xaml:143, Slider_themeresources.xaml:128,
-    // ProgressBar_themeresources.xaml:22; docs/platform-facts.md:1239, :1521, :1317, :1333).
-    variant.checkbox.checked_background = Some(primary_bg);
-    variant.switch.checked_background = Some(primary_bg);
-    variant.slider.fill_color = Some(primary_bg);
-    variant.progress_bar.fill_color = Some(primary_bg);
-    // A ProgressRing too: `ProgressRingForegroundThemeBrush` =
-    // `AccentFillColorDefaultBrush` (ProgressRing_themeresources.xaml:5, :9;
-    // docs/platform-facts.md:1602).
-    variant.spinner.fill_color = Some(primary_bg);
-    // `HyperlinkForeground` = `AccentTextFillColorPrimary`: AccentDark2 light,
-    // AccentLight3 dark (docs/platform-facts.md:1058).
-    variant.defaults.link_color = if dark { light3 } else { dark2 };
-    // `SystemFillColorAttention`: the accent light, AccentLight2 dark
-    // (docs/platform-facts.md:1090).
-    variant.defaults.info_color = if dark { light2 } else { Some(accent) };
-    // `HyperlinkForegroundPointerOver` and `HyperlinkForegroundPressed`: AccentDark3 and
-    // AccentDark1 light, AccentLight3 and AccentLight2 dark (Hyperlink_themeresources.xaml:16-17,
-    // :6-7; Common_themeresources_any.xaml:298-299, :94-95). Not under high contrast, where
-    // the user's accent colours are not written.
-    if !high_contrast {
-        variant.link.hover_text_color = if dark { light3 } else { dark3 };
-        variant.link.active_text_color = if dark { light2 } else { dark1 };
-        // A focused text box's bottom line, `TextControlElevationBorderFocusedBrush`: the
-        // same shade (docs/platform-facts.md:1219). Under high contrast `apply_sys_colors`
-        // writes it.
-        variant.input.focus_border_color = Some(primary_bg);
-    }
-
-    // --- Defaults-level font (message font) ---
-    variant.defaults.font = fonts.msg;
-
-    // --- Per-widget fonts (WIN-01) ---
-    variant.window.title_bar_font = Some(fonts.caption);
-    variant.menu.font = Some(fonts.menu);
-    // lfStatusFont is "the font used in status bars and tooltips" (NONCLIENTMETRICSW).
-    variant.tooltip.font = Some(fonts.status.clone());
-    variant.status_bar.font = Some(fonts.status);
-
-    // --- Widget sizing ---
-    read_widget_sizing(&mut variant);
-
-    // --- The high-contrast colours (WIN-03); outside high contrast the
-    // GetSysColor indices are classic Win32 values WinUI 3 does not draw ---
-    if let (true, Some(colors)) = (high_contrast, sys_colors) {
-        apply_sys_colors(&mut variant, colors);
-    }
-
-    // --- Icon sizes (WIN-05) ---
-    if let Some((small, large)) = icon_sizes {
-        variant.defaults.icon_sizes.small = Some(small);
-        variant.defaults.icon_sizes.large = Some(large);
-    }
-
-    // Build AccessibilityPreferences from Windows AccessibilityData
-    let acc = if let Some(a) = accessibility {
-        let mut ap = crate::AccessibilityPreferences::default();
-        if let Some(tsf) = a.text_scaling_factor {
-            ap.text_scaling_factor = tsf;
-        }
-        if let Some(rm) = a.reduce_motion {
-            ap.reduce_motion = rm;
-        }
-        if let Some(hc) = a.high_contrast {
-            ap.high_contrast = hc;
-        }
-        if let Some(enabled) = a.advanced_effects_enabled {
-            ap.reduce_transparency = !enabled;
-        }
-        ap
-    } else {
-        crate::AccessibilityPreferences::default()
-    };
-    let font_dpi = Some(LOGICAL_DPI as f32);
-
-    let output = crate::ReaderOutput::Single {
-        mode: Box::new(variant),
-        is_dark: dark,
-    };
-
-    crate::ReaderResult {
-        output,
-        name: "Windows".into(),
-        icon_set: Some(crate::IconSet::SegoeFluent),
-        layout: crate::LayoutTheme::default(),
-        font_dpi,
-        accessibility: acc,
-    }
-}
-
-/// Read the current Windows theme from UISettings, SystemParametersInfoW,
-/// GetSystemMetricsForDpi, and, under high contrast, GetSysColor.
-///
-/// Reads the accent and foreground colors plus 6 accent shade colors from
-/// `UISettings` (WinRT), per-widget fonts from `NONCLIENTMETRICSW` (Win32),
-/// GetSysColor for the high-contrast colors, accessibility settings, and icon
-/// sizes.
-///
-/// Returns `Error::ReaderFailed` if UISettings cannot be created (pre-Windows 10).
-///
-/// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
-/// by [`pipeline::select_reader`]; external consumers should use
-/// [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
-///
-/// The body contains no `.await` points — wrapping a sync implementation in
-/// an async trait method produces a future that resolves immediately.
-#[cfg(all(target_os = "windows", feature = "windows"))]
-pub(crate) struct WindowsReader;
-
-#[cfg(all(target_os = "windows", feature = "windows"))]
-#[async_trait::async_trait]
-impl crate::reader::ThemeReader for WindowsReader {
-    async fn read(&self) -> crate::Result<crate::ReaderResult> {
-        read_windows()
-    }
-}
-
-#[cfg(all(target_os = "windows", feature = "windows"))]
-fn read_windows() -> crate::Result<crate::ReaderResult> {
-    let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
-        reader: crate::error::reader_names::WINDOWS,
-        source: format!("UISettings unavailable: {e}").into(),
+    let foreground = color(UIColorType::Foreground).map_err(|e| {
+        ReaderFailure::Platform(format!("UISettings.GetColorValue(Foreground) failed: {e}"))
     })?;
-
-    let accent = settings
-        .GetColorValue(UIColorType::Accent)
-        .map(win_color_to_rgba)
-        .map_err(|e| crate::Error::ReaderFailed {
-            reader: crate::error::reader_names::WINDOWS,
-            source: format!("GetColorValue(Accent) failed: {e}").into(),
-        })?;
-    let fg = settings
-        .GetColorValue(UIColorType::Foreground)
-        .map(win_color_to_rgba)
-        .map_err(|e| crate::Error::ReaderFailed {
-            reader: crate::error::reader_names::WINDOWS,
-            source: format!("GetColorValue(Foreground) failed: {e}").into(),
-        })?;
-
-    let accent_shades = read_accent_shades(&settings);
-    let fonts = read_all_system_fonts();
-    let (small, large) = read_icon_sizes();
-    let accessibility = read_accessibility(&settings);
-    let sys_colors = (accessibility.high_contrast == Some(true)).then(read_sys_colors);
-
-    Ok(build_theme(
-        accent,
-        fg,
-        accent_shades,
-        fonts,
-        sys_colors.as_ref(),
-        Some((small, large)),
-        Some(&accessibility),
-    ))
+    let high_contrast = read_high_contrast();
+    let data = WindowsData {
+        foreground,
+        accent: color(UIColorType::Accent),
+        ramp: [
+            UIColorType::AccentDark1,
+            UIColorType::AccentDark2,
+            UIColorType::AccentDark3,
+            UIColorType::AccentLight1,
+            UIColorType::AccentLight2,
+            UIColorType::AccentLight3,
+        ]
+        .map(color),
+        high_contrast,
+        system_colors: (high_contrast == Some(true)).then(read_system_colors),
+        animations_enabled: settings.AnimationsEnabled().ok(),
+        advanced_effects_enabled: settings.AdvancedEffectsEnabled().ok(),
+        text_scale_factor: settings.TextScaleFactor().ok(),
+    };
+    Ok(build_reading(&data, own))
 }
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
-mod tests {
-    use super::*;
-    use crate::model::font::FontSize;
-
-    /// Helper: create default AllFonts for tests that don't care about fonts.
-    fn default_fonts() -> AllFonts {
-        AllFonts {
-            msg: FontSpec::default(),
-            caption: FontSpec::default(),
-            menu: FontSpec::default(),
-            status: FontSpec::default(),
-        }
-    }
-
-    /// Helper: create AllFonts with named fonts for testing per-widget placement.
-    fn named_fonts() -> AllFonts {
-        use crate::model::font::FontSize;
-        AllFonts {
-            msg: FontSpec {
-                family: Some("Segoe UI".into()),
-                size: Some(FontSize::Pt(9.0)),
-                weight: Some(400),
-                ..Default::default()
-            },
-            caption: FontSpec {
-                family: Some("Segoe UI".into()),
-                size: Some(FontSize::Pt(9.0)),
-                weight: Some(700),
-                ..Default::default()
-            },
-            menu: FontSpec {
-                family: Some("Segoe UI".into()),
-                size: Some(FontSize::Pt(9.0)),
-                weight: Some(400),
-                ..Default::default()
-            },
-            status: FontSpec {
-                family: Some("Segoe UI".into()),
-                size: Some(FontSize::Pt(8.0)),
-                weight: Some(400),
-                ..Default::default()
-            },
-        }
-    }
-
-    /// Helper: extract the ThemeMode from a ReaderResult for test assertions.
-    fn reader_mode(result: &crate::ReaderResult) -> &crate::ThemeMode {
-        match &result.output {
-            crate::ReaderOutput::Single { mode, .. } => mode,
-            crate::ReaderOutput::Dual { light, .. } => light,
-        }
-    }
-
-    /// Helper: build a ReaderResult in light mode with minimal args.
-    fn light_reader() -> crate::ReaderResult {
-        build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0), // black fg = light mode
-            [None; 6],
-            default_fonts(),
-            None,
-            None,
-            None,
-        )
-    }
-
-    /// Helper: reconstruct a Theme from light_reader for tests needing Theme fields.
-    fn light_theme() -> crate::Theme {
-        let r = light_reader();
-        r.output.to_theme(&r.name, r.icon_set, &r.layout)
-    }
-
-    /// Helper: build a ReaderResult in dark mode with minimal args.
-    fn dark_reader() -> crate::ReaderResult {
-        build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(255, 255, 255), // white fg = dark mode
-            [None; 6],
-            default_fonts(),
-            None,
-            None,
-            None,
-        )
-    }
-
-    /// Helper: reconstruct a Theme from dark_reader for tests needing Theme fields.
-    fn dark_theme() -> crate::Theme {
-        let r = dark_reader();
-        r.output.to_theme(&r.name, r.icon_set, &r.layout)
-    }
-
-    // === is_dark_mode tests ===
-
-    #[test]
-    fn is_dark_mode_white_foreground_returns_true() {
-        let fg = crate::Rgba::rgb(255, 255, 255);
-        assert!(is_dark_mode(&fg));
-    }
-
-    #[test]
-    fn is_dark_mode_black_foreground_returns_false() {
-        let fg = crate::Rgba::rgb(0, 0, 0);
-        assert!(!is_dark_mode(&fg));
-    }
-
-    #[test]
-    fn is_dark_mode_mid_gray_boundary_returns_false() {
-        let fg = crate::Rgba::rgb(128, 128, 128);
-        assert!(!is_dark_mode(&fg));
-    }
-
-    // === logfont_to_fontspec_raw tests ===
-
-    #[test]
-    fn logfont_to_fontspec_extracts_family_size_weight() {
-        // "Segoe UI" in UTF-16 + null terminator
-        let mut face: [u16; 32] = [0; 32];
-        for (i, ch) in "Segoe UI".encode_utf16().enumerate() {
-            face[i] = ch;
-        }
-        let fs = logfont_to_fontspec_raw(&face, -16, 400);
-        assert_eq!(fs.family.as_deref(), Some("Segoe UI"));
-        assert_eq!(fs.size, Some(FontSize::Pt(12.0))); // abs(16) * 72 / 96 = 12
-        assert_eq!(fs.weight, Some(400));
-    }
-
-    #[test]
-    fn logfont_to_fontspec_bold_weight_700() {
-        let face: [u16; 32] = [0; 32];
-        let fs = logfont_to_fontspec_raw(&face, -16, 700);
-        assert_eq!(fs.weight, Some(700));
-    }
-
-    #[test]
-    fn logfont_to_fontspec_weight_clamped_to_range() {
-        let face: [u16; 32] = [0; 32];
-        // Weight below 100 gets clamped
-        let fs = logfont_to_fontspec_raw(&face, -16, 50);
-        assert_eq!(fs.weight, Some(100));
-        // Weight above 900 gets clamped
-        let fs = logfont_to_fontspec_raw(&face, -16, 1000);
-        assert_eq!(fs.weight, Some(900));
-    }
-
-    /// `FW_DONTCARE` (0) states no weight, so the preset's stands.
-    #[test]
-    fn logfont_to_fontspec_weight_dontcare_is_no_weight() {
-        let face: [u16; 32] = [0; 32];
-        let fs = logfont_to_fontspec_raw(&face, -16, 0);
-        assert_eq!(fs.weight, None);
-        let fs = logfont_to_fontspec_raw(&face, -16, -400);
-        assert_eq!(fs.weight, None);
-    }
-
-    // === colorref_to_rgba tests ===
-
-    #[test]
-    fn colorref_to_rgba_correct_rgb_extraction() {
-        // COLORREF 0x00BBGGRR: blue=0xAA, green=0xBB, red=0xCC
-        let rgba = colorref_to_rgba(0x00AABBCC);
-        assert_eq!(rgba.r, 0xCC);
-        assert_eq!(rgba.g, 0xBB);
-        assert_eq!(rgba.b, 0xAA);
-        assert_eq!(rgba.a, 255); // Rgba::rgb sets alpha to 255
-    }
-
-    #[test]
-    fn colorref_to_rgba_black() {
-        let rgba = colorref_to_rgba(0x00000000);
-        assert_eq!(rgba, crate::Rgba::rgb(0, 0, 0));
-    }
-
-    #[test]
-    fn colorref_to_rgba_white() {
-        let rgba = colorref_to_rgba(0x00FFFFFF);
-        assert_eq!(rgba, crate::Rgba::rgb(255, 255, 255));
-    }
-
-    // === build_theme tests ===
-
-    #[test]
-    fn build_theme_dark_mode_populates_dark_variant_only() {
-        let theme = dark_theme();
-        assert!(theme.dark.is_some(), "dark variant should be Some");
-        assert!(theme.light.is_none(), "light variant should be None");
-    }
-
-    #[test]
-    fn build_theme_light_mode_populates_light_variant_only() {
-        let theme = light_theme();
-        assert!(theme.light.is_some(), "light variant should be Some");
-        assert!(theme.dark.is_none(), "dark variant should be None");
-    }
-
-    #[test]
-    fn build_theme_name_is_windows() {
-        assert_eq!(light_theme().name, "Windows");
-    }
-
-    /// The shades in `read_accent_shades`' order: Dark1, Dark2, Dark3,
-    /// Light1, Light2, Light3, a distinct value each.
-    const SHADES: [Option<crate::Rgba>; 6] = [
-        Some(crate::Rgba::rgb(0, 0, 1)),
-        Some(crate::Rgba::rgb(0, 0, 2)),
-        Some(crate::Rgba::rgb(0, 0, 3)),
-        Some(crate::Rgba::rgb(0, 0, 4)),
-        Some(crate::Rgba::rgb(0, 0, 5)),
-        Some(crate::Rgba::rgb(0, 0, 6)),
-    ];
-
-    /// The fields the accent fill reaches beside the buttons: the five accent
-    /// controls' fills, the spinner's among them, and the focused text box's line.
-    fn accent_fills(v: &crate::ThemeMode) -> [(&'static str, Option<crate::Rgba>); 6] {
-        [
-            ("checkbox.checked_background", v.checkbox.checked_background),
-            ("switch.checked_background", v.switch.checked_background),
-            ("slider.fill_color", v.slider.fill_color),
-            ("progress_bar.fill_color", v.progress_bar.fill_color),
-            ("spinner.fill_color", v.spinner.fill_color),
-            ("input.focus_border_color", v.input.focus_border_color),
-        ]
-    }
-
-    /// windows-11's hovered on switch, the window at alpha 25 laid over the
-    /// track as the model lays a hover (rule C17), composites to WinUI's
-    /// flattened `ToggleSwitchFillOnPointerOver` for the default accent: the
-    /// shade at 0.9 over the window, #1875c5 light and #48b2e9 dark
-    /// (`windows-11.toml` `[light.switch] hover_checked_background`), within
-    /// one level per channel.
-    #[test]
-    fn the_windows_11_switch_hover_composites_to_winuis() {
-        for (mode, winui) in [
-            (crate::ColorMode::Light, [0x18_u8, 0x75, 0xc5]),
-            (crate::ColorMode::Dark, [0x48, 0xb2, 0xe9]),
-        ] {
-            let r = crate::Theme::preset("windows-11")
-                .unwrap()
-                .into_variant(mode)
-                .unwrap()
-                .into_resolved(&crate::ResolutionContext::for_tests())
-                .unwrap();
-            let s = &r.switch;
-            let layer = s
-                .hover_checked_background
-                .expect("windows-11 states the hover");
-            let [red, green, blue, _] = crate::color::composite_over(
-                layer.to_f32_array(),
-                s.checked_background.to_f32_array(),
-            );
-            let got = crate::Rgba::from_f32(red, green, blue, 1.0);
-            for (channel, (got, want)) in [got.r, got.g, got.b].into_iter().zip(winui).enumerate() {
-                assert!(
-                    got.abs_diff(want) <= 1,
-                    "{mode:?} channel {channel}: {got} against WinUI's {want}"
-                );
-            }
-            // A layer, not a fill: over another accent's shade it is WinUI's
-            // 0.9 · S + 0.1 · W, the window W being the layer's colour.
-            assert!(layer.a < 255, "{mode:?}: the hover is an opaque fill");
-            let other = crate::Rgba::rgb(0x8a, 0x2b, 0xe2);
-            let [red, green, blue, _] =
-                crate::color::composite_over(layer.to_f32_array(), other.to_f32_array());
-            let got = crate::Rgba::from_f32(red, green, blue, 1.0);
-            let winui = |s: u8, w: u8| 0.9 * f32::from(s) + 0.1 * f32::from(w);
-            for (channel, (got, want)) in [got.r, got.g, got.b]
-                .into_iter()
-                .zip([
-                    winui(other.r, layer.r),
-                    winui(other.g, layer.g),
-                    winui(other.b, layer.b),
-                ])
-                .enumerate()
-            {
-                assert!(
-                    (f32::from(got) - want).abs() <= 1.0,
-                    "{mode:?} channel {channel} over another shade: {got} against WinUI's {want}"
-                );
-            }
-        }
-    }
-
-    /// Light mode: the accent fill is AccentDark1, the link AccentDark2, the
-    /// informational fill the accent (docs/platform-facts.md:1188, :1194,
-    /// :1058, :1090).
-    #[test]
-    fn build_theme_accent_shades_light_mode() {
-        let accent = crate::Rgba::rgb(0, 120, 215);
-        let theme = build_theme(
-            accent,
-            crate::Rgba::rgb(0, 0, 0),
-            SHADES,
-            default_fonts(),
-            None,
-            None,
-            None,
-        );
-        let variant = reader_mode(&theme);
-        assert_eq!(variant.defaults.accent_color, Some(accent));
-        assert_eq!(variant.button.primary_background, SHADES[0]);
-        assert_eq!(variant.button.checked_background, SHADES[0]);
-        // The accent controls and the focused text box take the same shade
-        // (docs/platform-facts.md:1239, :1521, :1317, :1333, :1219).
-        for (field, value) in accent_fills(variant) {
-            assert_eq!(value, SHADES[0], "{field}");
-        }
-        assert_eq!(variant.defaults.link_color, SHADES[1]);
-        assert_eq!(variant.link.hover_text_color, SHADES[2]);
-        assert_eq!(variant.link.active_text_color, SHADES[0]);
-        assert_eq!(variant.defaults.info_color, Some(accent));
-    }
-
-    /// Dark mode: the accent fill is AccentLight2, the link AccentLight3, the
-    /// informational fill AccentLight2.
-    #[test]
-    fn build_theme_accent_shades_dark_mode() {
-        let accent = crate::Rgba::rgb(0, 120, 215);
-        let theme = build_theme(
-            accent,
-            crate::Rgba::rgb(255, 255, 255),
-            SHADES,
-            default_fonts(),
-            None,
-            None,
-            None,
-        );
-        let variant = reader_mode(&theme);
-        assert_eq!(variant.defaults.accent_color, Some(accent));
-        assert_eq!(variant.button.primary_background, SHADES[4]);
-        assert_eq!(variant.button.checked_background, SHADES[4]);
-        for (field, value) in accent_fills(variant) {
-            assert_eq!(value, SHADES[4], "{field}");
-        }
-        assert_eq!(variant.defaults.link_color, SHADES[5]);
-        assert_eq!(variant.link.hover_text_color, SHADES[5]);
-        assert_eq!(variant.link.active_text_color, SHADES[4]);
-        assert_eq!(variant.defaults.info_color, SHADES[4]);
-    }
-
-    /// A shade that fails to read leaves the link and informational colours
-    /// to the preset; the accent fill falls back to the accent
-    /// (docs/platform-facts.md:1188).
-    #[test]
-    fn build_theme_without_shades_leaves_link_to_the_preset() {
-        let accent = crate::Rgba::rgb(0, 120, 215);
-        let theme = build_theme(
-            accent,
-            crate::Rgba::rgb(255, 255, 255),
-            [None; 6],
-            default_fonts(),
-            None,
-            None,
-            None,
-        );
-        let variant = reader_mode(&theme);
-        assert_eq!(variant.button.primary_background, Some(accent));
-        assert_eq!(variant.defaults.link_color, None);
-        assert_eq!(variant.defaults.info_color, None);
-    }
-
-    // === Per-widget font tests (WIN-01) ===
-
-    #[test]
-    fn build_theme_sets_title_bar_font() {
-        let fonts = named_fonts();
-        let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            [None; 6],
-            fonts,
-            None,
-            None,
-            None,
-        );
-        let variant = reader_mode(&theme);
-        let title_font = variant
-            .window
-            .title_bar_font
-            .as_ref()
-            .expect("title_bar_font");
-        assert_eq!(title_font.family.as_deref(), Some("Segoe UI"));
-        assert_eq!(title_font.weight, Some(700));
-    }
-
-    #[test]
-    fn build_theme_sets_menu_and_status_bar_fonts() {
-        let fonts = named_fonts();
-        let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            [None; 6],
-            fonts,
-            None,
-            None,
-            None,
-        );
-        let variant = reader_mode(&theme);
-        let menu_font = variant.menu.font.as_ref().expect("menu.font");
-        assert_eq!(menu_font.family.as_deref(), Some("Segoe UI"));
-        let status_font = variant.status_bar.font.as_ref().expect("status_bar.font");
-        assert_eq!(status_font.size, Some(FontSize::Pt(8.0)));
-    }
-
-    /// The tooltip text is `lfStatusFont`'s, "the font used in status bars and
-    /// tooltips" (NONCLIENTMETRICSW).
-    #[test]
-    fn build_theme_sets_tooltip_font_from_status_font() {
-        let fonts = named_fonts();
-        let status = fonts.status.clone();
-        let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            [None; 6],
-            fonts,
-            None,
-            None,
-            None,
-        );
-        let variant = reader_mode(&theme);
-        assert_eq!(variant.tooltip.font, Some(status));
-    }
-
-    #[test]
-    fn build_theme_sets_defaults_font_from_msg_font() {
-        let fonts = named_fonts();
-        let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            [None; 6],
-            fonts,
-            None,
-            None,
-            None,
-        );
-        let variant = reader_mode(&theme);
-        assert_eq!(variant.defaults.font.family.as_deref(), Some("Segoe UI"));
-        assert_eq!(variant.defaults.font.size, Some(FontSize::Pt(9.0)));
-    }
-
-    // === High contrast (the WinUI 3 HighContrast dictionaries) ===
-
-    /// A distinct value per system colour, so each field shows which one it took.
-    fn distinct_sys_colors() -> SysColors {
-        SysColors {
-            window_bg: crate::Rgba::rgb(1, 1, 1),
-            window_text: crate::Rgba::rgb(2, 2, 2),
-            btn_face: crate::Rgba::rgb(3, 3, 3),
-            btn_text: crate::Rgba::rgb(4, 4, 4),
-            highlight: crate::Rgba::rgb(5, 5, 5),
-            highlight_text: crate::Rgba::rgb(6, 6, 6),
-            hotlight: crate::Rgba::rgb(8, 8, 8),
-            gray_text: crate::Rgba::rgb(7, 7, 7),
-        }
-    }
-
-    fn reader_with_high_contrast(high_contrast: Option<bool>) -> crate::ReaderResult {
-        let accessibility = AccessibilityData {
-            text_scaling_factor: None,
-            high_contrast,
-            reduce_motion: None,
-            advanced_effects_enabled: None,
-        };
-        build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            [Some(crate::Rgba::rgb(0, 90, 170)); 6],
-            default_fonts(),
-            Some(&distinct_sys_colors()),
-            None,
-            Some(&accessibility),
-        )
-    }
-
-    /// Outside high contrast the reader writes no Win32 colour, no derived
-    /// colour and no focus ring: the windows-11 preset's WinUI 3 values stand.
-    #[test]
-    fn outside_high_contrast_the_reader_writes_only_the_accent_colours() {
-        for high_contrast in [Some(false), None] {
-            let result = reader_with_high_contrast(high_contrast);
-            let v = reader_mode(&result);
-            let font_color = |f: &Option<FontSpec>| f.as_ref().and_then(|f| f.color);
-            assert_eq!(v.defaults.accent_color, Some(crate::Rgba::rgb(0, 120, 215)));
-            assert_eq!(
-                v.button.primary_background,
-                Some(crate::Rgba::rgb(0, 90, 170))
-            );
-            assert_eq!(v.defaults.text_color, None);
-            assert_eq!(v.defaults.background_color, None);
-            assert_eq!(v.defaults.surface_color, None);
-            assert_eq!(v.defaults.disabled_text_color, None);
-            assert_eq!(v.defaults.selection_background, None);
-            assert_eq!(v.defaults.selection_text_color, None);
-            assert_eq!(v.defaults.accent_text_color, None);
-            assert_eq!(v.defaults.border.color, None);
-            assert_eq!(v.progress_bar.border, None);
-            assert_eq!(v.progress_bar.track_color, None);
-            assert_eq!(v.defaults.focus_ring_color, None);
-            assert_eq!(v.defaults.focus_ring_width, None);
-            assert_eq!(v.button.background_color, None);
-            assert_eq!(font_color(&v.button.font), None);
-            assert_eq!(v.button.primary_text_color, None);
-            assert_eq!(v.button.checked_text_color, None);
-            assert_eq!(v.menu.background_color, None);
-            assert_eq!(font_color(&v.menu.font), None);
-            assert_eq!(v.tooltip.background_color, None);
-            assert_eq!(font_color(&v.tooltip.font), None);
-            assert_eq!(v.input.background_color, None);
-            assert_eq!(font_color(&v.input.font), None);
-            assert_eq!(v.input.placeholder_color, None);
-            assert_eq!(v.list.selection_background, None);
-            assert_eq!(v.list.selection_text_color, None);
-            assert_eq!(v.window.title_bar_background, None);
-            assert_eq!(font_color(&v.window.title_bar_font), None);
-            assert_eq!(v.window.inactive_title_bar_background, None);
-            assert_eq!(v.window.inactive_title_bar_text_color, None);
-            // The segmented control is WinUI's fixed brushes outside high
-            // contrast, which no user setting moves: the preset's stand.
-            assert_eq!(v.segmented_control.background_color, None);
-            assert_eq!(v.segmented_control.border, None);
-            assert_eq!(v.segmented_control.font, None);
-            assert_eq!(v.segmented_control.hover_background, None);
-            assert_eq!(v.segmented_control.active_background, None);
-            assert_eq!(v.segmented_control.active_text_color, None);
-        }
-    }
-
-    /// Under high contrast each field takes the system colour WinUI 3's
-    /// HighContrast dictionary gives its brush (see `apply_sys_colors`).
-    #[test]
-    fn under_high_contrast_the_reader_maps_the_system_colours() {
-        let result = reader_with_high_contrast(Some(true));
-        let v = reader_mode(&result);
-        let c = distinct_sys_colors();
-        let font_color = |f: &Option<FontSpec>| f.as_ref().and_then(|f| f.color);
-        assert_eq!(v.defaults.text_color, Some(c.window_text));
-        assert_eq!(v.defaults.background_color, Some(c.window_bg));
-        assert_eq!(v.defaults.surface_color, Some(c.window_bg));
-        assert_eq!(v.defaults.disabled_text_color, Some(c.gray_text));
-        assert_eq!(v.defaults.selection_background, Some(c.highlight));
-        assert_eq!(v.defaults.selection_text_color, Some(c.highlight_text));
-        assert_eq!(v.defaults.accent_color, Some(c.highlight));
-        assert_eq!(v.defaults.accent_text_color, Some(c.highlight_text));
-        assert_eq!(v.defaults.link_color, Some(c.hotlight));
-        // No HighContrast mapping is stated for the link's hover and pressed
-        // text, and the user's accent shades are not written under high contrast.
-        assert_eq!(v.link.hover_text_color, None);
-        assert_eq!(v.link.active_text_color, None);
-        // The accent controls and the text box's focus line take the
-        // highlight, the hovered on switch the button face.
-        for (field, value) in accent_fills(v) {
-            assert_eq!(value, Some(c.highlight), "{field}");
-        }
-        assert_eq!(v.switch.hover_checked_background, Some(c.btn_face));
-        let seg = &v.segmented_control;
-        assert_eq!(seg.background_color, Some(c.btn_face));
-        assert_eq!(seg.border.as_ref().and_then(|b| b.color), Some(c.highlight));
-        assert_eq!(font_color(&seg.font), Some(c.btn_text));
-        assert_eq!(
-            seg.hover_background, None,
-            "a hovered item's highlight text has no field: the hover is not written"
-        );
-        assert_eq!(seg.active_background, Some(c.highlight));
-        assert_eq!(seg.active_text_color, Some(c.highlight_text));
-        assert_eq!(v.defaults.info_color, Some(c.window_text));
-        assert_eq!(
-            v.progress_bar.border.as_ref().and_then(|b| b.line_width),
-            Some(1.0)
-        );
-        assert_eq!(
-            v.progress_bar.border.as_ref().and_then(|b| b.color),
-            Some(c.window_text)
-        );
-        assert_eq!(v.progress_bar.track_color, Some(c.window_bg));
-        assert_eq!(v.defaults.border.color, Some(c.window_text));
-        assert_eq!(v.defaults.border.opacity, Some(1.0));
-        assert_eq!(v.defaults.focus_ring_color, Some(c.window_text));
-        assert_eq!(v.button.background_color, Some(c.btn_face));
-        assert_eq!(font_color(&v.button.font), Some(c.btn_text));
-        assert_eq!(v.button.primary_background, Some(c.highlight));
-        assert_eq!(v.button.primary_text_color, Some(c.highlight_text));
-        assert_eq!(v.button.checked_background, Some(c.highlight));
-        assert_eq!(v.button.checked_text_color, Some(c.highlight_text));
-        assert_eq!(v.input.background_color, Some(c.btn_face));
-        assert_eq!(font_color(&v.input.font), Some(c.btn_text));
-        assert_eq!(v.input.placeholder_color, Some(c.window_text));
-        assert_eq!(v.menu.background_color, Some(c.window_bg));
-        assert_eq!(font_color(&v.menu.font), Some(c.btn_text));
-        assert_eq!(v.tooltip.background_color, Some(c.window_bg));
-        assert_eq!(font_color(&v.tooltip.font), Some(c.window_text));
-        assert_eq!(v.list.selection_background, Some(c.highlight));
-        assert_eq!(v.list.selection_text_color, Some(c.highlight_text));
-        assert_eq!(v.window.title_bar_background, Some(c.window_bg));
-        assert_eq!(font_color(&v.window.title_bar_font), Some(c.btn_text));
-        assert_eq!(v.window.inactive_title_bar_background, Some(c.window_bg));
-        assert_eq!(v.window.inactive_title_bar_text_color, Some(c.gray_text));
-        assert_eq!(v.defaults.focus_ring_width, None);
-    }
-
-    /// Outside high contrast the title bar over the windows-11 preset is the
-    /// window's Mica fallback, opaque, active and inactive; its text is the
-    /// TitleBar control's primary and, inactive, tertiary text.
-    #[test]
-    fn outside_high_contrast_the_title_bar_is_the_window_background() {
-        let mut base = crate::Theme::preset("windows-11").unwrap();
-        let r = reader_with_high_contrast(Some(false));
-        base.merge(&r.output.to_theme(&r.name, r.icon_set, &r.layout));
-        let tertiary = [
-            (base.light.clone().unwrap(), crate::Rgba::new(0, 0, 0, 0x72)),
-            (
-                base.dark.clone().unwrap(),
-                crate::Rgba::new(255, 255, 255, 0x87),
-            ),
-        ];
-        for (mut mode, tertiary_text) in tertiary {
-            mode.resolve_all();
-            let resolved = mode.validate().unwrap();
-            let window_bg = resolved.defaults.background_color;
-            assert_eq!(window_bg.a, 255);
-            assert_eq!(resolved.window.title_bar_background, window_bg);
-            assert_eq!(resolved.window.inactive_title_bar_background, window_bg);
-            assert_eq!(
-                resolved.window.title_bar_font.color,
-                resolved.defaults.text_color
-            );
-            assert_eq!(resolved.window.inactive_title_bar_text_color, tertiary_text);
-        }
-    }
-
-    /// Over the windows-11 preset the text selection is the user's accent, as
-    /// WinUI 3's `TextControlSelectionHighlightColor` (`SystemAccentColor`).
-    #[test]
-    fn over_the_preset_the_selection_is_the_accent() {
-        let mut base = crate::Theme::preset("windows-11").unwrap();
-        let r = reader_with_high_contrast(Some(false));
-        base.merge(&r.output.to_theme(&r.name, r.icon_set, &r.layout));
-        let mut light = base.light.clone().unwrap();
-        light.resolve_all();
-        let resolved = light.validate().unwrap();
-        let accent = crate::Rgba::rgb(0, 120, 215);
-        assert_eq!(resolved.defaults.selection_background, accent);
-        assert_eq!(resolved.input.selection_background, accent);
-    }
-
-    /// The windows-11 controls WinUI 3 draws without a shadow resolve without
-    /// one (docs/inheritance-rules.toml: the preset must say so).
-    #[test]
-    fn windows_11_controls_without_a_shadow_resolve_without_one() {
-        let theme = crate::Theme::preset("windows-11").unwrap();
-        for mode in [theme.light.clone().unwrap(), theme.dark.clone().unwrap()] {
-            let mut mode = mode;
-            mode.resolve_all();
-            let r = mode.validate().unwrap();
-            assert!(!r.input.border.shadow_enabled);
-            assert!(!r.checkbox.border.shadow_enabled);
-            assert!(!r.progress_bar.border.shadow_enabled);
-            assert!(!r.combo_box.border.shadow_enabled);
-            assert!(!r.segmented_control.border.shadow_enabled);
-            assert!(!r.expander.border.shadow_enabled);
-        }
-    }
-
-    // === Logical system metrics ===
-
-    /// The model states lengths in logical pixels. `GetSystemMetricsForDpi`
-    /// at 96 DPI (100 % scaling) is the unscaled metric; at the system DPI it
-    /// would be device pixels, twice as large at 200 % scaling.
-    #[cfg(all(target_os = "windows", feature = "windows"))]
-    #[allow(unsafe_code)]
-    #[test]
-    fn system_metrics_are_logical_at_any_system_dpi() {
-        let at_96 =
-            |index| unsafe { GetSystemMetricsForDpi(index, USER_DEFAULT_SCREEN_DPI) } as f32;
-
-        // A per-monitor-aware process is told the real system DPI; an unaware
-        // one is told 96 and would pass whatever the reader does.
-        //
-        // The awareness is the process's, so it holds for every test in this
-        // binary from here on, and it cannot be undone. No other test depends
-        // on it: the reader asks for its metrics and fonts at an explicit
-        // 96 DPI (`GetSystemMetricsForDpi`, `SystemParametersInfoForDpi`),
-        // which awareness does not change, its `SystemParametersInfoW` calls
-        // read accessibility flags, which have no size, and the icon tests in
-        // `winicons.rs` check that an icon loads, not its pixel size.
-        let _ = unsafe {
-            ::windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(
-                ::windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
-            )
-        };
-
-        let mut variant = crate::ThemeMode::default();
-        read_widget_sizing(&mut variant);
-        assert_eq!(variant.scrollbar.groove_width, Some(at_96(SM_CXVSCROLL)));
-        assert_eq!(variant.scrollbar.min_thumb_length, Some(at_96(SM_CYVTHUMB)));
-        assert_eq!(variant.defaults.border.line_width, Some(at_96(SM_CXBORDER)));
-
-        let (small, large) = read_icon_sizes();
-        assert_eq!(small, at_96(SM_CXSMICON));
-        assert_eq!(large, at_96(SM_CXICON));
-    }
-
-    /// The fonts' point sizes resolve, at the reader's `font_dpi`, to logical
-    /// pixels: the message font's `lfHeight` at 96 DPI (100 % scaling). At the
-    /// system DPI they would be device pixels, 1.5 times as large at 150 %.
-    #[cfg(all(target_os = "windows", feature = "windows"))]
-    #[allow(unsafe_code)]
-    #[test]
-    fn fonts_resolve_to_logical_pixels_at_any_system_dpi() {
-        // Per-monitor aware, as in `system_metrics_are_logical_at_any_system_dpi`,
-        // which says why setting it for the whole test binary is safe.
-        let _ = unsafe {
-            ::windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(
-                ::windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
-            )
-        };
-        let mut ncm = NONCLIENTMETRICSW {
-            cbSize: std::mem::size_of::<NONCLIENTMETRICSW>() as u32,
-            ..Default::default()
-        };
-        unsafe {
-            ::windows::Win32::UI::HiDpi::SystemParametersInfoForDpi(
-                SPI_GETNONCLIENTMETRICS.0,
-                ncm.cbSize,
-                Some(&mut ncm as *mut _ as *mut _),
-                0,
-                USER_DEFAULT_SCREEN_DPI,
-            )
-        }
-        .unwrap();
-        let logical = ncm.lfMessageFont.lfHeight.unsigned_abs() as f32;
-        assert!(logical > 0.0, "no message font at 96 DPI");
-        assert_eq!(LOGICAL_DPI, USER_DEFAULT_SCREEN_DPI);
-
-        let result = build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            [None; 6],
-            read_all_system_fonts(),
-            None,
-            None,
-            None,
-        );
-        let font_dpi = result.font_dpi.unwrap();
-        let size = reader_mode(&result)
-            .defaults
-            .font
-            .size
-            .unwrap()
-            .to_logical_px(font_dpi);
-        assert!(
-            (size - logical).abs() < 1e-3,
-            "message font resolves to {size}px at font_dpi {font_dpi}; logical is {logical}px"
-        );
-    }
-
-    /// The reader states points that resolve to logical pixels: `font_dpi` 96.
-    #[test]
-    fn build_theme_reports_logical_font_dpi() {
-        assert_eq!(light_reader().font_dpi, Some(96.0));
-    }
-
-    // === Border line width test ===
-
-    #[test]
-    fn build_theme_sets_border_line_width() {
-        let result = light_reader();
-        let variant = reader_mode(&result);
-        assert!(
-            variant.defaults.border.line_width.is_some(),
-            "defaults.border.line_width should be set from SM_CXBORDER"
-        );
-    }
-
-    // === Icon sizes test (WIN-05) ===
-
-    #[test]
-    fn build_theme_with_icon_sizes() {
-        let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            [None; 6],
-            default_fonts(),
-            None,
-            Some((16.0, 32.0)),
-            None,
-        );
-        let variant = reader_mode(&theme);
-        assert_eq!(variant.defaults.icon_sizes.small, Some(16.0));
-        assert_eq!(variant.defaults.icon_sizes.large, Some(32.0));
-    }
-
-    // === Accessibility tests (WIN-04) ===
-
-    #[test]
-    fn build_theme_with_accessibility() {
-        let accessibility = AccessibilityData {
-            text_scaling_factor: Some(1.5),
-            high_contrast: Some(true),
-            reduce_motion: Some(false),
-            advanced_effects_enabled: None,
-        };
-        let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            [None; 6],
-            default_fonts(),
-            None,
-            None,
-            Some(&accessibility),
-        );
-        // Accessibility fields are no longer on ThemeDefaults;
-        // they live on AccessibilityPreferences (constructed by pipeline).
-        assert!(matches!(
-            theme.output,
-            crate::ReaderOutput::Single { is_dark: false, .. }
-        ));
-    }
-
-    /// `reduce_transparency` is the *Transparency effects* setting turned off:
-    /// `UISettings.AdvancedEffectsEnabled` false.
-    #[test]
-    fn build_theme_reduce_transparency_is_advanced_effects_off() {
-        for (enabled, reduce) in [(Some(true), false), (Some(false), true), (None, false)] {
-            let accessibility = AccessibilityData {
-                text_scaling_factor: None,
-                high_contrast: None,
-                reduce_motion: None,
-                advanced_effects_enabled: enabled,
-            };
-            let result = build_theme(
-                crate::Rgba::rgb(0, 120, 215),
-                crate::Rgba::rgb(0, 0, 0),
-                [None; 6],
-                default_fonts(),
-                None,
-                None,
-                Some(&accessibility),
-            );
-            assert_eq!(
-                result.accessibility.reduce_transparency, reduce,
-                "AdvancedEffectsEnabled {enabled:?}"
-            );
-        }
-    }
-
-    // === Widget sizing test ===
-
-    #[test]
-    fn build_theme_includes_widget_sizing() {
-        let result = light_reader();
-        let variant = reader_mode(&result);
-        assert_eq!(variant.scrollbar.groove_width, Some(17.0));
-        assert_eq!(variant.scrollbar.min_thumb_length, Some(17.0));
-        assert_eq!(variant.defaults.focus_ring_width, None);
-        assert_eq!(variant.defaults.border.line_width, Some(1.0));
-        // WinUI 3's design sizes come from the windows-11 preset alone.
-        assert_eq!(variant.button.min_height, None);
-        assert_eq!(variant.splitter.divider_width, None);
-        assert_eq!(variant.menu.row_height, None);
-        assert_eq!(variant.defaults.border.corner_radius, None);
-    }
-
-    // === What the preset states, not the reader ===
-
-    #[test]
-    fn build_theme_sets_the_accent_but_not_text_background_selection_focus() {
-        let result = light_reader();
-        let variant = reader_mode(&result);
-        assert_eq!(
-            variant.defaults.accent_color,
-            Some(crate::Rgba::rgb(0, 120, 215))
-        );
-        assert_eq!(variant.defaults.text_color, None);
-        assert_eq!(variant.defaults.background_color, None);
-        assert_eq!(variant.defaults.selection_background, None);
-        assert_eq!(variant.defaults.focus_ring_color, None);
-    }
-
-    /// `SM_CXFOCUSBORDER` is 1; WinUI 3's 2 px ring comes from the preset.
-    #[test]
-    fn build_theme_leaves_focus_ring_width_to_the_preset() {
-        let result = light_reader();
-        assert_eq!(reader_mode(&result).defaults.focus_ring_width, None);
-    }
-
-    /// `CardBackgroundFillColorDefault` comes from the preset
-    /// (docs/platform-facts.md:1054).
-    #[test]
-    fn build_theme_leaves_surface_to_the_preset() {
-        let result = light_reader();
-        assert_eq!(reader_mode(&result).defaults.surface_color, None);
-    }
-
-    /// `TextFillColorDisabled` comes from the preset
-    /// (docs/platform-facts.md:1064).
-    #[test]
-    fn build_theme_leaves_disabled_text_to_the_preset() {
-        let result = light_reader();
-        assert_eq!(reader_mode(&result).defaults.disabled_text_color, None);
-    }
-
-    // === No old model references verification ===
-
-    #[test]
-    fn build_theme_returns_native_theme_with_theme_variant() {
-        // Verify the output type is correct (Theme with ThemeMode, not old types)
-        let theme = light_theme();
-        let variant: &crate::ThemeMode = theme.light.as_ref().unwrap();
-        // Access new per-widget fields to prove they exist
-        let _ = variant.defaults.accent_color;
-        let _ = variant.window.title_bar_font;
-        let _ = variant.menu.font;
-        let _ = variant.status_bar.font;
-        let _ = variant.button.background_color;
-        let _ = variant.defaults.icon_sizes.small;
-        let _ = variant.defaults.icon_sizes.toolbar;
-        let _ = variant.dialog.button_order;
-    }
-
-    #[test]
-    fn test_windows_resolve_validate() {
-        // Load windows-11 preset as base (provides full color/geometry/spacing).
-        let mut base = crate::Theme::preset("windows-11").unwrap();
-        // Build reader output (light mode, sample data).
-        let reader_output = light_theme();
-        // Merge reader output on top of preset.
-        base.merge(&reader_output);
-
-        // Extract light variant.
-        let mut light = base
-            .light
-            .clone()
-            .expect("light variant should exist after merge");
-        light.resolve_all();
-        let resolved = light.validate().unwrap_or_else(|e| {
-            panic!("Windows resolve/validate pipeline failed: {e}");
-        });
-
-        // Spot-check: reader-sourced fields present.
-        assert_eq!(
-            resolved.defaults.accent_color,
-            crate::Rgba::rgb(0, 120, 215),
-            "accent should be from Windows reader"
-        );
-        assert_eq!(
-            resolved.defaults.font.family.as_ref(),
-            "Segoe UI",
-            "font family should be from Windows reader"
-        );
-        assert_eq!(
-            resolved.dialog.button_order,
-            crate::DialogButtonOrder::PrimaryLeft,
-            "dialog button order should be leading-affirmative (primary leftmost) for Windows per MS Common Buttons / WinUI 3 guidance"
-        );
-        // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
-    }
-
-    /// A high-contrast read over the windows-11 preset resolves and validates,
-    /// with the system colours where the reader writes them.
-    #[test]
-    fn high_contrast_reader_over_the_preset_resolves() {
-        let mut base = crate::Theme::preset("windows-11").unwrap();
-        let r = reader_with_high_contrast(Some(true));
-        base.merge(&r.output.to_theme(&r.name, r.icon_set, &r.layout));
-        let mut light = base.light.clone().unwrap();
-        light.resolve_all();
-        let resolved = light.validate().unwrap_or_else(|e| {
-            panic!("high-contrast resolve/validate failed: {e}");
-        });
-        let c = distinct_sys_colors();
-        assert_eq!(resolved.button.background_color, c.btn_face);
-        assert_eq!(resolved.button.font.color, c.btn_text);
-        assert_eq!(resolved.list.selection_background, c.highlight);
-    }
-
-    // === Plan 94-03 (G8): WindowsReader ThemeReader impl ===
-    //
-    // Locks the G8 contract on the Windows side: a unit struct `WindowsReader`
-    // exists at the module root and implements `crate::reader::ThemeReader`.
-    // Before Task 2 lands, this fails to compile (`no struct WindowsReader` /
-    // `unresolved module crate::reader`).
-    //
-    // The trait object coercion is the structural object-safety probe. Body
-    // is gated on `cfg(all(target_os = "windows", feature = "windows"))` so
-    // that the non-Windows build only compile-checks the trait path reference.
-    #[test]
-    fn windows_reader_exists() {
-        // Reference the trait path once so name resolution fires on all
-        // targets regardless of whether the WindowsReader struct is compiled.
-        let _: Option<&dyn crate::reader::ThemeReader> = None;
-
-        #[cfg(all(target_os = "windows", feature = "windows"))]
-        {
-            let r: Box<dyn crate::reader::ThemeReader> = Box::new(super::WindowsReader);
-            let _ = &r;
-        }
-    }
-}
+pub(crate) mod tests;

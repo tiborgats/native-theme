@@ -8,7 +8,7 @@
 // CoreGraphics FFI -- no safe alternative
 #![allow(unsafe_code)]
 
-use crate::IconData;
+use crate::icons::IconData;
 use objc2::rc::Retained;
 use objc2_app_kit::{NSFontWeightRegular, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};
 use objc2_core_foundation::{CGPoint, CGRect, CGSize};
@@ -22,12 +22,28 @@ use std::ptr;
 /// Default icon size in points (suitable for toolbar/menu icons).
 const DEFAULT_ICON_SIZE: u32 = 24;
 
+/// The first macOS with
+/// `+[NSImage imageWithSystemSymbolName:accessibilityDescription:]`
+/// (`API_AVAILABLE(macos(11.0))`, AppKit's `NSImage.h:82`, Xcode 26.6).
+/// Below it the selector does not exist and sending it raises an
+/// Objective-C exception, which `msg_send` unwinds, so the loader does not
+/// send it.
+const SYMBOL_IMAGE_MAJOR: u32 = 11;
+
+/// Whether `version` has SF Symbols images.
+fn has_symbol_images(version: crate::pipeline::OsVersion) -> bool {
+    version.major >= SYMBOL_IMAGE_MAJOR
+}
+
 /// Load an SF Symbol image by name with the given point size.
 ///
 /// Creates an NSImage from the system symbol name, then applies
 /// NSImageSymbolConfiguration with the given point size, regular weight,
 /// and medium scale.
 fn load_symbol(name: &str, point_size: f64) -> Option<Retained<NSImage>> {
+    if !has_symbol_images(crate::macos::os_version()) {
+        return None;
+    }
     let ns_name = NSString::from_str(name);
     let image = NSImage::imageWithSystemSymbolName_accessibilityDescription(&ns_name, None)?;
     // SAFETY: reading `NSFontWeightRegular` is an FFI read of an AppKit `extern`
@@ -103,8 +119,9 @@ fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
 /// it is `None`. It is a monochrome template: with `fg_color` its pixels
 /// take that colour and keep their alpha; without it they are left as drawn.
 ///
-/// Returns `None` if the symbol name doesn't exist on this macOS version,
-/// or if `size` is 0 or its `size² × 4` bytes exceed the decode bound
+/// Returns `None` on macOS before 11, which has no SF Symbols images
+/// ([`SYMBOL_IMAGE_MAJOR`]), if the symbol name doesn't exist on this
+/// macOS version, or if `size` is 0 or its `size² × 4` bytes exceed the decode bound
 /// ([`raster_size_in_bound`](crate::icons::raster_size_in_bound)), or if
 /// the image AppKit draws for it does, counted in pixels (twice the points
 /// on a 2× display).
@@ -138,7 +155,7 @@ pub(crate) fn load_sf_icon_by_name(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::{IconRole, IconSet, icon_name};
+    use crate::icons::{IconRole, IconSet, icon_name};
 
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the SF Symbols set.
@@ -193,6 +210,14 @@ mod tests {
             );
         }
         // If it returns SVG fallback, that's also acceptable
+    }
+
+    #[test]
+    fn symbol_images_start_at_macos_11() {
+        use crate::pipeline::OsVersion;
+        assert!(!has_symbol_images(OsVersion::new(10, 15, 7)));
+        assert!(has_symbol_images(OsVersion::new(11, 0, 0)));
+        assert!(has_symbol_images(OsVersion::new(26, 6, 2)));
     }
 
     // === load_sf_icon_by_name tests ===

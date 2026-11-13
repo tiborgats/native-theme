@@ -1,0 +1,52 @@
+# A synthetic preset (S17, ADD-A144): the subtitle's text fill listed, and a preset rule making the
+# subtitle absent on hover, where no field of it is listed. The label's and the subtitle's text
+# styles are written out, so the subtitle's can leave its fill to the synthetic layer.
+# base without: text = "= token.text.roles.body"
+# base without: text = "= token.text.roles.body"
+[pending]
+"widgets.button.subtitle.text.fill" = "U61"
+
+[widgets.button.label.text]
+font = { family = "Probe Sans", size_px = 12, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }
+scaling_role = "none"
+letter_spacing_px = 0
+word_spacing_px = 0
+line_height = "auto"
+decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+mnemonic_decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+case = "mixed"
+elision = "end"
+wrap = "word"
+max_lines = "none"
+fill = "#000000"
+
+[widgets.button.subtitle.text]
+font = { family = "Probe Sans", size_px = 12, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }
+scaling_role = "none"
+letter_spacing_px = 0
+word_spacing_px = 0
+line_height = "auto"
+decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+mnemonic_decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+case = "mixed"
+elision = "end"
+wrap = "word"
+max_lines = "none"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { states = ["hover"] }
+target = "button.subtitle"
+set = { absent = true }

@@ -1,0 +1,14 @@
+# preset.toml's twin whose focus offset stays zero in the dark scheme: the leaf's fact, which applies there
+# after the block's, fails it.
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

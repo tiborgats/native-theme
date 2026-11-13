@@ -1,0 +1,43 @@
+# A synthetic preset (S17, ADD-A128): the label's font axes listed as pending, a `Value` of a map the
+# preset's rule patches on hover, where it is stated beneath the later pending fact U4 (S6.1: a
+# stated map in a patch over nothing is the map), as ios-13's subtitle axes are.
+# base without: text = "= token.text.roles.body"
+[pending]
+"widgets.button.label.text.font.axes" = "U3"
+
+[widgets.button.label.text]
+font.family = "Probe Sans"
+font.size_px = 12
+font.weight = 400
+font.style = "normal"
+font.width = "absent"
+font.features = {}
+scaling_role = "none"
+letter_spacing_px = 0
+word_spacing_px = 0
+line_height = "auto"
+decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+mnemonic_decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+case = "mixed"
+elision = "end"
+wrap = "word"
+max_lines = "none"
+fill = "#000000"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["hover"] }
+target = "button.label"
+set = { text.font.axes = { GRAD = { fixed = 1 } } }

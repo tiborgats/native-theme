@@ -40,7 +40,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-005 | `window.content.fill (PaintKind::Material @mica: tint, luminosity, saturation, blur_radius, noise_opacity, fallback)` | field |
 | W1-005 | `window.content.fill @ variant @mica_alt` | rule |
 | W1-005 | `window.content.fill @ cond window_inactive / cond window_inactive variant @mica_alt (Material.fallback: the base and base-alt solid fills)` | rule |
-| W1-005 | `window.content.transitions (the material to colour crossfade)` | field |
+| W1-005 | `window.content.transitions (the material to colour crossfade: a pending fact, the preset stating none, the path listed in its `[pending]` table (register U184), as W3-10's, S2.7, S17, ADD-A126)` | field |
 | W1-006 | `window.title_bar.min_height` | field |
 | W1-006 | `window.title_bar.min_height @ variant @tall / variant @collapsed / variant @titlebar_control_expanded` | rule |
 | W1-006 | `reader:windows:AppWindowTitleBar.Height` | reader |
@@ -75,7 +75,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-016 | `reader:windows:SM_CXFRAME, SM_CXPADDEDBORDER, DWMWA_EXTENDED_FRAME_BOUNDS` | reader |
 | W1-017 | `cond animations_off (read from SPI_GETCLIENTAREAANIMATION)` | condition |
 | W1-017 | - (the DWM's open, close, minimize, maximize and restore animations) | out (R1.1) |
-| W1-148† | `window.values.caption_button_capabilities (the maximize button greyed on a window that cannot be resized: WhenMissing::Disable)` | field |
+| W1-148† | `window.values.caption_item_requirements (the maximize button greyed on a window that cannot be resized: WhenMissing::Disable)` | field |
 | W1-148† | `window.{caption_button.fill,caption_button_glyph.glyph.fill} @ {disabled}` | rule |
 | W1-148† | `window.values.caption_button_layout @ variant dialog (the close-only caption)` | rule |
 | W1-148† | - (the context-help "?" caption button, WS_EX_CONTEXTHELP: Win32 only) | preset (R1.3) |
@@ -88,18 +88,19 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-149† | `window.values.attention_flash (period_ms, count)` | field |
 | W1-149† | `reader:windows:SPI_GETFOREGROUNDFLASHCOUNT, GetCaretBlinkTime` | reader |
 | W1-149† | - (the taskbar button's flash: the shell's) | out (R1.1) |
-| W1-018 | `button.body.stroke (paint: Linear gradient over an absolute extent)` | field |
+| W1-018 | `button.body.stroke (paint: Linear gradient over an absolute extent; fill_clip inner_edge, the default style's BackgroundSizing InnerBorderEdge)` (`Button_themeresources.xaml:156`, ADD-A121) | field |
 | W1-018 | `button.body.stroke @ cond scheme:dark (gradient at the other edge)` | rule |
 | W1-019 | `button.body.stroke @ {hover} / {pressed} / {disabled}` | rule |
 | W1-020 | `button.{body.fill,label.text.fill} @ {hover} / {pressed} / {disabled} variant primary` | rule |
-| W1-020 | `button.body.stroke (gradient paint) @ variant primary / {hover} variant primary / {pressed} variant primary / {disabled} variant primary` | rule |
+| W1-020 | `button.body.stroke (gradient paint; fill_clip box, AccentButtonStyle's BackgroundSizing OuterBorderEdge) @ variant primary / {hover} variant primary / {pressed} variant primary / {disabled} variant primary` (`Button_themeresources.xaml:238`) | rule |
 | W1-020 | `button.{body.fill,label.text.fill,body.stroke} @ {default} / {default,hover} / {default,pressed} / {default,disabled} context dialog.action_area` (the dialog's default button in AccentButtonStyle, in every state) | rule |
 | W1-021 | `button.body.fill, button.label.text.fill, button.body.stroke @ variant flat / {hover} variant flat / {pressed} variant flat / {disabled} variant flat` | rule |
-| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` | rule |
+| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked and enabled, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, set in the Checked, CheckedPointerOver and CheckedPressed states, `:255-256`, `:271-272`, `:287-288`; `inner_edge` under `{checked,disabled}`, whose `CheckedDisabled` state sets none, `:292-304`; ADD-A122) | rule |
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled} variant toggle` | rule |
-| W1-023 | `button.body.transitions (Fill)` | field |
+| W1-023 | `button.body.transitions (Fill: engine WinUi, the template's BrushTransition, which hands an interrupted fade off from the colour drawn and fades a brush in from none from its own colour at zero alpha, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:42-66`, `src/dxaml/xcp/components/brushes/WUCBrushManager.cpp:525-579`; S2.7, ADD-A126)` | field |
+| W1-023 | `token.motion (color_space: the composition animations' CompositionColorSpace_Rgb, the brush transitions', microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111, its arithmetic measured, the catalogue's Open items, ADD-A125)` | token |
 | W1-023 | `token.motion.durations.control_faster` | token |
-| W1-024 | `button.icon.transitions` (its AnimatedIcon states: a `TransitionKind::Keyed` transition of group `Icon` per state, ADD-A27) | field |
+| W1-024 | `button.icon.transitions` (its AnimatedIcon states: a `TransitionKind::Keyed` transition of group `Icon` per state, ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, its `visual` the application's own source, which the application's layer adds to `token.icons`' `animated_visuals` and names, the preset stating the state keys, S2.7, ADD-A126) | field |
 | W1-025 | `button.body.focus.offset` | field |
 | W1-025 | `FocusIndicator.offset (per side, ADD-A18; stated on each widget's focus field, the per-control FocusVisualMargin)` | field |
 | W1-026 | `input.body.stroke (gradient paint per edge)` | field |
@@ -132,18 +133,22 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-150† | `input.supporting_text.text; input.values.supporting_text_gap` | field |
 | W1-150† | `combo_box.supporting_text.text; combo_box.values.supporting_text_gap` | field |
 | W1-150† | `input.supporting_text.text @ context stepper / context any search_field (NumberBox's and AutoSuggestBox's description; PasswordBox is input variant secure)` | rule |
-| W1-151† | `input.misspelling.text.decoration` (thickness and offset as references to the font's metrics, widget.text.font_underline_thickness and _offset, where the probe shows the line follows the font, S2.8) | field |
+| W1-151† | `input.misspelling.text.decoration` (thickness and offset as references to its own font's metrics, element.font_underline_thickness and _offset, the *(element)* part declaring them, where the probe shows the line follows the font, S2.8; ADD-A130) | field |
 | W1-151† | `input.preedit.{fill,text.fill,text.decoration} @ variant selected_clause (the target clause; the IME's other clause attributes, TF_DISPLAYATTRIBUTE, as keyed preedit variants)` | rule |
-| W1-037 | `checkbox.box.fill, checkbox.box.stroke, checkbox.mark.glyph.fill, checkbox.label.text.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} / {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled}` | rule |
-| W1-038 | `checkbox.mark.glyph (FontCodePoint and size) @ {indeterminate}` | rule |
+| W1-037 | `checkbox.box.fill, checkbox.box.stroke, checkbox.mark.glyph.stroke, checkbox.label.text.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} / {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled}` (the mark's colour on its stroke, the accept visual stroking its path in the foreground with no fill, `AnimatedAcceptVisualSource.cpp:564`, `:581`, its `fill` absent, S2.9; its rest look where it is drawn; unchecked it is hidden, `shown = false`, W1-039, and its stroke there, the base's `CheckBoxCheckGlyphForegroundUnchecked` and the `{hover}`, `{pressed}` and `{disabled}` rules', is its hidden style, the colours it trims off in, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CheckBox_themeresources.xaml:65-68`, `:153-156`, `:241-244`, set by the unchecked states, `:319-320`, `:344-345`, `:369-370`; S2.7's *A part not shown at rest*, ADD-A126) | rule |
+| W1-038 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path, stroked: the accept visual's dash)` (its `Geometry_0`, `microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:358-370`, placed at its own sprite's offset, `:562-563`, inside the same 1.05 containers, so one sprite unit, 1.05 of the visual's, below the check, W1-039; the visual cuts to it at its `NormalIndeterminate` marker, its layer visible from there, `:168-173`, `AnimatedIcon/AnimatedIcon.cpp:354-360`, ADD-A126) | rule |
 | W1-038 | `checkbox.box.{fill,stroke} @ {indeterminate}` | rule |
-| W1-039 | `checkbox.mark.glyph (FontCodePoint and size)` | field |
-| W1-039 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` | field |
+| W1-039 | `checkbox.mark.glyph (GlyphSource::Path, stroked: the accept visual's check; fill absent)` (the path data in the source, not a measurement: the check `Geometry_1`, an open polyline, `microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:372-385`, the pressed-on tweak `Geometry_2`, `:392-404`, placed by the check's sprites at their scale and offset, `:579-580`, inside the containers' 1.05 scale about the box's centre, which hold them offset back by the centre, the check's pair `:855-862`, `:870-877`, as every precomp's, so the path's whole scale 0.735 of the visual's units, inside the visual's square box, its `Size()`, `:1855-1857`, which `AnimatedIcon` scales uniformly to its arranged size, the template moving it one unit down, `Margin="0,1,0,-1"`, `CommonStyles/CheckBox_themeresources.xaml:604`, `AnimatedIcon/AnimatedIcon.cpp:153-181`; stroked at the visual's thickness with round caps and join, `:564-569`, `:581-587`; what WinUI draws, the AnimatedIcon's source, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CheckBox_themeresources.xaml:604-608`, the code point `CheckBoxCheckedGlyph` only the fallback, drawn where the visual cannot be inserted, `AnimatedIcon.cpp:473-479`, `:537-558`; the facts' "a font glyph" the Windows lane's to correct, ledger queue #109; ADD-A125, ADD-A126) | field |
+| W1-039 | `checkbox.mark.shown (false); checkbox.mark.shown @ {checked} / {indeterminate} (true)` (the rest look: the accept visual's Off frames draw nothing, `AnimatedAcceptVisualSource.cpp:437`, `:470`; S2.7's *A part not shown at rest*, ADD-A126) | rule |
+| W1-039 | `checkbox.mark.transitions (Glyph: TransitionKind::Keyed, key normal_off; engine WinUiAnimatedIcon { visual = "accept" }, its duration and timing absent, its delay zero; ADD-A27)` and `@ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} / {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled}` (keys pointer_over_off, pressed_off, normal_off, normal_on, pointer_over_on, pressed_on, normal_on, normal_indeterminate, pointer_over_indeterminate, pressed_indeterminate, normal_indeterminate: each visual state's `AnimatedIcon.State`, `NormalOff` and the rest, in S1's spelling, `CommonStyles/CheckBox_themeresources.xaml:324`, `:349`, `:375`, `:400`, `:425`, `:450`, `:476`, `:504`, `:533`, `:562`, `:592`; the group `Glyph`, the mark drawing a glyph, its stroke's colour changing at once under it, as the template sets the foreground by a discrete key frame, `:319-321`; the player draws the check on by `TrimEnd` toward checked and trims it off by `TrimStart` toward unchecked, `AnimatedAcceptVisualSource.cpp:437`, `:470`, `:522-553`, the unchecked states' keys stated with their hidden style, so a check trimming off is drawn in their colours, W1-037; a hover on an unchecked box plays a segment that, started while the mark is hidden, draws nothing, S2.7's *A part not shown at rest*, ADD-A126) | rule |
+| W1-039 | `token.icons` (its `animated_visuals` entry `accept`: the visual's duration and markers as the source states them) (`AnimatedAcceptVisualSource.cpp:105`, `:1940-1985`, the inputs `WinUiAnimatedIcon` times its segments from, S2.7; the visual's frames the Windows lane's asset, the catalogue's Open items, ADD-A126) | token |
 | W1-040 | `checkbox.body.min_height, checkbox.body.min_width` | field |
-| W1-041 | `radio.dot.{min_width,min_height} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
-| W1-041 | `radio.dot.transitions (Geometry: the scale animation)` | field |
+| W1-041 | `radio.dot.shown (false); radio.dot.{shown,min_width,min_height} @ {pressed} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (the rest looks: the dot hidden neither checked nor pressed, S2.7's *A part not shown at rest*, the checked glyph hidden unchecked, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:374`, `:348-353`, `:362`; an unchecked radio while pressed shows a second dot at the pressed state's dimensions, `:298-306`, `:376`, `{pressed}` written before the checked rules; a checked radio's dot while pressed, which `Pressed` and `Checked` both set, `:298-300`, `:353`, a measurement, the catalogue's Open items, ADD-A125) | rule |
+| W1-041 | `radio.dot.{min_width,min_height} (the pressed glyph's template size); radio.dot.transitions (Geometry: ControlFastAnimationDuration on ControlFastOutSlowInKeySpline, engine WinUi; then Geometry from {pressed, checked}: a zero duration, engine WinUi)` (the hidden dot: the pressed dot grows from its template's size, `:376`, to the pressed state's, `RadioButton_themeresources.xaml:301-306`, and is gone at once as the press ends unchecked or the radio is unchecked, its storyboard stopping and its checked glyph hidden with `Duration="0"`, `:348-353`; S2.7's *A part not shown at rest*, ADD-A126) | field |
+| W1-041 | `radio.dot.transitions (Geometry, engine WinUi) @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (each common state's key frame moving the checked glyph's width and height, `:292-296`, `:338-343`, so a press released into checked grows on from the pressed dot; after the base's zero, which it overrides) | rule |
 | W1-042 | `radio.ring.stroke, radio.ring.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
-| W1-042 | `radio.dot.fill, radio.dot.stroke @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
+| W1-042 | `radio.dot.fill, radio.dot.stroke @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (ADD-A125) | rule |
+| W1-042 | `radio.dot.fill, radio.dot.stroke @ {pressed} !{checked}` (the pressed unchecked dot, `shown` there by W1-041's rule, ADD-A126: its fill `RadioButtonCheckGlyphFill`, which the `Pressed` state does not retarget on `PressedCheckGlyph`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:34`, `:92`, `:150`, `:298-306`, its border not drawn, a `BorderBrush` but no `BorderThickness`, `:376`; ADD-A125) | rule |
 | W1-043 | `radio.{body,ring,dot,label} (the typed radio, stated apart from checkbox)` | field |
 | W1-044 | `menu.item.fill @ {pressed}` | rule |
 | W1-044 | `menu.item_label.text.fill @ {pressed}` | rule |
@@ -161,9 +166,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-049 | `menu.submenu_arrow.glyph.fill @ {hover} / {pressed} / {open} / {disabled}` | rule |
 | W1-049 | `menu.{item.fill,item_label.text.fill} @ {open}` | rule |
 | W1-049 | `menu.submenu_arrow.min_width (its box: the chevron margin)` | field |
-| W1-050 | `menu.check_indicator.glyph (glyph and size) @ {checked} variant check / {checked} variant radio` | rule |
+| W1-050 | `menu.check_indicator.glyph (glyph and size); menu.check_indicator.glyph @ variant radio` (the check in the base and the radio's glyph a patch of it, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | rule |
 | W1-050 | `menu.check_indicator.glyph.fill @ {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
 | W1-050 | `menu.values.{check_column,icon_column,check_column_width} (the single and double placeholder)` | field |
+| W1-050 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / context any combo_box` (no mark in the combo list whatever its selection, WinUI's combo list marking its chosen value by the pill and its selected colours, with no glyph, `ComboBox_themeresources.xaml:657-670`, its `ComboBoxItem` the pill and the content presenter only, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:758-764`, W1-135; an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (W1-050, W1-100), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | W1-051 | `menu.split_chevron.{fill,glyph,min_width}; menu.split_divider.{stroke,min_height}` | field |
 | W1-051 | `menu.split_chevron.fill @ {hover} / {pressed}` | rule |
 | W1-051 | `menu.item.* @ variant @split` | rule |
@@ -183,11 +189,14 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-059 | `tooltip.values.{reshow_delay,keyboard_show_delay,display_time}` | field |
 | W1-059 | `tooltip.values.show_delay @ cond input:touch` | rule |
 | W1-059 | `WinUiToolTip (tooltip.values.placement; its gap: the offset from the pointer or the target)` | placement |
-| W1-059 | `reader:windows:SPI_GETMOUSEHOVERTIME -> tooltip.values.{show_delay,reshow_delay}` | reader |
+| W1-059 | `tooltip.values.{show_delay,reshow_delay,keyboard_show_delay}` (multiples of `token.behavior.hover_time`, WinUI's `GetInitialShowDelay`: twice it, once (the mouse's reshow), twice (a keyboard's, first or reshown); under `cond input:touch` once and, on a reshow, zero; S4.2, ADD-A130) | field |
+| W1-059 | `reader:windows:SPI_GETMOUSEHOVERTIME -> token.behavior.hover_time` (the tooltip delays follow it by their expressions; ADD-A130) | reader |
 | W1-060 | `scrollbar.{body.min_width,thumb.min_width,thumb.fill} @ cond overlay_scrollbars !{hover} (the panning indicator: a thin thumb)` | rule |
 | W1-060 | `scrollbar.track.fill (Absent) @ cond overlay_scrollbars !{hover} (no track)` | rule |
 | W1-060 | `scrollbar.body.{min_width,min_height}; scrollbar.thumb.{stroke,min_width} (the expanded bar)` | field |
 | W1-061 | `scrollbar.arrow_button.{glyph,fill,stroke,padding}` | field |
+| W1-061 | `scrollbar.arrow_button.{glyph,padding} @ variant decrement / variant increment / variants {decrement,vertical} / variants {increment,vertical}` (the four glyphs and margins, `src/controls/dev/CommonStyles/ScrollBar_themeresources.xaml:258`, `:301`, `:344`, `:387`, `:195-198`; ADD-A146) | rule |
+| W1-061 | `scrollbar.values.arrow_buttons_start; scrollbar.values.arrow_buttons_end` (Single at each end, the template's one button there, `:681-711`; ADD-A146) | field |
 | W1-061 | `scrollbar.arrow_button.{fill,stroke,glyph.fill} @ {hover} / {pressed} / {disabled}` | rule |
 | W1-061 | `scrollbar.arrow_button.transform @ {pressed}` | rule |
 | W1-061 | `scrollbar.arrow_button.transitions (Transform: the press scale's animation)` | field |
@@ -200,7 +209,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-064 | `scrollbar.values.auto_hide_delay` | field |
 | W1-065 | `scroll_view.corner.{fill,transitions}` | field |
 | W1-065 | `scroll_view.values.scrollbar_margin` | field |
-| W1-066 | `reader:windows:UISettings.ScrollBarSize, ScrollBarArrowSize, ScrollBarThumbBoxSize -> scrollbar.body.min_width, scrollbar.arrow_button.min_height, scrollbar.thumb.min_width` | reader |
+| W1-066 | - (the Win32 scroll bar's metrics, which WinUI's scroll bar, sized by its XAML resources, W1-060, does not read: `microsoft-ui-xaml@2.5.1 src/` holds `ScrollBarArrowSize` and `ScrollBarThumbBoxSize` nowhere and `ScrollBarSize` only as a resource key) | preset (R1.3) |
 | W1-152† | `reader:windows:UISettings.AutoHideScrollBars -> cond overlay_scrollbars` | reader |
 | W1-152† | `cond overlay_scrollbars` | condition |
 | W1-067 | `slider.thumb_inner.{fill,min_width,min_height}` | field |
@@ -236,7 +245,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-082 | `button.{body.min_width,body.min_height,icon.glyph} @ variant close context tab.tab (the button size, the glyph and its size)` | rule |
 | W1-082 | `button.{body.fill,icon.glyph.fill,body.stroke} @ {hover} / {pressed} / {disabled} variant close context tab.tab` | rule |
 | W1-082 | `button.{body.fill,icon.glyph.fill,body.stroke} @ variant close context tab.tab {selected} / variant close context tab.tab {hover} / variant close context tab.tab {pressed}` | rule |
-| W1-082 | `tab.values.close_button_shown` | field |
+| W1-082 | `tab.values.close_button_visibility` | field |
 | W1-082 | `tab.tab.padding @ variant closable` (CloseIconStates: the padding with and without the button) | rule |
 | W1-082 | `button.body.margin @ variant close context tab.tab` (`TabViewItemHeaderCloseMargin`: the gap to the label) | rule |
 | W1-083 | `button.{body.min_width,body.min_height,icon.glyph,body.fill} @ variant add context tab.bar` | rule |
@@ -256,9 +265,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-088 | `tab.pane.fill (a layer over Mica Alt: = role.@layer_on_mica_base_alt_*)` | field |
 | W1-088 | `tab.tab.fill @ {selected} (joined to the pane's fill)` | rule |
 | W1-089 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ variant sidebar` | rule |
-| W1-089 | `list.row_selection_indicator.fill @ {hover} / {pressed} / {disabled} variant sidebar` | rule |
+| W1-089 | `list.row_selection_indicator.transitions (Opacity, Transform: a zero duration, engine WinUi) @ variant sidebar / {selected} variant sidebar` (written after W1-107's `{selected}` rule, which it overrides there: NavigationView's pill, its template's rectangle at opacity 0, `src/controls/dev/NavigationView/NavigationView_themeresources.xaml:602`, `:220-222`, is set to 0 and 1 at once in code where no move runs, `src/controls/dev/NavigationView/NavigationView.cpp:2130-2131`, and as a move completes, `:2246-2255`; its motion is the move's, the `@indicator_move` presentation, W1-090; ADD-A126) | rule |
 | W1-089 | `list.values.selection_indicator_edge @ variant sidebar` (the pill at the row's leading edge) | rule |
-| W1-090 | `list.values.presentations (event @indicator_move, part row_selection_indicator, PresentationKind::Morph) @ variant sidebar` | rule |
+| W1-090 | `list.values.presentations (event @indicator_move, part row_selection_indicator, PresentationKind::Morph) @ variant sidebar` (ADD-A129 (queue #118): its key frames, `src/controls/dev/NavigationView/NavigationView.cpp:2185-2240`; the entry not written until then, the pill moving at once by W1-089's zeros, S2.7) | rule |
 | W1-091 | `list.{row_background.fill,row_background.stroke,row.text.fill} @ {pressed} / {selected} / {selected,hover} / {selected,pressed} / {disabled} / {checked} variant sidebar` | rule |
 | W1-092 | `list.{row.min_height,row.padding,row_background.corners,leading_icon.min_width,leading_icon.min_height} @ variant sidebar (row height, icon box, its margin)` | rule |
 | W1-092 | `list.values.{row_background_inset,leading_gap} @ variant sidebar (the item margin, the icon to text gap)` | rule |
@@ -266,7 +275,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-093 | `separator.line.{stroke,margin} @ context sidebar.pane (the colour, height and margin)` | rule |
 | W1-093 | `list.disclosure.glyph @ variant sidebar` | rule |
 | W1-093 | `list.values.disclosure_gap @ variant sidebar (the chevron margin)` | rule |
-| W1-093 | `list.disclosure.transform @ {open} variant sidebar` | rule |
+| W1-093 | `list.disclosure.transform @ variant sidebar context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
 | W1-093 | `list.disclosure.transitions (Transform: the rotation)` | field |
 | W1-094 | `sidebar.values.width, sidebar.values.collapsed_width` | field |
 | W1-094 | `sidebar.* @ variant compact / variant @left_minimal (LeftCompact, LeftMinimal; Left is the base)` | rule |
@@ -281,29 +290,33 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-096 | `sidebar.pane.{fill,shadow,corners} @ variant overlay (fill PaintKind::Material @acrylic_in_app; shadow Shadow::Elevation)` | rule |
 | W1-097 | `sidebar.content.{fill,stroke,corners}` | field |
 | W1-098 | `sidebar.values.presentations (events Appear, Disappear; @expand, @collapse under variant compact)` (SplitView's open and close durations govern the minimal pane appearing and the compact rail expanding to the full pane, W1-096) | field |
-| W1-099 | `button.body.{min_width,min_height,padding,corners} @ variant tool context toolbar.bar / variants {tool,icon_only} context toolbar.bar (labelled and compact)` | rule |
+| W1-099 | `button.body.{min_width,min_height,padding,corners} @ variant tool context toolbar.bar (compact) / variant tool context toolbar.bar {open} (labelled)` (U1, ADD-A147) | rule |
 | W1-099 | `button.{body.fill,label.text.fill,icon.icon.fill} @ {hover} / {pressed} / {disabled} variant tool context toolbar.bar` | rule |
 | W1-099 | `button.values.label_position @ variant tool context toolbar.bar (TextUnderIcon, TextBesideIcon, IconOnly)` | rule |
 | W1-099 | `button.{label.text,values.icon_text_gap} @ variant tool context toolbar.bar (the label font, the icon and label margins)` | rule |
 | W1-100 | `button.{body.fill,label.text.fill} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variants {tool,toggle} context toolbar.bar` | rule |
-| W1-100 | `menu.check_indicator.glyph @ {checked} context button.body variant overflow` | rule |
+| W1-100 | `button.body.stroke (fill_clip box) @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variants {tool,toggle} context toolbar.bar` (AppBarToggleButton's inner border `OuterBorderEdge` in all four checked states, `AppBarToggleButton_themeresources.xaml:343`, `:354`, `:367`, `:380`; ADD-A122) | rule |
+| W1-100 | `menu.check_indicator.glyph @ context button.body variant overflow` (a patch of the base's check, drawn where W1-050's absent rule leaves it) | rule |
 | W1-101 | `toolbar.separator.{stroke,corners,margin} (width and colour as the stroke's, the margin on both sides of the line, the radius)` | field |
 | W1-102 | `button.{icon.glyph,body.fill,body.min_width,body.min_height} @ variant overflow context toolbar.bar` | rule |
 | W1-102 | `button.{body.fill,icon.glyph.fill} @ {hover} / {pressed} variant overflow context toolbar.bar` | rule |
 | W1-102 | `menu.body.{fill,stroke,padding,min_width,max_width,max_height,shadow} @ context button.body variant overflow` | rule |
 | W1-102 | `WinUiFlyout (button.values.menu_placement @ variant overflow context toolbar.bar)` | placement |
 | W1-102 | `menu.{accelerator.text.fill,submenu_arrow.glyph.fill} @ context button.body variant overflow` | rule |
+| W1-102 | `button.values.menu_indicator_anchor (TopEnd), button.menu_indicator.{glyph,margin,min_width,min_height} @ variants {tool,menu} context toolbar.bar not_context any component.tabbed_command_bar` (AppBarButton's flyout chevron: a font glyph whose family's fallbacks are `token.text.fallbacks.per_family`'s, S4.4, ADD-A122, its top and end margins under the default label position, the label below the icon, and the icon-only one, whose `LabelCollapsed` state leaves the chevron's margin as it is, `AppBarButton_themeresources.xaml:31`, `:33`, `:35`, `:182-191`, `:373`; ADD-A122. The margins are measured from ContentRoot, the whole control (`:356`; the chevron's panel in row 0 and the last column of its grid, `:372`), not from the drawn fill, AppBarButtonInnerBorder, inset by AppBarButtonInnerBorderMargin `2,6,2,6` from it (`:117`, `:351`), so the value phase states `margin` from `body`'s box by that inset (S2.11). The source gives the chevron no box: the FontIcon sets no Width, Height, MinWidth or MinHeight, only its glyph's font size, `:33`, `:373`, but the chevron's panel is a zero-width `Auto` column, `:357-361`, `:372`, which the arrange stretches to the column less the FontIcon's margins, at least its desired size, `src/dxaml/xcp/core/core/elements/framework.cpp:1833-1842`, the glyph centred in that box, `icon.cpp:809-814`: so `menu_indicator.min_width = 11` (`= sub(0, add(-23, 12))` from `:35`'s start and end margins) and `min_height` `auto`. The label-beside-icon position, which a command bar sets by `DefaultLabelPosition` and the catalogue selects under `context any component.tabbed_command_bar` (W-RV-3†, which states `label_position` there), is excluded from this rule: its `LabelOnRight` state gives the chevron the margin at `:36` (`:157`, `:177-179`), where it sits in the layout after the label with a glyph-sized box, top-aligned by its top margin: the next row, `InlineTop`, ADD-A123) | rule |
+| W1-102 | `button.values.menu_indicator_anchor (InlineTop), button.values.menu_indicator_gap, button.menu_indicator.{glyph,margin,min_width,min_height} @ variants {tool,menu} context toolbar.bar context any component.tabbed_command_bar` (the label-beside-icon position the tabbed command bar sets, W-RV-3†: `LabelOnRight` gives the chevron the margin at `AppBarButton_themeresources.xaml:36`, `:157`, `:177-179`, so it sits in the content's row after the label, in its `Auto` column sized to the glyph and its start and end margins, `:357-361`, `:372`, top-aligned, `VerticalAlignment="Top"`, `:373`, its top margin from the content's top; its `min_width` and `min_height` `auto`, the glyph's box, in place of the default position's widened box; the gap and the start margin from the label's end margin, `AppBarButtonTextLabelOnRightMargin`, `:116`, and the chevron's, the value phase stating them as S2.11's row margins; its `glyph` AppBarButton's flyout glyph, `AppBarButtonFlyoutGlyph`, `:31`, restated here as the default position's row does, so W2-18's `@ variant menu` glyph, DropDownButton's, does not reach it; ADD-A123) | rule |
 | W1-103 | `toolbar.bar.{fill,stroke,corners} @ {open}` | rule |
 | W1-103 | `toolbar.bar.min_height @ variant @compact / variant @minimal / variant @hidden` | rule |
 | W1-104 | `toolbar.values.presentations (events @expand, @collapse)` | field |
 | W1-105 | - | preset (R1.3) |
 | W1-106 | `list.row_background.fill, list.row.text.fill @ {pressed} / {selected,hover} / {selected,pressed} / {selected,disabled}` | rule |
 | W1-107 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` | field |
-| W1-107 | `list.row_selection_indicator.fill @ {hover} / {pressed} / {disabled}` | rule |
-| W1-107 | `list.row_selection_indicator.transitions` | field |
+| W1-107 | `list.row_selection_indicator.fill @ {hover} !variant sidebar / {pressed} !variant sidebar / {disabled} !variant sidebar` (NavigationView's pill sets no fill by state, `src/controls/dev/NavigationView/NavigationView_themeresources.xaml:602`, `:220-222`) | rule |
+| W1-107 | `list.row_selection_indicator.min_height @ {selected,pressed} !variant sidebar (= sub(<its height>, the chrome's `s_selectionIndicatorHeightShrinkage`)); list.row_selection_indicator.transitions (Geometry: the presenter's `scaleAnimationDuration`, CubicBezier(0, 0, 0, 1), engine WinUi) @ {selected} !variant sidebar` (a `ListViewItem`'s selected pill shrinking as the row is pressed and growing back as it is released: the chrome arranges it shorter while pressed, `src/dxaml/xcp/core/core/elements/ListViewBaseItemChrome.cpp:2579-2585`, `:55`, and animates its Y scale from the old height over the new about the centre, `:2851-2875`, `ListViewBaseItemPresenter_Partial.cpp:957-983`, drawn as its box moving between the two heights; each press and release also replays the pill's fade from transparent over the opacity duration where no pill animation runs, `:949-955`, `:913`, a restart on a change that leaves the opacity as it is, which no value engine states: ADD-A129 (queue #118); NavigationView's pill, of a fixed height and with no chrome, has neither, `src/controls/dev/NavigationView/NavigationView_themeresources.xaml:602`, `:220-222`, W1-089; ADD-A126) | rule |
+| W1-107 | `list.row_selection_indicator.{shown,opacity,transform} (false; 0; scale_y 0 about the centre); list.row_selection_indicator.{shown,opacity,transform} @ {selected} (true; 1; scale_y 1); list.row_selection_indicator.transitions (Opacity: the presenter's `opacityAnimationDuration`, Linear, engine WinUi; Transform: a zero duration delayed by that duration, engine WinUi); list.row_selection_indicator.transitions (Opacity: as the base; Transform: the presenter's `scaleAnimationDuration`, CubicBezier(0.167, 0.167, 0, 1), engine WinUi) @ {selected}` (a `ListViewItem`'s pill, not the sidebar's, W1-089: it fades in and out on the default linear timing, removed only as the fade-out completes, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ListViewBaseItemPresenter_Partial.cpp:943-955`, `:1047-1054`; selected, its Y scale grows from 0 about the centre on that curve, `:957-983`, `src/dxaml/xcp/core/core/elements/ListViewBaseItemChrome.cpp:2843-2849`; deselected, no scale key frame runs, `:957`, so the hidden scale is a zero delayed by the fade; a fade-in from the drawn value, `:950-953`, WinUI's handoff measurement, the catalogue's Open items; S2.7's *A part not shown at rest*, ADD-A126) | rule |
 | W1-108 | `list.row_background.corners, list.values.row_background_inset` | field |
 | W1-109 | `checkbox.{box.fill,box.stroke,box.corners,mark.glyph} @ context list.row` | rule |
-| W1-109 | `checkbox.{box.fill,box.stroke,mark.glyph.fill} @ context list.row {selected} / context list.row {hover} / context list.row {pressed}` | rule |
+| W1-109 | `checkbox.{box.fill,box.stroke,mark.glyph.stroke} @ context list.row {selected} / context list.row {hover} / context list.row {pressed}` | rule |
 | W1-109 | `list.values.check_box_placement (ListViewItemCheckMode: inline or overlay)` | field |
 | W1-110 | `list.{row.opacity,row.transform} @ {dragged} / {@reorder_target}` | rule |
 | W1-110 | `list.{row_background.fill,row.text.fill} @ {dragged}` | rule |
@@ -330,6 +343,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-120 | `switch.thumb.{fill,min_width} @ {pressed} / {checked,pressed} (the fill and the stretch)` | rule |
 | W1-121 | `switch.thumb.fill @ {hover} / {checked,hover}` | rule |
 | W1-122 | `switch.thumb.{min_width,min_height} @ {hover} / {checked,hover}` | rule |
+| W1-122 | `switch.track.padding @ {hover} / {checked,hover}` (the drawn knob's inset in its cell, the knob centred in it and growing about its centre, `src/controls/dev/CommonStyles/ToggleSwitch_themeresources.xaml:509-515`; the base states the resting knob's; ADD-A146) | rule |
 | W1-123 | `switch.thumb.transitions (Geometry: the knob growing and shrinking by state)` | field |
 | W1-123 | `switch.thumb.transform @ {checked}` (the slide: a translation per state, as WinUI moves the knob) | rule |
 | W1-123 | `switch.thumb.transitions (Transform: the slide, RepositionThemeAnimation; measured)` | field |
@@ -345,7 +359,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-126 | `dialog.action_area.{fill,stroke}` | field |
 | W1-127 | `dialog.values.title_message_gap` | field |
 | W1-127 | `button.body.{min_width,max_width,min_height} @ context dialog.action_area` | rule |
-| W1-127 | `dialog.values.action_layout.{equal_widths,row_gap}` | field |
+| W1-127 | `dialog.values.action_layout.{equal_widths,gap}` | field |
 | W1-128 | `dialog.values.presentations (events Appear, Disappear: Scale with Fade, their durations and timings, ADD-B10)` | field |
 | W1-129 | `dialog.body.shadow (Shadow::Elevation, the dialog entry of the ramp)` | field |
 | W1-130 | `spinner.{indicator,track}.* @ !{indeterminate}` (the determinate ring: the value arc's glyph, its draw_extent = element.progress) | rule |
@@ -355,20 +369,24 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-131 | `combo_box.{label,placeholder}.text.fill @ {pressed} / {focused}` | rule |
 | W1-131 | `combo_box.body.stroke (gradient paint) @ {hover} / {pressed}` | rule |
 | W1-132 | `combo_box.arrow.glyph.fill` | field |
-| W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / {focused} / {focused,pressed}` | rule |
-| W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27)` | field |
+| W1-132 | `combo_box.body.{padding,min_width,min_height}; combo_box.label.padding; combo_box.arrow.margin; combo_box.values.{label_arrow_gap,content_width,content_slack}` (the content row, the catalogue: the label in the star column, `ComboBoxPadding` `12,5,0,7` its padding as written, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:341`, `:360`, `:566-567`, `:577`, gaining no border, the presenter the bordered `Background`'s sibling, `:571`, `:577`, not inside it; the label with no padding; the chevron 12 wide right-aligned in the 38 column with its margin `0,0,14,0`, `:582`, so the gap 12 before its box; the body at least 64 wide, `ComboBoxThemeMinWidth` on the `Background`, `:321`, `:571`, and 32 tall, the chevron's `MinHeight`, `ComboBoxMinHeight`, `:327`, `:582`, centred in the whole row, the body's box; the presenter showing the selected item or the placeholder, `src/dxaml/xcp/dxaml/lib/ComboBox_Partial.cpp:1026`, `:1092`: `Shown`, the slack 0; the label cut at its slot, `src/dxaml/xcp/core/core/elements/framework.cpp:1839-1848`; ADD-A127) | field |
+| W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / context combo_box.body {focused} / context combo_box.body {focused,pressed}` (the combo box's states, read by context, ADD-A146) | rule |
+| W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_down_small" }, its `QueueOne` queue, `src/controls/dev/ComboBox/ComboBox_themeresources.xaml:583`, S2.7, ADD-A126)` | field |
 | W1-133 | `menu.body.{fill,stroke,padding,corners,shadow,min_width} @ context combo_box (fill PaintKind::Material @acrylic)` | rule |
 | W1-133 | `combo_box.values.popup_placement (its max_visible_items)` | placement |
 | W1-134 | `menu.{item.fill,item.stroke,item_label.text.fill} @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {selected,disabled} / {disabled} context combo_box` | rule |
 | W1-134 | `menu.item.fill @ {selected} !{focused} context combo_box (selected, unfocused)` | rule |
 | W1-134 | `menu.item.padding @ cond input:touch context combo_box / cond input:game_controller context combo_box` | rule |
 | W1-134 | `menu.item.corners @ context combo_box` | rule |
-| W1-135 | `menu.item_selection_indicator.{fill,min_width,min_height,corners} @ {selected} context combo_box` | rule |
-| W1-135 | `menu.item_selection_indicator.{transform,transitions} @ {selected} context combo_box (the scale it grows from, and its animation)` | rule |
+| W1-135 | `menu.item_selection_indicator.{fill,min_width,min_height,corners} @ context combo_box; menu.item_selection_indicator (absent = true) @ !{selected}` (the pill drawn in the combo list's base and `Absent` off the chosen value and in every plain menu, whose items are never `selected`, S7.2, the absent rule written last, the catalogue's one spelling, ADD-A126) | rule |
+| W1-135 | `menu.item_selection_indicator.{transform,transitions} @ {selected} context combo_box (its rest scale, ScaleY 1, and the pressed animation's timing; appearing and leaving at once, the template setting its opacity by discrete key frames, `src/controls/dev/ComboBox/ComboBox_themeresources.xaml:759`, `:657-741`, S2.7, S6.3, ADD-A126)` | rule |
+| W1-135 | `menu.item_selection_indicator.transform @ {selected,pressed} context combo_box` (the pill's `ScaleY` to `ComboBoxItemPillMinScale` while pressed, about its centre, `RenderTransformOrigin="0.5,0.5"`, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:356`, `:721-727`, `:326`, its timing, `ComboBoxItemScaleAnimationDuration`, `:330`, with `KeySpline="0,0,0,1"`, the pill's `transitions`, ADD-A125) | rule |
 | W1-136 | `menu.values.presentations @ context combo_box (events Appear, Disappear: ClipReveal { from: Anchor }, the selected row lying over the anchor under over_selected_item)` | rule |
 | W1-136 | `WinUiComboBox (combo_box.values.popup_placement: over_selected_item; ADD-A21, ADD-A22)` | placement |
 | W1-137 | `combo_box.* @ variant editable` | rule |
-| W1-137 | `input.{body.padding,text.text} @ context any combo_box (the editable text box)` | rule |
+| W1-137 | `input.{body.padding,text.text} @ context any combo_box (the editable text box)` (its padding `ComboBoxEditableTextPadding`, `11,5,38,6`, plus its border as S2.11's WinUI templates, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:342`, `:580`, holding the 38 column inside the input, counted once there, ADD-A127) | rule |
+| W1-137 | `combo_box.values.input_placement; combo_box.label (absent = true) @ variant editable {focused} !cond input:game_controller / variant editable {open} cond input:game_controller` (`Body`, the input drawn where the label is absent: under a game controller the text box waits for the popup, `src/dxaml/xcp/dxaml/lib/ComboBox_Partial.cpp:2320-2324`, then stays after it closes until focus leaves, `:2395`, a history the rule's `{open}` does not follow; otherwise the `EditableText` box spans both columns with no margin, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:580`; it is kept 0 × 0 and the presenter shows the item until the combo takes focus, then the presenter collapses, `src/dxaml/xcp/dxaml/lib/ComboBox_Partial.cpp:318-334`, `:2237-2243`, and back on losing it, `:2386-2397`; its natural width the larger of the row's and the text box's at its text, the collapsed presenter's padding changing no width, the text box being the wider; ADD-A127) | rule |
+| W1-137 | `combo_box.arrow_area.{fill,corners,min_width,margin} @ variant editable; combo_box.arrow_area.fill @ {hover} variant editable / {pressed} variant editable` (the `DropDownOverlay`, shown in editable mode, `src/dxaml/xcp/dxaml/lib/ComboBox_Partial.cpp:376-387`: in the 38 column, 30 wide, its margin 4, right-aligned and stretched on the cross axis, corners 4, transparent at rest, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:581`, filled on its own hover and press, `:538-554`; the chevron placed by the row, not by the overlay, `:582`; ADD-A127) | rule |
 | W1-137 | `combo_box.header.text; combo_box.values.header_gap` | field |
 | W1-138 | `segmented_control.segment.fill @ {pressed} / {selected,hover}` | rule |
 | W1-138 | `segmented_control.indicator.stroke, segmented_control.indicator.shadow` | field |
@@ -382,7 +400,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-141 | `expander.content.{fill,stroke,corners}` | field |
 | W1-141 | `expander.content.{stroke,corners} @ variant @expand_up (the content above the header)` | rule |
 | W1-142 | `expander.values.presentations (events @expand, @collapse: the content's eased slide)` | field |
-| W1-142 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, the chevron's rotation; ADD-A27)` | field |
+| W1-142 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, the chevron's rotation; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_up_down_small" }, its `QueueOne` queue, `src/controls/dev/Expander/Expander_themeresources.xaml:282`, S2.7, ADD-A126)` | field |
 | W1-143 | `link.text.text.decoration @ variant inline / {hover} variant inline / {pressed} variant inline` | rule |
 | W1-144 | `link.body.fill @ {pressed} / {disabled}` | rule |
 | W1-144 | `link.body.stroke @ {hover} / {pressed} / {disabled}` | rule |
@@ -412,7 +430,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-01 | `stepper.{increment,decrement}.{fill,stroke}; stepper.{increment_glyph,decrement_glyph}.glyph` | field |
 | W2-01 | `stepper.{increment.fill,increment.stroke,decrement.fill,decrement.stroke,increment_glyph.glyph.fill,decrement_glyph.glyph.fill} @ {hover} / {pressed} / {disabled} variant @inline` | rule |
 | W2-01 | `stepper.{increment.fill,increment.stroke,decrement.fill,decrement.stroke,increment_glyph.glyph.fill,decrement_glyph.glyph.fill} @ {hover} / {pressed} / {disabled} variant @compact` | rule |
-| W2-01 | `stepper.popup.{fill,stroke,shadow} @ variant @compact` | rule |
+| W2-01 | `stepper.popup.{fill,stroke,corners,shadow,padding} @ variant @compact` (the popup root's radius and padding, `NumberBox.xaml:116`) | rule |
+| W2-01 | `stepper.{popup,increment,decrement,increment_glyph,decrement_glyph} (absent = true) @ !{focused} variant @compact` (written last: NumberBox opens its popup on focus and closes it on focus loss, `microsoft-ui-xaml@2.5.1 src/controls/dev/NumberBox/NumberBox.cpp:415-439`, and under `Compact` its only spin buttons are the popup's, `NumberBox.xaml:115-166`, `:26-40`; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7) | rule |
 | W2-01 | `stepper.values.{popup_offset_x,popup_offset_y,invalid_input}; stepper.header.text` | field |
 | W2-01 | `input.* @ context stepper (the text box)` | rule |
 | W2-02 | `calendar.{day.fill,day.stroke,day_label.text,month.fill,month.stroke,month.text,year.fill,year.stroke,year.text} @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {selected,disabled} / {today} / {today,selected} / {@blackout} / {other_month} / {disabled}` | rule |
@@ -443,7 +462,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-04 | `button.{body.fill,icon.glyph,body.transform} @ variant previous context picker_wheel.container / variant next context picker_wheel.container (the up and down buttons)` | rule |
 | W2-04 | `button.body.transform @ {pressed} variant previous context picker_wheel.container / {pressed} variant next context picker_wheel.container (their press scale)` | rule |
 | W2-04 | `button.* @ variant @accept context time_picker / variant @dismiss context time_picker / variant @accept context date_picker / variant @dismiss context date_picker (the accept and dismiss row)` | rule |
-| W2-04 | `time_picker.popup.transitions, date_picker.popup.transitions; time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (the flyout's open animation: it enters from transparent by its transitions, S2.7) | rule |
+| W2-04 | `time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (their opening and closing: ADD-A129, queue #118, at once meanwhile, S2.7) | rule |
 | W2-05 | `color_picker.plane.{stroke,min_width,min_height} @ variant @box / variant @ring` | rule |
 | W2-05 | `color_picker.selection_ellipse.{stroke,corners,min_width,min_height}` (the selection ellipse) | field |
 | W2-05 | `color_picker.preview.corners (the previous and current colours)` | field |
@@ -468,7 +487,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-09 | `teaching_tip.{title,subtitle}.text.fill` | field |
 | W2-09 | `button.{body.min_width,body.min_height,icon.glyph} @ variant close context teaching_tip.body / variant close context teaching_tip.body variant @alternate_close` | rule |
 | W2-09 | `button.* @ context teaching_tip.action_area` | rule |
-| W2-09 | `teaching_tip.values.presentations (events @expand, @collapse)` | field |
+| W2-09 | `teaching_tip.values.presentations (events Appear, Disappear)` (TeachingTip's expand animation as it opens and its contract animation as it closes, `TeachingTip.cpp:837-920`, `:1411`) | field |
 | W2-09 | `WinUiTeachingTip (teaching_tip.values.placement: the tail's placement)` | placement |
 | W2-10 | `breadcrumb.crumb_label.text; breadcrumb.separator.{glyph,padding}` | field |
 | W2-10 | `breadcrumb.crumb_label.text.fill @ {hover} / {pressed} / {disabled} / {focus_visible} / {current} / {current,hover} / {current,pressed} / {current,disabled} / {current,focus_visible}` | rule |
@@ -483,8 +502,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-12 | `list.{row_background.fill,row_background.stroke,row.text.fill} @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {disabled}` | rule |
 | W2-12 | `list.values.indent_per_level` | field |
 | W2-12 | `list.disclosure.glyph; list.disclosure.transitions` | field |
-| W2-12 | `list.disclosure.transform @ {open}` | rule |
-| W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` | field |
+| W2-12 | `list.disclosure.transform @ context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
+| W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill `shown` under `{selected}`, its fade and scale W1-107's, S2.7, ADD-A126) | field |
 | W2-12 | `checkbox.* @ context list.row (the multi-select check box)` | rule |
 | W2-12 | `list.row.min_height` | field |
 | W2-12 | `list.row.min_height @ density compact` | rule |
@@ -516,7 +535,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-17 | `split_button.divider.stroke @ {checked} variant toggle` | rule |
 | W2-18 | `button.{menu_indicator.glyph,values.menu_indicator_gap} @ variant menu` | rule |
 | W2-18 | `button.menu_indicator.glyph.fill @ {hover} / {pressed} / {disabled} variant menu` | rule |
-| W2-18 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state, the press animation; ADD-A27)` | rule |
+| W2-18 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state, the press animation; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_down_small" }, its `QueueOne` queue, `src/controls/dev/DropDownButton/DropDownButton.xaml:94`, S2.7, ADD-A126)` | rule |
 | W2-19 | `button.{body.fill,body.stroke,label.text.fill} @ variant @repeat / {hover} variant @repeat / {pressed} variant @repeat / {disabled} variant @repeat` | rule |
 | W2-19 | `button.values.{repeat_delay,repeat_interval} @ variant @repeat` | rule |
 | W2-19 | `reader:windows:SPI_GETKEYBOARDDELAY/SPI_GETKEYBOARDSPEED relation to RepeatButton.Delay/Interval` | reader |
@@ -558,7 +577,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-26 | `pull_to_refresh.indicator.{fill,min_width,min_height}; pull_to_refresh.arrow.glyph` | field |
 | W2-26 | `pull_to_refresh.values.{trigger_distance,loop}` | field |
 | W2-27 | `view_switcher.{item.padding,item_label.padding,indicator.fill,indicator.min_width,indicator.min_height}; view_switcher.values.item_gap` | field |
-| W2-27 | `view_switcher.{item.fill,item.stroke,item_icon.icon,item_label.text.fill,indicator.fill} @ {hover} / {pressed} / {selected} / {disabled} variant @selector_bar` | rule |
+| W2-27 | `view_switcher.{item.fill,item.stroke,item_icon.icon,item_label.text.fill,indicator.fill} @ {hover} / {pressed} / {selected} / {disabled}` (SelectorBar is `windows-11`'s base: its state rules name no form, as its rest values do not) | rule |
 | W2-27 | `view_switcher.values.presentations (event @indicator_move, part indicator)` | field |
 | W2-28 | `scrollbar.annotation_labels.{text,min_width}` | field |
 | W2-28 | `scrollbar.thumb.{fill,corners,min_height} @ variant @annotated` | rule |
@@ -619,7 +638,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-43† | `button.{icon.glyph,body.corners} @ variant remove context chip.body (round)` | rule |
 | W2-43† | `button.{body.fill,icon.glyph.fill} @ variant remove context chip.body {selected}` | rule |
 | W2-43† | `layout.values.{item_gap,line_gap} @ variant flow context any input (the token spacing)` | rule |
-| W2-43† | `input.body.padding (the box's padding)` | field |
+| W2-43† | `input.body.padding @ variant with_chips` (the token box's own padding) | rule |
 | W3-01 | `token.elevation (one entry per WinUI elevation step, keys declared: each entry's ShadowLayer x, y, blur, spread, color, inset; the ambient layer only)` | token |
 | W3-01 | `token.elevation @ cond scheme:dark (the shadows' intensity per theme)` | rule |
 | W3-02 | `PartStyle.shadow (Shadow::Elevation of each control's root part) @ {hover} / {pressed}` | rule |
@@ -641,35 +660,34 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-09 | `role.@layer_fill_default, role.@layer_fill_alt, role.@layer_on_acrylic_fill_default, role.@layer_on_accent_acrylic_fill_default, role.@layer_on_mica_base_alt_*` | role |
 | W3-09 | `PartStyle.fill (a Color layer over the backdrop's Material: the content and commanding layers, Paint.layers)` | field |
 | W3-10 | `window.content.fill @ cond window_inactive (PaintKind::Material @mica to Material.fallback)` | rule |
-| W3-10 | `window.content.transitions (the material to colour crossfade)` | field |
+| W3-10 | `window.content.transitions (the material to colour crossfade: a pending fact, the preset stating none, the path listed in its `[pending]` table (register U184), until its engine, the system backdrop's or WinUi, is measured, S2.7, S17, the catalogue's Open items, ADD-A126, ADD-A128)` | field |
 | W3-11 | `role.global.scrim` | role |
 | W3-11 | `dialog.scrim.fill` | field |
 | W3-11 | `menu.dismiss_overlay.fill; popover.dismiss_overlay.fill (the light-dismiss overlays when enabled)` | field |
 | W3-12 | `role.global.accent_ramp (Light1-3, Dark1-3)` | role |
 | W3-12 | `input.accent_ramp` | input |
-| W3-12 | `role.@accent_* (the accent fill tiers default, secondary, tertiary, disabled and the accent text tiers primary, secondary, tertiary, one keyed role per brush)` | role |
+| W3-12 | `role.@accent_fill_default, role.@accent_fill_secondary, role.@accent_fill_tertiary, role.@accent_fill_disabled, role.@accent_fill_selected_text_background, role.@accent_text_fill_primary, role.@accent_text_fill_secondary, role.@accent_text_fill_tertiary, role.@accent_text_fill_disabled (the accent fill tiers default, secondary, tertiary, disabled and selected-text background and the accent text tiers primary, secondary, tertiary, disabled, one keyed role per brush)` | role |
 | W3-12 | `reader:windows:UISettings.GetColorValue AccentDark1-3, AccentLight1-3` | reader |
-| W3-13 | `role.@text_tertiary` | role |
-| W3-14 | `role.@text_on_accent_secondary, role.@text_on_accent_disabled, role.@text_on_accent_selected` | role |
-| W3-15 | `role.@stroke_control, role.@stroke_card, role.@stroke_surface, role.@stroke_divider, role.@stroke_* (the strong, on-accent, flyout, inverse and on-image tiers, one keyed role per brush)` | role |
-| W3-16 | `role.@fill_* tiers` | role |
-| W3-16 | `role.@fill_subtle` | role |
-| W3-16 | `role.@background_solid_*` | role |
-| W3-17 | `role.global.status.{info,success,warning,error,neutral}.{background,background_solid} (attention, success, caution, critical, neutral backgrounds and their solid variants)` | role |
+| W3-13 | `role.@text_fill_tertiary` | role |
+| W3-14 | `role.@text_on_accent_fill_secondary, role.@text_on_accent_fill_disabled, role.@text_on_accent_fill_selected_text` | role |
+| W3-15 | `role.@control_stroke_default, role.@control_stroke_secondary, role.@control_stroke_on_accent_default, role.@control_stroke_on_accent_secondary, role.@control_stroke_on_accent_tertiary, role.@control_stroke_on_accent_disabled, role.@control_stroke_for_strong_fill_when_on_image, role.@card_stroke_default, role.@card_stroke_default_solid, role.@control_strong_stroke_default, role.@control_strong_stroke_disabled, role.@surface_stroke_default, role.@surface_stroke_flyout, role.@surface_stroke_inverse, role.@divider_stroke_default, role.@focus_stroke_outer, role.@focus_stroke_inner (the control, on-accent, on-image, card, strong, surface, flyout, inverse, divider and focus strokes, one keyed role per brush)` | role |
+| W3-16 | `role.@control_fill_default, role.@control_fill_secondary, role.@control_fill_tertiary, role.@control_fill_quarternary, role.@control_fill_disabled, role.@control_fill_transparent, role.@control_fill_input_active, role.@control_strong_fill_default, role.@control_strong_fill_disabled, role.@control_solid_fill_default, role.@control_alt_fill_transparent, role.@control_alt_fill_secondary, role.@control_alt_fill_tertiary, role.@control_alt_fill_quarternary, role.@control_alt_fill_disabled, role.@control_on_image_fill_default, role.@control_on_image_fill_secondary, role.@control_on_image_fill_tertiary, role.@control_on_image_fill_disabled, role.@card_background_fill_default, role.@card_background_fill_secondary, role.@card_background_fill_tertiary (the fill tiers, one keyed role per brush)` | role |
+| W3-16 | `role.@subtle_fill_transparent, role.@subtle_fill_secondary, role.@subtle_fill_tertiary, role.@subtle_fill_disabled` | role |
+| W3-16 | `role.@solid_background_fill_base, role.@solid_background_fill_base_alt, role.@solid_background_fill_secondary, role.@solid_background_fill_tertiary, role.@solid_background_fill_quarternary, role.@solid_background_fill_quinary, role.@solid_background_fill_senary, role.@solid_background_fill_transparent` | role |
+| W3-17 | `role.global.status.{info,success,warning,error,neutral}.background (the attention, success, caution, critical and neutral backgrounds, Common_themeresources_any.xaml:171-175; attention is info, as InfoBar's informational severity takes it, InfoBar_themeresources.xaml:8)` | role |
+| W3-17 | `role.global.status.{info,neutral}.background_solid (the two solid backgrounds WinUI states, SystemFillColorSolidAttentionBackground and SystemFillColorSolidNeutralBackground, Common_themeresources_any.xaml:176-177; success, warning and error have none, absent)` | role |
 | W3-18 | `role.global.status.neutral.fill` | role |
 | W3-18 | `role.@system_fill_solid_neutral` (`SystemFillColorSolidNeutral`, the solid neutral fill, a fill tier) | role |
 | W3-45† | `PartStyle.fill (an alpha Color layer appended over base, fill.append, S2.3, R6: the translucent fill drawn over what lies behind)` | field |
 | W3-45† | `button.body.fill, combo_box.body.fill, switch.track.fill @ {hover} / {pressed} (appended translucent layers, not flattened colours)` | rule |
-| W3-46† | `role.@text_inverse` | role |
-| W3-46† | `banner.icon.glyph.fill @ variant info / variant success / variant warning / variant error (= role.@text_inverse on the backplates)` | rule |
-| W3-19 | `FocusIndicator.shadow (the inner ring, a shadow layer: its colour and width, R7, ADD-A17)` | field |
-| W3-20 | `FocusIndicator.offset` (per part: each control's FocusVisualMargin, ADD-A18; SelectorBar's on `view_switcher.item.focus`) | field |
-| W3-20 | `FocusIndicator.corners` (stated per control as WinUI draws it: an expression over `part.corners` and the offsets, the part's radius plus FocusVisualMargin, cited) | field |
+| W3-46† | `role.@text_fill_inverse` | role |
+| W3-46† | `banner.icon.glyph.fill @ variant info / variant success / variant warning / variant error (= role.@text_fill_inverse on the backplates)` | rule |
+| W3-19 | `FocusIndicator.shadow (the inner ring: one inset layer cast by the ring's inner outline, spread FocusVisualSecondaryThickness's default, colour FocusStrokeColorInner; microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:24-25, Common_themeresources.xaml:16, FocusRectManager.cpp:445-455; S2.10, R7, ADD-A17, ADD-A122)` | field |
+| W3-20 | `FocusIndicator.offset` (per part: each control's FocusVisualMargin, ADD-A18, which sets the ring's outer edge, `FocusRectNudging.h:389`, so the offset to its inner edge is `= sub(<the margin negated>, part.focus.width)`, the part's own ring width, S2.10, ADD-A122; SelectorBar's on `view_switcher.item.focus`) | field |
+| W3-20 | `FocusIndicator.corners` (the ring's inner corner, S2.10, per control as WinUI draws it: the outer ring's corner is the part's radius less the mean of FocusVisualMargin's two sides at that corner, and the inner border's, the outer ring's inner edge, that less the mean of the primary thickness's two sides, each at least 0, a square corner staying square, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-92`, `:206-215`, `:487-491`; so `FollowPart` where the part's corner is rounded and its two sides' offsets are equal, `= sub(0, add(<margin>, <width>))` being the offset, and `Radius::Px(0)` where the part's corner is square, and on every corner under the Reveal and DottedLine kinds, which WinUI draws square, `:192-194`) | field |
 | W3-20 | `FocusIndicator.kind` (Ring, its inner ring a shadow layer: the HighVisibility default; Reveal: `FocusKind::Keyed(@reveal)`; DottedLine: `FocusIndicator.dash` `Dotted`; ADD-A82) | field |
-| W3-21 | `token.behavior.focus_visible_when (Keyboard { … }; ADD-A16)` | token |
-| W3-21 | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
-| W3-22 | `token.text.rendering (ADD-B04)` | token |
-| W3-22 | `reader:windows:SPI_GETCLEARTYPE, SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGTYPE, SPI_GETFONTSMOOTHINGCONTRAST` | reader |
+| W3-21 | `token.behavior.focus_visible_when (Keyboard { timeout: None }: the system focus visual only on an element whose focus state is Keyboard, focusmgr.cpp:2729-2746; ADD-A16, ADD-A122)` (no reader: `SPI_GETKEYBOARDCUES` governs Win32's underline and focus cues, R1.3; ADD-A148) | token |
+| W3-22 | `token.text.rendering (ADD-B04; the rendering WinUI draws, greyscale: contrast DirectWrite's greyscale enhanced contrast, subpixel order and LCD filter absent, S4's The rendering drawn, ADD-A141; no reader read, the facts' values alone, S4's No Windows rendering read, ADD-A144)` | token |
 | W3-23 | `Font.axes (opsz: AxisValue::FollowsSize)` | field |
 | W3-23 | `token.text.roles.*.line_height` (the line height per role) | token |
 | W3-23 | `view_switcher.item_label.text.letter_spacing @ variant @pivot` (`PivotHeaderItemCharacterSpacing`: the Pivot header item's own character spacing, W2-32) | rule |
@@ -686,22 +704,21 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-26 | `tooltip.accelerator.text` | field |
 | W3-27 | `checkbox.mark.glyph.size; expander.arrow.glyph.size; combo_box.arrow.glyph.size; scrollbar.arrow_button.glyph.size; window.caption_button_glyph.glyph.size; banner.icon.glyph.size; menu.submenu_arrow.glyph.size` | field |
 | W3-27 | `button.icon.glyph.size @ variant close context tab.tab` | rule |
-| W3-28 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | field |
-| W3-28 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | field |
-| W3-28 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | rule |
-| W3-28 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` | field |
-| W3-28 | `button.icon.transitions @ variant back context window.title_bar / variant back context sidebar.header / variant pane_toggle context sidebar.header / variant pane_toggle context window.title_bar` (the back arrow and the hamburger, `TransitionKind::Keyed`, ADD-A27) | rule |
-| W3-28 | `list.leading_icon.transitions @ variant sidebar` (the settings gear, `TransitionKind::Keyed`, ADD-A27) | rule |
+| W3-28 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_down_small" }, W1-132, S2.7, ADD-A126)` | field |
+| W3-28 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_up_down_small" }, W1-142, S2.7, ADD-A126)` | field |
+| W3-28 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_down_small" }, W2-18, S2.7, ADD-A126)` | rule |
+| W3-28 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` (W1-039's rows: engine `WinUiAnimatedIcon { visual = "accept" }`, its source `AnimatedAcceptVisualSource.cpp`, S2.7, ADD-A126) | field |
+| W3-28 | `button.icon.transitions @ variant back context window.title_bar / variant back context sidebar.header / variant pane_toggle context sidebar.header / variant pane_toggle context window.title_bar` (the back arrow and the hamburger, `TransitionKind::Keyed`, ADD-A27; engine WinUiAnimatedIcon { visual = "back" } under `back` and { visual = "global_navigation_button" } under `pane_toggle`, `NavigationView/NavigationBackButton.xaml:59`, `NavigationView/NavigationView_themeresources.xaml:324`, its `QueueOne` queue, S2.7, ADD-A126) | rule |
+| W3-28 | `list.leading_icon.transitions @ variant sidebar` (the settings gear, `TransitionKind::Keyed`, ADD-A27; engine WinUiAnimatedIcon { visual = "settings" }, `NavigationView/NavigationView.cpp:1333`, its `QueueOne` queue, S2.7, ADD-A126) | rule |
+| W3-28 | `token.icons` (its `animated_visuals` entries `chevron_down_small`, `chevron_up_down_small`, `back`, `global_navigation_button` and `settings`: each visual's duration and markers as its source states them, `src/controls/dev/AnimatedIcon/AnimatedVisuals/Animated<Name>VisualSource.cpp`, S2.7, ADD-A126) | token |
 | W3-29 | `link.body.cursor; input.body.cursor; text_area.body.cursor; splitter.divider.cursor; window.resize_zone.cursor (the hand, the I-beam, the resize cursors)` | field |
 | W3-29 | `token.pointer.size (ADD-A46)` | token |
 | W3-29 | `reader:windows:UISettings.CursorSize, SM_CXCURSOR` | reader |
-| W3-47† | `token.text.roles.monospace` | token |
-| W3-47† | `reader:windows:HKCU\Console FaceName, FontSize, FontWeight` | reader |
-| W3-48† | `token.behavior.mnemonics (ADD-A12)` | token |
-| W3-48† | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
+| W3-47† | `token.text.roles.monospace` (a labelled mapping; no reader: the console host is no WinUI control, R1.3; U509, ADD-A147) | token |
+| W3-48† | `token.behavior.mnemonics (ADD-A12)` (no reader: `SPI_GETKEYBOARDCUES` governs Win32's underline, R1.3; U504, ADD-A147) | token |
 | W3-49† | `drag_image.image.{fill,opacity}` | field |
 | W3-49† | `drag_image.caption.text` | field |
-| W3-49† | `drag_image.glyph.glyph @ {drop_copy} / {drop_move} / {@drop_link}` (the glyph per drop operation) | rule |
+| W3-49† | `drag_image.drop_badge.glyph @ {drop_copy} / {drop_move} / {@drop_link}` (the glyph per drop operation, the one mark iOS's badge is too) | rule |
 | W3-49† | `drag_image.drop_description.text` | field |
 | W3-49† | `role.global.drop_highlight` | role |
 | W3-49† | `list.row_background.fill @ {drop_target}` | rule |
@@ -716,11 +733,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-32 | `PresentationKind::Keyed (ADD-A26: one declared key per theme transition none of the typed kinds is)` | field |
 | W3-32 | `button.body.transform @ {pressed} (PointerDown and PointerUp: the press tilt)` | rule |
 | W3-32 | `button.body.transitions (Transform: the tilt's motion)` | field |
-| W3-32 | `navigation_view.values.presentations events @push, @pop` (Frame's Entrance, Content, DrillIn, Slide and Suppress navigation transitions, keyed kinds, ADD-A26) | field |
+| W3-32 | `navigation_view.values.presentations events @push, @pop` (Frame's default navigation transition, the base; a step's kind keyed where no typed kind states the motion, ADD-A26) | field |
+| W3-32 | `navigation_view.values.presentations events @push, @pop @ variant @entrance / variant @drill_in / variant @slide / variant @suppress` (Frame's `NavigationTransitionInfo` kinds, the application's choice per navigation, one transition per variant) | rule |
 | W3-33 | `PresentationKind::Keyed { key: connected_animation } with its parameters (ADD-A26)` | field |
-| W3-33 | `token.motion.durations.connected, token.motion.timings.connected` | token |
+| W3-33 | `token.motion.durations.connected_service, token.motion.timings.connected_service (S4.1's step 2: ConnectedAnimationService's default duration and cubic Bézier, microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26-28)` | token |
 | W3-33 | `PartStyle.transform (translate as an expression on element.scroll_offset: ParallaxView, R25.3, ADD-B13)` | field |
-| W3-34 | `PartStyle.transitions and widget presentation transitions per control` | field |
+| W3-34 | `PartStyle.transitions and widget presentation transitions per control (engine WinUi: brush transitions and visual-state storyboards, handed off from the value drawn, a GoToState into the current state doing nothing, or, without transitions, snapping a running storyboard to its end, `src/dxaml/xcp/components/vsm/CVisualStateManager2.cpp:104-118`; S2.7, ADD-A126)` | field |
 | W3-34 | `token.motion.durations.*` | token |
 | W3-52† | `token.behavior.scroll (wheel_step_duration, wheel_step_timing, deceleration, overscroll, overscroll_effect, overscroll_extent, snap: the wheel animation, inertia, overpan and snap settle)` | token |
 | W3-52† | `token.behavior.scroll @ cond animations_off` | rule |
@@ -736,23 +754,24 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-53† | `token.behavior.scroll @ !cond system_setting:listbox_smooth_scroll (list boxes' animated scrolling)` | rule |
 | W3-53† | `PartStyle.transitions, <widget>.values.presentations @ !cond system_setting:ui_effects (the master switch)` | rule |
 | W3-53† | `reader:windows:SPI_GETMENUFADE, SPI_GETTOOLTIPFADE, SPI_GETSELECTIONFADE, SPI_GETCOMBOBOXANIMATION, SPI_GETLISTBOXSMOOTHSCROLLING, SPI_GETHOTTRACKING, SPI_GETDROPSHADOW, SPI_GETUIEFFECTS` | reader |
-| W3-35 | `role.@* (the eight high-contrast system colours Window, WindowText, Hotlight, GrayText, Highlight, HighlightText, ButtonFace, ButtonText: keyed roles the reader states under cond contrast_high, per contrast theme)` | role |
+| W3-35 | `role.@* (the eight high-contrast system colours Window, WindowText, Hotlight, GrayText, Highlight, HighlightText, ButtonFace, ButtonText: keyed roles the reader states under cond contrast_high, per contrast theme; their bases WinUI's placeholders, the preset's rule under cond contrast_high the default contrast theme Aquatic's colours, S3.1, ADD-A135)` | role |
 | W3-35 | `PartStyle.{fill,stroke,text,focus} @ cond contrast_high (each part's mapping to those roles: focus, disabled, selected-hover among them)` | rule |
 | W3-35 | `progress_bar.track.stroke @ cond contrast_high (a border drawn only there)` | rule |
 | W3-35 | `switch.track.stroke @ {checked} cond contrast_high (the on track's border drawn only there)` | rule |
 | W3-35 | `PartStyle.{fill,shadow} @ cond contrast_high (materials to Material.fallback, shadows removed)` | rule |
 | W3-35 | `cond contrast_high` | condition |
-| W3-35 | `reader:windows:GetSysColor under high contrast, AccessibilitySettings.HighContrastScheme, UISettings.UIElementColor` | reader |
+| W3-35 | `reader:windows:SPI_GETHIGHCONTRAST -> cond contrast_high; GetSysColor under high contrast` (S9.3; `AccessibilitySettings.HighContrastScheme` and `UISettings.UIElementColor` not read) | reader |
 | W3-36 | `PartStyle.{min_height,padding} (= an expression on text_scale or font_size where the control grows with the text; ADD-A55)` | field |
 | W3-36 | `TextStyle.{wrap,max_lines} (the wrapping)` | field |
 | W3-36 | `IconStyle.size (= an expression on text_scale where the icon grows; ADD-A55)` | field |
+| W3-36 | `token.text.scaling (win_ui, WinUI's TextFormatting::GetScaledFontSize curve, its factor UISettings.TextScaleFactor; S9.4, ADD-A141)` | token |
 | W3-37 | `PartStyle.transitions @ cond animations_off per animation` | rule |
 | W3-37 | `token.motion.speed_factor @ cond animations_off` | rule |
-| W3-37 | `reader:windows:UISettings.AnimationsEnabled, SPI_GETCLIENTAREAANIMATION` | reader |
+| W3-37 | `reader:windows:UISettings.AnimationsEnabled` (false: `cond animations_off` and `cond reduced_motion`, Windows' one motion setting, which WinUI reads; `SPI_GETCLIENTAREAANIMATION` not read; S9.3, ADD-A140) | reader |
 | W3-38 | `Material.fallback @ cond reduced_transparency per material` | rule |
-| W3-38 | `reader:windows:UISettings.AdvancedEffectsEnabled, registry EnableTransparency` | reader |
+| W3-38 | `reader:windows:UISettings.AdvancedEffectsEnabled` (the registry's `EnableTransparency` not read beside it, the API reporting the same setting, S9.3) | reader |
 | W3-39 | `declare.widget.{input,text_area,combo_box,list,date_picker,time_picker,picker_wheel}.densities (compact)` (each entry's *Sizes and densities*) | field |
-| W3-39 | `input.body.{min_height,padding}, text_area.body.{min_height,padding}, list.row.min_height, combo_box.body.{min_height,padding}, date_picker.field.padding, time_picker.field.padding @ density compact` | rule |
+| W3-39 | `input.body.{min_height,padding}, text_area.body.{min_height,padding}, list.row.min_height, combo_box.body.{min_height,padding}, date_picker.field.padding, time_picker.field.padding @ density compact` (the combo box's compact padding `12,1,0,3` and minimum height 24, `microsoft-ui-xaml@2.5.1 src/controls/dev/dll/DensityStyles/Compact.xaml:21-22`, its end 0 as written; the chevron's end margin 14, W1-132, unchanged; its editable text box's `10,0,30,0`, `:20`, W1-137's padding under compact; ADD-A127) | rule |
 | W3-39 | `list.row.min_height @ variant sidebar density compact (the nav item height)` | rule |
 | W3-39 | `picker_wheel.item.padding @ density compact context date_picker.popup / density compact context time_picker.popup (the picker flyouts)` | rule |
 | W3-40 | `menu.item.padding @ context menu.body {opened_by_touch}` | rule |
@@ -760,7 +779,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-40 | `menu.body.min_width @ cond input:touch context combo_box` | rule |
 | W3-40 | `menu.body.min_width @ {opened_by_touch} context button.body variant overflow` | rule |
 | W3-40 | `cond input:touch` | condition |
-| W3-41 | `token.behavior.{double_click_time,hover_open_delay,drag_threshold,scroll_lines_per_step}` | token |
+| W3-41 | `token.behavior.{double_click_time,hover_time,drag_threshold}` (`hover_time` the mouse hover time, SPI_GETMOUSEHOVERTIME, S4.2; ADD-A130) | token |
+| W3-41 | `token.behavior.scroll.wheel_step_lines` (SPI_GETWHEELSCROLLLINES; ADD-A130) | token |
 | W3-41 | `token.behavior.key_repeat.delay` (`SPI_GETKEYBOARDDELAY`); `token.behavior.key_repeat.interval` (KeyRepeat requires it: the keyboard repeat rate the row's "keyboard repeat" names, its read named in the value phase) | token |
 | W3-41 | `menu.values.submenu_open_delay` | field |
 | W3-41 | - (`UISettings.MessageDuration`: how long the system's notifications stay, which the shell draws; WinUI has no timed message control) | out (R1.1) |
@@ -795,16 +815,17 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-RL03† | - | preset (R1.3) |
 | W-FM01† | `token.text.fallbacks.emoji_family (ADD-A41)` | token |
 | W-FM01† | `token.text.fallbacks.families` (Segoe UI Symbol, the fallback font for symbols, ADD-A41) | token |
+| W-FM01† | `token.text.fallbacks.per_family` (the symbol font's chain, `Segoe Fluent Icons` then `Segoe MDL2 Assets`, `SymbolThemeFontFamily`, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:20`, which every `FontCodePoint` glyph's family takes, S4.4, ADD-A122; in TOML a table keyed by the family name, `"Segoe Fluent Icons" = ["Segoe MDL2 Assets"]`, S11, ADD-A123) | token |
 | W-FM01† | `reader:windows:IDWriteFontFallback::MapCharacters on an emoji string` | reader |
 | W-FM02† | `token.text.fallbacks.per_language (ADD-A41)` | token |
 | W-FM02† | `reader:windows:IDWriteFontFallback::MapCharacters per locale, LanguageFontGroup` | reader |
 | W-FM02† | - (GDI's SystemLink font-linking chains: Win32 controls) | preset (R1.3) |
 | W-P3-1† | `window.frame.corners @ cond tiled:left / cond tiled:right / cond tiled:top / cond tiled:bottom` | rule |
 | W-P3-1† | - (the snap overlay, the Snap bar, the shared edge of snapped windows, the snapped windows' gaps to the screen edge and to each other, and the settings that switch snapping: the shell's) | out (R1.1) |
-| W-P3-2† | `window.title_bar (absent) @ cond full_screen` | rule |
-| W-P3-2† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} (absent = true) @ cond full_screen` (the parts nested in the title bar, each by its own rule: Nesting) | rule |
+| W-P3-2† | `window.title_bar @ cond full_screen` (the revealed bar's style, the row's measurement; not absent: the connector draws the bar only while revealed, by `full_screen_title_bar_reveal`, ADD-A146) | rule |
+| W-P3-2† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} @ cond full_screen` (the parts nested in the revealed bar, where the measurement finds them unlike a window's outside full screen) | rule |
 | W-P3-2† | `window.values.full_screen_title_bar_reveal (SwipeFromTop)` | field |
-| W-P3-2† | `window.values.presentations (event @title_bar_show)` | field |
+| W-P3-2† | `window.values.presentations (event @title_bar_show)` (the reveal's motion and how long the bar stays: ADD-A129 (queue #118), the bar appearing and leaving at once meanwhile, S2.7) | field |
 | W-P3-2† | `window.{frame.corners,title_bar.min_height,values.default_size} @ variant @compact_overlay` | rule |
 | W-P3-2† | `window.caption_button.{min_width,min_height} @ context window.frame variant @compact_overlay` | rule |
 | W-P3-2† | - (entering and leaving each presenter: the system's window animation) | out (R1.1) |
@@ -830,10 +851,11 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P3-12† | `token.behavior.touch.double_tap_slop (the touch and pen tolerances, to verify)` | token |
 | W-P3-12† | `reader:windows:SM_CXDOUBLECLK, SM_CYDOUBLECLK` | reader |
 | W-P3-13† | `PartStyle.stroke (each Edge.snap a PixelSnap, ADD-A33: WinUI's layout rounding of thin lines)` | field |
+| W-P3-13† | `token.text.font_dpi` (96, the DPI a font's points convert by, S9.4: Windows' base DPI, `USER_DEFAULT_SCREEN_DPI` (Learn *GetDpiForWindow*), over which WinUI's rasterization scale is the window's DPI, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/DesktopWindowImpl.cpp:195-196`, so a view pixel is 1/96 inch and a point, 1/72 inch (Learn *Fonts*, the UX guide), 96/72 of them; the fact and its three citations `docs/facts/windows/tokens.toml:2319-2337`; ADD-A103, ADD-A125) | token |
 | W-P3-13† | - (the display scale per monitor: the windowing system's) | out (R1.1) |
 | W-P3-14† | - | newest (R1.5) |
 | W-P3-15† | - | preset (R1.3) |
-| W-P3-16† | `token.theme_change` | token |
+| W-P3-16† | `token.theme_change` (measured with what a theme switch does to the brush transitions and storyboards, a brush swapped or a colour changed in place, and to a transition running at the switch, S4.3, ADD-A126) | token |
 | W-P3-17† | `autocomplete.token.text, autocomplete.token.fill` (RichSuggestBox's `Prefix`, which opens the list, is the application's setting, not a look: no value carries it) | field |
 | W-P3-17† | `menu.{body.fill,body.stroke,body.shadow,body.corners,item.fill} @ context autocomplete (AutoSuggestBox's list, its radius the overlay radius)` | rule |
 | W-P3-17† | `WinUiAutoSuggest (autocomplete.values.placement, relative to the caret: to verify)` | placement |
@@ -859,7 +881,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P4-1† | `window.values.presentations (event @launch_exit)` | field |
 | W-P4-2† | - | out (R1.1) |
 | W-P4-3† | `window.values.keyboard_avoidance (KeyboardAvoid(WinUiScrollIntoView))` | placement |
-| W-P4-3† | `token.motion.durations.scroll_into_view, token.motion.timings.scroll_into_view (the scroll into view, measured)` | token |
+| W-P4-3† | `token.motion.durations.scroll_into_view (the scroll into view, measured: zero, so no keyed timing, S4.1's A motion in no time, ADD-A141)` | token |
 | W-P4-4† | - | out (R1.1) |
 | W-P4-5† | `token.pointer.drag_cursors.<drop operation> (ADD-A46)` | token |
 | W-P4-6† | - | out (R1.1) |
@@ -888,5 +910,5 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P4-18† | `media_controls.values.dropout_order` (the CastButton's `DropoutOrder` among the transport bar's buttons, `MediaTransportControls_themeresources.xaml:402-406`: the order in which the bar drops them when narrow) | field |
 | W-P4-18† | `button.{body.fill,icon.glyph.fill} @ {hover} / {pressed} / {disabled} variant route context media_controls.bar` | rule |
 | W-P4-18† | `reader:windows:DevicePickerAppearance getters` (whether they return the system defaults: to verify; the part `AccentColor` and `SelectedAccentColor` paint is named from the capture in the value phase, or they are recorded unused: the catalogue's `component.casting_picker`) | reader |
-| W-P4-19† | `sidebar.values.breakpoints` (NavigationView: measured Allocation, `compact` with width Below the expanded threshold, `@left_minimal` with width Below the compact threshold, its rules after `compact`'s; `NavigationView.cpp:1428-1458`) | field |
+| W-P4-19† | `sidebar.values.breakpoints` (NavigationView: measured Allocation, `compact` with width Below the expanded threshold, `@left_minimal` with width Below the compact threshold, its rules after `compact`'s; `NavigationView.cpp:1434-1464`) | field |
 | W-P4-19† | `layout.values.{max_panes_horizontal,max_panes_vertical,pane_width,pane_height,breakpoints} @ variant pane` (TwoPaneView; `breakpoints` its wide and tall thresholds: measured Allocation, width Above setting `@two_pane_wide`, height Above setting `@two_pane_tall`, the wide rules after the tall ones, `TwoPaneView.cpp:103-150`; R16) | rule |

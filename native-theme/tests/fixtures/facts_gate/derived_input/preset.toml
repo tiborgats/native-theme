@@ -1,0 +1,18 @@
+# A synthetic preset (S17, ADD-A132): a second input derived from the accent, as its fact
+# states it; the case's test declares it beside the base's `accent`.
+[inputs.tint]
+light = "= input.accent"
+dark = "= input.accent"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

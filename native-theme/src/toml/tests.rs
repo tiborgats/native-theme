@@ -1,0 +1,1899 @@
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
+//! S11's reader: one test per row of the Spelling table, the unknown key's
+//! TOML path, the shorthands' round trips, the `when` and `declare` readers
+//! and a preset's whole blocks.
+
+use super::layer::read_preset;
+use super::read::{FromToml, Spelling, read_as, read_map_as};
+use crate::blocks::BlockPatch;
+use crate::blocks::focus::FocusVisibleWhen;
+use crate::blocks::motion::Timing;
+use crate::blocks::outline::{
+    CornerCurve, Corners, CornersPatch, EdgePatch, FillClip, PixelSnap, Radius, StrokePatch,
+};
+use crate::blocks::paint::{BlendMode, Paint, PaintKind, PaintLayer, PaintPatch};
+use crate::blocks::part_style::PartStylePatch;
+use crate::blocks::shadow::{Shadow, ShadowFalloff};
+use crate::blocks::text::TextStylePatch;
+use crate::color::Color;
+use crate::declare::{DataName, DataOwner, DefaultSize, ScalarUnit};
+use crate::error::{LayerError, Problem, ProblemKind};
+use crate::expr::{ElementDatum, Expr};
+use crate::inputs::{Contrast, InputName};
+use crate::key;
+use crate::layer::Layer;
+use crate::presets::PresetId;
+use crate::roles::SurfaceSet;
+use crate::selector::{
+    Condition, ContextScope, ControlSize, Density, Direction, Idiom, InputKind, Parity, PartRef,
+    RuleBody, Scheme, SharedFlag, SiblingScope, SizeClass, StateFlag, TiledEdges, ValuesPatch,
+    VariantRef, WidgetOrPart, WidgetRef,
+};
+use crate::units::{FontSize, Fraction, Px, Scalar};
+use crate::value::Value;
+use crate::widgets::{
+    ButtonPart, ButtonValuesPatch, IconPlacement, PartPatch, PartPresence, TypedPart, Variant,
+    WidgetKind, WidgetValuesPatch,
+};
+
+/// The layer `text` states, or a failure naming its problems.
+fn layer(text: &str) -> Layer {
+    match Layer::from_toml(text) {
+        Ok(layer) => layer,
+        Err(error) => panic!("{error}"),
+    }
+}
+
+/// The problems `text` has, as `path: kind` lines.
+fn problems(text: &str) -> Vec<String> {
+    match Layer::from_toml(text) {
+        Ok(_) => Vec::new(),
+        Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
+        Err(other) => panic!("{other}"),
+    }
+}
+
+/// The patch of `button.body` the layer's bases state.
+fn body(layer: &Layer) -> PartStylePatch {
+    match layer
+        .bases
+        .widgets
+        .button
+        .as_ref()
+        .and_then(|b| b.body.clone())
+    {
+        Some(PartPatch {
+            presence: None,
+            style,
+        }) => *style,
+        other => panic!("not a style: {other:?}"),
+    }
+}
+
+/// `button.body`'s style read from its table's lines.
+fn body_of(lines: &str) -> PartStylePatch {
+    body(&layer(&format!("[widgets.button.body]\n{lines}")))
+}
+
+/// The problems `value` has read as a `T` at `at` ([`read_as`]).
+fn read_problems<T: FromToml>(value: &str, spelling: Spelling, at: &str) -> Vec<String> {
+    read_as::<T>(value, spelling, at).err().unwrap_or_default()
+}
+
+fn color(hex: &str) -> Color {
+    Color::parse(hex).unwrap()
+}
+
+fn expr(text: &str) -> Expr {
+    Expr::parse(text).unwrap()
+}
+
+fn color_paint(hex: &str) -> Paint {
+    Paint {
+        layers: vec![PaintLayer {
+            kind: PaintKind::Color(Value::Stated(color(hex))),
+            blend: BlendMode::Normal,
+        }],
+    }
+}
+
+// The Spelling table, row by row.
+
+#[test]
+fn spelling_stated_value() {
+    let style = body_of("min_width_px = 4\nopacity = 0.5\nfill = \"#ff0000\"");
+    assert_eq!(style.min_width, Some(Value::Stated(Px(4.0))));
+    assert_eq!(style.opacity, Some(Value::Stated(Fraction(0.5))));
+    assert_eq!(
+        style.fill,
+        Some(PaintPatch::Set(Value::Stated(color_paint("#ff0000"))))
+    );
+    let label = layer("[widgets.button.label]\ntext.case = \"upper\"\ntext.wrap = \"word\"");
+    let Some(PartStylePatch {
+        text: Some(BlockPatch::Fields(text)),
+        ..
+    }) = label
+        .bases
+        .widgets
+        .button
+        .unwrap()
+        .label
+        .map(|patch| *patch.style)
+    else {
+        panic!("a table under an application layer's bases is a `Fields` patch");
+    };
+    assert!(text.case.is_some() && text.wrap.is_some() && text.font.is_none());
+    let values = layer("[widgets.button.values]\nshows_icon = true");
+    let shows_icon = values
+        .bases
+        .widgets
+        .button
+        .and_then(|button| button.values)
+        .and_then(|values| values.shows_icon);
+    assert_eq!(shows_icon, Some(Value::Stated(true)));
+}
+
+#[test]
+fn spelling_key_of_a_field_with_a_unit() {
+    let style =
+        body_of("min_width_px = \"= 2px\"\nmax_width_px = \"auto\"\ntouch_target_px = \"absent\"");
+    assert_eq!(style.min_width, Some(Value::Expr(expr("2px"))));
+    assert_eq!(style.max_width, Some(Value::Auto));
+    assert_eq!(style.touch_target, Some(Value::Absent));
+    assert_eq!(
+        problems("[widgets.button.body]\nmin_width = 4"),
+        ["widgets.button.body.min_width: unknown key"]
+    );
+
+    let text = |lines: &str| {
+        let layer = layer(&format!("[widgets.button.label.text]\n{lines}"));
+        let label = layer.bases.widgets.button.unwrap().label;
+        match label.map(|patch| *patch.style) {
+            Some(PartStylePatch {
+                text: Some(BlockPatch::Fields(text)),
+                ..
+            }) => text,
+            other => panic!("{other:?}"),
+        }
+    };
+    let font = |text: TextStylePatch| text.font.unwrap_or_default();
+    assert_eq!(
+        font(text("font.size_pt = 10")).size,
+        Some(Value::Stated(FontSize::Pt(10.0)))
+    );
+    assert_eq!(
+        font(text("font.size_px = 13")).size,
+        Some(Value::Stated(FontSize::Px(13.0)))
+    );
+    assert_eq!(
+        text("line_height = \"= mul(font_size, 1.2)\"").line_height,
+        Some(Value::Expr(expr("mul(font_size, 1.2)")))
+    );
+    assert_eq!(
+        text("line_height = \"auto\"").line_height,
+        Some(Value::Auto)
+    );
+    assert_eq!(
+        problems("[widgets.button.label.text.font]\nsize = 10\nweight = 400"),
+        [
+            "widgets.button.label.text.font.size: expected an expression, \"auto\" or \"absent\"; \
+             a number under the key's `_pt` or `_px` form"
+        ]
+    );
+    assert_eq!(
+        problems("[widgets.button.label.text.font]\nsize_pt = \"auto\""),
+        ["widgets.button.label.text.font.size_pt: expected a number"]
+    );
+    assert_eq!(
+        problems("[widgets.button.label.text.font]\nsize_pt = 10\nsize_px = 13"),
+        ["widgets.button.label.text.font.size_px: states the field size_pt states too"]
+    );
+
+    let corners = |lines: &str| match body_of(lines).corners {
+        Some(BlockPatch::Fields(corners)) => corners,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(
+        corners("corners.top_left_px = 4").top_left,
+        Some(Radius::Px(Value::Stated(Px(4.0))))
+    );
+    assert_eq!(
+        corners("corners.top_left_px = \"= 2px\"").top_left,
+        Some(Radius::Px(Value::Expr(expr("2px"))))
+    );
+    assert_eq!(
+        corners("corners.top_left = \"follow_part\"").top_left,
+        Some(Radius::FollowPart)
+    );
+    assert_eq!(
+        corners("corners.top_left = \"ellipse\"").top_left,
+        Some(Radius::Ellipse)
+    );
+    assert_eq!(
+        corners("corners.top_left = { full = { maximum_px = \"absent\" } }").top_left,
+        Some(Radius::Full {
+            maximum: Value::Absent
+        })
+    );
+    assert_eq!(
+        corners("corners.top_left = { concentric = { minimum_px = 2 } }").top_left,
+        Some(Radius::Concentric {
+            minimum: Value::Stated(Px(2.0))
+        })
+    );
+    assert_eq!(
+        problems("[widgets.button.body.corners]\ntop_left = { px = 4 }"),
+        ["widgets.button.body.corners.top_left.px: unknown key"]
+    );
+}
+
+#[test]
+fn spelling_text_value() {
+    let font = |lines: &str| {
+        let layer = layer(&format!("[widgets.button.label.text.font]\n{lines}"));
+        match layer
+            .bases
+            .widgets
+            .button
+            .unwrap()
+            .label
+            .map(|patch| *patch.style)
+        {
+            Some(PartStylePatch {
+                text:
+                    Some(BlockPatch::Fields(TextStylePatch {
+                        font: Some(font), ..
+                    })),
+                ..
+            }) => font,
+            other => panic!("{other:?}"),
+        }
+    };
+    let family = |value: &str| font(&format!("family = {value:?}")).family;
+    assert_eq!(
+        family(".AppleSystemUIFont"),
+        Some(Value::Stated(".AppleSystemUIFont".to_owned()))
+    );
+    assert_eq!(
+        family("= token.text.keyed.body.font.family"),
+        Some(Value::Expr(expr("token.text.keyed.body.font.family")))
+    );
+    // A text field's type allows `Absent`, not `Auto`: "auto" is text there.
+    assert_eq!(family("absent"), Some(Value::Absent));
+    assert_eq!(family("auto"), Some(Value::Stated("auto".to_owned())));
+    // A plain `String` is always text.
+    let layer = layer(
+        "[widgets.button.icon.glyph]\nsource = { theme_icon = { name = \"absent\", fallbacks = \
+         [\"none\"] } }",
+    );
+    let Some(PartPatch { style: icon, .. }) = layer.bases.widgets.button.unwrap().icon else {
+        panic!("a style");
+    };
+    let Some(BlockPatch::Fields(glyph)) = icon.glyph else {
+        panic!("fields");
+    };
+    assert_eq!(
+        format!("{:?}", glyph.source),
+        "Some(ThemeIcon { name: \"absent\", fallbacks: [\"none\"] })"
+    );
+}
+
+#[test]
+fn spelling_expression() {
+    assert_eq!(
+        body_of("opacity = \"= mix(0.2, 0.4, 0.5)\"").opacity,
+        Some(Value::Expr(expr("mix(0.2, 0.4, 0.5)")))
+    );
+    let found = problems("[widgets.button.body]\nopacity = \"= mix(0.2,\"");
+    assert_eq!(found.len(), 1);
+    assert!(
+        found[0].starts_with("widgets.button.body.opacity: expression: "),
+        "{found:?}"
+    );
+}
+
+#[test]
+fn spelling_auto() {
+    assert_eq!(
+        body_of("max_width_px = \"auto\"").max_width,
+        Some(Value::Auto)
+    );
+    // On an enum field "auto" is no `Auto`: the enum has no such variant.
+    assert_eq!(
+        problems("[widgets.button.body]\ncursor = \"auto\""),
+        ["widgets.button.body.cursor: unknown name \"auto\""]
+    );
+}
+
+/// No block or paint is ever `Auto` (S2.2, S6.1, S12): `"auto"` on a
+/// `Value` block or a paint is refused as the reader reads it, in the
+/// bases and in a rule's `set`, so the merge never meets it.
+#[test]
+fn auto_on_a_block_or_paint_refused() {
+    assert_eq!(
+        problems("[widgets.button.body]\nstroke = \"auto\"\nfill = \"auto\""),
+        [
+            "widgets.button.body.stroke: expected a table",
+            "widgets.button.body.fill: expected a colour (S2.1)"
+        ]
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\ntarget = \"button.body\"\nset = { stroke = \"auto\", fill = \"auto\" }"
+        ),
+        [
+            "rules[0].set.stroke: expected a table",
+            "rules[0].set.fill: expected a colour (S2.1)"
+        ]
+    );
+}
+
+#[test]
+fn spelling_absent() {
+    assert_eq!(body_of("shadow = \"absent\"").shadow, Some(Value::Absent));
+    assert_eq!(
+        body_of("fill = \"absent\"").fill,
+        Some(PaintPatch::Set(Value::Absent))
+    );
+    let layer = layer("[widgets.button.subtitle]\nabsent = true");
+    assert_eq!(
+        layer.bases.widgets.button.unwrap().subtitle,
+        Some(PartPatch::of_presence(PartPresence::Absent))
+    );
+    let set = layer_rule("target = \"button.icon\"\nset = { absent = true }");
+    assert_eq!(
+        set,
+        RuleBody::Part(
+            button(ButtonPart::Icon),
+            PartPatch::of_presence(PartPresence::Absent)
+        )
+    );
+}
+
+/// A part's table states at most one presence, `absent = true`, `absent =
+/// false` (`Present`) or `drawn_as`, beside any of its fields, the one
+/// patch holding both (S6.3, S11, ADD-A126, ADD-A131).
+#[test]
+fn spelling_presence_beside_fields() {
+    let set = layer_rule("target = \"button.label\"\nset = { absent = false }");
+    assert_eq!(
+        set,
+        RuleBody::Part(
+            button(ButtonPart::Label),
+            PartPatch::of_presence(PartPresence::Present)
+        )
+    );
+    let beside = |text: &str| {
+        layer(&format!(
+            "[widgets.button.subtitle]\n{text}\ntext.case = \"upper\""
+        ))
+        .bases
+        .widgets
+        .button
+        .unwrap()
+        .subtitle
+        .unwrap()
+    };
+    for (text, presence) in [
+        ("absent = true", PartPresence::Absent),
+        ("absent = false", PartPresence::Present),
+    ] {
+        let read = beside(text);
+        assert_eq!(read.presence, Some(presence));
+        assert!(
+            matches!(&read.style.text, Some(BlockPatch::Fields(text)) if text.case.is_some()),
+            "{read:?}"
+        );
+    }
+    assert_eq!(
+        problems("[widgets.button.subtitle]\nabsent = \"no\""),
+        [
+            "widgets.button.subtitle.absent: expected `true`, the whole part not drawn, or \
+             `false`, drawn again"
+        ]
+    );
+}
+
+/// A second presence in one part's table is a duplicate key (S11, S12,
+/// ADD-A131): one table states at most one.
+#[test]
+fn refusal_second_presence() {
+    assert_eq!(
+        problems(
+            "[widgets.button.icon]\nabsent = true\ndrawn_as = { widget = \"button\", \
+             variants = [] }"
+        ),
+        ["widgets.button.icon.drawn_as: states the field absent states too"]
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\ntarget = \"button.icon\"\nset = { drawn_as = { widget = \"button\", \
+             variants = [] }, absent = false }"
+        ),
+        ["rules[0].set.absent: states the field drawn_as states too"]
+    );
+}
+
+#[test]
+fn spelling_none() {
+    let behavior =
+        layer("[tokens.behavior]\nfocus_visible_when = { keyboard = { timeout_ms = \"none\" } }")
+            .bases
+            .tokens
+            .behavior;
+    assert_eq!(
+        behavior.and_then(|behavior| behavior.focus_visible_when),
+        Some(Value::Stated(FocusVisibleWhen::Keyboard { timeout: None }))
+    );
+    let label = super::layer::read_layer("[widgets.button.label.text]\nmax_lines = \"none\"")
+        .unwrap()
+        .bases
+        .widgets
+        .button
+        .unwrap()
+        .label;
+    assert!(matches!(
+        label.map(|patch| *patch.style),
+        Some(PartStylePatch {
+            text: Some(BlockPatch::Fields(TextStylePatch {
+                max_lines: Some(Value::Stated(None)),
+                ..
+            })),
+            ..
+        })
+    ));
+    // An `Option` inside an enum variant's payload left out is `None`.
+    let values =
+        Layer::from_toml("[widgets.button.values]\nfocus_visible_when = { keyboard = {} }")
+            .unwrap();
+    assert_eq!(
+        values
+            .bases
+            .widgets
+            .button
+            .unwrap()
+            .values
+            .unwrap()
+            .focus_visible_when,
+        Some(Value::Stated(FocusVisibleWhen::Keyboard { timeout: None }))
+    );
+}
+
+/// `DecorationLine::UnderlineLow` reads as `underline_low` (S2.8, S11;
+/// ADD-A130), the line Pango's low underline draws.
+#[test]
+fn decoration_line_underline_low_reads() {
+    use crate::blocks::text::{DecorationLine, DecorationPatch};
+    let read = layer(
+        "[widgets.button.label]\ntext.mnemonic_decoration = { line = \"underline_low\", \
+         style = \"solid\", by_word = \"absent\", thickness_px = \"= element.font_underline_thickness\", \
+         offset_px = \"= element.font_underline_thickness\", paint = \"#000000\" }",
+    );
+    let label = read
+        .bases
+        .widgets
+        .button
+        .as_ref()
+        .and_then(|button| button.label.clone());
+    let Some(PartStylePatch {
+        text:
+            Some(BlockPatch::Fields(TextStylePatch {
+                mnemonic_decoration:
+                    Some(BlockPatch::Fields(DecorationPatch {
+                        line: Some(line), ..
+                    })),
+                ..
+            })),
+        ..
+    }) = label.clone().map(|patch| *patch.style)
+    else {
+        panic!("not a stated decoration: {label:?}");
+    };
+    assert_eq!(line, DecorationLine::UnderlineLow);
+    assert_eq!(
+        problems("[widgets.button.label]\ntext.mnemonic_decoration.line = \"underline_lower\""),
+        ["widgets.button.label.text.mnemonic_decoration.line: unknown name \"underline_lower\""]
+    );
+}
+
+/// `straight_srgb` is S2.7's straight unrounded colour space and
+/// `straight_srgb8` Qt's truncating one, two members (ADD-A141), read by
+/// the type's own reader: `token.motion.color_space` is staged with the
+/// motion unit (S6.1).
+#[test]
+fn the_straight_colour_spaces_are_two() -> Result<(), Vec<String>> {
+    use crate::tokens::ColorInterpolation;
+
+    let space = |name: &str| {
+        read_as::<Value<ColorInterpolation>>(
+            &format!("\"{name}\""),
+            Spelling::Bare,
+            "tokens.motion.color_space",
+        )
+    };
+    assert_eq!(
+        space("straight_srgb")?,
+        Value::Stated(ColorInterpolation::StraightSrgb)
+    );
+    assert_eq!(
+        space("straight_srgb8")?,
+        Value::Stated(ColorInterpolation::StraightSrgb8)
+    );
+    Ok(())
+}
+
+/// `win_ui` is S9.4's `WinUi` scaling (ADD-A141).
+#[test]
+fn win_ui_is_a_text_scaling() {
+    let scaling = layer("[tokens.text]\nscaling = \"win_ui\"")
+        .bases
+        .tokens
+        .text
+        .and_then(|text| text.scaling);
+    assert_eq!(scaling, Some(crate::tokens::TextScaling::WinUi));
+}
+
+/// `filled_ring` names no `FocusKind` (S2.10's *One ring*, ADD-A141):
+/// Breeze's filled frame is a `ring`.
+#[test]
+fn a_filled_ring_is_no_focus_kind() {
+    assert_eq!(
+        problems("[widgets.button.body]\nfocus.kind = \"filled_ring\""),
+        ["widgets.button.body.focus.kind: unknown name \"filled_ring\""]
+    );
+    assert_eq!(
+        body_of("focus.kind = \"ring\"")
+            .focus
+            .and_then(|focus| match focus {
+                BlockPatch::Fields(focus) => focus.kind,
+                _ => None,
+            }),
+        Some(crate::blocks::focus::FocusKind::Ring)
+    );
+}
+
+#[test]
+fn spelling_enum_variant() {
+    let style = body_of("corners.curve = \"continuous\"\nshadow = { elevation = \"2\" }");
+    assert_eq!(
+        style.corners,
+        Some(BlockPatch::Fields(CornersPatch {
+            curve: Some(CornerCurve::Continuous),
+            ..CornersPatch::default()
+        }))
+    );
+    assert_eq!(
+        style.shadow,
+        Some(Value::Stated(Shadow::Elevation(key!("2"))))
+    );
+    // A timing read by its own reader: the keyed timings are staged with
+    // the motion unit (S6.1).
+    let timing = read_as::<Timing>(
+        "{ spring = { mass = 1, stiffness = 200, damping_ratio = 1, initial_velocity = 0, \
+         rest_epsilon = 0.001, clamp = false, time_scale = \"= token.motion.speed_factor\" } }",
+        Spelling::Bare,
+        "tokens.motion.timings.standard",
+    );
+    assert!(
+        matches!(timing, Ok(Timing::Spring { mass, clamp: false, .. }) if mass == 1.0),
+        "{timing:?}"
+    );
+    // A keyed variant is `@<key>`, as a keyed name is.
+    let style = body_of("focus.kind = \"@reveal\"");
+    let Some(BlockPatch::Fields(focus)) = style.focus else {
+        panic!("fields");
+    };
+    assert_eq!(
+        focus.kind,
+        Some(crate::blocks::focus::FocusKind::Keyed(key!("reveal")))
+    );
+}
+
+#[test]
+fn spelling_list() {
+    let style = body_of("bindings = []");
+    assert_eq!(style.bindings, Some(Vec::new()));
+    // A part's `transitions` read by the list's own reader: no part lists
+    // them until the motion unit (D6 outcome 3).
+    assert_eq!(
+        read_as::<Vec<crate::blocks::motion::Transition>>(
+            "[]",
+            Spelling::Bare,
+            "widgets.button.body.transitions"
+        ),
+        Ok(Vec::new())
+    );
+    let style = body_of("bindings = [{ surface = \"button\" }]");
+    assert_eq!(style.bindings.map(|b| b.len()), Some(1));
+    assert_eq!(
+        problems("[widgets.button.body]\nbindings = \"absent\""),
+        ["widgets.button.body.bindings: expected an array"]
+    );
+}
+
+/// A paint layer's `blend`: each member's snake_case name, a keyed mode
+/// `@<key>` (S2.3, S11; ADD-A134's `difference`).
+#[test]
+fn blend_mode_spellings() {
+    for (text, expected) in [
+        ("\"normal\"", BlendMode::Normal),
+        ("\"mask\"", BlendMode::Mask),
+        ("\"difference\"", BlendMode::Difference),
+        ("\"@vibrant\"", BlendMode::Keyed(key!("vibrant"))),
+    ] {
+        let style = body_of(&format!(
+            "fill = {{ layers = [{{ kind = {{ color = \"#ffffff\" }}, blend = {text} }}] }}"
+        ));
+        let Some(PaintPatch::Set(Value::Stated(paint))) = style.fill else {
+            panic!("{text}: {:?}", style.fill);
+        };
+        assert_eq!(
+            paint.layers.first().map(|layer| layer.blend.clone()),
+            Some(expected),
+            "{text}"
+        );
+    }
+}
+
+/// A shadow layer's `falloff`: each member's snake_case name (S2.5, S11;
+/// ADD-A134), stated on every layer, no default standing in for it.
+#[test]
+fn shadow_falloff_spellings() {
+    let layer = |falloff: &str| {
+        format!(
+            "shadow = {{ layers = [{{ x_px = 0, y_px = 1, blur_px = 2, spread_px = 0, \
+             color = \"#00000026\", inset = false{falloff} }}] }}"
+        )
+    };
+    for (text, expected) in [
+        ("\"gaussian\"", ShadowFalloff::Gaussian),
+        ("\"kirigami_smoothstep\"", ShadowFalloff::KirigamiSmoothstep),
+    ] {
+        let style = body_of(&layer(&format!(", falloff = {text}")));
+        let Some(Value::Stated(Shadow::Layers(layers))) = style.shadow else {
+            panic!("{text}: {:?}", style.shadow);
+        };
+        assert_eq!(
+            layers.first().map(|layer| layer.falloff),
+            Some(expected),
+            "{text}"
+        );
+    }
+    for falloff in ["", ", falloff = \"smoothstep\""] {
+        let text = format!("[widgets.button.body]\n{}", layer(falloff));
+        assert!(Layer::from_toml(&text).is_err(), "{falloff:?}");
+    }
+}
+
+#[test]
+fn spelling_tuple() {
+    let style = body_of("transform = { origin = [0.5, 0.25] }");
+    let Some(BlockPatch::Fields(transform)) = style.transform else {
+        panic!("fields");
+    };
+    assert_eq!(transform.origin, Some((0.5, 0.25)));
+    // A transition read by its own reader: no part lists `transitions`
+    // until the motion unit (D6 outcome 3).
+    let transitions = read_as::<Vec<crate::blocks::motion::Transition>>(
+        "[{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, \
+         timing = { cubic_bezier = [0.2, 0, 0, 1] }, engine = \"gtk_css\" }]",
+        Spelling::Bare,
+        "widgets.button.body.transitions",
+    );
+    assert_eq!(
+        transitions.map(|held| held.first().map(|transition| transition.timing.clone())),
+        Ok(Some(Value::Stated(Timing::CubicBezier(0.2, 0.0, 0.0, 1.0))))
+    );
+    assert_eq!(
+        problems("[widgets.button.body.transform]\norigin = [0.5]"),
+        ["widgets.button.body.transform.origin: expected an array of two numbers"]
+    );
+}
+
+#[test]
+fn spelling_kde_scheme_lists() {
+    let layer = layer(
+        "[inputs.kde_scheme.groups]\nlight = [\"header\", \"view\"]\ndark = []\n\
+         [inputs.kde_scheme.inactive_groups]\nlight = [\"window\"]\n\
+         [inputs.kde_scheme.unset_keys]\ndark = [\"kde_scheme.view.foreground_visited\"]",
+    );
+    let inputs = layer.bases.inputs;
+    assert_eq!(
+        inputs.kde_groups.light,
+        Some(vec![SurfaceSet::Header, SurfaceSet::View])
+    );
+    assert_eq!(inputs.kde_groups.dark, Some(Vec::new()));
+    assert_eq!(
+        inputs.kde_inactive_groups.light,
+        Some(vec![SurfaceSet::Window])
+    );
+    assert_eq!(
+        inputs.kde_unset_keys.dark,
+        Some(vec![
+            InputName::new("kde_scheme.view.foreground_visited").unwrap()
+        ])
+    );
+    assert_eq!(
+        problems("[inputs.kde_scheme.groups]\nlight = [\"nowhere\"]"),
+        ["inputs.kde_scheme.groups.light[0]: unknown name \"nowhere\""]
+    );
+}
+
+#[test]
+fn spelling_drawn_as() {
+    let read = |table: &str| {
+        let layer = layer(&format!(
+            "[widgets.button.menu_indicator]\ndrawn_as = {table}"
+        ));
+        layer.bases.widgets.button.unwrap().menu_indicator.unwrap()
+    };
+    assert_eq!(
+        read("{ widget = \"button\", part = \"icon\", variants = [\"tool\", \"@raised\"] }"),
+        PartPatch::of_presence(PartPresence::DrawnAs {
+            target: WidgetOrPart::Part(button(ButtonPart::Icon)),
+            variants: vec![
+                VariantRef::Typed(Variant::Tool),
+                VariantRef::Keyed(key!("raised"))
+            ],
+        })
+    );
+    assert_eq!(
+        read("{ widget = \"button\", variants = [] }"),
+        PartPatch::of_presence(PartPresence::DrawnAs {
+            target: WidgetOrPart::Widget(WidgetRef::Typed(WidgetKind::Button)),
+            variants: Vec::new(),
+        })
+    );
+    assert_eq!(
+        problems("[widgets.button.icon]\ndrawn_as = { part = \"icon\", variants = [] }"),
+        ["widgets.button.icon.drawn_as.part: states `part` without `widget`"]
+    );
+    assert_eq!(
+        problems(
+            "[widgets.button.icon]\ndrawn_as = { widget = \"button\", part = \"knob\", variants = [] }"
+        ),
+        ["widgets.button.icon.drawn_as.part: unknown name \"knob\""]
+    );
+}
+
+#[test]
+fn spelling_condition() {
+    let rule = |conditions: &str| {
+        let layer = layer(&format!(
+            "[[rules]]\nwhen = {{ conditions = [{conditions}] }}\ntarget = \"tokens\"\nset = {{}}"
+        ));
+        layer.rules[0].selector.conditions.all_of.clone()
+    };
+    assert_eq!(
+        rule(
+            "\"window_inactive\", \"scheme:dark\", \"tiled:left,top\", \"input:touch\", \
+             \"idiom:pad\", \"flavor:kirigami\", \"system_setting:graphic_effects_level\", \
+             \"container_size:button:small\", \"posture:book\", \"device_model:iphone16\", \
+             \"preset:adwaita\""
+        ),
+        [
+            Condition::WindowInactive,
+            Condition::Scheme(Scheme::Dark),
+            Condition::Tiled(TiledEdges {
+                top: true,
+                left: true,
+                ..TiledEdges::default()
+            }),
+            Condition::Input(InputKind::Touch),
+            Condition::Idiom(Idiom::Pad),
+            Condition::Flavor(key!("kirigami")),
+            Condition::SystemSetting(key!("graphic_effects_level")),
+            Condition::ContainerSize {
+                container: WidgetRef::Typed(WidgetKind::Button),
+                size: key!("small"),
+            },
+            Condition::Posture(crate::selector::Posture::Book),
+            Condition::DeviceModel(key!("iphone16")),
+            Condition::Preset(PresetId::Adwaita),
+        ]
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\nwhen = { conditions = [\"scheme:blue\", \"windowinactive\", \
+             \"preset:breeze\", \"scheme\", \"maximized:yes\"] }\ntarget = \"tokens\"\nset = {}"
+        ),
+        [
+            "rules[0].when.conditions[0]: unknown name \"blue\"",
+            "rules[0].when.conditions[1]: unknown name \"windowinactive\"",
+            "rules[0].when.conditions[2]: unknown name \"breeze\"",
+            "rules[0].when.conditions[3]: expected a condition and its value, `<name>:<value>`",
+            "rules[0].when.conditions[4]: expected a condition with no `:<value>`",
+        ]
+    );
+}
+
+/// A layer's one rule's body, from the rule's `target` and `set` lines.
+fn layer_rule(lines: &str) -> RuleBody {
+    layer(&format!("[[rules]]\n{lines}")).rules.remove(0).body
+}
+
+fn button(part: ButtonPart) -> PartRef {
+    PartRef::Typed(TypedPart::Button(part))
+}
+
+#[test]
+fn spelling_rule_target() {
+    assert!(matches!(
+        layer_rule("target = \"colors\"\nset = { global.accent = \"#3584e4\" }"),
+        RuleBody::Colors(_)
+    ));
+    assert!(matches!(
+        layer_rule("target = \"tokens\"\nset = { focus.width_px = 1 }"),
+        RuleBody::Tokens(_)
+    ));
+    assert!(matches!(
+        layer_rule("target = \"button.body\"\nset = { opacity = 0.5 }"),
+        RuleBody::Part(part, PartPatch { presence: None, .. }) if part == button(ButtonPart::Body)
+    ));
+    assert_eq!(
+        layer_rule("target = \"button.values\"\nset = { icon_placement = \"top\" }"),
+        RuleBody::Values(ValuesPatch::Typed(WidgetValuesPatch::Button(Box::new(
+            ButtonValuesPatch {
+                icon_placement: Some(Value::Stated(IconPlacement::Top)),
+                ..ButtonValuesPatch::default()
+            }
+        ))))
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\ntarget = \"component.rule_editor.row\"\nset = {}\n[[rules]]\ntarget = \
+             \"slider.track\"\nset = {}\n[[rules]]\ntarget = \"button.knob\"\nset = {}\n\
+             [[rules]]\ntarget = \"button\"\nset = {}"
+        ),
+        [
+            "rules[0].target: unknown name \"component.rule_editor.row\"",
+            "rules[1].target: unknown name \"slider\"",
+            "rules[2].target: unknown name \"knob\"",
+            "rules[3].target: expected \"colors\", \"tokens\", \"<widget>.<part>\" or \
+             \"<widget>.values\"",
+        ]
+    );
+}
+
+#[test]
+fn spelling_rule_patch() {
+    let layer = layer(
+        "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\nset = { fill.append \
+         = [\"= alpha(surface.foreground, 0.1)\"] }",
+    );
+    let rule = &layer.rules[0];
+    assert_eq!(rule.selector.states.all_of, [StateFlag::Hover]);
+    let RuleBody::Part(_, PartPatch { style, .. }) = &rule.body else {
+        panic!("a part's style");
+    };
+    assert!(matches!(&style.fill, Some(PaintPatch::Append(layers)) if layers.len() == 1));
+    assert_eq!(
+        problems("[[rules]]\ntarget = \"button.body\"\nsets = {}\nwhen = {}"),
+        ["rules[0].sets: unknown key", "rules[0].set: missing",]
+    );
+    // `append` in a layer's bases has nothing beneath it (S6.1).
+    assert_eq!(
+        problems("[widgets.button.body]\nfill.append = [\"#000000\"]"),
+        [
+            "widgets.button.body.fill.append: `append` in a layer's bases, where nothing lies beneath"
+        ]
+    );
+}
+
+#[test]
+fn spelling_per_contrast_input_bases() {
+    let layer = layer(
+        "[inputs.accent]\nlight = \"#3584e4\"\ndark = \"#78aeed\"\n\
+         [inputs.accent.contrast.high]\nlight = \"#1c71d8\"\ndark = \"#99c1f1\"\n\
+         [inputs.accent_ramp.light1]\nlight = \"#ffffff\"",
+    );
+    let entries = layer.bases.inputs.entries;
+    assert_eq!(entries.len(), 2);
+    let (name, accent) = &entries[0];
+    assert_eq!(name.to_string(), "accent");
+    assert_eq!(
+        accent.per_scheme.dark,
+        Some(Value::Stated(color("#78aeed")))
+    );
+    assert_eq!(accent.per_contrast.len(), 1);
+    assert_eq!(accent.per_contrast[0].0, Contrast::High);
+    assert_eq!(entries[1].0.to_string(), "accent_ramp.light1");
+    assert_eq!(
+        problems("[inputs.accent.contrast.medium]\nlight = \"#000000\""),
+        ["inputs.accent.contrast.medium: unknown name \"medium\""]
+    );
+}
+
+#[test]
+fn spelling_for_preset() {
+    // A bundled preset's id names its part; an id no preset has is an
+    // unknown key, its bases read all the same, their problems reported.
+    let layer = layer("[for_preset.adwaita.widgets.button.body]\nopacity = 0.5");
+    assert_eq!(layer.for_preset.len(), 1);
+    assert_eq!(layer.for_preset[0].0, PresetId::Adwaita);
+    assert_eq!(
+        problems("[for_preset.breeze.widgets.button.body]\nshine = 1"),
+        [
+            "for_preset.breeze: unknown key",
+            "for_preset.breeze.widgets.button.body.shine: unknown key",
+        ]
+    );
+}
+
+#[test]
+fn spelling_widget_values_and_component_parts() {
+    let layer = layer("[widgets.button.values]\nicon_text_gap_px = 4\nhit_extension.top_px = 2");
+    let values = layer.bases.widgets.button.unwrap().values.unwrap();
+    assert_eq!(values.icon_text_gap, Some(Value::Stated(Px(4.0))));
+    assert_eq!(
+        values.hit_extension.map(|sides| sides.top),
+        Some(Some(Value::Stated(Px(2.0))))
+    );
+    // No unit enables a component yet (S5.1).
+    assert_eq!(
+        problems("[components.rule_editor.row]\nopacity = 1"),
+        ["components: unknown key"]
+    );
+}
+
+#[test]
+fn unknown_key_reports_toml_path() {
+    assert_eq!(
+        problems(
+            "[widgets.button.body]\nshine = 1\n[widgets.button.body.stroke.top]\nglow = 2\n\
+             [tokens.focus]\ncolour = \"#000000\"\n[colors.light.surfaces.window]\nbackgroud = \
+             \"#ffffff\"\n[[rules]]\ntarget = \"button.label\"\nset = { text = { font = { \
+             wieght = 400 } } }\nwhen = { states = [\"hover\"], colour = 1 }\n[widgets.button]\n\
+             knob = {}\n[nonsense]"
+        ),
+        [
+            "widgets.button.body.shine: unknown key",
+            "widgets.button.body.stroke.top.glow: unknown key",
+            "widgets.button.knob: unknown key",
+            "tokens.focus.colour: unknown key",
+            "colors.light.surfaces.window.backgroud: unknown key",
+            "rules[0].when.colour: unknown key",
+            "rules[0].set.text.font.wieght: unknown key",
+            "nonsense: unknown key",
+        ]
+    );
+}
+
+#[test]
+fn a_part_takes_only_its_catalogue_fields() {
+    assert_eq!(
+        problems("[widgets.button.label]\nfill = \"#000000\"\npadding.top_px = 2"),
+        ["widgets.button.label.fill: a field `button.label` does not have"]
+    );
+}
+
+#[test]
+fn every_problem_is_collected() {
+    let found = problems(
+        "[widgets.button.body]\nopacity = \"high\"\nmin_width_px = true\ncursor = \"blink\"\n\
+         [widgets.button.values]\nicon_placement = \"left\"\nrepeat_delay_ms = nan",
+    );
+    assert_eq!(
+        found,
+        [
+            "widgets.button.body.opacity: expected a number",
+            "widgets.button.body.min_width_px: expected a number",
+            "widgets.button.body.cursor: unknown name \"blink\"",
+            "widgets.button.values.icon_placement: unknown name \"left\"",
+            "widgets.button.values.repeat_delay_ms: not a finite number",
+        ]
+    );
+    assert_eq!(
+        problems("[widgets.button.body\nopacity = 1").len(),
+        1,
+        "TOML that does not parse is one problem"
+    );
+}
+
+// The shorthands' round trips: each states what its long form states.
+
+#[test]
+fn corners_px_round_trips() {
+    let short = body_of("corners_px = 6\ncorners.curve = \"circular\"").corners;
+    let long = body_of(
+        "corners.top_left_px = 6\ncorners.top_right_px = 6\ncorners.bottom_right_px = 6\n\
+         corners.bottom_left_px = 6\ncorners.curve = \"circular\"",
+    )
+    .corners;
+    assert_eq!(short, long);
+    // On a bare `Corners` (a focus indicator's) too.
+    let focus = |lines: &str| match body_of(lines).focus {
+        Some(BlockPatch::Fields(focus)) => focus.corners,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(
+        focus("focus.corners_px = \"= 2px\""),
+        focus(
+            "focus.corners.top_left_px = \"= 2px\"\nfocus.corners.top_right_px = \"= 2px\"\n\
+             focus.corners.bottom_right_px = \"= 2px\"\nfocus.corners.bottom_left_px = \"= 2px\""
+        )
+    );
+    // A corner both ways is a duplicate key.
+    assert_eq!(
+        problems("[widgets.button.body]\ncorners_px = 6\ncorners.top_left_px = 4"),
+        ["widgets.button.body.corners: states the field corners_px states too"]
+    );
+}
+
+#[test]
+fn stroke_shorthand_round_trips() {
+    let stroke = |lines: &str| match body_of(lines).stroke {
+        Some(BlockPatch::Fields(stroke)) => stroke,
+        other => panic!("{other:?}"),
+    };
+    let short = stroke(
+        "stroke = { width_px = 1, paint = \"#000000\", dash = \"solid\", snap = \
+         \"to_device_pixel\", position = \"inside\", outset_px = \"absent\", fill_clip = \"box\" }",
+    );
+    let edge =
+        "{ width_px = 1, paint = \"#000000\", dash = \"solid\", snap = \"to_device_pixel\" }";
+    let long = stroke(&format!(
+        "stroke = {{ top = {edge}, right = {edge}, bottom = {edge}, left = {edge}, position = \
+         \"inside\", outset_px = \"absent\", fill_clip = \"box\" }}"
+    ));
+    assert_eq!(short, long);
+    let dotted = stroke("stroke.width_px = 2\nstroke.snap = \"none\"");
+    let expected = EdgePatch {
+        width: Some(Value::Stated(Px(2.0))),
+        snap: Some(PixelSnap::None),
+        ..EdgePatch::default()
+    };
+    assert_eq!(
+        dotted,
+        StrokePatch {
+            top: Some(expected.clone()),
+            right: Some(expected.clone()),
+            bottom: Some(expected.clone()),
+            left: Some(expected),
+            ..StrokePatch::default()
+        }
+    );
+    assert_eq!(
+        problems("[widgets.button.body.stroke]\nwidth_px = 1\ntop.width_px = 2"),
+        ["widgets.button.body.stroke.top.width_px: states the field width_px states too"]
+    );
+}
+
+/// `fill_clip` reads each `FillClip` member by its S11 spelling, `center`
+/// the fill to the stroke's centre line (S2.4, ADD-A135).
+#[test]
+fn stroke_fill_clip_reads_each_member() {
+    let clip = |name: &str| match body_of(&format!("stroke.fill_clip = \"{name}\"")).stroke {
+        Some(BlockPatch::Fields(stroke)) => stroke.fill_clip,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(clip("box"), Some(FillClip::Box));
+    assert_eq!(clip("inner_edge"), Some(FillClip::InnerEdge));
+    assert_eq!(clip("center"), Some(FillClip::Center));
+}
+
+#[test]
+fn a_whole_block_replaces_and_reports_its_missing_fields() {
+    let style = body_of(
+        "corners = { replace = { top_left_px = 1, top_right_px = 1, bottom_right_px = 1, \
+         bottom_left_px = 1, curve = \"circular\" } }",
+    );
+    let radius = Radius::Px(Value::Stated(Px(1.0)));
+    assert_eq!(
+        style.corners,
+        Some(BlockPatch::Set(Value::Stated(Corners {
+            top_left: radius.clone(),
+            top_right: radius.clone(),
+            bottom_right: radius.clone(),
+            bottom_left: radius,
+            curve: CornerCurve::Circular,
+        })))
+    );
+    assert_eq!(
+        problems("[widgets.button.body]\ncorners = { replace = { top_left_px = 1 } }"),
+        [
+            "widgets.button.body.corners.replace.top_right: missing",
+            "widgets.button.body.corners.replace.bottom_right: missing",
+            "widgets.button.body.corners.replace.bottom_left: missing",
+            "widgets.button.body.corners.replace.curve: missing",
+        ]
+    );
+}
+
+/// In a preset's own bases a table is the whole block, so `replace` is an
+/// unknown key there (S11: "where the type is the block itself (the preset
+/// layer's bases outside a keyframe's `patch`, …) … it is an unknown key");
+/// a rule of the preset states a whole block by it.
+#[test]
+fn refusal_replace_in_preset_bases() {
+    let replace = "corners = { replace = { top_left_px = 1, top_right_px = 1, bottom_right_px = \
+                   1, bottom_left_px = 1, curve = \"circular\" } }";
+    let found = |text: &str| -> Vec<String> {
+        match read_preset(&format!("{PRESET_HEAD}{text}")) {
+            Ok(_) => Vec::new(),
+            Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
+            Err(other) => panic!("{other}"),
+        }
+    };
+    let based = found(&format!("[widgets.button.body]\n{replace}"));
+    assert!(
+        based.contains(&"widgets.button.body.corners.replace: unknown key".to_owned()),
+        "{based:?}"
+    );
+    let ruled = found(&format!(
+        "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\nset = {{ \
+         {replace} }}"
+    ));
+    assert!(
+        !ruled.iter().any(|problem| problem.contains("corners")),
+        "{ruled:?}"
+    );
+}
+
+// `when` (S7).
+
+#[test]
+fn when_reads_every_selector_part() {
+    let layer = layer(
+        "[[rules]]\ntarget = \"button.body\"\nset = {}\n[rules.when]\n\
+         conditions = [\"scheme:dark\"]\nnot_conditions = [\"contrast_high\"]\n\
+         context = [{ widget = \"button\", part = \"body\", variants = [\"tool\"], states = \
+         [\"hover\"], sizes = [\"small\"], surface = \"header\" }, { scope = { nearest = \
+         [\"button\"] }, widget = \"button\" }]\n\
+         not_context = [{ widget = \"button\" }]\n\
+         position = { among = \"any\", first = true, parity = \"odd\", previous = { widget = \
+         \"button\", not_states = [\"checked\"] } }\n\
+         variants = [\"tool\", \"@pill_keyed\"]\nnot_variants = [\"primary\"]\n\
+         sizes = [\"regular\"]\nnot_sizes = [\"mini\"]\ndensities = [\"compact\", \"@dense\"]\n\
+         not_densities = [\"default\"]\nsize_class = { horizontal = [\"compact\"], not_vertical = \
+         [\"regular\"] }\ndirection = \"rtl\"\nstates = [\"focus_visible\", \"empty\", \
+         \"@keyboard_focus_change\"]\nnot_states = [\"disabled\"]",
+    );
+    let selector = &layer.rules[0].selector;
+    assert_eq!(selector.conditions.none_of, [Condition::ContrastHigh]);
+    let context = &selector.context;
+    assert_eq!(context.len(), 2);
+    assert_eq!(context[0].scope, ContextScope::AnyAncestor);
+    assert_eq!(
+        context[0].target,
+        Some(WidgetOrPart::Part(button(ButtonPart::Body)))
+    );
+    assert_eq!(context[0].sizes.all_of, [ControlSize::Small]);
+    assert_eq!(context[0].surface, Some(SurfaceSet::Header));
+    assert_eq!(
+        context[1].scope,
+        ContextScope::NearestAmong(vec![WidgetRef::Typed(WidgetKind::Button)])
+    );
+    assert_eq!(selector.not_context.len(), 1);
+    let position = selector.position.as_ref().unwrap();
+    assert_eq!(position.among, SiblingScope::Any);
+    assert_eq!(
+        (position.first, position.parity),
+        (Some(true), Some(Parity::Odd))
+    );
+    assert_eq!(
+        position.previous.as_ref().unwrap().states.none_of,
+        [StateFlag::Checked]
+    );
+    assert_eq!(
+        selector.variants.all_of,
+        [
+            VariantRef::Typed(Variant::Tool),
+            VariantRef::Keyed(key!("pill_keyed"))
+        ]
+    );
+    assert_eq!(selector.size.sizes.none_of, [ControlSize::Mini]);
+    assert_eq!(
+        selector.size.densities.all_of,
+        [Density::Compact, Density::Keyed(key!("dense"))]
+    );
+    assert_eq!(
+        selector.size.size_classes.horizontal.all_of,
+        [SizeClass::Compact]
+    );
+    assert_eq!(
+        selector.size.size_classes.vertical.none_of,
+        [SizeClass::Regular]
+    );
+    assert_eq!(selector.direction, Some(Direction::Rtl));
+    assert_eq!(
+        selector.states.all_of,
+        [
+            StateFlag::FocusVisible,
+            StateFlag::Shared(SharedFlag::Empty),
+            StateFlag::Widget(key!("keyboard_focus_change")),
+        ]
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\ntarget = \"tokens\"\nset = {}\nwhen = { states = [\"hovered\", \
+             \"@Bad\"], context = [{ part = \"body\" }], position = { among = \"most\" } }"
+        ),
+        [
+            "rules[0].when.states[0]: unknown name \"hovered\"",
+            "rules[0].when.states[1]: \"Bad\" is not a key: 'B' is outside `[a-z0-9][a-z0-9_]*`",
+            "rules[0].when.context[0].part: states `part` without `widget`",
+            "rules[0].when.position.among: expected \"same\", \"any\" or an array of widgets",
+        ]
+    );
+}
+
+// A preset's file: its header, its declarations, its whole blocks.
+
+const PRESET_HEAD: &str = "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n";
+
+#[test]
+fn a_presets_tables_are_whole_blocks() {
+    let preset = read_preset(&format!(
+        "{PRESET_HEAD}[widgets.button.body]\ncorners_px = 4\ncorners.curve = \"circular\""
+    ))
+    .unwrap();
+    assert_eq!(preset.id, "probe");
+    assert_eq!(preset.generation, "probe-1");
+    let radius = Radius::Px(Value::Stated(Px(4.0)));
+    assert_eq!(
+        body(&preset.layer).corners,
+        Some(BlockPatch::Set(Value::Stated(Corners {
+            top_left: radius.clone(),
+            top_right: radius.clone(),
+            bottom_right: radius.clone(),
+            bottom_left: radius,
+            curve: CornerCurve::Circular,
+        })))
+    );
+    let error = read_preset(&format!(
+        "{PRESET_HEAD}[widgets.button.label.text]\ncase = \"upper\""
+    ))
+    .unwrap_err();
+    let LayerError::Invalid(found) = error else {
+        panic!("{error}")
+    };
+    let found: Vec<String> = found.iter().map(Problem::to_string).collect();
+    assert!(
+        found.contains(&"widgets.button.label.text.font.size_pt: missing".to_owned()),
+        "{found:?}"
+    );
+    assert!(
+        found.contains(&"widgets.button.label.text.max_lines: missing".to_owned()),
+        "an `Option` in a whole block is stated like any other field: {found:?}"
+    );
+    assert_eq!(
+        read_preset("[widgets.button.body]\nopacity = 1").map(|_| ()),
+        Err(LayerError::Invalid(vec![Problem::new(
+            "preset",
+            ProblemKind::Missing
+        )]))
+    );
+}
+
+#[test]
+fn declarations_read_s10s_keys() {
+    let preset = read_preset(&format!(
+        "{PRESET_HEAD}[declare]\nflavors = [\"widgets\", \"kirigami\"]\nmaterials = [\"mica\"]\n\
+         elevation = [\"1\", \"2\"]\nsurface_sets = [\"window\", \"view\"]\nconditions = \
+         [\"@graphic_effects_level\", {{ key = \"@show_sounds\", for_applications = true }}]\n\
+         params = {{ layout = {{ unit = \"px\", keys = [\"grid_unit\"] }} }}\ninputs = \
+         [\"accent\", \"accent_ramp.light1\"]\naccent_inputs = [\"accent\"]\ntransition_kinds = \
+         {{ bounce = {{ height = \"px\" }} }}\ncontainer_sizes = {{ button = [\"small\", \
+         \"large\"] }}\nmaterial_params = {{ shimmer = \"fraction\" }}\nschemes = [\"light\", \
+         \"dark\"]\n[declare.widget.button]\nvariants = [\"primary\", \"tool\", \"@pill\"]\n\
+         sizes = [\"small\", \"regular\"]\ndensities = [\"compact\"]\nflags = \
+         [\"@keyboard_focus_change\"]\nexclusive = [[\"disabled\", \"pressed\", \"hover\"]]\n\
+         exclusive_variants = [[\"primary\", \"tool\"]]\nsizes_by_variant = [{{ variant = \
+         \"@pill\", sizes = [\"small\"], default_size = \"small\" }}]\ndefault_size = \"regular\"\n\
+         sizes_by_context = [{{ context = {{ scope = \"any\", widget = \"button\", part = \
+         \"body\" }}, sizes = [\"small\"], default_size = \"small\" }}]\navailable = \
+         true\nrequires_variants = []\ndata = {{ body = [\"color\", \"width\"], icon = \
+         [\"body_font_height\", \"widget.label.char_width\"] }}\nbreakpoints = [{{ measured = {{ \
+         part = \"body\" }}, width = {{ at_most = 400 }}, variant = \"@narrow\" }}]\n\
+         [declare.flavor.kirigami.widget.button]\nsizes = [\"regular\"]\ndefault_size = \"regular\""
+    ))
+    .unwrap();
+    let declared = preset.declarations;
+    assert_eq!(declared.flavors, [key!("widgets"), key!("kirigami")]);
+    assert_eq!(declared.elevation, [key!("1"), key!("2")]);
+    assert_eq!(declared.conditions.len(), 2);
+    assert!(declared.conditions[1].for_applications);
+    assert_eq!(declared.params[0].1.unit, ScalarUnit::Px);
+    assert_eq!(declared.accent_inputs.len(), 1);
+    assert_eq!(
+        declared.transition_kinds[0].1,
+        [(key!("height"), ScalarUnit::Px)]
+    );
+    assert_eq!(
+        declared.container_sizes[0].1,
+        [key!("small"), key!("large")]
+    );
+    assert_eq!(
+        declared.material_params,
+        [(key!("shimmer"), ScalarUnit::Fraction)]
+    );
+    assert_eq!(declared.schemes, [Scheme::Light, Scheme::Dark]);
+    let (widget, decl) = &declared.widgets[0];
+    assert_eq!(*widget, WidgetKind::Button);
+    assert_eq!(
+        decl.variants.as_deref(),
+        Some(
+            &[
+                VariantRef::Typed(Variant::Primary),
+                VariantRef::Typed(Variant::Tool),
+                VariantRef::Keyed(key!("pill")),
+            ][..]
+        )
+    );
+    assert_eq!(
+        decl.exclusive.as_ref().map(|groups| groups[0].len()),
+        Some(3)
+    );
+    assert_eq!(
+        decl.default_size,
+        Some(DefaultSize::Size(ControlSize::Regular))
+    );
+    let by_variant = &decl.sizes_by_variant.as_ref().unwrap()[0];
+    assert_eq!(by_variant.variant, VariantRef::Keyed(key!("pill")));
+    assert_eq!(
+        by_variant.default_size,
+        Some(DefaultSize::Size(ControlSize::Small))
+    );
+    let by_context = &decl.sizes_by_context.as_ref().unwrap()[0];
+    assert_eq!(
+        by_context.context.target,
+        Some(crate::selector::WidgetOrPart::Part(button(
+            ButtonPart::Body
+        )))
+    );
+    assert_eq!(by_context.sizes, [ControlSize::Small]);
+    assert_eq!(
+        by_context.default_size,
+        Some(DefaultSize::Size(ControlSize::Small))
+    );
+    assert_eq!(decl.available, Some(true));
+    assert_eq!(decl.requires_variants, Some(Vec::new()));
+    let data = decl.data.as_ref().unwrap();
+    assert_eq!(
+        data[0],
+        (
+            DataOwner::Part(TypedPart::Button(ButtonPart::Body)),
+            vec![
+                DataName::Element(ElementDatum::Color),
+                DataName::Element(ElementDatum::Width)
+            ]
+        )
+    );
+    assert_eq!(data[1].1.len(), 2);
+    let breakpoint = &decl.breakpoints.as_ref().unwrap()[0];
+    assert_eq!(
+        breakpoint.measured,
+        crate::selector::Measured::Part(button(ButtonPart::Body))
+    );
+    assert_eq!(
+        breakpoint.width,
+        Some((
+            crate::selector::Comparison::AtMost,
+            Value::Stated(Px(400.0))
+        ))
+    );
+    assert_eq!(breakpoint.combine, crate::selector::Combine::All);
+    let flavor = &declared.flavor[0];
+    assert_eq!(flavor.0, key!("kirigami"));
+    assert_eq!(
+        flavor.1.widgets[0].1.sizes.as_deref(),
+        Some(&[ControlSize::Regular][..])
+    );
+    assert_eq!(flavor.1.widgets[0].1.variants, None);
+}
+
+#[test]
+fn declarations_refuse_what_s10_does_not_spell() {
+    let error = read_preset(&format!(
+        "{PRESET_HEAD}[declare]\nflavours = []\ndrag_cursors = []\n\
+         conditions = [\"graphic_effects_level\"]\n\
+         params = {{ layout = {{ unit = \"em\", keys = [] }} }}\n[declare.widget.button]\n\
+         sizes = [\"huge\"]\ndata = {{ knob = [\"width\"], body = [\"heat\"] }}\n\
+         default_size_by_variant = []\nsizes_by_context = [{{ context = \"toolbar\", sizes = [] }}]\n\
+         sizes_by_variant = [{{ variant = \"tool\", sizes = [], size = \"small\" }}]\n\
+         breakpoints = [{{ measured = \"window\", width = {{ at_most = 1 }}, height = {{ \
+         at_most = 2 }}, variant = \"@x\" }}]\n[declare.widget.slider]\nsizes = []\n\
+         [declare.component.rule_editor]\navailable = true"
+    ))
+    .unwrap_err();
+    let LayerError::Invalid(found) = error else {
+        panic!("{error}")
+    };
+    let found: Vec<String> = found.iter().map(Problem::to_string).collect();
+    assert_eq!(
+        found,
+        [
+            "declare.flavours: unknown key",
+            "declare.drag_cursors: unknown key",
+            "declare.conditions[0]: expected a keyed name, `@<key>`",
+            "declare.params.layout.unit: unknown name \"em\"",
+            "declare.widget.button.sizes[0]: unknown name \"huge\"",
+            "declare.widget.button.data.knob: unknown name \"knob\"",
+            "declare.widget.button.data.body[0]: unknown name \"heat\"",
+            "declare.widget.button.default_size_by_variant: unknown key",
+            "declare.widget.button.sizes_by_context[0].context: expected a table",
+            "declare.widget.button.sizes_by_variant[0].size: unknown key",
+            "declare.widget.button.breakpoints[0].combine: missing",
+            "declare.widget.slider: unknown key",
+            "declare.component: unknown key",
+        ]
+    );
+}
+
+/// A map entry whose value has a unit takes the unit's suffix on its key
+/// for every value, as a field does; a keyed scalar takes none, its number
+/// in the unit its declaration names (S11, ADD-A123).
+#[test]
+fn map_entry_keys_take_their_units_suffix_and_scalars_none() {
+    let read =
+        layer("[tokens.params.layout]\ngrid_unit = 18\n[tokens.params.opacity]\ndisabled = 0.5\n");
+    let tokens = read.bases.tokens;
+    assert_eq!(
+        tokens.params,
+        Some(vec![
+            (
+                key!("layout"),
+                vec![(key!("grid_unit"), Value::Stated(Scalar::Number(18.0)))]
+            ),
+            (
+                key!("opacity"),
+                vec![(key!("disabled"), Value::Stated(Scalar::Number(0.5)))]
+            ),
+        ])
+    );
+    // A map of durations, read by its own reader: the keyed durations are
+    // staged with the motion unit (S6.1), and no map at depth holds a value
+    // with a unit.
+    let at = "tokens.motion.durations";
+    let read = |value: &str| read_map_as::<crate::key::Key, Value<crate::units::Ms>>(value, at);
+    let durations = read("{ button_ms = 150, long_ms = \"= token.motion.durations.button\" }");
+    assert_eq!(
+        durations
+            .as_ref()
+            .map(|held| (held.first().cloned(), held.len())),
+        Ok((
+            Some((key!("button"), Value::Stated(crate::units::Ms(150.0)))),
+            2
+        ))
+    );
+    // Every value of a duration takes the suffixed key: a number, an
+    // expression, `"absent"`.
+    for value in ["150", "\"= token.motion.durations.long\"", "\"absent\""] {
+        for key in ["button", "button_px"] {
+            assert_eq!(
+                read(&format!("{{ {key} = {value} }}"))
+                    .err()
+                    .unwrap_or_default(),
+                [format!("tokens.motion.durations.{key}: unknown key")],
+                "{key} = {value}"
+            );
+        }
+    }
+    // A keyed scalar's suffixed key is another key, named as written.
+    let suffixed = layer("[tokens.params.layout]\ngap_px = 4");
+    assert_eq!(
+        suffixed.bases.tokens.params,
+        Some(vec![(
+            key!("layout"),
+            vec![(key!("gap_px"), Value::Stated(Scalar::Number(4.0)))]
+        )])
+    );
+}
+
+/// `"auto"`, `"none"` and `"absent"` are exact: `"absent"` is `Absent`,
+/// `"none"` is `None` only in an `Option` field, `"auto"` is `Auto` only in a
+/// length or a font size, and elsewhere each is what the field's type spells
+/// by it (S11, ADD-A123).
+#[test]
+fn auto_none_and_absent_are_exact() {
+    let theme = |text: &str| {
+        let layer = layer(&format!("[tokens.icons]\ntheme = {text}"));
+        layer.bases.tokens.icons.and_then(|icons| icons.theme)
+    };
+    assert_eq!(theme("\"absent\""), Some(Value::Absent));
+    assert_eq!(theme("\"auto\""), Some(Value::Stated("auto".to_owned())));
+    assert_eq!(theme("\"none\""), Some(Value::Stated("none".to_owned())));
+    assert_eq!(
+        theme("\"Absent\""),
+        Some(Value::Stated("Absent".to_owned()))
+    );
+    assert_eq!(
+        body_of("max_width_px = \"auto\"").max_width,
+        Some(Value::Auto)
+    );
+    assert_eq!(
+        problems("[widgets.button.body]\nmax_width_px = \"Auto\""),
+        ["widgets.button.body.max_width_px: expected a number"]
+    );
+    let keyboard = |text: &str| {
+        format!(
+            "[tokens.behavior]\nfocus_visible_when = {{ keyboard = {{ timeout_ms = {text} }} }}"
+        )
+    };
+    assert_eq!(
+        problems(&keyboard("\"auto\"")),
+        ["tokens.behavior.focus_visible_when.keyboard.timeout_ms: expected a number"]
+    );
+    let timeout = |text: &str| {
+        layer(&keyboard(text))
+            .bases
+            .tokens
+            .behavior
+            .and_then(|behavior| behavior.focus_visible_when)
+    };
+    assert_eq!(
+        timeout("\"none\""),
+        Some(Value::Stated(FocusVisibleWhen::Keyboard { timeout: None }))
+    );
+    assert_eq!(
+        problems(&keyboard("\"None\"")),
+        ["tokens.behavior.focus_visible_when.keyboard.timeout_ms: expected a number"]
+    );
+}
+
+/// An `Option` of a struct block is `"none"` or a table holding every
+/// field, in every position; a table missing a field is mistyped, the leaf
+/// named (S11, ADD-A125), not a missing field, and a whole block in a
+/// preset's bases is still missing what it leaves out.
+#[test]
+fn partial_option_block_mistyped() {
+    let expected = "expected a field of a block an `Option` holds: the block is \"none\" or a \
+                    table holding every field";
+    let ripple = "[widgets.button.body.interaction.ripple]\nindication_box";
+    assert_eq!(
+        problems(&format!("{ripple} = {{ outset_px = 2 }}")),
+        [format!(
+            "widgets.button.body.interaction.ripple.indication_box.part: {expected}"
+        )]
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\nwhen = { conditions = [\"scheme:dark\"] }\ntarget = \"button.body\"\n\
+             set = { interaction.ripple.indication_box = { part = \"icon\" } }"
+        ),
+        [format!(
+            "rules[0].set.interaction.ripple.indication_box.outset_px: {expected}"
+        )]
+    );
+    assert_eq!(
+        problems(&format!("{ripple} = {{ part = \"icon\", outset_px = 2 }}")),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        problems(&format!("{ripple} = \"none\"")),
+        Vec::<String>::new()
+    );
+    let found = match read_preset("[widgets.button.label.text]\nmax_lines = 1") {
+        Err(LayerError::Invalid(problems)) => problems,
+        other => panic!("{other:?}"),
+    };
+    assert!(
+        found.contains(&Problem::new(
+            "widgets.button.label.text.wrap",
+            ProblemKind::Missing
+        )),
+        "{found:?}"
+    );
+}
+
+#[test]
+fn try_from_names_every_missing_leaf() {
+    let error = Corners::try_from(CornersPatch {
+        top_left: Some(Radius::FollowPart),
+        ..CornersPatch::default()
+    })
+    .unwrap_err();
+    assert_eq!(
+        error,
+        LayerError::Invalid(
+            ["top_right", "bottom_right", "bottom_left", "curve"]
+                .map(|path| Problem::new(path, ProblemKind::Missing))
+                .to_vec()
+        )
+    );
+}
+
+#[test]
+fn a_missing_field_is_reported_at_its_key() {
+    let error = crate::FocusIndicator::try_from(crate::FocusIndicatorPatch {
+        kind: Some(crate::FocusKind::Ring),
+        ..crate::FocusIndicatorPatch::default()
+    })
+    .unwrap_err();
+    let LayerError::Invalid(found) = error else {
+        panic!("{error}")
+    };
+    let found: Vec<String> = found.iter().map(Problem::to_string).collect();
+    for key in [
+        "width_px",
+        "offset.top_px",
+        "offset.left_px",
+        "corners.top_left",
+    ] {
+        assert!(
+            found.contains(&format!("{key}: missing")),
+            "{key}: {found:?}"
+        );
+    }
+}
+
+#[test]
+fn a_breakpoints_part_is_the_widgets_own() {
+    let declare = |measured: &str| {
+        read_preset(&format!(
+            "{PRESET_HEAD}[declare.widget.button]\nbreakpoints = [{{ measured = {measured}, \
+             width = {{ at_most = 1 }}, variant = \"@x\" }}]"
+        ))
+        .map(|preset| preset.declarations.widgets.len())
+    };
+    assert_eq!(declare("{ part = \"label\" }"), Ok(1));
+    let LayerError::Invalid(found) = declare("{ part = \"button.label\" }").unwrap_err() else {
+        panic!("not invalid")
+    };
+    assert_eq!(
+        found,
+        [Problem::new(
+            "declare.widget.button.breakpoints[0].measured.part",
+            ProblemKind::UnknownName {
+                name: "button.label".to_owned()
+            }
+        )]
+    );
+}
+
+/// A map keyed by text is a TOML table with the text as its keys, quoted
+/// where TOML does not allow it bare; two keys are one entry exactly where
+/// they are equal as TOML keys, case-sensitively (S4.4, S11, ADD-A123).
+#[test]
+fn a_map_keyed_by_text_is_a_table_of_its_texts() {
+    // The font fallbacks' map, read by its own reader: the fallbacks are
+    // staged with the text rendering parking unit (S6.1), and no map at
+    // depth is keyed by text.
+    let at = "tokens.text.fallbacks.per_family";
+    let read = |value: &str| read_map_as::<String, Vec<String>>(value, at);
+    let problems = |value: &str| read(value).err().unwrap_or_default();
+    assert_eq!(
+        read("{ \"Segoe Fluent Icons\" = [\"Segoe MDL2 Assets\"], \"segoe fluent icons\" = [] }"),
+        Ok(vec![
+            (
+                "Segoe Fluent Icons".to_owned(),
+                vec!["Segoe MDL2 Assets".to_owned()]
+            ),
+            ("segoe fluent icons".to_owned(), Vec::new()),
+        ])
+    );
+    // A problem names the key as written, quoted.
+    assert_eq!(
+        problems("{ \"Segoe Fluent Icons\" = 4 }"),
+        ["tokens.text.fallbacks.per_family.\"Segoe Fluent Icons\": expected an array"]
+    );
+    // Equal as TOML keys: one key, which TOML itself refuses twice.
+    assert_eq!(
+        problems("{ \"Segoe UI\" = [], \"Segoe UI\" = [] }").len(),
+        1
+    );
+}
+
+/// A `PartRef` stated as a value is a bare name of the parts of the widget
+/// whose table it is in, or `<widget>.<part>`; a bare name where no
+/// widget's table is read is mistyped (S11, ADD-A123).
+#[test]
+fn a_part_ref_value_names_its_widget_outside_a_widgets_table() {
+    // An icon context's animation, read by the loop's own reader:
+    // `IconStyle.animation` is staged with the motion unit (S6.1).
+    use crate::blocks::motion::Loop;
+    let keyframe = |part: &str| {
+        format!(
+            "{{ period_ms = 100, timing = \"linear\", keyframes = [{{ at = 0, part = \"{part}\", \
+             timing = \"absent\", patch = {{}} }}] }}"
+        )
+    };
+    let at = "tokens.icons.sizes.toolbar.animation";
+    assert_eq!(
+        read_problems::<Loop>(&keyframe("icon"), Spelling::Bare, at),
+        [
+            "tokens.icons.sizes.toolbar.animation.keyframes[0].part: expected `<widget>.<part>`: \
+             no widget's table is read here"
+        ]
+    );
+    assert!(read_as::<Loop>(&keyframe("button.icon"), Spelling::Bare, at).is_ok());
+}
+
+/// A key that is no bare TOML key is a TOML basic string, escaped as TOML
+/// escapes it, which TOML reads back as the key (S11, S17).
+#[test]
+fn toml_key_escapes_as_toml_does() {
+    use crate::toml::read::toml_key;
+    assert_eq!(toml_key("Segoe UI"), "\"Segoe UI\"");
+    assert_eq!(toml_key("a\u{7f}b"), "\"a\\u007Fb\"");
+    assert_eq!(toml_key("q\"\\\t"), "\"q\\\"\\\\\\t\"");
+    for key in ["Segoe UI", "a\u{7f}b", "q\"\\\t\u{1}", "é ü"] {
+        let table: ::toml::Table = format!("{} = 1", toml_key(key)).parse().unwrap();
+        assert!(table.contains_key(key), "{key:?}");
+    }
+}
+
+/// A transition's `engine` is spelt as an enum block's variant, every list
+/// of a Breeze test stated (S11, ADD-A126): one case per S11 form; a
+/// transition stating none misses it. The transitions are read by the
+/// list's own reader: no part lists them until the motion unit (D6
+/// outcome 3).
+#[test]
+fn transition_engine_spellings() {
+    use crate::blocks::motion::{BreezeTest, Transition, TransitionEngine};
+    use crate::selector::{Condition, StateFlag};
+    let item = |engine: &str| {
+        format!(
+            "[{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = \
+             0, timing = \"linear\"{engine} }}]"
+        )
+    };
+    let read = |list: &str| {
+        read_as::<Vec<Transition>>(list, Spelling::Bare, "widgets.button.body.transitions")
+    };
+    let problems = |list: &str| read(list).err().unwrap_or_default();
+    let engine = |engine: &str| {
+        let transitions = read(&item(&format!(", engine = {engine}"))).ok();
+        transitions.and_then(|list| list.first().map(|t| t.engine.clone()))
+    };
+    let test = |any: Vec<StateFlag>, none: Vec<StateFlag>, conditions: Vec<Condition>| BreezeTest {
+        any,
+        none,
+        conditions,
+    };
+    let breeze = test(
+        vec![StateFlag::Hover],
+        vec![StateFlag::Focused, StateFlag::Disabled],
+        Vec::new(),
+    );
+    for (text, expected) in [
+        ("\"gtk_css\"", TransitionEngine::GtkCss),
+        ("\"qt_quick\"", TransitionEngine::QtQuick),
+        (
+            "\"compose_animatable\"",
+            TransitionEngine::ComposeAnimatable,
+        ),
+        (
+            "\"compose_transition\"",
+            TransitionEngine::ComposeTransition,
+        ),
+        ("\"win_ui\"", TransitionEngine::WinUi),
+        ("\"gtk_switch\"", TransitionEngine::GtkSwitch),
+        ("\"compose_held\"", TransitionEngine::ComposeHeld),
+        ("\"css_animation\"", TransitionEngine::CssAnimation),
+        (
+            "{ win_ui_animated_icon = { visual = \"accept\" } }",
+            TransitionEngine::WinUiAnimatedIcon {
+                visual: key!("accept"),
+            },
+        ),
+        (
+            "{ adw_animation = { replays = false } }",
+            TransitionEngine::AdwAnimation { replays: false },
+        ),
+        (
+            "{ breeze = { any = [\"hover\"], none = [\"focused\", \"disabled\"], conditions = [] \
+             } }",
+            TransitionEngine::Breeze(breeze.clone()),
+        ),
+        (
+            "{ breeze_tab_bar = { any = [\"hover\"], none = [\"focused\", \"disabled\"], \
+             conditions = [] } }",
+            TransitionEngine::BreezeTabBar(breeze),
+        ),
+        (
+            "{ breeze = { any = [], none = [], conditions = [\"window_inactive\"] } }",
+            TransitionEngine::Breeze(test(
+                Vec::new(),
+                Vec::new(),
+                vec![Condition::WindowInactive],
+            )),
+        ),
+    ] {
+        assert_eq!(engine(text), Some(expected), "{text}");
+    }
+    let at = "widgets.button.body.transitions[0]";
+    assert_eq!(problems(&item("")), [format!("{at}.engine: missing")]);
+    assert_eq!(
+        problems(&item(
+            ", engine = { breeze = { any = [\"hover\"], none = [] } }"
+        )),
+        [format!("{at}.engine.breeze.conditions: missing")]
+    );
+    assert_eq!(
+        problems(&item(", engine = \"breeze_style\"")),
+        [format!("{at}.engine: unknown name \"breeze_style\"")]
+    );
+}
+
+/// A `Keyframes` transition's kind (S2.7, S11; ADD-A134): `{ keyframes = {
+/// keyframes = [ … ] } }`, each keyframe as a loop's, its `part` left out;
+/// read by the kind's own reader, as no part lists `transitions` until the
+/// motion unit and the focus indicator's transition is staged with it (D6
+/// outcome 3, S6.1).
+#[test]
+fn spelling_keyframes_kind() -> Result<(), Vec<String>> {
+    use crate::blocks::motion::{Keyframe, TransitionKind};
+    let kind = read_as::<TransitionKind>(
+        "{ keyframes = { keyframes = [{ at = 0, timing = \"absent\", patch = { focus.width_px = \
+         0 } }, { at = 0.25, timing = \"linear\", patch = { focus.width_px = 8 } }] } }",
+        Spelling::Bare,
+        "widgets.button.body.transitions[0].kind",
+    )?;
+    let TransitionKind::Keyframes { keyframes } = kind else {
+        return Err(vec![format!("not keyframes: {kind:?}")]);
+    };
+    let width = |px: f32| PartStylePatch {
+        focus: Some(BlockPatch::Fields(
+            crate::blocks::focus::FocusIndicatorPatch {
+                width: Some(Value::Stated(Px(px))),
+                ..crate::blocks::focus::FocusIndicatorPatch::default()
+            },
+        )),
+        ..PartStylePatch::default()
+    };
+    assert_eq!(
+        keyframes,
+        [
+            Keyframe {
+                at: Fraction(0.0),
+                part: None,
+                timing: Value::Absent,
+                patch: width(0.0),
+            },
+            Keyframe {
+                at: Fraction(0.25),
+                part: None,
+                timing: Value::Stated(Timing::Linear),
+                patch: width(8.0),
+            },
+        ]
+    );
+    Ok(())
+}
+
+/// A transition's `from` is a list of flags; left out of a `transitions`
+/// item it is `None`, and in a transition's patch (the focus indicator's
+/// transition, staged with the motion unit, S6.1) `"none"` is any state
+/// (S11, ADD-A124). Read by the blocks' own readers: no part lists
+/// `transitions` until the motion unit (D6 outcome 3).
+#[test]
+fn spelling_transition_from() -> Result<(), Vec<String>> {
+    use crate::blocks::motion::{Transition, TransitionPatch};
+    let at = "widgets.button.body.transitions";
+    let item = |from: &str| {
+        format!(
+            "[{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = \
+             0, timing = \"linear\", engine = \"gtk_css\"{from} }}]"
+        )
+    };
+    let from = |from: &str| -> Result<_, Vec<String>> {
+        let transitions = read_as::<Vec<Transition>>(&item(from), Spelling::Bare, at)?;
+        Ok(transitions
+            .first()
+            .map(|transition| transition.from.clone()))
+    };
+    assert_eq!(
+        from(", from = [\"hover\", \"focus_visible\", \"@spin\"]")?,
+        Some(Some(vec![
+            crate::selector::StateFlag::Hover,
+            crate::selector::StateFlag::FocusVisible,
+            crate::selector::StateFlag::Widget(key!("spin")),
+        ]))
+    );
+    assert_eq!(from("")?, Some(None));
+    let patch = read_as::<TransitionPatch>(
+        "{ properties = [], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \
+         \"linear\", engine = \"gtk_css\", from = \"none\" }",
+        Spelling::Bare,
+        "widgets.button.body.focus.transition",
+    )?;
+    assert_eq!(patch.from, Some(None));
+    assert_eq!(
+        read_problems::<Vec<Transition>>(&item(", from = [\"shiny\"]"), Spelling::Bare, at),
+        ["widgets.button.body.transitions[0].from[0]: unknown name \"shiny\""]
+    );
+    Ok(())
+}

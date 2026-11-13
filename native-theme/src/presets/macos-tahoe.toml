@@ -1,857 +1,3874 @@
-# macOS Tahoe theme: AppKit's Liquid Glass look, from macOS 26 Tahoe.
-# Covers: macOS 26. macOS 27 Golden Gate refines Liquid Glass and has no preset of its own until
-# GitHub offers a macOS 27 runner image to verify one on (docs/todo.md); on 27 the reader merges
-# over this preset and reports VersionMatch::PresetOlder.
-# Verified on: macOS 26.6.2 by the OS probe, docs/evidence/os-probe/2026-10-11-run-38129819806/
-# os-probe-macos-26/probe.toml, for the values whose comment cites it: "probe :N" is line N of that
-# file. os-probe-xcode-27 (macOS 27.0.1) reports the same colour or size on every line cited here.
-# The probe resolves each NSColor per appearance (performAsCurrentDrawingAppearance:, probe :305),
-# with Reduce Transparency on (probe :465), and draws its renders (renders/aqua, renders/darkAqua)
-# in a window that is never shown or key. A colour with alpha is stated as the API gives it, and
-# its comment gives the composite over the colour it sits on.
-# Not verified on macOS 26: a value whose comment says "no macOS 26 source" is one no source gives
-# for 26 (docs/platform-facts.md's "macOS 26: ❓" cells), in a field the model requires or one whose
-# inherited value would be the wrong kind; it carries macos-monterey's value.
-# Source: docs/platform-facts.md's macOS column, its "macOS 26:" values (AppKit documentation, the
-# HIG, WebKit, the OS probe).
-name = "macOS Tahoe"
-icon_set = "sf-symbols"
-icon_theme = "sf-symbols"
-
-# === Light variant ===
-
-[light.defaults]
-# platform-facts.md:1052 (§2.1.3): controlAccentColor, probe :362 (the same in darkAqua, :436)
-accent_color = "#007aff"
-# platform-facts.md:1050: windowBackgroundColor, probe :321
-background_color = "#ffffff"
-# platform-facts.md:1051: labelColor, probe :308; over background_color #272727
-text_color = "#000000d8"
-# platform-facts.md:1054: controlBackgroundColor, probe :323
-surface_color = "#ffffff"
-# platform-facts.md:1056: secondaryLabelColor, probe :309; over background_color #808080
-muted_color = "#0000007f"
-# platform-facts.md:1057: NSShadow.shadowColor's default, black at 1/3 (85/255, the nearest 8-bit alpha)
-shadow_color = "#00000055"
-
-# platform-facts.md:1084-1091 (§2.1.4): systemRedColor, systemOrangeColor, systemGreenColor and
-# systemBlueColor, probe :344, :347, :345, :346; each text colour is labelColor (probe :308), the
-# body text beside a status mark, not text on the status fill (footnote 1, :1093-1102)
-danger_color = "#ff383c"
-danger_text_color = "#000000d8"
-warning_color = "#ff8d28"
-warning_text_color = "#000000d8"
-success_color = "#34c759"
-success_text_color = "#000000d8"
-info_color = "#0088ff"
-info_text_color = "#000000d8"
-
-# platform-facts.md:1059-1063: selectedContentBackgroundColor, alternateSelectedControlTextColor,
-# unemphasizedSelectedContentBackgroundColor, selectedTextBackgroundColor and selectedTextColor,
-# probe :324, :317, :325, :331, :330
-selection_background = "#0064e1"
-selection_text_color = "#ffffff"
-selection_inactive_background = "#dcdcdc"
-text_selection_background = "#b3d7ff"
-text_selection_color = "#000000"
-# platform-facts.md:1058: linkColor, probe :313
-link_color = "#0068da"
-# platform-facts.md:1108 (§2.1.5): keyboardFocusIndicatorColor, probe :339; over background_color #80b3fa
-focus_ring_color = "#0067f47f"
-# platform-facts.md:1064: disabledControlTextColor, probe :338; over background_color #c0c0c0
-disabled_text_color = "#0000003f"
-# platform-facts.md:1053: alternateSelectedControlTextColor, probe :317
-accent_text_color = "#ffffff"
-
-# platform-facts.md:1119 (§2.1.6): 1.0, macOS dims a disabled control by colour (disabled_text_color)
-disabled_opacity = 1.0
-# platform-facts.md:1034 (§2.1.1): SF Pro's sTypo metrics, unchanged in SF Pro 22.0d5e4
-line_height = 1.19
-# platform-facts.md:1109 (§2.1.5): 3, WebKit's unconditional constant
-focus_ring_width_px = 3.0
-# no macOS 26 source (platform-facts.md:1110): macos-monterey's value
-focus_ring_offset_px = -1.0
-
-
-[light.defaults.border]
-# platform-facts.md:1055 (§2.1.3): separatorColor, probe :319; over background_color #e6e6e6
-color = "#00000019"
-# platform-facts.md:1116 (§2.1.6): 6, the push button's and pop-up's (WebKit's vector drawing)
-corner_radius_px = 6.0
-# no macOS 26 source (platform-facts.md:1117, :1168: Tahoe's window radii vary by style, no API):
-# macos-monterey's value; Tahoe's window radii are larger per third-party measurements
-# (platform-facts.md:177), not adopted
-corner_radius_lg_px = 10.0
-# no macOS 26 source (platform-facts.md:1118): macos-monterey's value
-line_width_px = 0.5
-# platform-facts.md:1120 (§2.1.6): separatorColor's alpha, 25/255 (probe :319), already in color
-opacity = 0.098
-# no macOS 26 source (platform-facts.md:1121): macos-monterey's value
-shadow_enabled = true
-[light.defaults.font]
-# platform-facts.md:1029-1031 (§2.1.1): the system font, 13pt, weight trait 0 (probe :29-33)
-family = "SF Pro"
-size_pt = 13.0
-weight = 400
-
-[light.defaults.mono_font]
-# platform-facts.md:1040-1042 (§2.1.2): 13pt, weight trait 0 (probe :161-165); the family name is
-# the same open question as macos-monterey's (platform-facts.md:65)
-family = "SF Mono"
-size_pt = 13.0
-weight = 400
-
-[light.defaults.icon_sizes]
-# platform-facts.md:1136 (§2.1.8): 32 regular / 24 small; macos-monterey's choice of the small mode
-toolbar_px = 24.0
-# no macOS 26 source (platform-facts.md:1137-1140): macos-monterey's values
-small_px = 16.0
-large_px = 32.0
-dialog_px = 22.0
-panel_px = 20.0
-
-[light.button]
-# platform-facts.md:1177 (§2.3): drawn in secondarySystemFillColor's value (measured; probe :358);
-# over background_color #ebebeb
-background_color = "#00000014"
-# no macOS 26 source (platform-facts.md:1182, (none)): macos-monterey's value
-min_width_px = 64.0
-# platform-facts.md:1183 (§2.3): NSButton intrinsicContentSize 24 (probe :1057)
-min_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1187): macos-monterey's value
-icon_text_gap_px = 4.0
-# no macOS 26 source (platform-facts.md:1192): macos-monterey's value; the inherited
-# defaults.background_color (inheritance-rules.toml:167, a wrong safety net) is the window's
-# opaque colour, which would hide the translucent button on hover
-hover_background = "#e0e0e5"
-# platform-facts.md:1198 (§2.3): the bezel at half its alpha, black at 10/255 (measured, os-probe run 40348854007,
-# renders/aqua/push_button-regular-disabled@2x.png, not key); over background_color #f5f5f5
-disabled_background = "#0000000a"
-
-[light.button.border]
-# platform-facts.md:1184-1185 (§2.3): the title rect [12, 4, 41, 16] in the 65 x 24 bezel
-# (probe :1071), from its outer edge
-padding_horizontal_px = 12.0
-padding_vertical_px = 4.0
-# platform-facts.md:1191 (§2.3): no shadow (measured: nothing drawn outside the bezel)
-shadow_enabled = false
-
-[light.button.font]
-# platform-facts.md:1179 (§2.3): controlTextColor, probe :335; over the button's fill #242424
-color = "#000000d8"
-
-[light.input]
-# platform-facts.md:1203 (§2.4): textBackgroundColor, probe :328
-background_color = "#ffffff"
-# platform-facts.md:1212 (§2.4): NSTextField intrinsicContentSize 24 (probe :1308)
-min_height_px = 24.0
-# platform-facts.md:1208: placeholderTextColor, probe :314; over the field's background_color #808080
-placeholder_color = "#0000007f"
-# platform-facts.md:1209 (§2.4): textInsertionPointColor, probe :329
-caret_color = "#007aff"
-
-[light.input.border]
-# platform-facts.md:1213-1214 (§2.4): the title rect [4, 4, 152, 16] in the 160 x 24 field
-# (probe :1323), from its outer edge
-padding_horizontal_px = 4.0
-padding_vertical_px = 4.0
-# platform-facts.md:178 (§1.1.3): the text field's radius, 5 (WebKit's vector drawing)
-corner_radius_px = 5.0
-# platform-facts.md:1216 (§2.4): no drop shadow (measured)
-shadow_enabled = false
-
-[light.input.font]
-# platform-facts.md:1205 (§2.4): textColor, probe :327
-color = "#000000"
-
-[light.checkbox]
-# platform-facts.md:1233 (§2.5): imageRectForBounds 16 x 16 (probe :1107)
-indicator_width_px = 16.0
-# platform-facts.md:1234 (§2.5): the title rect starts 6 after the image rect (probe :1106-1107)
-label_gap_px = 6.0
-# platform-facts.md:1241 (§2.5): macOS 26: the selected radio's dot, 5 (measured, os-probe run 40348854007,
-# os-probe-macos-26/renders/aqua/radio-regular-on@2x.png, in a window that is not key)
-radio_dot_diameter_px = 5.0
-# platform-facts.md:1247 (§2.5): macOS 26: the unchecked box is one fill, systemFillColor's value #00000019 (measured,
-# renders/aqua/checkbox-regular-off@2x.png; probe :1121, :357); the probe's window is never ordered front (:514), so
-# this is the box of a window that is not key
-unchecked_background = "#00000019"
-# platform-facts.md:1248 (§2.5): macOS 26: none (measured), no edge pixel differs from the fill; the same caveat
-unchecked_border_color = "#00000000"
-
-[light.checkbox.border]
-# platform-facts.md:1236 (§2.5): no shadow (measured)
-shadow_enabled = false
-
-[light.tooltip]
-# no macOS 26 source (platform-facts.md:1285): macos-monterey's value
-max_width_px = 300.0
-# no macOS 26 source (platform-facts.md:1277): macos-monterey's value; the inherited window
-# background would be the wrong kind
-background_color = "#2c2c2e"
-
-[light.tooltip.font]
-# platform-facts.md:1279 (§2.7): toolTipsFontOfSize: 11, probe :98
-size_pt = 11.0
-# no macOS 26 source (platform-facts.md:1282): macos-monterey's value; the inherited label colour
-# would be the wrong kind
-color = "#ffffff"
-
-[light.scrollbar]
-# platform-facts.md:1307 (§2.8): scrollerWidth 17 in both modes (probe :481-482)
-groove_width_px = 17.0
-# no macOS 26 source (platform-facts.md:1309): macos-monterey's value
-thumb_width_px = 7.0
-# platform-facts.md:1310 (§2.8): NSScroller.preferredScrollerStyle, overlay on the probe's runner (probe :470)
-overlay_mode = true
-# no macOS 26 source (platform-facts.md:1308): macos-monterey's value
-min_thumb_length_px = 40.0
-# no macOS 26 source (platform-facts.md:1304): macos-monterey's value, the overlay mode's
-# transparent track; the inherited window background would be the wrong kind
-track_color = "#00000000"
-
-[light.slider]
-# platform-facts.md:1320 (§2.9): barRectFlipped 6 high (probe :1435)
-track_height_px = 6.0
-# platform-facts.md:1318 (§2.9): systemFillColor's value (probe :357), black at alpha 25/255 (measured,
-# os-probe run 40348854007, renders/aqua/slider-regular@2x.png; a key window draws #e4e4e4 over #ffffff,
-# os-probe-macos-26/probe.toml:3680), not muted_color; over background_color #e6e6e6
-track_color = "#00000019"
-# platform-facts.md:1321 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
-# track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
-thumb_diameter_px = 16.0
-# platform-facts.md:1322 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
-tick_mark_length_px = 2.0
-# platform-facts.md:1325 (§2.9): no accent when disabled, the bar left of the knob a grey darker than
-# the track: #dfdfdf over the window's #ffffff in a key window (os-probe run 40348854007,
-# os-probe-macos-26/probe.toml:3660), black at alpha 32/255; over background_color #dfdfdf
-disabled_fill_color = "#00000020"
-# no disabled_track_color / disabled_thumb_color: platform-facts.md:1326-1327 (§2.9), macOS 26
-# draws a disabled slider's track and knob as the enabled ones; unset, they are track_color and
-# thumb_color
-
-[light.progress_bar]
-# platform-facts.md:1335 (§2.10): 8 (measured, renders/aqua/progress_bar-regular@2x.png)
-track_height_px = 8.0
-# no macOS 26 source (platform-facts.md:1336, (none)): macos-monterey's value
-min_width_px = 100.0
-
-[light.progress_bar.border]
-# platform-facts.md:1338 (§2.10): no shadow (measured)
-shadow_enabled = false
-# platform-facts.md:1341-1342 (§2.10): 0; 0 (measured, macOS 26.6.2), the fill starts in the track's first column and covers its rows
-padding_horizontal_px = 0.0
-padding_vertical_px = 0.0
-
-[light.tab]
-# no macOS 26 source (platform-facts.md:1350-1351): macos-monterey's values
-min_width_px = 64.0
-min_height_px = 24.0
-
-[light.menu]
-# no macOS 26 source (platform-facts.md:1267): macos-monterey's value
-icon_text_gap_px = 4.0
-# no macOS 26 source (platform-facts.md:1268): macos-monterey's value; the inherited toolbar size
-# would be the wrong kind
-icon_size_px = 16.0
-# platform-facts.md:1270: selectedMenuItemTextColor, probe :316
-hover_text_color = "#ffffff"
-
-[light.list]
-# platform-facts.md:1429 (§2.15): the table's own fill in a key window, measured on
-# macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749, os-probe-macos-26/probe.toml:3335)
-header_background = "#ffffff"
-# platform-facts.md:1421 (§2.15): controlBackgroundColor, probe :323, alternatingContentBackgroundColors[0]
-background_color = "#ffffff"
-# platform-facts.md:1424 (§2.15): alternatingContentBackgroundColors[1], probe :377
-alternate_row_background = "#f4f5f5"
-# platform-facts.md:1430: gridColor, probe :320
-grid_color = "#e6e6e6"
-# platform-facts.md:1431 (§2.15): NSTableView rowHeight 24 (probe :498)
-row_height_px = 24.0
-# platform-facts.md:1432 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 26 (probe 26 :537)
-header_height_px = 28.0
-
-[light.list.header_font]
-# platform-facts.md:1428 (§2.15): headerTextColor, probe :318
-color = "#000000d8"
-
-[light.sidebar]
-# platform-facts.md:1370 (§2.12): NSVisualEffectView.Material.sidebar's opaque rendering with Reduce
-# Transparency on, in an active view of a key window, measured on macOS 26 and xcode-27's macOS 27, which agree
-# (os-probe run 40320895749, os-probe-macos-26/probe.toml:3315)
-background_color = "#f6f6f6"
-
-[light.splitter]
-# platform-facts.md:1468-1469 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
-# (probe :488-495), dividerColor clear
-divider_width_px = 9.0
-divider_color = "#00000000"
-
-[light.switch]
-# platform-facts.md:1522 (§2.21): black at alpha 25/255 (measured), systemFillColor's value
-# (probe :357); over background_color #e6e6e6
-unchecked_background = "#00000019"
-# platform-facts.md:1523 (§2.21): white (measured)
-thumb_background = "#ffffff"
-# platform-facts.md:1517-1518 (§2.21): NSSwitch intrinsicContentSize 54 x 24 (probe :1194)
-track_width_px = 54.0
-track_height_px = 24.0
-# platform-facts.md:1519 (§2.21): the knob is a 32 x 20 capsule (measured); its 20 across the
-# track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
-thumb_diameter_px = 20.0
-# platform-facts.md:1520 (§2.21): half the track's height, a pill (the render's ends are round)
-track_radius_px = 12.0
-# platform-facts.md:1529 (§2.21): accent_color at alpha 115/255, as macOS 26 draws the enabled on track
-# at about 0.45 (measured in a key window, os-probe run 40348854007, os-probe-macos-26/probe.toml:3620,
-# :3640); the macOS reader writes the user's accent at it; over background_color #8cc3ff
-disabled_checked_background = "#007aff73"
-# platform-facts.md:1530 (§2.21): black at alpha 13/255 (measured, os-probe run 40348854007,
-# renders/aqua/switch-regular-disabled-off@2x.png); over background_color #f2f2f2
-disabled_unchecked_background = "#0000000d"
-# no disabled_thumb_color: platform-facts.md:1531 (§2.21), macOS 26 draws a disabled knob white, as
-# the enabled one; unset, it is thumb_background
-
-[light.dialog]
-# platform-facts.md:1559 (§2.22): the default button rightmost
-button_order = "primary_right"
-# no macOS 26 source (platform-facts.md:1552-1555, :1558, :1568): macos-monterey's values
-min_width_px = 320.0
-max_width_px = 560.0
-min_height_px = 140.0
-max_height_px = 600.0
-button_gap_px = 12.0
-icon_size_px = 64.0
-
-[light.dialog.title_font]
-# no macOS 26 source (platform-facts.md:1561-1562): macos-monterey's values, the emphasized system
-# font, 13pt Bold; the inherited defaults.font would be the regular weight
-size_pt = 13.0
-weight = 700
-
-[light.link]
-# no macOS 26 source (platform-facts.md:1696-1698): macos-monterey's values
-underline_enabled = true
-background_color = "#00000000"
-hover_background = "#00000000"
-
-[light.spinner]
-# platform-facts.md:1599-1600 (§2.23): sizeToFit 32 regular, 10 mini (probe :1530, :770)
-diameter_px = 32.0
-min_diameter_px = 10.0
-# no macOS 26 source (platform-facts.md:1601, (none)): macos-monterey's value
-stroke_width_px = 2.0
-# platform-facts.md:1602 (§2.23): black fins at a graded alpha, the leading one 82/255 (the render
-# equals macOS 14.8.9's byte for byte); over the window background #adadad
-fill_color = "#00000052"
-
-[light.combo_box]
-# platform-facts.md:1611 (§2.24): drawn in secondarySystemFillColor's value (measured; probe :358);
-# over background_color #ebebeb
-background_color = "#00000014"
-# platform-facts.md:1616 (§2.24): NSPopUpButton intrinsicContentSize 24 (probe :1237)
-min_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1617, (none)): macos-monterey's value
-min_width_px = 120.0
-# no macOS 26 source (platform-facts.md:1619: the chevron is 7 x 10.5, which a square icon size
-# cannot carry): macos-monterey's value
-arrow_icon_size_px = 17.0
-
-[light.combo_box.border]
-# platform-facts.md:1618, :1623 (§2.24): the title rect [12, 4, 41, 16] in the 89 x 24 frame
-# (probe :1251), from its outer edge; the right side holds the arrow
-padding_left_px = 12.0
-padding_top_px = 4.0
-padding_bottom_px = 4.0
-# platform-facts.md:1622 (§2.24): no shadow (measured)
-shadow_enabled = false
-
-[light.combo_box.font]
-# platform-facts.md:1613 (§2.24): labelColor = controlTextColor, probe :308, :335; over the fill #242424
-color = "#000000d8"
-
-[light.segmented_control]
-# platform-facts.md:1638 (§2.25): intrinsicContentSize 24 high, the alignment rect (probe :1380)
-segment_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1639): macos-monterey's value
-separator_width_px = 1.0
-# no active_background: platform-facts.md:1636 (§2.25), macOS 26 draws the selected segment in the
-# accent, within 7 levels of controlAccentColor under the default and a red accent (os-probe run 40348854007,
-# accent-red); unset, it is defaults.accent_color, which the macOS reader writes
-
-[light.segmented_control.border]
-# platform-facts.md:1644 (§2.25): no shadow (measured)
-shadow_enabled = false
-
-[light.card.border]
-# platform-facts.md:1662-1663 (§2.26): NSBox.contentViewMargins, "By default, these are both 5.0" (API); on macOS 26
-# the same, inferred from the current page, which is not versioned and makes no macOS 26 statement; the box's fill
-# and border are not published (§2.26 background_color, ❓), so the card's fill stays inherited
-padding_horizontal_px = 5.0
-padding_vertical_px = 5.0
-
-[light.expander]
-# no macOS 26 source (platform-facts.md:1675-1676): macos-monterey's values
-header_height_px = 40.0
-arrow_icon_size_px = 13.0
-# platform-facts.md:1683 (§2.27): the HIG's disclosure triangle points in from the leading edge
-arrow_side = "leading"
-
-[light.expander.border]
-# no macOS 26 source (platform-facts.md:1682): macos-monterey's value; the inherited
-# defaults.border.shadow_enabled would be the wrong kind
-shadow_enabled = false
-
-[light.window]
-# platform-facts.md:1160 (§2.2): a key window's title bar with Reduce Transparency on, measured
-# on macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749, os-probe-macos-26/probe.toml:3310)
-title_bar_background = "#ffffff"
-# platform-facts.md:1166-1167 (§2.2): inactive_title_bar_background and inactive_title_bar_text_color
-# inherit the active title bar's: a window that is not key draws its title bar as the key one does on
-# macOS 26 and 27 (os-probe run 40324458365, os-probe-macos-26/not-key/probe.toml:3321)
-
-[light.window.title_bar_font]
-# platform-facts.md:1163 (§2.2): titleBarFontOfSize:, weight trait 0.4 (probe :121)
-weight = 700
-
-[light.text_scale.caption]
-# platform-facts.md:1485-1488 (§2.19): the HIG's macOS text styles (probe :186-286)
-size_pt = 10.0
-weight = 400
-
-[light.text_scale.section_heading]
-size_pt = 13.0
-weight = 700
-
-[light.text_scale.dialog_title]
-size_pt = 22.0
-weight = 400
-
-[light.text_scale.display]
-size_pt = 26.0
-weight = 400
-
-# === Dark variant ===
-
-[dark.defaults]
-# platform-facts.md:1052 (§2.1.3): controlAccentColor, probe :436, the same as in Aqua (:362)
-accent_color = "#007aff"
-# platform-facts.md:1050: windowBackgroundColor, probe :395
-background_color = "#1e1e1e"
-# platform-facts.md:1051: labelColor, probe :382; over background_color #dddddd
-text_color = "#ffffffd8"
-# platform-facts.md:1054: controlBackgroundColor, probe :397
-surface_color = "#1e1e1e"
-# platform-facts.md:1056: secondaryLabelColor, probe :383; over background_color #9a9a9a
-muted_color = "#ffffff8c"
-# platform-facts.md:1057: NSShadow.shadowColor's default, black at 1/3 (85/255, the nearest 8-bit alpha)
-shadow_color = "#00000055"
-
-# platform-facts.md:1084-1091 (§2.1.4): systemRedColor, systemOrangeColor, systemGreenColor and
-# systemBlueColor, probe :418, :421, :419, :420; each text colour is labelColor (probe :382), the
-# body text beside a status mark, not text on the status fill (footnote 1, :1093-1102)
-danger_color = "#ff4245"
-danger_text_color = "#ffffffd8"
-warning_color = "#ff9230"
-warning_text_color = "#ffffffd8"
-success_color = "#30d158"
-success_text_color = "#ffffffd8"
-info_color = "#0091ff"
-info_text_color = "#ffffffd8"
-
-# platform-facts.md:1059-1063: selectedContentBackgroundColor, alternateSelectedControlTextColor,
-# unemphasizedSelectedContentBackgroundColor, selectedTextBackgroundColor and selectedTextColor,
-# probe :398, :391, :399, :405, :404
-selection_background = "#0059d1"
-selection_text_color = "#ffffff"
-selection_inactive_background = "#464646"
-text_selection_background = "#3f638b"
-text_selection_color = "#ffffff"
-# platform-facts.md:1058: linkColor, probe :387
-link_color = "#419cff"
-# platform-facts.md:1108 (§2.1.5): keyboardFocusIndicatorColor, probe :413; over background_color #1c638e
-focus_ring_color = "#1aa9ff7f"
-# platform-facts.md:1064: disabledControlTextColor, probe :412; over background_color #565656
-disabled_text_color = "#ffffff3f"
-# platform-facts.md:1053: alternateSelectedControlTextColor, probe :391
-accent_text_color = "#ffffff"
-
-# platform-facts.md:1119 (§2.1.6): 1.0, macOS dims a disabled control by colour (disabled_text_color)
-disabled_opacity = 1.0
-# platform-facts.md:1034 (§2.1.1): SF Pro's sTypo metrics, unchanged in SF Pro 22.0d5e4
-line_height = 1.19
-# platform-facts.md:1109 (§2.1.5): 3, WebKit's unconditional constant
-focus_ring_width_px = 3.0
-# no macOS 26 source (platform-facts.md:1110): macos-monterey's value
-focus_ring_offset_px = -1.0
-
-
-[dark.defaults.border]
-# platform-facts.md:1055 (§2.1.3): separatorColor, probe :393; over background_color #343434
-color = "#ffffff19"
-# platform-facts.md:1116 (§2.1.6): 6, the push button's and pop-up's (WebKit's vector drawing)
-corner_radius_px = 6.0
-# no macOS 26 source (platform-facts.md:1117, :1168: Tahoe's window radii vary by style, no API):
-# macos-monterey's value; Tahoe's window radii are larger per third-party measurements
-# (platform-facts.md:177), not adopted
-corner_radius_lg_px = 10.0
-# no macOS 26 source (platform-facts.md:1118): macos-monterey's value
-line_width_px = 0.5
-# platform-facts.md:1120 (§2.1.6): separatorColor's alpha, 25/255 (probe :393), already in color
-opacity = 0.098
-# no macOS 26 source (platform-facts.md:1121): macos-monterey's value
-shadow_enabled = true
-[dark.defaults.font]
-# platform-facts.md:1029-1031 (§2.1.1): the system font, 13pt, weight trait 0 (probe :29-33)
-family = "SF Pro"
-size_pt = 13.0
-weight = 400
-
-[dark.defaults.mono_font]
-# platform-facts.md:1040-1042 (§2.1.2): 13pt, weight trait 0 (probe :161-165); the family name is
-# the same open question as macos-monterey's (platform-facts.md:65)
-family = "SF Mono"
-size_pt = 13.0
-weight = 400
-
-[dark.defaults.icon_sizes]
-# platform-facts.md:1136 (§2.1.8): 32 regular / 24 small; macos-monterey's choice of the small mode
-toolbar_px = 24.0
-# no macOS 26 source (platform-facts.md:1137-1140): macos-monterey's values
-small_px = 16.0
-large_px = 32.0
-dialog_px = 22.0
-panel_px = 20.0
-
-[dark.button]
-# platform-facts.md:1177 (§2.3): drawn in secondarySystemFillColor's value (measured; probe :432);
-# over background_color #303030
-background_color = "#ffffff14"
-# no macOS 26 source (platform-facts.md:1182, (none)): macos-monterey's value
-min_width_px = 64.0
-# platform-facts.md:1183 (§2.3): NSButton intrinsicContentSize 24 (probe :1057)
-min_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1187): macos-monterey's value
-icon_text_gap_px = 4.0
-# no macOS 26 source (platform-facts.md:1192): macos-monterey's value; the inherited
-# defaults.background_color (inheritance-rules.toml:167, a wrong safety net) is the window's
-# opaque colour, which would hide the translucent button on hover
-hover_background = "#444446"
-# platform-facts.md:1198 (§2.3): the bezel at half its alpha, white at 10/255 (measured, os-probe run 40348854007,
-# renders/darkAqua/push_button-regular-disabled@2x.png, not key); over background_color #272727
-disabled_background = "#ffffff0a"
-
-[dark.button.border]
-# platform-facts.md:1184-1185 (§2.3): the title rect [12, 4, 41, 16] in the 65 x 24 bezel
-# (probe :1071), from its outer edge
-padding_horizontal_px = 12.0
-padding_vertical_px = 4.0
-# platform-facts.md:1191 (§2.3): no shadow (measured: nothing drawn outside the bezel)
-shadow_enabled = false
-
-[dark.button.font]
-# platform-facts.md:1179 (§2.3): controlTextColor, probe :409; over the button's fill #dfdfdf
-color = "#ffffffd8"
-
-[dark.input]
-# platform-facts.md:1203 (§2.4): textBackgroundColor, probe :402
-background_color = "#1e1e1e"
-# platform-facts.md:1212 (§2.4): NSTextField intrinsicContentSize 24 (probe :1308)
-min_height_px = 24.0
-# platform-facts.md:1208: placeholderTextColor, probe :388; over the field's background_color #9a9a9a
-placeholder_color = "#ffffff8c"
-# platform-facts.md:1209 (§2.4): textInsertionPointColor, probe :403
-caret_color = "#007aff"
-
-[dark.input.border]
-# platform-facts.md:1213-1214 (§2.4): the title rect [4, 4, 152, 16] in the 160 x 24 field
-# (probe :1323), from its outer edge
-padding_horizontal_px = 4.0
-padding_vertical_px = 4.0
-# platform-facts.md:178 (§1.1.3): the text field's radius, 5 (WebKit's vector drawing)
-corner_radius_px = 5.0
-# platform-facts.md:1216 (§2.4): no drop shadow (measured)
-shadow_enabled = false
-
-[dark.input.font]
-# platform-facts.md:1205 (§2.4): textColor, probe :401
-color = "#ffffff"
-
-[dark.checkbox]
-# platform-facts.md:1233 (§2.5): imageRectForBounds 16 x 16 (probe :1107)
-indicator_width_px = 16.0
-# platform-facts.md:1234 (§2.5): the title rect starts 6 after the image rect (probe :1106-1107)
-label_gap_px = 6.0
-# platform-facts.md:1241 (§2.5): macOS 26: the selected radio's dot, 5 (measured, os-probe run 40348854007,
-# os-probe-macos-26/renders/aqua/radio-regular-on@2x.png, in a window that is not key)
-radio_dot_diameter_px = 5.0
-# platform-facts.md:1247 (§2.5): macOS 26: the unchecked box is one fill, systemFillColor's value #ffffff19 (measured,
-# renders/darkAqua/checkbox-regular-off@2x.png; probe :2433, :431); the probe's window is never ordered front (:514), so
-# this is the box of a window that is not key
-unchecked_background = "#ffffff19"
-# platform-facts.md:1248 (§2.5): macOS 26: none (measured), no edge pixel differs from the fill; the same caveat
-unchecked_border_color = "#00000000"
-
-[dark.checkbox.border]
-# platform-facts.md:1236 (§2.5): no shadow (measured)
-shadow_enabled = false
-
-[dark.tooltip]
-# no macOS 26 source (platform-facts.md:1285): macos-monterey's value
-max_width_px = 300.0
-# no macOS 26 source (platform-facts.md:1277): macos-monterey's value; the inherited window
-# background would be the wrong kind
-background_color = "#3a3a3c"
-
-[dark.tooltip.font]
-# platform-facts.md:1279 (§2.7): toolTipsFontOfSize: 11, probe :98
-size_pt = 11.0
-# no macOS 26 source (platform-facts.md:1282): macos-monterey's value; the inherited label colour
-# would be the wrong kind
-color = "#ffffff"
-
-[dark.scrollbar]
-# platform-facts.md:1307 (§2.8): scrollerWidth 17 in both modes (probe :481-482)
-groove_width_px = 17.0
-# no macOS 26 source (platform-facts.md:1309): macos-monterey's value
-thumb_width_px = 7.0
-# platform-facts.md:1310 (§2.8): NSScroller.preferredScrollerStyle, overlay on the probe's runner (probe :470)
-overlay_mode = true
-# no macOS 26 source (platform-facts.md:1308): macos-monterey's value
-min_thumb_length_px = 40.0
-# no macOS 26 source (platform-facts.md:1304): macos-monterey's value, the overlay mode's
-# transparent track; the inherited window background would be the wrong kind
-track_color = "#00000000"
-
-[dark.slider]
-# platform-facts.md:1320 (§2.9): barRectFlipped 6 high (probe :1435)
-track_height_px = 6.0
-# platform-facts.md:1318 (§2.9): systemFillColor's value (probe :431), white at alpha 25/255 (measured,
-# os-probe run 40348854007, renders/darkAqua/slider-regular@2x.png; a key window draws #343434 over #1e1e1e,
-# os-probe-macos-26/probe.toml:3874), not muted_color; over background_color #343434
-track_color = "#ffffff19"
-# platform-facts.md:1321 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
-# track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
-thumb_diameter_px = 16.0
-# platform-facts.md:1322 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
-tick_mark_length_px = 2.0
-# platform-facts.md:1319 (§2.9): white at alpha 217/255 (measured, renders/darkAqua/slider-regular@2x.png);
-# over background_color #dddddd
-thumb_color = "#ffffffd9"
-# platform-facts.md:1325 (§2.9): no accent when disabled, the bar left of the knob a grey lighter than
-# the track: #393939 over the window's #1e1e1e in a key window (os-probe run 40348854007,
-# os-probe-macos-26/probe.toml:3854), white at alpha 31/255; over background_color #393939
-disabled_fill_color = "#ffffff1f"
-# no disabled_track_color / disabled_thumb_color: platform-facts.md:1326-1327 (§2.9), macOS 26
-# draws a disabled slider's track and knob as the enabled ones; unset, they are track_color and
-# thumb_color
-
-[dark.progress_bar]
-# platform-facts.md:1335 (§2.10): 8 (measured, renders/darkAqua/progress_bar-regular@2x.png)
-track_height_px = 8.0
-# no macOS 26 source (platform-facts.md:1336, (none)): macos-monterey's value
-min_width_px = 100.0
-
-[dark.progress_bar.border]
-# platform-facts.md:1338 (§2.10): no shadow (measured)
-shadow_enabled = false
-# platform-facts.md:1341-1342 (§2.10): 0; 0 (measured, macOS 26.6.2), the fill starts in the track's first column and covers its rows
-padding_horizontal_px = 0.0
-padding_vertical_px = 0.0
-
-[dark.tab]
-# no macOS 26 source (platform-facts.md:1350-1351): macos-monterey's values
-min_width_px = 64.0
-min_height_px = 24.0
-
-[dark.menu]
-# no macOS 26 source (platform-facts.md:1267): macos-monterey's value
-icon_text_gap_px = 4.0
-# no macOS 26 source (platform-facts.md:1268): macos-monterey's value; the inherited toolbar size
-# would be the wrong kind
-icon_size_px = 16.0
-# platform-facts.md:1270: selectedMenuItemTextColor, probe :390
-hover_text_color = "#ffffff"
-
-[dark.list]
-# platform-facts.md:1429 (§2.15): the table's own fill in a key window, measured on
-# macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749, os-probe-macos-26/probe.toml:3459)
-header_background = "#1e1e1e"
-# platform-facts.md:1421 (§2.15): controlBackgroundColor, probe :397, alternatingContentBackgroundColors[0]
-background_color = "#1e1e1e"
-# platform-facts.md:1424 (§2.15): alternatingContentBackgroundColors[1], probe :451; over the
-# list's background_color #292929
-alternate_row_background = "#ffffff0c"
-# platform-facts.md:1430: gridColor, probe :394
-grid_color = "#1a1a1a"
-# platform-facts.md:1431 (§2.15): NSTableView rowHeight 24 (probe :498)
-row_height_px = 24.0
-# platform-facts.md:1432 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 26 (probe 26 :537)
-header_height_px = 28.0
-
-[dark.list.header_font]
-# platform-facts.md:1428 (§2.15): headerTextColor, probe :392
-color = "#ffffff"
-
-[dark.sidebar]
-# platform-facts.md:1370 (§2.12): NSVisualEffectView.Material.sidebar's opaque rendering with Reduce
-# Transparency on, in an active view of a key window, measured on macOS 26 and xcode-27's macOS 27, which agree
-# (os-probe run 40320895749, os-probe-macos-26/probe.toml:3439)
-background_color = "#383838"
-
-[dark.splitter]
-# platform-facts.md:1468-1469 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
-# (probe :488-495), dividerColor clear
-divider_width_px = 9.0
-divider_color = "#00000000"
-
-[dark.switch]
-# platform-facts.md:1522 (§2.21): white at alpha 25/255 (measured), systemFillColor's value
-# (probe :431); over background_color #343434
-unchecked_background = "#ffffff19"
-# platform-facts.md:1523 (§2.21): white at alpha 221/255 (measured, renders/darkAqua/switch-regular-off@2x.png)
-thumb_background = "#ffffffdd"
-# platform-facts.md:1517-1518 (§2.21): NSSwitch intrinsicContentSize 54 x 24 (probe :1194)
-track_width_px = 54.0
-track_height_px = 24.0
-# platform-facts.md:1519 (§2.21): the knob is a 32 x 20 capsule (measured); its 20 across the
-# track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
-thumb_diameter_px = 20.0
-# platform-facts.md:1520 (§2.21): half the track's height, a pill (the render's ends are round)
-track_radius_px = 12.0
-# platform-facts.md:1529 (§2.21): accent_color at alpha 115/255, as macOS 26 draws the enabled on track
-# at about 0.45 (measured in a key window, os-probe run 40348854007, os-probe-macos-26/probe.toml:3814,
-# :3834); the macOS reader writes the user's accent at it; over background_color #104783
-disabled_checked_background = "#007aff73"
-# platform-facts.md:1530 (§2.21): white at alpha 13/255 (measured, os-probe run 40348854007,
-# renders/darkAqua/switch-regular-disabled-off@2x.png); over background_color #292929
-disabled_unchecked_background = "#ffffff0d"
-# platform-facts.md:1531 (§2.21): white at alpha 219/255, where the enabled knob is 221/255 (measured,
-# the same render); over background_color #dfdfdf
-disabled_thumb_color = "#ffffffdb"
-
-[dark.dialog]
-# platform-facts.md:1559 (§2.22): the default button rightmost
-button_order = "primary_right"
-# no macOS 26 source (platform-facts.md:1552-1555, :1558, :1568): macos-monterey's values
-min_width_px = 320.0
-max_width_px = 560.0
-min_height_px = 140.0
-max_height_px = 600.0
-button_gap_px = 12.0
-icon_size_px = 64.0
-
-[dark.dialog.title_font]
-# no macOS 26 source (platform-facts.md:1561-1562): macos-monterey's values, the emphasized system
-# font, 13pt Bold; the inherited defaults.font would be the regular weight
-size_pt = 13.0
-weight = 700
-
-[dark.link]
-# no macOS 26 source (platform-facts.md:1696-1698): macos-monterey's values
-underline_enabled = true
-background_color = "#00000000"
-hover_background = "#00000000"
-
-[dark.spinner]
-# platform-facts.md:1599-1600 (§2.23): sizeToFit 32 regular, 10 mini (probe :1530, :770)
-diameter_px = 32.0
-min_diameter_px = 10.0
-# no macOS 26 source (platform-facts.md:1601, (none)): macos-monterey's value
-stroke_width_px = 2.0
-# platform-facts.md:1602 (§2.23): white fins at a graded alpha, the leading one 82/255 (the render
-# equals macOS 14.8.9's byte for byte); over the window background #666666
-fill_color = "#ffffff52"
-
-[dark.combo_box]
-# platform-facts.md:1611 (§2.24): drawn in secondarySystemFillColor's value (measured; probe :432);
-# over background_color #303030
-background_color = "#ffffff14"
-# platform-facts.md:1616 (§2.24): NSPopUpButton intrinsicContentSize 24 (probe :1237)
-min_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1617, (none)): macos-monterey's value
-min_width_px = 120.0
-# no macOS 26 source (platform-facts.md:1619: the chevron is 7 x 10.5, which a square icon size
-# cannot carry): macos-monterey's value
-arrow_icon_size_px = 17.0
-
-[dark.combo_box.border]
-# platform-facts.md:1618, :1623 (§2.24): the title rect [12, 4, 41, 16] in the 89 x 24 frame
-# (probe :1251), from its outer edge; the right side holds the arrow
-padding_left_px = 12.0
-padding_top_px = 4.0
-padding_bottom_px = 4.0
-# platform-facts.md:1622 (§2.24): no shadow (measured)
-shadow_enabled = false
-
-[dark.combo_box.font]
-# platform-facts.md:1613 (§2.24): labelColor = controlTextColor, probe :382, :409; over the fill #dfdfdf
-color = "#ffffffd8"
-
-[dark.segmented_control]
-# platform-facts.md:1638 (§2.25): intrinsicContentSize 24 high, the alignment rect (probe :1380)
-segment_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1639): macos-monterey's value
-separator_width_px = 1.0
-# no active_background: platform-facts.md:1636 (§2.25), macOS 26 draws the selected segment in the
-# accent, within 7 levels of controlAccentColor under the default and a red accent (os-probe run 40348854007,
-# accent-red); unset, it is defaults.accent_color, which the macOS reader writes
-
-[dark.segmented_control.border]
-# platform-facts.md:1644 (§2.25): no shadow (measured)
-shadow_enabled = false
-
-[dark.card.border]
-# platform-facts.md:1662-1663 (§2.26): NSBox.contentViewMargins, "By default, these are both 5.0" (API); on macOS 26
-# the same, inferred from the current page, which is not versioned and makes no macOS 26 statement; the box's fill
-# and border are not published (§2.26 background_color, ❓), so the card's fill stays inherited
-padding_horizontal_px = 5.0
-padding_vertical_px = 5.0
-
-[dark.expander]
-# no macOS 26 source (platform-facts.md:1675-1676): macos-monterey's values
-header_height_px = 40.0
-arrow_icon_size_px = 13.0
-# platform-facts.md:1683 (§2.27): the HIG's disclosure triangle points in from the leading edge
-arrow_side = "leading"
-
-[dark.expander.border]
-# no macOS 26 source (platform-facts.md:1682): macos-monterey's value; the inherited
-# defaults.border.shadow_enabled would be the wrong kind
-shadow_enabled = false
-
-[dark.window]
-# platform-facts.md:1160 (§2.2): a key window's title bar with Reduce Transparency on, measured
-# on macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749, os-probe-macos-26/probe.toml:3434)
-title_bar_background = "#1e1e1e"
-# platform-facts.md:1166-1167 (§2.2): inactive_title_bar_background and inactive_title_bar_text_color
-# inherit the active title bar's: a window that is not key draws its title bar as the key one does on
-# macOS 26 and 27 (os-probe run 40324458365, os-probe-macos-26/not-key/probe.toml:3447)
-
-[dark.window.title_bar_font]
-# platform-facts.md:1163 (§2.2): titleBarFontOfSize:, weight trait 0.4 (probe :121)
-weight = 700
-
-[dark.text_scale.caption]
-# platform-facts.md:1485-1488 (§2.19): the HIG's macOS text styles (probe :186-286)
-size_pt = 10.0
-weight = 400
-
-[dark.text_scale.section_heading]
-size_pt = 13.0
-weight = 700
-
-[dark.text_scale.dialog_title]
-size_pt = 22.0
-weight = 400
-
-[dark.text_scale.display]
-size_pt = 26.0
-weight = 400
-
-
-[layout]
-# platform-facts.md:1503 (§2.20): NSStackView's default spacing 8
-widget_gap_px = 8.0
-# platform-facts.md:1505 (§2.20): 20, §1.1.5's content margin (the Auto Layout Guide)
-window_margin_px = 20.0
+# macos-tahoe (S11): generated by scripts/generate_preset.py from docs/facts/macos/, each value's comment naming its fact.
+# The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
+# written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
+# `generate_preset.py <id> --write` regenerates every other line and carries them over.
+# generated lines: sha256 0d78419c58e14a38921094fd395130294ea1cef2eb701e9521227d42951fee69
+
+[preset]
+id = "macos-tahoe"
+# hand-written: begin preset
+# docs/facts/sources.toml:1066 (xcode@26.6)
+generation = "macos-26"
+# hand-written: end preset
+
+[declare]
+# hand-written: begin declare
+surface_sets = [
+    "window",  # docs/facts/macos/roles.toml:15
+    "view",  # docs/facts/macos/roles.toml:507
+    "selection",  # docs/facts/macos/roles.toml:586
+]
+color_roles = [
+    "system_red",  # docs/facts/macos/roles.toml:1816
+    "system_orange",  # docs/facts/macos/roles.toml:1901
+    "system_green",  # docs/facts/macos/roles.toml:1986
+    "system_blue",  # docs/facts/macos/roles.toml:2071
+    "selected_control_secondary",  # docs/facts/macos/roles.toml:3073
+]
+text_styles = [
+    "large_title",  # docs/facts/macos/tokens.toml:15
+    "title_1",  # docs/facts/macos/tokens.toml:41
+    "title_2",  # docs/facts/macos/tokens.toml:67
+    "title_3",  # docs/facts/macos/tokens.toml:93
+    "headline",  # docs/facts/macos/tokens.toml:119
+    "body",  # docs/facts/macos/tokens.toml:171
+    "caption_1",  # docs/facts/macos/tokens.toml:249
+]
+inputs = [
+    "accent",  # docs/facts/macos/roles.toml:3227
+    "selected_content_background",  # docs/facts/macos/roles.toml:1026
+    "highlight",  # docs/facts/macos/roles.toml:3312
+    "keyboard_focus_indicator",  # docs/facts/macos/roles.toml:3454
+    "selected_control",  # docs/facts/macos/roles.toml:3550
+]
+# S9.1: every declared input but on kde-breeze
+accent_inputs = ["accent", "selected_content_background", "highlight", "keyboard_focus_indicator", "selected_control"]
+# S10: SF Symbols' named scales the facts state (IconStyle.scale)
+symbol_scales = [
+    "medium",  # docs/facts/macos/tokens.toml:46816
+]
+
+[declare.params.pointer_repeat]
+# S4.6: one unit per group, the pointer repeat's delay and interval in ms
+unit = "ms"
+keys = [
+    "delay",  # docs/facts/macos/tokens.toml:1347
+    "interval",  # docs/facts/macos/tokens.toml:1378
+]
+# hand-written: end declare
+
+# docs/facts/macos/state-models.toml:9
+[declare.widget.button]
+available = true
+variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "tool", "primary", "tinted", "@rounded_rectangle", "with_icon", "@bordered", "@menu_on_hold"]
+later = { variants = ["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "@rounded_rectangle", "@bordered", "@menu_on_hold"] }
+sizes = ["mini", "small", "regular", "large", "extra_large"]
+default_size = "regular"
+densities = []
+exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "tool"], ["primary", "tinted"]]
+
+[pending]
+# docs/facts/macos/button.toml:22189
+"widgets.button.icon.icon.fill" = ["U751", "U91", "U92", "U99", "U695", "U750"]
+# docs/facts/macos/button.toml:125458
+"widgets.button.body.focus.corners.curve" = ["U100", "U695"]
+# docs/facts/macos/button.toml:137008
+"widgets.button.body.corners.curve" = "U90"
+# docs/facts/macos/button.toml:219326
+"widgets.button.label.text.elision" = "U178"
+# docs/facts/macos/button.toml:219332
+"widgets.button.label.text.wrap" = "U178"
+# docs/facts/macos/button.toml:219338
+"widgets.button.label.text.max_lines" = "U178"
+# docs/facts/macos/button.toml:221835
+"widgets.button.values.label_position" = "U333"
+# docs/facts/macos/button.toml:221841
+"widgets.button.values.focus_visible_when" = "U331"
+# docs/facts/macos/button.toml:221848
+"widgets.button.body.opacity" = "U332"
+# docs/facts/macos/button.toml:221854
+"widgets.button.body.transform" = "U332"
+# docs/facts/macos/button.toml:221860
+"widgets.button.body.bindings" = "U332"
+# docs/facts/macos/button.toml:221875
+"widgets.button.icon.icon.rendering_mode" = "U324"
+# docs/facts/macos/button.toml:221881
+"widgets.button.icon.icon.weight" = "U324"
+# docs/facts/macos/button.toml:221993
+"widgets.button.icon.icon.axes" = "U324"
+# docs/facts/macos/button.toml:221999
+"widgets.button.icon.icon.state_effect" = "U324"
+# docs/facts/macos/button.toml:222005
+"widgets.button.icon.icon.symbol_variants" = "U324"
+# docs/facts/macos/button.toml:222011
+"widgets.button.icon.icon.symbolic_colors" = "U324"
+# docs/facts/macos/roles.toml:14949
+"colors.light.global.drop_highlight" = "U322"
+# docs/facts/macos/roles.toml:14949
+"colors.dark.global.drop_highlight" = "U322"
+# docs/facts/macos/tokens.toml:2266
+"tokens.focus.kind" = "U104"
+# docs/facts/macos/tokens.toml:2272
+"tokens.focus.width_px" = "U104"
+# docs/facts/macos/tokens.toml:2278
+"tokens.focus.dash" = "U104"
+# docs/facts/macos/tokens.toml:2284
+"tokens.focus.offset.top_px" = "U104"
+# docs/facts/macos/tokens.toml:2290
+"tokens.focus.offset.right_px" = "U104"
+# docs/facts/macos/tokens.toml:2296
+"tokens.focus.offset.bottom_px" = "U104"
+# docs/facts/macos/tokens.toml:2302
+"tokens.focus.offset.left_px" = "U104"
+# docs/facts/macos/tokens.toml:2308
+"tokens.focus.corners.top_left" = "U104"
+# docs/facts/macos/tokens.toml:2314
+"tokens.focus.corners.top_right" = "U104"
+# docs/facts/macos/tokens.toml:2320
+"tokens.focus.corners.bottom_right" = "U104"
+# docs/facts/macos/tokens.toml:2326
+"tokens.focus.corners.bottom_left" = "U104"
+# docs/facts/macos/tokens.toml:2332
+"tokens.focus.corners.curve" = "U104"
+# docs/facts/macos/tokens.toml:2338
+"tokens.focus.shadow" = "U104"
+# docs/facts/macos/tokens.toml:2459
+"tokens.icons.sizes.small.size_px" = "U102"
+# docs/facts/macos/tokens.toml:2465
+"tokens.icons.sizes.large.size_px" = "U102"
+# docs/facts/macos/tokens.toml:2471
+"tokens.icons.sizes.dialog.size_px" = "U102"
+# docs/facts/macos/tokens.toml:2477
+"tokens.icons.sizes.panel.size_px" = "U102"
+# docs/facts/macos/tokens.toml:46449
+"tokens.text.roles.monospace" = "U325"
+# docs/facts/macos/tokens.toml:46698
+"tokens.behavior.focus_visible_when" = "U331"
+# docs/facts/macos/tokens.toml:46798
+"tokens.icons.sizes.toolbar.fill" = "U102"
+# docs/facts/macos/tokens.toml:46804
+"tokens.icons.sizes.toolbar.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:46810
+"tokens.icons.sizes.toolbar.weight" = "U102"
+# docs/facts/macos/tokens.toml:46862
+"tokens.icons.sizes.toolbar.axes" = "U102"
+# docs/facts/macos/tokens.toml:46868
+"tokens.icons.sizes.toolbar.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:46874
+"tokens.icons.sizes.toolbar.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:46880
+"tokens.icons.sizes.toolbar.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:46892
+"tokens.icons.sizes.small.fill" = "U102"
+# docs/facts/macos/tokens.toml:46898
+"tokens.icons.sizes.small.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:46904
+"tokens.icons.sizes.small.weight" = "U102"
+# docs/facts/macos/tokens.toml:46910
+"tokens.icons.sizes.small.scale" = "U102"
+# docs/facts/macos/tokens.toml:46916
+"tokens.icons.sizes.small.axes" = "U102"
+# docs/facts/macos/tokens.toml:46922
+"tokens.icons.sizes.small.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:46928
+"tokens.icons.sizes.small.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:46934
+"tokens.icons.sizes.small.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:46946
+"tokens.icons.sizes.large.fill" = "U102"
+# docs/facts/macos/tokens.toml:46952
+"tokens.icons.sizes.large.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:46958
+"tokens.icons.sizes.large.weight" = "U102"
+# docs/facts/macos/tokens.toml:46964
+"tokens.icons.sizes.large.scale" = "U102"
+# docs/facts/macos/tokens.toml:46970
+"tokens.icons.sizes.large.axes" = "U102"
+# docs/facts/macos/tokens.toml:46976
+"tokens.icons.sizes.large.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:46982
+"tokens.icons.sizes.large.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:46988
+"tokens.icons.sizes.large.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:47000
+"tokens.icons.sizes.dialog.fill" = "U102"
+# docs/facts/macos/tokens.toml:47006
+"tokens.icons.sizes.dialog.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:47012
+"tokens.icons.sizes.dialog.weight" = "U102"
+# docs/facts/macos/tokens.toml:47018
+"tokens.icons.sizes.dialog.scale" = "U102"
+# docs/facts/macos/tokens.toml:47024
+"tokens.icons.sizes.dialog.axes" = "U102"
+# docs/facts/macos/tokens.toml:47030
+"tokens.icons.sizes.dialog.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:47036
+"tokens.icons.sizes.dialog.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:47042
+"tokens.icons.sizes.dialog.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:47054
+"tokens.icons.sizes.panel.fill" = "U102"
+# docs/facts/macos/tokens.toml:47060
+"tokens.icons.sizes.panel.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:47066
+"tokens.icons.sizes.panel.weight" = "U102"
+# docs/facts/macos/tokens.toml:47072
+"tokens.icons.sizes.panel.scale" = "U102"
+# docs/facts/macos/tokens.toml:47078
+"tokens.icons.sizes.panel.axes" = "U102"
+# docs/facts/macos/tokens.toml:47084
+"tokens.icons.sizes.panel.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:47090
+"tokens.icons.sizes.panel.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:47096
+"tokens.icons.sizes.panel.symbolic_colors" = "U102"
+
+[inputs.selected_content_background]
+# docs/facts/macos/roles.toml:1026
+light = "#0064e1"
+# docs/facts/macos/roles.toml:1069
+dark = "#0059d1"
+
+[inputs.accent]
+# docs/facts/macos/roles.toml:3227
+light = "#007aff"
+# docs/facts/macos/roles.toml:3270
+dark = "#007aff"
+
+[inputs.highlight]
+# docs/facts/macos/roles.toml:3312
+light = "#b3d7ff"
+# docs/facts/macos/roles.toml:3345
+dark = "#3f638b"
+
+[inputs.keyboard_focus_indicator]
+# docs/facts/macos/roles.toml:3454
+light = "#0067f47f"
+# docs/facts/macos/roles.toml:3497
+dark = "#1aa9ff7f"
+
+[inputs.selected_control]
+# docs/facts/macos/roles.toml:3550
+light = "#b3d7ff"
+# docs/facts/macos/roles.toml:3593
+dark = "#3f638b"
+
+[colors.light.surfaces.window]
+# hand-written: begin bases colors.light.surfaces.window
+# docs/facts/macos/roles.toml:3539
+decoration_focus = "= input.keyboard_focus_indicator"
+# hand-written: end bases colors.light.surfaces.window
+# docs/facts/macos/roles.toml:15
+background = "#ffffff"
+# docs/facts/macos/roles.toml:94
+foreground = "#000000d8"
+# docs/facts/macos/roles.toml:179
+foreground_inactive = "#0000007f"
+# docs/facts/macos/roles.toml:264
+link = "#0068da"
+# docs/facts/macos/roles.toml:337
+border = "#00000019"
+# docs/facts/macos/roles.toml:422
+disabled.foreground = "#00000042"
+# docs/facts/macos/roles.toml:9043
+background_alternate = "absent"
+# docs/facts/macos/roles.toml:9068
+foreground_active = "absent"
+# docs/facts/macos/roles.toml:9093
+link_visited = "absent"
+# docs/facts/macos/roles.toml:9118
+decoration_hover = "absent"
+# docs/facts/macos/roles.toml:9143
+shade = "absent"
+# docs/facts/macos/roles.toml:9168
+shade_darker = "absent"
+# docs/facts/macos/roles.toml:9193
+background_active = "absent"
+# docs/facts/macos/roles.toml:9218
+background_link = "absent"
+# docs/facts/macos/roles.toml:9243
+background_visited = "absent"
+# docs/facts/macos/roles.toml:9268
+background_negative = "absent"
+# docs/facts/macos/roles.toml:9293
+background_neutral = "absent"
+# docs/facts/macos/roles.toml:9318
+background_positive = "absent"
+# docs/facts/macos/roles.toml:9343
+disabled.background = "absent"
+# docs/facts/macos/roles.toml:9368
+disabled.background_alternate = "absent"
+# docs/facts/macos/roles.toml:9393
+disabled.foreground_inactive = "absent"
+# docs/facts/macos/roles.toml:9418
+disabled.foreground_active = "absent"
+# docs/facts/macos/roles.toml:9443
+disabled.link = "absent"
+# docs/facts/macos/roles.toml:9468
+disabled.link_visited = "absent"
+# docs/facts/macos/roles.toml:9493
+disabled.negative = "absent"
+# docs/facts/macos/roles.toml:9518
+disabled.neutral = "absent"
+# docs/facts/macos/roles.toml:9543
+disabled.positive = "absent"
+# docs/facts/macos/roles.toml:9568
+disabled.decoration_focus = "absent"
+# docs/facts/macos/roles.toml:9593
+disabled.decoration_hover = "absent"
+# docs/facts/macos/roles.toml:9618
+disabled.shade = "absent"
+# docs/facts/macos/roles.toml:9643
+disabled.shade_darker = "absent"
+# docs/facts/macos/roles.toml:9668
+disabled.border = "absent"
+# docs/facts/macos/roles.toml:9693
+disabled.background_active = "absent"
+# docs/facts/macos/roles.toml:9718
+disabled.background_link = "absent"
+# docs/facts/macos/roles.toml:9743
+disabled.background_visited = "absent"
+# docs/facts/macos/roles.toml:9768
+disabled.background_negative = "absent"
+# docs/facts/macos/roles.toml:9793
+disabled.background_neutral = "absent"
+# docs/facts/macos/roles.toml:9818
+disabled.background_positive = "absent"
+# docs/facts/macos/roles.toml:11637
+negative = "absent"
+# docs/facts/macos/roles.toml:11661
+neutral = "absent"
+# docs/facts/macos/roles.toml:11685
+positive = "absent"
+
+[colors.light.surfaces.view]
+# docs/facts/macos/roles.toml:507
+background = "#ffffff"
+# docs/facts/macos/roles.toml:9843
+foreground_active = "absent"
+# docs/facts/macos/roles.toml:9868
+link_visited = "absent"
+# docs/facts/macos/roles.toml:9893
+decoration_hover = "absent"
+# docs/facts/macos/roles.toml:9918
+shade = "absent"
+# docs/facts/macos/roles.toml:9943
+shade_darker = "absent"
+# docs/facts/macos/roles.toml:9968
+background_active = "absent"
+# docs/facts/macos/roles.toml:9993
+background_link = "absent"
+# docs/facts/macos/roles.toml:10018
+background_visited = "absent"
+# docs/facts/macos/roles.toml:10043
+background_negative = "absent"
+# docs/facts/macos/roles.toml:10068
+background_neutral = "absent"
+# docs/facts/macos/roles.toml:10093
+background_positive = "absent"
+# docs/facts/macos/roles.toml:10118
+disabled.background = "absent"
+# docs/facts/macos/roles.toml:10143
+disabled.background_alternate = "absent"
+# docs/facts/macos/roles.toml:10168
+disabled.foreground_inactive = "absent"
+# docs/facts/macos/roles.toml:10193
+disabled.foreground_active = "absent"
+# docs/facts/macos/roles.toml:10218
+disabled.link = "absent"
+# docs/facts/macos/roles.toml:10243
+disabled.link_visited = "absent"
+# docs/facts/macos/roles.toml:10268
+disabled.negative = "absent"
+# docs/facts/macos/roles.toml:10293
+disabled.neutral = "absent"
+# docs/facts/macos/roles.toml:10318
+disabled.positive = "absent"
+# docs/facts/macos/roles.toml:10343
+disabled.decoration_focus = "absent"
+# docs/facts/macos/roles.toml:10368
+disabled.decoration_hover = "absent"
+# docs/facts/macos/roles.toml:10393
+disabled.shade = "absent"
+# docs/facts/macos/roles.toml:10418
+disabled.shade_darker = "absent"
+# docs/facts/macos/roles.toml:10443
+disabled.border = "absent"
+# docs/facts/macos/roles.toml:10468
+disabled.background_active = "absent"
+# docs/facts/macos/roles.toml:10493
+disabled.background_link = "absent"
+# docs/facts/macos/roles.toml:10518
+disabled.background_visited = "absent"
+# docs/facts/macos/roles.toml:10543
+disabled.background_negative = "absent"
+# docs/facts/macos/roles.toml:10568
+disabled.background_neutral = "absent"
+# docs/facts/macos/roles.toml:10593
+disabled.background_positive = "absent"
+# docs/facts/macos/roles.toml:11422
+foreground = "= role.window.foreground"
+# docs/facts/macos/roles.toml:11439
+foreground_inactive = "= role.window.foreground_inactive"
+# docs/facts/macos/roles.toml:11456
+link = "= role.window.link"
+# docs/facts/macos/roles.toml:11473
+border = "= role.window.border"
+# docs/facts/macos/roles.toml:11490
+disabled.foreground = "= role.window.disabled.foreground"
+# docs/facts/macos/roles.toml:11507
+decoration_focus = "= role.window.decoration_focus"
+# docs/facts/macos/roles.toml:11537
+background_alternate = "#f4f5f5"
+# docs/facts/macos/roles.toml:11709
+negative = "absent"
+# docs/facts/macos/roles.toml:11733
+neutral = "absent"
+# docs/facts/macos/roles.toml:11757
+positive = "absent"
+
+[colors.light.surfaces.selection]
+# hand-written: begin bases colors.light.surfaces.selection
+# docs/facts/macos/roles.toml:1111
+background = "= input.selected_content_background"
+# hand-written: end bases colors.light.surfaces.selection
+# docs/facts/macos/roles.toml:586
+foreground = "#ffffff"
+# docs/facts/macos/roles.toml:10618
+background_alternate = "absent"
+# docs/facts/macos/roles.toml:10643
+foreground_active = "absent"
+# docs/facts/macos/roles.toml:10668
+link_visited = "absent"
+# docs/facts/macos/roles.toml:10693
+decoration_hover = "absent"
+# docs/facts/macos/roles.toml:10718
+shade = "absent"
+# docs/facts/macos/roles.toml:10743
+shade_darker = "absent"
+# docs/facts/macos/roles.toml:10768
+background_active = "absent"
+# docs/facts/macos/roles.toml:10793
+background_link = "absent"
+# docs/facts/macos/roles.toml:10818
+background_visited = "absent"
+# docs/facts/macos/roles.toml:10843
+background_negative = "absent"
+# docs/facts/macos/roles.toml:10868
+background_neutral = "absent"
+# docs/facts/macos/roles.toml:10893
+background_positive = "absent"
+# docs/facts/macos/roles.toml:10918
+disabled.background = "absent"
+# docs/facts/macos/roles.toml:10943
+disabled.background_alternate = "absent"
+# docs/facts/macos/roles.toml:10968
+disabled.foreground_inactive = "absent"
+# docs/facts/macos/roles.toml:10993
+disabled.foreground_active = "absent"
+# docs/facts/macos/roles.toml:11018
+disabled.link = "absent"
+# docs/facts/macos/roles.toml:11043
+disabled.link_visited = "absent"
+# docs/facts/macos/roles.toml:11068
+disabled.negative = "absent"
+# docs/facts/macos/roles.toml:11093
+disabled.neutral = "absent"
+# docs/facts/macos/roles.toml:11118
+disabled.positive = "absent"
+# docs/facts/macos/roles.toml:11143
+disabled.decoration_focus = "absent"
+# docs/facts/macos/roles.toml:11168
+disabled.decoration_hover = "absent"
+# docs/facts/macos/roles.toml:11193
+disabled.shade = "absent"
+# docs/facts/macos/roles.toml:11218
+disabled.shade_darker = "absent"
+# docs/facts/macos/roles.toml:11243
+disabled.border = "absent"
+# docs/facts/macos/roles.toml:11268
+disabled.background_active = "absent"
+# docs/facts/macos/roles.toml:11293
+disabled.background_link = "absent"
+# docs/facts/macos/roles.toml:11318
+disabled.background_visited = "absent"
+# docs/facts/macos/roles.toml:11343
+disabled.background_negative = "absent"
+# docs/facts/macos/roles.toml:11368
+disabled.background_neutral = "absent"
+# docs/facts/macos/roles.toml:11393
+disabled.background_positive = "absent"
+# docs/facts/macos/roles.toml:11524
+decoration_focus = "= role.window.decoration_focus"
+# docs/facts/macos/roles.toml:11781
+negative = "absent"
+# docs/facts/macos/roles.toml:11805
+neutral = "absent"
+# docs/facts/macos/roles.toml:11829
+positive = "absent"
+# docs/facts/macos/roles.toml:11853
+border = "absent"
+# docs/facts/macos/roles.toml:11882
+foreground_inactive = "#ffffffb3"
+# docs/facts/macos/roles.toml:11893
+link = "#0068da"
+# docs/facts/macos/roles.toml:11909
+disabled.foreground = "#ffffff59"
+
+[colors.light.global]
+# hand-written: begin bases colors.light.global
+# docs/facts/macos/roles.toml:3379
+accent = "= input.accent"
+# docs/facts/macos/roles.toml:3751
+selection_text_background = "= input.highlight"
+# hand-written: end bases colors.light.global
+# docs/facts/macos/roles.toml:659
+find_highlight = "#ffff00"
+# docs/facts/macos/roles.toml:732
+shadow_reference = "#000000"
+# docs/facts/macos/roles.toml:805
+selection_text_foreground = "#000000"
+# docs/facts/macos/roles.toml:878
+selection_text_background_unfocused = "#dcdcdc"
+# docs/facts/macos/roles.toml:951
+selection_text_foreground_unfocused = "#000000"
+# docs/facts/macos/roles.toml:3391
+accent_foreground = "#ffffff"
+# docs/facts/macos/roles.toml:3786
+status.success.fill = "absent"
+# docs/facts/macos/roles.toml:3810
+status.success.foreground = "absent"
+# docs/facts/macos/roles.toml:3834
+status.success.standalone = "absent"
+# docs/facts/macos/roles.toml:3858
+status.success.background = "absent"
+# docs/facts/macos/roles.toml:3882
+status.success.background_solid = "absent"
+# docs/facts/macos/roles.toml:3906
+status.warning.fill = "absent"
+# docs/facts/macos/roles.toml:3930
+status.warning.foreground = "absent"
+# docs/facts/macos/roles.toml:3954
+status.warning.standalone = "absent"
+# docs/facts/macos/roles.toml:3978
+status.warning.background = "absent"
+# docs/facts/macos/roles.toml:4002
+status.warning.background_solid = "absent"
+# docs/facts/macos/roles.toml:4026
+status.error.fill = "absent"
+# docs/facts/macos/roles.toml:4050
+status.error.foreground = "absent"
+# docs/facts/macos/roles.toml:4074
+status.error.standalone = "absent"
+# docs/facts/macos/roles.toml:4098
+status.error.background = "absent"
+# docs/facts/macos/roles.toml:4122
+status.error.background_solid = "absent"
+# docs/facts/macos/roles.toml:4146
+status.info.fill = "absent"
+# docs/facts/macos/roles.toml:4170
+status.info.foreground = "absent"
+# docs/facts/macos/roles.toml:4194
+status.info.standalone = "absent"
+# docs/facts/macos/roles.toml:4218
+status.info.background = "absent"
+# docs/facts/macos/roles.toml:4242
+status.info.background_solid = "absent"
+# docs/facts/macos/roles.toml:4266
+status.neutral.fill = "absent"
+# docs/facts/macos/roles.toml:4290
+status.neutral.foreground = "absent"
+# docs/facts/macos/roles.toml:4314
+status.neutral.standalone = "absent"
+# docs/facts/macos/roles.toml:4338
+status.neutral.background = "absent"
+# docs/facts/macos/roles.toml:4362
+status.neutral.background_solid = "absent"
+# docs/facts/macos/roles.toml:4386
+status.destructive.fill = "absent"
+# docs/facts/macos/roles.toml:4410
+status.destructive.foreground = "absent"
+# docs/facts/macos/roles.toml:4434
+status.destructive.standalone = "absent"
+# docs/facts/macos/roles.toml:4458
+status.destructive.background = "absent"
+# docs/facts/macos/roles.toml:4482
+status.destructive.background_solid = "absent"
+# docs/facts/macos/roles.toml:14958
+accent_standalone = "= role.global.accent"
+# docs/facts/macos/roles.toml:14971
+accent_ramp = {}
+# docs/facts/macos/roles.toml:14995
+scrim = "absent"
+
+[colors.light.keyed]
+# docs/facts/macos/roles.toml:1816
+system_red = "#ff383c"
+# docs/facts/macos/roles.toml:1901
+system_orange = "#ff8d28"
+# docs/facts/macos/roles.toml:1986
+system_green = "#34c759"
+# docs/facts/macos/roles.toml:2071
+system_blue = "#0088ff"
+# docs/facts/macos/roles.toml:3073
+selected_control_secondary = "#dcdcdc"
+
+[colors.dark.surfaces.window]
+# hand-written: begin bases colors.dark.surfaces.window
+# docs/facts/macos/roles.toml:3539
+decoration_focus = "= input.keyboard_focus_indicator"
+# hand-written: end bases colors.dark.surfaces.window
+# docs/facts/macos/roles.toml:52
+background = "#1e1e1e"
+# docs/facts/macos/roles.toml:137
+foreground = "#ffffffd8"
+# docs/facts/macos/roles.toml:222
+foreground_inactive = "#ffffff8c"
+# docs/facts/macos/roles.toml:301
+link = "#419cff"
+# docs/facts/macos/roles.toml:380
+border = "#ffffff19"
+# docs/facts/macos/roles.toml:465
+disabled.foreground = "#ffffff3f"
+# docs/facts/macos/roles.toml:9043
+background_alternate = "absent"
+# docs/facts/macos/roles.toml:9068
+foreground_active = "absent"
+# docs/facts/macos/roles.toml:9093
+link_visited = "absent"
+# docs/facts/macos/roles.toml:9118
+decoration_hover = "absent"
+# docs/facts/macos/roles.toml:9143
+shade = "absent"
+# docs/facts/macos/roles.toml:9168
+shade_darker = "absent"
+# docs/facts/macos/roles.toml:9193
+background_active = "absent"
+# docs/facts/macos/roles.toml:9218
+background_link = "absent"
+# docs/facts/macos/roles.toml:9243
+background_visited = "absent"
+# docs/facts/macos/roles.toml:9268
+background_negative = "absent"
+# docs/facts/macos/roles.toml:9293
+background_neutral = "absent"
+# docs/facts/macos/roles.toml:9318
+background_positive = "absent"
+# docs/facts/macos/roles.toml:9343
+disabled.background = "absent"
+# docs/facts/macos/roles.toml:9368
+disabled.background_alternate = "absent"
+# docs/facts/macos/roles.toml:9393
+disabled.foreground_inactive = "absent"
+# docs/facts/macos/roles.toml:9418
+disabled.foreground_active = "absent"
+# docs/facts/macos/roles.toml:9443
+disabled.link = "absent"
+# docs/facts/macos/roles.toml:9468
+disabled.link_visited = "absent"
+# docs/facts/macos/roles.toml:9493
+disabled.negative = "absent"
+# docs/facts/macos/roles.toml:9518
+disabled.neutral = "absent"
+# docs/facts/macos/roles.toml:9543
+disabled.positive = "absent"
+# docs/facts/macos/roles.toml:9568
+disabled.decoration_focus = "absent"
+# docs/facts/macos/roles.toml:9593
+disabled.decoration_hover = "absent"
+# docs/facts/macos/roles.toml:9618
+disabled.shade = "absent"
+# docs/facts/macos/roles.toml:9643
+disabled.shade_darker = "absent"
+# docs/facts/macos/roles.toml:9668
+disabled.border = "absent"
+# docs/facts/macos/roles.toml:9693
+disabled.background_active = "absent"
+# docs/facts/macos/roles.toml:9718
+disabled.background_link = "absent"
+# docs/facts/macos/roles.toml:9743
+disabled.background_visited = "absent"
+# docs/facts/macos/roles.toml:9768
+disabled.background_negative = "absent"
+# docs/facts/macos/roles.toml:9793
+disabled.background_neutral = "absent"
+# docs/facts/macos/roles.toml:9818
+disabled.background_positive = "absent"
+# docs/facts/macos/roles.toml:11637
+negative = "absent"
+# docs/facts/macos/roles.toml:11661
+neutral = "absent"
+# docs/facts/macos/roles.toml:11685
+positive = "absent"
+
+[colors.dark.surfaces.view]
+# docs/facts/macos/roles.toml:544
+background = "#1e1e1e"
+# docs/facts/macos/roles.toml:9843
+foreground_active = "absent"
+# docs/facts/macos/roles.toml:9868
+link_visited = "absent"
+# docs/facts/macos/roles.toml:9893
+decoration_hover = "absent"
+# docs/facts/macos/roles.toml:9918
+shade = "absent"
+# docs/facts/macos/roles.toml:9943
+shade_darker = "absent"
+# docs/facts/macos/roles.toml:9968
+background_active = "absent"
+# docs/facts/macos/roles.toml:9993
+background_link = "absent"
+# docs/facts/macos/roles.toml:10018
+background_visited = "absent"
+# docs/facts/macos/roles.toml:10043
+background_negative = "absent"
+# docs/facts/macos/roles.toml:10068
+background_neutral = "absent"
+# docs/facts/macos/roles.toml:10093
+background_positive = "absent"
+# docs/facts/macos/roles.toml:10118
+disabled.background = "absent"
+# docs/facts/macos/roles.toml:10143
+disabled.background_alternate = "absent"
+# docs/facts/macos/roles.toml:10168
+disabled.foreground_inactive = "absent"
+# docs/facts/macos/roles.toml:10193
+disabled.foreground_active = "absent"
+# docs/facts/macos/roles.toml:10218
+disabled.link = "absent"
+# docs/facts/macos/roles.toml:10243
+disabled.link_visited = "absent"
+# docs/facts/macos/roles.toml:10268
+disabled.negative = "absent"
+# docs/facts/macos/roles.toml:10293
+disabled.neutral = "absent"
+# docs/facts/macos/roles.toml:10318
+disabled.positive = "absent"
+# docs/facts/macos/roles.toml:10343
+disabled.decoration_focus = "absent"
+# docs/facts/macos/roles.toml:10368
+disabled.decoration_hover = "absent"
+# docs/facts/macos/roles.toml:10393
+disabled.shade = "absent"
+# docs/facts/macos/roles.toml:10418
+disabled.shade_darker = "absent"
+# docs/facts/macos/roles.toml:10443
+disabled.border = "absent"
+# docs/facts/macos/roles.toml:10468
+disabled.background_active = "absent"
+# docs/facts/macos/roles.toml:10493
+disabled.background_link = "absent"
+# docs/facts/macos/roles.toml:10518
+disabled.background_visited = "absent"
+# docs/facts/macos/roles.toml:10543
+disabled.background_negative = "absent"
+# docs/facts/macos/roles.toml:10568
+disabled.background_neutral = "absent"
+# docs/facts/macos/roles.toml:10593
+disabled.background_positive = "absent"
+# docs/facts/macos/roles.toml:11422
+foreground = "= role.window.foreground"
+# docs/facts/macos/roles.toml:11439
+foreground_inactive = "= role.window.foreground_inactive"
+# docs/facts/macos/roles.toml:11456
+link = "= role.window.link"
+# docs/facts/macos/roles.toml:11473
+border = "= role.window.border"
+# docs/facts/macos/roles.toml:11490
+disabled.foreground = "= role.window.disabled.foreground"
+# docs/facts/macos/roles.toml:11507
+decoration_focus = "= role.window.decoration_focus"
+# docs/facts/macos/roles.toml:11570
+background_alternate = "#ffffff0c"
+# docs/facts/macos/roles.toml:11709
+negative = "absent"
+# docs/facts/macos/roles.toml:11733
+neutral = "absent"
+# docs/facts/macos/roles.toml:11757
+positive = "absent"
+
+[colors.dark.surfaces.selection]
+# hand-written: begin bases colors.dark.surfaces.selection
+# docs/facts/macos/roles.toml:1111
+background = "= input.selected_content_background"
+# hand-written: end bases colors.dark.surfaces.selection
+# docs/facts/macos/roles.toml:623
+foreground = "#ffffff"
+# docs/facts/macos/roles.toml:10618
+background_alternate = "absent"
+# docs/facts/macos/roles.toml:10643
+foreground_active = "absent"
+# docs/facts/macos/roles.toml:10668
+link_visited = "absent"
+# docs/facts/macos/roles.toml:10693
+decoration_hover = "absent"
+# docs/facts/macos/roles.toml:10718
+shade = "absent"
+# docs/facts/macos/roles.toml:10743
+shade_darker = "absent"
+# docs/facts/macos/roles.toml:10768
+background_active = "absent"
+# docs/facts/macos/roles.toml:10793
+background_link = "absent"
+# docs/facts/macos/roles.toml:10818
+background_visited = "absent"
+# docs/facts/macos/roles.toml:10843
+background_negative = "absent"
+# docs/facts/macos/roles.toml:10868
+background_neutral = "absent"
+# docs/facts/macos/roles.toml:10893
+background_positive = "absent"
+# docs/facts/macos/roles.toml:10918
+disabled.background = "absent"
+# docs/facts/macos/roles.toml:10943
+disabled.background_alternate = "absent"
+# docs/facts/macos/roles.toml:10968
+disabled.foreground_inactive = "absent"
+# docs/facts/macos/roles.toml:10993
+disabled.foreground_active = "absent"
+# docs/facts/macos/roles.toml:11018
+disabled.link = "absent"
+# docs/facts/macos/roles.toml:11043
+disabled.link_visited = "absent"
+# docs/facts/macos/roles.toml:11068
+disabled.negative = "absent"
+# docs/facts/macos/roles.toml:11093
+disabled.neutral = "absent"
+# docs/facts/macos/roles.toml:11118
+disabled.positive = "absent"
+# docs/facts/macos/roles.toml:11143
+disabled.decoration_focus = "absent"
+# docs/facts/macos/roles.toml:11168
+disabled.decoration_hover = "absent"
+# docs/facts/macos/roles.toml:11193
+disabled.shade = "absent"
+# docs/facts/macos/roles.toml:11218
+disabled.shade_darker = "absent"
+# docs/facts/macos/roles.toml:11243
+disabled.border = "absent"
+# docs/facts/macos/roles.toml:11268
+disabled.background_active = "absent"
+# docs/facts/macos/roles.toml:11293
+disabled.background_link = "absent"
+# docs/facts/macos/roles.toml:11318
+disabled.background_visited = "absent"
+# docs/facts/macos/roles.toml:11343
+disabled.background_negative = "absent"
+# docs/facts/macos/roles.toml:11368
+disabled.background_neutral = "absent"
+# docs/facts/macos/roles.toml:11393
+disabled.background_positive = "absent"
+# docs/facts/macos/roles.toml:11524
+decoration_focus = "= role.window.decoration_focus"
+# docs/facts/macos/roles.toml:11781
+negative = "absent"
+# docs/facts/macos/roles.toml:11805
+neutral = "absent"
+# docs/facts/macos/roles.toml:11829
+positive = "absent"
+# docs/facts/macos/roles.toml:11853
+border = "absent"
+# docs/facts/macos/roles.toml:11920
+foreground_inactive = "#ffffffb3"
+# docs/facts/macos/roles.toml:11931
+link = "#419cff"
+# docs/facts/macos/roles.toml:11947
+disabled.foreground = "#ffffff59"
+
+[colors.dark.global]
+# hand-written: begin bases colors.dark.global
+# docs/facts/macos/roles.toml:3379
+accent = "= input.accent"
+# docs/facts/macos/roles.toml:3751
+selection_text_background = "= input.highlight"
+# hand-written: end bases colors.dark.global
+# docs/facts/macos/roles.toml:696
+find_highlight = "#ffff00"
+# docs/facts/macos/roles.toml:769
+shadow_reference = "#000000"
+# docs/facts/macos/roles.toml:842
+selection_text_foreground = "#ffffff"
+# docs/facts/macos/roles.toml:915
+selection_text_background_unfocused = "#464646"
+# docs/facts/macos/roles.toml:988
+selection_text_foreground_unfocused = "#ffffff"
+# docs/facts/macos/roles.toml:3423
+accent_foreground = "#ffffff"
+# docs/facts/macos/roles.toml:3786
+status.success.fill = "absent"
+# docs/facts/macos/roles.toml:3810
+status.success.foreground = "absent"
+# docs/facts/macos/roles.toml:3834
+status.success.standalone = "absent"
+# docs/facts/macos/roles.toml:3858
+status.success.background = "absent"
+# docs/facts/macos/roles.toml:3882
+status.success.background_solid = "absent"
+# docs/facts/macos/roles.toml:3906
+status.warning.fill = "absent"
+# docs/facts/macos/roles.toml:3930
+status.warning.foreground = "absent"
+# docs/facts/macos/roles.toml:3954
+status.warning.standalone = "absent"
+# docs/facts/macos/roles.toml:3978
+status.warning.background = "absent"
+# docs/facts/macos/roles.toml:4002
+status.warning.background_solid = "absent"
+# docs/facts/macos/roles.toml:4026
+status.error.fill = "absent"
+# docs/facts/macos/roles.toml:4050
+status.error.foreground = "absent"
+# docs/facts/macos/roles.toml:4074
+status.error.standalone = "absent"
+# docs/facts/macos/roles.toml:4098
+status.error.background = "absent"
+# docs/facts/macos/roles.toml:4122
+status.error.background_solid = "absent"
+# docs/facts/macos/roles.toml:4146
+status.info.fill = "absent"
+# docs/facts/macos/roles.toml:4170
+status.info.foreground = "absent"
+# docs/facts/macos/roles.toml:4194
+status.info.standalone = "absent"
+# docs/facts/macos/roles.toml:4218
+status.info.background = "absent"
+# docs/facts/macos/roles.toml:4242
+status.info.background_solid = "absent"
+# docs/facts/macos/roles.toml:4266
+status.neutral.fill = "absent"
+# docs/facts/macos/roles.toml:4290
+status.neutral.foreground = "absent"
+# docs/facts/macos/roles.toml:4314
+status.neutral.standalone = "absent"
+# docs/facts/macos/roles.toml:4338
+status.neutral.background = "absent"
+# docs/facts/macos/roles.toml:4362
+status.neutral.background_solid = "absent"
+# docs/facts/macos/roles.toml:4386
+status.destructive.fill = "absent"
+# docs/facts/macos/roles.toml:4410
+status.destructive.foreground = "absent"
+# docs/facts/macos/roles.toml:4434
+status.destructive.standalone = "absent"
+# docs/facts/macos/roles.toml:4458
+status.destructive.background = "absent"
+# docs/facts/macos/roles.toml:4482
+status.destructive.background_solid = "absent"
+# docs/facts/macos/roles.toml:14958
+accent_standalone = "= role.global.accent"
+# docs/facts/macos/roles.toml:14971
+accent_ramp = {}
+# docs/facts/macos/roles.toml:14995
+scrim = "absent"
+
+[colors.dark.keyed]
+# docs/facts/macos/roles.toml:1859
+system_red = "#ff4245"
+# docs/facts/macos/roles.toml:1944
+system_orange = "#ff9230"
+# docs/facts/macos/roles.toml:2029
+system_green = "#30d158"
+# docs/facts/macos/roles.toml:2114
+system_blue = "#0091ff"
+# docs/facts/macos/roles.toml:3110
+selected_control_secondary = "#464646"
+
+[tokens.text]
+# docs/facts/macos/tokens.toml:15
+keyed.large_title.font.size_px = 26
+# docs/facts/macos/tokens.toml:41
+keyed.title_1.font.size_px = 22
+# docs/facts/macos/tokens.toml:67
+keyed.title_2.font.size_px = 17
+# docs/facts/macos/tokens.toml:93
+keyed.title_3.font.size_px = 15
+# docs/facts/macos/tokens.toml:119
+keyed.headline.font.size_px = 13
+# docs/facts/macos/tokens.toml:171
+keyed.body.font.size_px = 13
+# docs/facts/macos/tokens.toml:249
+keyed.caption_1.font.size_px = 10
+# docs/facts/macos/tokens.toml:458
+keyed.large_title.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:484
+keyed.large_title.font.weight = 400
+# docs/facts/macos/tokens.toml:510
+keyed.title_1.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:536
+keyed.title_1.font.weight = 400
+# docs/facts/macos/tokens.toml:562
+keyed.title_2.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:588
+keyed.title_2.font.weight = 400
+# docs/facts/macos/tokens.toml:614
+keyed.title_3.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:640
+keyed.title_3.font.weight = 400
+# docs/facts/macos/tokens.toml:666
+keyed.headline.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:692
+keyed.headline.font.weight = 700
+# docs/facts/macos/tokens.toml:770
+keyed.body.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:796
+keyed.body.font.weight = 400
+# docs/facts/macos/tokens.toml:926
+keyed.caption_1.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/tokens.toml:952
+keyed.caption_1.font.weight = 400
+# docs/facts/macos/tokens.toml:2125
+roles.large_title = "= token.text.keyed.large_title"
+# docs/facts/macos/tokens.toml:2136
+roles.title1 = "= token.text.keyed.title_1"
+# docs/facts/macos/tokens.toml:2147
+roles.title2 = "= token.text.keyed.title_2"
+# docs/facts/macos/tokens.toml:2158
+roles.title3 = "= token.text.keyed.title_3"
+# docs/facts/macos/tokens.toml:2169
+roles.headline = "= token.text.keyed.headline"
+# docs/facts/macos/tokens.toml:2191
+roles.body = "= token.text.keyed.body"
+# docs/facts/macos/tokens.toml:2224
+roles.caption = "= token.text.keyed.caption_1"
+# docs/facts/macos/tokens.toml:5176
+keyed.large_title.decoration = "absent"
+# docs/facts/macos/tokens.toml:5219
+keyed.large_title.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:5277
+keyed.large_title.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:5308
+keyed.large_title.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:5351
+keyed.large_title.case = "mixed"
+# docs/facts/macos/tokens.toml:5394
+keyed.title_1.decoration = "absent"
+# docs/facts/macos/tokens.toml:5437
+keyed.title_1.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:5495
+keyed.title_1.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:5526
+keyed.title_1.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:5569
+keyed.title_1.case = "mixed"
+# docs/facts/macos/tokens.toml:5612
+keyed.title_2.decoration = "absent"
+# docs/facts/macos/tokens.toml:5655
+keyed.title_2.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:5713
+keyed.title_2.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:5744
+keyed.title_2.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:5787
+keyed.title_2.case = "mixed"
+# docs/facts/macos/tokens.toml:5830
+keyed.title_3.decoration = "absent"
+# docs/facts/macos/tokens.toml:5873
+keyed.title_3.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:5931
+keyed.title_3.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:5962
+keyed.title_3.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:6005
+keyed.title_3.case = "mixed"
+# docs/facts/macos/tokens.toml:6048
+keyed.headline.decoration = "absent"
+# docs/facts/macos/tokens.toml:6091
+keyed.headline.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:6149
+keyed.headline.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:6180
+keyed.headline.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:6223
+keyed.headline.case = "mixed"
+# docs/facts/macos/tokens.toml:6484
+keyed.body.decoration = "absent"
+# docs/facts/macos/tokens.toml:6527
+keyed.body.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:6585
+keyed.body.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:6616
+keyed.body.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:6659
+keyed.body.case = "mixed"
+# docs/facts/macos/tokens.toml:7138
+keyed.caption_1.decoration = "absent"
+# docs/facts/macos/tokens.toml:7181
+keyed.caption_1.mnemonic_decoration = "absent"
+# docs/facts/macos/tokens.toml:7239
+keyed.caption_1.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/tokens.toml:7270
+keyed.caption_1.word_spacing_px = 0
+# docs/facts/macos/tokens.toml:7313
+keyed.caption_1.case = "mixed"
+# docs/facts/macos/tokens.toml:11299
+keyed.large_title.font.style = "normal"
+# docs/facts/macos/tokens.toml:11325
+keyed.large_title.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:11351
+keyed.large_title.font.features = {}
+# docs/facts/macos/tokens.toml:11380
+keyed.large_title.font.width = 100
+# docs/facts/macos/tokens.toml:11406
+keyed.large_title.line_height = "auto"
+# docs/facts/macos/tokens.toml:11432
+keyed.large_title.fill = "absent"
+# docs/facts/macos/tokens.toml:11474
+keyed.large_title.elision = "absent"
+# docs/facts/macos/tokens.toml:11516
+keyed.large_title.wrap = "absent"
+# docs/facts/macos/tokens.toml:11558
+keyed.large_title.max_lines = "absent"
+# docs/facts/macos/tokens.toml:11600
+keyed.large_title.scaling_role = "none"
+# docs/facts/macos/tokens.toml:11616
+keyed.title_1.font.style = "normal"
+# docs/facts/macos/tokens.toml:11642
+keyed.title_1.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:11668
+keyed.title_1.font.features = {}
+# docs/facts/macos/tokens.toml:11694
+keyed.title_1.font.width = 100
+# docs/facts/macos/tokens.toml:11720
+keyed.title_1.line_height = "auto"
+# docs/facts/macos/tokens.toml:11746
+keyed.title_1.fill = "absent"
+# docs/facts/macos/tokens.toml:11788
+keyed.title_1.elision = "absent"
+# docs/facts/macos/tokens.toml:11830
+keyed.title_1.wrap = "absent"
+# docs/facts/macos/tokens.toml:11872
+keyed.title_1.max_lines = "absent"
+# docs/facts/macos/tokens.toml:11914
+keyed.title_1.scaling_role = "none"
+# docs/facts/macos/tokens.toml:11930
+keyed.title_2.font.style = "normal"
+# docs/facts/macos/tokens.toml:11956
+keyed.title_2.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:11982
+keyed.title_2.font.features = {}
+# docs/facts/macos/tokens.toml:12008
+keyed.title_2.font.width = 100
+# docs/facts/macos/tokens.toml:12034
+keyed.title_2.line_height = "auto"
+# docs/facts/macos/tokens.toml:12060
+keyed.title_2.fill = "absent"
+# docs/facts/macos/tokens.toml:12102
+keyed.title_2.elision = "absent"
+# docs/facts/macos/tokens.toml:12144
+keyed.title_2.wrap = "absent"
+# docs/facts/macos/tokens.toml:12186
+keyed.title_2.max_lines = "absent"
+# docs/facts/macos/tokens.toml:12228
+keyed.title_2.scaling_role = "none"
+# docs/facts/macos/tokens.toml:12244
+keyed.title_3.font.style = "normal"
+# docs/facts/macos/tokens.toml:12270
+keyed.title_3.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:12296
+keyed.title_3.font.features = {}
+# docs/facts/macos/tokens.toml:12322
+keyed.title_3.font.width = 100
+# docs/facts/macos/tokens.toml:12348
+keyed.title_3.line_height = "auto"
+# docs/facts/macos/tokens.toml:12374
+keyed.title_3.fill = "absent"
+# docs/facts/macos/tokens.toml:12416
+keyed.title_3.elision = "absent"
+# docs/facts/macos/tokens.toml:12458
+keyed.title_3.wrap = "absent"
+# docs/facts/macos/tokens.toml:12500
+keyed.title_3.max_lines = "absent"
+# docs/facts/macos/tokens.toml:12542
+keyed.title_3.scaling_role = "none"
+# docs/facts/macos/tokens.toml:12558
+keyed.headline.font.style = "normal"
+# docs/facts/macos/tokens.toml:12584
+keyed.headline.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:12610
+keyed.headline.font.features = {}
+# docs/facts/macos/tokens.toml:12636
+keyed.headline.font.width = 100
+# docs/facts/macos/tokens.toml:12662
+keyed.headline.line_height = "auto"
+# docs/facts/macos/tokens.toml:12688
+keyed.headline.fill = "absent"
+# docs/facts/macos/tokens.toml:12730
+keyed.headline.elision = "absent"
+# docs/facts/macos/tokens.toml:12772
+keyed.headline.wrap = "absent"
+# docs/facts/macos/tokens.toml:12814
+keyed.headline.max_lines = "absent"
+# docs/facts/macos/tokens.toml:12856
+keyed.headline.scaling_role = "none"
+# docs/facts/macos/tokens.toml:13186
+keyed.body.font.style = "normal"
+# docs/facts/macos/tokens.toml:13212
+keyed.body.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:13238
+keyed.body.font.features = {}
+# docs/facts/macos/tokens.toml:13264
+keyed.body.font.width = 100
+# docs/facts/macos/tokens.toml:13290
+keyed.body.line_height = "auto"
+# docs/facts/macos/tokens.toml:13316
+keyed.body.fill = "absent"
+# docs/facts/macos/tokens.toml:13358
+keyed.body.elision = "absent"
+# docs/facts/macos/tokens.toml:13400
+keyed.body.wrap = "absent"
+# docs/facts/macos/tokens.toml:13442
+keyed.body.max_lines = "absent"
+# docs/facts/macos/tokens.toml:13484
+keyed.body.scaling_role = "none"
+# docs/facts/macos/tokens.toml:14128
+keyed.caption_1.font.style = "normal"
+# docs/facts/macos/tokens.toml:14154
+keyed.caption_1.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/tokens.toml:14180
+keyed.caption_1.font.features = {}
+# docs/facts/macos/tokens.toml:14206
+keyed.caption_1.font.width = 100
+# docs/facts/macos/tokens.toml:14232
+keyed.caption_1.line_height = "auto"
+# docs/facts/macos/tokens.toml:14258
+keyed.caption_1.fill = "absent"
+# docs/facts/macos/tokens.toml:14300
+keyed.caption_1.elision = "absent"
+# docs/facts/macos/tokens.toml:14342
+keyed.caption_1.wrap = "absent"
+# docs/facts/macos/tokens.toml:14384
+keyed.caption_1.max_lines = "absent"
+# docs/facts/macos/tokens.toml:14426
+keyed.caption_1.scaling_role = "none"
+# docs/facts/macos/tokens.toml:20148
+scaling = "linear"
+# docs/facts/macos/tokens.toml:46383
+roles.display_large = "= token.text.roles.large_title"
+# docs/facts/macos/tokens.toml:46415
+roles.display_small = "= token.text.roles.large_title"
+# S9.4
+font_dpi = 72
+
+[tokens.params]
+# docs/facts/macos/tokens.toml:1347
+pointer_repeat.delay = 400
+# docs/facts/macos/tokens.toml:1378
+pointer_repeat.interval = 75
+
+[tokens.motion]
+# docs/facts/macos/tokens.toml:2388
+speed_factor = 1
+
+[tokens.icons]
+# docs/facts/macos/tokens.toml:2413
+sizes.toolbar.size_px = 20
+# docs/facts/macos/tokens.toml:46466
+set = "sf_symbols"
+# docs/facts/macos/tokens.toml:46477
+theme = "absent"
+# docs/facts/macos/tokens.toml:46495
+theme_fallback = "absent"
+# docs/facts/macos/tokens.toml:46816
+sizes.toolbar.scale = "medium"
+# S10
+sizes.keyed = {}
+
+[tokens.behavior]
+# docs/facts/macos/tokens.toml:46281
+mnemonics = "never"
+# docs/facts/macos/tokens.toml:46304
+mnemonic_when_disabled = "absent"
+
+[tokens]
+# docs/facts/macos/tokens.toml:46529
+size_classes = {}
+# docs/facts/macos/tokens.toml:48367
+kde = "absent"
+# docs/facts/macos/tokens.toml:48384
+material = "absent"
+# S10
+elevation = {}
+
+[tokens.focus]
+# hand-written: begin bases tokens.focus
+# docs/facts/macos/tokens.toml:2250
+paint = "= input.keyboard_focus_indicator"
+# hand-written: end bases tokens.focus
+
+[widgets.button.label]
+# docs/facts/macos/button.toml:26029
+text.font.family = ".AppleSystemUIFont"
+# docs/facts/macos/button.toml:26155
+text.font.weight = 400
+# docs/facts/macos/button.toml:218524
+text.decoration = "absent"
+# docs/facts/macos/button.toml:218591
+text.mnemonic_decoration = "absent"
+# docs/facts/macos/button.toml:218635
+text.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/macos/button.toml:218686
+text.word_spacing_px = 0
+# docs/facts/macos/button.toml:218753
+text.case = "mixed"
+# docs/facts/macos/button.toml:218829
+text.font.style = "normal"
+# docs/facts/macos/button.toml:218885
+text.font.axes = { opsz = "follows_size" }
+# docs/facts/macos/button.toml:218941
+text.font.features = {}
+# docs/facts/macos/button.toml:219000
+text.font.width = 100
+# docs/facts/macos/button.toml:219344
+text.scaling_role = "none"
+# docs/facts/macos/button.toml:221622
+padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+# docs/facts/macos/button.toml:18616
+text.fill = "#000000d8"
+# docs/facts/macos/button.toml:26113
+text.font.size_px = 13
+# docs/facts/macos/button.toml:219168
+text.line_height_px = 16
+
+[widgets.button.values]
+# docs/facts/macos/button.toml:26311
+icon_text_gap_px = 2
+# docs/facts/macos/button.toml:28994
+repeat_delay_ms = "= token.params.pointer_repeat.delay"
+# docs/facts/macos/button.toml:29005
+repeat_interval_ms = "= token.params.pointer_repeat.interval"
+# docs/facts/macos/button.toml:220719
+icon_placement = "leading"
+# docs/facts/macos/button.toml:221652
+hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+# docs/facts/macos/button.toml:221743
+subtitle_gap_px = "absent"
+# docs/facts/macos/button.toml:221761
+shows_icon = "absent"
+
+[widgets.button.body]
+# docs/facts/macos/button.toml:26342
+shadow = "absent"
+# docs/facts/macos/button.toml:26916
+stroke = "absent"
+# docs/facts/macos/button.toml:28626
+focus.kind = "ring"
+# docs/facts/macos/button.toml:28672
+focus.width_px = 4
+# docs/facts/macos/button.toml:28810
+focus.offset.top_px = -1
+# docs/facts/macos/button.toml:28856
+focus.offset.right_px = -1
+# docs/facts/macos/button.toml:28902
+focus.offset.bottom_px = -1
+# docs/facts/macos/button.toml:28948
+focus.offset.left_px = -1
+# docs/facts/macos/button.toml:29034
+focus.corners.top_left = "follow_part"
+# docs/facts/macos/button.toml:29100
+focus.corners.top_right = "follow_part"
+# docs/facts/macos/button.toml:29166
+focus.corners.bottom_right = "follow_part"
+# docs/facts/macos/button.toml:29232
+focus.corners.bottom_left = "follow_part"
+# docs/facts/macos/button.toml:29298
+cursor = "absent"
+# docs/facts/macos/button.toml:125596
+focus.dash = "solid"
+# docs/facts/macos/button.toml:125922
+focus.shadow = "absent"
+# docs/facts/macos/button.toml:221532
+max_width_px = "auto"
+# docs/facts/macos/button.toml:221562
+touch_target_px = "absent"
+# docs/facts/macos/button.toml:221592
+interaction = "absent"
+# docs/facts/macos/button.toml:550
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:3907
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:7264
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:10621
+corners.bottom_left_px = 6.25
+# docs/facts/macos/button.toml:13537
+fill = "#00000013"
+# docs/facts/macos/button.toml:24019
+min_height_px = 24
+# docs/facts/macos/button.toml:24563
+min_width_px = 34
+# docs/facts/macos/button.toml:24718
+padding.top_px = 4
+# docs/facts/macos/button.toml:25098
+padding.right_px = 12
+# docs/facts/macos/button.toml:25440
+padding.bottom_px = 4
+# docs/facts/macos/button.toml:25820
+padding.left_px = 12
+# docs/facts/macos/button.toml:28764
+focus.paint = "#0066f57f"
+# docs/facts/macos/button.toml:222229
+margin.top_px = 0
+# docs/facts/macos/button.toml:223249
+margin.right_px = 0
+# docs/facts/macos/button.toml:224255
+margin.bottom_px = 0
+# docs/facts/macos/button.toml:225261
+margin.left_px = 0
+
+[widgets.button.subtitle]
+# docs/facts/macos/button.toml:29016
+absent = true
+
+[widgets.button.menu_indicator]
+# docs/facts/macos/button.toml:220999
+absent = true
+
+[widgets.button.icon]
+# docs/facts/macos/button.toml:221887
+icon.scale = "medium"
+# docs/facts/macos/button.toml:226743
+glyph = "absent"
+# docs/facts/macos/button.toml:220825
+icon.size_px = 13
+
+[[rules]]
+when = { sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:550
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:3907
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:7264
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:10621
+corners.bottom_left_px = 6.25
+# docs/facts/macos/button.toml:24019
+min_height_px = 24
+# docs/facts/macos/button.toml:24563
+min_width_px = 34
+# docs/facts/macos/button.toml:24718
+padding.top_px = 4
+# docs/facts/macos/button.toml:25098
+padding.right_px = 12
+# docs/facts/macos/button.toml:25440
+padding.bottom_px = 4
+# docs/facts/macos/button.toml:25820
+padding.left_px = 12
+
+[[rules]]
+when = { states = ["default"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:2101
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:5458
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:8815
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:12172
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:2727
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:6084
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:9441
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:12798
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { variants = ["tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:2787
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:6144
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:9501
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:12858
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:24266
+min_height_px = 20
+# docs/facts/macos/button.toml:24916
+padding.top_px = 1
+# docs/facts/macos/button.toml:25285
+padding.right_px = 5
+# docs/facts/macos/button.toml:25638
+padding.bottom_px = 3
+# docs/facts/macos/button.toml:26007
+padding.left_px = 5
+
+[[rules]]
+when = { states = ["default", "disabled"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:2873
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:6230
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:9587
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:12944
+corners.bottom_left_px = 6.25
+
+[[rules]]
+when = { states = ["disabled"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:2905
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:6262
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:9619
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:12976
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { states = ["checked"], variants = ["toggle"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:2937
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:6294
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:9651
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:13008
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { states = ["checked", "disabled"], variants = ["toggle"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:2953
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:6310
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:9667
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:13024
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:dark"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:13490
+fill = "#ffffff13"
+# docs/facts/macos/button.toml:28718
+focus.paint = "#1aabff7f"
+
+[[rules]]
+when = { conditions = ["scheme:light"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:13537
+fill = "#00000013"
+# docs/facts/macos/button.toml:28764
+focus.paint = "#0066f57f"
+
+[[rules]]
+when = { states = ["default"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:13711
+fill = "= input.accent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:13747
+fill = "#ffffff0a"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:13786
+fill = "#0000000a"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:13825
+fill = "#ffffff2a"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:13880
+fill = "#0000002a"
+
+[[rules]]
+when = { variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14053
+fill = "= input.accent"
+
+[[rules]]
+when = { variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14089
+fill = "= alpha(input.accent, 0.05)"
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14125
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14444
+fill = "= mix(input.accent, #000000, 0.1)"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14480
+fill = "= mix(input.accent, #ffffff, 0.1)"
+
+[[rules]]
+when = { states = ["disabled"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14578
+fill = "= alpha(input.accent, 0.427)"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14614
+fill = "= mix(input.accent, #000000, 0.1)"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14650
+fill = "= mix(input.accent, #ffffff, 0.1)"
+
+[[rules]]
+when = { states = ["disabled"], variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14686
+fill = "= alpha(input.accent, 0.024)"
+
+[[rules]]
+when = { states = ["pressed"], variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14722
+fill = "= alpha(input.accent, 0.145)"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["checked"], variants = ["toggle"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14758
+fill = "= mix(input.accent, #000000, 0.025)"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["checked"], variants = ["toggle"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14794
+fill = "= mix(input.accent, #ffffff, 0.025)"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14830
+fill = "#ffffff1a"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:14861
+fill = "#0000001a"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["checked", "disabled"], variants = ["toggle"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:15781
+fill = "= alpha(mix(input.accent, #000000, 0.04), 0.44)"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["checked", "disabled"], variants = ["toggle"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:15817
+fill = "= alpha(mix(input.accent, #ffffff, 0.04), 0.44)"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["checked", "pressed"], variants = ["toggle"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:15853
+fill = "= mix(input.accent, #000000, 0.12)"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["checked", "pressed"], variants = ["toggle"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:15889
+fill = "= mix(input.accent, #ffffff, 0.12)"
+
+[[rules]]
+when = { conditions = ["scheme:dark"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:18477
+text.fill = "#ffffffd8"
+
+[[rules]]
+when = { conditions = ["scheme:light"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:18616
+text.fill = "#000000d8"
+
+[[rules]]
+when = { states = ["default"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:18740
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:18796
+text.fill = "#ffffff3f"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:18827
+text.fill = "#00000042"
+
+[[rules]]
+when = { variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:18982
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { variants = ["tinted"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19038
+text.fill = "= input.accent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19074
+text.fill = "#ffffff80"
+
+[[rules]]
+when = { conditions = ["scheme:light"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19105
+text.fill = "#0000008c"
+
+[[rules]]
+when = { states = ["disabled"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19415
+text.fill = "#fffffd1f"
+
+[[rules]]
+when = { states = ["disabled"], variants = ["tinted"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19471
+text.fill = "= alpha(input.accent, 0.075)"
+
+[[rules]]
+when = { states = ["pressed"], variants = ["tinted"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19507
+text.fill = "= input.accent"
+
+[[rules]]
+when = { states = ["checked"], variants = ["toggle"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19543
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19599
+text.fill = "#ffffff40"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19630
+text.fill = "#00000040"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19661
+text.fill = "#ffffffe5"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:19692
+text.fill = "#000000d9"
+
+[[rules]]
+when = { states = ["checked", "disabled"], variants = ["toggle"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:20379
+text.fill = "#ffffff20"
+
+[[rules]]
+when = { sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:26113
+text.font.size_px = 13
+# docs/facts/macos/button.toml:219168
+text.line_height_px = 16
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:29392
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:45653
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:61914
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:78175
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:94370
+fill = "#0000000a"
+# docs/facts/macos/button.toml:126272
+shadow = "absent"
+# docs/facts/macos/button.toml:132258
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], not_variants = ["toggle", "tool", "primary", "tinted", "with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:29600
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:45861
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:62122
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:78383
+corners.bottom_left_px = 6.25
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["toggle"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:29633
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:45894
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:62155
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:78416
+corners.bottom_left_px = 6.25
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:29775
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:46036
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:62297
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:78558
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:94765
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:29873
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:46134
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:62395
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:78656
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:29906
+corners.top_left_px = 5.75
+# docs/facts/macos/button.toml:46167
+corners.top_right_px = 5.75
+# docs/facts/macos/button.toml:62428
+corners.bottom_right_px = 5.75
+# docs/facts/macos/button.toml:78689
+corners.bottom_left_px = 5.75
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:30061
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:46322
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:62583
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:78844
+corners.bottom_left_px = 6.25
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:30072
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:46333
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:62594
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:78855
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:94858
+fill = "#ffffff0a"
+# docs/facts/macos/button.toml:126776
+shadow = "absent"
+# docs/facts/macos/button.toml:132677
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], not_variants = ["toggle", "tool", "primary", "tinted", "with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:30286
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:46547
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:62808
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:79069
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["toggle"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:30319
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:46580
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:62841
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:79102
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:30464
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:46725
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:62986
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:79247
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:95290
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:30556
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:46817
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:63078
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:79339
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:30589
+corners.top_left_px = 5.75
+# docs/facts/macos/button.toml:46850
+corners.top_right_px = 5.75
+# docs/facts/macos/button.toml:63111
+corners.bottom_right_px = 5.75
+# docs/facts/macos/button.toml:79372
+corners.bottom_left_px = 5.75
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:30744
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:47005
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:63266
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:79527
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:35030
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:51291
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:67552
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:83813
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:98655
+fill = "#0000000a"
+# docs/facts/macos/button.toml:130314
+shadow = "absent"
+# docs/facts/macos/button.toml:135064
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"], not_variants = ["toggle", "tool", "primary", "tinted", "with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:35228
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:51489
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:67750
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:84011
+corners.bottom_left_px = 6.25
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:35370
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:51631
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:67892
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:84153
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:99025
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:35468
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:51729
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:67990
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:84251
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:35501
+corners.top_left_px = 5.75
+# docs/facts/macos/button.toml:51762
+corners.top_right_px = 5.75
+# docs/facts/macos/button.toml:68023
+corners.bottom_right_px = 5.75
+# docs/facts/macos/button.toml:84284
+corners.bottom_left_px = 5.75
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:35656
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:51917
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:68178
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:84439
+corners.bottom_left_px = 6.25
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:35667
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:51928
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:68189
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:84450
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:99118
+fill = "#ffffff0a"
+# docs/facts/macos/button.toml:130793
+shadow = "absent"
+# docs/facts/macos/button.toml:135458
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"], not_variants = ["toggle", "tool", "primary", "tinted", "with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:35871
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:52132
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:68393
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:84654
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:36016
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:52277
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:68538
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:84799
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:99525
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:36108
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:52369
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:68630
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:84891
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:36141
+corners.top_left_px = 5.75
+# docs/facts/macos/button.toml:52402
+corners.top_right_px = 5.75
+# docs/facts/macos/button.toml:68663
+corners.bottom_right_px = 5.75
+# docs/facts/macos/button.toml:84924
+corners.bottom_left_px = 5.75
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:36296
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:52557
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:68818
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:85079
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "checked"], not_states = ["default"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:36953
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:53214
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:69475
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:85736
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:131814
+shadow = "absent"
+# docs/facts/macos/button.toml:136240
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "checked"], not_states = ["default"], variants = ["toggle"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:36994
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:53255
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:69516
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:85777
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "checked"], not_states = ["default"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:37005
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:53266
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:69527
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:85788
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:131845
+shadow = "absent"
+# docs/facts/macos/button.toml:136271
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39203
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:55464
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:71725
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:87986
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:101731
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39246
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:55507
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:71768
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:88029
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:101762
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39289
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:55550
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:71811
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:88072
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:101793
+fill = "#0000001a"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39332
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:55593
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:71854
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:88115
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:101824
+fill = "#ffffff1a"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39393
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:55654
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:71915
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:88176
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:101873
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39436
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:55697
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:71958
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:88219
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:101904
+fill = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39783
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56044
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72305
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88566
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39821
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:56082
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:72343
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:88604
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39832
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56093
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72354
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88615
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39870
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:56131
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:72392
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:88653
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39881
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56142
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72403
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88664
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39919
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:56180
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:72441
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:88702
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39930
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56191
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72452
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88713
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39968
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:56229
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:72490
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:88751
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:39997
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56258
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72519
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88780
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40035
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:56296
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:72557
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:88818
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40046
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56307
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72568
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88829
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["primary"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40084
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:56345
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:72606
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:88867
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40113
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56374
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72635
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88896
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40151
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:56412
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:72673
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:88934
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40162
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56423
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72684
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88945
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40200
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:56461
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:72722
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:88983
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40211
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56472
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72733
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:88994
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40249
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:56510
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:72771
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:89032
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40260
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56521
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72782
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:89043
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40298
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:56559
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:72820
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:89081
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40327
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56588
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72849
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:89110
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40365
+corners.top_left_px = 5.75
+# docs/facts/macos/button.toml:56626
+corners.top_right_px = 5.75
+# docs/facts/macos/button.toml:72887
+corners.bottom_right_px = 5.75
+# docs/facts/macos/button.toml:89148
+corners.bottom_left_px = 5.75
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40376
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:56637
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:72898
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:89159
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:40414
+corners.top_left_px = 5.75
+# docs/facts/macos/button.toml:56675
+corners.top_right_px = 5.75
+# docs/facts/macos/button.toml:72936
+corners.bottom_right_px = 5.75
+# docs/facts/macos/button.toml:89197
+corners.bottom_left_px = 5.75
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["with_icon"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41707
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:57968
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:74229
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:90490
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41745
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:58006
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:74267
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:90528
+corners.bottom_left_px = 5.5
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["with_icon"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41756
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:58017
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:74278
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:90539
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41794
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:58055
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:74316
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:90577
+corners.bottom_left_px = 5.5
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41805
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:58066
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:74327
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:90588
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41843
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:58104
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:74365
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:90626
+corners.bottom_left_px = 5.25
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41854
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:58115
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:74376
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:90637
+corners.bottom_left = { full = { maximum_px = "absent" } }
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41892
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:58153
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:74414
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:90675
+corners.bottom_left_px = 5.5
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41921
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:58182
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:74443
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:90704
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:102637
+fill = "#0000000a"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41959
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:58220
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:74481
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:90742
+corners.bottom_left_px = 6.25
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:41970
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:58231
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:74492
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:90753
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/macos/button.toml:102668
+fill = "#ffffff0a"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:42008
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:58269
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:74530
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:90791
+corners.bottom_left_px = 6
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:107601
+text.fill = "#00000042"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:107894
+text.fill = "#00000040"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:107999
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:108036
+text.fill = "#ffffff3f"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:108366
+text.fill = "#ffffff40"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:108461
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:111298
+text.fill = "#00000042"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:111566
+text.fill = "#00000040"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:111671
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:111708
+text.fill = "#ffffff3f"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:112013
+text.fill = "#ffffff40"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "default"], not_states = ["checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:112108
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed", "checked"], not_states = ["default"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:112707
+text.fill = "#ffffff20"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed", "checked"], not_states = ["default"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:112738
+text.fill = "#fefffe20"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114189
+text.fill = "#0000008c"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114220
+text.fill = "#ffffff80"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114251
+text.fill = "#000000d9"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114282
+text.fill = "#ffffffe5"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114331
+text.fill = "#00000040"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["tool"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114362
+text.fill = "#ffffff40"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114733
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114764
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114795
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114826
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114875
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114912
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tinted"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114967
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["tinted"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:114998
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tinted"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:115029
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["tinted"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:115060
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["with_icon"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:115793
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default"], not_states = ["disabled", "pressed", "checked"], variants = ["with_icon"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:115824
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:115855
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "pressed"], not_states = ["disabled", "checked"], variants = ["with_icon"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:115886
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:115935
+text.fill = "#00000042"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["default", "disabled"], not_states = ["pressed", "checked"], variants = ["with_icon"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:115966
+text.fill = "#ffffff3f"
+
+[[rules]]
+when = { sizes = ["regular"] }
+target = "button.icon"
+
+[rules.set]
+# docs/facts/macos/button.toml:220825
+icon.size_px = 13
+
+[[rules]]
+when = { not_variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:222229
+margin.top_px = 0
+# docs/facts/macos/button.toml:223249
+margin.right_px = 0
+# docs/facts/macos/button.toml:224255
+margin.bottom_px = 0
+# docs/facts/macos/button.toml:225261
+margin.left_px = 0
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:226491
+margin.top_px = 1
+# docs/facts/macos/button.toml:226547
+margin.right_px = 1
+# docs/facts/macos/button.toml:226603
+margin.bottom_px = 2
+# docs/facts/macos/button.toml:226659
+margin.left_px = 1
+
+[[rules]]
+when = { conditions = ["scheme:light"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:257938
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:258462
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:258986
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:259510
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:260034
+fill = "absent"
+# docs/facts/macos/button.toml:260648
+shadow = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:257998
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:258522
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:259046
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:259570
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:260094
+fill = "#0000001a"
+# docs/facts/macos/button.toml:260708
+shadow = "absent"
+# docs/facts/macos/button.toml:261352
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:258058
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:258582
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:259106
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:259630
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:260154
+fill = "absent"
+# docs/facts/macos/button.toml:260768
+shadow = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:258118
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:258642
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:259166
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:259690
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:260214
+fill = "absent"
+# docs/facts/macos/button.toml:260828
+shadow = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:258178
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:258702
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:259226
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:259750
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:260274
+fill = "absent"
+# docs/facts/macos/button.toml:260888
+shadow = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:258238
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:258762
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:259286
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:259810
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:260334
+fill = "#ffffff1a"
+# docs/facts/macos/button.toml:260948
+shadow = "absent"
+# docs/facts/macos/button.toml:261412
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:258298
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:258822
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:259346
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:259870
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:260394
+fill = "absent"
+# docs/facts/macos/button.toml:261008
+shadow = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:258358
+corners.bottom_left_px = 5
+# docs/facts/macos/button.toml:258882
+corners.bottom_right_px = 5
+# docs/facts/macos/button.toml:259406
+corners.top_left_px = 5
+# docs/facts/macos/button.toml:259930
+corners.top_right_px = 5
+# docs/facts/macos/button.toml:260454
+fill = "absent"
+# docs/facts/macos/button.toml:261068
+shadow = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:261880
+text.fill = "#0000008c"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:261940
+text.fill = "#000000d9"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:262000
+text.fill = "#00000040"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:262060
+text.fill = "#00000040"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:262120
+text.fill = "#ffffff80"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:262180
+text.fill = "#ffffffe5"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:262240
+text.fill = "#ffffff40"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tool", "with_icon"], not_variants = ["toggle", "primary", "tinted"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:262300
+text.fill = "#ffffff40"
+
+[[rules]]
+when = { conditions = ["scheme:light"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:296740
+corners.bottom_left_px = 5.5
+# docs/facts/macos/button.toml:297334
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:297928
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:298522
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:299588
+shadow = "absent"
+# docs/facts/macos/button.toml:300190
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:296796
+corners.bottom_left_px = 5.25
+# docs/facts/macos/button.toml:297390
+corners.bottom_right_px = 5.25
+# docs/facts/macos/button.toml:297984
+corners.top_left_px = 5.25
+# docs/facts/macos/button.toml:298578
+corners.top_right_px = 5.25
+# docs/facts/macos/button.toml:299648
+shadow = "absent"
+# docs/facts/macos/button.toml:300250
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:296852
+corners.bottom_left_px = 6
+# docs/facts/macos/button.toml:297446
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:298040
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:298634
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:299708
+shadow = "absent"
+# docs/facts/macos/button.toml:300310
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:296912
+corners.bottom_left_px = 6
+# docs/facts/macos/button.toml:297506
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:298100
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:298694
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:299768
+shadow = "absent"
+# docs/facts/macos/button.toml:300370
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:296972
+corners.bottom_left_px = 5.5
+# docs/facts/macos/button.toml:297566
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:298160
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:298754
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:299828
+shadow = "absent"
+# docs/facts/macos/button.toml:300430
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:297032
+corners.bottom_left_px = 5.5
+# docs/facts/macos/button.toml:297626
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:298220
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:298814
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:299888
+shadow = "absent"
+# docs/facts/macos/button.toml:300490
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:297092
+corners.bottom_left_px = 6
+# docs/facts/macos/button.toml:297686
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:298280
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:298874
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:299948
+shadow = "absent"
+# docs/facts/macos/button.toml:300550
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:297152
+corners.bottom_left_px = 6
+# docs/facts/macos/button.toml:297746
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:298340
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:298934
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:300008
+shadow = "absent"
+# docs/facts/macos/button.toml:300610
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:301234
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:301294
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:301354
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:301414
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:301474
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:301534
+text.fill = "#ffffffff"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:301594
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["primary", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/macos/button.toml:301654
+text.fill = "#fffffc1f"
+
+[[rules]]
+when = { conditions = ["scheme:light"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:302280
+corners.bottom_left_px = 6.25
+# docs/facts/macos/button.toml:302882
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:303484
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:304086
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:305160
+shadow = "absent"
+# docs/facts/macos/button.toml:305786
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:302340
+corners.bottom_left_px = 6
+# docs/facts/macos/button.toml:302942
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:303544
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:304146
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:305220
+shadow = "absent"
+# docs/facts/macos/button.toml:305822
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:302400
+corners.bottom_left_px = 5.5
+# docs/facts/macos/button.toml:303002
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:303604
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:304206
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:305280
+shadow = "absent"
+# docs/facts/macos/button.toml:305882
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:light"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:302460
+corners.bottom_left_px = 5.5
+# docs/facts/macos/button.toml:303062
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:303664
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:304266
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:305340
+shadow = "absent"
+# docs/facts/macos/button.toml:305942
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], not_states = ["disabled", "pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:302520
+corners.bottom_left_px = 6.25
+# docs/facts/macos/button.toml:303122
+corners.bottom_right_px = 6.25
+# docs/facts/macos/button.toml:303724
+corners.top_left_px = 6.25
+# docs/facts/macos/button.toml:304326
+corners.top_right_px = 6.25
+# docs/facts/macos/button.toml:305400
+shadow = "absent"
+# docs/facts/macos/button.toml:306002
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["pressed"], not_states = ["disabled", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:302580
+corners.bottom_left_px = 6
+# docs/facts/macos/button.toml:303182
+corners.bottom_right_px = 6
+# docs/facts/macos/button.toml:303784
+corners.top_left_px = 6
+# docs/facts/macos/button.toml:304386
+corners.top_right_px = 6
+# docs/facts/macos/button.toml:305460
+shadow = "absent"
+# docs/facts/macos/button.toml:306038
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled"], not_states = ["pressed", "default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:302640
+corners.bottom_left_px = 5.5
+# docs/facts/macos/button.toml:303242
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:303844
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:304446
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:305520
+shadow = "absent"
+# docs/facts/macos/button.toml:306098
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["scheme:dark"], states = ["disabled", "pressed"], not_states = ["default", "checked"], variants = ["tinted", "with_icon"], not_variants = ["toggle", "tool"], sizes = ["regular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:302700
+corners.bottom_left_px = 5.5
+# docs/facts/macos/button.toml:303302
+corners.bottom_right_px = 5.5
+# docs/facts/macos/button.toml:303904
+corners.top_left_px = 5.5
+# docs/facts/macos/button.toml:304506
+corners.top_right_px = 5.5
+# docs/facts/macos/button.toml:305580
+shadow = "absent"
+# docs/facts/macos/button.toml:306158
+stroke = "absent"
+
+[[rules]]
+when = { conditions = ["window_inactive"] }
+target = "colors"
+
+[rules.set]
+# docs/facts/macos/roles.toml:1122
+surfaces.selection.background = "= role.@selected_control_secondary"
+# docs/facts/macos/roles.toml:11964
+surfaces.selection.foreground_inactive = "= role.window.foreground_inactive"
+# docs/facts/macos/roles.toml:11980
+surfaces.selection.disabled.foreground = "= role.window.disabled.foreground"

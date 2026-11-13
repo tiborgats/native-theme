@@ -1,0 +1,39 @@
+# Synthetic role facts (S17).
+
+[[fact]]
+key = "role.global.accent"
+value = "#3366cc"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.global.accent_standalone"
+value = "= role.global.accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# The highlight pending in the light scheme with nothing beneath: listed (ADD-A132).
+[[fact]]
+key = "input.highlight"
+when = { conditions = ["scheme:light"] }
+pending = "U9"
+rows = []
+
+[[fact]]
+key = "input.highlight"
+when = { conditions = ["scheme:dark"] }
+value = "#cc3366"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

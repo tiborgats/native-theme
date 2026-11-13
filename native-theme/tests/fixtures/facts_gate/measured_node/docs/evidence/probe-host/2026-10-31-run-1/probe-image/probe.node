@@ -1,0 +1,6 @@
+/* A synthetic render-node file (S17 *`evidence`*): the colour as GSK records it, its OKLab coordinates unrounded,
+   which an analysis converts as the colour function does; not drawn pixels. */
+color {
+  bounds: 0 0 16 16;
+  color: oklab(0.5 -0.1 0.02 / 0.5);
+}

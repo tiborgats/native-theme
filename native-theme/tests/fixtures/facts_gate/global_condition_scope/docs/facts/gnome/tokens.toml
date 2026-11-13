@@ -1,0 +1,35 @@
+# Synthetic token facts (S17): `reduced_motion` is at depth for `token.motion.speed_factor` alone (the units file's
+# [at_depth]), so the speed factor's fact under it brings a condition set no other key with no widget is asked under:
+# the focus width, whose one fact excludes the condition, has no fact there and is not asked.
+
+[[fact]]
+key = "token.focus.width"
+when = { not_conditions = ["reduced_motion"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.motion.speed_factor"
+value = 1
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.motion.speed_factor"
+when = { conditions = ["reduced_motion"] }
+value = 0.5
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

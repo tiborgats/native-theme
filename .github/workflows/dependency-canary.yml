@@ -41,6 +41,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # native-theme's tests run the facts gate, which reads the evidence at
+      # its pin.
+      - uses: ./.github/actions/evidence
+      # `from_port`'s tests read Breeze's scheme files from the source cache.
+      - uses: ./.github/actions/sources
+        with:
+          ids: breeze@6.8.2
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy

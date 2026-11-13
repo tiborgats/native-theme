@@ -1,0 +1,48 @@
+# The evidence the facts cite lives in its own repository, pinned by commit in
+# docs/facts/sources.toml (the `[[source]]` with `evidence = true`; the 0.8.0
+# plan's *The evidence repository*, spec S17 *The evidence root*). Every job
+# whose steps read evidence (the facts gate's jobs and its fixtures' tests in
+# `cargo test -p native-theme`, check_function_vectors.py) runs this one step
+# after its checkout, so the
+# jobs cannot differ: it fetches that commit alone (depth 1) into
+# $RUNNER_TEMP/native-theme-evidence, byte for byte (no line-ending
+# conversion), and sets NATIVE_THEME_EVIDENCE to it for the job's later steps.
+# The readers accept it only as a clean checkout at the pinned commit.
+name: Evidence checkout
+description: Checks the evidence repository out at the commit docs/facts/sources.toml pins and sets NATIVE_THEME_EVIDENCE.
+runs:
+  using: composite
+  steps:
+    - name: Evidence at its pin
+      shell: bash
+      run: |
+        set -euo pipefail
+        # The evidence entry's repository and commit: each [[source]] table
+        # holding `evidence = true` prints one line (check_sources.py's form
+        # puts each field on a line of its own).
+        pins=$(awk '
+          function flush() { if (ev) print repo, commit }
+          /^\[\[/ { flush(); ev = 0; repo = ""; commit = ""; next }
+          /^evidence = true[[:space:]]*$/ { ev = 1 }
+          /^repository = "/ { repo = $3; gsub(/"/, "", repo) }
+          /^commit = "/ { commit = $3; gsub(/"/, "", commit) }
+          END { flush() }
+        ' docs/facts/sources.toml)
+        if [ "$(grep -c . <<<"$pins")" != 1 ]; then
+          echo "docs/facts/sources.toml: not exactly one evidence entry: $pins"
+          exit 1
+        fi
+        read -r repository commit <<<"$pins"
+        if [[ "$repository" != https://* || ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "docs/facts/sources.toml: the evidence entry's repository or commit does not read: $pins"
+          exit 1
+        fi
+        dir="$RUNNER_TEMP/native-theme-evidence"
+        git init -q "$dir"
+        git -C "$dir" config core.autocrlf false
+        git -C "$dir" remote add origin "$repository"
+        git -C "$dir" fetch -q --depth 1 origin "$commit"
+        git -C "$dir" -c advice.detachedHead=false checkout -q --detach "$commit"
+        test "$(git -C "$dir" rev-parse HEAD)" = "$commit"
+        echo "native-theme-evidence at $commit in $dir"
+        echo "NATIVE_THEME_EVIDENCE=$dir" >>"$GITHUB_ENV"

@@ -1,0 +1,5 @@
+# A synthetic preset for preset-check's test: its `[preset]` table states a
+# key the model has no field for, which the reader refuses by name.
+[preset]
+id = "preset-check-fixture"
+not_a_key = 1

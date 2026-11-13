@@ -3,7 +3,10 @@
 
 The data documents point at platform-facts sections by number (`§2.21`,
 `§2.1.9`, `§2 intro`). This script lists each such reference whose section
-the facts file does not have.
+the facts file does not have. docs/platform-facts.md is not committed
+(specification S17): the script reads the document
+scripts/generate_platform_facts.py generates from the facts, on demand
+(generate_platform_facts.document).
 
 Run from the repository root:
 
@@ -36,13 +39,14 @@ import re
 import sys
 from pathlib import Path
 
+import generate_platform_facts
+
 FILES = [
     Path("docs/property-registry.toml"),
     Path("docs/inheritance-rules.toml"),
     Path("docs/showcase-elements.toml"),
     Path("docs/new-os-version-guide.md"),
 ]
-FACTS = Path("docs/platform-facts.md")
 
 REF = re.compile(r"§(\d+(?:\.\d+)*)")
 MD_FILE = re.compile(r"[\w./-]+\.md\b")
@@ -128,8 +132,8 @@ def main(argv: list[str]) -> int:
         return 2
     try:
         docs = {str(p): p.read_text(encoding="utf-8") for p in FILES}
-        out = dangling(docs, FACTS.read_text(encoding="utf-8"))
-    except (OSError, InputError) as err:
+        out = dangling(docs, generate_platform_facts.document())
+    except (OSError, UnicodeDecodeError, InputError, generate_platform_facts.InputError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
     for name, line, ref in out:

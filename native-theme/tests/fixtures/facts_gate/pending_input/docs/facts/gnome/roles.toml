@@ -1,0 +1,32 @@
+# Synthetic role facts (S17): the drop highlight, which the preset reads from the accent, its value
+# the accent the platform shows (ADD-A132: skipped where the folded synthetic accent is in force).
+
+[[fact]]
+key = "role.global.accent"
+value = "#3366cc"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.global.accent_standalone"
+value = "= role.global.accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.global.drop_highlight"
+value = "#3366cc"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

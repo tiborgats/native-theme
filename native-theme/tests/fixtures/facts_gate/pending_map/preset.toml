@@ -1,0 +1,17 @@
+# A synthetic preset (S17, ADD-A128): a whole map listed as pending, the size classes' thresholds.
+# base without: size_classes = {}
+[pending]
+"tokens.size_classes" = "U150"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }

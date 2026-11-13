@@ -1,0 +1,21 @@
+# A synthetic preset (S17, ADD-A131): preset.toml with the subtitle's case upper, against its fact
+# mixed, so the drawn subtitle's field fails where it is compared.
+[pending]
+"widgets.button.subtitle" = "U7"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "button.subtitle"
+set = { text.case = "upper" }

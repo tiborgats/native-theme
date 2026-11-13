@@ -953,7 +953,7 @@ fn covered_fields() -> Vec<&'static str> {
 
 /// Why kde-breeze, adwaita, macos-monterey, macos-tahoe and windows-11 leave
 /// `link.hover_background` transparent.
-const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1698 (§2.28) states no \
+const LINK_HOVER_NONE: &str = "docs/platform-facts.md@fc6109d1:1698 (§2.28) states no \
                                link hover background for macOS, KDE and GNOME, \
                                nor for WinUI's inline Hyperlink, which has no \
                                background";
@@ -1098,7 +1098,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::Inherited(
             "the primary button's label and the check mark inherit it, \
              `button.primary_text_color` and `checkbox.indicator_color` \
-             (`docs/inheritance-rules.toml:165`, `:189`), and they reach \
+             (`docs/inheritance-rules.toml@fc6109d1:165`, `:189`), and they reach \
              `primary_foreground` and `CheckboxLook`",
         ),
     },
@@ -1106,7 +1106,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "defaults.font.color",
         why: Unread::Inherited(
             "every widget's font colour inherits it \
-             (`docs/inheritance-rules.toml:115`), and the widgets' own reach \
+             (`docs/inheritance-rules.toml@fc6109d1:115`), and the widgets' own reach \
              their sinks: `checkbox.font.color`, `input.font.color`, \
              `list.item_font.color`, `popover.font.color`, \
              `status_bar.font.color` and `window.title_bar_font.color` among \
@@ -1116,7 +1116,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "defaults.link_color",
         why: Unread::Inherited(
-            "`link.font.color` inherits it (`docs/inheritance-rules.toml:294`), \
+            "`link.font.color` inherits it (`docs/inheritance-rules.toml@fc6109d1:294`), \
              and the `link` row reads that",
         ),
     },
@@ -1125,7 +1125,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::Inherited(
             "the selections that sinks read inherit it: \
              `menu.hover_background`, `sidebar.selection_background` and \
-             `list.selection_background` (`docs/inheritance-rules.toml:197`, \
+             `list.selection_background` (`docs/inheritance-rules.toml@fc6109d1:197`, \
              `:226`, `:242`), and `input.selection_background` through \
              `defaults.text_selection_background` (`:59`, `:175`)",
         ),
@@ -1135,7 +1135,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::Inherited(
             "the selected-item labels that sinks read inherit it: \
              `menu.hover_text_color`, `sidebar.selection_text_color` and \
-             `list.selection_text_color` (`docs/inheritance-rules.toml:198`, \
+             `list.selection_text_color` (`docs/inheritance-rules.toml@fc6109d1:198`, \
              `:227`, `:243`)",
         ),
     },
@@ -1145,7 +1145,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
             "the surfaces that sinks read inherit it: \
              `window.title_bar_background`, `slider.thumb_color`, \
              `list.header_background` and `switch.thumb_background` \
-             (`docs/inheritance-rules.toml:158`, `:211`, `:244`, `:258`); \
+             (`docs/inheritance-rules.toml@fc6109d1:158`, `:211`, `:244`, `:258`); \
              `card.background_color` inherits it too (`:274`), which \
              `geometry::group_box_content` reads",
         ),
@@ -1154,7 +1154,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "defaults.text_selection_background",
         why: Unread::Inherited(
             "`input.selection_background` inherits it \
-             (`docs/inheritance-rules.toml:175`), and the `selection` row \
+             (`docs/inheritance-rules.toml@fc6109d1:175`), and the `selection` row \
              reads that",
         ),
     },
@@ -1222,7 +1222,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              `appearance(false)` draws no edge (`input/input.rs:776-780`), \
              which an edge colour in the refinement would paint over the \
              width `geometry::text_area` sets. The leaf inherits \
-             `input.border.color` (`docs/inheritance-rules.toml:181`), which \
+             `input.border.color` (`docs/inheritance-rules.toml@fc6109d1:181`), which \
              the `input` row reads, and equals it in all 34 combinations",
         ),
     },
@@ -1504,8 +1504,8 @@ fn every_unreachable_native_colour_is_stated_by_every_preset() -> crate::Result<
 /// `controlColor` is `#ffffff3f` in darkAqua
 /// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408),
 /// macOS 26 draws the push button in a translucent fill, `#00000014` / `#ffffff14`
-/// (docs/platform-facts.md:1177, the probe's render), and WinUI 3's `ButtonBackground` is
-/// `ControlFillColorDefault`, `#B3FFFFFF` light and `#0FFFFFFF` dark (docs/platform-facts.md:1177).
+/// (docs/platform-facts.md@fc6109d1:1177, the probe's render), and WinUI 3's `ButtonBackground` is
+/// `ControlFillColorDefault`, `#B3FFFFFF` light and `#0FFFFFFF` dark (docs/platform-facts.md@fc6109d1:1177).
 const TRANSLUCENT_BUTTON_FILL: [&str; 5] = [
     "macos-monterey/dark",
     "macos-tahoe/light",
@@ -1516,7 +1516,7 @@ const TRANSLUCENT_BUTTON_FILL: [&str; 5] = [
 
 /// The [`TRANSLUCENT_BUTTON_FILL`] combinations whose pressed fill gpui derives
 /// (`derive::active_color` of the translucent idle fill), with no platform
-/// source: no source gives macOS 26's pressed fill (docs/platform-facts.md §2.3
+/// source: no source gives macOS 26's pressed fill (docs/platform-facts.md@fc6109d1 §2.3
 /// has no pressed row, and its hover row, :1192, is ❓), so the layer is as
 /// translucent as the fill it is drawn over.
 const DERIVED_PRESSED_FILL: [&str; 2] = ["macos-tahoe/light", "macos-tahoe/dark"];
@@ -1850,7 +1850,7 @@ struct Pair {
 /// (`gpui-component-0.8.1/src/tab/tab.rs:173, 184, 191, 196, 201, 212`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
 /// platform's idle-tab fill. Breeze fills an unselected tab with
-/// `Window.darker(120)` (`docs/platform-facts.md:1346`, §2.11), which under
+/// `Window.darker(120)` (`docs/platform-facts.md@fc6109d1:1346`, §2.11), which under
 /// Breeze Dark (`#1b1d20` on the `#202326` window) lifts the label's contrast
 /// above the bar's; the emitted pair stays above 15:1. Without the `widgets`
 /// feature only: `widgets::TabBar` paints the idle fill.

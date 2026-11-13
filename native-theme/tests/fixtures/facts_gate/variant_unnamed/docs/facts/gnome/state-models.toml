@@ -1,0 +1,11 @@
+# A synthetic state model (S17): `@probe_lifted`, a keyed variant at depth, is named by no fact; the preset
+# declares it.
+[[model]]
+widget = "button"
+available = true
+variants = ["tool", "@probe_lifted"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+rows = []

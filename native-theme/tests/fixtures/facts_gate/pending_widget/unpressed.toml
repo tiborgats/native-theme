@@ -1,0 +1,28 @@
+# A synthetic preset (S17, ADD-A128): preset.toml with the pressed button's minimum width other than its
+# fact's, so the rule stating the listed path is compared and fails.
+# base without: min_width_px = 40
+# base without: icon_text_gap_px = 4
+[pending]
+"widgets.button.body.min_width_px" = "U8"
+"widgets.button.values.icon_text_gap_px" = "U9"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 45 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "button.body"
+set = { max_width_px = "= max(part.min_width, 1px)" }
+
+[[rules]]
+target = "button.values"
+set = { subtitle_gap_px = "= min(values.icon_text_gap, 0px)" }

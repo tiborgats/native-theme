@@ -49,9 +49,7 @@ capture_showcases iced "--features iced_aw" "$ICED_FRAME_DIR/frame-{index}.png" 
 
 echo ""
 echo "--- Assembling iced GIF ---"
-python3 "$SCRIPT_DIR/generate_gifs_spinners.py" \
-    --theme-switching "$ICED_FRAME_DIR" \
-    --theme-switching-output "$ICED_OUTPUT_DIR/theme-switching.gif"
+python3 "$SCRIPT_DIR/generate_gifs_assemble.py" "$ICED_FRAME_DIR" "$ICED_OUTPUT_DIR/theme-switching.gif"
 echo ""
 ls -lh "$ICED_OUTPUT_DIR/theme-switching.gif"
 
@@ -64,9 +62,7 @@ capture_showcases gpui "" "$GPUI_FRAME_DIR/frame-{index}.png" "" "${THEMES[@]}"
 
 echo ""
 echo "--- Assembling gpui GIF ---"
-python3 "$SCRIPT_DIR/generate_gifs_spinners.py" \
-    --theme-switching "$GPUI_FRAME_DIR" \
-    --theme-switching-output "$GPUI_OUTPUT_DIR/theme-switching.gif"
+python3 "$SCRIPT_DIR/generate_gifs_assemble.py" "$GPUI_FRAME_DIR" "$GPUI_OUTPUT_DIR/theme-switching.gif"
 echo ""
 ls -lh "$GPUI_OUTPUT_DIR/theme-switching.gif"
 
@@ -79,9 +75,7 @@ capture_showcases egui "--all-features" "$EGUI_FRAME_DIR/frame-{index}.png" "" "
 
 echo ""
 echo "--- Assembling egui GIF ---"
-python3 "$SCRIPT_DIR/generate_gifs_spinners.py" \
-    --theme-switching "$EGUI_FRAME_DIR" \
-    --theme-switching-output "$EGUI_OUTPUT_DIR/theme-switching.gif"
+python3 "$SCRIPT_DIR/generate_gifs_assemble.py" "$EGUI_FRAME_DIR" "$EGUI_OUTPUT_DIR/theme-switching.gif"
 echo ""
 ls -lh "$EGUI_OUTPUT_DIR/theme-switching.gif"
 

@@ -29,7 +29,7 @@ const EGUI_DOT_DIVISOR: f32 = 3.0;
 /// many pixels across, in the cell's `fg_stroke`, `checkbox.indicator_color`. Where the theme
 /// states none (ios-13 and the colour-scheme presets) or a size that is not finite, the dot
 /// is egui's own. Where the theme sizes the radio apart from the check box
-/// (`checkbox.radio_indicator_width`, Material's 20 against its 18, `docs/platform-facts.md:1243`)
+/// (`checkbox.radio_indicator_width`, Material's 20 against its 18, `docs/platform-facts.md@fc6109d1:1243`)
 /// the scope's `icon_width` becomes that width for this radio alone. And the circle's outline lies inside
 /// `checkbox.indicator_width`, as the check box's square's does: egui's circle is half the
 /// icon's width plus the state's `expansion` in radius and epaint strokes it outside that

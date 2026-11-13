@@ -38,7 +38,7 @@ pub(crate) fn theme_name_to_icon_set(name: &str) -> Option<&'static str> {
 
 /// Returns the fully-qualified icon set path with crate prefix.
 pub(crate) fn theme_name_to_qualified_icon_set(name: &str, crate_path: &str) -> Option<String> {
-    theme_name_to_icon_set(name).map(|variant| format!("{crate_path}::theme::{variant}"))
+    theme_name_to_icon_set(name).map(|variant| format!("{crate_path}::icons::{variant}"))
 }
 
 /// Maps a lowercase TOML DE key to its `LinuxDesktop::Variant` path (without crate prefix).
@@ -66,8 +66,8 @@ pub(crate) fn de_key_to_qualified_variant(key: &str, crate_path: &str) -> Option
 ///
 /// For DE-aware mapping values, `icon_name()` emits cfg-gated runtime dispatch
 /// on `{crate_path}::detect::system().refined_linux_desktop_sync()`, the desktop
-/// native-theme's platform readers use (`XDG_CURRENT_DESKTOP`, refined by the
-/// portal or `kdeglobals` where it names none), whose cache
+/// native-theme's icon-theme detection uses (`XDG_CURRENT_DESKTOP`, refined by
+/// `kdeglobals` where it names none), whose cache
 /// `detect::invalidate_caches()` clears. On non-Linux, the default value is used.
 pub(crate) fn generate_code(
     config: &MasterConfig,
@@ -196,6 +196,7 @@ fn generate_icon_name(
     // The arms are written first: `de` is bound only when an arm dispatches on it
     let mut arms = String::new();
     let mut needs_de = false;
+    let mut arm_count: usize = 0;
 
     // All themes (bundled + system) produce icon_name arms
     let all_themes = config
@@ -230,6 +231,7 @@ fn generate_icon_name(
                     MappingValue::DeAware(de_map) => de_dispatch(de_map, default_name, crate_path),
                     MappingValue::Simple(_) => None,
                 };
+                arm_count = arm_count.saturating_add(1);
                 let Some(de_entries) = de_entries else {
                     let _ = writeln!(
                         arms,
@@ -266,13 +268,13 @@ fn generate_icon_name(
 
     let _ = writeln!(
         out,
-        "    fn icon_name(&self, set: {crate_path}::theme::IconSet) -> ::std::option::Option<&str> {{"
+        "    fn icon_name(&self, set: {crate_path}::icons::IconSet) -> ::std::option::Option<&str> {{"
     );
     if needs_de {
         // Issue 21: say in the generated code where the desktop comes from
         let _ = writeln!(
             out,
-            "        // the desktop native-theme's readers use; detect::invalidate_caches() clears it"
+            "        // the desktop native-theme's icon-theme detection uses; detect::invalidate_caches() clears it"
         );
         let _ = writeln!(out, "        #[cfg(target_os = \"linux\")]");
         let _ = writeln!(
@@ -282,9 +284,24 @@ fn generate_icon_name(
     }
     let _ = writeln!(out, "        match (self, set) {{");
     out.push_str(&arms);
-    let _ = writeln!(out, "            _ => None,");
+    write_uncovered_arm(out, arm_count, role_variants);
     let _ = writeln!(out, "        }}");
     let _ = writeln!(out, "    }}");
+}
+
+/// The `_ => None` arm of a `match (self, set)`, written only where the
+/// `arm_count` arms before it leave a `(variant, set)` pair uncovered: both
+/// `IconSet` and the generated enum's variants are matched in full, so a
+/// wildcard after arms covering every pair is unreachable, which the user's
+/// crate would be warned of. Each theme is one `IconSet` variant and is
+/// listed once, and each role one enum variant, so the arms are distinct
+/// pairs. An enum without variants always keeps it: `&self` of an empty
+/// enum counts as inhabited, so a match with no arm would not compile.
+fn write_uncovered_arm(out: &mut String, arm_count: usize, role_variants: &[(&str, String)]) {
+    if role_variants.is_empty() || arm_count < role_variants.len().saturating_mul(THEME_TABLE.len())
+    {
+        let _ = writeln!(out, "            _ => None,");
+    }
 }
 
 /// Generates the `icon_svg` method body with `include_bytes!` arms for bundled themes only.
@@ -298,7 +315,7 @@ fn generate_icon_svg(
 ) {
     let _ = writeln!(
         out,
-        "    fn icon_svg(&self, set: {crate_path}::theme::IconSet) -> ::std::option::Option<std::borrow::Cow<'static, [u8]>> {{"
+        "    fn icon_svg(&self, set: {crate_path}::icons::IconSet) -> ::std::option::Option<std::borrow::Cow<'static, [u8]>> {{"
     );
     let _ = writeln!(out, "        match (self, set) {{");
 
@@ -313,6 +330,7 @@ fn generate_icon_svg(
     let base_dir = escape_rust_str(base_dir);
 
     // Only bundled themes produce icon_svg arms
+    let mut arm_count: usize = 0;
     for theme_name in &config.bundled_themes {
         // Issue 22: debug_assert when validation missed an unknown theme
         let icon_set = match theme_name_to_qualified_icon_set(theme_name, crate_path) {
@@ -331,6 +349,7 @@ fn generate_icon_svg(
                     && let Some(icon_name) = mv.default_name()
                 {
                     let escaped_icon = escape_rust_str(icon_name);
+                    arm_count = arm_count.saturating_add(1);
                     if is_absolute_base {
                         let _ = writeln!(
                             out,
@@ -347,7 +366,7 @@ fn generate_icon_svg(
         }
     }
 
-    let _ = writeln!(out, "            _ => None,");
+    write_uncovered_arm(out, arm_count, role_variants);
     let _ = writeln!(out, "        }}");
     let _ = writeln!(out, "    }}");
 }
@@ -477,11 +496,11 @@ play-pause = { kde = "media-playback-start", default = "play" }
     fn theme_name_qualified_includes_crate_path() {
         assert_eq!(
             theme_name_to_qualified_icon_set("material", "native_theme"),
-            Some("native_theme::theme::IconSet::Material".to_string())
+            Some("native_theme::icons::IconSet::Material".to_string())
         );
         assert_eq!(
             theme_name_to_qualified_icon_set("material", "my_crate"),
-            Some("my_crate::theme::IconSet::Material".to_string())
+            Some("my_crate::icons::IconSet::Material".to_string())
         );
     }
 
@@ -574,13 +593,13 @@ play-pause = { kde = "media-playback-start", default = "play" }
         // material bundled theme should have icon_name arms
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\")"
+                "(Self::PlayPause, native_theme::icons::IconSet::Material) => Some(\"play_pause\")"
             ),
             "missing material play-pause icon_name arm. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(\"skip_next\")"
+                "(Self::SkipForward, native_theme::icons::IconSet::Material) => Some(\"skip_next\")"
             ),
             "missing material skip-forward icon_name arm"
         );
@@ -593,13 +612,13 @@ play-pause = { kde = "media-playback-start", default = "play" }
         // sf-symbols system theme should also have icon_name arms
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::SfSymbols) => Some(\"play.fill\")"
+                "(Self::PlayPause, native_theme::icons::IconSet::SfSymbols) => Some(\"play.fill\")"
             ),
             "missing sf-symbols play-pause icon_name arm. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
+                "(Self::SkipForward, native_theme::icons::IconSet::SfSymbols) => Some(\"forward.fill\")"
             ),
             "missing sf-symbols skip-forward icon_name arm"
         );
@@ -614,6 +633,63 @@ play-pause = { kde = "media-playback-start", default = "play" }
             output.contains("_ => None"),
             "missing wildcard arm in icon_name"
         );
+    }
+
+    /// A config whose one role every icon set maps, `lucide`'s left out
+    /// when `with_lucide` is false.
+    fn every_set_config_and_mappings(
+        with_lucide: bool,
+    ) -> (MasterConfig, BTreeMap<String, ThemeMapping>) {
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "app-icon"
+roles = ["play-pause"]
+bundled-themes = ["material", "lucide"]
+system-themes = ["sf-symbols", "segoe-fluent", "freedesktop"]
+"#,
+        )
+        .unwrap();
+        let mut mappings = BTreeMap::new();
+        for (theme, name) in [
+            ("material", "play_pause"),
+            ("lucide", "play"),
+            ("sf-symbols", "play.fill"),
+            ("segoe-fluent", "Play"),
+            ("freedesktop", "media-playback-start"),
+        ] {
+            if theme == "lucide" && !with_lucide {
+                continue;
+            }
+            let mapping: ThemeMapping =
+                toml::from_str(&format!("play-pause = \"{name}\"")).unwrap();
+            mappings.insert(theme.to_string(), mapping);
+        }
+        (config, mappings)
+    }
+
+    /// `IconSet` and the generated enum are matched in full, so a `_` after
+    /// arms covering every pair would be unreachable in the user's crate:
+    /// `icon_name` covers all five sets and has none, `icon_svg` covers the
+    /// two bundled ones and keeps it.
+    #[test]
+    fn a_match_covering_every_pair_has_no_wildcard() {
+        let (config, mappings) = every_set_config_and_mappings(true);
+        let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
+        let svg_at = output.find("fn icon_svg").unwrap();
+        let (name_part, svg_part) = output.split_at(svg_at);
+        assert!(!name_part.contains("_ => None"), "{output}");
+        assert!(svg_part.contains("_ => None"), "{output}");
+    }
+
+    /// A set a role is not mapped in leaves a pair uncovered: the wildcard
+    /// stays.
+    #[test]
+    fn a_match_leaving_a_pair_uncovered_keeps_the_wildcard() {
+        let (config, mappings) = every_set_config_and_mappings(false);
+        let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
+        let svg_at = output.find("fn icon_svg").unwrap();
+        let (name_part, _) = output.split_at(svg_at);
+        assert!(name_part.contains("_ => None"), "{output}");
     }
 
     // === generate_code: icon_svg tests ===
@@ -781,7 +857,7 @@ play-pause = { kde = "media-playback-start", default = "play" }
         assert!(
             output
                 .contains("let de = native_theme::detect::system().refined_linux_desktop_sync();"),
-            "DE-aware codegen should read the desktop native-theme's readers use. output:\n{output}"
+            "DE-aware codegen should read the desktop native-theme's icon-theme detection uses. output:\n{output}"
         );
     }
 
@@ -841,7 +917,7 @@ play-pause = { default = "play" }
         // DeAware with only a default key (no DE overrides) should optimize to a simple arm
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Freedesktop) => Some(\"play\"),"
+                "(Self::PlayPause, native_theme::icons::IconSet::Freedesktop) => Some(\"play\"),"
             ),
             "DE-aware with only default should produce simple arm. output:\n{output}"
         );
@@ -859,7 +935,7 @@ play-pause = { default = "play" }
         // The material theme has Simple("play_pause") -- should still produce a simple arm
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\"),"
+                "(Self::PlayPause, native_theme::icons::IconSet::Material) => Some(\"play_pause\"),"
             ),
             "Simple mapping values should produce simple arms (no regression). output:\n{output}"
         );
@@ -974,7 +1050,7 @@ system-themes = ["sf-symbols"]
             "should use custom crate path in impl. output:\n{output}"
         );
         assert!(
-            output.contains("my_crate::theme::IconSet"),
+            output.contains("my_crate::icons::IconSet"),
             "should use custom crate path for IconSet. output:\n{output}"
         );
         assert!(
@@ -1086,13 +1162,13 @@ system-themes = ["sf-symbols"]
         // Verify specific bundled theme match arms exist in icon_svg
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
+                "(Self::PlayPause, native_theme::icons::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
             ),
             "should have icon_svg arm for PlayPause/Material. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
+                "(Self::SkipForward, native_theme::icons::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
             ),
             "should have icon_svg arm for SkipForward/Material. output:\n{output}"
         );
@@ -1181,7 +1257,7 @@ system-themes = ["sf-symbols"]
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
             output.contains(
-                "// the desktop native-theme's readers use; detect::invalidate_caches() clears it"
+                "// the desktop native-theme's icon-theme detection uses; detect::invalidate_caches() clears it"
             ),
             "should have the desktop cache comment. output:\n{output}"
         );
@@ -1218,7 +1294,7 @@ play-pause = { kde = "play", gnome = "play", default = "play" }
         );
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Freedesktop) => Some(\"play\"),"
+                "(Self::PlayPause, native_theme::icons::IconSet::Freedesktop) => Some(\"play\"),"
             ),
             "should produce simple arm. output:\n{output}"
         );

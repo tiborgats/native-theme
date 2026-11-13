@@ -1,0 +1,56 @@
+# Facts of `checkbox` on macos-tahoe and macos-monterey ahead of its unit (the 0.8.0 plan enables it later; until then
+# the gate and generate_preset.py skip these facts, spec S17 *While 0.8.0 is built*). Only what the spec batches
+# ADD-A126 and ADD-A127 ask of the macOS lane is stated here: the mark's absence (MAC-C06) and the mixed box's fill (MAC-C01). The widget's state model and its other
+# facts are its unit's lane's.
+
+# The mark is `Absent` in every state (MAC-C06, ADD-A126): AppKit names no image for it, its button and cell
+# declaring only the button's own `image` and `alternateImage`, so the model draws none and AppKit's rendering
+# on the box draws it (S15, R11; without the rendering no mark is drawn, R23).
+
+[[fact]]
+key = "checkbox.mark"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-C06"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:81-128"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact]]
+key = "checkbox.box.fill"
+when = { conditions = ["preset:macos-tahoe"], states = ["indeterminate"] }
+pending = "U191"
+rows = ["MAC-C01"]
+
+[[fact]]
+key = "checkbox.mark"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = ["MAC-C06"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact]]
+key = "checkbox.box.fill"
+when = { conditions = ["preset:macos-monterey"], states = ["indeterminate"] }
+pending = "U191"
+rows = ["MAC-C01"]

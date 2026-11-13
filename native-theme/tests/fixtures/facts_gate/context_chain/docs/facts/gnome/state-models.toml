@@ -1,0 +1,12 @@
+# A synthetic state model (S17): a button, also inside a chain of two ancestors, outermost first: a
+# hovered button holding a tool button.
+[[model]]
+widget = "button"
+available = true
+variants = ["tool"]
+sizes = []
+densities = []
+axes = { states = ["hover"], conditions = ["scheme:light", "scheme:dark"], contexts = [[{ widget = "button", states = ["hover"] }, { widget = "button", variants = ["tool"] }]] }
+exclusive = []
+not_drawn = []
+rows = []

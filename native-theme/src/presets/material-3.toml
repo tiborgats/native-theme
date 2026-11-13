@@ -1,1054 +1,1682 @@
-# Material Design 3 baseline theme
-# Source: the material-web token set v0_192 at material-web cbd34a8921915af94d5ef65c2a69eece41d5b4f3
-# (tokens/versions/v0_192/), the one its components use; docs/platform-facts.md's Material column.
-# A role's hex is md.sys.color (_md-sys-color.scss:19-76 dark, :78-135 light) through
-# md.ref.palette (_md-ref-palette.scss:15-109). A state layer is its colour at the md.sys.state
-# opacity (_md-sys-state.scss:17-20: hover 0.08, focus and pressed 0.12, dragged 0.16) over the
-# container, composited as round(container · (1 − a) + layer · a) per 8-bit channel.
-name = "Material"
-icon_set = "material"
-icon_theme = "material"
-
-# === Light variant ===
-
-[light.defaults]
-# md.sys.color.primary, primary40 (_md-sys-color.scss:110, _md-ref-palette.scss:73)
-accent_color = "#6750a4"
-# platform-facts.md:1050 (§2.1.3): md.sys.color.surface = background, neutral98 (_md-sys-color.scss:120, :84; _md-ref-palette.scss:66)
-background_color = "#fef7ff"
-# on-surface, neutral10 (_md-sys-color.scss:102; _md-ref-palette.scss:45)
-text_color = "#1d1b20"
-# surface, neutral98 (_md-sys-color.scss:120; _md-ref-palette.scss:66)
-surface_color = "#fef7ff"
-muted_color = "#49454f"
-# md.sys.color.shadow #000000 (_md-sys-color.scss:119) as material-web's key shadow renders it, opacity 0.3 (elevation/internal/_elevation.scss:104-105)
-shadow_color = "#0000004d"
-
-danger_color = "#b3261e"
-danger_text_color = "#ffffff"
-warning_color = "#7d5700"
-warning_text_color = "#ffffff"
-success_color = "#386a20"
-success_text_color = "#ffffff"
-info_color = "#6750a4"
-info_text_color = "#ffffff"
-
-# platform-facts.md:1059-1060 (§2.1.3): list and menu selection, secondary-container, secondary90 (_md-sys-color.scss:116; _md-ref-palette.scss:91) and on-secondary-container, secondary10 (:98; :82)
-selection_background = "#e8def8"
-selection_text_color = "#1d192b"
-link_color = "#6750a4"
-# platform-facts.md:1108 (§2.1.5): md-focus-ring color = secondary, secondary40 (tokens/_md-comp-focus-ring.scss:47; _md-sys-color.scss:115; _md-ref-palette.scss:86)
-focus_ring_color = "#625b71"
-# platform-facts.md:1064 (§2.1.3): on-surface at disabled-label-text-opacity 0.38 (_md-comp-filled-button.scss:45-46)
-disabled_text_color = "#1d1b2061"
-accent_text_color = "#ffffff"
-
-# 1.0: Material 3 dims a disabled component by its colours alone, the container at
-# disabled-container-opacity 0.12 and the label at disabled-label-text-opacity 0.38 of
-# on-surface (material-web cbd34a8, tokens/versions/v0_192/_md-comp-filled-button.scss:42-46;
-# button/internal/_shared.scss:141-150), which this preset's disabled colours carry (#…1f, #…61)
-disabled_opacity = 1.0
-# platform-facts.md:1034 (§2.1.1): body-medium-line-height 20 / body-medium-size 14 (_md-sys-typescale.scss:55-56)
-line_height = 1.43
-# platform-facts.md:1109-1110 (§2.1.5): md-focus-ring width 3, outward-offset 2 (tokens/_md-comp-focus-ring.scss:50, :52)
-focus_ring_width_px = 3.0
-focus_ring_offset_px = 2.0
-
-
-[light.defaults.border]
-color = "#79747e"
-corner_radius_px = 12.0
-corner_radius_lg_px = 16.0
-line_width_px = 1.0
-opacity = 0.12
-shadow_enabled = true
-[light.defaults.font]
-family = "Roboto"
-size_px =14.0
-weight = 400
-
-[light.defaults.mono_font]
-family = "Roboto Mono"
-size_px =14.0
-weight = 400
-
-[light.defaults.icon_sizes]
-toolbar_px = 24.0
-small_px = 16.0
-large_px = 32.0
-# platform-facts.md:1139 (§2.1.8): comp.dialog with-icon-icon-size 24 (_md-comp-dialog.scss:122)
-dialog_px = 24.0
-# platform-facts.md:1140 (§2.1.8): comp.navigation-drawer icon-size 24 (_md-comp-navigation-drawer.scss:94)
-panel_px = 24.0
-
-[light.text_scale.caption]
-# platform-facts.md:1485 (§2.19): md.sys.typescale.body-small, 12 / 400, line 16 (material-web cbd34a8, tokens/versions/v0_192/_md-sys-typescale.scss:72-75)
-size_px =12.0
-weight = 400
-line_height_px = 16.0
-
-[light.text_scale.section_heading]
-size_px =16.0
-weight = 500
-line_height_px = 24.0
-
-[light.text_scale.dialog_title]
-size_px =24.0
-weight = 400
-line_height_px = 32.0
-
-[light.text_scale.display]
-size_px =36.0
-weight = 400
-line_height_px = 44.0
-
-[light.button]
-background_color = "#e8def8"
-min_width_px = 64.0
-min_height_px = 40.0
-icon_text_gap_px = 8.0
-# platform-facts.md:1192 (§2.3): on-secondary-container at hover-state-layer-opacity 0.08 over secondary-container (_md-comp-filled-tonal-button.scss:57-60)
-hover_background = "#d8cee8"
-hover_text_color = "#1d192b"
-# on-secondary-container at pressed-state-layer-opacity 0.12 over secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
-active_background = "#d0c6df"
-active_text_color = "#1d192b"
-# platform-facts.md:1198 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
-disabled_background = "#1d1b201f"
-disabled_text_color = "#1d1b2061"
-# platform-facts.md:1194-1195 (§2.3): latest comp.button.tonal selected-container-color = secondary, selected-label-text-color = on-secondary (_md-comp-button-tonal.scss:79, :95)
-checked_background = "#625b71"
-checked_text_color = "#ffffff"
-
-
-[light.button.font]
-color = "#1d192b"
-# platform-facts.md:1178 (§2.3): label-text = label-large, weight 500 (_md-comp-filled-tonal-button.scss:80; _md-sys-typescale.scss:195)
-weight = 500
-
-[light.button.border]
-# platform-facts.md:1184-1185 (§2.3): material-web leading-space / trailing-space 24 (cbd34a8, tokens/_md-comp-filled-tonal-button.scss:96-105); padding-block (container-height 40 − line 20) / 2 = 10 (button/internal/_shared.scss:31-32)
-padding_horizontal_px = 24.0
-padding_vertical_px = 10.0
-# platform-facts.md:1186 (§2.3): container-shape corner-full, a pill: half the 40 container-height (_md-comp-filled-tonal-button.scss:39, :41)
-corner_radius_px = 20.0
-# platform-facts.md:1180-1181 (§2.3): the tonal button has no outline token (_md-comp-filled-tonal-button.scss:37-99)
-line_width_px = 0.0
-# platform-facts.md:1191 (§2.3): container-elevation level0 (_md-comp-filled-tonal-button.scss:38)
-shadow_enabled = false
-[light.input]
-# platform-facts.md:1203 (§2.4): the outlined field has no container, the surface shows through
-background_color = "#fef7ff"
-min_height_px = 56.0
-# platform-facts.md:1218 (§2.4): hover-outline-color = on-surface (_md-comp-outlined-text-field.scss:87)
-hover_border_color = "#1d1b20"
-focus_border_color = "#6750a4"
-# platform-facts.md:1221 (§2.4): input text on-surface at 0.38 (_md-comp-outlined-text-field.scss:33-34)
-disabled_text_color = "#1d1b2061"
-# platform-facts.md:1209 (§2.4): caret-color = primary (_md-comp-outlined-text-field.scss:31)
-caret_color = "#6750a4"
-
-
-[light.input.font]
-# platform-facts.md:1204-1205 (§2.4): input-text-color = on-surface (_md-comp-outlined-text-field.scss:93); input-text = body-large 16 (:101)
-color = "#1d1b20"
-size_px = 16.0
-
-[light.input.border]
-# platform-facts.md:1213-1214 (§2.4): material-web outlined field leading-space / trailing-space 16, top-space / bottom-space 16 from the field's edge (cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142), less the 1 outline laid over it (field/internal/_outlined-field.scss:50-59, v0_192 outline-width :146)
-padding_horizontal_px = 15.0
-padding_vertical_px = 15.0
-# platform-facts.md:1215 (§2.4): container-shape corner-extra-small 4 (_md-comp-outlined-text-field.scss:32)
-corner_radius_px = 4.0
-# platform-facts.md:1216 (§2.4): the text fields have no elevation token
-shadow_enabled = false
-
-[light.text_area.border]
-# platform-facts.md:1714-1715 (§2.29): the outlined field's 16; 16 from its edge (material-web cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142), less the 1 outline laid over it
-padding_horizontal_px = 15.0
-padding_vertical_px = 15.0
-[light.checkbox]
-indicator_width_px = 18.0
-# platform-facts.md:1243 (§2.5): comp.radio-button icon-size 20 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-radio-button.scss:34)
-radio_indicator_width_px = 20.0
-# platform-facts.md:1241 (§2.5): material-web radio.ts:119, the inner circle r = 5 (cbd34a8)
-radio_dot_diameter_px = 10.0
-# platform-facts.md:1242 (§2.5): material-web $_mark-stroke: 2px (cbd34a8, checkbox/internal/_checkbox.scss:18-19)
-check_mark_stroke_width_px = 2.0
-label_gap_px = 8.0
-# unselected-hover-state-layer-color = on-surface at hover opacity 0.08 (_md-comp-checkbox.scss:114-116)
-hover_background = "#1d1b2014"
-# platform-facts.md:1245 (§2.5): selected-disabled-container-color on-surface at 0.38 (_md-comp-checkbox.scss:44-46)
-disabled_background = "#1d1b2061"
-disabled_text_color = "#1d1b2061"
-# platform-facts.md:1247 (§2.5): comp.checkbox has no unselected container colour, the box is transparent (_md-comp-checkbox.scss:118-120)
-unchecked_background = "#00000000"
-# platform-facts.md:1248 (§2.5): unselected-outline-color = on-surface-variant (_md-comp-checkbox.scss:118)
-unchecked_border_color = "#49454f"
-
-[light.checkbox.border]
-# platform-facts.md:1231 (§2.5): unselected-outline-width 2 (_md-comp-checkbox.scss:120)
-line_width_px = 2.0
-# platform-facts.md:1235 (§2.5): container-shape 2 (_md-comp-checkbox.scss:31)
-corner_radius_px = 2.0
-# platform-facts.md:1236 (§2.5): no elevation token
-shadow_enabled = false
-# platform-facts.md:1230 (§2.5): a checked box has no outline (selected-outline-width 0, _md-comp-checkbox.scss:80), so the line is its fill, selected-container-color primary (:43), and the checked radio's ring is primary (platform-facts.md:1239)
-color = "#6750a4"
-
-[light.tooltip]
-# platform-facts.md:1277 (§2.7): container-color = inverse-surface, neutral20 (_md-comp-plain-tooltip.scss:31; _md-sys-color.scss:89; _md-ref-palette.scss:49)
-background_color = "#322f35"
-# platform-facts.md:1285 (§2.7): Compose plainTooltipMaxWidth 200 (androidx 1e677685, Tooltip.kt:535)
-max_width_px = 200.0
-# platform-facts.md:1290 (§2.7): 0, shown on pointer enter (Compose BasicTooltip.kt:271-276; Tooltip.kt:1075-1099)
-show_delay_ms = 0
-
-
-[light.tooltip.font]
-# platform-facts.md:1282 (§2.7): supporting-text-color = inverse-on-surface, neutral95 (_md-comp-plain-tooltip.scss:33; _md-sys-color.scss:87; _md-ref-palette.scss:64)
-color = "#f5eff7"
-# platform-facts.md:1279 (§2.7): supporting-text-size = body-small-size 12 (_md-comp-plain-tooltip.scss:39)
-size_px = 12.0
-
-[light.tooltip.border]
-# platform-facts.md:1283-1284 (§2.7): Compose PlainTooltipHorizontalPadding 8, PlainTooltipVerticalPadding 4 (androidx 1e677685, Tooltip.kt:1454-1459)
-padding_horizontal_px = 8.0
-padding_vertical_px = 4.0
-# platform-facts.md:1286 (§2.7): container-shape corner-extra-small 4 (_md-comp-plain-tooltip.scss:32)
-corner_radius_px = 4.0
-# platform-facts.md:1287-1288 (§2.7): no outline token
-line_width_px = 0.0
-# platform-facts.md:1289 (§2.7): no elevation token; Compose PlainTooltip shadowElevation = 0.dp (Tooltip.kt:350-351)
-shadow_enabled = false
-[light.scrollbar]
-groove_width_px = 12.0
-thumb_width_px = 4.0
-overlay_mode = false
-min_thumb_length_px = 30.0
-thumb_hover_color = "#79747e"
-thumb_active_color = "#625b71"
-
-[light.slider]
-track_height_px = 4.0
-thumb_diameter_px = 20.0
-# platform-facts.md:1322 (§2.9): with-tick-marks-container-size 2 (_md-comp-slider.scss:108)
-tick_mark_length_px = 2.0
-# md.comp.slider.handle.color = md.sys.color.primary, primary40 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-slider.scss:52, _md-sys-color.scss:110, _md-ref-palette.scss:73)
-thumb_color = "#6750a4"
-thumb_hover_color = "#6750a4"
-# platform-facts.md:1318 (§2.9): inactive-track-color = surface-container-highest, neutral90 (_md-comp-slider.scss:62; _md-sys-color.scss:124; _md-ref-palette.scss:61)
-track_color = "#e6e0e9"
-# platform-facts.md:1325 (§2.9): on-surface at 0.38 (active track, handle) and 0.12 (inactive track) (_md-comp-slider.scss:40-47)
-disabled_fill_color = "#1d1b2061"
-disabled_track_color = "#1d1b201f"
-disabled_thumb_color = "#1d1b2061"
-
-[light.progress_bar]
-track_height_px = 4.0
-min_width_px = 100.0
-# platform-facts.md:1334 (§2.10): track-color = surface-container-highest (_md-comp-linear-progress-indicator.scss:39)
-track_color = "#e6e0e9"
-
-[light.progress_bar.border]
-# platform-facts.md:1337 (§2.10): track-shape / active-indicator-shape corner-none (_md-comp-linear-progress-indicator.scss:30, :41)
-corner_radius_px = 0.0
-# platform-facts.md:1338-1340 (§2.10): no elevation token, no outline
-shadow_enabled = false
-line_width_px = 0.0
-
-[light.tab]
-# platform-facts.md:1350 (§2.11): fixed tabs share the width; scrollable tabs, Compose ScrollableTabRowMinTabWidth 90 (androidx 1e677685, TabRow.kt:981)
-min_width_px = 90.0
-min_height_px = 48.0
-# with-label-text-inactive-hover: on-surface at hover opacity 0.08 (_md-comp-primary-navigation-tab.scss:59-61)
-hover_background = "#1d1b2014"
-# inactive-hover-label-text-color = on-surface (_md-comp-primary-navigation-tab.scss:95)
-hover_text_color = "#1d1b20"
-active_text_color = "#6750a4"
-# platform-facts.md:1361-1363 (§2.11): active-indicator-color = primary, active-indicator-height 3 (_md-comp-primary-navigation-tab.scss:37-38), along the bottom (tabs/internal/_tab.scss:92-102)
-active_indicator_color = "#6750a4"
-active_indicator_width_px = 3.0
-active_indicator_side = "bottom"
-
-[light.tab.font]
-# platform-facts.md:1359 (§2.11): with-label-text-inactive-label-text-color = on-surface-variant (_md-comp-primary-navigation-tab.scss:97)
-color = "#49454f"
-# platform-facts.md:1358 (§2.11): with-label-text-label-text = title-small, weight 500 (_md-comp-primary-navigation-tab.scss:121)
-weight = 500
-
-[light.tab.border]
-# platform-facts.md:1352 (§2.11): material-web tab padding: 0 16px (cbd34a8, tabs/internal/_tab.scss:23)
-padding_horizontal_px = 16.0
-
-[light.menu]
-# platform-facts.md:1260 (§2.6): md.comp.menu list-item-container-height 48 (material-web cbd34a8, tokens/versions/latest/sass/_md-comp-menu.scss:36; v0_192/_md-comp-outlined-select.scss:47)
-row_height_px = 48.0
-# platform-facts.md:1267 (§2.6): md-menu-item gap: 16px (material-web cbd34a8, menu/internal/menuitem/_menu-item.scss:39)
-icon_text_gap_px = 16.0
-# platform-facts.md:1269 (§2.6): list-item-hover-state-layer-color = on-surface at 0.08 (tokens/versions/latest/sass/_md-comp-menu.scss:112-116)
-hover_background = "#1d1b2014"
-# platform-facts.md:1270 (§2.6): list-item-hover-label-text-color = on-surface (latest/sass/_md-comp-menu.scss:108)
-hover_text_color = "#1d1b20"
-# platform-facts.md:1271 (§2.6): on-surface at 0.38 (latest/sass/_md-comp-menu.scss:92, :40)
-disabled_text_color = "#1d1b2061"
-# platform-facts.md:1253 (§2.6): container-color = surface-container, neutral94 (_md-comp-menu.scss:31; _md-sys-color.scss:122; _md-ref-palette.scss:63)
-background_color = "#f3edf7"
-# platform-facts.md:1254 (§2.6): divider-color = surface-variant, neutral-variant90 (latest/sass/_md-comp-menu.scss:76; _md-sys-color.scss:129; _md-ref-palette.scss:41)
-separator_color = "#e7e0ec"
-
-[light.menu.font]
-# platform-facts.md:1257 (§2.6): list-item-label-text = label-large, weight 500 (latest/sass/_md-comp-menu.scss:140)
-weight = 500
-
-[light.menu.border]
-# platform-facts.md:1261 (§2.6): md-menu-item takes the list item's leading-space / trailing-space 16 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-list.scss:152, :225; tokens/_md-comp-menu-item.scss:93)
-padding_horizontal_px = 16.0
-# platform-facts.md:1265 (§2.6): container-shape corner-extra-small 4 (_md-comp-menu.scss:34)
-corner_radius_px = 4.0
-# platform-facts.md:1266 (§2.6): container-elevation level2 (_md-comp-menu.scss:32)
-shadow_enabled = true
-
-[light.list]
-# platform-facts.md:1424 (§2.15): (none), M3 has no row striping: the alternate row is the list's surface (_md-comp-list.scss:39)
-alternate_row_background = "#fef7ff"
-# platform-facts.md:1435 (§2.15): list-item-hover-state-layer-color = on-surface at 0.08 (_md-comp-list.scss:85-87)
-hover_background = "#1d1b2014"
-# list-item-hover-label-text-color = on-surface (_md-comp-list.scss:81)
-hover_text_color = "#1d1b20"
-# list-item-disabled-label-text-color = on-surface at 0.38 (_md-comp-list.scss:43-45)
-disabled_text_color = "#1d1b2061"
-# platform-facts.md:1430 (§2.15): row-item-outline-color = outline-variant, neutral-variant80 (_md-comp-data-table.scss:84; _md-sys-color.scss:109; _md-ref-palette.scss:40)
-grid_color = "#cac4d0"
-# platform-facts.md:1432 (§2.15): md.comp.data-table.header.container.height 56 (_md-comp-data-table.scss:50)
-header_height_px = 56.0
-
-[light.list.header_font]
-# platform-facts.md:1427-1428 (§2.15): header-headline = title-small, weight 500; header-headline-color = on-surface-variant (_md-comp-data-table.scss:51, :61)
-weight = 500
-color = "#49454f"
-
-[light.list.border]
-# platform-facts.md:1433 (§2.15): md.comp.list list-item-leading-space / list-item-trailing-space 16 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-list.scss:152, :225)
-padding_horizontal_px = 16.0
-
-[light.toolbar]
-# platform-facts.md:1390 (§2.13): md.comp.top-app-bar-small container-height 64 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-top-app-bar-small.scss:36)
-bar_height_px = 64.0
-
-[light.toolbar.font]
-# platform-facts.md:1386 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
-size_px = 22.0
-
-[light.toolbar.border]
-# platform-facts.md:1397-1399 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
-corner_radius_px = 0.0
-shadow_enabled = false
-line_width_px = 0.0
-
-[light.sidebar]
-# platform-facts.md:1379 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
-hover_background = "#1d1b2014"
-
-
-[light.sidebar.font]
-# platform-facts.md:1371-1372 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
-color = "#49454f"
-weight = 500
-
-
-[light.sidebar.border]
-# platform-facts.md:1380 (§2.12): (impl) Compose 12, NavigationDrawerItemDefaults.ItemPadding = PaddingValues(horizontal = 12.dp) (androidx 1e677685, compose/NavigationDrawer.kt:1239-1243); the vertical is app-defined (:1381), so it is unstated
-padding_horizontal_px = 12.0
-[light.popover]
-# platform-facts.md:1454 (§2.16): comp.menu container-color = surface-container (_md-comp-menu.scss:31)
-background_color = "#f3edf7"
-
-
-[light.popover.font]
-# platform-facts.md:1456 (§2.16): ← defaults.font.color, on-surface
-color = "#1d1b20"
-
-[light.popover.border]
-# platform-facts.md:1461-1462 (§2.16): the menu container pads 8 top and bottom, nothing at the sides (material-web cbd34a8, tokens/_md-comp-menu.scss:53-54)
-padding_horizontal_px = 0.0
-padding_vertical_px = 8.0
-# platform-facts.md:1459 (§2.16): the menu's corner-extra-small 4 (_md-comp-menu.scss:34)
-corner_radius_px = 4.0
-# platform-facts.md:1458 (§2.16): no outline
-line_width_px = 0.0
-[light.separator]
-line_color = "#cac4d0"
-
-[light.splitter]
-divider_width_px = 4.0
-hover_color = "#6750a4"
-
-[light.switch]
-# platform-facts.md:1522 (§2.21): unselected-track-color = surface-container-highest (_md-comp-switch.scss:135)
-unchecked_background = "#e6e0e9"
-# selected-hover-track-color = primary (_md-comp-switch.scss:73)
-hover_checked_background = "#6750a4"
-# unselected-hover-track-color = surface-container-highest (_md-comp-switch.scss:116)
-hover_unchecked_background = "#e6e0e9"
-# disabled-selected-track-color on-surface at disabled-track-opacity 0.12 (_md-comp-switch.scss:35-37)
-disabled_checked_background = "#1d1b201f"
-# disabled-unselected-track-color surface-container-highest at disabled-track-opacity 0.12 (_md-comp-switch.scss:37, :46)
-disabled_unchecked_background = "#e6e0e91f"
-# disabled-unselected-handle-color on-surface at 0.38 (_md-comp-switch.scss:38-40)
-disabled_thumb_color = "#1d1b2061"
-# platform-facts.md:1523 (§2.21): selected-handle-color = on-primary (_md-comp-switch.scss:62)
-thumb_background = "#ffffff"
-# platform-facts.md:1526 (§2.21): unselected-handle-color = outline (_md-comp-switch.scss:105)
-unchecked_thumb_background = "#79747e"
-track_width_px = 52.0
-track_height_px = 32.0
-thumb_diameter_px = 24.0
-# platform-facts.md:1525 (§2.21): unselected-handle-width / height 16 (_md-comp-switch.scss:106-107)
-unchecked_thumb_diameter_px = 16.0
-track_radius_px = 16.0
-# platform-facts.md:1532 (§2.21): unselected-track-outline-color = outline #79747e (_md-comp-switch.scss:137),
-# drawn round the unselected track only; hover, focus and pressed the same (platform-facts.md:1533)
-unchecked_track_border_color = "#79747e"
-# platform-facts.md:1534 (§2.21): disabled-unselected-track-outline-color = on-surface (_md-comp-switch.scss:48-49)
-# at disabled-track-opacity 0.12 (:37)
-disabled_unchecked_track_border_color = "#1d1b201f"
-# platform-facts.md:1537 (§2.21): track-outline-width 2 (_md-comp-switch.scss:90), unselected only, so
-# checked_track_border_color stays unset (platform-facts.md:1535)
-track_border_line_width_px = 2.0
-
-[light.dialog]
-button_order = "primary_right"
-# platform-facts.md:1569 (§2.22): MaterialAlertDialog.Material3.Animation, alpha 0 → 1 with scale 0.8 → 1 (m3_motion_fade_enter.xml:17-31)
-entrance = "scale_fade"
-min_width_px = 280.0
-max_width_px = 560.0
-min_height_px = 140.0
-# platform-facts.md:1555 (§2.22): material-web min(560px, calc(100% - 48px)) (cbd34a8, dialog/internal/_dialog.scss:39)
-max_height_px = 560.0
-button_gap_px = 8.0
-# platform-facts.md:1568 (§2.22): with-icon-icon-size 24 (_md-comp-dialog.scss:122)
-icon_size_px = 24.0
-# platform-facts.md:1548 (§2.22): container-color = surface-container-high, neutral92 (_md-comp-dialog.scss:73; _md-sys-color.scss:123; _md-ref-palette.scss:62)
-background_color = "#ece6f0"
-
-[light.dialog.title_font]
-# platform-facts.md:1561-1562 (§2.22): md.comp.dialog headline-size = headline-small-size 24, headline-small-weight 400 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-dialog.scss:80, :95)
-size_px = 24.0
-weight = 400
-
-[light.dialog.body_font]
-# platform-facts.md:1550 (§2.22): supporting-text-color = on-surface-variant (_md-comp-dialog.scss:97)
-color = "#49454f"
-
-[light.dialog.border]
-# platform-facts.md:1556-1557 (§2.22): material-web dialog headline padding 24px 24px 0, actions 16px 24px 24px (cbd34a8, dialog/internal/_dialog.scss:111, :218)
-padding_horizontal_px = 24.0
-padding_vertical_px = 24.0
-# platform-facts.md:1565 (§2.22): container-shape corner-extra-large 28 (_md-comp-dialog.scss:75)
-corner_radius_px = 28.0
-# platform-facts.md:1566-1567 (§2.22): no outline token
-line_width_px = 0.0
-
-[light.link]
-underline_enabled = false
-background_color = "#00000000"
-hover_background = "#6750a418"
-hover_text_color = "#6750a4"
-active_text_color = "#4f3d8a"
-disabled_text_color = "#c4c7c5"
-
-[light.spinner]
-# platform-facts.md:1599 (§2.23): comp.circular-progress-indicator size 48 (_md-comp-circular-progress-indicator.scss:39)
-diameter_px = 48.0
-min_diameter_px = 16.0
-# platform-facts.md:1601 (§2.23): active-indicator-width 4 (_md-comp-circular-progress-indicator.scss:30)
-stroke_width_px = 4.0
-
-[light.combo_box]
-# platform-facts.md:1616 (§2.24): the text field's height, container-height 56 (tokens/versions/latest/sass/_md-comp-outlined-text-field.scss:26)
-min_height_px = 56.0
-# platform-facts.md:1617 (§2.24): md-outlined-select min-width: 210px (material-web cbd34a8, select/internal/_shared.scss:19)
-min_width_px = 210.0
-# platform-facts.md:1619 (§2.24): text-field-trailing-icon-size 24 (_md-comp-outlined-select.scss:261)
-arrow_icon_size_px = 24.0
-disabled_text_color = "#1d1b2061"
-
-[light.combo_box.font]
-# platform-facts.md:1612 (§2.24): text-field-input-text = body-large 16 (_md-comp-outlined-select.scss:184)
-size_px = 16.0
-
-[light.combo_box.border]
-# platform-facts.md:1618, :1623 (§2.24): material-web outlined field 16 leading, 12 trailing (the arrow's with-trailing-content-trailing-space), 16 top and bottom from the field's edge (cbd34a8, tokens/_md-comp-outlined-field.scss:222, :240-241, :235, :127), less the 1 outline laid over it (v0_192 _md-comp-outlined-select.scss:234)
-padding_left_px = 15.0
-padding_right_px = 11.0
-padding_vertical_px = 15.0
-# platform-facts.md:1621 (§2.24): text-field-container-shape corner-extra-small 4 (_md-comp-outlined-select.scss:84)
-corner_radius_px = 4.0
-# platform-facts.md:1622 (§2.24): the field has no elevation
-shadow_enabled = false
-
-[light.segmented_control]
-segment_height_px = 40.0
-separator_width_px = 1.0
-# unselected-hover-state-layer-color = on-surface at 0.08 (_md-comp-outlined-segmented-button.scss:99-102)
-hover_background = "#1d1b2014"
-# platform-facts.md:1636-1637 (§2.25): selected-container-color = secondary-container, selected-label-text-color = on-secondary-container (_md-comp-outlined-segmented-button.scss:69, :83)
-active_background = "#e8def8"
-active_text_color = "#1d192b"
-
-[light.segmented_control.font]
-# platform-facts.md:1634 (§2.25): label-text = label-large, weight 500 (_md-comp-outlined-segmented-button.scss:63)
-weight = 500
-
-[light.segmented_control.border]
-# platform-facts.md:1640 (§2.25): material-web labs outlined segmented button spacing-leading / spacing-trailing 12 (cbd34a8, labs/segmentedbutton/internal/_outlined-segmented-button.scss:22-23)
-padding_horizontal_px = 12.0
-# platform-facts.md:1641 (§2.25): shape corner-full, a pill: half the 40 container-height (_md-comp-outlined-segmented-button.scss:34, :93)
-corner_radius_px = 20.0
-# platform-facts.md:1644 (§2.25): no elevation token
-shadow_enabled = false
-
-[light.card]
-# platform-facts.md:1657 (§2.26): filled card container-color = surface-container-highest (_md-comp-filled-card.scss:34)
-background_color = "#e6e0e9"
-
-[light.card.border]
-# platform-facts.md:1660 (§2.26): container-shape corner-medium 12 (_md-comp-filled-card.scss:38)
-corner_radius_px = 12.0
-
-[light.expander]
-header_height_px = 48.0
-arrow_icon_size_px =12.0
-hover_background = "#1c1b1f14"
-arrow_color = "#49454f"
-
-[light.window]
-# platform-facts.md:1166-1167 (§2.2): (none), M3 has no window-focus state; nearest the top app bar's surface and on-surface (_md-comp-top-app-bar-small.scss:34, :38)
-inactive_title_bar_background = "#fef7ff"
-inactive_title_bar_text_color = "#1d1b20"
-
-# === Dark variant ===
-
-[dark.defaults]
-# md.sys.color.primary, primary80 (_md-sys-color.scss:51, _md-ref-palette.scss:77)
-accent_color = "#d0bcff"
-# platform-facts.md:1050 (§2.1.3): md.sys.color.surface = background, neutral6 (_md-sys-color.scss:61, :25; _md-ref-palette.scss:56)
-background_color = "#141218"
-# on-surface, neutral90 (_md-sys-color.scss:43; _md-ref-palette.scss:61)
-text_color = "#e6e0e9"
-# surface, neutral6 (_md-sys-color.scss:61; _md-ref-palette.scss:56)
-surface_color = "#141218"
-muted_color = "#cac4d0"
-# md.sys.color.shadow #000000 (_md-sys-color.scss:60) as material-web's key shadow renders it, opacity 0.3 (elevation/internal/_elevation.scss:104-105)
-shadow_color = "#0000004d"
-
-danger_color = "#f2b8b5"
-danger_text_color = "#601410"
-warning_color = "#e6c18e"
-warning_text_color = "#3e2e00"
-success_color = "#b1d18a"
-success_text_color = "#1b3700"
-info_color = "#d0bcff"
-info_text_color = "#381e72"
-
-# platform-facts.md:1059-1060 (§2.1.3): list and menu selection, secondary-container, secondary30 (_md-sys-color.scss:57; _md-ref-palette.scss:85) and on-secondary-container, secondary90 (:39; :91)
-selection_background = "#4a4458"
-selection_text_color = "#e8def8"
-link_color = "#d0bcff"
-# platform-facts.md:1108 (§2.1.5): md-focus-ring color = secondary, secondary80 (tokens/_md-comp-focus-ring.scss:47; _md-sys-color.scss:56; _md-ref-palette.scss:90)
-focus_ring_color = "#ccc2dc"
-# platform-facts.md:1064 (§2.1.3): on-surface at disabled-label-text-opacity 0.38 (_md-comp-filled-button.scss:45-46)
-disabled_text_color = "#e6e0e961"
-accent_text_color = "#381e72"
-
-# 1.0: Material 3 dims a disabled component by its colours alone, the container at
-# disabled-container-opacity 0.12 and the label at disabled-label-text-opacity 0.38 of
-# on-surface (material-web cbd34a8, tokens/versions/v0_192/_md-comp-filled-button.scss:42-46;
-# button/internal/_shared.scss:141-150), which this preset's disabled colours carry (#…1f, #…61)
-disabled_opacity = 1.0
-# platform-facts.md:1034 (§2.1.1): body-medium-line-height 20 / body-medium-size 14 (_md-sys-typescale.scss:55-56)
-line_height = 1.43
-# platform-facts.md:1109-1110 (§2.1.5): md-focus-ring width 3, outward-offset 2 (tokens/_md-comp-focus-ring.scss:50, :52)
-focus_ring_width_px = 3.0
-focus_ring_offset_px = 2.0
-
-
-[dark.defaults.border]
-color = "#938f99"
-corner_radius_px = 12.0
-corner_radius_lg_px = 16.0
-line_width_px = 1.0
-opacity = 0.12
-shadow_enabled = true
-[dark.defaults.font]
-family = "Roboto"
-size_px =14.0
-weight = 400
-
-[dark.defaults.mono_font]
-family = "Roboto Mono"
-size_px =14.0
-weight = 400
-
-[dark.defaults.icon_sizes]
-toolbar_px = 24.0
-small_px = 16.0
-large_px = 32.0
-# platform-facts.md:1139 (§2.1.8): comp.dialog with-icon-icon-size 24 (_md-comp-dialog.scss:122)
-dialog_px = 24.0
-# platform-facts.md:1140 (§2.1.8): comp.navigation-drawer icon-size 24 (_md-comp-navigation-drawer.scss:94)
-panel_px = 24.0
-
-[dark.text_scale.caption]
-# platform-facts.md:1485 (§2.19): md.sys.typescale.body-small, 12 / 400, line 16 (material-web cbd34a8, tokens/versions/v0_192/_md-sys-typescale.scss:72-75)
-size_px =12.0
-weight = 400
-line_height_px = 16.0
-
-[dark.text_scale.section_heading]
-size_px =16.0
-weight = 500
-line_height_px = 24.0
-
-[dark.text_scale.dialog_title]
-size_px =24.0
-weight = 400
-line_height_px = 32.0
-
-[dark.text_scale.display]
-size_px =36.0
-weight = 400
-line_height_px = 44.0
-
-[dark.button]
-background_color = "#4a4458"
-min_width_px = 64.0
-min_height_px = 40.0
-icon_text_gap_px = 8.0
-# platform-facts.md:1192 (§2.3): on-secondary-container at hover-state-layer-opacity 0.08 over secondary-container (_md-comp-filled-tonal-button.scss:57-60)
-hover_background = "#575065"
-hover_text_color = "#e8def8"
-# on-secondary-container at pressed-state-layer-opacity 0.12 over secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
-active_background = "#5d566b"
-active_text_color = "#e8def8"
-# platform-facts.md:1198 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
-disabled_background = "#e6e0e91f"
-disabled_text_color = "#e6e0e961"
-# platform-facts.md:1194-1195 (§2.3): latest comp.button.tonal selected-container-color = secondary, selected-label-text-color = on-secondary (_md-comp-button-tonal.scss:79, :95)
-checked_background = "#ccc2dc"
-checked_text_color = "#332d41"
-
-
-[dark.button.font]
-color = "#e8def8"
-# platform-facts.md:1178 (§2.3): label-text = label-large, weight 500 (_md-comp-filled-tonal-button.scss:80; _md-sys-typescale.scss:195)
-weight = 500
-
-[dark.button.border]
-# platform-facts.md:1184-1185 (§2.3): material-web leading-space / trailing-space 24 (cbd34a8, tokens/_md-comp-filled-tonal-button.scss:96-105); padding-block (container-height 40 − line 20) / 2 = 10 (button/internal/_shared.scss:31-32)
-padding_horizontal_px = 24.0
-padding_vertical_px = 10.0
-# platform-facts.md:1186 (§2.3): container-shape corner-full, a pill: half the 40 container-height (_md-comp-filled-tonal-button.scss:39, :41)
-corner_radius_px = 20.0
-# platform-facts.md:1180-1181 (§2.3): the tonal button has no outline token (_md-comp-filled-tonal-button.scss:37-99)
-line_width_px = 0.0
-# platform-facts.md:1191 (§2.3): container-elevation level0 (_md-comp-filled-tonal-button.scss:38)
-shadow_enabled = false
-[dark.input]
-# platform-facts.md:1203 (§2.4): the outlined field has no container, the surface shows through
-background_color = "#141218"
-min_height_px = 56.0
-# platform-facts.md:1218 (§2.4): hover-outline-color = on-surface (_md-comp-outlined-text-field.scss:87)
-hover_border_color = "#e6e0e9"
-focus_border_color = "#d0bcff"
-# platform-facts.md:1221 (§2.4): input text on-surface at 0.38 (_md-comp-outlined-text-field.scss:33-34)
-disabled_text_color = "#e6e0e961"
-# platform-facts.md:1209 (§2.4): caret-color = primary (_md-comp-outlined-text-field.scss:31)
-caret_color = "#d0bcff"
-
-
-[dark.input.font]
-# platform-facts.md:1204-1205 (§2.4): input-text-color = on-surface (_md-comp-outlined-text-field.scss:93); input-text = body-large 16 (:101)
-color = "#e6e0e9"
-size_px = 16.0
-
-[dark.input.border]
-# platform-facts.md:1213-1214 (§2.4): material-web outlined field leading-space / trailing-space 16, top-space / bottom-space 16 from the field's edge (cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142), less the 1 outline laid over it (field/internal/_outlined-field.scss:50-59, v0_192 outline-width :146)
-padding_horizontal_px = 15.0
-padding_vertical_px = 15.0
-# platform-facts.md:1215 (§2.4): container-shape corner-extra-small 4 (_md-comp-outlined-text-field.scss:32)
-corner_radius_px = 4.0
-# platform-facts.md:1216 (§2.4): the text fields have no elevation token
-shadow_enabled = false
-
-[dark.text_area.border]
-# platform-facts.md:1714-1715 (§2.29): the outlined field's 16; 16 from its edge (material-web cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142), less the 1 outline laid over it
-padding_horizontal_px = 15.0
-padding_vertical_px = 15.0
-[dark.checkbox]
-indicator_width_px = 18.0
-# platform-facts.md:1243 (§2.5): comp.radio-button icon-size 20 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-radio-button.scss:34)
-radio_indicator_width_px = 20.0
-# platform-facts.md:1241 (§2.5): material-web radio.ts:119, the inner circle r = 5 (cbd34a8)
-radio_dot_diameter_px = 10.0
-# platform-facts.md:1242 (§2.5): material-web $_mark-stroke: 2px (cbd34a8, checkbox/internal/_checkbox.scss:18-19)
-check_mark_stroke_width_px = 2.0
-label_gap_px = 8.0
-# unselected-hover-state-layer-color = on-surface at hover opacity 0.08 (_md-comp-checkbox.scss:114-116)
-hover_background = "#e6e0e914"
-# platform-facts.md:1245 (§2.5): selected-disabled-container-color on-surface at 0.38 (_md-comp-checkbox.scss:44-46)
-disabled_background = "#e6e0e961"
-disabled_text_color = "#e6e0e961"
-# platform-facts.md:1247 (§2.5): comp.checkbox has no unselected container colour, the box is transparent (_md-comp-checkbox.scss:118-120)
-unchecked_background = "#00000000"
-# platform-facts.md:1248 (§2.5): unselected-outline-color = on-surface-variant (_md-comp-checkbox.scss:118)
-unchecked_border_color = "#cac4d0"
-
-[dark.checkbox.border]
-# platform-facts.md:1231 (§2.5): unselected-outline-width 2 (_md-comp-checkbox.scss:120)
-line_width_px = 2.0
-# platform-facts.md:1235 (§2.5): container-shape 2 (_md-comp-checkbox.scss:31)
-corner_radius_px = 2.0
-# platform-facts.md:1236 (§2.5): no elevation token
-shadow_enabled = false
-# platform-facts.md:1230 (§2.5): a checked box has no outline (selected-outline-width 0, _md-comp-checkbox.scss:80), so the line is its fill, selected-container-color primary (:43), and the checked radio's ring is primary (platform-facts.md:1239)
-color = "#d0bcff"
-
-[dark.tooltip]
-# platform-facts.md:1277 (§2.7): container-color = inverse-surface, neutral90 (_md-comp-plain-tooltip.scss:31; _md-sys-color.scss:30; _md-ref-palette.scss:61)
-background_color = "#e6e0e9"
-# platform-facts.md:1285 (§2.7): Compose plainTooltipMaxWidth 200 (androidx 1e677685, Tooltip.kt:535)
-max_width_px = 200.0
-# platform-facts.md:1290 (§2.7): 0, shown on pointer enter (Compose BasicTooltip.kt:271-276; Tooltip.kt:1075-1099)
-show_delay_ms = 0
-
-
-[dark.tooltip.font]
-# platform-facts.md:1282 (§2.7): supporting-text-color = inverse-on-surface, neutral20 (_md-comp-plain-tooltip.scss:33; _md-sys-color.scss:28; _md-ref-palette.scss:49)
-color = "#322f35"
-# platform-facts.md:1279 (§2.7): supporting-text-size = body-small-size 12 (_md-comp-plain-tooltip.scss:39)
-size_px = 12.0
-
-[dark.tooltip.border]
-# platform-facts.md:1283-1284 (§2.7): Compose PlainTooltipHorizontalPadding 8, PlainTooltipVerticalPadding 4 (androidx 1e677685, Tooltip.kt:1454-1459)
-padding_horizontal_px = 8.0
-padding_vertical_px = 4.0
-# platform-facts.md:1286 (§2.7): container-shape corner-extra-small 4 (_md-comp-plain-tooltip.scss:32)
-corner_radius_px = 4.0
-# platform-facts.md:1287-1288 (§2.7): no outline token
-line_width_px = 0.0
-# platform-facts.md:1289 (§2.7): no elevation token; Compose PlainTooltip shadowElevation = 0.dp (Tooltip.kt:350-351)
-shadow_enabled = false
-[dark.scrollbar]
-groove_width_px = 12.0
-thumb_width_px = 4.0
-overlay_mode = false
-min_thumb_length_px = 30.0
-thumb_hover_color = "#938f99"
-thumb_active_color = "#aea9b4"
-
-[dark.slider]
-track_height_px = 4.0
-thumb_diameter_px = 20.0
-# platform-facts.md:1322 (§2.9): with-tick-marks-container-size 2 (_md-comp-slider.scss:108)
-tick_mark_length_px = 2.0
-# md.comp.slider.handle.color = md.sys.color.primary, primary80 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-slider.scss:52, _md-sys-color.scss:51, _md-ref-palette.scss:77)
-thumb_color = "#d0bcff"
-thumb_hover_color = "#d0bcff"
-# platform-facts.md:1318 (§2.9): inactive-track-color = surface-container-highest, neutral22 (_md-comp-slider.scss:62; _md-sys-color.scss:65; _md-ref-palette.scss:50)
-track_color = "#36343b"
-# platform-facts.md:1325 (§2.9): on-surface at 0.38 (active track, handle) and 0.12 (inactive track) (_md-comp-slider.scss:40-47)
-disabled_fill_color = "#e6e0e961"
-disabled_track_color = "#e6e0e91f"
-disabled_thumb_color = "#e6e0e961"
-
-[dark.progress_bar]
-track_height_px = 4.0
-min_width_px = 100.0
-# platform-facts.md:1334 (§2.10): track-color = surface-container-highest (_md-comp-linear-progress-indicator.scss:39)
-track_color = "#36343b"
-
-[dark.progress_bar.border]
-# platform-facts.md:1337 (§2.10): track-shape / active-indicator-shape corner-none (_md-comp-linear-progress-indicator.scss:30, :41)
-corner_radius_px = 0.0
-# platform-facts.md:1338-1340 (§2.10): no elevation token, no outline
-shadow_enabled = false
-line_width_px = 0.0
-
-[dark.tab]
-# platform-facts.md:1350 (§2.11): fixed tabs share the width; scrollable tabs, Compose ScrollableTabRowMinTabWidth 90 (androidx 1e677685, TabRow.kt:981)
-min_width_px = 90.0
-min_height_px = 48.0
-# with-label-text-inactive-hover: on-surface at hover opacity 0.08 (_md-comp-primary-navigation-tab.scss:59-61)
-hover_background = "#e6e0e914"
-# inactive-hover-label-text-color = on-surface (_md-comp-primary-navigation-tab.scss:95)
-hover_text_color = "#e6e0e9"
-active_text_color = "#d0bcff"
-# platform-facts.md:1361-1363 (§2.11): active-indicator-color = primary, active-indicator-height 3 (_md-comp-primary-navigation-tab.scss:37-38), along the bottom (tabs/internal/_tab.scss:92-102)
-active_indicator_color = "#d0bcff"
-active_indicator_width_px = 3.0
-active_indicator_side = "bottom"
-
-[dark.tab.font]
-# platform-facts.md:1359 (§2.11): with-label-text-inactive-label-text-color = on-surface-variant (_md-comp-primary-navigation-tab.scss:97)
-color = "#cac4d0"
-# platform-facts.md:1358 (§2.11): with-label-text-label-text = title-small, weight 500 (_md-comp-primary-navigation-tab.scss:121)
-weight = 500
-
-[dark.tab.border]
-# platform-facts.md:1352 (§2.11): material-web tab padding: 0 16px (cbd34a8, tabs/internal/_tab.scss:23)
-padding_horizontal_px = 16.0
-
-[dark.menu]
-# platform-facts.md:1260 (§2.6): md.comp.menu list-item-container-height 48 (material-web cbd34a8, tokens/versions/latest/sass/_md-comp-menu.scss:36; v0_192/_md-comp-outlined-select.scss:47)
-row_height_px = 48.0
-# platform-facts.md:1267 (§2.6): md-menu-item gap: 16px (material-web cbd34a8, menu/internal/menuitem/_menu-item.scss:39)
-icon_text_gap_px = 16.0
-# platform-facts.md:1269 (§2.6): list-item-hover-state-layer-color = on-surface at 0.08 (tokens/versions/latest/sass/_md-comp-menu.scss:112-116)
-hover_background = "#e6e0e914"
-# platform-facts.md:1270 (§2.6): list-item-hover-label-text-color = on-surface (latest/sass/_md-comp-menu.scss:108)
-hover_text_color = "#e6e0e9"
-# platform-facts.md:1271 (§2.6): on-surface at 0.38 (latest/sass/_md-comp-menu.scss:92, :40)
-disabled_text_color = "#e6e0e961"
-# platform-facts.md:1253 (§2.6): container-color = surface-container, neutral12 (_md-comp-menu.scss:31; _md-sys-color.scss:63; _md-ref-palette.scss:47)
-background_color = "#211f26"
-# platform-facts.md:1254 (§2.6): divider-color = surface-variant, neutral-variant30 (latest/sass/_md-comp-menu.scss:76; _md-sys-color.scss:70; _md-ref-palette.scss:35)
-separator_color = "#49454f"
-
-[dark.menu.font]
-# platform-facts.md:1257 (§2.6): list-item-label-text = label-large, weight 500 (latest/sass/_md-comp-menu.scss:140)
-weight = 500
-
-[dark.menu.border]
-# platform-facts.md:1261 (§2.6): md-menu-item takes the list item's leading-space / trailing-space 16 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-list.scss:152, :225; tokens/_md-comp-menu-item.scss:93)
-padding_horizontal_px = 16.0
-# platform-facts.md:1265 (§2.6): container-shape corner-extra-small 4 (_md-comp-menu.scss:34)
-corner_radius_px = 4.0
-# platform-facts.md:1266 (§2.6): container-elevation level2 (_md-comp-menu.scss:32)
-shadow_enabled = true
-
-[dark.list]
-# platform-facts.md:1424 (§2.15): (none), M3 has no row striping: the alternate row is the list's surface (_md-comp-list.scss:39)
-alternate_row_background = "#141218"
-# platform-facts.md:1435 (§2.15): list-item-hover-state-layer-color = on-surface at 0.08 (_md-comp-list.scss:85-87)
-hover_background = "#e6e0e914"
-# list-item-hover-label-text-color = on-surface (_md-comp-list.scss:81)
-hover_text_color = "#e6e0e9"
-# list-item-disabled-label-text-color = on-surface at 0.38 (_md-comp-list.scss:43-45)
-disabled_text_color = "#e6e0e961"
-# platform-facts.md:1430 (§2.15): row-item-outline-color = outline-variant, neutral-variant30 (_md-comp-data-table.scss:84; _md-sys-color.scss:50; _md-ref-palette.scss:35)
-grid_color = "#49454f"
-# platform-facts.md:1432 (§2.15): md.comp.data-table.header.container.height 56 (_md-comp-data-table.scss:50)
-header_height_px = 56.0
-
-[dark.list.header_font]
-# platform-facts.md:1427-1428 (§2.15): header-headline = title-small, weight 500; header-headline-color = on-surface-variant (_md-comp-data-table.scss:51, :61)
-weight = 500
-color = "#cac4d0"
-
-[dark.list.border]
-# platform-facts.md:1433 (§2.15): md.comp.list list-item-leading-space / list-item-trailing-space 16 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-list.scss:152, :225)
-padding_horizontal_px = 16.0
-
-[dark.toolbar]
-# platform-facts.md:1390 (§2.13): md.comp.top-app-bar-small container-height 64 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-top-app-bar-small.scss:36)
-bar_height_px = 64.0
-
-[dark.toolbar.font]
-# platform-facts.md:1386 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
-size_px = 22.0
-
-[dark.toolbar.border]
-# platform-facts.md:1397-1399 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
-corner_radius_px = 0.0
-shadow_enabled = false
-line_width_px = 0.0
-
-[dark.sidebar]
-# platform-facts.md:1379 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
-hover_background = "#e6e0e914"
-
-
-[dark.sidebar.font]
-# platform-facts.md:1371-1372 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
-color = "#cac4d0"
-weight = 500
-
-
-[dark.sidebar.border]
-# platform-facts.md:1380 (§2.12): (impl) Compose 12, NavigationDrawerItemDefaults.ItemPadding = PaddingValues(horizontal = 12.dp) (androidx 1e677685, compose/NavigationDrawer.kt:1239-1243); the vertical is app-defined (:1381), so it is unstated
-padding_horizontal_px = 12.0
-[dark.popover]
-# platform-facts.md:1454 (§2.16): comp.menu container-color = surface-container (_md-comp-menu.scss:31)
-background_color = "#211f26"
-
-
-[dark.popover.font]
-# platform-facts.md:1456 (§2.16): ← defaults.font.color, on-surface
-color = "#e6e0e9"
-
-[dark.popover.border]
-# platform-facts.md:1461-1462 (§2.16): the menu container pads 8 top and bottom, nothing at the sides (material-web cbd34a8, tokens/_md-comp-menu.scss:53-54)
-padding_horizontal_px = 0.0
-padding_vertical_px = 8.0
-# platform-facts.md:1459 (§2.16): the menu's corner-extra-small 4 (_md-comp-menu.scss:34)
-corner_radius_px = 4.0
-# platform-facts.md:1458 (§2.16): no outline
-line_width_px = 0.0
-[dark.separator]
-line_color = "#49454f"
-
-[dark.splitter]
-divider_width_px = 4.0
-hover_color = "#d0bcff"
-
-[dark.switch]
-# platform-facts.md:1522 (§2.21): unselected-track-color = surface-container-highest (_md-comp-switch.scss:135)
-unchecked_background = "#36343b"
-# selected-hover-track-color = primary (_md-comp-switch.scss:73)
-hover_checked_background = "#d0bcff"
-# unselected-hover-track-color = surface-container-highest (_md-comp-switch.scss:116)
-hover_unchecked_background = "#36343b"
-# disabled-selected-track-color on-surface at disabled-track-opacity 0.12 (_md-comp-switch.scss:35-37)
-disabled_checked_background = "#e6e0e91f"
-# disabled-unselected-track-color surface-container-highest at disabled-track-opacity 0.12 (_md-comp-switch.scss:37, :46)
-disabled_unchecked_background = "#36343b1f"
-# disabled-unselected-handle-color on-surface at 0.38 (_md-comp-switch.scss:38-40)
-disabled_thumb_color = "#e6e0e961"
-# platform-facts.md:1523 (§2.21): selected-handle-color = on-primary (_md-comp-switch.scss:62)
-thumb_background = "#381e72"
-# platform-facts.md:1526 (§2.21): unselected-handle-color = outline (_md-comp-switch.scss:105)
-unchecked_thumb_background = "#938f99"
-track_width_px = 52.0
-track_height_px = 32.0
-thumb_diameter_px = 24.0
-# platform-facts.md:1525 (§2.21): unselected-handle-width / height 16 (_md-comp-switch.scss:106-107)
-unchecked_thumb_diameter_px = 16.0
-track_radius_px = 16.0
-# platform-facts.md:1532 (§2.21): unselected-track-outline-color = outline #938f99 (_md-comp-switch.scss:137),
-# drawn round the unselected track only; hover, focus and pressed the same (platform-facts.md:1533)
-unchecked_track_border_color = "#938f99"
-# platform-facts.md:1534 (§2.21): disabled-unselected-track-outline-color = on-surface (_md-comp-switch.scss:48-49)
-# at disabled-track-opacity 0.12 (:37)
-disabled_unchecked_track_border_color = "#e6e0e91f"
-# platform-facts.md:1537 (§2.21): track-outline-width 2 (_md-comp-switch.scss:90), unselected only, so
-# checked_track_border_color stays unset (platform-facts.md:1535)
-track_border_line_width_px = 2.0
-
-[dark.dialog]
-button_order = "primary_right"
-# platform-facts.md:1569 (§2.22): MaterialAlertDialog.Material3.Animation, alpha 0 → 1 with scale 0.8 → 1 (m3_motion_fade_enter.xml:17-31)
-entrance = "scale_fade"
-min_width_px = 280.0
-max_width_px = 560.0
-min_height_px = 140.0
-# platform-facts.md:1555 (§2.22): material-web min(560px, calc(100% - 48px)) (cbd34a8, dialog/internal/_dialog.scss:39)
-max_height_px = 560.0
-button_gap_px = 8.0
-# platform-facts.md:1568 (§2.22): with-icon-icon-size 24 (_md-comp-dialog.scss:122)
-icon_size_px = 24.0
-# platform-facts.md:1548 (§2.22): container-color = surface-container-high, neutral17 (_md-comp-dialog.scss:73; _md-sys-color.scss:64; _md-ref-palette.scss:48)
-background_color = "#2b2930"
-
-[dark.dialog.title_font]
-# platform-facts.md:1561-1562 (§2.22): md.comp.dialog headline-size = headline-small-size 24, headline-small-weight 400 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-dialog.scss:80, :95)
-size_px = 24.0
-weight = 400
-
-[dark.dialog.body_font]
-# platform-facts.md:1550 (§2.22): supporting-text-color = on-surface-variant (_md-comp-dialog.scss:97)
-color = "#cac4d0"
-
-[dark.dialog.border]
-# platform-facts.md:1556-1557 (§2.22): material-web dialog headline padding 24px 24px 0, actions 16px 24px 24px (cbd34a8, dialog/internal/_dialog.scss:111, :218)
-padding_horizontal_px = 24.0
-padding_vertical_px = 24.0
-# platform-facts.md:1565 (§2.22): container-shape corner-extra-large 28 (_md-comp-dialog.scss:75)
-corner_radius_px = 28.0
-# platform-facts.md:1566-1567 (§2.22): no outline token
-line_width_px = 0.0
-
-[dark.link]
-underline_enabled = false
-background_color = "#00000000"
-hover_background = "#d0bcff18"
-hover_text_color = "#d0bcff"
-active_text_color = "#e8deff"
-disabled_text_color = "#49454f"
-
-[dark.spinner]
-# platform-facts.md:1599 (§2.23): comp.circular-progress-indicator size 48 (_md-comp-circular-progress-indicator.scss:39)
-diameter_px = 48.0
-min_diameter_px = 16.0
-# platform-facts.md:1601 (§2.23): active-indicator-width 4 (_md-comp-circular-progress-indicator.scss:30)
-stroke_width_px = 4.0
-
-[dark.combo_box]
-# platform-facts.md:1616 (§2.24): the text field's height, container-height 56 (tokens/versions/latest/sass/_md-comp-outlined-text-field.scss:26)
-min_height_px = 56.0
-# platform-facts.md:1617 (§2.24): md-outlined-select min-width: 210px (material-web cbd34a8, select/internal/_shared.scss:19)
-min_width_px = 210.0
-# platform-facts.md:1619 (§2.24): text-field-trailing-icon-size 24 (_md-comp-outlined-select.scss:261)
-arrow_icon_size_px = 24.0
-disabled_text_color = "#e6e0e961"
-
-[dark.combo_box.font]
-# platform-facts.md:1612 (§2.24): text-field-input-text = body-large 16 (_md-comp-outlined-select.scss:184)
-size_px = 16.0
-
-[dark.combo_box.border]
-# platform-facts.md:1618, :1623 (§2.24): material-web outlined field 16 leading, 12 trailing (the arrow's with-trailing-content-trailing-space), 16 top and bottom from the field's edge (cbd34a8, tokens/_md-comp-outlined-field.scss:222, :240-241, :235, :127), less the 1 outline laid over it (v0_192 _md-comp-outlined-select.scss:234)
-padding_left_px = 15.0
-padding_right_px = 11.0
-padding_vertical_px = 15.0
-# platform-facts.md:1621 (§2.24): text-field-container-shape corner-extra-small 4 (_md-comp-outlined-select.scss:84)
-corner_radius_px = 4.0
-# platform-facts.md:1622 (§2.24): the field has no elevation
-shadow_enabled = false
-
-[dark.segmented_control]
-segment_height_px = 40.0
-separator_width_px = 1.0
-# unselected-hover-state-layer-color = on-surface at 0.08 (_md-comp-outlined-segmented-button.scss:99-102)
-hover_background = "#e6e0e914"
-# platform-facts.md:1636-1637 (§2.25): selected-container-color = secondary-container, selected-label-text-color = on-secondary-container (_md-comp-outlined-segmented-button.scss:69, :83)
-active_background = "#4a4458"
-active_text_color = "#e8def8"
-
-[dark.segmented_control.font]
-# platform-facts.md:1634 (§2.25): label-text = label-large, weight 500 (_md-comp-outlined-segmented-button.scss:63)
-weight = 500
-
-[dark.segmented_control.border]
-# platform-facts.md:1640 (§2.25): material-web labs outlined segmented button spacing-leading / spacing-trailing 12 (cbd34a8, labs/segmentedbutton/internal/_outlined-segmented-button.scss:22-23)
-padding_horizontal_px = 12.0
-# platform-facts.md:1641 (§2.25): shape corner-full, a pill: half the 40 container-height (_md-comp-outlined-segmented-button.scss:34, :93)
-corner_radius_px = 20.0
-# platform-facts.md:1644 (§2.25): no elevation token
-shadow_enabled = false
-
-[dark.card]
-# platform-facts.md:1657 (§2.26): filled card container-color = surface-container-highest (_md-comp-filled-card.scss:34)
-background_color = "#36343b"
-
-[dark.card.border]
-# platform-facts.md:1660 (§2.26): container-shape corner-medium 12 (_md-comp-filled-card.scss:38)
-corner_radius_px = 12.0
-
-[dark.expander]
-header_height_px = 48.0
-arrow_icon_size_px =12.0
-hover_background = "#e6e1e514"
-arrow_color = "#cac4d0"
-
-[dark.window]
-# platform-facts.md:1166-1167 (§2.2): (none), M3 has no window-focus state; nearest the top app bar's surface and on-surface (_md-comp-top-app-bar-small.scss:34, :38)
-inactive_title_bar_background = "#141218"
-inactive_title_bar_text_color = "#e6e0e9"
-
-[layout]
-widget_gap_px = 6.0
-container_margin_px = 6.0
-window_margin_px = 10.0
-section_gap_px = 18.0
+# material-3 (S11): generated by scripts/generate_preset.py from docs/facts/material/, each value's comment naming its fact.
+# The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
+# written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
+# `generate_preset.py <id> --write` regenerates every other line and carries them over.
+# generated lines: sha256 26e9dcdbb30f8b1ec64d4cdf0ad000fb721ef2e4477de480c7d1dc8d486bceda
+
+[preset]
+id = "material-3"
+# hand-written: begin preset
+# docs/facts/sources.toml:831 (androidx@e4d933c9)
+generation = "compose-material3-1.5"
+# hand-written: end preset
+
+[declare]
+# hand-written: begin declare
+surface_sets = [
+    "window",  # docs/facts/material/roles.toml:991
+    "selection",  # docs/facts/material/roles.toml:1470
+]
+color_roles = [
+    "background",  # docs/facts/material/roles.toml:6
+    "error",  # docs/facts/material/roles.toml:26
+    "error_container",  # docs/facts/material/roles.toml:46
+    "on_background",  # docs/facts/material/roles.toml:126
+    "on_error",  # docs/facts/material/roles.toml:146
+    "on_primary",  # docs/facts/material/roles.toml:186
+    "on_secondary_container",  # docs/facts/material/roles.toml:286
+    "on_surface",  # docs/facts/material/roles.toml:346
+    "on_surface_variant",  # docs/facts/material/roles.toml:366
+    "outline_variant",  # docs/facts/material/roles.toml:486
+    "primary",  # docs/facts/material/roles.toml:506
+    "scrim",  # docs/facts/material/roles.toml:586
+    "secondary",  # docs/facts/material/roles.toml:606
+    "secondary_container",  # docs/facts/material/roles.toml:626
+    "shadow",  # docs/facts/material/roles.toml:686
+]
+text_styles = [
+    "body_large",  # docs/facts/material/tokens.toml:1894
+    "body_small",  # docs/facts/material/tokens.toml:2368
+    "display_large",  # docs/facts/material/tokens.toml:2605
+    "display_small",  # docs/facts/material/tokens.toml:3079
+    "headline_medium",  # docs/facts/material/tokens.toml:3553
+    "headline_small",  # docs/facts/material/tokens.toml:3790
+    "label_large",  # docs/facts/material/tokens.toml:4027
+    "title_large",  # docs/facts/material/tokens.toml:4738
+    "monospace",  # docs/facts/material/tokens.toml:9007
+]
+elevation = [
+    "level0",  # docs/facts/material/tokens.toml:1364
+    "level1",  # docs/facts/material/tokens.toml:1379
+]
+flavors = [
+    "baseline",  # docs/facts/material/state-models.toml:46
+    "expressive",  # docs/facts/material/state-models.toml:272
+]
+spec_versions = [
+    "spec_2021",  # docs/facts/material/roles.toml:2480
+]
+inputs = [
+    "accent",  # docs/facts/material/roles.toml:2535
+]
+# S9.1: every declared input but on kde-breeze
+accent_inputs = ["accent"]
+
+[declare.params.opacity]
+# S4.6, S10: one unit per group, the opacity group's `fraction` (S10's `opacity = { unit = "fraction" }`): its facts state fractions
+unit = "fraction"
+keys = [
+    "disabled",  # docs/facts/material/tokens.toml:9
+    "focus",  # docs/facts/material/tokens.toml:29
+    "hover",  # docs/facts/material/tokens.toml:39
+    "pressed",  # docs/facts/material/tokens.toml:49
+]
+# hand-written: end declare
+
+# docs/facts/material/state-models.toml:46
+[declare.widget.button]
+available = true
+variants = ["primary", "tinted", "toggle", "with_icon", "@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@primary_container"]
+later = { variants = ["toggle", "@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@primary_container"] }
+sizes = ["regular"]
+default_size = "regular"
+densities = []
+exclusive = [["disabled", "hover"], ["disabled", "pressed"], ["disabled", "focus_visible"]]
+exclusive_variants = [["primary", "tinted", "@elevated", "@outlined", "@secondary", "@tertiary", "@surface", "@primary_container"], ["@fab", "@extended_fab"]]
+recency = { state_layer = ["focus_visible", "hover"], elevation = ["pressed", "focus_visible", "hover"] }
+sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "extra_large"] }, { variant = "@extended_fab", sizes = ["regular"] }]
+
+# docs/facts/material/state-models.toml:272
+[declare.flavor.expressive.widget.button]
+available = true
+variants = ["primary", "tinted", "toggle", "with_icon", "@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@square", "@narrow", "@wide", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"]
+later = { variants = ["@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@square", "@narrow", "@wide", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"] }
+sizes = ["extra_small", "small", "regular", "large", "extra_large"]
+default_size = "small"
+densities = []
+exclusive = [["disabled", "hover"], ["disabled", "pressed"], ["disabled", "focus_visible"]]
+exclusive_variants = [["primary", "tinted", "@elevated", "@outlined", "@secondary", "@tertiary", "@surface", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"], ["@fab", "@extended_fab"], ["@narrow", "@wide"]]
+recency = { state_layer = ["focus_visible", "hover"], elevation = ["pressed", "focus_visible", "hover"] }
+sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "large", "extra_large"], default_size = "regular" }, { variant = "@extended_fab", sizes = ["small", "regular", "large", "extra_large"], default_size = "regular" }]
+
+[pending]
+# docs/facts/material/roles.toml:2535
+"inputs.accent.light" = "U550"
+# docs/facts/material/roles.toml:2535
+"inputs.accent.dark" = "U550"
+# docs/facts/material/tokens.toml:9297
+"tokens.text.font_dpi" = "U295"
+# docs/facts/material/tokens.toml:9459
+"tokens.text.roles.headline" = "U562"
+# docs/facts/material/tokens.toml:10147
+"tokens.icons.theme" = "U559"
+# docs/facts/material/tokens.toml:10152
+"tokens.icons.theme_fallback" = "U559"
+# docs/facts/material/tokens.toml:10362
+"tokens.icons.sizes.small" = "U561"
+# docs/facts/material/tokens.toml:10367
+"tokens.icons.sizes.large" = "U561"
+# docs/facts/material/tokens.toml:10372
+"tokens.icons.sizes.panel" = "U561"
+
+[colors.light.keyed]
+# docs/facts/material/roles.toml:6
+background = "= m3_role(@background)"
+# docs/facts/material/roles.toml:26
+error = "= m3_role(@error)"
+# docs/facts/material/roles.toml:46
+error_container = "= m3_role(@error_container)"
+# docs/facts/material/roles.toml:126
+on_background = "= m3_role(@on_background)"
+# docs/facts/material/roles.toml:146
+on_error = "= m3_role(@on_error)"
+# docs/facts/material/roles.toml:186
+on_primary = "= m3_role(@on_primary)"
+# docs/facts/material/roles.toml:286
+on_secondary_container = "= m3_role(@on_secondary_container)"
+# docs/facts/material/roles.toml:346
+on_surface = "= m3_role(@on_surface)"
+# docs/facts/material/roles.toml:366
+on_surface_variant = "= m3_role(@on_surface_variant)"
+# docs/facts/material/roles.toml:486
+outline_variant = "= m3_role(@outline_variant)"
+# docs/facts/material/roles.toml:506
+primary = "= m3_role(@primary)"
+# docs/facts/material/roles.toml:586
+scrim = "= m3_role(@scrim)"
+# docs/facts/material/roles.toml:606
+secondary = "= m3_role(@secondary)"
+# docs/facts/material/roles.toml:626
+secondary_container = "= m3_role(@secondary_container)"
+# docs/facts/material/roles.toml:686
+shadow = "= m3_role(@shadow)"
+
+[colors.light.surfaces.window]
+# docs/facts/material/roles.toml:991
+background = "= role.@background"
+# docs/facts/material/roles.toml:1001
+background_alternate = "absent"
+# docs/facts/material/roles.toml:1012
+foreground = "= role.@on_background"
+# docs/facts/material/roles.toml:1027
+foreground_inactive = "= role.@on_surface_variant"
+# docs/facts/material/roles.toml:1042
+foreground_active = "absent"
+# docs/facts/material/roles.toml:1053
+link = "= role.@primary"
+# docs/facts/material/roles.toml:1063
+link_visited = "absent"
+# docs/facts/material/roles.toml:1074
+negative = "= role.global.status.error.standalone"
+# docs/facts/material/roles.toml:1084
+neutral = "absent"
+# docs/facts/material/roles.toml:1095
+positive = "absent"
+# docs/facts/material/roles.toml:1106
+decoration_focus = "absent"
+# docs/facts/material/roles.toml:1117
+decoration_hover = "absent"
+# docs/facts/material/roles.toml:1128
+shade = "absent"
+# docs/facts/material/roles.toml:1139
+shade_darker = "absent"
+# docs/facts/material/roles.toml:1150
+border = "= role.@outline_variant"
+# docs/facts/material/roles.toml:1165
+background_active = "absent"
+# docs/facts/material/roles.toml:1176
+background_link = "absent"
+# docs/facts/material/roles.toml:1187
+background_visited = "absent"
+# docs/facts/material/roles.toml:1198
+background_negative = "absent"
+# docs/facts/material/roles.toml:1209
+background_neutral = "absent"
+# docs/facts/material/roles.toml:1220
+background_positive = "absent"
+# docs/facts/material/roles.toml:1231
+disabled.background = "absent"
+# docs/facts/material/roles.toml:1242
+disabled.background_alternate = "absent"
+# docs/facts/material/roles.toml:1253
+disabled.foreground = "= alpha(role.@on_surface, 0.38)"
+# docs/facts/material/roles.toml:1268
+disabled.foreground_inactive = "absent"
+# docs/facts/material/roles.toml:1279
+disabled.foreground_active = "absent"
+# docs/facts/material/roles.toml:1290
+disabled.link = "absent"
+# docs/facts/material/roles.toml:1301
+disabled.link_visited = "absent"
+# docs/facts/material/roles.toml:1312
+disabled.negative = "absent"
+# docs/facts/material/roles.toml:1323
+disabled.neutral = "absent"
+# docs/facts/material/roles.toml:1334
+disabled.positive = "absent"
+# docs/facts/material/roles.toml:1345
+disabled.decoration_focus = "absent"
+# docs/facts/material/roles.toml:1356
+disabled.decoration_hover = "absent"
+# docs/facts/material/roles.toml:1367
+disabled.shade = "absent"
+# docs/facts/material/roles.toml:1378
+disabled.shade_darker = "absent"
+# docs/facts/material/roles.toml:1389
+disabled.border = "absent"
+# docs/facts/material/roles.toml:1400
+disabled.background_active = "absent"
+# docs/facts/material/roles.toml:1411
+disabled.background_link = "absent"
+# docs/facts/material/roles.toml:1422
+disabled.background_visited = "absent"
+# docs/facts/material/roles.toml:1433
+disabled.background_negative = "absent"
+# docs/facts/material/roles.toml:1444
+disabled.background_neutral = "absent"
+# docs/facts/material/roles.toml:1455
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.selection]
+# docs/facts/material/roles.toml:1470
+background = "= role.@secondary_container"
+# docs/facts/material/roles.toml:1480
+background_alternate = "absent"
+# docs/facts/material/roles.toml:1491
+foreground = "= role.@on_secondary_container"
+# docs/facts/material/roles.toml:1501
+foreground_inactive = "= role.@on_secondary_container"
+# docs/facts/material/roles.toml:1511
+foreground_active = "absent"
+# docs/facts/material/roles.toml:1522
+link = "= role.window.link"
+# docs/facts/material/roles.toml:1532
+link_visited = "absent"
+# docs/facts/material/roles.toml:1543
+negative = "= role.global.status.error.standalone"
+# docs/facts/material/roles.toml:1553
+neutral = "absent"
+# docs/facts/material/roles.toml:1564
+positive = "absent"
+# docs/facts/material/roles.toml:1575
+decoration_focus = "absent"
+# docs/facts/material/roles.toml:1586
+decoration_hover = "absent"
+# docs/facts/material/roles.toml:1597
+shade = "absent"
+# docs/facts/material/roles.toml:1608
+shade_darker = "absent"
+# docs/facts/material/roles.toml:1619
+border = "= role.window.border"
+# docs/facts/material/roles.toml:1629
+background_active = "absent"
+# docs/facts/material/roles.toml:1640
+background_link = "absent"
+# docs/facts/material/roles.toml:1651
+background_visited = "absent"
+# docs/facts/material/roles.toml:1662
+background_negative = "absent"
+# docs/facts/material/roles.toml:1673
+background_neutral = "absent"
+# docs/facts/material/roles.toml:1684
+background_positive = "absent"
+# docs/facts/material/roles.toml:1695
+disabled.background = "= alpha(role.@on_surface, 0.38)"
+# docs/facts/material/roles.toml:1710
+disabled.background_alternate = "absent"
+# docs/facts/material/roles.toml:1721
+disabled.foreground = "= alpha(role.@on_surface, 0.38)"
+# docs/facts/material/roles.toml:1736
+disabled.foreground_inactive = "absent"
+# docs/facts/material/roles.toml:1747
+disabled.foreground_active = "absent"
+# docs/facts/material/roles.toml:1758
+disabled.link = "absent"
+# docs/facts/material/roles.toml:1769
+disabled.link_visited = "absent"
+# docs/facts/material/roles.toml:1780
+disabled.negative = "absent"
+# docs/facts/material/roles.toml:1791
+disabled.neutral = "absent"
+# docs/facts/material/roles.toml:1802
+disabled.positive = "absent"
+# docs/facts/material/roles.toml:1813
+disabled.decoration_focus = "absent"
+# docs/facts/material/roles.toml:1824
+disabled.decoration_hover = "absent"
+# docs/facts/material/roles.toml:1835
+disabled.shade = "absent"
+# docs/facts/material/roles.toml:1846
+disabled.shade_darker = "absent"
+# docs/facts/material/roles.toml:1857
+disabled.border = "absent"
+# docs/facts/material/roles.toml:1868
+disabled.background_active = "absent"
+# docs/facts/material/roles.toml:1879
+disabled.background_link = "absent"
+# docs/facts/material/roles.toml:1890
+disabled.background_visited = "absent"
+# docs/facts/material/roles.toml:1901
+disabled.background_negative = "absent"
+# docs/facts/material/roles.toml:1912
+disabled.background_neutral = "absent"
+# docs/facts/material/roles.toml:1923
+disabled.background_positive = "absent"
+
+[colors.light.global]
+# docs/facts/material/roles.toml:1936
+accent = "= role.@primary"
+# docs/facts/material/roles.toml:1946
+accent_foreground = "= role.@on_primary"
+# docs/facts/material/roles.toml:1961
+accent_standalone = "= role.global.accent"
+# docs/facts/material/roles.toml:1976
+accent_ramp = {}
+# docs/facts/material/roles.toml:1987
+status.success.fill = "absent"
+# docs/facts/material/roles.toml:1998
+status.success.foreground = "absent"
+# docs/facts/material/roles.toml:2009
+status.success.standalone = "absent"
+# docs/facts/material/roles.toml:2020
+status.success.background = "absent"
+# docs/facts/material/roles.toml:2031
+status.success.background_solid = "absent"
+# docs/facts/material/roles.toml:2042
+status.warning.fill = "absent"
+# docs/facts/material/roles.toml:2053
+status.warning.foreground = "absent"
+# docs/facts/material/roles.toml:2064
+status.warning.standalone = "absent"
+# docs/facts/material/roles.toml:2075
+status.warning.background = "absent"
+# docs/facts/material/roles.toml:2086
+status.warning.background_solid = "absent"
+# docs/facts/material/roles.toml:2097
+status.error.fill = "= role.@error"
+# docs/facts/material/roles.toml:2107
+status.error.foreground = "= role.@on_error"
+# docs/facts/material/roles.toml:2122
+status.error.standalone = "= role.@error"
+# docs/facts/material/roles.toml:2132
+status.error.background = "= role.@error_container"
+# docs/facts/material/roles.toml:2142
+status.error.background_solid = "absent"
+# docs/facts/material/roles.toml:2153
+status.info.fill = "absent"
+# docs/facts/material/roles.toml:2164
+status.info.foreground = "absent"
+# docs/facts/material/roles.toml:2175
+status.info.standalone = "absent"
+# docs/facts/material/roles.toml:2186
+status.info.background = "absent"
+# docs/facts/material/roles.toml:2197
+status.info.background_solid = "absent"
+# docs/facts/material/roles.toml:2208
+status.neutral.fill = "absent"
+# docs/facts/material/roles.toml:2219
+status.neutral.foreground = "absent"
+# docs/facts/material/roles.toml:2230
+status.neutral.standalone = "absent"
+# docs/facts/material/roles.toml:2241
+status.neutral.background = "absent"
+# docs/facts/material/roles.toml:2252
+status.neutral.background_solid = "absent"
+# docs/facts/material/roles.toml:2263
+status.destructive.fill = "absent"
+# docs/facts/material/roles.toml:2274
+status.destructive.foreground = "absent"
+# docs/facts/material/roles.toml:2285
+status.destructive.standalone = "absent"
+# docs/facts/material/roles.toml:2296
+status.destructive.background = "absent"
+# docs/facts/material/roles.toml:2307
+status.destructive.background_solid = "absent"
+# docs/facts/material/roles.toml:2318
+shadow_reference = "= role.@shadow"
+# docs/facts/material/roles.toml:2328
+selection_text_background = "= alpha(role.@primary, 0.4)"
+# docs/facts/material/roles.toml:2338
+selection_text_foreground = "absent"
+# docs/facts/material/roles.toml:2349
+selection_text_background_unfocused = "absent"
+# docs/facts/material/roles.toml:2360
+selection_text_foreground_unfocused = "absent"
+# docs/facts/material/roles.toml:2371
+find_highlight = "absent"
+# docs/facts/material/roles.toml:2382
+drop_highlight = "absent"
+# docs/facts/material/roles.toml:2399
+scrim = "= with_alpha(role.@scrim, 0.32)"
+
+[colors.dark.keyed]
+# docs/facts/material/roles.toml:6
+background = "= m3_role(@background)"
+# docs/facts/material/roles.toml:26
+error = "= m3_role(@error)"
+# docs/facts/material/roles.toml:46
+error_container = "= m3_role(@error_container)"
+# docs/facts/material/roles.toml:126
+on_background = "= m3_role(@on_background)"
+# docs/facts/material/roles.toml:146
+on_error = "= m3_role(@on_error)"
+# docs/facts/material/roles.toml:186
+on_primary = "= m3_role(@on_primary)"
+# docs/facts/material/roles.toml:286
+on_secondary_container = "= m3_role(@on_secondary_container)"
+# docs/facts/material/roles.toml:346
+on_surface = "= m3_role(@on_surface)"
+# docs/facts/material/roles.toml:366
+on_surface_variant = "= m3_role(@on_surface_variant)"
+# docs/facts/material/roles.toml:486
+outline_variant = "= m3_role(@outline_variant)"
+# docs/facts/material/roles.toml:506
+primary = "= m3_role(@primary)"
+# docs/facts/material/roles.toml:586
+scrim = "= m3_role(@scrim)"
+# docs/facts/material/roles.toml:606
+secondary = "= m3_role(@secondary)"
+# docs/facts/material/roles.toml:626
+secondary_container = "= m3_role(@secondary_container)"
+# docs/facts/material/roles.toml:686
+shadow = "= m3_role(@shadow)"
+
+[colors.dark.surfaces.window]
+# docs/facts/material/roles.toml:991
+background = "= role.@background"
+# docs/facts/material/roles.toml:1001
+background_alternate = "absent"
+# docs/facts/material/roles.toml:1012
+foreground = "= role.@on_background"
+# docs/facts/material/roles.toml:1027
+foreground_inactive = "= role.@on_surface_variant"
+# docs/facts/material/roles.toml:1042
+foreground_active = "absent"
+# docs/facts/material/roles.toml:1053
+link = "= role.@primary"
+# docs/facts/material/roles.toml:1063
+link_visited = "absent"
+# docs/facts/material/roles.toml:1074
+negative = "= role.global.status.error.standalone"
+# docs/facts/material/roles.toml:1084
+neutral = "absent"
+# docs/facts/material/roles.toml:1095
+positive = "absent"
+# docs/facts/material/roles.toml:1106
+decoration_focus = "absent"
+# docs/facts/material/roles.toml:1117
+decoration_hover = "absent"
+# docs/facts/material/roles.toml:1128
+shade = "absent"
+# docs/facts/material/roles.toml:1139
+shade_darker = "absent"
+# docs/facts/material/roles.toml:1150
+border = "= role.@outline_variant"
+# docs/facts/material/roles.toml:1165
+background_active = "absent"
+# docs/facts/material/roles.toml:1176
+background_link = "absent"
+# docs/facts/material/roles.toml:1187
+background_visited = "absent"
+# docs/facts/material/roles.toml:1198
+background_negative = "absent"
+# docs/facts/material/roles.toml:1209
+background_neutral = "absent"
+# docs/facts/material/roles.toml:1220
+background_positive = "absent"
+# docs/facts/material/roles.toml:1231
+disabled.background = "absent"
+# docs/facts/material/roles.toml:1242
+disabled.background_alternate = "absent"
+# docs/facts/material/roles.toml:1253
+disabled.foreground = "= alpha(role.@on_surface, 0.38)"
+# docs/facts/material/roles.toml:1268
+disabled.foreground_inactive = "absent"
+# docs/facts/material/roles.toml:1279
+disabled.foreground_active = "absent"
+# docs/facts/material/roles.toml:1290
+disabled.link = "absent"
+# docs/facts/material/roles.toml:1301
+disabled.link_visited = "absent"
+# docs/facts/material/roles.toml:1312
+disabled.negative = "absent"
+# docs/facts/material/roles.toml:1323
+disabled.neutral = "absent"
+# docs/facts/material/roles.toml:1334
+disabled.positive = "absent"
+# docs/facts/material/roles.toml:1345
+disabled.decoration_focus = "absent"
+# docs/facts/material/roles.toml:1356
+disabled.decoration_hover = "absent"
+# docs/facts/material/roles.toml:1367
+disabled.shade = "absent"
+# docs/facts/material/roles.toml:1378
+disabled.shade_darker = "absent"
+# docs/facts/material/roles.toml:1389
+disabled.border = "absent"
+# docs/facts/material/roles.toml:1400
+disabled.background_active = "absent"
+# docs/facts/material/roles.toml:1411
+disabled.background_link = "absent"
+# docs/facts/material/roles.toml:1422
+disabled.background_visited = "absent"
+# docs/facts/material/roles.toml:1433
+disabled.background_negative = "absent"
+# docs/facts/material/roles.toml:1444
+disabled.background_neutral = "absent"
+# docs/facts/material/roles.toml:1455
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.selection]
+# docs/facts/material/roles.toml:1470
+background = "= role.@secondary_container"
+# docs/facts/material/roles.toml:1480
+background_alternate = "absent"
+# docs/facts/material/roles.toml:1491
+foreground = "= role.@on_secondary_container"
+# docs/facts/material/roles.toml:1501
+foreground_inactive = "= role.@on_secondary_container"
+# docs/facts/material/roles.toml:1511
+foreground_active = "absent"
+# docs/facts/material/roles.toml:1522
+link = "= role.window.link"
+# docs/facts/material/roles.toml:1532
+link_visited = "absent"
+# docs/facts/material/roles.toml:1543
+negative = "= role.global.status.error.standalone"
+# docs/facts/material/roles.toml:1553
+neutral = "absent"
+# docs/facts/material/roles.toml:1564
+positive = "absent"
+# docs/facts/material/roles.toml:1575
+decoration_focus = "absent"
+# docs/facts/material/roles.toml:1586
+decoration_hover = "absent"
+# docs/facts/material/roles.toml:1597
+shade = "absent"
+# docs/facts/material/roles.toml:1608
+shade_darker = "absent"
+# docs/facts/material/roles.toml:1619
+border = "= role.window.border"
+# docs/facts/material/roles.toml:1629
+background_active = "absent"
+# docs/facts/material/roles.toml:1640
+background_link = "absent"
+# docs/facts/material/roles.toml:1651
+background_visited = "absent"
+# docs/facts/material/roles.toml:1662
+background_negative = "absent"
+# docs/facts/material/roles.toml:1673
+background_neutral = "absent"
+# docs/facts/material/roles.toml:1684
+background_positive = "absent"
+# docs/facts/material/roles.toml:1695
+disabled.background = "= alpha(role.@on_surface, 0.38)"
+# docs/facts/material/roles.toml:1710
+disabled.background_alternate = "absent"
+# docs/facts/material/roles.toml:1721
+disabled.foreground = "= alpha(role.@on_surface, 0.38)"
+# docs/facts/material/roles.toml:1736
+disabled.foreground_inactive = "absent"
+# docs/facts/material/roles.toml:1747
+disabled.foreground_active = "absent"
+# docs/facts/material/roles.toml:1758
+disabled.link = "absent"
+# docs/facts/material/roles.toml:1769
+disabled.link_visited = "absent"
+# docs/facts/material/roles.toml:1780
+disabled.negative = "absent"
+# docs/facts/material/roles.toml:1791
+disabled.neutral = "absent"
+# docs/facts/material/roles.toml:1802
+disabled.positive = "absent"
+# docs/facts/material/roles.toml:1813
+disabled.decoration_focus = "absent"
+# docs/facts/material/roles.toml:1824
+disabled.decoration_hover = "absent"
+# docs/facts/material/roles.toml:1835
+disabled.shade = "absent"
+# docs/facts/material/roles.toml:1846
+disabled.shade_darker = "absent"
+# docs/facts/material/roles.toml:1857
+disabled.border = "absent"
+# docs/facts/material/roles.toml:1868
+disabled.background_active = "absent"
+# docs/facts/material/roles.toml:1879
+disabled.background_link = "absent"
+# docs/facts/material/roles.toml:1890
+disabled.background_visited = "absent"
+# docs/facts/material/roles.toml:1901
+disabled.background_negative = "absent"
+# docs/facts/material/roles.toml:1912
+disabled.background_neutral = "absent"
+# docs/facts/material/roles.toml:1923
+disabled.background_positive = "absent"
+
+[colors.dark.global]
+# docs/facts/material/roles.toml:1936
+accent = "= role.@primary"
+# docs/facts/material/roles.toml:1946
+accent_foreground = "= role.@on_primary"
+# docs/facts/material/roles.toml:1961
+accent_standalone = "= role.global.accent"
+# docs/facts/material/roles.toml:1976
+accent_ramp = {}
+# docs/facts/material/roles.toml:1987
+status.success.fill = "absent"
+# docs/facts/material/roles.toml:1998
+status.success.foreground = "absent"
+# docs/facts/material/roles.toml:2009
+status.success.standalone = "absent"
+# docs/facts/material/roles.toml:2020
+status.success.background = "absent"
+# docs/facts/material/roles.toml:2031
+status.success.background_solid = "absent"
+# docs/facts/material/roles.toml:2042
+status.warning.fill = "absent"
+# docs/facts/material/roles.toml:2053
+status.warning.foreground = "absent"
+# docs/facts/material/roles.toml:2064
+status.warning.standalone = "absent"
+# docs/facts/material/roles.toml:2075
+status.warning.background = "absent"
+# docs/facts/material/roles.toml:2086
+status.warning.background_solid = "absent"
+# docs/facts/material/roles.toml:2097
+status.error.fill = "= role.@error"
+# docs/facts/material/roles.toml:2107
+status.error.foreground = "= role.@on_error"
+# docs/facts/material/roles.toml:2122
+status.error.standalone = "= role.@error"
+# docs/facts/material/roles.toml:2132
+status.error.background = "= role.@error_container"
+# docs/facts/material/roles.toml:2142
+status.error.background_solid = "absent"
+# docs/facts/material/roles.toml:2153
+status.info.fill = "absent"
+# docs/facts/material/roles.toml:2164
+status.info.foreground = "absent"
+# docs/facts/material/roles.toml:2175
+status.info.standalone = "absent"
+# docs/facts/material/roles.toml:2186
+status.info.background = "absent"
+# docs/facts/material/roles.toml:2197
+status.info.background_solid = "absent"
+# docs/facts/material/roles.toml:2208
+status.neutral.fill = "absent"
+# docs/facts/material/roles.toml:2219
+status.neutral.foreground = "absent"
+# docs/facts/material/roles.toml:2230
+status.neutral.standalone = "absent"
+# docs/facts/material/roles.toml:2241
+status.neutral.background = "absent"
+# docs/facts/material/roles.toml:2252
+status.neutral.background_solid = "absent"
+# docs/facts/material/roles.toml:2263
+status.destructive.fill = "absent"
+# docs/facts/material/roles.toml:2274
+status.destructive.foreground = "absent"
+# docs/facts/material/roles.toml:2285
+status.destructive.standalone = "absent"
+# docs/facts/material/roles.toml:2296
+status.destructive.background = "absent"
+# docs/facts/material/roles.toml:2307
+status.destructive.background_solid = "absent"
+# docs/facts/material/roles.toml:2318
+shadow_reference = "= role.@shadow"
+# docs/facts/material/roles.toml:2328
+selection_text_background = "= alpha(role.@primary, 0.4)"
+# docs/facts/material/roles.toml:2338
+selection_text_foreground = "absent"
+# docs/facts/material/roles.toml:2349
+selection_text_background_unfocused = "absent"
+# docs/facts/material/roles.toml:2360
+selection_text_foreground_unfocused = "absent"
+# docs/facts/material/roles.toml:2371
+find_highlight = "absent"
+# docs/facts/material/roles.toml:2382
+drop_highlight = "absent"
+# docs/facts/material/roles.toml:2399
+scrim = "= with_alpha(role.@scrim, 0.32)"
+
+[tokens]
+# docs/facts/material/roles.toml:2439
+kde = "absent"
+# docs/facts/material/tokens.toml:10381
+size_classes = { compact = { horizontal_px = 0, vertical_px = 0 }, medium = { horizontal_px = 600, vertical_px = 480 }, expanded = { horizontal_px = 840, vertical_px = 900 } }
+
+[tokens.material]
+# docs/facts/material/roles.toml:2460
+variant = "tonal_spot"
+# docs/facts/material/roles.toml:2480
+spec_version = "spec_2021"
+# docs/facts/material/roles.toml:2495
+contrast_level = 0.0
+
+[tokens.params]
+# docs/facts/material/tokens.toml:9
+opacity.disabled = 0.38
+# docs/facts/material/tokens.toml:29
+opacity.focus = 0.1
+# docs/facts/material/tokens.toml:39
+opacity.hover = 0.08
+# docs/facts/material/tokens.toml:49
+opacity.pressed = 0.1
+
+[tokens.motion]
+# docs/facts/material/tokens.toml:1313
+speed_factor = 1
+
+[tokens.elevation]
+# docs/facts/material/tokens.toml:1364
+level0 = []
+# docs/facts/material/tokens.toml:1379
+level1 = [{ x_px = 0, y_px = 1, blur_px = 2, spread_px = 0, color = "= alpha(role.@shadow, 0.3)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "= alpha(role.@shadow, 0.15)", inset = false, falloff = "gaussian" }]
+
+[tokens.focus]
+# docs/facts/material/tokens.toml:1562
+kind = "ring"
+# docs/facts/material/tokens.toml:1572
+width_px = 3
+# docs/facts/material/tokens.toml:1582
+paint = "= role.@secondary"
+# docs/facts/material/tokens.toml:1597
+dash = "solid"
+# docs/facts/material/tokens.toml:1608
+offset.top_px = 2
+# docs/facts/material/tokens.toml:1623
+offset.right_px = 2
+# docs/facts/material/tokens.toml:1638
+offset.bottom_px = 2
+# docs/facts/material/tokens.toml:1653
+offset.left_px = 2
+# docs/facts/material/tokens.toml:1669
+corners.top_left = "follow_part"
+# docs/facts/material/tokens.toml:1679
+corners.top_right = "follow_part"
+# docs/facts/material/tokens.toml:1689
+corners.bottom_right = "follow_part"
+# docs/facts/material/tokens.toml:1699
+corners.bottom_left = "follow_part"
+# docs/facts/material/tokens.toml:1709
+corners.curve = "circular"
+# docs/facts/material/tokens.toml:1719
+shadow = "absent"
+
+[tokens.icons]
+# docs/facts/material/tokens.toml:1841
+set = "material"
+# docs/facts/material/tokens.toml:1851
+sizes.toolbar.size_px = 24
+# docs/facts/material/tokens.toml:1861
+sizes.dialog.size_px = 24
+# docs/facts/material/tokens.toml:10168
+sizes.toolbar.fill = "= surface.foreground"
+# docs/facts/material/tokens.toml:10178
+sizes.toolbar.weight = 400
+# docs/facts/material/tokens.toml:10188
+sizes.toolbar.axes = {}
+# docs/facts/material/tokens.toml:10198
+sizes.toolbar.symbol_variants = []
+# docs/facts/material/tokens.toml:10209
+sizes.toolbar.symbolic_colors = {}
+# docs/facts/material/tokens.toml:10220
+sizes.toolbar.rendering_mode = "absent"
+# docs/facts/material/tokens.toml:10231
+sizes.toolbar.scale = "absent"
+# docs/facts/material/tokens.toml:10242
+sizes.toolbar.state_effect = "absent"
+# docs/facts/material/tokens.toml:10264
+sizes.dialog.fill = "= surface.foreground"
+# docs/facts/material/tokens.toml:10274
+sizes.dialog.weight = 400
+# docs/facts/material/tokens.toml:10284
+sizes.dialog.axes = {}
+# docs/facts/material/tokens.toml:10294
+sizes.dialog.symbol_variants = []
+# docs/facts/material/tokens.toml:10305
+sizes.dialog.symbolic_colors = {}
+# docs/facts/material/tokens.toml:10316
+sizes.dialog.rendering_mode = "absent"
+# docs/facts/material/tokens.toml:10327
+sizes.dialog.scale = "absent"
+# docs/facts/material/tokens.toml:10338
+sizes.dialog.state_effect = "absent"
+# S10
+sizes.keyed = {}
+
+[tokens.text]
+# docs/facts/material/tokens.toml:1894
+keyed.body_large.font.family = "Roboto"
+# docs/facts/material/tokens.toml:1909
+keyed.body_large.font.size_px = 16
+# docs/facts/material/tokens.toml:1919
+keyed.body_large.font.weight = 400
+# docs/facts/material/tokens.toml:1934
+keyed.body_large.font.style = "normal"
+# docs/facts/material/tokens.toml:1950
+keyed.body_large.font.width = 100
+# docs/facts/material/tokens.toml:1961
+keyed.body_large.font.axes = {}
+# docs/facts/material/tokens.toml:1972
+keyed.body_large.font.features = {}
+# docs/facts/material/tokens.toml:1983
+keyed.body_large.line_height_px = 24.0
+# docs/facts/material/tokens.toml:1993
+keyed.body_large.letter_spacing_px = 0.5
+# docs/facts/material/tokens.toml:2003
+keyed.body_large.decoration = "absent"
+# docs/facts/material/tokens.toml:2014
+keyed.body_large.case = "mixed"
+# docs/facts/material/tokens.toml:2027
+keyed.body_large.scaling_role = "none"
+# docs/facts/material/tokens.toml:2039
+keyed.body_large.word_spacing_px = 0
+# docs/facts/material/tokens.toml:2050
+keyed.body_large.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:2061
+keyed.body_large.elision = "absent"
+# docs/facts/material/tokens.toml:2078
+keyed.body_large.wrap = "absent"
+# docs/facts/material/tokens.toml:2095
+keyed.body_large.max_lines = "absent"
+# docs/facts/material/tokens.toml:2113
+keyed.body_large.fill = "absent"
+# docs/facts/material/tokens.toml:2368
+keyed.body_small.font.family = "Roboto"
+# docs/facts/material/tokens.toml:2383
+keyed.body_small.font.size_px = 12
+# docs/facts/material/tokens.toml:2393
+keyed.body_small.font.weight = 400
+# docs/facts/material/tokens.toml:2408
+keyed.body_small.font.style = "normal"
+# docs/facts/material/tokens.toml:2424
+keyed.body_small.font.width = 100
+# docs/facts/material/tokens.toml:2435
+keyed.body_small.font.axes = {}
+# docs/facts/material/tokens.toml:2446
+keyed.body_small.font.features = {}
+# docs/facts/material/tokens.toml:2457
+keyed.body_small.line_height_px = 16.0
+# docs/facts/material/tokens.toml:2467
+keyed.body_small.letter_spacing_px = 0.4
+# docs/facts/material/tokens.toml:2477
+keyed.body_small.decoration = "absent"
+# docs/facts/material/tokens.toml:2488
+keyed.body_small.case = "mixed"
+# docs/facts/material/tokens.toml:2501
+keyed.body_small.scaling_role = "none"
+# docs/facts/material/tokens.toml:2513
+keyed.body_small.word_spacing_px = 0
+# docs/facts/material/tokens.toml:2524
+keyed.body_small.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:2535
+keyed.body_small.elision = "absent"
+# docs/facts/material/tokens.toml:2552
+keyed.body_small.wrap = "absent"
+# docs/facts/material/tokens.toml:2569
+keyed.body_small.max_lines = "absent"
+# docs/facts/material/tokens.toml:2587
+keyed.body_small.fill = "absent"
+# docs/facts/material/tokens.toml:2605
+keyed.display_large.font.family = "Roboto"
+# docs/facts/material/tokens.toml:2620
+keyed.display_large.font.size_px = 57
+# docs/facts/material/tokens.toml:2630
+keyed.display_large.font.weight = 400
+# docs/facts/material/tokens.toml:2645
+keyed.display_large.font.style = "normal"
+# docs/facts/material/tokens.toml:2661
+keyed.display_large.font.width = 100
+# docs/facts/material/tokens.toml:2672
+keyed.display_large.font.axes = {}
+# docs/facts/material/tokens.toml:2683
+keyed.display_large.font.features = {}
+# docs/facts/material/tokens.toml:2694
+keyed.display_large.line_height_px = 64.0
+# docs/facts/material/tokens.toml:2704
+keyed.display_large.letter_spacing_px = -0.2
+# docs/facts/material/tokens.toml:2714
+keyed.display_large.decoration = "absent"
+# docs/facts/material/tokens.toml:2725
+keyed.display_large.case = "mixed"
+# docs/facts/material/tokens.toml:2738
+keyed.display_large.scaling_role = "none"
+# docs/facts/material/tokens.toml:2750
+keyed.display_large.word_spacing_px = 0
+# docs/facts/material/tokens.toml:2761
+keyed.display_large.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:2772
+keyed.display_large.elision = "absent"
+# docs/facts/material/tokens.toml:2789
+keyed.display_large.wrap = "absent"
+# docs/facts/material/tokens.toml:2806
+keyed.display_large.max_lines = "absent"
+# docs/facts/material/tokens.toml:2824
+keyed.display_large.fill = "absent"
+# docs/facts/material/tokens.toml:3079
+keyed.display_small.font.family = "Roboto"
+# docs/facts/material/tokens.toml:3094
+keyed.display_small.font.size_px = 36
+# docs/facts/material/tokens.toml:3104
+keyed.display_small.font.weight = 400
+# docs/facts/material/tokens.toml:3119
+keyed.display_small.font.style = "normal"
+# docs/facts/material/tokens.toml:3135
+keyed.display_small.font.width = 100
+# docs/facts/material/tokens.toml:3146
+keyed.display_small.font.axes = {}
+# docs/facts/material/tokens.toml:3157
+keyed.display_small.font.features = {}
+# docs/facts/material/tokens.toml:3168
+keyed.display_small.line_height_px = 44.0
+# docs/facts/material/tokens.toml:3178
+keyed.display_small.letter_spacing_px = 0.0
+# docs/facts/material/tokens.toml:3188
+keyed.display_small.decoration = "absent"
+# docs/facts/material/tokens.toml:3199
+keyed.display_small.case = "mixed"
+# docs/facts/material/tokens.toml:3212
+keyed.display_small.scaling_role = "none"
+# docs/facts/material/tokens.toml:3224
+keyed.display_small.word_spacing_px = 0
+# docs/facts/material/tokens.toml:3235
+keyed.display_small.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:3246
+keyed.display_small.elision = "absent"
+# docs/facts/material/tokens.toml:3263
+keyed.display_small.wrap = "absent"
+# docs/facts/material/tokens.toml:3280
+keyed.display_small.max_lines = "absent"
+# docs/facts/material/tokens.toml:3298
+keyed.display_small.fill = "absent"
+# docs/facts/material/tokens.toml:3553
+keyed.headline_medium.font.family = "Roboto"
+# docs/facts/material/tokens.toml:3568
+keyed.headline_medium.font.size_px = 28
+# docs/facts/material/tokens.toml:3578
+keyed.headline_medium.font.weight = 400
+# docs/facts/material/tokens.toml:3593
+keyed.headline_medium.font.style = "normal"
+# docs/facts/material/tokens.toml:3609
+keyed.headline_medium.font.width = 100
+# docs/facts/material/tokens.toml:3620
+keyed.headline_medium.font.axes = {}
+# docs/facts/material/tokens.toml:3631
+keyed.headline_medium.font.features = {}
+# docs/facts/material/tokens.toml:3642
+keyed.headline_medium.line_height_px = 36.0
+# docs/facts/material/tokens.toml:3652
+keyed.headline_medium.letter_spacing_px = 0.0
+# docs/facts/material/tokens.toml:3662
+keyed.headline_medium.decoration = "absent"
+# docs/facts/material/tokens.toml:3673
+keyed.headline_medium.case = "mixed"
+# docs/facts/material/tokens.toml:3686
+keyed.headline_medium.scaling_role = "none"
+# docs/facts/material/tokens.toml:3698
+keyed.headline_medium.word_spacing_px = 0
+# docs/facts/material/tokens.toml:3709
+keyed.headline_medium.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:3720
+keyed.headline_medium.elision = "absent"
+# docs/facts/material/tokens.toml:3737
+keyed.headline_medium.wrap = "absent"
+# docs/facts/material/tokens.toml:3754
+keyed.headline_medium.max_lines = "absent"
+# docs/facts/material/tokens.toml:3772
+keyed.headline_medium.fill = "absent"
+# docs/facts/material/tokens.toml:3790
+keyed.headline_small.font.family = "Roboto"
+# docs/facts/material/tokens.toml:3805
+keyed.headline_small.font.size_px = 24
+# docs/facts/material/tokens.toml:3815
+keyed.headline_small.font.weight = 400
+# docs/facts/material/tokens.toml:3830
+keyed.headline_small.font.style = "normal"
+# docs/facts/material/tokens.toml:3846
+keyed.headline_small.font.width = 100
+# docs/facts/material/tokens.toml:3857
+keyed.headline_small.font.axes = {}
+# docs/facts/material/tokens.toml:3868
+keyed.headline_small.font.features = {}
+# docs/facts/material/tokens.toml:3879
+keyed.headline_small.line_height_px = 32.0
+# docs/facts/material/tokens.toml:3889
+keyed.headline_small.letter_spacing_px = 0.0
+# docs/facts/material/tokens.toml:3899
+keyed.headline_small.decoration = "absent"
+# docs/facts/material/tokens.toml:3910
+keyed.headline_small.case = "mixed"
+# docs/facts/material/tokens.toml:3923
+keyed.headline_small.scaling_role = "none"
+# docs/facts/material/tokens.toml:3935
+keyed.headline_small.word_spacing_px = 0
+# docs/facts/material/tokens.toml:3946
+keyed.headline_small.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:3957
+keyed.headline_small.elision = "absent"
+# docs/facts/material/tokens.toml:3974
+keyed.headline_small.wrap = "absent"
+# docs/facts/material/tokens.toml:3991
+keyed.headline_small.max_lines = "absent"
+# docs/facts/material/tokens.toml:4009
+keyed.headline_small.fill = "absent"
+# docs/facts/material/tokens.toml:4027
+keyed.label_large.font.family = "Roboto"
+# docs/facts/material/tokens.toml:4042
+keyed.label_large.font.size_px = 14
+# docs/facts/material/tokens.toml:4052
+keyed.label_large.font.weight = 500
+# docs/facts/material/tokens.toml:4067
+keyed.label_large.font.style = "normal"
+# docs/facts/material/tokens.toml:4083
+keyed.label_large.font.width = 100
+# docs/facts/material/tokens.toml:4094
+keyed.label_large.font.axes = {}
+# docs/facts/material/tokens.toml:4105
+keyed.label_large.font.features = {}
+# docs/facts/material/tokens.toml:4116
+keyed.label_large.line_height_px = 20.0
+# docs/facts/material/tokens.toml:4126
+keyed.label_large.letter_spacing_px = 0.1
+# docs/facts/material/tokens.toml:4136
+keyed.label_large.decoration = "absent"
+# docs/facts/material/tokens.toml:4147
+keyed.label_large.case = "mixed"
+# docs/facts/material/tokens.toml:4160
+keyed.label_large.scaling_role = "none"
+# docs/facts/material/tokens.toml:4172
+keyed.label_large.word_spacing_px = 0
+# docs/facts/material/tokens.toml:4183
+keyed.label_large.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:4194
+keyed.label_large.elision = "absent"
+# docs/facts/material/tokens.toml:4211
+keyed.label_large.wrap = "absent"
+# docs/facts/material/tokens.toml:4228
+keyed.label_large.max_lines = "absent"
+# docs/facts/material/tokens.toml:4246
+keyed.label_large.fill = "absent"
+# docs/facts/material/tokens.toml:4738
+keyed.title_large.font.family = "Roboto"
+# docs/facts/material/tokens.toml:4753
+keyed.title_large.font.size_px = 22
+# docs/facts/material/tokens.toml:4763
+keyed.title_large.font.weight = 400
+# docs/facts/material/tokens.toml:4778
+keyed.title_large.font.style = "normal"
+# docs/facts/material/tokens.toml:4794
+keyed.title_large.font.width = 100
+# docs/facts/material/tokens.toml:4805
+keyed.title_large.font.axes = {}
+# docs/facts/material/tokens.toml:4816
+keyed.title_large.font.features = {}
+# docs/facts/material/tokens.toml:4827
+keyed.title_large.line_height_px = 28.0
+# docs/facts/material/tokens.toml:4837
+keyed.title_large.letter_spacing_px = 0.0
+# docs/facts/material/tokens.toml:4847
+keyed.title_large.decoration = "absent"
+# docs/facts/material/tokens.toml:4858
+keyed.title_large.case = "mixed"
+# docs/facts/material/tokens.toml:4871
+keyed.title_large.scaling_role = "none"
+# docs/facts/material/tokens.toml:4883
+keyed.title_large.word_spacing_px = 0
+# docs/facts/material/tokens.toml:4894
+keyed.title_large.mnemonic_decoration = "absent"
+# docs/facts/material/tokens.toml:4905
+keyed.title_large.elision = "absent"
+# docs/facts/material/tokens.toml:4922
+keyed.title_large.wrap = "absent"
+# docs/facts/material/tokens.toml:4939
+keyed.title_large.max_lines = "absent"
+# docs/facts/material/tokens.toml:4957
+keyed.title_large.fill = "absent"
+# docs/facts/material/tokens.toml:9007
+keyed.monospace.font.family = "monospace"
+# docs/facts/material/tokens.toml:9017
+keyed.monospace.font.size = "= token.text.keyed.body_large.font.size"
+# docs/facts/material/tokens.toml:9027
+keyed.monospace.font.weight = "= token.text.keyed.body_large.font.weight"
+# docs/facts/material/tokens.toml:9037
+keyed.monospace.font.style = "= token.text.keyed.body_large.font.style"
+# docs/facts/material/tokens.toml:9047
+keyed.monospace.font.width = "= token.text.keyed.body_large.font.width"
+# docs/facts/material/tokens.toml:9057
+keyed.monospace.line_height = "= token.text.keyed.body_large.line_height"
+# docs/facts/material/tokens.toml:9067
+keyed.monospace.letter_spacing = "= token.text.keyed.body_large.letter_spacing"
+# docs/facts/material/tokens.toml:9077
+keyed.monospace.decoration = "= token.text.keyed.body_large.decoration"
+# docs/facts/material/tokens.toml:9087
+keyed.monospace.fill = "= token.text.keyed.body_large.fill"
+# docs/facts/material/tokens.toml:9097
+keyed.monospace.font.axes = {}
+# docs/facts/material/tokens.toml:9113
+keyed.monospace.font.features = {}
+# docs/facts/material/tokens.toml:9129
+keyed.monospace.case = "mixed"
+# docs/facts/material/tokens.toml:9145
+keyed.monospace.scaling_role = "= token.text.keyed.body_large.scaling_role"
+# docs/facts/material/tokens.toml:9155
+keyed.monospace.word_spacing = "= token.text.keyed.body_large.word_spacing"
+# docs/facts/material/tokens.toml:9165
+keyed.monospace.mnemonic_decoration = "= token.text.keyed.body_large.mnemonic_decoration"
+# docs/facts/material/tokens.toml:9175
+keyed.monospace.elision = "= token.text.keyed.body_large.elision"
+# docs/facts/material/tokens.toml:9185
+keyed.monospace.wrap = "= token.text.keyed.body_large.wrap"
+# docs/facts/material/tokens.toml:9195
+keyed.monospace.max_lines = "= token.text.keyed.body_large.max_lines"
+# docs/facts/material/tokens.toml:9214
+roles.body = "= token.text.keyed.body_large"
+# docs/facts/material/tokens.toml:9224
+roles.title1 = "= token.text.keyed.headline_small"
+# docs/facts/material/tokens.toml:9239
+roles.large_title = "= token.text.keyed.headline_medium"
+# docs/facts/material/tokens.toml:9274
+roles.monospace = "= token.text.keyed.monospace"
+# docs/facts/material/tokens.toml:9346
+roles.display_large = "= token.text.keyed.display_large"
+# docs/facts/material/tokens.toml:9366
+roles.display_small = "= token.text.keyed.display_small"
+# docs/facts/material/tokens.toml:9381
+roles.title2 = "= token.text.keyed.title_large"
+# docs/facts/material/tokens.toml:9396
+roles.title3 = "= token.text.roles.title2"
+# docs/facts/material/tokens.toml:9421
+roles.caption = "= token.text.keyed.body_small"
+# docs/facts/material/tokens.toml:9478
+scaling = "android_non_linear"
+
+[tokens.behavior]
+# docs/facts/material/tokens.toml:10036
+mnemonics = "never"
+# docs/facts/material/tokens.toml:10047
+mnemonic_when_disabled = "absent"
+# docs/facts/material/tokens.toml:10071
+focus_visible_when = { keyboard = {} }
+
+[widgets.button.body]
+# docs/facts/material/button.toml:16
+bindings = [{ role = { role = { surface = "foreground" }, value = "= role.@on_primary" } }]
+# docs/facts/material/button.toml:36
+fill = "= role.@primary"
+# docs/facts/material/button.toml:57
+interaction.state_layer.color = "= surface.foreground"
+# docs/facts/material/button.toml:72
+interaction.state_layer.alpha = 0
+# docs/facts/material/button.toml:87
+interaction.ripple.effect = "android_patterned"
+# docs/facts/material/button.toml:107
+interaction.ripple.color = "= surface.foreground"
+# docs/facts/material/button.toml:122
+interaction.ripple.alpha = "= token.params.opacity.pressed"
+# docs/facts/material/button.toml:137
+interaction.ripple.bounded = true
+# docs/facts/material/button.toml:152
+interaction.ripple.max_radius_px = "absent"
+# docs/facts/material/button.toml:167
+interaction.ripple.padding_px = 10
+# docs/facts/material/button.toml:184
+interaction.ripple.indication_box = "none"
+# docs/facts/material/button.toml:199
+stroke.top.width_px = "absent"
+# docs/facts/material/button.toml:215
+stroke.top.paint = "absent"
+# docs/facts/material/button.toml:231
+stroke.top.dash = "absent"
+# docs/facts/material/button.toml:247
+stroke.right.width_px = "absent"
+# docs/facts/material/button.toml:263
+stroke.right.paint = "absent"
+# docs/facts/material/button.toml:279
+stroke.right.dash = "absent"
+# docs/facts/material/button.toml:295
+stroke.bottom.width_px = "absent"
+# docs/facts/material/button.toml:311
+stroke.bottom.paint = "absent"
+# docs/facts/material/button.toml:327
+stroke.bottom.dash = "absent"
+# docs/facts/material/button.toml:343
+stroke.left.width_px = "absent"
+# docs/facts/material/button.toml:359
+stroke.left.paint = "absent"
+# docs/facts/material/button.toml:375
+stroke.left.dash = "absent"
+# docs/facts/material/button.toml:391
+stroke.top.snap = "to_device_pixel"
+# docs/facts/material/button.toml:401
+stroke.right.snap = "to_device_pixel"
+# docs/facts/material/button.toml:411
+stroke.bottom.snap = "to_device_pixel"
+# docs/facts/material/button.toml:421
+stroke.left.snap = "to_device_pixel"
+# docs/facts/material/button.toml:431
+stroke.position = "inside"
+# docs/facts/material/button.toml:442
+stroke.fill_clip = "box"
+# docs/facts/material/button.toml:452
+stroke.outset_px = "absent"
+# docs/facts/material/button.toml:463
+corners.top_left = { full = { maximum_px = "absent" } }
+# docs/facts/material/button.toml:478
+corners.top_right = { full = { maximum_px = "absent" } }
+# docs/facts/material/button.toml:493
+corners.bottom_right = { full = { maximum_px = "absent" } }
+# docs/facts/material/button.toml:508
+corners.bottom_left = { full = { maximum_px = "absent" } }
+# docs/facts/material/button.toml:523
+corners.curve = "circular"
+# docs/facts/material/button.toml:538
+shadow = { elevation = "level0" }
+# docs/facts/material/button.toml:553
+padding.top_px = 8
+# docs/facts/material/button.toml:571
+padding.right_px = 24
+# docs/facts/material/button.toml:592
+padding.bottom_px = 8
+# docs/facts/material/button.toml:607
+padding.left_px = 24
+# docs/facts/material/button.toml:628
+margin.top_px = "absent"
+# docs/facts/material/button.toml:639
+margin.right_px = "absent"
+# docs/facts/material/button.toml:650
+margin.bottom_px = "absent"
+# docs/facts/material/button.toml:661
+margin.left_px = "absent"
+# docs/facts/material/button.toml:672
+min_width_px = 58
+# docs/facts/material/button.toml:682
+min_height_px = 40
+# docs/facts/material/button.toml:697
+max_width_px = "auto"
+# docs/facts/material/button.toml:707
+opacity = 1
+# docs/facts/material/button.toml:722
+transform.scale_x = 1
+# docs/facts/material/button.toml:737
+transform.scale_y = 1
+# docs/facts/material/button.toml:752
+transform.rotate_deg = 0
+# docs/facts/material/button.toml:767
+transform.translate_x_px = 0
+# docs/facts/material/button.toml:782
+transform.translate_y_px = 0
+# docs/facts/material/button.toml:797
+transform.origin = [0.5, 0.5]
+# docs/facts/material/button.toml:889
+focus.kind = "ring"
+# docs/facts/material/button.toml:904
+focus.width_px = "= token.focus.width"
+# docs/facts/material/button.toml:914
+focus.paint = "= role.@secondary"
+# docs/facts/material/button.toml:924
+focus.dash = "solid"
+# docs/facts/material/button.toml:934
+focus.offset.top_px = "= token.focus.offset.top"
+# docs/facts/material/button.toml:944
+focus.offset.right_px = "= token.focus.offset.right"
+# docs/facts/material/button.toml:954
+focus.offset.bottom_px = "= token.focus.offset.bottom"
+# docs/facts/material/button.toml:964
+focus.offset.left_px = "= token.focus.offset.left"
+# docs/facts/material/button.toml:974
+focus.corners.top_left = "follow_part"
+# docs/facts/material/button.toml:984
+focus.corners.top_right = "follow_part"
+# docs/facts/material/button.toml:994
+focus.corners.bottom_right = "follow_part"
+# docs/facts/material/button.toml:1004
+focus.corners.bottom_left = "follow_part"
+# docs/facts/material/button.toml:1014
+focus.corners.curve = "circular"
+# docs/facts/material/button.toml:1029
+focus.shadow = "absent"
+# docs/facts/material/button.toml:1046
+cursor = "absent"
+# docs/facts/material/button.toml:1063
+touch_target_px = 48
+
+[widgets.button.label]
+# docs/facts/material/button.toml:821
+padding.top_px = 0
+# docs/facts/material/button.toml:838
+padding.right_px = 0
+# docs/facts/material/button.toml:855
+padding.bottom_px = 0
+# docs/facts/material/button.toml:872
+padding.left_px = 0
+# docs/facts/material/button.toml:1082
+text.font.family = "= token.text.keyed.label_large.font.family"
+# docs/facts/material/button.toml:1097
+text.font.size = "= token.text.keyed.label_large.font.size"
+# docs/facts/material/button.toml:1112
+text.font.weight = "= token.text.keyed.label_large.font.weight"
+# docs/facts/material/button.toml:1127
+text.font.style = "= token.text.keyed.label_large.font.style"
+# docs/facts/material/button.toml:1142
+text.font.width = "= token.text.keyed.label_large.font.width"
+# docs/facts/material/button.toml:1157
+text.font.axes = "= token.text.keyed.label_large.font.axes"
+# docs/facts/material/button.toml:1172
+text.font.features = "= token.text.keyed.label_large.font.features"
+# docs/facts/material/button.toml:1187
+text.scaling_role = "= token.text.keyed.label_large.scaling_role"
+# docs/facts/material/button.toml:1202
+text.letter_spacing = "= token.text.keyed.label_large.letter_spacing"
+# docs/facts/material/button.toml:1217
+text.word_spacing = "= token.text.keyed.label_large.word_spacing"
+# docs/facts/material/button.toml:1232
+text.line_height = "= token.text.keyed.label_large.line_height"
+# docs/facts/material/button.toml:1247
+text.decoration = "= token.text.keyed.label_large.decoration"
+# docs/facts/material/button.toml:1262
+text.mnemonic_decoration = "= token.text.keyed.label_large.mnemonic_decoration"
+# docs/facts/material/button.toml:1277
+text.case = "= token.text.keyed.label_large.case"
+# docs/facts/material/button.toml:1292
+text.elision = "none"
+# docs/facts/material/button.toml:1304
+text.wrap = "word_char"
+# docs/facts/material/button.toml:1329
+text.max_lines = "none"
+# docs/facts/material/button.toml:1339
+text.fill = "= role.@on_primary"
+
+[widgets.button.icon]
+# docs/facts/material/button.toml:1349
+icon.size_px = 20
+# docs/facts/material/button.toml:1359
+icon.fill = "= role.@on_primary"
+# docs/facts/material/button.toml:1374
+icon.rendering_mode = "template"
+# docs/facts/material/button.toml:1384
+icon.weight = "absent"
+# docs/facts/material/button.toml:1395
+icon.scale = "absent"
+# docs/facts/material/button.toml:1406
+icon.state_effect = "absent"
+# docs/facts/material/button.toml:1428
+icon.axes = {}
+# docs/facts/material/button.toml:1439
+icon.symbol_variants = []
+# docs/facts/material/button.toml:1452
+icon.symbolic_colors = {}
+# docs/facts/material/button.toml:1468
+glyph = "absent"
+
+[widgets.button.values]
+# docs/facts/material/button.toml:1490
+icon_text_gap_px = 8
+# docs/facts/material/button.toml:1500
+label_position = "absent"
+# docs/facts/material/button.toml:1511
+subtitle_gap_px = "absent"
+# docs/facts/material/button.toml:1564
+icon_placement = "leading"
+# docs/facts/material/button.toml:1579
+shows_icon = "absent"
+# docs/facts/material/button.toml:1590
+repeat_delay_ms = "absent"
+# docs/facts/material/button.toml:1601
+repeat_interval_ms = "absent"
+# docs/facts/material/button.toml:1634
+hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+# docs/facts/material/button.toml:1678
+focus_visible_when = "= token.behavior.focus_visible_when"
+
+[widgets.button.subtitle]
+# docs/facts/material/button.toml:3030
+absent = true
+
+[widgets.button.menu_indicator]
+# docs/facts/material/button.toml:3041
+absent = true
+
+[[rules]]
+when = { variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:1690
+bindings = [{ role = { role = { surface = "foreground" }, value = "= role.@on_primary" } }]
+# docs/facts/material/button.toml:1706
+fill = "= role.@primary"
+# docs/facts/material/button.toml:1739
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { variants = ["primary"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/material/button.toml:1717
+text.fill = "= role.@on_primary"
+
+[[rules]]
+when = { variants = ["primary"] }
+target = "button.icon"
+
+[rules.set]
+# docs/facts/material/button.toml:1728
+icon.fill = "= role.@on_primary"
+
+[[rules]]
+when = { variants = ["tinted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:1750
+bindings = [{ role = { role = { surface = "foreground" }, value = "= role.@on_secondary_container" } }]
+# docs/facts/material/button.toml:1766
+fill = "= role.@secondary_container"
+# docs/facts/material/button.toml:1799
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { variants = ["tinted"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/material/button.toml:1777
+text.fill = "= role.@on_secondary_container"
+
+[[rules]]
+when = { variants = ["tinted"] }
+target = "button.icon"
+
+[rules.set]
+# docs/facts/material/button.toml:1788
+icon.fill = "= role.@on_secondary_container"
+
+[[rules]]
+when = { latest = { state_layer = "hover" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2179
+interaction.state_layer.alpha = "= token.params.opacity.hover"
+
+[[rules]]
+when = { latest = { elevation = "hover" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2195
+shadow = { elevation = "level1" }
+
+[[rules]]
+when = { variants = ["primary"], latest = { state_layer = "hover" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2206
+interaction.state_layer.alpha = "= token.params.opacity.hover"
+
+[[rules]]
+when = { variants = ["primary"], latest = { elevation = "hover" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2222
+shadow = { elevation = "level1" }
+
+[[rules]]
+when = { variants = ["tinted"], latest = { state_layer = "hover" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2233
+interaction.state_layer.alpha = "= token.params.opacity.hover"
+
+[[rules]]
+when = { variants = ["tinted"], latest = { elevation = "hover" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2249
+shadow = { elevation = "level1" }
+
+[[rules]]
+when = { latest = { state_layer = "focus_visible" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2319
+interaction.state_layer.alpha = "= token.params.opacity.focus"
+
+[[rules]]
+when = { latest = { elevation = "focus_visible" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2335
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { variants = ["primary"], latest = { state_layer = "focus_visible" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2346
+interaction.state_layer.alpha = "= token.params.opacity.focus"
+
+[[rules]]
+when = { variants = ["primary"], latest = { elevation = "focus_visible" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2362
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { variants = ["tinted"], latest = { state_layer = "focus_visible" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2373
+interaction.state_layer.alpha = "= token.params.opacity.focus"
+
+[[rules]]
+when = { variants = ["tinted"], latest = { elevation = "focus_visible" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2389
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { latest = { elevation = "pressed" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2461
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { variants = ["primary"], latest = { elevation = "pressed" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2472
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { variants = ["tinted"], latest = { elevation = "pressed" } }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2483
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { states = ["disabled"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2507
+fill = "= alpha(role.@on_surface, 0.1)"
+# docs/facts/material/button.toml:2523
+bindings = [{ role = { role = { surface = "foreground" }, value = "= alpha(role.@on_surface, 0.38)" } }]
+# docs/facts/material/button.toml:2576
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { states = ["disabled"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/material/button.toml:2544
+text.fill = "= alpha(role.@on_surface, 0.38)"
+
+[[rules]]
+when = { states = ["disabled"] }
+target = "button.icon"
+
+[rules.set]
+# docs/facts/material/button.toml:2560
+icon.fill = "= alpha(role.@on_surface, 0.38)"
+
+[[rules]]
+when = { variants = ["primary"], states = ["disabled"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2587
+fill = "= alpha(role.@on_surface, 0.1)"
+# docs/facts/material/button.toml:2603
+bindings = [{ role = { role = { surface = "foreground" }, value = "= alpha(role.@on_surface, 0.38)" } }]
+# docs/facts/material/button.toml:2656
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { variants = ["primary"], states = ["disabled"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/material/button.toml:2624
+text.fill = "= alpha(role.@on_surface, 0.38)"
+
+[[rules]]
+when = { variants = ["primary"], states = ["disabled"] }
+target = "button.icon"
+
+[rules.set]
+# docs/facts/material/button.toml:2640
+icon.fill = "= alpha(role.@on_surface, 0.38)"
+
+[[rules]]
+when = { variants = ["tinted"], states = ["disabled"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:2667
+fill = "= alpha(role.@on_surface, 0.1)"
+# docs/facts/material/button.toml:2683
+bindings = [{ role = { role = { surface = "foreground" }, value = "= alpha(role.@on_surface, 0.38)" } }]
+# docs/facts/material/button.toml:2736
+shadow = { elevation = "level0" }
+
+[[rules]]
+when = { variants = ["tinted"], states = ["disabled"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/material/button.toml:2704
+text.fill = "= alpha(role.@on_surface, 0.38)"
+
+[[rules]]
+when = { variants = ["tinted"], states = ["disabled"] }
+target = "button.icon"
+
+[rules.set]
+# docs/facts/material/button.toml:2720
+icon.fill = "= alpha(role.@on_surface, 0.38)"
+
+[[rules]]
+when = { variants = ["with_icon"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/material/button.toml:3012
+padding.left_px = 16
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "tokens"
+
+[rules.set]
+# docs/facts/material/roles.toml:2521
+material.contrast_level = 1.0
+
+[[rules]]
+when = { conditions = ["animations_off"] }
+target = "tokens"
+
+[rules.set]
+# docs/facts/material/tokens.toml:1329
+motion.speed_factor = 0

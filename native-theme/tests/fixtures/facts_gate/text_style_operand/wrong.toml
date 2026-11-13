@@ -1,0 +1,24 @@
+# preset.toml's twin whose body style's line height is its font size's other multiple: the fact fails it.
+# base without: [preset]
+# base without: id = "probe"
+# base without: generation = "probe-1"
+[preset]
+id = "adwaita"
+generation = "probe-1"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "tokens"
+set = { text.keyed.body.line_height = "= mul(font_size, 1.5)" }

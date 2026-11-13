@@ -1,0 +1,22 @@
+# A synthetic preset (S17): a button with two sizes whose rules state a wrong value at the small size, its
+# default, pressed (not drawn there) and hover (drawn).
+[declare.widget.button]
+variants = ["tool"]
+sizes = ["small", "regular"]
+default_size = "small"
+
+# Wrong where the state model draws nothing (pressed, small), and wrong where it draws (hover, small).
+[[rules]]
+when = { states = ["pressed"], sizes = ["small"] }
+target = "button.body"
+set = { min_width_px = 99 }
+
+[[rules]]
+when = { states = ["hover"], sizes = ["small"] }
+target = "button.body"
+set = { min_width_px = 41 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

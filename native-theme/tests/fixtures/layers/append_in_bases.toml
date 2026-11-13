@@ -1,0 +1,11 @@
+# `append` in a layer's bases, where nothing lies beneath (S6.1); in a
+# rule's `set` it appends over `base`.
+# problem: widgets.button.body.fill.append: `append` in a layer's bases, where nothing lies beneath
+
+[widgets.button.body]
+fill.append = ["#00000010"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { fill.append = ["#00000020"] }

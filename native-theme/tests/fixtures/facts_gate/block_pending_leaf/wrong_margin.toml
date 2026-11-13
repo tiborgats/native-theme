@@ -1,0 +1,31 @@
+# preset.toml's twin whose button body's margin top is 1px: the block's fact, its left leaf pending
+# after it, fails it (S17 *Which fact applies*: the pending leaf alone is left out of the block's
+# comparison).
+# base without: offset = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+# base without: margin = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+[pending]
+"tokens.focus.offset.left_px" = "U8"
+"widgets.button.body.margin.left_px" = "U9"
+
+[tokens.focus.offset]
+top_px = 0
+right_px = 0
+bottom_px = 0
+
+[widgets.button.body.margin]
+top_px = 1
+right_px = 0
+bottom_px = 0
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

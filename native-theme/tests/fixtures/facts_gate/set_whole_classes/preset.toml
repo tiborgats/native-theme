@@ -1,0 +1,28 @@
+# The body's interaction stated, its ripple's indication box (`Option<IndicationBox>`, a set-whole block, S6.1)
+# none in the base and stated whole per class by a rule each.
+# base without: interaction = "absent"
+[declare.widget.button]
+variants = ["tool"]
+
+[widgets.button.body.interaction]
+state_layer = { color = "#000000", alpha = 0.1 }
+ripple = { effect = "absent", color = "absent", alpha = "absent", bounded = true, max_radius_px = "absent", padding_px = "absent", indication_box = "none" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "button.body"
+set = { interaction.ripple.indication_box = { part = "icon", outset_px = 2 } }
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "button.body"
+set = { interaction.ripple.indication_box = { part = "icon", outset_px = 3 } }

@@ -1,0 +1,23 @@
+# A synthetic preset (S17, ADD-A144): the body's bindings, a keyed list, listed, and a preset rule
+# merging a binding over the synthetic list on hover, where the preset states the list.
+# base without: bindings = []
+[pending]
+"widgets.button.body.bindings" = "U40"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { states = ["hover"] }
+target = "button.body"
+set = { bindings = [{ role = { role = { surface = "foreground" }, value = "= role.global.accent" } }] }

@@ -1,0 +1,23 @@
+# preset.toml's twin zero wide where the button is not focused, as the leaf's fact would give it if it applied
+# there: the block's later fact applies to the width, so it fails at the block's width.
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "button.body"
+set = { focus = "= token.focus" }
+
+[[rules]]
+when = { not_states = ["focused"] }
+target = "button.body"
+set = { focus.width_px = 0 }

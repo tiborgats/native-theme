@@ -1,3108 +1,1344 @@
-use super::*;
-use crate::Rgba;
-use crate::model::font::FontSize;
-use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry};
+//! S8's resolution and S9.2's accent layer. Every
+//! number and name here is synthetic.
 
-/// Helper: build a ThemeMode with all defaults.* fields populated.
-fn variant_with_defaults() -> ThemeMode {
-    let c1 = Rgba::rgb(0, 120, 215); // accent
-    let c2 = Rgba::rgb(255, 255, 255); // background
-    let c3 = Rgba::rgb(30, 30, 30); // foreground
-    let c4 = Rgba::rgb(240, 240, 240); // surface
-    let c5 = Rgba::rgb(200, 200, 200); // border
-    let c6 = Rgba::rgb(128, 128, 128); // muted
-    let c7 = Rgba::rgb(0, 0, 0); // shadow
-    let c8 = Rgba::rgb(0, 100, 200); // link
-    let c9 = Rgba::rgb(255, 255, 255); // accent_foreground
-    let c10 = Rgba::rgb(220, 53, 69); // danger
-    let c11 = Rgba::rgb(255, 255, 255); // danger_foreground
-    let c12 = Rgba::rgb(240, 173, 78); // warning
-    let c13 = Rgba::rgb(30, 30, 30); // warning_foreground
-    let c14 = Rgba::rgb(40, 167, 69); // success
-    let c15 = Rgba::rgb(255, 255, 255); // success_foreground
-    let c16 = Rgba::rgb(0, 120, 215); // info
-    let c17 = Rgba::rgb(255, 255, 255); // info_foreground
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::float_cmp)]
 
-    let mut v = ThemeMode::default();
-    v.defaults.accent_color = Some(c1);
-    v.defaults.background_color = Some(c2);
-    v.defaults.text_color = Some(c3);
-    v.defaults.surface_color = Some(c4);
-    v.defaults.border.color = Some(c5);
-    v.defaults.muted_color = Some(c6);
-    v.defaults.shadow_color = Some(c7);
-    v.defaults.link_color = Some(c8);
-    v.defaults.accent_text_color = Some(c9);
-    v.defaults.selection_text_color = Some(Rgba::rgb(255, 255, 255));
-    v.defaults.disabled_text_color = Some(Rgba::rgb(160, 160, 160));
-    v.defaults.danger_color = Some(c10);
-    v.defaults.danger_text_color = Some(c11);
-    v.defaults.warning_color = Some(c12);
-    v.defaults.warning_text_color = Some(c13);
-    v.defaults.success_color = Some(c14);
-    v.defaults.success_text_color = Some(c15);
-    v.defaults.info_color = Some(c16);
-    v.defaults.info_text_color = Some(c17);
+use std::sync::Arc;
 
-    v.defaults.border.corner_radius = Some(4.0);
-    v.defaults.border.corner_radius_lg = Some(8.0);
-    v.defaults.border.line_width = Some(1.0);
-    v.defaults.disabled_opacity = Some(0.5);
-    v.defaults.border.opacity = Some(0.15);
-    v.defaults.border.shadow_enabled = Some(true);
+use super::{Change, Pos, ReaderState, Stack, WindowConditions, WindowState};
+use crate::blocks::Apply;
+use crate::blocks::part_style::PartStylePatch;
+use crate::color::Color;
+use crate::declare::Declarations;
+use crate::error::LayerError;
+use crate::inputs::{Accent, Contrast, InputName, InputValue};
+use crate::key;
+use crate::key::Key;
+use crate::layer::{Layer, LayerId};
+use crate::presets::PresetId;
+use crate::selector::{Condition, InputKind, Rule, RuleBody, Scheme, Selector, WidgetRef};
+use crate::toml::layer::read_preset;
+use crate::units::Fraction;
+use crate::value::{SchemeMap, Value};
+use crate::widgets::{ButtonPart, ButtonPatch, PartPatch, PartSlot, TypedPart, WidgetKind};
 
-    v.defaults.focus_ring_width = Some(2.0);
-    v.defaults.focus_ring_offset = Some(1.0);
-
-    v.defaults.font = FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        color: Some(c3), // foreground
-        ..Default::default()
-    };
-    v.defaults.line_height = Some(1.4);
-    v.defaults.mono_font = FontSpec {
-        family: Some("JetBrains Mono".into()),
-        size: Some(FontSize::Px(13.0)),
-        weight: Some(400),
-        color: Some(c3), // foreground
-        ..Default::default()
-    };
-
-    // REMOVED: defaults.spacing not in new schema
-    // REMOVED: defaults.spacing not in new schema
-    // REMOVED: defaults.spacing not in new schema
-    // REMOVED: defaults.spacing not in new schema
-    // REMOVED: defaults.spacing not in new schema
-    // REMOVED: defaults.spacing not in new schema
-    // REMOVED: defaults.spacing not in new schema
-
-    v.defaults.icon_sizes.toolbar = Some(24.0);
-    v.defaults.icon_sizes.small = Some(16.0);
-    v.defaults.icon_sizes.large = Some(32.0);
-    v.defaults.icon_sizes.dialog = Some(22.0);
-    v.defaults.icon_sizes.panel = Some(20.0);
-
-    v
-}
-
-// ===== Phase 1: Defaults internal chains =====
-
-#[test]
-fn resolve_phase1_accent_fills_selection_and_focus_ring() {
-    let mut v = ThemeMode::default();
-    v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
-    v.resolve();
-    assert_eq!(
-        v.defaults.selection_background,
-        Some(Rgba::rgb(0, 120, 215))
-    );
-    assert_eq!(v.defaults.focus_ring_color, Some(Rgba::rgb(0, 120, 215)));
-}
-
-#[test]
-fn resolve_phase1_selection_fills_selection_inactive() {
-    let mut v = ThemeMode::default();
-    v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
-    v.resolve();
-    // selection_inactive should be set from selection (which was set from accent)
-    assert_eq!(
-        v.defaults.selection_inactive_background,
-        Some(Rgba::rgb(0, 120, 215))
-    );
-}
-
-#[test]
-fn resolve_phase1_explicit_selection_preserved() {
-    let mut v = ThemeMode::default();
-    v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
-    v.defaults.selection_background = Some(Rgba::rgb(100, 100, 100));
-    v.resolve();
-    // Explicit selection preserved
-    assert_eq!(
-        v.defaults.selection_background,
-        Some(Rgba::rgb(100, 100, 100))
-    );
-    // selection_inactive inherits from the explicit selection
-    assert_eq!(
-        v.defaults.selection_inactive_background,
-        Some(Rgba::rgb(100, 100, 100))
-    );
-}
-
-#[test]
-fn resolve_phase1_font_color_from_text_color() {
-    let mut v = ThemeMode::default();
-    v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
-    v.resolve();
-    assert_eq!(
-        v.defaults.font.color,
-        Some(Rgba::rgb(30, 30, 30)),
-        "defaults.font.color <- defaults.text_color"
-    );
-    assert_eq!(
-        v.defaults.mono_font.color,
-        Some(Rgba::rgb(30, 30, 30)),
-        "defaults.mono_font.color <- defaults.font.color"
-    );
-}
-
-#[test]
-fn resolve_phase1_font_color_explicit_preserved() {
-    let mut v = ThemeMode::default();
-    v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
-    v.defaults.font.color = Some(Rgba::rgb(50, 50, 50));
-    v.resolve();
-    assert_eq!(
-        v.defaults.font.color,
-        Some(Rgba::rgb(50, 50, 50)),
-        "explicit font.color preserved"
-    );
-    // mono_font inherits from font.color, not text_color
-    assert_eq!(
-        v.defaults.mono_font.color,
-        Some(Rgba::rgb(50, 50, 50)),
-        "mono_font.color <- font.color (not text_color)"
-    );
-}
-
-#[test]
-fn resolve_text_area_frame_is_the_inputs_and_its_padding_its_own() {
-    let mut v = ThemeMode::default();
-    v.defaults.border.color = Some(Rgba::rgb(100, 100, 100));
-    v.defaults.border.corner_radius = Some(3.0);
-    v.defaults.border.line_width = Some(1.0);
-    v.defaults.border.shadow_enabled = Some(false);
-    v.input.border.get_or_insert_default().color = Some(Rgba::rgb(10, 20, 30));
-    v.input.border.get_or_insert_default().padding_left = Some(7.0);
-    v.text_area.border.get_or_insert_default().padding_top = Some(5.0);
-    v.resolve();
-    let area = v.text_area.border.as_ref();
-    assert_eq!(area.and_then(|b| b.color), Some(Rgba::rgb(10, 20, 30)));
-    assert_eq!(area.and_then(|b| b.corner_radius), Some(3.0));
-    assert_eq!(area.and_then(|b| b.line_width), Some(1.0));
-    assert_eq!(area.and_then(|b| b.shadow_enabled), Some(false));
-    assert_eq!(area.and_then(|b| b.padding_top), Some(5.0));
-    assert_eq!(
-        area.and_then(|b| b.padding_left),
-        None,
-        "the input's padding is not the text area's"
-    );
-}
-
-// ===== Phase 2: Safety nets =====
-
-#[test]
-fn resolve_phase2_safety_nets() {
-    let mut v = ThemeMode::default();
-    v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
-    v.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
-    v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
-    v.defaults.muted_color = Some(Rgba::rgb(128, 128, 128));
-    v.resolve();
-
-    // Removed safety nets: line_height, accent_text_color, shadow_color,
-    // disabled_text_color are no longer fabricated -- all 20 presets provide them.
-    assert_eq!(
-        v.defaults.line_height, None,
-        "line_height no longer fabricated"
-    );
-    assert_eq!(
-        v.defaults.accent_text_color, None,
-        "accent_text_color no longer fabricated"
-    );
-    assert_eq!(
-        v.defaults.shadow_color, None,
-        "shadow_color no longer fabricated"
-    );
-    assert_eq!(
-        v.defaults.disabled_text_color, None,
-        "disabled_text_color no longer fabricated"
-    );
-
-    // dialog.button_order moved to resolve_platform_defaults (no longer in resolve()):
-    assert!(
-        v.dialog.button_order.is_none(),
-        "dialog.button_order no longer set by resolve() -- moved to resolve_platform_defaults"
-    );
-    assert_eq!(
-        v.input.caret_color,
-        Some(Rgba::rgb(30, 30, 30)),
-        "input.caret <- foreground"
-    );
-    assert_eq!(
-        v.scrollbar.track_color,
-        Some(Rgba::rgb(255, 255, 255)),
-        "scrollbar.track <- background"
-    );
-    assert_eq!(
-        v.spinner.fill_color,
-        Some(Rgba::rgb(0, 120, 215)),
-        "spinner.fill <- accent"
-    );
-    assert_eq!(
-        v.popover.background_color,
-        Some(Rgba::rgb(255, 255, 255)),
-        "popover.background <- background"
-    );
-    assert_eq!(
-        v.list.background_color,
-        Some(Rgba::rgb(255, 255, 255)),
-        "list.background <- background"
-    );
-    assert_eq!(
-        v.dialog.background_color,
-        Some(Rgba::rgb(255, 255, 255)),
-        "dialog.background <- background"
-    );
-}
-
-// ===== Font DPI conversion (via validate) =====
-//
-// These tests verify that FontSize::Pt values are correctly converted to
-// logical pixels during validate(). This replaces the old Phase 1.5
-// resolve_font_dpi_conversion() tests -- conversion now happens in validate
-// via FontSize::to_logical_px(dpi), not in-place mutation during resolve.
-
-/// Standard screen DPI (CSS reference pixel).
-const TEST_DPI_STANDARD: f32 = 96.0;
-/// Apple coordinate system DPI (1pt = 1px identity).
-const TEST_DPI_APPLE: f32 = 72.0;
-
-#[test]
-fn the_resolved_font_keeps_the_unit_its_source_stated() {
-    // The reason this field exists: 10.5pt at 96 DPI and 14px resolve to the
-    // same 14.0 logical pixels, so nothing downstream can tell them apart
-    // from `size` alone. A panel that divided `size` by the DPI would label
-    // the pixel-defined one as points -- a unit no source ever stated.
-    let mut in_points = fully_populated_variant();
-    in_points.defaults.font.size = Some(FontSize::Pt(10.5));
-    let points = in_points
-        .validate_with_dpi(TEST_DPI_STANDARD)
-        .expect("should validate");
-
-    let mut in_pixels = fully_populated_variant();
-    in_pixels.defaults.font.size = Some(FontSize::Px(14.0));
-    let pixels = in_pixels
-        .validate_with_dpi(TEST_DPI_STANDARD)
-        .expect("should validate");
-
-    assert_eq!(
-        points.defaults.font.size, pixels.defaults.font.size,
-        "the two should be indistinguishable in logical pixels, or this test \
-         is not testing what it claims"
-    );
-    assert_eq!(
-        points.defaults.font.defined_size,
-        Some(FontSize::Pt(10.5)),
-        "a source stating points keeps its points"
-    );
-    assert_eq!(
-        pixels.defaults.font.defined_size,
-        Some(FontSize::Px(14.0)),
-        "a source stating pixels keeps its pixels"
-    );
-}
-
-#[test]
-fn validate_converts_pt_to_logical_px_at_96_dpi() {
-    // 10pt at 96 DPI -> 10 * 96/72 = 13.333...px
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Pt(10.0));
-    v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
-    let resolved = v
-        .validate_with_dpi(TEST_DPI_STANDARD)
-        .expect("should validate");
-    let size = resolved.defaults.font.size;
-    assert!(
-        (size - 13.333).abs() < 0.01,
-        "10pt at 96 DPI should be ~13.333px, got {size}"
-    );
-}
-
-#[test]
-fn validate_px_ignores_dpi() {
-    // FontSize::Px(14.0) stays 14.0 regardless of dpi
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Px(14.0));
-    v.defaults.mono_font.size = Some(FontSize::Px(13.0));
-    let resolved = v
-        .validate_with_dpi(TEST_DPI_STANDARD)
-        .expect("should validate");
-    assert_eq!(resolved.defaults.font.size, 14.0);
-}
-
-#[test]
-fn validate_pt_at_72_dpi_is_identity() {
-    // 72 DPI (macOS): 13pt * 72/72 = 13px (identity)
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Pt(13.0));
-    v.defaults.mono_font.size = Some(FontSize::Pt(13.0));
-    let resolved = v
-        .validate_with_dpi(TEST_DPI_APPLE)
-        .expect("should validate");
-    assert!(
-        (resolved.defaults.font.size - 13.0).abs() < 0.01,
-        "13pt at 72 DPI should stay 13.0px"
-    );
-}
-
-#[test]
-fn validate_text_scale_pt_converted() {
-    // text_scale caption: size_pt + line_height both converted
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Pt(10.0));
-    v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
-    v.text_scale.caption = Some(TextScaleEntry {
-        size: Some(FontSize::Pt(9.0)),
-        weight: Some(400),
-        line_height: Some(FontSize::Pt(12.6)),
-    });
-    let resolved = v
-        .validate_with_dpi(TEST_DPI_STANDARD)
-        .expect("should validate");
-    let cap = &resolved.text_scale.caption;
-    assert!(
-        (cap.size - 12.0).abs() < 0.01,
-        "9pt at 96 DPI should be 12.0px, got {}",
-        cap.size
-    );
-    assert!(
-        (cap.line_height - 16.8).abs() < 0.01,
-        "12.6 line_height at 96 DPI should be 16.8px, got {}",
-        cap.line_height
-    );
-}
-
-#[test]
-fn validate_per_widget_font_pt_converted() {
-    // Per-widget font with FontSize::Pt gets converted in validate
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Pt(10.0));
-    v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
-    // Override only the size on the existing button font (preserve family/weight/color)
-    if let Some(ref mut bf) = v.button.font {
-        bf.size = Some(FontSize::Pt(11.0));
-    }
-    let resolved = v
-        .validate_with_dpi(TEST_DPI_STANDARD)
-        .expect("should validate");
-    let btn_size = resolved.button.font.size;
-    assert!(
-        (btn_size - 14.666).abs() < 0.01,
-        "11pt at 96 DPI should be ~14.666px, got {btn_size}"
-    );
-}
-
-#[test]
-fn validate_no_dpi_uses_default_96() {
-    // validate() without explicit DPI uses DEFAULT_FONT_DPI (96)
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Pt(10.0));
-    v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
-    let resolved = v.validate().expect("should validate");
-    let size = resolved.defaults.font.size;
-    // With DEFAULT_FONT_DPI=96: 10 * 96/72 = 13.333
-    assert!(
-        (size - 13.333).abs() < 0.01,
-        "10pt with default 96 DPI should be ~13.333px, got {size}"
-    );
-}
-
-// ===== Phase 3: Accent propagation (RESOLVE-06) =====
-
-#[test]
-fn resolve_phase3_accent_propagation() {
-    let mut v = ThemeMode::default();
-    v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
-    v.resolve();
-
-    assert_eq!(
-        v.button.primary_background,
-        Some(Rgba::rgb(0, 120, 215)),
-        "button.primary_background <- accent"
-    );
-    assert_eq!(
-        v.checkbox.checked_background,
-        Some(Rgba::rgb(0, 120, 215)),
-        "checkbox.checked_background <- accent"
-    );
-    assert_eq!(
-        v.slider.fill_color,
-        Some(Rgba::rgb(0, 120, 215)),
-        "slider.fill <- accent"
-    );
-    assert_eq!(
-        v.progress_bar.fill_color,
-        Some(Rgba::rgb(0, 120, 215)),
-        "progress_bar.fill <- accent"
-    );
-    assert_eq!(
-        v.switch.checked_background,
-        Some(Rgba::rgb(0, 120, 215)),
-        "switch.checked_background <- accent"
-    );
-}
-
-// ===== Phase 3: Font sub-field inheritance (RESOLVE-04) =====
-
-#[test]
-fn resolve_phase3_font_subfield_inheritance() {
-    let mut v = ThemeMode::default();
-    v.defaults.font = FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    };
-    // Menu has a font with only size set
-    v.menu.font = Some(FontSpec {
-        family: None,
-        size: Some(FontSize::Px(12.0)),
-        weight: None,
-        ..Default::default()
-    });
-    v.resolve();
-
-    let menu_font = v.menu.font.as_ref().unwrap();
-    assert_eq!(
-        menu_font.family.as_deref(),
-        Some("Inter"),
-        "family from defaults"
-    );
-    assert_eq!(
-        menu_font.size,
-        Some(FontSize::Px(12.0)),
-        "explicit size preserved"
-    );
-    assert_eq!(menu_font.weight, Some(400), "weight from defaults");
-}
-
-#[test]
-fn resolve_phase3_font_entire_inheritance() {
-    let mut v = ThemeMode::default();
-    v.defaults.font = FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    };
-    // button.font is None, should inherit entire defaults.font
-    assert!(v.button.font.is_none());
-    v.resolve();
-
-    let button_font = v.button.font.as_ref().unwrap();
-    assert_eq!(button_font.family.as_deref(), Some("Inter"));
-    assert_eq!(button_font.size, Some(FontSize::Px(14.0)));
-    assert_eq!(button_font.weight, Some(400));
-}
-
-#[test]
-fn resolve_phase3_link_font_color_explicit_preserved() {
-    let mut v = ThemeMode::default();
-    v.defaults.link_color = Some(Rgba::rgb(0, 0, 255));
-    v.link.font = Some(FontSpec {
-        color: Some(Rgba::rgb(255, 0, 0)),
-        ..Default::default()
-    });
-    v.resolve();
-    assert_eq!(
-        v.link.font.as_ref().and_then(|f| f.color),
-        Some(Rgba::rgb(255, 0, 0)),
-        "stated link.font.color preserved"
-    );
-    v.resolve();
-    assert_eq!(
-        v.link.font.as_ref().and_then(|f| f.color),
-        Some(Rgba::rgb(255, 0, 0)),
-        "a second resolve keeps it"
-    );
-}
-
-#[test]
-fn resolve_phase3_link_font_color_from_link_color() {
-    let mut v = ThemeMode::default();
-    v.defaults.font.color = Some(Rgba::rgb(0, 0, 0));
-    v.defaults.link_color = Some(Rgba::rgb(0, 0, 255));
-    v.link.font = Some(FontSpec {
-        size: Some(FontSize::Px(12.0)),
-        ..Default::default()
-    });
-    v.resolve();
-    assert_eq!(
-        v.link.font.as_ref().and_then(|f| f.color),
-        Some(Rgba::rgb(0, 0, 255)),
-        "None link.font.color from defaults.link_color, not defaults.font.color"
-    );
-    v.resolve();
-    assert_eq!(
-        v.link.font.as_ref().and_then(|f| f.color),
-        Some(Rgba::rgb(0, 0, 255)),
-        "a second resolve keeps it"
-    );
-}
-
-// ===== Phase 3: Text scale inheritance (RESOLVE-05) =====
-
-#[test]
-fn resolve_phase3_text_scale_inheritance() {
-    let mut v = ThemeMode::default();
-    v.defaults.font = FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    };
-    v.defaults.line_height = Some(1.4);
-    // Leave text_scale entries as None -- resolve fills from defaults.font
-    v.resolve();
-
-    // All entries inherit size = defaults.font.size (14.0),
-    // weight = defaults.font.weight (400),
-    // line_height = defaults.line_height * size = 1.4 * 14.0 = 19.6
-
-    // caption
-    assert!(v.text_scale.caption.is_some(), "caption present");
-    if let Some(ref cap) = v.text_scale.caption {
-        assert_eq!(
-            cap.size,
-            Some(FontSize::Px(14.0)),
-            "caption size inherits defaults.font.size"
-        );
-        assert_eq!(
-            cap.weight,
-            Some(400),
-            "caption weight inherits defaults.font.weight"
-        );
-        assert_eq!(
-            cap.line_height,
-            Some(FontSize::Px(19.6)),
-            "caption line_height = lh * size"
-        );
-    }
-
-    // section_heading
-    assert!(
-        v.text_scale.section_heading.is_some(),
-        "section_heading present"
-    );
-    if let Some(ref sh) = v.text_scale.section_heading {
-        assert_eq!(
-            sh.size,
-            Some(FontSize::Px(14.0)),
-            "section_heading size inherits defaults.font.size"
-        );
-        assert_eq!(
-            sh.weight,
-            Some(400),
-            "section_heading weight inherits defaults.font.weight"
-        );
-    }
-
-    // dialog_title
-    assert!(v.text_scale.dialog_title.is_some(), "dialog_title present");
-    if let Some(ref dt) = v.text_scale.dialog_title {
-        assert_eq!(
-            dt.size,
-            Some(FontSize::Px(14.0)),
-            "dialog_title size inherits defaults.font.size"
-        );
-        assert_eq!(
-            dt.weight,
-            Some(400),
-            "dialog_title weight inherits defaults.font.weight"
-        );
-    }
-
-    // display
-    assert!(v.text_scale.display.is_some(), "display present");
-    if let Some(ref disp) = v.text_scale.display {
-        assert_eq!(
-            disp.size,
-            Some(FontSize::Px(14.0)),
-            "display size inherits defaults.font.size"
-        );
-        assert_eq!(
-            disp.weight,
-            Some(400),
-            "display weight inherits defaults.font.weight"
-        );
+/// A stack of these layers, unvalidated: the resolution alone is tested.
+pub(super) fn stack(
+    preset: Layer,
+    reader: Option<(ReaderState, Layer)>,
+    layers: Vec<Layer>,
+) -> Stack {
+    Stack {
+        preset: None,
+        declarations: Declarations::default(),
+        preset_layer: Arc::new(preset),
+        derivation: None,
+        reader_left_out: None,
+        reader: reader.map(|(state, layer)| super::Reader::StandIn {
+            state,
+            layer: Arc::new(layer),
+        }),
+        layers: layers
+            .into_iter()
+            .map(|layer| (LayerId::next(), Arc::new(layer)))
+            .collect(),
+        palette: None,
+        port_left_out: None,
+        accent: None,
+        accent_layer: Arc::default(),
+        picked: None,
+        default_scheme: Scheme::Light,
+        contrast: None,
+        flavor: None,
+        pending: Vec::new(),
+        synthetic: None,
     }
 }
 
-// ===== Phase 3: Color inheritance =====
-
-#[test]
-fn resolve_phase3_color_inheritance() {
-    let mut v = variant_with_defaults();
-    v.resolve();
-
-    // window
-    assert_eq!(v.window.background_color, Some(Rgba::rgb(255, 255, 255)));
-    assert_eq!(
-        v.window.border.as_ref().and_then(|b| b.color),
-        v.defaults.border.color
-    );
-    // button
-    assert_eq!(
-        v.button.border.as_ref().and_then(|b| b.color),
-        v.defaults.border.color
-    );
-    // tooltip
-    assert_eq!(
-        v.tooltip.border.as_ref().and_then(|b| b.corner_radius),
-        v.defaults.border.corner_radius
-    );
+pub(super) fn window() -> WindowConditions {
+    WindowConditions::new(InputKind::Mouse)
 }
 
-// ===== Phase 4: Widget-to-widget =====
-
-#[test]
-fn resolve_phase4_inactive_title_bar_from_active() {
-    let mut v = ThemeMode::default();
-    v.defaults.surface_color = Some(Rgba::rgb(240, 240, 240));
-    v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
-    v.resolve();
-
-    // title_bar_background was set to surface in Phase 3
-    // inactive should inherit from active
-    assert_eq!(
-        v.window.inactive_title_bar_background,
-        v.window.title_bar_background
-    );
-    assert_eq!(
-        v.window.inactive_title_bar_text_color,
-        v.window.title_bar_font.as_ref().and_then(|f| f.color)
-    );
+fn opacity(n: f32) -> PartPatch {
+    PartPatch::of_style(PartStylePatch {
+        opacity: Some(Value::Stated(Fraction(n))),
+        ..PartStylePatch::default()
+    })
 }
 
-// ===== Preserve explicit values =====
-
-#[test]
-fn resolve_does_not_overwrite_existing_some_values() {
-    let mut v = variant_with_defaults();
-    let explicit = Rgba::rgb(255, 0, 0);
-    v.window.background_color = Some(explicit);
-    v.button.primary_background = Some(explicit);
-    v.resolve();
-
-    assert_eq!(
-        v.window.background_color,
-        Some(explicit),
-        "window.background preserved"
-    );
-    assert_eq!(
-        v.button.primary_background,
-        Some(explicit),
-        "button.primary_background preserved"
-    );
+/// A layer whose bases set the button body's opacity.
+pub(super) fn body(n: f32) -> Layer {
+    let mut layer = Layer::default();
+    layer.bases.widgets.button = Some(Box::new(ButtonPatch {
+        body: Some(opacity(n)),
+        ..ButtonPatch::default()
+    }));
+    layer
 }
 
-// ===== Idempotent =====
-
-#[test]
-fn resolve_is_idempotent() {
-    let mut v = variant_with_defaults();
-    v.resolve();
-    let after_first = v.clone();
-    v.resolve();
-    assert_eq!(v, after_first, "second resolve() produces same result");
+/// A rule setting the body's opacity under `condition`.
+fn body_rule(condition: Condition, n: f32) -> Rule {
+    let mut selector = Selector::default();
+    selector.conditions.all_of.push(condition);
+    Rule::new(
+        selector,
+        RuleBody::Part(
+            crate::selector::PartRef::Typed(TypedPart::Button(ButtonPart::Body)),
+            opacity(n),
+        ),
+    )
 }
 
-#[test]
-fn scrollbar_thumb_hover_inherits_muted_color() {
-    let mut v = variant_with_defaults();
-    let muted = v.defaults.muted_color;
-    // Ensure thumb and thumb_hover are not pre-set so resolve derives them
-    v.scrollbar.thumb_color = None;
-    v.scrollbar.thumb_hover_color = None;
-    v.resolve();
-    assert!(
-        v.scrollbar.thumb_hover_color.is_some(),
-        "thumb_hover should be resolved"
-    );
-    assert_eq!(
-        v.scrollbar.thumb_hover_color, muted,
-        "thumb_hover_color should inherit from defaults.muted_color"
-    );
-    // Both thumb_color and thumb_hover_color inherit from muted_color
-    assert_eq!(
-        v.scrollbar.thumb_color, muted,
-        "thumb_color should also inherit from defaults.muted_color"
-    );
-}
-
-// ===== All 8 font-carrying widgets get resolved fonts =====
-
-#[test]
-fn resolve_all_font_carrying_widgets_get_resolved_fonts() {
-    let mut v = ThemeMode::default();
-    v.defaults.font = FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    };
-    v.resolve();
-
-    // All 8 should now have Some(FontSpec)
-    assert!(v.window.title_bar_font.is_some(), "window.title_bar_font");
-    assert!(v.button.font.is_some(), "button.font");
-    assert!(v.input.font.is_some(), "input.font");
-    assert!(v.menu.font.is_some(), "menu.font");
-    assert!(v.tooltip.font.is_some(), "tooltip.font");
-    assert!(v.toolbar.font.is_some(), "toolbar.font");
-    assert!(v.status_bar.font.is_some(), "status_bar.font");
-    assert!(v.dialog.title_font.is_some(), "dialog.title_font");
-
-    // Each should have the defaults values
-    for (name, font) in [
-        ("window.title_bar_font", &v.window.title_bar_font),
-        ("button.font", &v.button.font),
-        ("input.font", &v.input.font),
-        ("menu.font", &v.menu.font),
-        ("tooltip.font", &v.tooltip.font),
-        ("toolbar.font", &v.toolbar.font),
-        ("status_bar.font", &v.status_bar.font),
-        ("dialog.title_font", &v.dialog.title_font),
-    ] {
-        let f = font.as_ref().unwrap();
-        assert_eq!(f.family.as_deref(), Some("Inter"), "{name} family");
-        assert_eq!(f.size, Some(FontSize::Px(14.0)), "{name} size");
-        assert_eq!(f.weight, Some(400), "{name} weight");
+fn stated_opacity(slot: &PartSlot) -> Option<f32> {
+    match slot.style.as_ref()?.opacity.as_ref()? {
+        Value::Stated(Fraction(n)) => Some(*n),
+        _ => None,
     }
 }
 
-// ===== validate() tests =====
-
-/// Build a fully-populated ThemeMode (all fields Some) for validate() testing.
-fn fully_populated_variant() -> ThemeMode {
-    let mut v = variant_with_defaults();
-    let c = Rgba::rgb(128, 128, 128);
-
-    // Ensure derived defaults are set (variant_with_defaults doesn't set these)
-    v.defaults.selection_background = Some(Rgba::rgb(0, 120, 215));
-    v.defaults.selection_text_color = Some(Rgba::rgb(255, 255, 255));
-    v.defaults.selection_inactive_background = Some(Rgba::rgb(0, 120, 215));
-    v.defaults.text_selection_background = Some(Rgba::rgb(0, 120, 215));
-    v.defaults.text_selection_color = Some(Rgba::rgb(255, 255, 255));
-    v.defaults.focus_ring_color = Some(Rgba::rgb(0, 120, 215));
-
-    // window
-    v.window.background_color = Some(c);
-    v.window.title_bar_font.get_or_insert_default().color = Some(c);
-    v.window.border.get_or_insert_default().color = Some(c);
-    v.window.title_bar_background = Some(c);
-    v.window.title_bar_font.get_or_insert_default().color = Some(c);
-    v.window.inactive_title_bar_background = Some(c);
-    v.window.inactive_title_bar_text_color = Some(c);
-    v.window.border.get_or_insert_default().corner_radius = Some(8.0);
-    v.window.border.get_or_insert_default().line_width = Some(1.0);
-    v.window.border.get_or_insert_default().shadow_enabled = Some(true);
-    v.window.title_bar_font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // button
-    v.button.background_color = Some(c);
-    v.button.font.get_or_insert_default().color = Some(c);
-    v.button.border.get_or_insert_default().color = Some(c);
-    v.button.primary_background = Some(c);
-    v.button.primary_text_color = Some(c);
-    v.button.min_width = Some(64.0);
-    v.button.min_height = Some(28.0);
-    {
-        let b = v.button.border.get_or_insert_default();
-        b.padding_left = Some(12.0);
-        b.padding_right = Some(12.0);
-    }
-    {
-        let b = v.button.border.get_or_insert_default();
-        b.padding_top = Some(6.0);
-        b.padding_bottom = Some(6.0);
-    }
-    v.button.border.get_or_insert_default().corner_radius = Some(4.0);
-    v.button.border.get_or_insert_default().line_width = Some(1.0);
-    v.button.icon_text_gap = Some(6.0);
-    v.button.disabled_opacity = Some(0.5);
-    v.button.hover_background = Some(c);
-    v.button.hover_text_color = Some(c);
-    v.button.active_text_color = Some(c);
-    v.button.disabled_text_color = Some(c);
-    v.button.active_background = Some(c);
-    v.button.disabled_background = Some(c);
-    v.button.border.get_or_insert_default().shadow_enabled = Some(false);
-    v.button.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // input
-    v.input.background_color = Some(c);
-    v.input.font.get_or_insert_default().color = Some(c);
-    v.input.border.get_or_insert_default().color = Some(c);
-    v.input.placeholder_color = Some(c);
-    v.input.caret_color = Some(c);
-    v.input.selection_background = Some(c);
-    v.input.selection_text_color = Some(c);
-    v.input.min_height = Some(28.0);
-    {
-        let b = v.input.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    {
-        let b = v.input.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.input.disabled_opacity = Some(0.5);
-    v.input.disabled_text_color = Some(c);
-    v.input.hover_border_color = Some(c);
-    v.input.focus_border_color = Some(c);
-    v.input.disabled_background = Some(c);
-    v.input.border.get_or_insert_default().corner_radius = Some(4.0);
-    v.input.border.get_or_insert_default().line_width = Some(1.0);
-    v.input.border.get_or_insert_default().shadow_enabled = Some(false);
-    v.input.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // text_area
-    {
-        let b = v.text_area.border.get_or_insert_default();
-        b.color = Some(c);
-        b.corner_radius = Some(4.0);
-        b.line_width = Some(1.0);
-        b.shadow_enabled = Some(false);
-        b.padding_top = Some(6.0);
-        b.padding_bottom = Some(6.0);
-    }
-
-    // checkbox
-    v.checkbox.background_color = Some(c);
-    v.checkbox.checked_background = Some(c);
-    v.checkbox.indicator_color = Some(c);
-    v.checkbox.indicator_width = Some(18.0);
-    v.checkbox.label_gap = Some(6.0);
-    v.checkbox.disabled_opacity = Some(0.5);
-    v.checkbox.disabled_text_color = Some(c);
-    v.checkbox.hover_background = Some(c);
-    v.checkbox.disabled_background = Some(c);
-    v.checkbox.unchecked_background = Some(c);
-    v.checkbox.unchecked_border_color = Some(c);
-    v.checkbox.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.checkbox.border.get_or_insert_default().corner_radius = Some(2.0);
-    v.checkbox.border.get_or_insert_default().line_width = Some(1.0);
-    v.checkbox.border.get_or_insert_default().shadow_enabled = Some(false);
-
-    // menu
-    v.menu.background_color = Some(c);
-    v.menu.font.get_or_insert_default().color = Some(c);
-    v.menu.separator_color = Some(c);
-    v.menu.row_height = Some(28.0);
-    {
-        let b = v.menu.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    {
-        let b = v.menu.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.menu.icon_text_gap = Some(6.0);
-    v.menu.icon_size = Some(16.0);
-    v.menu.hover_background = Some(c);
-    v.menu.hover_text_color = Some(c);
-    v.menu.disabled_text_color = Some(c);
-    v.menu.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // tooltip
-    v.tooltip.background_color = Some(c);
-    v.tooltip.font.get_or_insert_default().color = Some(c);
-    {
-        let b = v.tooltip.border.get_or_insert_default();
-        b.padding_left = Some(6.0);
-        b.padding_right = Some(6.0);
-    }
-    {
-        let b = v.tooltip.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.tooltip.max_width = Some(300.0);
-    v.tooltip.border.get_or_insert_default().corner_radius = Some(4.0);
-    v.tooltip.border.get_or_insert_default().line_width = Some(1.0);
-    v.tooltip.border.get_or_insert_default().shadow_enabled = Some(false);
-    v.tooltip.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // scrollbar
-    v.scrollbar.track_color = Some(c);
-    v.scrollbar.thumb_color = Some(c);
-    v.scrollbar.thumb_hover_color = Some(c);
-    v.scrollbar.groove_width = Some(14.0);
-    v.scrollbar.min_thumb_length = Some(20.0);
-    v.scrollbar.thumb_width = Some(8.0);
-    v.scrollbar.overlay_mode = Some(false);
-    v.scrollbar.thumb_active_color = Some(c);
-
-    // slider
-    v.slider.fill_color = Some(c);
-    v.slider.track_color = Some(c);
-    v.slider.thumb_color = Some(c);
-    v.slider.track_height = Some(4.0);
-    v.slider.thumb_diameter = Some(16.0);
-    v.slider.tick_mark_length = Some(6.0);
-    v.slider.disabled_opacity = Some(0.5);
-    v.slider.thumb_hover_color = Some(c);
-    v.slider.disabled_fill_color = Some(c);
-    v.slider.disabled_track_color = Some(c);
-    v.slider.disabled_thumb_color = Some(c);
-
-    // progress_bar
-    v.progress_bar.fill_color = Some(c);
-    v.progress_bar.track_color = Some(c);
-    v.progress_bar.track_height = Some(6.0);
-    v.progress_bar.min_width = Some(100.0);
-    v.progress_bar.border.get_or_insert_default().corner_radius = Some(3.0);
-    v.progress_bar.border.get_or_insert_default().color = Some(c);
-    v.progress_bar.border.get_or_insert_default().line_width = Some(1.0);
-    v.progress_bar.border.get_or_insert_default().shadow_enabled = Some(false);
-
-    // tab
-    v.tab.background_color = Some(c);
-    v.tab.active_background = Some(c);
-    v.tab.active_text_color = Some(c);
-    v.tab.bar_background = Some(c);
-    v.tab.min_width = Some(60.0);
-    v.tab.min_height = Some(32.0);
-    v.tab.hover_text_color = Some(c);
-    v.tab.hover_background = Some(c);
-    {
-        let b = v.tab.border.get_or_insert_default();
-        b.padding_left = Some(12.0);
-        b.padding_right = Some(12.0);
-    }
-    {
-        let b = v.tab.border.get_or_insert_default();
-        b.padding_top = Some(6.0);
-        b.padding_bottom = Some(6.0);
-    }
-    v.tab.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // sidebar
-    v.sidebar.background_color = Some(c);
-    v.sidebar.selection_background = Some(c);
-    v.sidebar.selection_text_color = Some(c);
-    v.sidebar.hover_background = Some(c);
-    v.sidebar.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.sidebar.border.get_or_insert_default().color = Some(c);
-    v.sidebar.border.get_or_insert_default().line_width = Some(1.0);
-
-    // toolbar
-    v.toolbar.background_color = Some(c);
-    v.toolbar.bar_height = Some(40.0);
-    v.toolbar.item_gap = Some(4.0);
-    v.toolbar.icon_size = Some(24.0);
-    v.toolbar.border.get_or_insert_default().color = Some(c);
-    v.toolbar.border.get_or_insert_default().corner_radius = Some(4.0);
-    v.toolbar.border.get_or_insert_default().line_width = Some(1.0);
-    v.toolbar.border.get_or_insert_default().shadow_enabled = Some(false);
-    v.toolbar.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // status_bar
-    v.status_bar.background_color = Some(c);
-    v.status_bar.border.get_or_insert_default().color = Some(c);
-    v.status_bar.border.get_or_insert_default().line_width = Some(1.0);
-    v.status_bar.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // list
-    v.list.background_color = Some(c);
-    v.list.alternate_row_background = Some(c);
-    v.list.selection_background = Some(c);
-    v.list.selection_text_color = Some(c);
-    v.list.header_background = Some(c);
-    v.list.grid_color = Some(c);
-    v.list.row_height = Some(28.0);
-    v.list.hover_background = Some(c);
-    v.list.hover_text_color = Some(c);
-    v.list.disabled_text_color = Some(c);
-    v.list.item_font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.list.header_font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.list.border.get_or_insert_default().color = Some(c);
-    v.list.border.get_or_insert_default().corner_radius = Some(4.0);
-    v.list.border.get_or_insert_default().line_width = Some(1.0);
-    v.list.border.get_or_insert_default().shadow_enabled = Some(false);
-
-    // popover
-    v.popover.background_color = Some(c);
-    v.popover.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.popover.border.get_or_insert_default().color = Some(c);
-    v.popover.border.get_or_insert_default().corner_radius = Some(6.0);
-    v.popover.border.get_or_insert_default().line_width = Some(1.0);
-    v.popover.border.get_or_insert_default().shadow_enabled = Some(false);
-
-    // splitter
-    v.splitter.divider_width = Some(4.0);
-    v.splitter.divider_color = Some(c);
-    v.splitter.hover_color = Some(c);
-
-    // separator
-    v.separator.line_color = Some(c);
-    v.separator.line_width = Some(1.0);
-
-    // switch
-    v.switch.checked_background = Some(c);
-    v.switch.unchecked_background = Some(c);
-    v.switch.thumb_background = Some(c);
-    v.switch.track_width = Some(40.0);
-    v.switch.track_height = Some(20.0);
-    v.switch.thumb_diameter = Some(14.0);
-    v.switch.track_radius = Some(10.0);
-    v.switch.disabled_opacity = Some(0.5);
-    v.switch.hover_checked_background = Some(c);
-    v.switch.hover_unchecked_background = Some(c);
-    v.switch.disabled_checked_background = Some(c);
-    v.switch.disabled_unchecked_background = Some(c);
-    v.switch.disabled_thumb_color = Some(c);
-
-    // dialog
-    v.dialog.background_color = Some(c);
-    v.dialog.min_width = Some(320.0);
-    v.dialog.max_width = Some(600.0);
-    v.dialog.min_height = Some(200.0);
-    v.dialog.max_height = Some(800.0);
-    v.dialog.button_gap = Some(8.0);
-    v.dialog.border.get_or_insert_default().color = Some(c);
-    v.dialog.border.get_or_insert_default().corner_radius = Some(8.0);
-    v.dialog.border.get_or_insert_default().line_width = Some(1.0);
-    v.dialog.border.get_or_insert_default().shadow_enabled = Some(true);
-    v.dialog.icon_size = Some(22.0);
-    v.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
-    v.dialog.title_font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(16.0)),
-        weight: Some(700),
-        ..Default::default()
-    });
-    v.dialog.body_font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-
-    // spinner
-    v.spinner.fill_color = Some(c);
-    v.spinner.diameter = Some(24.0);
-    v.spinner.min_diameter = Some(16.0);
-    v.spinner.stroke_width = Some(2.0);
-
-    // combo_box
-    v.combo_box.background_color = Some(c);
-    v.combo_box.min_height = Some(28.0);
-    v.combo_box.min_width = Some(80.0);
-    v.combo_box.arrow_icon_size = Some(12.0);
-    v.combo_box.arrow_area_width = Some(20.0);
-    v.combo_box.disabled_opacity = Some(0.5);
-    v.combo_box.disabled_text_color = Some(c);
-    v.combo_box.hover_background = Some(c);
-    v.combo_box.disabled_background = Some(c);
-    v.combo_box.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.combo_box.border.get_or_insert_default().color = Some(c);
-    v.combo_box.border.get_or_insert_default().corner_radius = Some(4.0);
-    v.combo_box.border.get_or_insert_default().line_width = Some(1.0);
-    v.combo_box.border.get_or_insert_default().shadow_enabled = Some(false);
-
-    // segmented_control
-    v.segmented_control.background_color = Some(c);
-    v.segmented_control.active_background = Some(c);
-    v.segmented_control.active_text_color = Some(c);
-    v.segmented_control.segment_height = Some(28.0);
-    v.segmented_control.separator_width = Some(1.0);
-    v.segmented_control.disabled_opacity = Some(0.5);
-    v.segmented_control.hover_background = Some(c);
-    v.segmented_control.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.segmented_control.border.get_or_insert_default().color = Some(c);
-    v.segmented_control
-        .border
-        .get_or_insert_default()
-        .corner_radius = Some(4.0);
-    v.segmented_control
-        .border
-        .get_or_insert_default()
-        .line_width = Some(1.0);
-    v.segmented_control
-        .border
-        .get_or_insert_default()
-        .shadow_enabled = Some(false);
-
-    // card
-    v.card.background_color = Some(c);
-    v.card.border.get_or_insert_default().color = Some(c);
-    v.card.border.get_or_insert_default().corner_radius = Some(8.0);
-    v.card.border.get_or_insert_default().shadow_enabled = Some(true);
-
-    // expander
-    v.expander.header_height = Some(32.0);
-    v.expander.arrow_icon_size = Some(12.0);
-    v.expander.hover_background = Some(c);
-    v.expander.arrow_color = Some(c);
-    v.expander.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.expander.border.get_or_insert_default().color = Some(c);
-    v.expander.border.get_or_insert_default().corner_radius = Some(4.0);
-    v.expander.border.get_or_insert_default().line_width = Some(1.0);
-    v.expander.border.get_or_insert_default().shadow_enabled = Some(false);
-
-    // link
-    v.link.font = Some(FontSpec {
-        family: Some("Inter".into()),
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(400),
-        ..Default::default()
-    });
-    v.link.visited_text_color = Some(c);
-    v.link.background_color = Some(c);
-    v.link.hover_background = Some(c);
-    v.link.hover_text_color = Some(c);
-    v.link.active_text_color = Some(c);
-    v.link.disabled_text_color = Some(c);
-    v.link.underline_enabled = Some(true);
-
-    // text_scale (all 4 entries fully populated)
-    v.text_scale.caption = Some(crate::model::TextScaleEntry {
-        size: Some(FontSize::Px(11.0)),
-        weight: Some(400),
-        line_height: Some(FontSize::Px(15.4)),
-    });
-    v.text_scale.section_heading = Some(crate::model::TextScaleEntry {
-        size: Some(FontSize::Px(14.0)),
-        weight: Some(600),
-        line_height: Some(FontSize::Px(19.6)),
-    });
-    v.text_scale.dialog_title = Some(crate::model::TextScaleEntry {
-        size: Some(FontSize::Px(16.0)),
-        weight: Some(700),
-        line_height: Some(FontSize::Px(22.4)),
-    });
-    v.text_scale.display = Some(crate::model::TextScaleEntry {
-        size: Some(FontSize::Px(24.0)),
-        weight: Some(300),
-        line_height: Some(FontSize::Px(33.6)),
-    });
-
-    // Font color on all widget fonts (require_font/require_font_opt now requires color)
-    v.window.title_bar_font.get_or_insert_default().color = Some(c);
-    v.button.font.get_or_insert_default().color = Some(c);
-    v.input.font.get_or_insert_default().color = Some(c);
-    v.checkbox.font.get_or_insert_default().color = Some(c);
-    v.menu.font.get_or_insert_default().color = Some(c);
-    v.tooltip.font.get_or_insert_default().color = Some(c);
-    v.tab.font.get_or_insert_default().color = Some(c);
-    v.sidebar.font.get_or_insert_default().color = Some(c);
-    v.toolbar.font.get_or_insert_default().color = Some(c);
-    v.status_bar.font.get_or_insert_default().color = Some(c);
-    v.list.item_font.get_or_insert_default().color = Some(c);
-    v.list.header_font.get_or_insert_default().color = Some(c);
-    v.popover.font.get_or_insert_default().color = Some(c);
-    v.dialog.title_font.get_or_insert_default().color = Some(c);
-    v.dialog.body_font.get_or_insert_default().color = Some(c);
-    v.link.font.get_or_insert_default().color = Some(c);
-    v.combo_box.font.get_or_insert_default().color = Some(c);
-    v.segmented_control.font.get_or_insert_default().color = Some(c);
-    v.expander.font.get_or_insert_default().color = Some(c);
-
-    // Border sub-fields that require_border needs but weren't set above
-    v.checkbox.border.get_or_insert_default().color = Some(c);
-    v.checkbox.border.get_or_insert_default().shadow_enabled = Some(false);
-    v.tooltip.border.get_or_insert_default().color = Some(c);
-
-    v
-}
-
+/// A rule whose `Preset` condition names another preset than the current
+/// one is not applied, and one naming the current preset is; a
+/// `not_conditions` entry naming the current preset excludes its rule
+/// (S7.1, S12): `adwaita`'s rules under no bundled preset and under
+/// `adwaita`.
 #[test]
-fn validate_fully_populated_returns_ok() {
-    let v = fully_populated_variant();
-    let result = v.validate();
-    assert!(
-        result.is_ok(),
-        "validate() should succeed on fully populated variant, got: {:?}",
-        result.err()
-    );
-    let resolved = result.unwrap();
-    assert_eq!(resolved.defaults.font.family.as_ref(), "Inter");
-    // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
-}
-
-#[test]
-fn validate_missing_2_fields_returns_all_paths() {
-    let mut v = fully_populated_variant();
-    // Remove 2 specific scalar fields (non-cascading)
-    v.defaults.muted_color = None;
-    v.defaults.link_color = None;
-
-    let result = v.validate();
-    let missing = match result {
-        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
-        other => panic!("expected ResolutionIncomplete, got {other:?}"),
-    };
-    assert_eq!(
-        missing.len(),
-        2,
-        "should report exactly 2 missing fields, got: {:?}",
-        missing
-    );
-    assert!(missing.contains(&"defaults.muted_color".to_string()));
-    assert!(missing.contains(&"defaults.link_color".to_string()));
-}
-
-#[test]
-fn validate_error_message_includes_count_and_paths() {
-    let mut v = fully_populated_variant();
-    v.defaults.muted_color = None;
-    v.button.min_height = None;
-
-    let result = v.validate();
-    let missing = match result {
-        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
-        other => panic!("expected ResolutionIncomplete, got {other:?}"),
-    };
-    // ResolutionIncomplete Display includes count and paths
-    let err = crate::Error::ResolutionIncomplete {
-        missing: missing.clone(),
-    };
-    let msg = err.to_string();
-    assert!(msg.contains("2 missing field(s)"), "got: {msg}");
-    assert!(msg.contains("defaults.muted_color"), "got: {msg}");
-    assert!(msg.contains("button.min_height_px"), "got: {msg}");
-}
-
-#[test]
-fn validate_checks_all_defaults_fields() {
-    // Default variant has ALL fields None, so validate should report many missing
-    let v = ThemeMode::default();
-    let result = v.validate();
-    let missing = match result {
-        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
-        other => panic!("expected ResolutionIncomplete, got {other:?}"),
-    };
-    // Should include defaults fields
-    assert!(
-        missing.iter().any(|f| f.starts_with("defaults.")),
-        "should include defaults.* fields in missing"
-    );
-    // Check a representative set of defaults fields
-    assert!(missing.contains(&"defaults.font.family".to_string()));
-    assert!(missing.contains(&"defaults.background_color".to_string()));
-    assert!(missing.contains(&"defaults.accent_color".to_string()));
-    assert!(missing.contains(&"defaults.border.corner_radius_px".to_string()));
-    assert!(missing.contains(&"defaults.text_selection_background".to_string()));
-    assert!(missing.contains(&"defaults.icon_sizes.toolbar_px".to_string()));
-}
-
-#[test]
-fn validate_checks_all_widget_structs() {
-    let v = ThemeMode::default();
-    let result = v.validate();
-    let missing = match result {
-        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
-        other => panic!("expected ResolutionIncomplete, got {other:?}"),
-    };
-    // Every widget should have at least one field reported
-    for prefix in [
-        "window.",
-        "button.",
-        "input.",
-        "text_area.",
-        "checkbox.",
-        "menu.",
-        "tooltip.",
-        "scrollbar.",
-        "slider.",
-        "progress_bar.",
-        "tab.",
-        "sidebar.",
-        "toolbar.",
-        "status_bar.",
-        "list.",
-        "popover.",
-        "splitter.",
-        "separator.",
-        "switch.",
-        "dialog.",
-        "spinner.",
-        "combo_box.",
-        "segmented_control.",
-        "card.",
-        "expander.",
-        "link.",
-    ] {
-        assert!(
-            missing.iter().any(|f| f.starts_with(prefix)),
-            "missing fields should include {prefix}* but got: {:?}",
-            missing
-                .iter()
-                .filter(|f| f.starts_with(prefix))
-                .collect::<Vec<_>>()
-        );
-    }
-}
-
-#[test]
-fn validate_checks_text_scale_entries() {
-    let v = ThemeMode::default();
-    let result = v.validate();
-    let missing = match result {
-        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
-        other => panic!("expected ResolutionIncomplete, got {other:?}"),
-    };
-    assert!(missing.contains(&"text_scale.caption".to_string()));
-    assert!(missing.contains(&"text_scale.section_heading".to_string()));
-    assert!(missing.contains(&"text_scale.dialog_title".to_string()));
-    assert!(missing.contains(&"text_scale.display".to_string()));
-}
-
-#[test]
-fn validate_after_resolve_succeeds_for_derivable_fields() {
-    // Start with defaults populated but widgets empty
-    let mut v = variant_with_defaults();
-
-    // Non-derivable fields that resolve() cannot fill:
-    // button sizing
-    v.button.min_width = Some(64.0);
-    v.button.min_height = Some(28.0);
-    {
-        let b = v.button.border.get_or_insert_default();
-        b.padding_left = Some(12.0);
-        b.padding_right = Some(12.0);
-    }
-    {
-        let b = v.button.border.get_or_insert_default();
-        b.padding_top = Some(6.0);
-        b.padding_bottom = Some(6.0);
-    }
-    v.button.icon_text_gap = Some(6.0);
-    // input sizing
-    v.input.min_height = Some(28.0);
-    {
-        let b = v.input.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    {
-        let b = v.input.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    // checkbox sizing
-    v.checkbox.indicator_width = Some(18.0);
-    v.checkbox.label_gap = Some(6.0);
-    // menu sizing
-    v.menu.row_height = Some(28.0);
-    {
-        let b = v.menu.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    {
-        let b = v.menu.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.menu.icon_text_gap = Some(6.0);
-    // tooltip sizing
-    {
-        let b = v.tooltip.border.get_or_insert_default();
-        b.padding_left = Some(6.0);
-        b.padding_right = Some(6.0);
-    }
-    {
-        let b = v.tooltip.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.tooltip.max_width = Some(300.0);
-    // scrollbar sizing
-    v.scrollbar.groove_width = Some(14.0);
-    v.scrollbar.min_thumb_length = Some(20.0);
-    v.scrollbar.thumb_width = Some(8.0);
-    v.scrollbar.overlay_mode = Some(false);
-    // slider sizing
-    v.slider.track_height = Some(4.0);
-    v.slider.thumb_diameter = Some(16.0);
-    v.slider.tick_mark_length = Some(6.0);
-    // progress_bar sizing
-    v.progress_bar.track_height = Some(6.0);
-    v.progress_bar.min_width = Some(100.0);
-    // tab sizing
-    v.tab.min_width = Some(60.0);
-    v.tab.min_height = Some(32.0);
-    {
-        let b = v.tab.border.get_or_insert_default();
-        b.padding_left = Some(12.0);
-        b.padding_right = Some(12.0);
-    }
-    {
-        let b = v.tab.border.get_or_insert_default();
-        b.padding_top = Some(6.0);
-        b.padding_bottom = Some(6.0);
-    }
-    // toolbar sizing
-    v.toolbar.bar_height = Some(40.0);
-    v.toolbar.item_gap = Some(4.0);
-    // REMOVED: toolbar.padding not in new schema
-    // list sizing + alternate_row (no longer derived — must be explicit)
-    v.list.row_height = Some(28.0);
-    {
-        let b = v.list.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    {
-        let b = v.list.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.list.alternate_row_background = Some(Rgba::rgb(245, 245, 245));
-    // splitter
-    v.splitter.divider_width = Some(4.0);
-    // switch sizing
-    v.switch.unchecked_background = Some(Rgba::rgb(180, 180, 180));
-    v.switch.track_width = Some(40.0);
-    v.switch.track_height = Some(20.0);
-    v.switch.thumb_diameter = Some(14.0);
-    v.switch.track_radius = Some(10.0);
-    // dialog sizing
-    v.dialog.min_width = Some(320.0);
-    v.dialog.max_width = Some(600.0);
-    v.dialog.min_height = Some(200.0);
-    v.dialog.max_height = Some(800.0);
-    // REMOVED: content_padding not in new schema
-    v.dialog.button_gap = Some(8.0);
-    v.dialog.icon_size = Some(22.0);
-    v.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
-    // spinner sizing
-    v.spinner.diameter = Some(24.0);
-    v.spinner.min_diameter = Some(16.0);
-    v.spinner.stroke_width = Some(2.0);
-    // combo_box sizing
-    v.combo_box.min_height = Some(28.0);
-    v.combo_box.min_width = Some(80.0);
-    {
-        let b = v.combo_box.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    v.combo_box.arrow_icon_size = Some(12.0);
-    v.combo_box.arrow_area_width = Some(20.0);
-    // segmented_control sizing
-    v.segmented_control.segment_height = Some(28.0);
-    v.segmented_control.separator_width = Some(1.0);
-    {
-        let b = v.segmented_control.border.get_or_insert_default();
-        b.padding_left = Some(12.0);
-        b.padding_right = Some(12.0);
-    }
-    // card
-    // REMOVED: card.padding not in new schema
-    // expander
-    v.expander.header_height = Some(32.0);
-    v.expander.arrow_icon_size = Some(12.0);
-    // REMOVED: content_padding not in new schema
-    // link
-    v.link.background_color = Some(Rgba::rgb(255, 255, 255));
-    v.link.hover_background = Some(Rgba::rgb(230, 230, 255));
-    v.link.underline_enabled = Some(true);
-
-    v.resolve_all();
-    let result = v.validate();
-    assert!(
-        result.is_ok(),
-        "validate() should succeed after resolve_all() with all non-derivable fields set, got: {:?}",
-        result.err()
-    );
-}
-
-#[test]
-fn test_gnome_resolve_validate() {
-    // Simulate GNOME reader pipeline: adwaita base + GNOME reader overlay.
-    // The GNOME reader's variant is sparse (build_gnome_variant_pure): it sets
-    // only what the portal and gsettings answer, and the adwaita preset under
-    // it states the rest, dialog.button_order included. Both icon_set and
-    // icon_theme are Theme-level (shared) after the G4 migration; KDE remains
-    // the one exception with per-variant icon_theme overrides.
-    let adwaita = crate::Theme::preset("adwaita").unwrap();
-
-    // Pick dark variant from adwaita (matches GNOME PreferDark path).
-    let mut variant = adwaita
-        .dark
-        .clone()
-        .expect("adwaita should have dark variant");
-
-    // The adwaita preset's dialog.button_order, which the reader leaves to it.
-    variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
-
-    // Simulate GNOME reader font output (gsettings font-name on a GNOME system).
-    variant.defaults.font = FontSpec {
-        family: Some("Cantarell".into()),
-        size: Some(FontSize::Px(11.0)),
-        weight: Some(400),
-        ..Default::default()
-    };
-
-    variant.resolve_all();
-    let resolved = variant.validate().unwrap_or_else(|e| {
-        panic!("GNOME resolve/validate pipeline failed: {e}");
-    });
-
-    // Spot-check: adwaita-base fields present.
-    // Adwaita dark accent is #3584e4 = rgb(53, 132, 228)
-    assert_eq!(
-        resolved.defaults.accent_color,
-        Rgba::rgb(53, 132, 228),
-        "accent should be from adwaita preset"
-    );
-    assert_eq!(
-        resolved.defaults.font.family.as_ref(),
-        "Cantarell",
-        "font family should be from GNOME reader overlay"
-    );
-    assert_eq!(
-        resolved.dialog.button_order,
-        DialogButtonOrder::PrimaryRight,
-        "dialog button order should be trailing affirmative for GNOME"
-    );
-    // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
-}
-
-// ===== Range validation tests =====
-
-#[test]
-fn validate_catches_negative_radius() {
-    let mut v = fully_populated_variant();
-    v.defaults.border.corner_radius = Some(-5.0);
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    assert!(
-        errors
+fn a_rule_naming_another_preset_is_not_applied() {
+    let opacities = |preset: Option<PresetId>, rule: Rule| {
+        let mut application = body(0.2);
+        application.rules.push(rule);
+        let mut stack = stack(Layer::default(), None, vec![application]);
+        stack.preset = preset;
+        let theme = stack.resolve(&mut WindowState::default(), &window()).theme;
+        let mut slot = PartSlot::default();
+        theme
+            .part_steps(TypedPart::Button(ButtonPart::Body))
             .iter()
-            .any(|rv| rv.path == "defaults.border.corner_radius_px"),
-        "should report negative defaults.border.corner_radius, got: {:?}",
-        errors
-    );
-}
-
-#[test]
-fn validate_catches_zero_font_size() {
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Px(0.0));
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
+            .map(|step| {
+                slot.apply(step.patch.clone()).unwrap();
+                stated_opacity(&slot).unwrap()
+            })
+            .collect::<Vec<_>>()
     };
-    assert!(
-        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
-        "should report zero defaults.font.size, got: {:?}",
-        errors
-    );
+    let named = || body_rule(Condition::Preset(PresetId::Adwaita), 0.4);
+    assert_eq!(opacities(None, named()), [0.2]);
+    assert_eq!(opacities(Some(PresetId::Adwaita), named()), [0.2, 0.4]);
+    let mut unless = named();
+    unless.selector.conditions.none_of = std::mem::take(&mut unless.selector.conditions.all_of);
+    assert_eq!(opacities(Some(PresetId::Adwaita), unless), [0.2]);
 }
 
+/// S8's order: every layer's bases, in order (preset, reader, the
+/// application's), then every layer's rules whose conditions hold, in
+/// order; a rule whose conditions do not hold is not kept.
 #[test]
-fn validate_catches_opacity_out_of_range() {
-    let mut v = fully_populated_variant();
-    v.defaults.disabled_opacity = Some(1.5);
-    v.defaults.border.opacity = Some(-0.1);
-    v.button.disabled_opacity = Some(3.0);
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
+fn bases_then_rules_order() {
+    let mut preset = body(0.1);
+    preset.rules.push(body_rule(Condition::ReducedMotion, 0.3));
+    preset.rules.push(body_rule(Condition::BoldText, 0.9));
+    let mut state = ReaderState::new(Scheme::Light, 1.0);
+    state.reduced_motion = true;
+    let mut application = body(0.2);
+    application
+        .rules
+        .push(body_rule(Condition::ReducedMotion, 0.4));
+    let stack = stack(preset, Some((state, body(0.15))), vec![application]);
+    let theme = stack.resolve(&mut WindowState::default(), &window()).theme;
+    let steps = theme.part_steps(TypedPart::Button(ButtonPart::Body));
+    let base = |layer| Pos {
+        rule: false,
+        layer,
+        index: 0,
     };
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.disabled_opacity")),
-        "should report out-of-range disabled_opacity, got: {:?}",
-        errors
-    );
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.border.opacity")),
-        "should report out-of-range border_opacity, got: {:?}",
-        errors
-    );
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("button.disabled_opacity")),
-        "should report out-of-range button.disabled_opacity, got: {:?}",
-        errors
-    );
-}
-
-#[test]
-fn validate_catches_invalid_font_weight() {
-    let mut v = fully_populated_variant();
-    v.defaults.font.weight = Some(50); // below 100
-    v.defaults.mono_font.weight = Some(1000); // above 900
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
+    let rule = |layer, index| Pos {
+        rule: true,
+        layer,
+        index,
     };
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.weight")
-                && (rv.value - 50.0).abs() < f64::EPSILON),
-        "should report out-of-range font weight 50, got: {:?}",
-        errors
-    );
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.mono_font.weight")
-                && (rv.value - 1000.0).abs() < f64::EPSILON),
-        "should report out-of-range mono_font weight 1000, got: {:?}",
-        errors
-    );
-}
-
-#[test]
-fn validate_reports_multiple_range_errors_together() {
-    let mut v = fully_populated_variant();
-    v.defaults.border.corner_radius = Some(-1.0);
-    v.defaults.disabled_opacity = Some(2.0);
-    v.defaults.font.size = Some(FontSize::Px(0.0));
-    v.defaults.font.weight = Some(50);
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    // All 4 range errors should be reported in one batch
-    assert!(
-        errors.len() >= 4,
-        "should report at least 4 range errors, got {}: {:?}",
-        errors.len(),
-        errors
-    );
-}
-
-#[test]
-fn validate_allows_zero_radius_and_frame_width() {
-    // Zero is valid for these fields (flat design, no border)
-    let mut v = fully_populated_variant();
-    v.defaults.border.corner_radius = Some(0.0);
-    v.defaults.border.corner_radius_lg = Some(0.0);
-    v.defaults.border.line_width = Some(0.0);
-    v.button.border.get_or_insert_default().corner_radius = Some(0.0);
-    v.defaults.disabled_opacity = Some(0.0);
-    v.defaults.border.opacity = Some(0.0);
-
-    let result = v.validate();
-    assert!(
-        result.is_ok(),
-        "zero values should be valid for radius/frame_width/opacity, got: {:?}",
-        result.err()
-    );
-}
-
-// ===== Additional range-check negative tests (issue 2a) =====
-
-#[test]
-fn validate_catches_negative_font_size() {
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Px(-1.0));
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    assert!(
-        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
-        "should report negative font.size, got: {:?}",
-        errors
-    );
-}
-
-#[test]
-fn validate_catches_disabled_opacity_above_one() {
-    let mut v = fully_populated_variant();
-    v.defaults.disabled_opacity = Some(2.0);
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.disabled_opacity")),
-        "should report disabled_opacity=2.0 out of 0..=1 range, got: {:?}",
-        errors
-    );
-}
-
-#[test]
-fn validate_catches_font_weight_zero() {
-    let mut v = fully_populated_variant();
-    v.defaults.font.weight = Some(0);
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.weight")),
-        "should report font.weight=0 out of 100..=900 range, got: {:?}",
-        errors
-    );
-}
-
-#[test]
-fn validate_catches_nan_values() {
-    let mut v = fully_populated_variant();
-    v.defaults.border.corner_radius = Some(f32::NAN);
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path == "defaults.border.corner_radius_px"),
-        "should report NaN defaults.border.corner_radius, got: {:?}",
-        errors
-    );
-}
-
-#[test]
-fn validate_catches_infinity() {
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Px(f32::INFINITY));
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    assert!(
-        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
-        "should report infinite font.size, got: {:?}",
-        errors
-    );
-}
-
-#[test]
-fn validate_catches_negative_infinity() {
-    let mut v = fully_populated_variant();
-    // Set a field to negative infinity to trigger range check failure
-    v.defaults.border.line_width = Some(f32::NEG_INFINITY);
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path == "defaults.border.line_width_px"),
-        "should report -inf border.line_width, got: {:?}",
-        errors
-    );
-}
-
-// ===== Validation split tests (BUG-01, BUG-02) =====
-
-#[test]
-fn validate_missing_field_short_circuits_before_range_checks() {
-    // BUG-01 fix: when a field is missing AND another field is out-of-range,
-    // validate() must return ResolutionIncomplete (not ResolutionInvalid)
-    // because the short-circuit fires before check_ranges runs.
-    let mut v = fully_populated_variant();
-    v.defaults.accent_color = None; // missing field
-    v.defaults.font.weight = Some(0); // out of range (100..=900)
-
-    let result = v.validate();
-    let missing = match result {
-        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
-        other => panic!("expected ResolutionIncomplete, got {other:?}"),
-    };
-    assert!(
-        missing.contains(&"defaults.accent_color".to_string()),
-        "missing should contain defaults.accent_color, got: {missing:?}"
-    );
-}
-
-#[test]
-fn validate_range_only_errors_produce_resolution_invalid() {
-    // BUG-02 fix: when all fields are present but one is out-of-range,
-    // validate() returns ResolutionInvalid with structured RangeViolation.
-    let mut v = fully_populated_variant();
-    v.defaults.font.weight = Some(0); // out of range (100..=900)
-
-    let result = v.validate();
-    let errors = match result {
-        Err(crate::Error::ResolutionInvalid { errors }) => errors,
-        other => panic!("expected ResolutionInvalid, got {other:?}"),
-    };
-    assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.weight")),
-        "should contain RangeViolation for defaults.font.weight, got: {errors:?}"
-    );
-}
-
-// ===== Derivation chain tests (issues 17a, 17b, 17c) =====
-
-#[test]
-fn merge_preserves_base_name_when_overlay_name_empty() {
-    let mut base = crate::Theme {
-        name: "My Base".into(),
-        ..crate::Theme::default()
-    };
-    let overlay = crate::Theme::default();
-    base.merge(&overlay);
-    assert_eq!(base.name, "My Base", "base name should be preserved");
-}
-
-#[test]
-fn merge_preserves_empty_base_name_over_nonempty_overlay() {
-    // Issue 17a edge case: merge() never touches self.name, so an empty
-    // base name is kept even when the overlay has a non-empty name.
-    let mut base = crate::Theme::default();
-    let overlay = crate::Theme {
-        name: "Overlay Name".into(),
-        ..crate::Theme::default()
-    };
-    base.merge(&overlay);
     assert_eq!(
-        base.name, "",
-        "empty base name should be preserved (merge never touches name)"
+        steps.iter().map(|step| step.pos).collect::<Vec<_>>(),
+        [base(0), base(1), base(2), rule(0, 0), rule(2, 0)]
     );
-}
-
-#[test]
-fn accent_derives_selection_then_selection_inactive() {
-    let mut v = ThemeMode::default();
-    let accent = Rgba::rgb(0, 120, 215);
-    v.defaults.accent_color = Some(accent);
-    v.resolve();
-
-    // accent -> selection -> selection_inactive chain
-    assert_eq!(
-        v.defaults.selection_background,
-        Some(accent),
-        "selection should derive from accent"
-    );
-    assert_eq!(
-        v.defaults.selection_inactive_background,
-        Some(accent),
-        "selection_inactive should derive from selection"
-    );
-}
-
-/// D9: an unstated list or sidebar hover is the widget's own background,
-/// no tint, not the window's (docs/inheritance-rules.toml, widget-to-widget);
-/// a stated one stands.
-#[test]
-fn an_unstated_list_or_sidebar_hover_is_the_widgets_own_background() {
-    let mut v = variant_with_defaults();
-    v.defaults.background_color = Some(Rgba::rgb(236, 236, 236));
-    v.list.background_color = Some(Rgba::rgb(255, 255, 255));
-    v.sidebar.background_color = Some(Rgba::rgb(246, 246, 246));
-    v.resolve();
-    assert_eq!(v.list.hover_background, Some(Rgba::rgb(255, 255, 255)));
-    assert_eq!(v.sidebar.hover_background, Some(Rgba::rgb(246, 246, 246)));
-
-    let mut stated = variant_with_defaults();
-    stated.list.background_color = Some(Rgba::rgb(255, 255, 255));
-    stated.list.hover_background = Some(Rgba::rgb(1, 2, 3));
-    stated.sidebar.background_color = Some(Rgba::rgb(246, 246, 246));
-    stated.sidebar.hover_background = Some(Rgba::rgb(4, 5, 6));
-    stated.resolve();
-    assert_eq!(stated.list.hover_background, Some(Rgba::rgb(1, 2, 3)));
-    assert_eq!(stated.sidebar.hover_background, Some(Rgba::rgb(4, 5, 6)));
-}
-
-/// D9: the two macOS presets, which state neither hover (no source gives
-/// one, docs/platform-facts.md:1379, :1435), hover a row in its own
-/// background: macos-monterey's light window #ececec is not its list's
-/// #ffffff, so the window would show as a grey row.
-#[test]
-fn the_macos_presets_hover_list_and_sidebar_rows_with_no_tint() {
-    for name in ["macos-monterey", "macos-tahoe"] {
-        for mode in [crate::ColorMode::Light, crate::ColorMode::Dark] {
-            let r = crate::Theme::preset(name)
-                .expect("preset")
-                .resolve(mode)
-                .expect("resolves")
-                .variant;
-            assert_eq!(
-                r.list.hover_background, r.list.background_color,
-                "{name} {mode:?}"
-            );
-            assert_eq!(
-                r.sidebar.hover_background, r.sidebar.background_color,
-                "{name} {mode:?}"
-            );
-        }
+    let mut slot = PartSlot::default();
+    let mut seen = Vec::new();
+    for step in steps {
+        slot.apply(step.patch.clone()).unwrap();
+        seen.push(stated_opacity(&slot).unwrap());
     }
-    let monterey = crate::Theme::preset("macos-monterey")
-        .expect("preset")
-        .resolve(crate::ColorMode::Light)
-        .expect("resolves")
-        .variant;
-    assert_ne!(
-        monterey.list.hover_background, monterey.defaults.background_color,
-        "the window colour is the list's, so this test cannot tell the rules apart"
-    );
+    assert_eq!(seen, [0.1, 0.15, 0.2, 0.3, 0.4]);
+    // A base stated after a rule in the application's layer still comes
+    // before every rule.
+    assert!(steps.windows(2).all(|pair| pair[0].pos < pair[1].pos));
 }
 
+/// S8's change classification: the first resolution, none, a condition
+/// change, and a theme change (a layer, the scheme, the contrast, a reader
+/// value), which wins over a condition change.
 #[test]
-fn title_bar_background_inherits_from_surface_not_background() {
-    let mut v = ThemeMode::default();
-    v.defaults.surface_color = Some(Rgba::rgb(240, 240, 240));
-    v.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
-    v.resolve();
-
-    assert_eq!(
-        v.window.title_bar_background,
-        Some(Rgba::rgb(240, 240, 240)),
-        "title_bar_background should inherit from surface, not background"
-    );
-    assert_ne!(
-        v.window.title_bar_background, v.defaults.background_color,
-        "title_bar_background must not equal background"
-    );
-}
-
-// ===== Resolve completeness test =====
-
-/// Verify that resolve() has rules for every derived field.
-///
-/// Constructs a ThemeMode with ONLY root fields (the ~46 defaults
-/// Helper: populate all non-derivable widget geometry/behavior fields.
-///
-/// These fields have no resolve() rule; they MUST be set explicitly.
-fn set_widget_geometry(v: &mut ThemeMode) {
-    // icon_set is now on Theme, not ThemeMode
-    // button
-    v.button.min_width = Some(64.0);
-    v.button.min_height = Some(28.0);
-    {
-        let b = v.button.border.get_or_insert_default();
-        b.padding_left = Some(12.0);
-        b.padding_right = Some(12.0);
-    }
-    {
-        let b = v.button.border.get_or_insert_default();
-        b.padding_top = Some(6.0);
-        b.padding_bottom = Some(6.0);
-    }
-    v.button.icon_text_gap = Some(6.0);
-    // input
-    v.input.min_height = Some(28.0);
-    {
-        let b = v.input.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    {
-        let b = v.input.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    // checkbox
-    v.checkbox.indicator_width = Some(18.0);
-    v.checkbox.label_gap = Some(6.0);
-    // menu
-    v.menu.row_height = Some(28.0);
-    {
-        let b = v.menu.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    {
-        let b = v.menu.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.menu.icon_text_gap = Some(6.0);
-    // tooltip
-    {
-        let b = v.tooltip.border.get_or_insert_default();
-        b.padding_left = Some(6.0);
-        b.padding_right = Some(6.0);
-    }
-    {
-        let b = v.tooltip.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.tooltip.max_width = Some(300.0);
-    // scrollbar
-    v.scrollbar.groove_width = Some(14.0);
-    v.scrollbar.min_thumb_length = Some(20.0);
-    v.scrollbar.thumb_width = Some(8.0);
-    v.scrollbar.overlay_mode = Some(false);
-    // slider
-    v.slider.track_height = Some(4.0);
-    v.slider.thumb_diameter = Some(16.0);
-    v.slider.tick_mark_length = Some(6.0);
-    // progress_bar
-    v.progress_bar.track_height = Some(6.0);
-    v.progress_bar.min_width = Some(100.0);
-    // tab
-    v.tab.min_width = Some(60.0);
-    v.tab.min_height = Some(32.0);
-    {
-        let b = v.tab.border.get_or_insert_default();
-        b.padding_left = Some(12.0);
-        b.padding_right = Some(12.0);
-    }
-    {
-        let b = v.tab.border.get_or_insert_default();
-        b.padding_top = Some(6.0);
-        b.padding_bottom = Some(6.0);
-    }
-    // toolbar
-    v.toolbar.bar_height = Some(40.0);
-    v.toolbar.item_gap = Some(4.0);
-    // REMOVED: toolbar.padding not in new schema
-    // list (alternate_row_background has no inheritance -- must be preset-provided)
-    v.list.row_height = Some(28.0);
-    {
-        let b = v.list.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    {
-        let b = v.list.border.get_or_insert_default();
-        b.padding_top = Some(4.0);
-        b.padding_bottom = Some(4.0);
-    }
-    v.list.alternate_row_background = Some(Rgba::rgb(245, 245, 245));
-    // splitter
-    v.splitter.divider_width = Some(4.0);
-    // switch (unchecked_background has no inheritance -- must be preset-provided)
-    v.switch.unchecked_background = Some(Rgba::rgb(180, 180, 180));
-    v.switch.track_width = Some(40.0);
-    v.switch.track_height = Some(20.0);
-    v.switch.thumb_diameter = Some(14.0);
-    v.switch.track_radius = Some(10.0);
-    // card (border sub-fields have no inheritance -- must be preset-provided)
-    v.card.border.get_or_insert_default().color = Some(Rgba::rgb(200, 200, 200));
-    v.card.border.get_or_insert_default().corner_radius = Some(8.0);
-    v.card.border.get_or_insert_default().shadow_enabled = Some(true);
-    // dialog
-    v.dialog.min_width = Some(320.0);
-    v.dialog.max_width = Some(600.0);
-    v.dialog.min_height = Some(200.0);
-    v.dialog.max_height = Some(800.0);
-    // REMOVED: content_padding not in new schema
-    v.dialog.button_gap = Some(8.0);
-    v.dialog.icon_size = Some(22.0);
-    v.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
-    // spinner
-    v.spinner.diameter = Some(24.0);
-    v.spinner.min_diameter = Some(16.0);
-    v.spinner.stroke_width = Some(2.0);
-    // combo_box
-    v.combo_box.min_height = Some(28.0);
-    v.combo_box.min_width = Some(80.0);
-    {
-        let b = v.combo_box.border.get_or_insert_default();
-        b.padding_left = Some(8.0);
-        b.padding_right = Some(8.0);
-    }
-    v.combo_box.arrow_icon_size = Some(12.0);
-    v.combo_box.arrow_area_width = Some(20.0);
-    // segmented_control
-    v.segmented_control.segment_height = Some(28.0);
-    v.segmented_control.separator_width = Some(1.0);
-    {
-        let b = v.segmented_control.border.get_or_insert_default();
-        b.padding_left = Some(12.0);
-        b.padding_right = Some(12.0);
-    }
-    // card
-    // REMOVED: card.padding not in new schema
-    // expander
-    v.expander.header_height = Some(32.0);
-    v.expander.arrow_icon_size = Some(12.0);
-    // REMOVED: content_padding not in new schema
-    // link (background and hover_bg have no derivation path)
-    v.link.background_color = Some(Rgba::rgb(255, 255, 255));
-    v.link.hover_background = Some(Rgba::rgb(230, 230, 255));
-    v.link.underline_enabled = Some(true);
-}
-
-/// Helper: clear all derived color/font/text_scale fields on a variant.
-///
-/// After calling this, resolve_all() must be able to reconstruct every
-/// cleared field from the remaining defaults.
-fn clear_derived_fields(v: &mut ThemeMode) {
-    // Widget colors and radii (derived from defaults)
-    v.window.background_color = None;
-    v.window.title_bar_font = None;
-    v.window.border = None;
-    v.window.title_bar_background = None;
-    v.window.title_bar_font = None;
-    v.window.inactive_title_bar_background = None;
-    v.window.inactive_title_bar_text_color = None;
-    v.window.border = None;
-    v.window.border = None;
-    v.button.background_color = None;
-    v.button.font = None;
-    v.button.border = None;
-    v.button.primary_background = None;
-    v.button.primary_text_color = None;
-    v.button.border = None;
-    v.button.disabled_opacity = None;
-    v.button.active_text_color = None;
-    v.button.disabled_text_color = None;
-    v.button.border = None;
-    v.input.background_color = None;
-    v.input.font = None;
-    v.input.border = None;
-    v.input.placeholder_color = None;
-    v.input.caret_color = None;
-    v.input.selection_background = None;
-    v.input.selection_text_color = None;
-    v.input.disabled_text_color = None;
-    v.input.border = None;
-    v.checkbox.checked_background = None;
-    v.checkbox.disabled_text_color = None;
-    v.checkbox.border = None;
-    v.menu.background_color = None;
-    v.menu.font = None;
-    v.menu.separator_color = None;
-    v.tooltip.background_color = None;
-    v.tooltip.font = None;
-    v.tooltip.border = None;
-    v.scrollbar.track_color = None;
-    v.scrollbar.thumb_color = None;
-    v.scrollbar.thumb_hover_color = None;
-    v.slider.fill_color = None;
-    v.slider.track_color = None;
-    v.slider.thumb_color = None;
-    v.progress_bar.fill_color = None;
-    v.progress_bar.track_color = None;
-    v.progress_bar.border = None;
-    v.tab.background_color = None;
-    v.tab.font = None;
-    v.tab.active_background = None;
-    v.tab.active_text_color = None;
-    v.tab.bar_background = None;
-    v.tab.hover_text_color = None;
-    v.sidebar.background_color = None;
-    v.sidebar.font = None;
-    v.list.background_color = None;
-    v.list.item_font = None;
-    // list.alternate_row_background: NOT cleared — it is no longer derived,
-    // so presets must provide it explicitly.
-    v.list.selection_background = None;
-    v.list.selection_text_color = None;
-    v.list.header_background = None;
-    v.list.header_font = None;
-    v.list.grid_color = None;
-    v.list.hover_text_color = None;
-    v.list.disabled_text_color = None;
-    v.popover.background_color = None;
-    v.popover.font = None;
-    v.popover.border = None;
-    v.separator.line_color = None;
-    v.splitter.hover_color = None;
-    v.switch.checked_background = None;
-    // switch.unchecked_background: NOT cleared -- no inheritance, must come from preset
-    v.switch.thumb_background = None;
-    v.dialog.border = None;
-    v.combo_box.border = None;
-    v.combo_box.disabled_text_color = None;
-    v.segmented_control.border = None;
-    v.card.background_color = None;
-    // card.border: NOT cleared -- no inheritance from defaults (INH-3), must come from preset
-    v.expander.border = None;
-    v.link.font = None;
-    v.link.visited_text_color = None;
-    v.link.hover_text_color = None;
-    v.link.active_text_color = None;
-    v.link.disabled_text_color = None;
-    v.spinner.fill_color = None;
-    // Widget fonts (derived from defaults.font)
-    v.window.title_bar_font = None;
-    v.button.font = None;
-    v.input.font = None;
-    v.menu.font = None;
-    v.tooltip.font = None;
-    v.toolbar.font = None;
-    v.status_bar.font = None;
-    v.dialog.title_font = None;
-    // Text scale (derived from defaults.font + defaults.line_height)
-    v.text_scale.caption = None;
-    v.text_scale.section_heading = None;
-    v.text_scale.dialog_title = None;
-    v.text_scale.display = None;
-    // Defaults internal chains (derived from accent/selection)
-    v.defaults.selection_background = None;
-    v.defaults.focus_ring_color = None;
-    v.defaults.selection_inactive_background = None;
-}
-
-/// fields + ~65 widget geometry/behavior fields that have no derivation
-/// path in resolve()). Derived fields (widget colors, widget fonts, text
-/// scale entries, widget-to-widget chains) are left as None.
-///
-/// If any derived field lacks a resolve rule, it stays None and
-/// validate() reports it as missing -- catching the bug.
-#[test]
-fn resolve_completeness_minimal_variant() {
-    let mut v = variant_with_defaults();
-    set_widget_geometry(&mut v);
-
-    // Verify: NO derived color/font/text_scale fields are set
-    assert!(
-        v.window.background_color.is_none(),
-        "window.background should be None before resolve"
-    );
-    assert!(
-        v.button.background_color.is_none(),
-        "button.background should be None before resolve"
-    );
-    assert!(
-        v.button.font.is_none(),
-        "button.font should be None before resolve"
-    );
-    assert!(
-        v.text_scale.caption.is_none(),
-        "text_scale.caption should be None before resolve"
-    );
-
-    v.resolve_all();
-    let result = v.validate();
-    assert!(
-        result.is_ok(),
-        "Resolve completeness failed -- some derived fields lack resolve rules: {:?}",
-        result.err()
-    );
-}
-
-/// Cross-check: verify completeness by stripping derived fields from a preset.
-///
-/// Loads a known preset, clears all derived color/font/text_scale fields,
-/// then verifies resolve() can reconstruct them.
-#[test]
-fn resolve_completeness_from_preset() {
-    let spec = crate::Theme::preset("material-3").unwrap();
-    let mut v = spec.dark.expect("material-3 should have dark variant");
-
-    clear_derived_fields(&mut v);
-
-    v.resolve_all();
-    let result = v.validate();
-    assert!(
-        result.is_ok(),
-        "Resolve completeness from preset failed -- some derived fields lack resolve rules: {:?}",
-        result.err()
-    );
-}
-
-#[test]
-fn validate_all_presets_pass_range_checks() {
-    // Verify no false positives: all 17 presets pass validation including range checks
-    let presets = crate::Theme::list_presets();
-    assert!(presets.len() >= 17, "expected at least 17 presets");
-
-    for info in presets {
-        let name = info.key;
-        let spec = crate::Theme::preset(name).unwrap();
-        if let Some(light) = spec.light {
-            let resolved = light.into_resolved(&crate::resolve::ResolutionContext::for_tests());
-            assert!(
-                resolved.is_ok(),
-                "preset '{name}' light variant failed: {:?}",
-                resolved.err()
-            );
-        }
-        if let Some(dark) = spec.dark {
-            let resolved = dark.into_resolved(&crate::resolve::ResolutionContext::for_tests());
-            assert!(
-                resolved.is_ok(),
-                "preset '{name}' dark variant failed: {:?}",
-                resolved.err()
-            );
-        }
-    }
-}
-
-#[test]
-fn check_ranges_happy_path_zero_errors() {
-    // VALID-04: Verify that check_ranges on a valid theme produces zero errors,
-    // confirming the happy path runs to completion without allocating path strings.
-    //
-    // The lazy-path-string refactor ensures that format! is only called inside
-    // error branches of each check_* helper. Since a valid theme triggers no
-    // errors, no format! calls execute and zero path strings are allocated.
-    let theme = crate::Theme::preset("adwaita").expect("adwaita preset should load");
-    let light = theme.light.expect("adwaita should have light variant");
-    let stated_scale = light.text_scale.clone();
-    let resolved = light
-        .into_resolved(&crate::resolve::ResolutionContext::for_tests())
-        .expect("adwaita should validate");
-
-    let mut errors = Vec::new();
-
-    // Defaults + text_scale
-    super::validate_helpers::check_defaults_ranges(
-        &resolved.defaults,
-        &resolved.text_scale,
-        &stated_scale,
-        &mut errors,
-    );
-
-    // All per-widget check_ranges
-    resolved.window.check_ranges("window", &mut errors);
-    resolved.button.check_ranges("button", &mut errors);
-    resolved.input.check_ranges("input", &mut errors);
-    resolved.text_area.check_ranges("text_area", &mut errors);
-    resolved.checkbox.check_ranges("checkbox", &mut errors);
-    resolved.menu.check_ranges("menu", &mut errors);
-    resolved.tooltip.check_ranges("tooltip", &mut errors);
-    resolved.scrollbar.check_ranges("scrollbar", &mut errors);
-    resolved.slider.check_ranges("slider", &mut errors);
-    resolved
-        .progress_bar
-        .check_ranges("progress_bar", &mut errors);
-    resolved.tab.check_ranges("tab", &mut errors);
-    resolved.sidebar.check_ranges("sidebar", &mut errors);
-    resolved.toolbar.check_ranges("toolbar", &mut errors);
-    resolved.status_bar.check_ranges("status_bar", &mut errors);
-    resolved.list.check_ranges("list", &mut errors);
-    resolved.popover.check_ranges("popover", &mut errors);
-    resolved.splitter.check_ranges("splitter", &mut errors);
-    resolved.separator.check_ranges("separator", &mut errors);
-    resolved.switch.check_ranges("switch", &mut errors);
-    resolved.dialog.check_ranges("dialog", &mut errors);
-    resolved.spinner.check_ranges("spinner", &mut errors);
-    resolved.combo_box.check_ranges("combo_box", &mut errors);
-    resolved
-        .segmented_control
-        .check_ranges("segmented_control", &mut errors);
-    resolved.card.check_ranges("card", &mut errors);
-    resolved.expander.check_ranges("expander", &mut errors);
-    resolved.link.check_ranges("link", &mut errors);
-
-    assert!(
-        errors.is_empty(),
-        "valid theme should have zero range errors: {errors:?}"
-    );
-}
-
-// ===== G1 (Phase 93-01) — `require` no-Default-bound regression tests =====
-//
-// These tests exercise `validate_helpers::require` on a type that does NOT
-// implement `Default`. Before Phase 93-01, `require<T: Clone + Default>`
-// could not be called with such a type and this module would not compile.
-// After the fix, `require<T: Clone>` accepts an explicit `fallback: T`.
-
-#[test]
-fn require_accepts_type_without_default_when_value_present() {
-    // A local type deliberately without `Default`.
-    #[derive(Clone, Debug, PartialEq)]
-    struct NoDefault(u32);
-
-    let field: Option<NoDefault> = Some(NoDefault(42));
-    let mut missing = Vec::new();
-    let fallback = NoDefault(0);
-    let out = super::validate_helpers::require(&field, "x.y", &mut missing, fallback);
-    assert_eq!(out, NoDefault(42));
-    assert!(missing.is_empty());
-}
-
-#[test]
-fn require_records_missing_and_returns_fallback_for_type_without_default() {
-    #[derive(Clone, Debug, PartialEq)]
-    struct NoDefault(u32);
-
-    let field: Option<NoDefault> = None;
-    let mut missing = Vec::new();
-    let fallback = NoDefault(99);
-    let out = super::validate_helpers::require(&field, "x.y", &mut missing, fallback);
-    assert_eq!(out, NoDefault(99));
-    assert_eq!(missing, vec!["x.y".to_string()]);
-}
-
-#[test]
-fn require_rgba_fallback_is_transparent_when_missing() {
-    // Rgba still implements Default today, but after G1 completes it will not.
-    // Passing Rgba::TRANSPARENT as an explicit fallback must work in both worlds.
-    let field: Option<Rgba> = None;
-    let mut missing = Vec::new();
-    let out = super::validate_helpers::require(
-        &field,
-        "defaults.accent_color",
-        &mut missing,
-        Rgba::TRANSPARENT,
-    );
-    assert_eq!(out, Rgba::TRANSPARENT);
-    assert_eq!(missing, vec!["defaults.accent_color".to_string()]);
-}
-
-#[test]
-fn validate_border_sentinel_on_none_with_border_kind_none() {
-    // Ensures validate_border returns a zero/TRANSPARENT sentinel (no T::default()
-    // required for Rgba/ResolvedWidgetBorder) when the widget's border is None
-    // under BorderKind::None.
-    let mut missing = Vec::new();
-    let out = super::validate_helpers::validate_border(
-        &None,
-        "menu.border",
-        super::validate_helpers::BorderKind::None,
-        &mut missing,
-    );
-    // BorderKind::None with None border: no missing recorded, sentinel returned.
-    assert!(missing.is_empty());
-    assert_eq!(out.color, Rgba::TRANSPARENT);
-    assert_eq!(out.corner_radius, 0.0);
-    assert_eq!(out.line_width, 0.0);
-    assert!(!out.shadow_enabled);
-    assert_eq!(
-        out.padding,
-        crate::model::border::ResolvedPadding::default(),
-        "an absent border states no padding side"
-    );
-}
-
-#[test]
-fn validate_border_records_missing_and_returns_sentinel_for_full_kind() {
-    let mut missing = Vec::new();
-    let out = super::validate_helpers::validate_border(
-        &None,
-        "button.border",
-        super::validate_helpers::BorderKind::Full,
-        &mut missing,
-    );
-    assert_eq!(missing, vec!["button.border".to_string()]);
-    assert_eq!(out.color, Rgba::TRANSPARENT);
-    assert_eq!(out.corner_radius, 0.0);
-    assert_eq!(out.line_width, 0.0);
-    assert!(!out.shadow_enabled);
-}
-
-// ===== G7 (Phase 94-02) — `ResolutionContext` regression tests =====
-//
-// These tests lock the G7 contract (docs/archive/v0.5.7_gaps.md §G7) before the
-// implementation is written. They prove:
-//   (a) `crate::resolve::ResolutionContext` does not exist yet
-//   (b) `ThemeMode::into_resolved(&ResolutionContext)` does not exist yet
-//   (c) `ThemeMode::resolve_system()` does not exist yet
-//   (d) `for_tests()` semantics are correctly specified (96 DPI,
-//       PrimaryRight, no icon_theme)
-//   (e) `OverlaySource.context` field replaces `.font_dpi`
-//
-// Posture: Phase 93-01 and 93-09 established RED-then-GREEN discipline; this
-// plan follows the same pattern.
-
-#[test]
-fn resolution_context_exists_and_has_no_default() {
-    // (a) Import check — this line fails to compile before Task 2.
-    use crate::resolve::ResolutionContext;
-
-    // (d) for_tests() semantics per gaps doc §G7.
-    let ctx: ResolutionContext = ResolutionContext::for_tests();
-    assert!(
-        (ctx.font_dpi - 96.0).abs() < f32::EPSILON,
-        "for_tests() should use 96 DPI (gaps doc §G7), got {}",
-        ctx.font_dpi
-    );
-    assert_eq!(
-        ctx.button_order,
-        DialogButtonOrder::PrimaryRight,
-        "for_tests() should use PrimaryRight button order (gaps doc §G7)"
-    );
-    assert!(
-        ctx.icon_theme.is_none(),
-        "for_tests() should have no icon_theme fallback (gaps doc §G7)"
-    );
-
-    // Negative-space assertion: the following line would fail to compile if
-    // `Default` were implemented. It stays commented-out as documentation of
-    // the signal-intent guarantee from gaps doc §G7 / J.2 B5.
-    //   fn assert_no_default<T: Default>() {}
-    //   assert_no_default::<ResolutionContext>();
-}
-
-#[test]
-fn into_resolved_takes_context_ref() {
-    // (b) The current signature `into_resolved(Option<f32>)` must be replaced
-    //     by `into_resolved(&ResolutionContext)`. Passing a &ctx literal
-    //     fails to compile until Task 2 lands.
-    use crate::resolve::ResolutionContext;
-
-    let theme = crate::Theme::preset("dracula").expect("dracula preset should load");
-    let variant = theme.dark.expect("dracula should have dark variant");
-    let original_accent = variant
-        .defaults
-        .accent_color
-        .expect("dracula dark should have accent_color");
-
-    let resolved = variant
-        .into_resolved(&ResolutionContext::for_tests())
-        .expect("dracula dark should resolve with for_tests ctx");
-    assert_eq!(
-        resolved.defaults.accent_color, original_accent,
-        "resolved accent should match preset value"
-    );
-}
-
-#[test]
-fn resolve_system_shortcut_equivalent_to_explicit_context() {
-    // (c) `resolve_system()` shortcut: `variant.resolve_system()` must behave
-    //     identically to `variant.into_resolved(&ResolutionContext::from_system())`.
-    use crate::resolve::ResolutionContext;
-
-    let theme = crate::Theme::preset("adwaita").expect("adwaita preset should load");
-    let variant = theme.light.expect("adwaita should have light variant");
-
-    let via_explicit = variant
-        .clone()
-        .into_resolved(&ResolutionContext::from_system())
-        .expect("explicit from_system should resolve");
-    let via_shortcut = variant
-        .resolve_system()
-        .expect("resolve_system shortcut should resolve");
-
-    // Compare the primary color field; both paths must produce identical values.
-    assert_eq!(
-        via_explicit.defaults.accent_color, via_shortcut.defaults.accent_color,
-        "resolve_system() should be equivalent to into_resolved(&from_system())"
-    );
-    assert_eq!(
-        via_explicit.defaults.background_color, via_shortcut.defaults.background_color,
-        "resolve_system() background should match explicit form"
-    );
-}
-
-#[test]
-fn overlay_source_context_roundtrip() {
-    // (e) `OverlaySource.context: ResolutionContext` replaces `.font_dpi: Option<f32>`.
-    //     This is a compile-time proof: the field access `.context` must exist.
-    //     Runtime assertion: constructing an OverlaySource (via pipeline output)
-    //     captures the context, and cloning preserves the font_dpi within.
-    //
-    //     This test is compile-time-oriented: if `.context` does not exist on
-    //     OverlaySource, it fails to compile.
-    use crate::resolve::ResolutionContext;
-
-    // Build a minimal OverlaySource by hand via the crate-internal path.
-    // We cannot construct SystemTheme directly (readers are feature-gated),
-    // so we assert the ResolutionContext API shape instead.
-    let ctx = ResolutionContext::for_tests();
-    let ctx_cloned = ctx.clone();
-    assert!(
-        (ctx.font_dpi - ctx_cloned.font_dpi).abs() < f32::EPSILON,
-        "ResolutionContext should Clone with identical font_dpi"
-    );
-    assert_eq!(
-        ctx.button_order, ctx_cloned.button_order,
-        "ResolutionContext should Clone with identical button_order"
-    );
-    assert_eq!(
-        ctx.icon_theme, ctx_cloned.icon_theme,
-        "ResolutionContext should Clone with identical icon_theme"
-    );
-
-    // Field-level compile check: if `context` is not a field of
-    // OverlaySource, this fails to compile at the point Task 2 wires it up.
-    // We cannot access pub(crate) fields from the unit test module because
-    // tests.rs is inside the crate — so reference the type directly.
-    let _type_check: fn() -> ResolutionContext = ResolutionContext::for_tests;
-}
-
-#[test]
-fn for_tests_values_match_gaps_doc_spec() {
-    // (d) Explicit three-invariant check, cited to gaps doc §G7.
-    use crate::resolve::ResolutionContext;
-
-    let ctx = ResolutionContext::for_tests();
-    assert!(
-        (ctx.font_dpi - 96.0).abs() < f32::EPSILON,
-        "gaps doc §G7 specifies font_dpi = 96.0 for for_tests()"
-    );
-    assert_eq!(
-        ctx.button_order,
-        DialogButtonOrder::PrimaryRight,
-        "gaps doc §G7 specifies button_order = PrimaryRight for for_tests()"
-    );
-    assert!(
-        ctx.icon_theme.is_none(),
-        "gaps doc §G7 specifies icon_theme = None for for_tests()"
-    );
-}
-
-// ===== Validation paths name the TOML keys (M3-20) =====
-
-/// The paths of the range violations `v.validate()` reports.
-fn range_violation_paths(v: &ThemeMode) -> Vec<String> {
-    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
-        panic!("expected ResolutionInvalid, got {:?}", v.validate().err());
+fn change_classification() {
+    let mut stack = stack(Layer::default(), None, Vec::new());
+    let mut state = WindowState::default();
+    let plain = window();
+    let change = |stack: &Stack, state: &mut WindowState, conditions: &WindowConditions| {
+        stack.resolve(state, conditions).change
     };
-    errors.into_iter().map(|rv| rv.path).collect()
-}
-
-/// The paths `v.validate()` reports missing.
-fn missing_paths(v: &ThemeMode) -> Vec<String> {
-    let Err(crate::Error::ResolutionIncomplete { missing }) = v.validate() else {
-        panic!(
-            "expected ResolutionIncomplete, got {:?}",
-            v.validate().err()
-        );
-    };
-    missing
-}
-
-#[test]
-fn validate_paths_name_a_widget_scalars_px_key() {
-    let mut v = fully_populated_variant();
-    v.button.min_height = Some(-1.0);
-    assert_eq!(range_violation_paths(&v), ["button.min_height_px"]);
-
-    let mut v = fully_populated_variant();
-    v.button.min_height = None;
-    assert_eq!(missing_paths(&v), ["button.min_height_px"]);
-}
-
-#[test]
-fn validate_paths_name_a_padding_sides_key() {
-    let mut v = fully_populated_variant();
-    v.button.border.get_or_insert_default().padding_left = Some(-1.0);
-    assert_eq!(range_violation_paths(&v), ["button.border.padding_left_px"]);
-}
-
-#[test]
-fn validate_checks_the_card_border_padding() {
-    let mut v = fully_populated_variant();
-    v.card.border.get_or_insert_default().padding_left = Some(-8.0);
-    assert_eq!(range_violation_paths(&v), ["card.border.padding_left_px"]);
-}
-
-#[test]
-fn validate_checks_a_widget_borders_geometry() {
-    let mut v = fully_populated_variant();
-    v.button.border.get_or_insert_default().corner_radius = Some(-4.0);
+    assert_eq!(change(&stack, &mut state, &plain), Change::First);
+    assert_eq!(change(&stack, &mut state, &plain), Change::Unchanged);
+    let mut inactive = window();
+    inactive.inactive = true;
     assert_eq!(
-        range_violation_paths(&v),
-        ["button.border.corner_radius_px"]
+        change(&stack, &mut state, &inactive),
+        Change::ConditionChange
     );
-
-    let mut v = fully_populated_variant();
-    v.button.border.get_or_insert_default().line_width = Some(f32::NAN);
-    assert_eq!(range_violation_paths(&v), ["button.border.line_width_px"]);
-}
-
-/// A negative focus ring offset is an inset ring and stays legal; a
-/// non-finite one is a range violation.
-#[test]
-fn validate_checks_the_focus_ring_offset_is_finite() {
-    let mut v = fully_populated_variant();
-    v.defaults.focus_ring_offset = Some(f32::NAN);
-    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_offset_px"]);
-
-    let mut v = fully_populated_variant();
-    v.defaults.focus_ring_offset = Some(f32::INFINITY);
-    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_offset_px"]);
-
-    let mut v = fully_populated_variant();
-    v.defaults.focus_ring_offset = Some(-2.0);
-    assert!(v.validate().is_ok(), "{:?}", v.validate().err());
-}
-
-#[test]
-fn validate_paths_name_a_border_geometry_key() {
-    let mut v = fully_populated_variant();
-    v.defaults.border.line_width = Some(-1.0);
-    assert_eq!(range_violation_paths(&v), ["defaults.border.line_width_px"]);
-
-    let mut v = fully_populated_variant();
-    v.button.border.get_or_insert_default().corner_radius = None;
-    v.defaults.border.line_width = None;
+    assert_eq!(change(&stack, &mut state, &plain), Change::ConditionChange);
+    stack.add_layer(body(0.5)).unwrap();
+    assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
+    // An equal stack is no change, however it was reached.
+    stack.layers = vec![(LayerId::next(), Arc::new(body(0.5)))];
+    assert_eq!(change(&stack, &mut state, &plain), Change::Unchanged);
+    stack.pick(Some(Scheme::Dark)).unwrap();
+    assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
+    stack.set_contrast(Some(Contrast::High)).unwrap();
+    assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
+    stack.declarations.flavors = vec![key!("first"), key!("other")];
+    // The declared default comes in force: a condition change (S8).
+    assert_eq!(change(&stack, &mut state, &plain), Change::ConditionChange);
+    // `set_flavor` refuses a flavour but the default while the flavours
+    // unit is not enabled (S6.1, S16; ADD-A147), which changes nothing; a
+    // flavour switch, set here directly, is a condition change (S8).
+    assert!(stack.set_flavor(key!("other")).is_err());
+    assert_eq!(change(&stack, &mut state, &plain), Change::Unchanged);
+    stack.flavor = Some(key!("other"));
+    assert_eq!(change(&stack, &mut state, &plain), Change::ConditionChange);
+    // Both at once: the theme change wins.
+    stack.layers.clear();
+    assert_eq!(change(&stack, &mut state, &inactive), Change::ThemeChange);
+    // The reader's conditions and values.
+    let mut read = ReaderState::new(Scheme::Light, 1.0);
+    stack.reader = Some(super::Reader::StandIn {
+        state: read.clone(),
+        layer: Arc::default(),
+    });
+    assert_eq!(change(&stack, &mut state, &inactive), Change::ThemeChange);
+    read.reduced_motion = true;
+    stack.reader = Some(super::Reader::StandIn {
+        state: read.clone(),
+        layer: Arc::default(),
+    });
     assert_eq!(
-        missing_paths(&v),
+        change(&stack, &mut state, &inactive),
+        Change::ConditionChange
+    );
+    read.text_scaling_factor = 1.5;
+    stack.reader = Some(super::Reader::StandIn {
+        state: read.clone(),
+        layer: Arc::default(),
+    });
+    assert_eq!(change(&stack, &mut state, &inactive), Change::ThemeChange);
+    // The reader's scheme under a picked one changes nothing in force.
+    read.scheme = Scheme::Dark;
+    stack.reader = Some(super::Reader::StandIn {
+        state: read,
+        layer: Arc::default(),
+    });
+    assert_eq!(change(&stack, &mut state, &inactive), Change::Unchanged);
+}
+
+/// A stand-in is refused while a reader exists (S8, R2.6); without one it
+/// is set, and replaced.
+#[test]
+fn reader_stand_in_refused_with_reader() {
+    let state = || ReaderState::new(Scheme::Dark, 1.0);
+    // A preset stating nothing is refused: a preset states every field.
+    assert!(matches!(
+        Stack::new(
+            None,
+            Declarations::default(),
+            Layer::default(),
+            Scheme::Light,
+            Vec::new()
+        ),
+        Err(LayerError::Invalid(_))
+    ));
+    let mut stack = stack(Layer::default(), None, Vec::new());
+    stack
+        .set_reader_stand_in(state(), Layer::default())
+        .unwrap();
+    assert_eq!(stack.scheme(), Scheme::Dark);
+    stack.set_reader_stand_in(state(), body(0.5)).unwrap();
+    let mut read = stack.clone();
+    read.set_reader(state(), Layer::default(), None).unwrap();
+    assert_eq!(
+        read.set_reader_stand_in(state(), Layer::default()),
+        Err(LayerError::ReaderPresent)
+    );
+    // The refused change leaves the stack as it was.
+    assert!(matches!(read.reader, Some(super::Reader::Read { .. })));
+    // A stand-in's layer is validated as a reader's: refused whole.
+    let mut invalid = Layer::default();
+    invalid.bases.inputs.entries.push((
+        InputName::new("nowhere").unwrap(),
+        InputValue::new(SchemeMap::one(Scheme::Light, Value::Absent)),
+    ));
+    assert!(matches!(
+        stack.set_reader_stand_in(state(), invalid),
+        Err(LayerError::Invalid(_))
+    ));
+}
+
+pub(super) fn color(r: f32) -> Value<Color> {
+    Value::Stated(Color {
+        r,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    })
+}
+
+pub(super) fn input(r: f32) -> InputValue {
+    InputValue::new(SchemeMap::new(color(r), color(r)))
+}
+
+/// S9.2: the accent layer states the preset's accent inputs; an accent
+/// lacking one is refused, naming it; `None` clears the layer. The accent
+/// layer comes last, over the stand-in's inputs.
+#[test]
+fn accent_layer_states_the_accent_inputs() {
+    let declarations = read_preset(
+        "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare]\n\
+         inputs = [\"accent\", \"accent_ramp.light1\"]\n\
+         accent_inputs = [\"accent\", \"accent_ramp.light1\"]\n",
+    )
+    .unwrap()
+    .declarations;
+    let mut stack = stack(Layer::default(), None, Vec::new());
+    stack.declarations = declarations;
+    let ramp = InputName::new("accent_ramp.light1").unwrap();
+    assert_eq!(
+        stack.set_accent(Some(Accent::new(input(0.1)))),
+        Err(LayerError::AccentInputsMissing(vec![ramp.clone()]))
+    );
+    let mut reader = Layer::default();
+    reader
+        .bases
+        .inputs
+        .entries
+        .push((InputName::new("accent").unwrap(), input(0.9)));
+    reader.bases.inputs.entries.push((ramp.clone(), input(0.8)));
+    stack
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), reader)
+        .unwrap();
+    let mut accent = Accent::new(input(0.1));
+    accent.derived.push((ramp.clone(), input(0.2)));
+    stack.set_accent(Some(accent)).unwrap();
+    let inputs = |stack: &Stack| {
+        stack
+            .resolve(&mut WindowState::default(), &window())
+            .theme
+            .inputs
+    };
+    assert_eq!(
+        inputs(&stack),
         [
-            "defaults.border.line_width_px",
-            "button.border.corner_radius_px"
+            (InputName::new("accent").unwrap(), color(0.1)),
+            (ramp.clone(), color(0.2)),
+        ]
+    );
+    stack.set_accent(None).unwrap();
+    assert_eq!(
+        inputs(&stack),
+        [
+            (InputName::new("accent").unwrap(), color(0.9)),
+            (ramp, color(0.8)),
         ]
     );
 }
 
+/// An input's per-contrast base applies where its contrast holds; where it
+/// states none, its per-scheme value applies under contrast too (S9).
 #[test]
-fn validate_paths_name_a_defaults_icon_size_key() {
-    let mut v = fully_populated_variant();
-    v.defaults.icon_sizes.toolbar = Some(-1.0);
-    assert_eq!(
-        range_violation_paths(&v),
-        ["defaults.icon_sizes.toolbar_px"]
-    );
-
-    let mut v = fully_populated_variant();
-    v.defaults.icon_sizes.toolbar = None;
-    assert_eq!(missing_paths(&v), ["defaults.icon_sizes.toolbar_px"]);
-}
-
-#[test]
-fn validate_paths_name_a_defaults_px_key() {
-    let mut v = fully_populated_variant();
-    v.defaults.focus_ring_width = Some(-1.0);
-    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_width_px"]);
-}
-
-#[test]
-fn validate_paths_name_the_font_size_key_the_theme_states() {
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(FontSize::Px(0.0));
-    v.button.font.get_or_insert_default().size = Some(FontSize::Pt(-1.0));
-    let paths = range_violation_paths(&v);
-    assert!(
-        paths.contains(&"defaults.font.size_px".to_string()),
-        "{paths:?}"
-    );
-    assert!(
-        paths.contains(&"button.font.size_pt".to_string()),
-        "{paths:?}"
-    );
-
-    // A missing size states no unit: the path names the field.
-    let mut v = fully_populated_variant();
-    v.defaults.font.size = None;
-    assert_eq!(missing_paths(&v), ["defaults.font.size"]);
-}
-
-#[test]
-fn validate_reports_a_stated_size_pt_in_points() {
-    let mut v = fully_populated_variant();
-    v.button.font.get_or_insert_default().size = Some(FontSize::Pt(-3.0));
-    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
-        panic!("expected ResolutionInvalid");
+fn inputs_take_their_contrast_base() {
+    let mut reader = Layer::default();
+    let mut value = input(0.3);
+    value
+        .per_contrast
+        .push((Contrast::High, SchemeMap::one(Scheme::Light, color(0.7))));
+    let accent = InputName::new("accent").unwrap();
+    reader.bases.inputs.entries.push((accent.clone(), value));
+    let mut state = ReaderState::new(Scheme::Light, 1.0);
+    let resolved = |state: &ReaderState| {
+        stack(
+            Layer::default(),
+            Some((state.clone(), reader.clone())),
+            Vec::new(),
+        )
+        .resolve(&mut WindowState::default(), &window())
+        .theme
+        .inputs
     };
-    let violation = errors
+    assert_eq!(resolved(&state), [(accent.clone(), color(0.3))]);
+    state.contrast = Some(Contrast::High);
+    assert_eq!(resolved(&state), [(accent.clone(), color(0.7))]);
+    state.contrast = Some(Contrast::Increased);
+    assert_eq!(resolved(&state), [(accent, color(0.3))]);
+}
+
+/// An input is replaced slot by slot, never whole (S9, ADD-A132): at each
+/// of the six slots the last layer giving the input a value there wins,
+/// its contrast base for that contrast, else its per-scheme value, so a
+/// stand-in's one-scheme value stands under every contrast at that scheme,
+/// over the preset's contrast base, and leaves the other scheme's slots to
+/// the preset but where it states a contrast base.
+#[test]
+fn an_input_is_replaced_slot_by_slot() {
+    let accent = InputName::new("accent").unwrap();
+    let mut preset = Layer::default();
+    let mut stated = InputValue::new(SchemeMap::new(color(0.1), color(0.2)));
+    stated
+        .per_contrast
+        .push((Contrast::High, SchemeMap::new(color(0.3), color(0.4))));
+    preset.bases.inputs.entries.push((accent.clone(), stated));
+    let mut reader = Layer::default();
+    let mut one = InputValue::new(SchemeMap::one(Scheme::Dark, color(0.9)));
+    one.per_contrast.push((
+        Contrast::Increased,
+        SchemeMap::one(Scheme::Light, color(0.8)),
+    ));
+    reader.bases.inputs.entries.push((accent.clone(), one));
+    let at = |scheme: Scheme, contrast: Option<Contrast>| {
+        let mut state = ReaderState::new(scheme, 1.0);
+        state.contrast = contrast;
+        stack(preset.clone(), Some((state, reader.clone())), Vec::new())
+            .resolve(&mut WindowState::default(), &window())
+            .theme
+            .inputs
+    };
+    let slots = [
+        (Scheme::Light, None, 0.1),
+        (Scheme::Light, Some(Contrast::Increased), 0.8),
+        (Scheme::Light, Some(Contrast::High), 0.3),
+        (Scheme::Dark, None, 0.9),
+        (Scheme::Dark, Some(Contrast::Increased), 0.9),
+        (Scheme::Dark, Some(Contrast::High), 0.9),
+    ];
+    for (scheme, contrast, r) in slots {
+        assert_eq!(
+            at(scheme, contrast),
+            [(accent.clone(), color(r))],
+            "{scheme:?} {contrast:?}"
+        );
+    }
+}
+
+/// The stack's refusals, for `layer_error_every_variant_triggers`: a
+/// stand-in while a reader exists, an accent lacking an accent input, an
+/// id the stack does not hold, a palette under a scheme it lacks and one
+/// with no source for the preset (S14). A palette that does not convert
+/// gives no refusal, which that test then reports as missing.
+pub(super) fn refusals() -> Vec<LayerError> {
+    let mut refused = stack_refusals();
+    // A port of a synthetic file, for the dark scheme alone.
+    let port =
+        || crate::Palette::from_port(b"[Colors:Window]\nBackgroundNormal=1,2,3\n", Scheme::Dark);
+    let mut light = stack(Layer::default(), None, Vec::new());
+    refused.extend(port().ok().and_then(|p| light.apply_palette(Some(p)).err()));
+    let mut adwaita = stack(Layer::default(), None, Vec::new());
+    adwaita.preset = Some(PresetId::Adwaita);
+    adwaita.picked = Some(Scheme::Dark);
+    refused.extend(
+        port()
+            .ok()
+            .and_then(|p| adwaita.apply_palette(Some(p)).err()),
+    );
+    refused
+}
+
+/// [`refusals`]' first three.
+fn stack_refusals() -> Vec<LayerError> {
+    let mut read = stack(Layer::default(), None, Vec::new());
+    read.set_reader(ReaderState::new(Scheme::Light, 1.0), Layer::default(), None)
+        .unwrap();
+    let present = read
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), Layer::default())
+        .unwrap_err();
+    let mut accent = stack(Layer::default(), None, Vec::new());
+    accent.declarations.accent_inputs = vec![
+        InputName::new("accent").unwrap(),
+        InputName::new("accent_ramp.light1").unwrap(),
+    ];
+    let missing = accent
+        .set_accent(Some(Accent::new(input(0.1))))
+        .unwrap_err();
+    let unknown = accent.remove_layer(LayerId::next()).unwrap_err();
+    vec![present, missing, unknown]
+}
+
+/// S9.3: a reader stating an input under one scheme only leaves the
+/// earlier layers' value under the other.
+#[test]
+fn input_stated_for_one_scheme_keeps_the_other() {
+    let accent = InputName::new("accent").unwrap();
+    let mut preset = Layer::default();
+    preset.bases.inputs.entries.push((
+        accent.clone(),
+        InputValue::new(SchemeMap::new(color(0.1), color(0.2))),
+    ));
+    let mut reader = Layer::default();
+    reader.bases.inputs.entries.push((
+        accent.clone(),
+        InputValue::new(SchemeMap::one(Scheme::Dark, color(0.9))),
+    ));
+    let resolved = |scheme| {
+        stack(
+            preset.clone(),
+            Some((ReaderState::new(scheme, 1.0), reader.clone())),
+            Vec::new(),
+        )
+        .resolve(&mut WindowState::default(), &window())
+        .theme
+        .inputs
+    };
+    assert_eq!(resolved(Scheme::Light), [(accent.clone(), color(0.1))]);
+    assert_eq!(resolved(Scheme::Dark), [(accent, color(0.9))]);
+}
+
+/// S9.2: the accent layer states the preset's accent inputs only: an
+/// accent's derived input the preset does not declare, or declares as an
+/// input but not as an accent input, is left out (S9.5: an accent may carry
+/// more for another preset).
+#[test]
+fn accent_layer_states_only_the_accent_inputs() {
+    let declarations = |inputs: &str| {
+        read_preset(&format!(
+            "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare]\n\
+             inputs = [{inputs}]\naccent_inputs = [\"accent\"]\n"
+        ))
+        .unwrap()
+        .declarations
+    };
+    let ramp = InputName::new("accent_ramp.light1").unwrap();
+    let mut accent = Accent::new(input(0.1));
+    accent.derived.push((ramp.clone(), input(0.2)));
+    // Not declared at all: the accent is still accepted.
+    let mut undeclared = stack(Layer::default(), None, Vec::new());
+    undeclared.declarations = declarations("\"accent\"");
+    undeclared.set_accent(Some(accent.clone())).unwrap();
+    let inputs = |stack: &Stack| {
+        stack
+            .resolve(&mut WindowState::default(), &window())
+            .theme
+            .inputs
+    };
+    assert_eq!(
+        inputs(&undeclared),
+        [(InputName::new("accent").unwrap(), color(0.1))]
+    );
+    // Declared as an input, not an accent input: the reader's stays.
+    let mut reader = Layer::default();
+    reader.bases.inputs.entries.push((ramp.clone(), input(0.7)));
+    let mut preset = Layer::default();
+    let entry = (InputName::new("accent").unwrap(), input(0.5));
+    preset.bases.inputs.entries.push(entry);
+    let mut declared = stack(preset, None, Vec::new());
+    declared.declarations = declarations("\"accent\", \"accent_ramp.light1\"");
+    declared
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), reader)
+        .unwrap();
+    declared.set_accent(Some(accent)).unwrap();
+    assert_eq!(
+        inputs(&declared),
+        [
+            (ramp, color(0.7)),
+            (InputName::new("accent").unwrap(), color(0.1)),
+        ]
+    );
+}
+
+/// S16's no-reader state: a text-scaling factor of 1; a stand-in's own
+/// factor where one is set.
+#[test]
+fn no_reader_scales_text_by_one() {
+    let mut stack = stack(Layer::default(), None, Vec::new());
+    let factor = |stack: &Stack| {
+        stack
+            .resolve(&mut WindowState::default(), &window())
+            .theme
+            .text_scaling_factor
+    };
+    assert_eq!(factor(&stack), 1.0);
+    stack
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.5), Layer::default())
+        .unwrap();
+    assert_eq!(factor(&stack), 1.5);
+}
+
+/// S7.1: exactly one declared size of a container holds; a reported size
+/// the preset does not declare leaves the declared default.
+#[test]
+fn undeclared_container_size_takes_the_default() {
+    let button = WidgetRef::Typed(WidgetKind::Button);
+    let size = |s| Condition::ContainerSize {
+        container: button.clone(),
+        size: Key::new(s).unwrap(),
+    };
+    let mut preset = body(0.1);
+    preset.rules.push(body_rule(size("compact"), 0.3));
+    preset.rules.push(body_rule(size("regular"), 0.5));
+    let opacities = |reported: &str| {
+        let mut state = ReaderState::new(Scheme::Light, 1.0);
+        state
+            .container_sizes
+            .push((button.clone(), Key::new(reported).unwrap()));
+        let mut stack = stack(preset.clone(), Some((state, Layer::default())), Vec::new());
+        stack.declarations.container_sizes =
+            vec![(button.clone(), vec![key!("compact"), key!("regular")])];
+        let theme = stack.resolve(&mut WindowState::default(), &window()).theme;
+        let mut slot = PartSlot::default();
+        theme
+            .part_steps(TypedPart::Button(ButtonPart::Body))
+            .iter()
+            .map(|step| {
+                slot.apply(step.patch.clone()).unwrap();
+                stated_opacity(&slot).unwrap()
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(opacities("regular"), [0.1, 0.5]);
+    assert_eq!(opacities("huge"), [0.1, 0.3]);
+}
+
+/// A window's record shares the stack's layers, copying none, and a
+/// reader's accent left out or applied (its own preset, a stand-in) is a
+/// theme change (S8, S9.5).
+#[test]
+fn window_record_shares_the_layers() {
+    let stack = stack(body(0.1), None, vec![body(0.2)]);
+    let mut state = WindowState::default();
+    let _ = stack.resolve(&mut state, &window());
+    let last = state.last.as_ref().unwrap();
+    assert!(Arc::ptr_eq(&last.layers[0], &stack.preset_layer));
+    assert!(Arc::ptr_eq(&last.layers[1], &stack.layers[0].1));
+    let mut now = last.clone();
+    now.accent_left_out = !last.accent_left_out;
+    assert_eq!(super::classify(last, &now), Change::ThemeChange);
+}
+
+/// The layers' places in the stack's order (S8; ADD-A132): on `kde-breeze`
+/// the accent-derivation layer lies directly above the preset, beneath the
+/// reader or stand-in, so every layer above it lies one place higher, with
+/// a reader, a stand-in or neither; on every other preset there is none.
+/// The synthetic route's places, a window's record and the resolution's
+/// synthetic places follow them.
+#[test]
+fn accent_derivation_layer_places() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::validate::LayerKind as K;
+    let kinds = |stack: &Stack| stack.stacked().iter().map(|s| s.kind).collect::<Vec<_>>();
+    // The synthetic route's stack of the bundled preset `id`, with the
+    // number of layers it adds.
+    let synthetic = |id: PresetId| -> Result<(Stack, usize), Box<dyn std::error::Error>> {
+        let file = read_preset(id.source())?;
+        let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+        let count = layers.len();
+        let stack = Stack::synthetic(
+            Some(id),
+            file.declarations,
+            file.layer,
+            Scheme::Light,
+            file.pending,
+            layers,
+        )?;
+        Ok((stack, count))
+    };
+    // The stack's order as `stacked`, a window's record and the resolution
+    // see it, with the synthetic route's places `places`.
+    let pinned = |stack: &Stack, expected: &[K], places: &[usize]| {
+        assert_eq!(kinds(stack), expected);
+        assert_eq!(stack.synthetic_places(), places);
+        let recorded = stack.recorded(&window()).layers;
+        let stacked = stack.stacked();
+        assert_eq!(recorded.len(), stacked.len());
+        for (shared, stacked) in recorded.iter().zip(&stacked) {
+            assert!(std::ptr::eq(Arc::as_ptr(shared), stacked.layer));
+        }
+        assert_eq!(stack.resolved(&window()).synthetic, places);
+    };
+    let applications = |count: usize| vec![K::Application; count];
+    let stand_in = || ReaderState::new(Scheme::Dark, 1.0);
+
+    let (mut breeze, count) = synthetic(PresetId::KdeBreeze)?;
+    assert!(count > 0);
+    let after = |first: usize| (first..first + count).collect::<Vec<_>>();
+    let order = |below: &[K], above: usize| {
+        let mut order = below.to_vec();
+        order.extend(applications(count + above));
+        order.push(K::Accent);
+        order
+    };
+    pinned(
+        &breeze,
+        &order(&[K::Preset, K::AccentDerivation], 0),
+        &after(2),
+    );
+    let mut read = breeze.clone();
+    read.set_reader(stand_in(), Layer::default(), Some(PresetId::KdeBreeze))?;
+    pinned(
+        &read,
+        &order(&[K::Preset, K::AccentDerivation, K::Reader], 0),
+        &after(3),
+    );
+    breeze.set_reader_stand_in(stand_in(), Layer::default())?;
+    assert_eq!(breeze.reader_place(), 2);
+    breeze.add_layer(Layer::default())?;
+    pinned(
+        &breeze,
+        &order(&[K::Preset, K::AccentDerivation, K::Reader], 1),
+        &after(3),
+    );
+
+    let (mut adwaita, count) = synthetic(PresetId::Adwaita)?;
+    let after = |first: usize| (first..first + count).collect::<Vec<_>>();
+    let order = |below: &[K]| {
+        let mut order = below.to_vec();
+        order.extend(applications(count));
+        order.push(K::Accent);
+        order
+    };
+    pinned(&adwaita, &order(&[K::Preset]), &after(1));
+    adwaita.set_reader_stand_in(stand_in(), Layer::default())?;
+    assert_eq!(adwaita.reader_place(), 1);
+    pinned(&adwaita, &order(&[K::Preset, K::Reader]), &after(2));
+
+    // Off the synthetic route and with no preset id: no derivation.
+    let mut plain = stack(body(0.1), None, vec![body(0.2)]);
+    pinned(&plain, &[K::Preset, K::Application, K::Accent], &[]);
+    plain.set_reader_stand_in(stand_in(), Layer::default())?;
+    pinned(
+        &plain,
+        &[K::Preset, K::Reader, K::Application, K::Accent],
+        &[],
+    );
+    Ok(())
+}
+
+/// Colours resolved, each by its path.
+type Resolved = Vec<(String, Option<Color>)>;
+
+/// What `stack` resolves to at `scheme` at a window's root (the scheme
+/// picked, the accent-derivation layer derived for it): every key's role of
+/// every declared set and each declared `[WM]` keyed role (S9.1's list as
+/// under a tinting scheme), then every inactive input role, each by its
+/// path.
+fn derived_values(stack: &Stack, scheme: Scheme) -> Result<Resolved, Box<dyn std::error::Error>> {
+    use crate::blocks::part_style::RoleRef;
+    use crate::units::{Px, Size};
+    use crate::validate::AccentRole;
+    let mut stack = stack.clone();
+    stack.picked = Some(scheme);
+    stack.derive_derivation();
+    let resolved = stack.resolved(&window());
+    let size = Size {
+        width: Px(800.0),
+        height: Px(600.0),
+    };
+    let root = crate::query::RootInputs::new(size, size, crate::selector::Direction::Ltr);
+    let scope = resolved.root_scope(&root);
+    let mut out = Vec::new();
+    for role in crate::validate::accent_dependent_roles(stack.declarations(), true) {
+        let reference = match role {
+            AccentRole::Surface(set, key) => RoleRef::Set(set, key.role()),
+            AccentRole::Wm(key) => RoleRef::Keyed(Key::new(&format!("wm_{}", key.name()))?),
+        };
+        out.push((role.path(), resolved.role(&scope, reference)));
+    }
+    for (name, _, _) in super::inactive_inputs(stack.declarations()) {
+        let input = crate::expr::Ref::Input(name.segments().to_vec());
+        let value = resolved.evaluate_role(&scope, &input).value;
+        out.push((format!("inputs.{name}"), value));
+    }
+    Ok(out)
+}
+
+/// The paths at which two lists of [`derived_values`] differ, in order.
+fn differ(a: &[(String, Option<Color>)], b: &[(String, Option<Color>)]) -> Vec<String> {
+    assert_eq!(a.len(), b.len());
+    a.iter()
+        .zip(b)
+        .filter(|(a, b)| a != b)
+        .map(|((path, _), _)| path.clone())
+        .collect()
+}
+
+/// `kde-breeze`'s accent-derivation layer (S8, S9.2; ADD-A132): with no
+/// stated accent it states nothing; under `set_accent` the `Accent`'s
+/// derivation shows at both schemes; an accent for one scheme leaves the
+/// other as without it; a stand-in's accent equals `set_accent` of it but
+/// for the roles the stand-in states; a reader-shaped stand-in (its accent
+/// common, its results in its part for the preset at its scheme) shows its
+/// results at its scheme and the derivation at the other; under
+/// `set_accent` a stand-in's own accent-dependent roles and inactive input
+/// roles are left out at both schemes, its other roles kept; and
+/// validation reads that leave-out (S12): a stand-in whose left-out link
+/// and input read themselves is refused alone and kept under the
+/// `Accent`, which then cannot be cleared. Every colour but the accent,
+/// the accent run's `#e5a50a`, is synthetic.
+#[test]
+fn accent_derivation_layer() -> Result<(), Box<dyn std::error::Error>> {
+    use Scheme::{Dark, Light};
+    let file = read_preset(PresetId::KdeBreeze.source())?;
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    let plain = Stack::synthetic(
+        Some(PresetId::KdeBreeze),
+        file.declarations,
+        file.layer,
+        Light,
+        file.pending,
+        layers,
+    )?;
+    let accent = |schemes: &[Scheme], hex: &str| -> Result<Accent, Box<dyn std::error::Error>> {
+        let mut per_scheme = SchemeMap::default();
+        for scheme in schemes {
+            *per_scheme.slot(*scheme) =
+                Some(Value::Stated(Color::parse(hex).ok_or("not a colour")?));
+        }
+        Ok(Accent::new(InputValue::new(per_scheme)))
+    };
+    let at_light = || ReaderState::new(Light, 1.0);
+    let both = [Light, Dark];
+    let x = "#e5a50a";
+
+    assert_eq!(plain.derivation.as_deref(), Some(&Layer::default()));
+    assert_eq!(plain.reader_left_out, None);
+    let mut quiet = plain.clone();
+    quiet.set_reader_stand_in(
+        at_light(),
+        Layer::from_toml("[colors.light.surfaces.view]\nlink = \"#102030\"\n")?,
+    )?;
+    assert_eq!(quiet.derivation.as_deref(), Some(&Layer::default()));
+    assert_eq!(quiet.reader_left_out, None);
+
+    let plain_light = derived_values(&plain, Light)?;
+    let plain_dark = derived_values(&plain, Dark)?;
+    let mut set = plain.clone();
+    set.set_accent(Some(accent(&both, x)?))?;
+    let set_light = derived_values(&set, Light)?;
+    let set_dark = derived_values(&set, Dark)?;
+    let link = "surfaces.view.link".to_owned();
+    assert!(differ(&set_light, &plain_light).contains(&link));
+    assert!(differ(&set_dark, &plain_dark).contains(&link));
+
+    let mut one = plain.clone();
+    one.set_accent(Some(accent(&[Light], x)?))?;
+    assert_eq!(derived_values(&one, Light)?, set_light);
+    assert_eq!(derived_values(&one, Dark)?, plain_dark);
+
+    let mut stood = plain.clone();
+    stood.set_reader_stand_in(
+        at_light(),
+        Layer::from_toml(&format!(
+            "[inputs.accent]\nlight = \"{x}\"\ndark = \"{x}\"\n\
+             [colors.light.surfaces.view]\nlink = \"#102030\"\n\
+             [colors.dark.keyed]\nwm_active_background = \"#203040\"\n"
+        ))?,
+    )?;
+    assert_eq!(stood.reader_left_out, None);
+    assert_eq!(differ(&derived_values(&stood, Light)?, &set_light), [link]);
+    assert_eq!(
+        differ(&derived_values(&stood, Dark)?, &set_dark),
+        ["keyed.wm_active_background"]
+    );
+
+    let mut shaped = plain.clone();
+    shaped.set_reader_stand_in(
+        at_light(),
+        Layer::from_toml(&format!(
+            "[inputs.accent]\nlight = \"{x}\"\ndark = \"{x}\"\n\
+             [for_preset.kde-breeze.colors.light.surfaces.selection]\n\
+             background = \"#304050\"\n\
+             [for_preset.kde-breeze.inputs.inactive.view.foreground_link]\n\
+             light = \"#405060\"\n"
+        ))?,
+    )?;
+    assert_eq!(
+        differ(&derived_values(&shaped, Light)?, &set_light),
+        [
+            "surfaces.selection.background",
+            "inputs.inactive.view.foreground_link"
+        ]
+    );
+    assert_eq!(derived_values(&shaped, Dark)?, set_dark);
+
+    let mut over = plain.clone();
+    over.set_reader_stand_in(
+        at_light(),
+        Layer::from_toml(
+            "[inputs.accent]\nlight = \"#1d99f3\"\ndark = \"#1d99f3\"\n\
+             [colors.light.surfaces.view]\nlink = \"#102030\"\nbackground = \"#506070\"\n\
+             [colors.dark.keyed]\nwm_active_background = \"#203040\"\n\
+             [inputs.inactive.view.foreground_link]\n\
+             light = \"#405060\"\ndark = \"#405060\"\n",
+        )?,
+    )?;
+    assert_eq!(over.reader_left_out, None);
+    over.set_accent(Some(accent(&both, x)?))?;
+    assert!(over.reader_left_out.is_some());
+    assert_eq!(
+        differ(&derived_values(&over, Light)?, &set_light),
+        ["surfaces.view.background"]
+    );
+    assert_eq!(derived_values(&over, Dark)?, set_dark);
+
+    let cycle = Layer::from_toml(
+        "[colors.light.surfaces.view]\n\
+         link = \"= role.view.link_visited\"\nlink_visited = \"= role.view.link\"\n\
+         [inputs.inactive.view.foreground_link]\n\
+         light = \"= input.inactive.view.foreground_link\"\n",
+    )?;
+    let mut alone = plain.clone();
+    assert!(
+        alone
+            .set_reader_stand_in(at_light(), cycle.clone())
+            .is_err()
+    );
+    let mut kept = set.clone();
+    kept.set_reader_stand_in(at_light(), cycle)?;
+    assert!(kept.set_accent(None).is_err());
+    Ok(())
+}
+
+/// A stand-in stating a surface set whole on `kde-breeze`, a block and not
+/// field by field (here the preset's own `view` block at light), which S8's
+/// per-role leave-out cannot reach (S8, S9.2, S12): kept while no layer
+/// above it gives the accent, refused under an `Accent`, so `set_accent`
+/// is refused over it and the stand-in under it, each leaving the stack as
+/// it was.
+#[test]
+fn a_set_stated_whole_beneath_the_derivation() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::blocks::BlockPatch;
+    use crate::roles::{ColorRolesPatch, SurfaceSet};
+    let file = read_preset(PresetId::KdeBreeze.source())?;
+    let view = file
+        .layer
+        .bases
+        .colors
+        .light
+        .as_ref()
+        .and_then(|roles| roles.surfaces.as_ref())
+        .and_then(|surfaces| surfaces.get(SurfaceSet::View))
+        .cloned()
+        .ok_or("the preset states its view set")?;
+    assert!(matches!(view, BlockPatch::Set(Value::Stated(_))));
+    let mut surfaces = crate::value::SurfaceMap::default();
+    surfaces.insert(SurfaceSet::View, view);
+    let mut whole = Layer::default();
+    whole.bases.colors.light = Some(ColorRolesPatch {
+        surfaces: Some(surfaces),
+        ..ColorRolesPatch::default()
+    });
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    let plain = Stack::synthetic(
+        Some(PresetId::KdeBreeze),
+        file.declarations,
+        file.layer,
+        Scheme::Light,
+        file.pending,
+        layers,
+    )?;
+    let accent = Color::parse("#e5a50a").ok_or("not a colour")?;
+    let accent = Accent::new(InputValue::new(SchemeMap::new(
+        Value::Stated(accent),
+        Value::Stated(accent),
+    )));
+    let named = |error: LayerError| match error {
+        LayerError::Invalid(problems) => problems.iter().map(ToString::to_string).collect(),
+        other => vec![other.to_string()],
+    };
+    let refusal = [
+        "colors.light.surfaces.view: the surface set `view` stated whole where its \
+         accent-dependent roles are left out; state its roles one by one",
+    ];
+
+    let mut stood = plain.clone();
+    stood.set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), whole.clone())?;
+    let before = stood.clone();
+    let refused = stood
+        .set_accent(Some(accent.clone()))
+        .err()
+        .ok_or("set_accent kept")?;
+    assert_eq!(named(refused), refusal);
+    assert_eq!(stood, before);
+
+    let mut accented = plain;
+    accented.set_accent(Some(accent))?;
+    let before = accented.clone();
+    let refused = accented
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), whole)
+        .err()
+        .ok_or("the stand-in kept")?;
+    assert_eq!(named(refused), refusal);
+    assert_eq!(accented, before);
+    Ok(())
+}
+
+// === Palettes (S8, S14) ===
+
+/// Colours resolved, each by its path, as 8-bit sRGB.
+type Colours = Vec<(String, Option<[u8; 4]>)>;
+
+/// What `stack` resolves to at a window's root, the window `inactive` or
+/// not: every role of every declared set, every global role, every
+/// declared keyed role, then every declared input, each by its path, as
+/// 8-bit sRGB (a port's file values and the preset's TOML hex are one
+/// 8-bit colour each, computed ones compared at that precision).
+fn every_colour(stack: &Stack, inactive: bool) -> Result<Colours, Box<dyn std::error::Error>> {
+    use crate::blocks::part_style::RoleRef;
+    use crate::roles::{GlobalRole, SurfaceRole};
+    use crate::units::{Px, Size};
+    let mut conditions = window();
+    conditions.inactive = inactive;
+    let resolved = stack.resolved(&conditions);
+    let size = Size {
+        width: Px(800.0),
+        height: Px(600.0),
+    };
+    let root = crate::query::RootInputs::new(size, size, crate::selector::Direction::Ltr);
+    let scope = resolved.root_scope(&root);
+    let decl = stack.declarations();
+    let mut roles: Vec<(String, RoleRef)> = Vec::new();
+    for set in &decl.surface_sets {
+        for role in SurfaceRole::ALL {
+            let path = format!("surfaces.{}.{}", set.name(), role.path());
+            roles.push((path, RoleRef::Set(*set, *role)));
+        }
+    }
+    for role in GlobalRole::ALL {
+        roles.push((
+            format!("global.{}", role.path()),
+            RoleRef::Global(role.clone()),
+        ));
+    }
+    for key in &decl.color_roles {
+        roles.push((format!("keyed.{key}"), RoleRef::Keyed(key.clone())));
+    }
+    let mut out: Colours = roles
+        .into_iter()
+        .map(|(path, role)| {
+            let color = resolved.role(&scope, role);
+            (path, color.map(Color::to_srgb8_clamped))
+        })
+        .collect();
+    for name in &decl.inputs {
+        let input = crate::expr::Ref::Input(name.segments().to_vec());
+        let color = resolved.evaluate_role(&scope, &input).value;
+        out.push((format!("inputs.{name}"), color.map(Color::to_srgb8_clamped)));
+    }
+    Ok(out)
+}
+
+/// The paths at which two lists of [`every_colour`] differ, in order, each
+/// with both colours.
+fn colours_differ(a: &Colours, b: &Colours) -> Vec<String> {
+    assert_eq!(a.len(), b.len());
+    a.iter()
+        .zip(b)
+        .filter(|(a, b)| a != b)
+        .map(|((path, a), (_, b))| format!("{path}: {a:?} / {b:?}"))
+        .collect()
+}
+
+/// The paths alone of [`colours_differ`].
+fn paths_differ(a: &Colours, b: &Colours) -> Vec<String> {
+    assert_eq!(a.len(), b.len());
+    a.iter()
+        .zip(b)
+        .filter(|(a, b)| a != b)
+        .map(|((path, _), _)| path.clone())
+        .collect()
+}
+
+/// `kde-breeze` on the synthetic route at `scheme`, with no reader.
+fn breeze_at(scheme: Scheme) -> Result<Stack, Box<dyn std::error::Error>> {
+    let file = read_preset(PresetId::KdeBreeze.source())?;
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    Ok(Stack::synthetic(
+        Some(PresetId::KdeBreeze),
+        file.declarations,
+        file.layer,
+        scheme,
+        file.pending,
+        layers,
+    )?)
+}
+
+/// `from_port` of Breeze's file `name` at `scheme`, from the source cache
+/// (`palette::tests::breeze_file`, which fails naming the entry where the
+/// cache lacks it).
+fn breeze_port(name: &str, scheme: Scheme) -> Result<crate::Palette, Box<dyn std::error::Error>> {
+    let file = crate::palette::tests::breeze_file(name);
+    Ok(crate::Palette::from_port(&file, scheme)?)
+}
+
+/// The place in the stack's order of the layer the input `path` in force
+/// is taken from at the scheme in force (S8 step 1).
+fn input_place(stack: &Stack, path: &str) -> Result<Option<usize>, Box<dyn std::error::Error>> {
+    let name = InputName::new(path)?;
+    let resolved = stack.resolved(&window());
+    Ok(resolved
+        .input_layers
         .iter()
-        .find(|rv| rv.path == "button.font.size_pt")
-        .expect("button.font.size_pt is reported");
-    assert_eq!(violation.value, -3.0);
-    assert!(violation.to_string().contains("got -3"), "{violation}");
+        .find(|(held, _)| *held == name)
+        .map(|(_, layer)| *layer))
 }
 
+/// The place of the palette's entry in the stack's order.
+fn palette_place(stack: &Stack) -> Option<usize> {
+    stack
+        .stacked()
+        .iter()
+        .position(|stacked| stacked.kind == crate::validate::LayerKind::Palette)
+}
+
+/// `kde-breeze` with `from_port` of Breeze's own file at its scheme applied
+/// (S14) resolves as the preset there: every colour role and input, in an
+/// active and an inactive window, the port's values in force (its scheme
+/// inputs, lists and inactive input roles, its `= active(…)` ones accepted
+/// by the cycle check, ADD-A144), so the conversion with no accent is
+/// Plasma's look of the file.
 #[test]
-fn validate_paths_name_the_text_scale_key_the_theme_states() {
-    let mut v = fully_populated_variant();
-    v.text_scale.caption = Some(TextScaleEntry {
-        size: Some(FontSize::Pt(-1.0)),
-        weight: Some(400),
-        line_height: Some(FontSize::Pt(-1.0)),
-    });
-    assert_eq!(
-        range_violation_paths(&v),
-        [
-            "text_scale.caption.size_pt",
-            "text_scale.caption.line_height_pt"
-        ]
-    );
-}
-
-#[test]
-fn validate_reports_a_stated_text_scale_size_in_its_unit() {
-    let mut v = fully_populated_variant();
-    v.text_scale.caption = Some(TextScaleEntry {
-        size: Some(FontSize::Pt(-3.0)),
-        weight: Some(400),
-        line_height: Some(FontSize::Pt(-5.0)),
-    });
-    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
-        panic!("expected ResolutionInvalid");
-    };
-    let value_of = |path: &str| errors.iter().find(|rv| rv.path == path).map(|rv| rv.value);
-    assert_eq!(value_of("text_scale.caption.size_pt"), Some(-3.0));
-    assert_eq!(value_of("text_scale.caption.line_height_pt"), Some(-5.0));
-}
-
-/// A ThemeMode TOML value with every leaf value removed: each table stays,
-/// empty, so validation names every field inside it as missing.
-fn strip_leaves(value: &mut toml::Value) {
-    if let toml::Value::Table(t) = value {
-        t.retain(|_, v| v.is_table());
-        for (_, v) in t.iter_mut() {
-            strip_leaves(v);
-        }
-    }
-}
-
-/// A ThemeMode TOML value with every number out of range: every float NaN,
-/// every integer 0.
-fn break_numbers(value: &mut toml::Value) {
-    match value {
-        toml::Value::Table(t) => t.iter_mut().for_each(|(_, v)| break_numbers(v)),
-        toml::Value::Float(f) => *f = f64::NAN,
-        toml::Value::Integer(i) => *i = 0,
-        _ => {}
-    }
-}
-
-/// Every path a validation error names is a key `Theme::lint_toml` accepts
-/// in a variant. A missing font size or text-scale line height states no
-/// unit, so its path names the field, which stands for its two keys.
-#[test]
-fn validate_paths_are_toml_keys() {
-    let mut v = crate::Theme::preset("kde-breeze").unwrap().light.unwrap();
-    v.resolve_all_with_context(&ResolutionContext::for_tests());
-    // kde-breeze states no card padding: give the card a side to break.
-    v.card.border.get_or_insert_default().padding_left = Some(0.0);
-    let table = toml::Value::try_from(&v).unwrap();
-
-    let mut empty = table.clone();
-    strip_leaves(&mut empty);
-    let missing = missing_paths(&empty.try_into().unwrap());
-
-    let mut broken = table;
-    break_numbers(&mut broken);
-    let ranged = range_violation_paths(&broken.try_into().unwrap());
-    for key in [
-        "button.border.padding_left_px",
-        "button.border.corner_radius_px",
-        "button.border.line_width_px",
-        "card.border.padding_left_px",
-        "defaults.focus_ring_offset_px",
+fn a_breeze_port_resolves_as_kde_breeze() -> Result<(), Box<dyn std::error::Error>> {
+    for (name, scheme) in [
+        ("BreezeLight.colors", Scheme::Light),
+        ("BreezeDark.colors", Scheme::Dark),
     ] {
-        assert!(ranged.iter().any(|p| p == key), "{key}: {ranged:?}");
-    }
-
-    let lint = |key: &str| crate::Theme::lint_toml(&format!("light.{key} = 0")).unwrap();
-    for path in &missing {
-        let keys = match path.rsplit_once('.') {
-            Some((head, "size")) => vec![format!("{head}.size_pt"), format!("{head}.size_px")],
-            Some((head, "line_height")) if head.starts_with("text_scale.") => vec![
-                format!("{head}.line_height_pt"),
-                format!("{head}.line_height_px"),
-            ],
-            _ => vec![path.clone()],
-        };
-        for key in keys {
-            assert_eq!(lint(&key), Vec::<String>::new(), "missing path {path}");
+        let plain = breeze_at(scheme)?;
+        let mut ported = plain.clone();
+        ported.apply_palette(Some(breeze_port(name, scheme)?))?;
+        let place = palette_place(&ported).ok_or("no palette entry")?;
+        assert_eq!(
+            input_place(&ported, "kde_scheme.view.background_normal")?,
+            Some(place),
+            "{name}"
+        );
+        assert_eq!(
+            input_place(&ported, "inactive.view.foreground_link")?,
+            Some(place),
+            "{name}"
+        );
+        for inactive in [false, true] {
+            let differ = colours_differ(
+                &every_colour(&plain, inactive)?,
+                &every_colour(&ported, inactive)?,
+            );
+            assert_eq!(differ, Vec::<String>::new(), "{name}, inactive: {inactive}");
         }
     }
-    for path in &ranged {
-        assert_eq!(lint(path), Vec::<String>::new(), "range path {path}");
-    }
+    Ok(())
 }
 
-/// `Theme::resolve_with` range-checks the theme's layout. Layout is shared by
-/// both variants, so each path is a top-level key, with no variant table.
+/// The palette sits among the application layers where it was first
+/// added (S8): a layer added after it goes above it, a palette replacing it
+/// keeps its place, `apply_palette(None)` removes it and is a no-op
+/// without one.
 #[test]
-fn theme_resolve_checks_the_layout() {
-    let ctx = ResolutionContext::for_tests();
-    let mut theme = crate::Theme::preset("kde-breeze").unwrap();
-    theme.layout.widget_gap = Some(-8.0);
-    theme.layout.container_margin = Some(f32::NAN);
-    theme.layout.window_margin = Some(f32::INFINITY);
-    theme.layout.section_gap = Some(0.0);
-    let Err(crate::Error::ResolutionInvalid { errors }) =
-        theme.resolve_with(crate::ColorMode::Light, &ctx)
-    else {
-        panic!("expected ResolutionInvalid");
-    };
-    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+fn a_palette_keeps_the_place_it_was_first_added_at() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::validate::LayerKind as K;
+    let kinds = |stack: &Stack| stack.stacked().iter().map(|s| s.kind).collect::<Vec<_>>();
+    let mut stack = breeze_at(Scheme::Light)?;
+    let below = kinds(&stack);
+    stack.add_layer(Layer::default())?;
+    stack.apply_palette(Some(breeze_port("BreezeLight.colors", Scheme::Light)?))?;
+    stack.add_layer(Layer::default())?;
+    let place = palette_place(&stack).ok_or("no palette entry")?;
+    let mut expected = below.clone();
+    let accent = expected.pop();
+    expected.extend([K::Application, K::Palette, K::Application]);
+    expected.extend(accent);
+    assert_eq!(kinds(&stack), expected);
+    stack.apply_palette(Some(breeze_port("BreezeLight.colors", Scheme::Light)?))?;
+    assert_eq!(palette_place(&stack), Some(place));
+    stack.apply_palette(None)?;
+    assert_eq!(palette_place(&stack), None);
+    assert_eq!(kinds(&stack).len(), expected.len() - 1);
+    let before = stack.clone();
+    stack.apply_palette(None)?;
+    assert_eq!(stack, before);
+    Ok(())
+}
+
+/// S14's refusals, each leaving the stack as it was: a palette under a
+/// scheme it lacks and `pick(Some(s))` of one (`SchemeNotInPalette`); a
+/// palette with no source for the preset, and `set_preset` to one under it
+/// (`PaletteNotForPreset`). `pick(None)` is no refusal: following a scheme
+/// the palette lacks suspends it.
+#[test]
+fn a_palette_s_refusals() -> Result<(), Box<dyn std::error::Error>> {
+    let light = || breeze_port("BreezeLight.colors", Scheme::Light);
+    let mut dark = breeze_at(Scheme::Dark)?;
+    let before = dark.clone();
     assert_eq!(
-        paths,
-        [
-            "layout.widget_gap_px",
-            "layout.container_margin_px",
-            "layout.window_margin_px"
-        ]
+        dark.apply_palette(Some(light()?)),
+        Err(LayerError::SchemeNotInPalette(Scheme::Dark))
     );
-    for path in paths {
+    assert_eq!(dark, before);
+
+    let mut ported = breeze_at(Scheme::Light)?;
+    ported.apply_palette(Some(light()?))?;
+    let before = ported.clone();
+    assert_eq!(
+        ported.pick(Some(Scheme::Dark)),
+        Err(LayerError::SchemeNotInPalette(Scheme::Dark))
+    );
+    assert_eq!(ported, before);
+    ported.pick(Some(Scheme::Light))?;
+    ported.pick(None)?;
+
+    let adwaita = read_preset(PresetId::Adwaita.source())?;
+    let before = ported.clone();
+    assert_eq!(
+        ported.set_preset(
+            Some(PresetId::Adwaita),
+            adwaita.declarations,
+            adwaita.layer,
+            adwaita.pending
+        ),
+        Err(LayerError::PaletteNotForPreset(PresetId::Adwaita))
+    );
+    assert_eq!(ported, before);
+
+    let file = read_preset(PresetId::Adwaita.source())?;
+    let layers = crate::gate::synthetic_layers(&file.pending, &file.layer)?;
+    let mut on_adwaita = Stack::synthetic(
+        Some(PresetId::Adwaita),
+        file.declarations,
+        file.layer,
+        Scheme::Light,
+        file.pending,
+        layers,
+    )?;
+    let before = on_adwaita.clone();
+    assert_eq!(
+        on_adwaita.apply_palette(Some(light()?)),
+        Err(LayerError::PaletteNotForPreset(PresetId::Adwaita))
+    );
+    assert_eq!(on_adwaita, before);
+    Ok(())
+}
+
+/// S8's leave-out beneath a KDE port, and the user's accent under it
+/// (S8, S14, R2.6; ADD-A142), with a reader-shaped stand-in (its accent
+/// common, its scheme inputs, a list, roles and `token.kde` in its part for
+/// the preset): at the port's scheme its colours, inputs, lists and
+/// `token.kde` are left out, its accent kept in force (A7's palette case:
+/// a port states no accent, so the reader's or stand-in's is not left
+/// out), and the accent-derivation layer's roles over it show in the
+/// port's place, so the stack resolves as `set_accent` of that accent over
+/// the port; the port's own accent-dependent roles are left out, and
+/// differ from the port's no-accent look. With no accent the stand-in's
+/// colours are left out whole, the port's look shown. At a scheme the
+/// palette lacks it is suspended, and under a contrast it states no
+/// colours for it is skipped: the stand-in's colours apply as without it.
+/// Every colour but the accent, the accent run's `#e5a50a`, is synthetic.
+#[test]
+fn a_port_leaves_the_stand_in_out_but_its_accent() -> Result<(), Box<dyn std::error::Error>> {
+    use Scheme::{Dark, Light};
+    let x = "#e5a50a";
+    let light = || breeze_port("BreezeLight.colors", Light);
+    let shaped = |accent: bool| -> Result<Layer, Box<dyn std::error::Error>> {
+        let accent = if accent {
+            format!("[inputs.accent]\nlight = \"{x}\"\ndark = \"{x}\"\n")
+        } else {
+            String::new()
+        };
+        Ok(Layer::from_toml(&format!(
+            "{accent}\
+             [for_preset.kde-breeze.inputs.kde_scheme.view.background_normal]\n\
+             light = \"#102030\"\ndark = \"#102030\"\n\
+             [for_preset.kde-breeze.inputs.kde_scheme.groups]\n\
+             light = [\"view\"]\ndark = [\"view\"]\n\
+             [for_preset.kde-breeze.inputs.inactive.view.foreground_link]\n\
+             light = \"#203040\"\ndark = \"#203040\"\n\
+             [for_preset.kde-breeze.colors.light.surfaces.view]\n\
+             background = \"#304050\"\nlink = \"#405060\"\n\
+             [for_preset.kde-breeze.colors.dark.surfaces.view]\n\
+             background = \"#304050\"\nlink = \"#405060\"\n\
+             [for_preset.kde-breeze.tokens.kde]\n\
+             inactive_enabled = true\n"
+        ))?)
+    };
+    let accent = Color::parse(x).ok_or("not a colour")?;
+    let accent = Accent::new(InputValue::new(SchemeMap::new(
+        Value::Stated(accent),
+        Value::Stated(accent),
+    )));
+
+    let mut port = breeze_at(Light)?;
+    port.apply_palette(Some(light()?))?;
+    let mut set = port.clone();
+    set.set_accent(Some(accent))?;
+    let mut stood = breeze_at(Light)?;
+    stood.set_reader_stand_in(ReaderState::new(Light, 1.0), shaped(true)?)?;
+    let alone = stood.clone();
+    stood.apply_palette(Some(light()?))?;
+    assert_eq!(
+        input_place(&stood, "accent")?,
+        Some(stood.reader_place()),
+        "the stand-in's accent in force"
+    );
+    assert!(stood.port_left_out.is_some());
+    for inactive in [false, true] {
+        let stood = every_colour(&stood, inactive)?;
         assert_eq!(
-            crate::Theme::lint_toml(&format!("{path} = 0")).unwrap(),
+            colours_differ(&stood, &every_colour(&set, inactive)?),
             Vec::<String>::new(),
-            "range path {path}"
+            "inactive: {inactive}"
+        );
+        let differ = paths_differ(&stood, &every_colour(&port, inactive)?);
+        assert!(
+            differ.contains(&"surfaces.view.link".to_owned()),
+            "{differ:?}"
+        );
+        assert!(differ.contains(&"inputs.accent".to_owned()), "{differ:?}");
+    }
+
+    let mut quiet = breeze_at(Light)?;
+    quiet.set_reader_stand_in(ReaderState::new(Light, 1.0), shaped(false)?)?;
+    let quiet_alone = quiet.clone();
+    quiet.apply_palette(Some(light()?))?;
+    assert_eq!(quiet.port_left_out, None);
+    for inactive in [false, true] {
+        assert_eq!(
+            colours_differ(
+                &every_colour(&quiet, inactive)?,
+                &every_colour(&port, inactive)?
+            ),
+            Vec::<String>::new(),
+            "inactive: {inactive}"
         );
     }
-}
 
-/// `Theme::resolve_with` prefixes each path with the table of the variant it
-/// resolved: the requested one, or the other where the theme has only that.
-#[test]
-fn theme_resolve_paths_name_the_variant() {
-    let ctx = ResolutionContext::for_tests();
-    let mut theme = crate::Theme::preset("kde-breeze").unwrap();
-    theme.dark.as_mut().unwrap().button.min_height = Some(-1.0);
-    let Err(crate::Error::ResolutionInvalid { errors }) =
-        theme.resolve_with(crate::ColorMode::Dark, &ctx)
-    else {
-        panic!("expected ResolutionInvalid");
-    };
-    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
-    assert_eq!(paths, ["dark.button.min_height_px"]);
-
-    theme.light = None;
-    let Err(crate::Error::ResolutionInvalid { errors }) =
-        theme.resolve_with(crate::ColorMode::Light, &ctx)
-    else {
-        panic!("expected ResolutionInvalid");
-    };
-    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
-    assert_eq!(paths, ["dark.button.min_height_px"]);
-
-    theme.light = Some(ThemeMode::default());
-    let Err(crate::Error::ResolutionIncomplete { missing }) =
-        theme.resolve_with(crate::ColorMode::Light, &ctx)
-    else {
-        panic!("expected ResolutionIncomplete");
-    };
-    assert!(
-        missing.contains(&"light.defaults.icon_sizes.toolbar_px".to_string()),
-        "{missing:?}"
+    let mut suspended = stood.clone();
+    suspended.set_reader_stand_in(ReaderState::new(Dark, 1.0), shaped(true)?)?;
+    let mut unported = alone.clone();
+    unported.set_reader_stand_in(ReaderState::new(Dark, 1.0), shaped(true)?)?;
+    assert_eq!(
+        colours_differ(
+            &every_colour(&suspended, false)?,
+            &every_colour(&unported, false)?
+        ),
+        Vec::<String>::new()
     );
-    assert!(
-        missing.iter().all(|p| p.starts_with("light.")),
-        "{missing:?}"
-    );
-}
 
-/// A context whose font DPI is not finite and positive is one violation, on
-/// `context.font_dpi`, found before any point size is converted, so no font
-/// the DPI would spoil is reported. It is the context's, not a variant's:
-/// the path has no variant table.
-#[test]
-fn a_bad_font_dpi_is_one_context_violation() {
-    let theme = crate::Theme::preset("kde-breeze").unwrap();
-    let variant = theme.light.clone().unwrap();
-    let mut resolved = variant.clone();
-    resolved.resolve();
-    for font_dpi in [0.0, -96.0, f32::NAN, f32::INFINITY] {
-        let ctx = ResolutionContext {
-            font_dpi,
-            ..ResolutionContext::for_tests()
-        };
-        let results = [
-            (
-                "into_resolved",
-                variant.clone().into_resolved(&ctx).map(|_| ()),
+    for contrast in [Contrast::Increased, Contrast::High] {
+        let mut skipped = quiet.clone();
+        skipped.set_contrast(Some(contrast))?;
+        let mut unported = quiet_alone.clone();
+        unported.set_contrast(Some(contrast))?;
+        assert_eq!(
+            colours_differ(
+                &every_colour(&skipped, false)?,
+                &every_colour(&unported, false)?
             ),
-            (
-                "validate_with_dpi",
-                resolved.validate_with_dpi(font_dpi).map(|_| ()),
-            ),
-            (
-                "resolve_with",
-                theme.resolve_with(crate::ColorMode::Dark, &ctx).map(|_| ()),
-            ),
-        ];
-        for (call, result) in results {
-            let Err(crate::Error::ResolutionInvalid { errors }) = result else {
-                panic!("{call} at {font_dpi}: expected ResolutionInvalid, got {result:?}");
-            };
-            let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
-            assert_eq!(paths, ["context.font_dpi"], "{call} at {font_dpi}");
-            let value = errors[0].value;
-            assert!(
-                value == f64::from(font_dpi) || (value.is_nan() && font_dpi.is_nan()),
-                "{call} at {font_dpi}: value {value}"
-            );
-        }
+            Vec::<String>::new(),
+            "{contrast:?}"
+        );
     }
+    Ok(())
 }

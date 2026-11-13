@@ -1,0 +1,28 @@
+# An Apple preset (S9.4): its `font_dpi` the specification's own 72, which no fact states and the gate compares with
+# the definition (S17, ADD-A125).
+# base without: [preset]
+# base without: id = "probe"
+# base without: generation = "probe-1"
+# base without: [tokens.text]
+# base without: scaling = "linear"
+# base without: font_dpi = 96
+[preset]
+id = "macos-tahoe"
+generation = "probe-1"
+
+[tokens.text]
+scaling = "linear"
+font_dpi = 72
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

@@ -1,0 +1,20 @@
+# The fixtures' preset under a bundled preset's id, so `preset:adwaita` reads as a condition.
+# base without: [preset]
+# base without: id = "probe"
+# base without: generation = "probe-1"
+[preset]
+id = "adwaita"
+generation = "probe-1"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

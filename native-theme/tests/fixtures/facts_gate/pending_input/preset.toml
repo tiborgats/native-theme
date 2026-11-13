@@ -1,0 +1,25 @@
+# A synthetic preset (S17, ADD-A128): the accent input listed as pending at each scheme, its table left out;
+# the drop highlight read from it, so its fact is skipped where the folded value is in force (ADD-A132).
+# base without: [inputs.accent]
+# base without: light = "#3366cc"
+# base without: dark = "#3366cc"
+[pending]
+"inputs.accent.light" = "U9"
+"inputs.accent.dark" = "U9"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "colors"
+set = { global.drop_highlight = "= input.accent" }

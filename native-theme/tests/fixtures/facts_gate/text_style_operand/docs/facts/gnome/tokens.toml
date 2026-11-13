@@ -1,0 +1,22 @@
+# Synthetic token facts (S17).
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# A text style's line height read from its own font size (S2.2: `font_size` in a text style is its own font's).
+[[fact]]
+key = "token.text.keyed.body.line_height"
+value = "= mul(font_size, 1.4)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

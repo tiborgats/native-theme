@@ -99,7 +99,7 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 
 ```toml
 [dependencies]
-native-theme-gpui = { version = "0.7", features = ["native"] }
+native-theme-gpui = { version = "0.8", features = ["native"] }
 gpui-kit = "0.8.1"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
@@ -628,7 +628,7 @@ dependency:
 
 ```toml
 [dependencies]
-native-theme-gpui = { version = "0.7", features = ["native", "watch"] }
+native-theme-gpui = { version = "0.8", features = ["native", "watch"] }
 ```
 
 ```rust,no_run

@@ -1,0 +1,21 @@
+# A synthetic preset (S17, ADD-A128): preset.toml with the accent input stated, so its [pending] entry fails.
+[pending]
+"inputs.accent.light" = "U9"
+"inputs.accent.dark" = "U9"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "colors"
+set = { global.drop_highlight = "= input.accent" }

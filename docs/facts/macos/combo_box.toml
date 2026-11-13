@@ -1,0 +1,1206 @@
+# Facts of `combo_box` on macos-tahoe and macos-monterey ahead of its unit (the 0.8.0 plan enables it later; until then
+# the gate and generate_preset.py skip these facts, spec S17 *While 0.8.0 is built*). Only what the spec batches
+# ADD-A126 and ADD-A127 ask of the macOS lane is stated here: the content row (MAC-CB01, ADD-A127). The widget's state model and its other
+# facts are its unit's lane's.
+
+# macos-tahoe: the bordered pop-up's `body.padding` start, top and bottom per control size, the distance from
+# the alignment rect to the cell's title rect (run 41195846264's controls pass, analysis/read_controls.py), as
+# the button's padding is read; the label's own padding is not separated from it (the button's is not either).
+# The rest of the row is unread: the gap to the rendering's arrow (U167), an item image (U168), the arrow area
+# and the end padding (U169), the width's basis and slack (U170), the cut (U171), NSComboBox's arrow button
+# and row (U172), and on macos-monterey its large form (U176). macos-monterey's bordered pop-up's start, top and
+# bottom padding are run 42215651196's controls pass on macOS 15 (analysis/read_controls.py), read as macos-tahoe's.
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["mini"] }
+value = "8px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["small"] }
+value = "10px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["regular"] }
+value = "12px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["large"] }
+value = "14px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["mini"] }
+value = "3px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["small"] }
+value = "3px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["regular"] }
+value = "4px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["large"] }
+value = "6px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["mini"] }
+value = "2px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["small"] }
+value = "3px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["regular"] }
+value = "4px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["large"] }
+value = "6px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.aqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.main.darkAqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.aqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.reduce_transparency_off.darkAqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.aqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/controls.toml#controls.increase_contrast_on.darkAqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U167"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U169"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.min_width"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U169"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.content_width"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U170"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.content_slack"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U170"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.label.text.elision"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U171"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.icon.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.icon.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.icon.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.icon.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.icon_text_gap"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.min_width"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.max_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.glyph"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.content_width"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.content_slack"
+when = { conditions = ["preset:macos-tahoe"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["mini"] }
+value = "5px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.mini.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["small"] }
+value = "6px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.small.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["regular"] }
+value = "8px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.regular.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["large"] }
+value = "8px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.large.pop_up_button.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["mini"] }
+value = "1px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.mini.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["small"] }
+value = "1px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.small.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["regular"] }
+value = "1px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.regular.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["large"] }
+value = "5px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.large.pop_up_button.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["mini"] }
+value = "1px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.mini.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["small"] }
+value = "1px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.small.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["regular"] }
+value = "3px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.regular.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"], sizes = ["large"] }
+value = "7px"
+rows = ["MAC-CB01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.aqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.main.darkAqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.aqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.reduce_transparency_off.darkAqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.aqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/controls.toml#controls.increase_contrast_on.darkAqua.large.pop_up_button.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U167"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U169"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.min_width"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U169"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.content_width"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U170"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.content_slack"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U170"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.label.text.elision"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["editable", "@pull_down", "with_icon", "flat"] }
+pending = "U171"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.icon.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.icon.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.icon.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.icon.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.icon_text_gap"
+when = { conditions = ["preset:macos-monterey"], variants = ["with_icon"], not_variants = ["editable"] }
+pending = "U168"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.min_width"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.max_height"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow_area.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.glyph"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.content_width"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.values.content_slack"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"] }
+pending = "U172"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.body.min_height"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"], sizes = ["large"] }
+pending = "U176"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"], sizes = ["large"] }
+pending = "U176"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"], sizes = ["large"] }
+pending = "U176"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"], sizes = ["large"] }
+pending = "U176"
+rows = ["MAC-CB01"]
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["editable"], sizes = ["large"] }
+pending = "U176"
+rows = ["MAC-CB01"]

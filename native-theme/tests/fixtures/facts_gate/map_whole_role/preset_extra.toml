@@ -1,0 +1,31 @@
+# map_whole_role's preset with an accent ramp entry in each scheme's bases, its key declared (S10).
+# base without: accent_ramp = {}
+# base without: accent_ramp = {}
+# base without: [declare]
+# base without: text_styles = ["body"]
+# base without: inputs = ["accent"]
+# base without: surface_sets = ["window"]
+[declare]
+text_styles = ["body"]
+inputs = ["accent"]
+surface_sets = ["window"]
+accent_ramp = ["light1"]
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[colors.light.global.accent_ramp]
+light1 = "#ffffff"
+
+[colors.dark.global.accent_ramp]
+light1 = "#ffffff"

@@ -1,0 +1,276 @@
+# function: kde_accent_wm
+# route: compiled_source
+# source: plasma-workspace@6.8.2
+# source: kcolorscheme@6.31.0
+# source: kconfig@6.31.0
+# source: kguiaddons@6.31.0
+# source: qtbase@6.12.0
+# generations: kde-breeze
+# generator: tools/kde-vectors
+# inputs: key:enum<KdeWmKey> accent:colour value:colour window_background:colour groups:string unset_keys:string tint_factor:option<number> titlebar_is_accent_colored:bool
+# outputs: result:colour
+# written by tools/kde-vectors/generate.py on Qt 6.12.0, KConfig 6.31.0,
+# KGuiAddons 6.31.0 and KColorScheme 6.31.0; do not edit. Each case:
+# a scheme file and an accent, applyScheme(file, a fresh kdeglobals, KConfig::Normal, accent)
+# (colorsapplicator.cpp compiled unchanged), the kdeglobals synced and opened afresh.
+# The result: the written [WM] key as KConfig reads a colour.
+# The operands: accent input.accent (#00000000: none); value input.kde_scheme.wm.<key> (the
+# file's [WM] key, else KColorScheme's Header colours over the file: Normal background and
+# foreground, Inactive background and foreground with the file's inactive effects, S9.1);
+# window_background input.kde_scheme.window.background_normal;
+# the lists JSON strings, their names comma-separated (groups the sets,
+# unset_keys the scheme inputs below input.kde_scheme, `<set>.<key>`, `<set>.inactive.<key>`);
+# tint_factor token.kde.tint_factor (none: the file has no TintFactor), titlebar_is_accent_colored
+# the token. Every operand is read over the scheme file as the KDE reader reads it.
+# A row already listed is not repeated; no two rows with the same inputs differ. The
+# 10 measured (file, accent) pairs of docs/facts/kde/accent.toml (1720 facts; the pairs with no
+# AccentColor run both as measured, with no accent argument, and with #00000000) were re-run
+# and equal it; SUSE-Cafe's file (GPL-2.0) is read for that check alone. The cases:
+#   BreezeLight
+#   BreezeDark
+#   BreezeClassic (the title-bar option, no Header group)
+#   BreezeDark tinting (TintFactor 0.15)
+#   BreezeLight tinting (0.3) with the title-bar option
+#   BreezeLight, the title-bar option by accentActiveTitlebar
+#   BreezeLight, TitlebarIsAccentColored false over accentActiveTitlebar true
+#   BreezeDark, the title-bar option, a Header group without [Inactive]
+#   a SUSE-Cafe-shaped file: tinting 0.15, the title-bar option, a Header group of two keys
+#   BreezeLight without a Header group
+#   BreezeClassic tinting (0.2)
+#   BreezeLight without View and Button groups
+#   BreezeLight without View and Button groups, tinting 0.15
+#   BreezeLight without a Window group, the title-bar option
+#   BreezeLight without a Window group, tinting 0.15
+#   BreezeClassic without a Window group
+#   BreezeDark with unset keys
+#   BreezeDark with unset keys, tinting 0.15, the title-bar option
+#   BreezeLight with [Inactive] groups in Window (four keys) and View
+#   the same, tinting 0.15
+#   BreezeLight, Window without its backgrounds (the Header table's)
+#   the same with the title-bar option and no Header [Inactive]
+#   BreezeLight, a Header [Inactive] but no Window group
+#   translucent backgrounds (View, Button, Window, Header)
+#   a Header group only in its [Inactive] subgroup, an empty Tooltip group
+#   tint factor 0
+#   tint factor 1
+#   tint factor unreadable
+#   tint factor empty
+#   BreezeDark tinting (0.15), Window colours with a zero red or blue channel
+#   BreezeDark without a [WM] group, the inactive effects on (the start values KColorScheme gives)
+#   the same, tinting 0.15, the title-bar option
+#   a [WM] group of other values
+# then 12 seeded random accents over the first five, 12 rows each.
+# Each case's first accent gives its rows (of the sets it names); a later accent those whose
+# result differs from every earlier accent's, at most 16 of them (seeded).
+key	accent	value	window_background	groups	unset_keys	tint_factor	titlebar_is_accent_colored	result
+active_background	#e5a50a	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#e5a50a	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#e5a50a	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#e5a50a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#e5a50a	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#e5a50a	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#e5a50a	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.905882359, 0.733333349, 0.309803933, 1)
+active_foreground	#e5a50a	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#bdc3c7	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.741176486, 0.764705896, 0.78039217, 1)
+active_background	#5e2ca5	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.53725493, 0.400000006, 0.733333349, 1)
+active_background	#00000000	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.278431386, 0.313725501, 0.34117648, 1)
+active_foreground	#00000000	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+active_background	#3daee9	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.447058827, 0.75686276, 0.921568632, 1)
+active_background	#ffffff	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.980392158, 0.980392158, 0.980392158, 1)
+active_background	#e5a50a	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.152941182, 0.13333334, 0.0980392173, 1)
+active_foreground	#e5a50a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(1, 1, 1, 1)
+inactive_background	#e5a50a	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.152941182, 0.13333334, 0.0980392173, 1)
+inactive_foreground	#e5a50a	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.65882355, 0.650980413, 0.635294139, 1)
+active_background	#5e2ca5	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.13333334, 0.125490203, 0.192156866, 1)
+inactive_background	#5e2ca5	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.13333334, 0.125490203, 0.192156866, 1)
+inactive_foreground	#5e2ca5	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.650980413, 0.647058845, 0.674509823, 1)
+active_background	#00000000	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#00000000	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#00000000	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#00000000	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#3daee9	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.0901960805, 0.141176477, 0.180392161, 1)
+inactive_background	#3daee9	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.0901960805, 0.141176477, 0.180392161, 1)
+inactive_foreground	#3daee9	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.635294139, 0.654901981, 0.670588255, 1)
+active_background	#ffffff	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.125490203, 0.137254909, 0.145098045, 1)
+inactive_background	#ffffff	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.125490203, 0.137254909, 0.145098045, 1)
+inactive_foreground	#ffffff	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.647058845, 0.650980413, 0.654901981, 1)
+active_background	#e5a50a	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.905882359, 0.733333349, 0.309803933, 1)
+active_foreground	#e5a50a	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(1, 0.933333337, 0.807843149, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.396078438, 0.372549027, 0.321568638, 1)
+active_background	#5e2ca5	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.53725493, 0.400000006, 0.733333349, 1)
+inactive_background	#5e2ca5	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.952941179, 0.913725495, 1, 1)
+inactive_foreground	#5e2ca5	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.380392164, 0.36470589, 0.396078438, 1)
+active_background	#00000000	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#00000000	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+inactive_background	#00000000	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#00000000	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#e5a50a	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.905882359, 0.733333349, 0.309803933, 1)
+active_foreground	#e5a50a	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#e5a50a	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.662745118, 0.494117647, 0.0705882385, 1)
+active_foreground	#e5a50a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#e5a50a	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#5e2ca5	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.294117659, 0.160784319, 0.494117647, 1)
+active_foreground	#5e2ca5	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(1, 1, 1, 1)
+active_background	#00000000	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#00000000	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+active_background	#e5a50a	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.662745118, 0.494117647, 0.0705882385, 1)
+active_foreground	#e5a50a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.152941182, 0.13333334, 0.0980392173, 1)
+inactive_foreground	#e5a50a	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.65882355, 0.650980413, 0.635294139, 1)
+active_background	#5e2ca5	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.294117659, 0.160784319, 0.494117647, 1)
+active_foreground	#5e2ca5	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(1, 1, 1, 1)
+inactive_background	#5e2ca5	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.13333334, 0.125490203, 0.192156866, 1)
+inactive_foreground	#5e2ca5	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.650980413, 0.647058845, 0.674509823, 1)
+active_background	#00000000	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#00000000	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#00000000	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#00000000	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	"header.foreground_normal,header.foreground_inactive,header.foreground_active,header.foreground_link,header.foreground_visited,header.foreground_negative,header.foreground_neutral,header.foreground_positive,header.decoration_focus,header.decoration_hover"	0.15	true	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#e5a50a	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	false	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#e5a50a	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	false	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	false	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	false	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#e5a50a	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.2	true	srgb(0.905882359, 0.733333349, 0.309803933, 1)
+active_foreground	#e5a50a	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.2	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.2	true	srgb(0.984313726, 0.933333337, 0.854901969, 1)
+inactive_foreground	#e5a50a	#bdc3c7	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.2	true	srgb(0.392156869, 0.372549027, 0.34117648, 1)
+active_background	#00000000	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.2	true	srgb(0.278431386, 0.313725501, 0.34117648, 1)
+active_foreground	#00000000	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.2	true	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#00000000	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.2	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#00000000	#bdc3c7	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.2	true	srgb(0.741176486, 0.764705896, 0.78039217, 1)
+active_background	#e5a50a	#e3e5e7	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.627451003, 0.450980395, 0.0274509806, 1)
+active_foreground	#e5a50a	#232629	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#5e2ca5	#e3e5e7	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.254901975, 0.117647059, 0.450980395, 1)
+active_foreground	#5e2ca5	#232629	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	none	true	srgb(1, 1, 1, 1)
+active_background	#00000000	#e3e5e7	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#00000000	#232629	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+active_background	#e5a50a	#e3e5e7	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0, 0, 0, 1)
+active_foreground	#e5a50a	#232629	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(1, 1, 1, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0, 0, 0, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.600000024, 0.600000024, 0.600000024, 1)
+active_background	#00000000	#e3e5e7	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#00000000	#232629	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+inactive_background	#00000000	#eff0f1	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#00000000	#707d8a	#eff0f1	"view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#e5a50a	#475057	#eff0f1	"view,button,selection,tooltip,complementary"	""	none	true	srgb(0.627451003, 0.450980395, 0.0274509806, 1)
+active_foreground	#e5a50a	#fcfcfc	#eff0f1	"view,button,selection,tooltip,complementary"	""	none	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"view,button,selection,tooltip,complementary"	""	none	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#bdc3c7	#eff0f1	"view,button,selection,tooltip,complementary"	""	none	true	srgb(0.741176486, 0.764705896, 0.78039217, 1)
+active_background	#00000000	#475057	#eff0f1	"view,button,selection,tooltip,complementary"	""	none	true	srgb(0.278431386, 0.313725501, 0.34117648, 1)
+active_foreground	#00000000	#fcfcfc	#eff0f1	"view,button,selection,tooltip,complementary"	""	none	true	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+active_background	#e5a50a	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	"window.foreground_link,window.decoration_hover,view.background_normal,button.background_normal,selection.foreground_active,tooltip.foreground_link,header.background_normal,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	none	false	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#e5a50a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	"window.foreground_link,window.decoration_hover,view.background_normal,button.background_normal,selection.foreground_active,tooltip.foreground_link,header.background_normal,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	none	false	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#e5a50a	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	"window.foreground_link,window.decoration_hover,view.background_normal,button.background_normal,selection.foreground_active,tooltip.foreground_link,header.background_normal,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	none	false	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#e5a50a	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	"window.foreground_link,window.decoration_hover,view.background_normal,button.background_normal,selection.foreground_active,tooltip.foreground_link,header.background_normal,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	none	false	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#e5a50a	#272c31	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.foreground_link,view.background_normal,selection.foreground_active,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	0.15	true	srgb(0.627451003, 0.450980395, 0.0274509806, 1)
+active_foreground	#e5a50a	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.foreground_link,view.background_normal,selection.foreground_active,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	0.15	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#202428	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.foreground_link,view.background_normal,selection.foreground_active,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	0.15	true	srgb(0, 0, 0, 1)
+inactive_foreground	#e5a50a	#a1a9b1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.foreground_link,view.background_normal,selection.foreground_active,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	0.15	true	srgb(0.600000024, 0.600000024, 0.600000024, 1)
+active_background	#00000000	#272c31	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.foreground_link,view.background_normal,selection.foreground_active,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	0.15	true	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#00000000	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.foreground_link,view.background_normal,selection.foreground_active,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	0.15	true	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#00000000	#202428	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.foreground_link,view.background_normal,selection.foreground_active,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	0.15	true	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#00000000	#a1a9b1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.foreground_link,view.background_normal,selection.foreground_active,header.foreground_normal,header.inactive.background_alternate,header.inactive.foreground_link"	0.15	true	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#e5a50a	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	false	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#e5a50a	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	false	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	false	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	false	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#e5a50a	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	true	srgb(0.627451003, 0.450980395, 0.0274509806, 1)
+active_foreground	#e5a50a	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	true	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#00000000	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	true	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#00000000	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	"window.background_normal,window.background_alternate"	none	true	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+active_background	#e5a50a	#e3e5e7	#eff0f1c8	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.847058833, 0.670588255, 0.247058824, 0)
+active_foreground	#e5a50a	#232629	#eff0f1c8	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0, 0, 0, 0.00392156886)
+inactive_background	#e5a50a	#eff0f1	#eff0f1c8	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#e5a50a	#707d8a	#eff0f1c8	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#5e2ca5	#e3e5e7	#eff0f1c8	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(0.478431374, 0.34117648, 0.674509823, 0)
+active_foreground	#5e2ca5	#232629	#eff0f1c8	"window,view,button,selection,tooltip,complementary,header"	""	none	true	srgb(1, 1, 1, 0.00392156886)
+active_background	#e5a50a	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0	false	srgb(0.125490203, 0.137254909, 0.149019614, 1)
+active_foreground	#e5a50a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0	false	srgb(1, 1, 1, 1)
+inactive_background	#e5a50a	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0	false	srgb(0.125490203, 0.137254909, 0.149019614, 1)
+inactive_foreground	#e5a50a	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0	false	srgb(0.647058845, 0.650980413, 0.65882355, 1)
+active_background	#e5a50a	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	1	false	srgb(0.274509817, 0.0431372561, 0, 1)
+active_foreground	#e5a50a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	1	false	srgb(1, 1, 1, 1)
+inactive_background	#e5a50a	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	1	false	srgb(0.274509817, 0.0431372561, 0, 1)
+inactive_foreground	#e5a50a	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	1	false	srgb(0.70588237, 0.615686297, 0.600000024, 1)
+active_foreground	#5e2ca5	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(1, 1, 1, 1)
+active_background	#0080ff	#272c31	#000000	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0, 0, 0, 1)
+active_foreground	#0080ff	#fcfcfc	#000000	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(1, 1, 1, 1)
+inactive_background	#0080ff	#202428	#000000	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0, 0, 0, 1)
+inactive_foreground	#0080ff	#a1a9b1	#000000	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.600000024, 0.600000024, 0.600000024, 1)
+active_background	#e5a50a	#292c30	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.160784319, 0.172549024, 0.188235298, 1)
+inactive_background	#e5a50a	srgb(0.13333334, 0.1447013, 0.15608454, 1)	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.13333334, 0.145098045, 0.156862751, 1)
+inactive_foreground	#e5a50a	srgb(0.96638435, 0.96649116, 0.96661323, 1)	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.964705884, 0.964705884, 0.964705884, 1)
+active_background	#e5a50a	#292c30	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	true	srgb(0.662745118, 0.494117647, 0.0705882385, 1)
+active_foreground	#e5a50a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	srgb(0.13333334, 0.1447013, 0.15608454, 1)	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	true	srgb(0.152941182, 0.13333334, 0.0980392173, 1)
+inactive_foreground	#e5a50a	srgb(0.96638435, 0.96649116, 0.96661323, 1)	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	true	srgb(0.65882355, 0.650980413, 0.635294139, 1)
+active_background	#00000000	#292c30	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	true	srgb(0.160784319, 0.172549024, 0.188235298, 1)
+active_foreground	#00000000	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	true	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#00000000	srgb(0.13333334, 0.1447013, 0.15608454, 1)	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	true	srgb(0.13333334, 0.145098045, 0.156862751, 1)
+inactive_foreground	#00000000	srgb(0.96638435, 0.96649116, 0.96661323, 1)	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	true	srgb(0.964705884, 0.964705884, 0.964705884, 1)
+active_background	#e5a50a	#0a141e	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.25	true	srgb(0.905882359, 0.733333349, 0.309803933, 1)
+active_foreground	#e5a50a	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.25	true	srgb(0, 0, 0, 1)
+inactive_background	#e5a50a	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.25	true	srgb(0.992156863, 0.933333337, 0.831372559, 1)
+inactive_foreground	#e5a50a	#c8643280	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.25	true	srgb(0.396078438, 0.372549027, 0.329411775, 1)
+active_background	#00000000	#0a141e	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.25	true	srgb(0.0392156877, 0.0784313753, 0.117647059, 1)
+active_foreground	#00000000	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.25	true	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#00000000	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.25	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#00000000	#c8643280	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	0.25	true	srgb(0.784313738, 0.392156869, 0.196078435, 0.501960814)
+active_background	#9446d9	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#9446d9	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#9446d9	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#9446d9	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#ee3069	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.933333337, 0.411764711, 0.568627477, 1)
+active_foreground	#ee3069	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0, 0, 0, 1)
+inactive_background	#ee3069	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#ee3069	#bdc3c7	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.741176486, 0.764705896, 0.78039217, 1)
+active_background	#52a39a	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.101960786, 0.145098045, 0.149019614, 1)
+active_foreground	#52a39a	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(1, 1, 1, 1)
+inactive_background	#52a39a	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.101960786, 0.145098045, 0.149019614, 1)
+inactive_foreground	#52a39a	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.639215708, 0.654901981, 0.65882355, 1)
+active_background	#cc6fd6	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#cc6fd6	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#cc6fd6	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#cc6fd6	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#8151e8	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#8151e8	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+inactive_background	#8151e8	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#8151e8	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#b6f45b	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	#b6f45b	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	#b6f45b	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	#b6f45b	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.631372571, 0.662745118, 0.694117665, 1)
+active_background	#60aa28	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.105882354, 0.149019614, 0.109803922, 1)
+active_foreground	#60aa28	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(1, 1, 1, 1)
+inactive_background	#60aa28	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.105882354, 0.149019614, 0.109803922, 1)
+inactive_foreground	#60aa28	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.639215708, 0.65882355, 0.643137276, 1)
+active_background	#791ec7	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.890196085, 0.898039222, 0.905882359, 1)
+active_foreground	#791ec7	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.137254909, 0.149019614, 0.160784319, 1)
+inactive_background	#791ec7	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#791ec7	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.43921569, 0.490196079, 0.541176498, 1)
+active_background	#9b4de6	#475057	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.70588237, 0.490196079, 0.913725495, 1)
+active_foreground	#9b4de6	#fcfcfc	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0, 0, 0, 1)
+inactive_background	#9b4de6	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.937254906, 0.941176474, 0.945098042, 1)
+inactive_foreground	#9b4de6	#bdc3c7	#eff0f1	"window,view,button,selection,tooltip,complementary"	""	none	true	srgb(0.741176486, 0.764705896, 0.78039217, 1)
+active_background	srgb(0.9832914, 0.05207904, 0.8990768, 1)	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.180392161, 0.101960786, 0.184313729, 1)
+active_foreground	srgb(0.9832914, 0.05207904, 0.8990768, 1)	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(1, 1, 1, 1)
+inactive_background	srgb(0.9832914, 0.05207904, 0.8990768, 1)	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.180392161, 0.101960786, 0.184313729, 1)
+inactive_foreground	srgb(0.9832914, 0.05207904, 0.8990768, 1)	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	0.15	false	srgb(0.670588255, 0.639215708, 0.670588255, 1)
+active_background	#7f0017	#e3e5e7	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.627451003, 0.278431386, 0.345098048, 1)
+active_foreground	#7f0017	#232629	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(1, 1, 1, 1)
+inactive_background	#7f0017	#eff0f1	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(1, 0.898039222, 0.890196085, 1)
+inactive_foreground	#7f0017	#707d8a	#eff0f1	"window,view,button,selection,tooltip,complementary,header"	""	0.3	true	srgb(0.396078438, 0.356862754, 0.352941185, 1)
+active_background	srgb(0.2338903, 0.09945831, 0.80588996, 1)	#272c31	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.152941182, 0.172549024, 0.192156866, 1)
+active_foreground	srgb(0.2338903, 0.09945831, 0.80588996, 1)	#fcfcfc	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.988235295, 0.988235295, 0.988235295, 1)
+inactive_background	srgb(0.2338903, 0.09945831, 0.80588996, 1)	#202428	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.125490203, 0.141176477, 0.156862751, 1)
+inactive_foreground	srgb(0.2338903, 0.09945831, 0.80588996, 1)	#a1a9b1	#202326	"window,view,button,selection,tooltip,complementary,header"	""	none	false	srgb(0.631372571, 0.662745118, 0.694117665, 1)

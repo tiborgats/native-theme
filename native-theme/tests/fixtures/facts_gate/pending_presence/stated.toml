@@ -1,0 +1,23 @@
+# A synthetic preset (S17, ADD-A131): preset.toml with the subtitle stated absent, so its [pending]
+# entry fails. The base's subtitle table is dropped (its text line, equal to the label's, stays the
+# label's).
+# base without: [widgets.button.subtitle]
+# base without: text = "= token.text.roles.body"
+[pending]
+"widgets.button.subtitle" = "U7"
+
+[widgets.button.subtitle]
+absent = true
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

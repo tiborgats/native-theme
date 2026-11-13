@@ -1,0 +1,2915 @@
+# combo_box (ios-13, ios-26): the content row of iOS's pop-up button (CB-1, ADD-A127), the `UIButton` menu
+# configuration with the `.popup` indicator, which the iOS host's run 41020880059 drew as each style with a menu as
+# its primary action and the pop-up indicator (`cells.<scheme>.<style>__menu_primary_action__indicator_popup`, the
+# facts' `button @ variants {menu,@indicator_popup}`) at `medium` (the model's `regular`), and run 42267206298 at mini, small and large (its
+# render_read_buttons.toml, the same method; not its overflowed pop-up button pages): its content insets
+# (the body's padding), the gap from the title's frame to the indicator's (`label_arrow_gap`) and the indicator's start
+# and end margins (analysis/read_buttons.py's docstring is the method). Each preset states its own facts from its own
+# image. Unmeasured, pending: the indicator's top and bottom margins (U121), the title's own padding inside the row
+# (U257), whether the width follows the selected title and its slack (U173), where a wider pop-up puts the spare
+# width (U174, no key: the catalogue's rule) and how a long title is cut (U175).
+
+# ---- ios-13 ----
+
+# the content insets (leading is left: the captures are left to right)
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "7px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-13"], sizes = ["mini"] }
+value = "5px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-13"], sizes = ["small"] }
+value = "5px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-13"], sizes = ["large"] }
+value = "15px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "12px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-13"], sizes = ["mini"] }
+value = "10px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-13"], sizes = ["small"] }
+value = "10px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-13"], sizes = ["large"] }
+value = "20px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "7px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["mini"] }
+value = "5px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["small"] }
+value = "5px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["large"] }
+value = "15px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "12px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-13"], sizes = ["mini"] }
+value = "10px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-13"], sizes = ["small"] }
+value = "10px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-13"], sizes = ["large"] }
+value = "20px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.padding.top"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.label_padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.padding.right"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.label_padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.padding.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.label_padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.padding.left"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.label_padding_left"
+tolerance = 0
+
+# the gap from the title's frame to the indicator's
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-13"], sizes = ["mini"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-13"], sizes = ["small"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-13"], sizes = ["large"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+# the indicator's start and end margins (no space set before the trailing inset)
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-13"], sizes = ["mini"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-13"], sizes = ["small"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-13"], sizes = ["large"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-13"], sizes = ["mini"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-13"], sizes = ["small"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-13"], sizes = ["large"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-15/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.top"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U121"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.arrow.margin.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U121"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.values.content_width"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "shown"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.content_width"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.content_slack"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.content_slack"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.text.elision"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "none"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.elision"
+tolerance = 0
+
+# ---- ios-26 ----
+
+# the content insets (leading is left: the captures are left to right)
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "7px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-26"], sizes = ["mini"] }
+value = "5px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-26"], sizes = ["small"] }
+value = "5px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-26"], sizes = ["large"] }
+value = "15px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "12px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-26"], sizes = ["mini"] }
+value = "10px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-26"], sizes = ["small"] }
+value = "10px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-26"], sizes = ["large"] }
+value = "20px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "7px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["mini"] }
+value = "5px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["small"] }
+value = "5px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["large"] }
+value = "15px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "12px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-26"], sizes = ["mini"] }
+value = "10px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-26"], sizes = ["small"] }
+value = "10px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-26"], sizes = ["large"] }
+value = "20px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.padding.top"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.label_padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.padding.right"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.label_padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.padding.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.label_padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.padding.left"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.label_padding_left"
+tolerance = 0
+
+# the gap from the title's frame to the indicator's
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-26"], sizes = ["mini"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-26"], sizes = ["small"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-26"], sizes = ["large"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_gap"
+tolerance = 0
+
+# the indicator's start and end margins (no space set before the trailing inset)
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-26"], sizes = ["mini"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-26"], sizes = ["small"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-26"], sizes = ["large"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-26"], sizes = ["mini"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.mini.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-26"], sizes = ["small"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.small.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-26"], sizes = ["large"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.glass__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.dark.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.filled__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.glass__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.gray__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42267206298/ios-host-macos-26/render_read_buttons.toml#cells.light.plain__menu_primary_action__indicator_popup.large.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.top"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U121"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.arrow.margin.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U121"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.values.content_width"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "shown"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.content_width"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.content_slack"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.content_slack"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.label.text.elision"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "none"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.elision"
+tolerance = 0
+

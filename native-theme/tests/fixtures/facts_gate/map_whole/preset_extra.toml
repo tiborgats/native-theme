@@ -1,0 +1,25 @@
+# Under `adwaita`'s id: a keyed text style is staged to the text styles unit, `body` kept at depth on `adwaita`
+# (scripts/widget_units.toml's `[kept.slice]`), so its facts are of the enabled units there.
+# base without: [preset]
+# base without: id = "probe"
+# base without: generation = "probe-1"
+[preset]
+id = "adwaita"
+generation = "probe-1"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "tokens"
+set = { text.keyed.body.font.axes = { GRAD = { fixed = 1 } } }

@@ -10,7 +10,6 @@ license.workspace = true
 # gpui-fast 0.1.12 calls at the same line.
 rust-version = "1.95.0"
 repository.workspace = true
-homepage.workspace = true
 keywords = ["theme", "gpui", "gui", "native", "colors"]
 categories = ["gui", "config"]
 readme = "README.md"

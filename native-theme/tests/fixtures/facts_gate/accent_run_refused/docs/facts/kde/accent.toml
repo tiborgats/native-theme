@@ -1,0 +1,66 @@
+# Synthetic facts (S17 *Fields*, *The accent run*, ADD-A142): accent-run facts the gate refuses. A `scheme_file`
+# with no `accent`; a fact with no `scheme:` condition; a pair whose facts name different schemes; a pair naming
+# the preset's own dark file under scheme:light.
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#123456"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.decoration_focus"
+value = "#123456"
+rows = []
+scheme_file = "probe@1 colors/OwnLight.colors"
+accent = "#123456"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#654321"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#654321"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#654321"
+rows = []
+scheme_file = "probe@1 colors/Port.colors"
+accent = "#654321"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#123456"
+rows = []
+scheme_file = "probe@1 colors/OwnDark.colors"
+accent = "#123456"
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"

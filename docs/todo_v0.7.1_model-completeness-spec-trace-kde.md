@@ -25,6 +25,30 @@ rationale, each decided in the core's additions register (S22).
 `system-control`, `condition`, `flag`; the verdicts `out (R1.1)` … `out (R1.4)`, `preset (R1.3)`, `newest (R1.5)`, `reference (R1.6)`,
 `readers (R18)` with target `-`.
 
+**Text rows** (S20, S2.8, ADD-A130). A target `<part>.text (leaf by leaf: <style or slot>)` takes S20's form, and on
+`kde-breeze` its four drawn-text leaves, but one the row states, come from what draws the part:
+
+- a part drawn as Qt Quick text (a Kirigami `Heading` or a qqc2 `Label`: the `Q` and `K-KA` rows) takes the
+  `color`, `elide`, `wrapMode` and `maximumLineCount` the item drawing it sets at its pin, and where it sets none
+  QQuickText's defaults, `Elision::None`, `Wrap::None` and `max_lines` `None` (`qtdeclarative@6.12.0
+  src/quick/items/qquicktext.cpp:54-55`, `:85`), and its `fill` a reference to the style's where the style sets one
+  (a `heading_<n>_secondary`'s reduced alpha, Kirigami's `opacity` of 0.75 for the secondary type, `kirigami@6.31.0
+  src/controls/Heading.qml:37`, Q1.4), otherwise the label's colour, its colour set's `textColor`,
+  `= surface.foreground` (`qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:26`, `kirigami@6.31.0
+  src/templates/Heading.qml:93`);
+- a part QStyle draws (K2.7, K2.8) takes Breeze's `drawItemText` call for it, which elides nothing
+  (`breeze@6.8.2 kstyle/breezestyle.cpp:1595-1630`, `qtbase@6.12.0 src/widgets/styles/qstyle.cpp:610-633`), wraps
+  only where the call's flags hold a wrap flag (`Qt::TextWordWrap`) and sets no line limit, its `fill` the palette role the call
+  passes;
+- a `rich_text` part (K-SF13†, K-P4-14†) takes Qt's document layout's, which has no elision and no line limit
+  (`qtbase@6.12.0 src/gui/text/qtextdocumentlayout.cpp`), its wrapping the document's text option
+  (`WrapAtWordBoundaryOrAnywhere` unless the view sets another, `src/gui/text/qtextdocument_p.cpp:176`; a fenced
+  code block's lines unbroken, `src/gui/text/qtextmarkdownimporter.cpp:642`), and the enclosing text's colour, as
+  neither the Markdown importer nor the HTML parser gives code a colour (`qtextmarkdownimporter.cpp:451-456`,
+  `src/gui/text/qtexthtmlparser.cpp:2182-2197`).
+
+Each of these rows' drawn-text leaves has a source, so none holds a register id for them.
+
 | Row | Target | Kind |
 |---|---|---|
 | K1.1 | `window.title_bar.min_height (Auto: the larger of title and buttons)` | field |
@@ -51,7 +75,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.7 | `window.caption_button_glyph.fill @ variant close cond system_setting:outline_close_button` | rule |
 | K1.7 | `input.inactive.header.foreground_negative (the Inactive group's stated value, R2.6)` | input |
 | K1.7 | `reader:kde:breezerc [Common] OutlineCloseButton -> cond system_setting:outline_close_button` | reader |
-| K1.8 | `window.caption_button_glyph.transitions (Fill; duration and timing the decoration's own animation states, value phase)` | field |
+| K1.8 | `window.caption_button_glyph` with no transition (the glyph's fill changes at once, no earlier transition there for a zero to override, S12: the decoration's animation is set to 0, `breeze@6.8.2 kdecoration/breezedecoration.cpp:383-386`, and a button animates only where it is not, `kdecoration/breezebutton.cpp:411-416`, `kdecoration/breezedecoration.h:45-48`; S2.7, ADD-A126)` | field |
 | K1.9 | `window.frame.stroke (position Outside; edge snap to the device pixel; paint kcu_mix with token.params.color.frame_contrast)` | field |
 | K1.9 | `window.frame.stroke @ cond window_inactive` | rule |
 | K1.9 | `window.frame.stroke (Absent) @ cond maximized` | rule |
@@ -77,15 +101,17 @@ rationale, each decided in the core's additions register (S22).
 | K1.16 | `window.frame.corners, window.frame.padding, window.frame.stroke, window.frame.shadow @ cond maximized / cond tiled:top / cond tiled:right / cond tiled:bottom / cond tiled:left` | rule |
 | K1.16 | `cond shaded (ADD-A02)` | condition |
 | K1.16 | `window.frame.corners, window.frame.padding, window.frame.stroke, window.frame.shadow @ cond shaded` | rule |
-| K1.17 | `window.frame.transitions (Shadow; = token.motion.durations.breeze_state; the activation timing)` | field |
-| K1.17 | `window.frame.transitions @ cond window_inactive (the deactivation timing)` | rule |
-| K1.17 | `token.motion.durations.breeze_state (= mul(<the decoration's duration>, token.motion.speed_factor))` | token |
-| K1.17 | `window.title.transitions (Text cross-fade; duration as the decoration states it, value phase)` | field |
+| K1.17 | `window.frame.transitions (Shadow; = token.motion.durations.decoration_shadow; = token.motion.timings.out_cubic both ways: the activation runs that curve forward, `breeze@6.8.2 kdecoration/breezedecoration.cpp:197`, `:279`, and the deactivation runs the in-cubic curve backward, `:278-279`, Qt applying the curve to currentTime over duration, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:200-202`, which in S2.7's forward reading is the out-cubic curve; engine Breeze, its test conditions [window_inactive]: the animation turns on activeChanged alone, `:241`, `:275-283`, maximising, tiling and shading not running it, `:231-247`, and a deactivation mid-fade jumping to the other curve's value at its point, S2.7, ADD-A126)` | field |
+| K1.17 | `token.motion.durations.decoration_shadow (= floor(mul(<the decoration's base>, token.params.motion.kwin_speed_factor)), the factor the decoration reads: `[KDE] AnimationDurationFactor` from KWin's main configuration, kwinrc, over kdeglobals, `KSharedConfig::openConfig()` inside KWin, which opens `<application name>rc` with kdeglobals included (`FullConfig`), KWin naming itself `kwin`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:380-381`, `kconfig@6.31.0 src/core/ksharedconfig.h:84`, `src/core/kconfig.h:94-100`, `src/core/kconfig.cpp:643-649`, `kwin@6.8.2 src/main.cpp:139`, `:155` (ADD-A123); S4.1's rule naming it after Breeze's Decoration class: the product, a float, truncated to whole ms by `QVariantAnimation::setDuration(int)`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51`; ADD-A122)` | token |
+| K1.17 | `token.params.motion.kwin_speed_factor (the decoration's and KWin's factor: kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', as KConfig cascades KWin's main configuration over kdeglobals; ADD-A123: stated `= token.motion.speed_factor`, so it follows kdeglobals' factor under `cond animations_off` too, ADD-A125)` | token |
+| K1.17 | `reader:kde:kwinrc [KDE] AnimationDurationFactor -> token.params.motion.kwin_speed_factor` (the reader's layer states kwinrc's own factor where kwinrc states one, ADD-A125) | reader |
+| K1.17 | `window.title` with no transition (its colours change at once, no earlier transition there for a zero to override, S12: the decoration's active-state animation is set to 0 and never runs, `breeze@6.8.2 kdecoration/breezedecoration.cpp:383-386`, `:288-296`; S2.7, ADD-A125, ADD-A126)` | field |
 | K1.18 | `window.frame.shadow @ cond window_inactive (layers at half strength)` | rule |
 | K1.19† | - | out (R1.1) |
 | K1.20 | `button.body.stroke @ {hover} / {focus_visible} / {pressed}` | rule |
 | K1.20 | `button.body.stroke @ {checked}` | rule |
 | K1.20 | `button.body.stroke @ {default}` | rule |
+| K1.20 | `button.body.stroke.fill_clip (center: the fill reaches the pen's centre line, Breeze's frame inset by half the pen width; S2.4, ADD-A135)` | field |
 | K1.21 | `button flags focus_visible` | flag |
 | K1.21 | `button.values.focus_visible_when (FocusVisibleWhen::Keyboard { timeout: None }: after a keyboard focus change; no timeout)` | field |
 | K1.22 | `button.body.fill, button.body.stroke @ {default} !cond window_inactive` | rule |
@@ -95,8 +121,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.24 | `button.label.text.fill @ variant flat (= role.window.foreground)` | rule |
 | K1.25 | `button.body.fill @ {checked} variant warning` | rule |
 | K1.25 | `button.body.stroke @ variant warning` | rule |
-| K1.26 | `button.body.corners @ variant circular (Full)` | rule |
-| K1.27 | `button.menu_indicator (part: min_width, glyph Path, fill)` | field |
+| K1.26 | `button.body.corners @ variant circular (Ellipse, all four corners, Circular: Breeze's QWidget round button, `_kde_round_button`, drawn with a radius of half its rect's larger side, `breeze@6.8.2 kstyle/breezehelper.cpp:727`, `:738-739`, which Qt clamps per axis to half each side of the frame rect, `qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018`, `qpaintengineex.cpp:745-746`, the path fallback `qpainterpath.cpp:3457-3470`: the rect's inscribed ellipse, a circle where it is square; its shadow the same radius on the shadow's rect, `breezehelper.cpp:729-731`, `:1654-1659`, an ellipse of its own box, S2.5; ADD-A124; Kirigami's RoundButton keeps `Full`, Q2.4)` | rule |
+| K1.27 | `button.menu_indicator (part: min_width, glyph Path, fill; margin, `Inline`'s margin in the row, S2.11's: the arrow's box at the right of the label's contents rect, which Breeze sizes with the arrow inside its margins, `breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556`, `:2216-2219`, `:5364-5372`, the value phase stating the start and end margins that move it there, ADD-A123; the label centred in the space before the arrow's box less the gap, the catalogue's `Inline` rule, `:5364-5372`, ADD-A125)` | field |
 | K1.27 | `button.values.menu_indicator_gap` | field |
 | K1.28 | `button.icon.icon.size (= token.icons.sizes.small.size)` | field |
 | K1.28 | `button.values.shows_icon` | field |
@@ -104,20 +130,24 @@ rationale, each decided in the core's additions register (S22).
 | K1.29 | `button.body.fill, button.body.stroke @ {checked,hover}` | rule |
 | K1.29 | `button.body.fill @ {checked,pressed}` | rule |
 | K1.29 | `button.body.fill, button.body.stroke @ {default,hover}` | rule |
-| K1.30 | `button.body.transitions (Fill, Stroke)` | field |
-| K1.30 | `token.motion.durations.breeze, token.motion.speed_factor` | token |
+| K1.30 | `button.body.transitions (Fill from {pressed}; Stroke from {hover, focus_visible, pressed}: Breeze fades the fill only on leaving press and the pen only on leaving hover, visible focus or press, into whatever state follows, its state rules but `{disabled}`'s (below) stating no transitions of their own, so checked, default and window-activation changes are instant, `breeze@6.8.2 kstyle/breezehelper.cpp:655-725`, `kstyle/breezestyle.cpp:4546-4549`; S2.7's Transition.from, ADD-A124; engines Breeze, the fill's test any [pressed] none [disabled] and the pen's any [hover, focus_visible, pressed] none [disabled], quoted from `breezestyle.cpp:4546-4549`, the pen drawn at once as it turns up and its fade seen only down, a re-hover mid-fade turning the run where it is; their timing Breeze's quantisation, the steps timing jump_end in both directions, `kstyle/animations/breezeanimationdata.h:73-80`, S2.7, ADD-A126)` | field |
+| K1.30 | `button.body.transitions (Fill from {disabled}, Stroke from {disabled}: a zero duration, engine Breeze, its test empty, stated after the two fades)` (Qt keeps `State_MouseOver` on a disabled widget, `qtbase@6.12.0 src/widgets/styles/qstyleoption.cpp:151-152`, `src/widgets/kernel/qapplication.cpp:3259-3262`, and a hovered button enabled again draws the highlight pen mixed with the highlight, `breezehelper.cpp:710-711`, `:721-724`: at once) | field |
+| K1.30 | `button.body.transitions (Fill, Stroke: a zero duration) @ {disabled}` (Breeze runs neither fade on a disabled button, `breezehelper.cpp:715`, `:721`, so a button disabled while hovered or pressed changes at once) | rule |
+| K1.30 | `button.body.transitions (Fill, Stroke: a zero duration, engine Breeze, its test empty: qqc2 draws the button through Breeze with no engine data, so Breeze's rest value, by its tests, is drawn at once; after the base's, so a Breeze run turning under it stays hidden, S2.7, ADD-A126) @ cond flavor:kirigami` (no fade under Kirigami: qqc2-desktop-style draws the button through the style with no widget, `qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1741`, so Breeze's state engine, keyed by the widget, finds no data for it, `breeze@6.8.2 kstyle/breezestyle.cpp:4547-4551`, `kstyle/animations/breezedatamap.h:38-40`, and gives no opacity, `kstyle/animations/breezewidgetstateengine.h:40-42`, while `org.kde.desktop/Button.qml` and `RoundButton.qml` state no `Behavior` or animation of their own; written before kirigami-addons' floating button's own transitions, K-KA-26†, which replace it there, S6.1) | rule |
+| K1.30 | `token.motion.durations.animations, token.motion.speed_factor` | token |
 | K1.40 | `input.body.stroke @ variant warning` | rule |
 | K1.40 | `input.body.stroke (= qt_lighter of it, ADD-A50) @ variant warning {hover} / variant warning {focused}` | rule |
 | K1.41 | `input.body.stroke, input.body.shadow (Absent; only the fill stays) @ variant flat (the connector also sets it where the field is too short for frame and font)` | rule |
 | K1.42 | `input.body.stroke (only the chosen edges) @ variant @border_top / variant @border_right / variant @border_bottom / variant @border_left` | rule |
 | K1.42 | `input.body.stroke (position Inside) @ variant @border_top {hover} / variant @border_top {focused} / variant @border_right {hover} / variant @border_right {focused} / variant @border_bottom {hover} / variant @border_bottom {focused} / variant @border_left {hover} / variant @border_left {focused}` | rule |
-| K1.44 | `input.body.transitions (Stroke: the hover-to-focus cross-fade)` | field |
+| K1.44 | `input.body.transitions (Stroke: the focus engine, engine Breeze any [focused] none [disabled]; then Stroke: the hover engine, engine Breeze any [hover] none [focused, disabled], ranked after the focus one, each drawn between the live state's colours, so a click mid-hover jumps to the hover colour and fades to focus, and a hover or a leave during a focus fade moves its start end at once: `kstyle/breezestyle.cpp:3934-3944`, `:4064-4074`, `animations/breezewidgetstateengine.h:45-73`, `kstyle/breezehelper.cpp:142-166`; S2.7, ADD-A126)` | field |
+| K1.44 | `text_area.body.transitions` (the line edit's frame engines restated on text_area, R20: Breeze animates a QTextEdit's frame alike, `breeze@6.8.2 kstyle/breezestyle.cpp:338`, `:3930-3945`; ADD-A146) | field |
 | K1.45 | `role.selection.background; role.selection.foreground @ cond window_inactive` | role |
 | K1.45 | `input.selection.{fill,text.fill}` | field |
 | K1.46† | `button.icon.icon.size (= token.icons.sizes.small.size), button.icon.glyph (ThemeIcon) @ variant clear_field context input` | rule |
 | K1.46† | `button.body.min_width, button.body.min_height, button.body.padding @ variant clear_field context input` | rule |
 | K1.46† | `button.icon.icon.state_effect @ variant clear_field context input {disabled} / variant clear_field {pressed} context input` (the field disabled; the button pressed) | rule |
-| K1.46† | `button.values.presentations (Appear, Disappear: Fade) @ variant clear_field context input` | rule |
+| K1.46† | `button.values.presentations (Appear, Disappear: Fade; = token.motion.durations.line_edit_icon_button) @ variant clear_field context input` | rule |
 | K1.46† | `input.values.clear_button_visibility` | field |
 | K1.46† | `input flags empty` | flag |
 | K1.47† | `input.block_caret.fill, input.block_caret.text (the character under the caret) @ {overwrite} (an input mask's caret; the connector sets overwrite on a masked field without selection)` | rule |
@@ -126,26 +156,30 @@ rationale, each decided in the core's additions register (S22).
 | K1.48† | `input.values.mask_character, input.values.mask_reveal` | field |
 | K1.48† | `button.icon.glyph (ThemeIcon with its fallback) @ variant reveal context input` | rule |
 | K1.48† | `input.values.reveal_button_visibility (while the field has text or shows the password)` | field |
-| K1.49† | `text_area.misspelling.text.decoration (line, style, paint: a stated colour, not a role; thickness and offset = widget.text.font_underline_thickness, widget.text.font_underline_offset: Qt draws the line from the font's metrics, S2.8); input.misspelling.text.decoration` | field |
+| K1.49† | `text_area.misspelling.text.decoration (line, style, paint: a stated colour, not a role; thickness and offset: Qt's drawn line, held within the descent, not the font's position, register U754's, S2.8, ADD-A130, ADD-A147); input.misspelling.text.decoration` | field |
 | K1.50 | `checkbox.mark.glyph @ {indeterminate} (three dots, Path)` | rule |
 | K1.51 | `checkbox.box.fill @ {pressed}; radio.ring.fill @ {pressed} (= qt_darker(..))` | rule |
 | K1.52 | `checkbox.box.shadow @ {hover} (inset ring layer); radio.ring.shadow @ {hover}` | rule |
 | K1.52 | `checkbox.box.shadow @ {hover} variant warning; radio.ring.shadow @ {hover} variant warning` | rule |
 | K1.52 | `checkbox.box.transitions (Shadow); radio.ring.transitions` | field |
-| K1.53 | `checkbox.values.indicator_cell` | field |
+| K1.53 | `checkbox.box.margin, radio.ring.margin` (the box's and the ring's inset in the indicator's cell, `breeze@6.8.2 kstyle/breezehelper.cpp:843-844`, `:995-996`; ADD-A146) | field |
 | K1.53 | `checkbox.box.min_width, checkbox.box.min_height, checkbox.box.corners` | field |
 | K1.54 | `checkbox.box.fill, checkbox.box.stroke @ {checked,hover} / {checked,pressed}` | rule |
 | K1.54 | `checkbox.box.stroke, checkbox.mark.glyph @ {indeterminate,hover}` | rule |
 | K1.54 | `checkbox.box.stroke @ {checked,disabled} (the Disabled set's highlight)` | rule |
-| K1.55 | `checkbox.mark.glyph.draw_extent @ {checked} / {indeterminate}; checkbox.mark.transitions (Glyph)` | rule |
-| K1.55 | `radio.dot.transform @ {checked}; radio.dot.transitions (Transform)` | rule |
+| K1.55 | `checkbox.mark.shown, radio.dot.shown (false)` (the rest look unchecked: `CheckOff` draws nothing, `breeze@6.8.2 kstyle/breezehelper.cpp:942-943`, nor an unchecked radio, `:1075-1076`; S2.7's *A part not shown at rest*, ADD-A126) | field |
+| K1.55 | `checkbox.mark.glyph.draw_extent (0); checkbox.mark.transitions (GlyphDraw: = token.motion.durations.animations, = token.motion.timings.animations, engine Breeze, any [checked, indeterminate]; then GlyphDraw from {checked, indeterminate}: a zero duration, engine Breeze, its test empty)` (the hidden mark, unchecked, that the run draws on from: the check's dash `path.length() * animation` toward checked, `breeze@6.8.2 kstyle/breezehelper.cpp:954-962`, the run's test `checkBoxState != CheckOff`, `kstyle/breezestyle.cpp:4923-4929`; nothing drawn toward unchecked, `breezehelper.cpp:957-959`, which the zero after it states, hiding the run back; S2.7's *A part not shown at rest*, ADD-A126) | field |
+| K1.55 | `checkbox.mark.{shown,glyph.draw_extent} @ {checked}` (true, and the extent the pen's width, `PenWidth::Frame * 2`, as a number: Qt measures the dash in units of the pen's width, `qtbase@6.12.0 src/gui/painting/qpen.cpp:487`, `src/gui/painting/qstroker.cpp:1086`, the pen `breezehelper.cpp:938`, `kstyle/breezemetrics.h:25`, so the check is whole once the run passes half its way, the extent drawn clamped to the whole path and the dash's square caps the stroke's, S2.9) `/ {indeterminate}` (true and 1); `checkbox.mark.transitions (GlyphDraw: = token.motion.durations.animations, Steps count 1 jump_end, engine Breeze, any [checked, indeterminate]) @ {indeterminate}` (the dots drawn transparent while the run runs, the brush left transparent, `breezehelper.cpp:935-936`, `:964-974`, and at once as it ends, `breezestyle.cpp:4926-4929`: one step at its end, the re-read timing taking it, S2.7) | rule |
+| K1.55 | `radio.dot.transform (scale 0); radio.dot.transitions (Transform: = token.motion.durations.animations, = token.motion.timings.animations, engine Breeze, any [checked])` (the hidden dot, unchecked; its growth and shrinking, `radius * animation`, `breezehelper.cpp:1070-1072`, about the ring's centre, both ways as the state engine runs back when the flag clears, `kstyle/breezestyle.cpp:4961-4966`, `kstyle/animations/breezewidgetstatedata.cpp:24`; S2.7's *A part not shown at rest*, ADD-A126) | field |
+| K1.55 | `radio.dot.{shown,transform} @ {checked}` (true and scale 1, the drawn dot) | rule |
 | K1.55 | `checkbox.box.transitions (Fill); radio.ring.transitions` | field |
-| K1.55 | `token.motion.durations.breeze, token.motion.speed_factor` | token |
-| K1.56 | `checkbox.box.stroke, checkbox.box.fill @ {checked} variant warning / radio.ring.stroke, radio.ring.fill @ {checked} variant warning` | rule |
+| K1.55 | `token.motion.durations.animations, token.motion.speed_factor` | token |
+| K1.56 | `checkbox.box.stroke @ variant warning; radio.ring.stroke @ variant warning` (the pen `NeutralText` in every state, unchecked included, `breezehelper.cpp:850-858`, `:1002-1010`) | rule |
+| K1.56 | `checkbox.box.fill @ {checked} variant warning / {indeterminate} variant warning; radio.ring.fill @ {checked} variant warning` (the tint, drawn unless off, `breezehelper.cpp:865-873`, `:1015-1023`) | rule |
 | K1.57 | `checkbox.box.focus; radio.ring.focus` | field |
 | K1.58† | `checkbox.mark.glyph (Path, stroke: GlyphStroke width and join)` | field |
 | K1.58† | `checkbox.mark.glyph @ {indeterminate} (three dots and their spacing, Path)` | rule |
-| K1.60 | `menu.item.{fill,stroke,corners} @ {hover} cond system_setting:menu_item_strong_focus / {focused} cond system_setting:menu_item_strong_focus` (Breeze fills the active item only under strong focus, `breezestyle.cpp:6021`, and draws the weak-focus line otherwise, K1.62; Breeze's `State_Selected` on QMenu's active action, which the pointer and the keys set: `hover` or `focused`, S7.2) | rule |
+| K1.60 | `menu.item.{fill,stroke,corners} @ {hover} cond system_setting:menu_item_strong_focus / {focused} cond system_setting:menu_item_strong_focus` (Breeze fills the active item only under strong focus, `breezestyle.cpp:6016`, and draws the weak-focus line otherwise, K1.62; Breeze's `State_Selected` on QMenu's active action, which the pointer and the keys set: `hover` or `focused`, S7.2) | rule |
 | K1.61 | `menu.item.fill @ {pressed} cond system_setting:menu_item_strong_focus` | rule |
 | K1.61 | `menu.item_label.text.fill @ {pressed} cond system_setting:menu_item_strong_focus` | rule |
 | K1.61 | `menu.item_icon.icon.state_effect @ {pressed} cond system_setting:menu_item_strong_focus (Selected mode)` | rule |
@@ -156,6 +190,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.64 | `menu.body.corners` | field |
 | K1.64 | `menu.body.corners @ cond not_composited (ADD-A01)` | rule |
 | K1.64 | `menu.body.corners @ {placed_below} context any menu_bar / {placed_above} context any menu_bar / {placed_below} context any combo_box / {placed_above} context any combo_box (the seamless edge)` | rule |
+| K1.64 | `menu_bar.values.menu_placement` (where a title's menu goes, the bar's value, whose result sets the menu's `placed_below` and `placed_above`; its strategy the value phase's) | placement |
 | K1.64 | `menu flags placed_below, placed_above (shared, set by the connector from the placement result)` | flag |
 | K1.65 | `menu.body.fill (alpha by MenuOpacity; kwin_blur material layer)` | field |
 | K1.65 | `menu.body.stroke` | field |
@@ -165,7 +200,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.67 | `menu.accelerator.{text,opacity}` | field |
 | K1.67 | `menu.values.{accelerator_gap,accelerator_alignment}` | field |
 | K1.68 | `menu.submenu_arrow.{glyph,min_width}` | field |
-| K1.69 | `menu.check_indicator.{fill,stroke,corners,shadow,glyph} @ variant check / variant radio` (Breeze's check box and radio look on the item's mark, which takes the item's states; Nested controls) | rule |
+| K1.69 | `menu.check_indicator.glyph; menu.check_indicator.{fill,stroke,corners,shadow,glyph} @ variant check / variant radio` (Breeze's check mark in the base, and Breeze's check box and radio look on the item's mark as patches of it, the mark taking the item's states; Nested controls; the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | rule |
+| K1.69 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / context any combo_box` (no mark in the combo list whatever its selection: Breeze leaves `SH_ComboBox_Popup` to Qt's common style, which answers false, `qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:5419`, `:5436`, so the combo keeps its item delegate, not the menu delegate that checks an item, `src/widgets/widgets/qcombobox.cpp:2032-2043`, which Breeze replaces with one that paints no check, `breeze@6.8.2 kstyle/breezestyle.cpp:427-431`, `:141-180`, and Kirigami's delegate is a `MenuItem` that is not checkable, `qqc2-desktop-style@6.31.0 org.kde.desktop/ComboBox.qml:37-42`; an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (K1.69, Q1.31), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | K1.69 | `menu.values.check_column, menu.values.check_column_width` | field |
 | K1.69 | `menu.item.padding (the text's leading margin)` | field |
 | K1.70 | `menu.values.icon_column, menu.values.icon_column_width, menu.values.icon_text_gap, menu.values.show_item_icons` | field |
@@ -174,6 +210,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.71 | `menu.separator.margin` | field |
 | K1.71 | `menu.separator.min_height` (the separator item's height; the line is `menu.separator.stroke`) | field |
 | K1.72 | `menu.scroll_arrow.glyph, menu.scroll_arrow.fill, menu.scroll_arrow.min_height` | field |
+| K1.72 | `menu.scroll_arrow.glyph @ variant top / variant bottom` (the up and the down arrow, one element per scroll area, its identity a variant; ADD-A146) | rule |
 | K1.72 | `menu.values.scrollable` | field |
 | K1.73 | `menu.values.submenu_open_delay` | field |
 | K1.81 | `tooltip.body.shadow` | field |
@@ -192,6 +229,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.93 | `scrollbar.track.stroke @ variant vertical / variant vertical dir rtl` | rule |
 | K1.94 | `scrollbar.arrow_button.{glyph,fill,min_width,min_height}` (the button's extent, `ScrollBar_SingleButtonHeight`) | field |
 | K1.94 | `scrollbar.arrow_button.glyph.fill @ {hover} / {pressed} / {disabled}` | rule |
+| K1.94 | `scrollbar.arrow_button.glyph @ variant decrement / variant increment / variants {decrement,vertical} / variants {increment,vertical}` (the arrow each identity draws, both at one end under Double, `breeze@6.8.2 kstyle/breezestyle.cpp:6520-6547`; ADD-A146) | rule |
 | K1.94 | `scrollbar.values.arrow_buttons_start; scrollbar.values.arrow_buttons_end` | field |
 | K1.94 | `reader:kde:breezerc [Style] ScrollBarAddLineButtons, ScrollBarSubLineButtons -> scrollbar.values.arrow_buttons_*` | reader |
 | K1.95 | `scrollbar.thumb.transitions; scrollbar.track.transitions` | field |
@@ -218,11 +256,11 @@ rationale, each decided in the core's additions register (S22).
 | K1.112 | `progress_bar.indicator.fill @ context list.row {selected}` | rule |
 | K1.113 | `progress_bar.value_label.text` | field |
 | K1.113 | `progress_bar.value_label.text.fill @ context list.row {selected}` | rule |
-| K1.113 | `progress_bar.values.label_gap, progress_bar.values.label_alignment, progress_bar.values.label_position` | field |
+| K1.113 | `progress_bar.values.value_label_gap, progress_bar.values.value_label_alignment, progress_bar.values.value_label_position` | field |
 | K1.114 | `progress_bar.values.min_indicator_length` | field |
 | K1.115† | `progress_bar.track.min_height, progress_bar.track.max_height @ variant @capacity / variant @capacity_inline` | rule |
 | K1.115† | `progress_bar.track.corners, progress_bar.indicator.corners @ variant @capacity_inline (its round margin)` | rule |
-| K1.115† | `progress_bar.values.label_position (below) @ variant @capacity / (inline) @ variant @capacity_inline` | rule |
+| K1.115† | `progress_bar.values.value_label_position (below) @ variant @capacity / (inline) @ variant @capacity_inline` | rule |
 | K1.120 | `tab.values.indicator_edge, tab.indicator.min_width, tab.indicator.min_height @ variant left / variant right` | rule |
 | K1.121 | `tab.tab.fill, tab.tab.corners (bar side) @ !{selected}` | rule |
 | K1.122 | `tab.tab.fill @ {selected} / {selected} variant document` | rule |
@@ -239,15 +277,18 @@ rationale, each decided in the core's additions register (S22).
 | K1.127 | `tab.bar.stroke (base line)` | field |
 | K1.128 | `tab.pane.fill, tab.pane.stroke, tab.pane.corners, tab.pane.padding` | field |
 | K1.128 | `tab.pane.corners @ variant top / variant bottom / variant left / variant right` | rule |
-| K1.129 | `tab.label.focus (Underline) @ {selected,focus_visible}` | rule |
-| K1.129 | `tab.label.focus.transition` | field |
+| K1.129 | `tab.label.focus (Underline); tab.label.focus (Absent) @ !{selected}` (the line in the base and `Absent` off the selected tab, the absent rule written last in the preset, the catalogue's one spelling of a block drawn by state, ADD-A126; drawn while focus is visible: Breeze draws the line only on the selected tab, fading it in on a newly selected tab while the bar has focus, as its tab-bar engine restarts the current tab's run from 0, `breeze@6.8.2 kstyle/animations/breezetabbardata.cpp:72-80`, `kstyle/breezestyle.cpp:7157-7161`, from `{selected}`'s transparent line, S2.10, fading it out as the focus leaves and dropping it from the tab left, `kstyle/breezestyle.cpp:7106-7115`; S2.7, S2.10, ADD-A126) | rule |
+| K1.129 | `tab.label.focus.transition (= token.motion.durations.animations, Breeze setting every registered engine's duration to it, `kstyle/animations/breezeanimations.cpp:44`, `:55`, `:71-74`; engine BreezeTabBar any [focus_visible] none [disabled], `:7110-7112`, restarting on every change, unquantised, its timing linear, `kstyle/animations/breezetabbardata.h:47-55`, `:86-94`; Breeze's test `enabled && selected && State_HasFocus`, `:7107`, its `selected` held by this rule's selector and its focus mapped to focus_visible by the row below) @ {selected}` | rule |
+| K1.129 | `tab.label.focus.transition (a zero duration, engine BreezeTabBar, its test empty) @ {selected,disabled}` (Breeze draws the line's fade only on an enabled selected tab, `kstyle/breezestyle.cpp:7111`, `:7114-7116`, so a bar holding the focus disabled drops it at once; S2.7, ADD-A126) | rule |
+| K1.129 | `tab.values.focus_visible_when (FocusVisibleWhen::AnyFocus: Breeze draws the line on any focus of the bar, `State_HasFocus`, `kstyle/breezestyle.cpp:7107`, which Qt sets on the current tab alone, `qtbase@6.12.0 src/widgets/widgets/qtabbar.cpp:145-146`, and the bar takes by the Tab key, `Qt::TabFocus`, `:382`, or from code; S7.2, ADD-A126)` | field |
 | K1.130 | `tab.icon.icon.size` | field |
 | K1.130 | `tab.values.icon_text_gap` | field |
 | K1.131 | `tab.values.alignment` | field |
 | K1.131 | `reader:kde:breezerc [Style] TabBarDrawCenteredTabs` | reader |
 | K1.132 | `tab.label.text.fill @ {disabled}` | rule |
-| K1.132 | `tab.tab.transitions (Fill: the hover fade)` | field |
-| K1.133† | `tab.values.presentations` (Move: the tabs sliding to their new place, the step's duration an expression over `element.move_distance`, which the values declare, `data = { values = ["move_distance"] }`; ADD-A87) | field |
+| K1.132 | `tab.tab.fill @ {hover}` (an unselected tab's hover fill, `alphaColor(hoverColor, <fraction>)`, which the hover fade mixes the tab's fill, the window colour darkened, toward, `kstyle/breezehelper.cpp:1494-1501`; drawn by its test, so a selected or disabled tab under the pointer draws its own style, S2.7, ADD-A126) | rule |
+| K1.132 | `tab.tab.transitions (Fill: the hover fade, engine BreezeTabBar any [hover] none [selected, disabled], `kstyle/breezestyle.cpp:7202-7203`, unquantised, its timing linear, `kstyle/animations/breezetabbardata.h:47-55`, `:86-94`; a tab clicked while hovered drawn selected at once, both ends the selected fill, `kstyle/breezehelper.cpp:1456-1487`: a tab left mid-fade jumps to its full hover and fades out, re-entered it fades in from rest, and leaving a second tab cuts the first one's fade, `animations/breezetabbardata.cpp:54-119`; S2.7, ADD-A126)` | field |
+| K1.133† | `tab.values.presentations` (Move: the tabs sliding to their new place; a tab moved aside takes `= token.motion.durations.tab_bar`, a plain 250, `qtabbar.cpp:2152`, and the dropped tab `= min(token.motion.durations.tab_bar, floor(div(mul(element.move_distance, token.motion.durations.tab_bar), element.width)))`, `element.height` on vertical tabs, `:2374-2379`, over `element.move_distance` and its own size, which the values declare, `data = { values = ["move_distance", "width", "height"] }`; its timing `= token.motion.timings.in_out_quad`, `qtabbar_p.h:144`; ADD-A87) | field |
 | K1.133† | `tab.values.drag_hover_delay` | field |
 | K1.140 | `sidebar.pane.stroke (the inner edge only; the Inactive group's highlight) @ variant @side_panel` | rule |
 | K1.140 | `sidebar.pane.stroke (the Active group's highlight) @ {focus_within} variant @side_panel` | rule |
@@ -275,6 +316,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.154 | `button.values.icon_text_gap @ variant tool context toolbar.bar (beside or under)` | rule |
 | K1.155 | `split_button.secondary.fill, split_button.secondary.stroke, split_button.divider.stroke, split_button.arrow.glyph @ context toolbar.bar (the split sub-control and its separator line)` | rule |
 | K1.155 | `button.menu_indicator.glyph, button.menu_indicator.min_width @ variants {tool,@inline_small} / variants {tool,@inline_large}` | rule |
+| K1.155 | `button.values.menu_indicator_anchor (BottomEnd), button.menu_indicator.{min_height,margin} @ variants {tool,@inline_small}` (the small arrow's box at the button's bottom-right corner, inset from it, `breezestyle.cpp:2940-2944`, mirrored, `:2950`; ADD-A122) | rule |
 | K1.155 | `button.menu_indicator.glyph.fill @ {hover} variant tool / {pressed} variant tool / {disabled} variant tool; split_button.arrow.glyph @ {hover} context toolbar.bar / {pressed} context toolbar.bar / {disabled} context toolbar.bar` (the split button's own states) | rule |
 | K1.156 | `toolbar.separator.stroke, toolbar.separator.min_height` | field |
 | K1.156 | `toolbar.separator (absent = true) @ !cond system_setting:toolbar_draw_item_separator` | rule |
@@ -302,7 +344,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.176 | `list.values.indent_per_level` | field |
 | K1.176 | `reader:kde:breezerc [Style] ViewDrawTreeBranchLines` | reader |
 | K1.177 | `list.header_section.fill @ {hover} / {pressed} / {sorted}` | rule |
-| K1.177 | `list.header_section.transitions (Fill)` | field |
+| K1.177 | `list.header_section.transitions (Fill: engine BreezeTabBar any [hover] none [disabled], `kstyle/breezestyle.cpp:6809`, `:6822-6824`, `animations/breezeheaderviewdata.cpp:28-67`, quantised, its timing the animations steps, `breezeheaderviewdata.h:49`, `:89`; S2.7, ADD-A126)` | field |
+| K1.177 | `list.header_section.transitions (Fill: a zero duration, engine BreezeTabBar, its test empty) @ {disabled}` (Breeze draws the header's fade only while enabled, `kstyle/breezestyle.cpp:6823`; S2.7, ADD-A126) | rule |
 | K1.178 | `list.header_separator.stroke, list.header.stroke (bottom edge)` | field |
 | K1.178 | `list.header_corner.fill, list.header_corner.stroke` | field |
 | K1.179 | `list.sort_indicator.glyph` | field |
@@ -317,16 +360,16 @@ rationale, each decided in the core's additions register (S22).
 | K1.183 | `list.cell.fill @ {@sort_column}` | rule |
 | K1.183 | `reader:kde:kdeglobals [General] shadeSortColumn` | reader |
 | K1.184† | `list.disclosure.glyph (the column view's triangle: fill = role.@shade_mid, stroke = role.@shade_dark) @ variant @column_view` | rule |
-| K1.184† | `list.disclosure.glyph.fill @ {selected} variant @column_view / {selected} variant @column_view cond window_inactive` | rule |
+| K1.184† | `list.disclosure.glyph.fill @ variant @column_view context list.row {selected} / variant @column_view context list.row {selected} cond window_inactive` (the row's `selected`, read by context, ADD-A146) | rule |
 | K1.184† | `role.@shade_mid, role.@shade_dark (KDE's 3-D shades, K3.53)` | role |
-| K1.185† | `list.values.presentations (@expand, @collapse: Slide; = mul(token.motion.durations.<key>, token.motion.speed_factor), its timing the source's)` | field |
+| K1.185† | `list.values.presentations (@expand, @collapse: Slide; = token.motion.durations.variant, QVariantAnimation's own default, 250, unscaled, S4.1's rule, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`; = token.motion.timings.in_out_quad, `src/widgets/itemviews/qtreeview_p.h:89`; drawn only while the style hint, `token.motion.durations.animations`, is above 0 when the view is made, `qtreeview.cpp:3148`)` | field |
 | K1.190 | `popover.body.shadow (Shadow::Elevation of Breeze's popup entry, K3.2)` | field |
 | K1.191 | `popover.body.corners @ cond not_composited (ADD-A01)` | rule |
 | K1.200 | `splitter.divider.fill @ variant @dock` | rule |
 | K1.201 | `separator.line.stroke (centred on the half pixel: the edge's snap)` | field |
 | K1.201 | `component.multi_tab_bar.separator.stroke` | component |
-| K1.210 | `form.values.label_alignment (its horizontal member, `SH_FormLayoutLabelAlignment`), form.values.field_growth (`SH_FormLayoutFieldGrowthPolicy`), form.values.contents_alignment (the form's own left and top alignment, `SH_FormLayoutFormAlignment`) @ cond flavor:widgets` (Qt's `QFormLayout` as Breeze styles it, `breezestyle.cpp:953-958`) | rule |
-| K1.210 | `form.values.collapse (absent: the rows never wrap, `SH_FormLayoutWrapPolicy` `DontWrapRows`, `breezestyle.cpp:959-960`); form.{group_title,group_description,section_title,row_edit_icon} (absent = true) @ cond flavor:widgets` (Qt's form layout draws labels, `form.field_label`, beside fields, the nested widgets in `context form.row`) | rule |
+| K1.210 | `form.values.label_alignment (its horizontal member, `SH_FormLayoutLabelAlignment`), form.values.field_growth (`SH_FormLayoutFieldGrowthPolicy`), form.values.contents_alignment (the form's own left and top alignment, `SH_FormLayoutFormAlignment`) @ cond flavor:widgets` (Qt's `QFormLayout` as Breeze styles it, `breezestyle.cpp:948-953`) | rule |
+| K1.210 | `form.values.collapse (absent: the rows never wrap, `SH_FormLayoutWrapPolicy` `DontWrapRows`, `breezestyle.cpp:954-955`); form.{group_title,group_description,row_edit_icon} (absent = true) @ cond flavor:widgets` (Qt's form layout draws labels, each row's `form.field_label`, beside fields, the nested widgets in `context form.row`) | rule |
 | K1.211 | `group_box.values.title_margin, group_box.title.text, group_box.body.padding (the space the title takes)` | field |
 | K1.220 | `dialog.values.action_layout (row_order: KdeLayout's roles, Help and Reset leading, the stretch, then the rest)` | field |
 | K1.221 | `dialog.values.button_icons` | field |
@@ -335,13 +378,21 @@ rationale, each decided in the core's additions register (S22).
 | K1.222 | `dialog.header.stroke @ !{@has_toolbar} (top separator)` | rule |
 | K1.223 | - | out (R1.1) |
 | K1.224† | `dialog.icon.glyph (ThemeIcon), dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size) @ variants {alert,warning} / variants {alert,info} / variants {alert,error} / variants {alert,@question}` | rule |
-| K1.224† | `dialog.message.text; dialog.values.details_min_lines` | field |
+| K1.224† | `dialog.message.text; dialog.values.message_wrap.details_min_lines` | field |
 | K1.224† | `checkbox @ context dialog (the "don't ask again" check box)` | rule |
-| K1.230 | `spinner.icon.glyph (ThemeIcon process-working)` | field |
+| K1.230 | `spinner.icon.glyph (ThemeIcon view-refresh)` (`kwidgetsaddons@6.31.0 src/kbusyindicatorwidget.cpp:34`; under `flavor:kirigami` qqc2-desktop-style's BusyIndicator rotates `process-working-symbolic`, Q1.119's rule; ADD-A125) | field |
 | K1.230 | `spinner.values.loop (rotation and its period)` | field |
+| K1.230 | `spinner.indicator (absent = true) @ not_context any pull_to_refresh` (the busy indicator the rotating icon on both flavours, no arc or spokes, K1.230 and Q1.119, the catalogue's `may_be_absent`; ADD-A125) | rule |
 | K1.240 | `combo_box.body.fill, combo_box.body.stroke @ variant editable / variant editable {hover} / variant editable {focused}` | rule |
-| K1.240 | `combo_box.arrow.glyph.fill @ variant editable / variant editable context combo_box.arrow_area {hover}` (the hover colour only while the pointer is over the arrow sub-control, `SC_ComboBoxArrow`) | rule |
-| K1.240 | `combo_box.arrow_area.min_width @ variant editable; combo_box.arrow_area (absent = true) @ !variant editable` (the arrow sub-control as an element, its drawing fields absent) | rule |
+| K1.240 | `combo_box.arrow.glyph.fill @ variant editable / {hover} variant editable` (the hover colour only while the pointer is over the arrow sub-control, `SC_ComboBoxArrow`: the arrow area's own hover, the arrow belonging to its element, ADD-A146) | rule |
+| K1.240 | `combo_box.arrow_area.{min_width,max_height,margin} @ variant editable; combo_box.arrow_area (absent = true) @ !variant editable` (the arrow sub-control as an element, its drawing fields absent: the `SC_ComboBoxArrow` square, `MenuButton_IndicatorWidth` on both axes, inside `Frame_FrameWidth`, `breeze@6.8.2 kstyle/breezestyle.cpp:2990-2999`, `kstyle/breezemetrics.h:41`, `:84`, so its width and greatest height 20 and its margin 2 (`Frame_FrameWidth`); ADD-A127) | rule |
+| K1.240 | `combo_box.body.{padding,min_height}; combo_box.label.padding; combo_box.icon.margin; combo_box.arrow.margin; combo_box.values.{icon_text_gap,label_arrow_gap,content_width,content_slack,input_placement}` (the content row, the catalogue: the edit field inset by `ComboBox_FrameWidth` at the start, top and bottom, `breeze@6.8.2 kstyle/breezestyle.cpp:3002-3013`, so the padding's start, top and bottom 6, its end 2, the arrow's square inside `Frame_FrameWidth`, `:2990-2999`; the text one pixel inside the field, `:5826-5832`, and Qt's 2 on the content's height, `qtbase@6.12.0 src/widgets/widgets/qcombobox.cpp:632-633`, so the label's padding 1 on every side; the glyph `ArrowSize` centred in the square, `kstyle/breezehelper.cpp:1511-1567`, `kstyle/breezemetrics.h:37`, so the arrow's margin 5 on every side; the field ending 2 into the square, the gap −2; the icon's rect `iconSize + 4` with the pixmap centred, `:5812-5818`, and Qt's `iconSize + 2` height, `qcombobox.cpp:634-635`, so the icon's margin 2 at the start and end and, the icon centred on the body's box as the field's even frame centres it, 7 at the top and bottom, Qt's 1 and the frame's 6, the field moved by the rect, `:5821-5823`, `icon_text_gap` 0; `body.min_height` the sum of `MenuButton_IndicatorWidth` and twice `ComboBox_FrameWidth`, the content at least `MenuButton_IndicatorWidth` tall and the frame width round it, `:3351-3375`; the width the widest item's, each with `iconSize + 4` where it has an icon, seven advances of `x` with none, at least the placeholder, `qcombobox.cpp:575-643`: `Widest` with no floor, `empty` seven `x`, no `or_shown`, each item's row in its own form, so an item with an icon takes the `with_icon` row and its slack; Breeze adding 38, `:3366-3373`, of which the drawn row holds 28, the slack 10, the end `ComboBox_FrameWidth` and `Button_ItemSpacing`; the text cut by the clip, not elided; below the font's height plus 12 Breeze drops the field's frame inset, `:3008`, which its own hint never reaches; `input_placement` `Row`, the line edit at the edit field, `qcombobox.cpp:1530-1546`; ADD-A127) | field |
+| K1.240 | `combo_box.label.padding, combo_box.values.content_slack @ variant with_icon` (the clip set at the untranslated field, `breeze@6.8.2 kstyle/breezestyle.cpp:5800`, so the text's end pixel lies past it: the label's end padding 0; Qt adding `iconSize + 4`, `qtbase@6.12.0 src/widgets/widgets/qcombobox.cpp:601`, the slack 11; ADD-A127) | rule |
+| K1.240 | `combo_box.label (absent = true) @ variant editable; input.body.padding @ context any combo_box; input.body.{fill,stroke} (absent) @ context any combo_box; combo_box.values.content_slack @ variant editable` (stated after the `with_icon` rule, as it holds with an icon too; QWidgets: no label text on the editable combo, `breeze@6.8.2 kstyle/breezestyle.cpp:5768-5770`; the frameless line edit, `qtbase@6.12.0 src/widgets/widgets/qcombobox.cpp:2132`, at the edit field and past the icon, `:1530-1546`, its text 2 inside it, `qlineedit.cpp:1918-1919`, `qlineedit_p.cpp:36`, centred on the cross axis, `qlineedit.cpp:1907-1916`, so its padding 2 at the start and end and 1 at the top and bottom, Qt's content height `fontHeight + 2`, `qcombobox.cpp:632-633`, inside Breeze's frame, `breezestyle.cpp:3366-3370`, the centred text not moving; the icon QCommonStyle's same rect, `src/widgets/styles/qcommonstyle.cpp:2189-2210`; Breeze's hint unchanged, the line edit's own unread, so the slack 8, with or without the icon; ADD-A127) | rule |
+| K1.240 | `combo_box.body.padding, combo_box.arrow_area.margin, combo_box.values.{label_arrow_gap,content_slack} @ variants {editable,flat}` (the frameless editable combo, `flat` only with `editable`, `breeze@6.8.2 kstyle/breezestyle.cpp:2979`: neither the arrow's square nor the field inset, `:2992-2994`, `:3008`, so the padding 0 at the start and end and 6 at the top and bottom as before, the full-height field's text centred alike and the hint's height Breeze's frame round Qt's content, `:3366-3370`, the field meeting the square, the gap 0, the area's margin 0, the hint unchanged, the slack 14, with or without the icon; ADD-A127) | rule |
+| K1.240 | `combo_box.placeholder.text` (QComboBox's `placeholderText` in the label's place with the palette's placeholder colour while no item is current, `qtbase@6.12.0 src/widgets/widgets/qcombobox.cpp:3356-3359`; its width measured beside the items, `:628-629`; ADD-A127) | field |
+| K1.240 | `combo_box.values.icon_clip_inset; combo_box.values.icon_clip_inset @ variants {editable,flat}` (the icon drawn under a clip at the edit field, Breeze's own non-editable, `breeze@6.8.2 kstyle/breezestyle.cpp:5800`, and editable QCommonStyle's, Breeze returning early, `:5768-5770`, `qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:2193`; the field the box less the frame width 6 at the top and bottom, `breezestyle.cpp:3002-3013`, whatever the body's padding, so 6, and 0 for the frameless editable field, `:3008`; ADD-A127) | rule |
+| K1.240 | `combo_box.placeholder (absent = true) @ variant editable` (QComboBox draws no label text on the editable combo, `qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:2212`, `breeze@6.8.2 kstyle/breezestyle.cpp:5768-5770`; ADD-A127) | rule |
 | K1.240 | `combo_box.arrow.transitions (Glyph: the hover fade)` | field |
 | K1.241 | `combo_box.body.fill, combo_box.body.stroke, combo_box.body.shadow @ variant flat` | rule |
 | K1.242 | `combo_box.body.fill @ {open} / {pressed}` | rule |
@@ -349,9 +400,9 @@ rationale, each decided in the core's additions register (S22).
 | K1.244 | `combo_box.body.shadow @ !variant flat !variant editable` | rule |
 | K1.245 | `menu.body.fill, menu.body.stroke, menu.body.corners, menu.body.shadow @ context combo_box` | rule |
 | K1.245 | `menu.body.corners @ {placed_below} context combo_box / {placed_above} context combo_box (the menu's own flags: the seamless edge, K1.64)` | rule |
-| K1.245 | `menu.item.fill @ {hover} context combo_box / {focused} context combo_box` (Breeze's `State_Selected` on the popup's current item, which follows the pointer and the keys: `hover` or `focused`, S7.2; the chosen value's mark is `menu.check_indicator`) | rule |
+| K1.245 | `menu.item.fill @ {hover} context combo_box / {focused} context combo_box` (Breeze's `State_Selected` on the popup's current item, which follows the pointer and the keys: `hover` or `focused`, S7.2; the chosen value has no mark, K1.69) | rule |
 | K1.245 | `combo_box.values.popup_placement (QtComboBox)` | placement |
-| K1.246 | `combo_box.arrow.glyph.fill @ {disabled} / {hover} / {focused}` | rule |
+| K1.246 | `combo_box.arrow.glyph.fill @ {disabled} / context combo_box.body {hover} / context combo_box.body {focused}` (the combo box's hover and focus, read by context, ADD-A146) | rule |
 | K1.247 | `combo_box.body.stroke, combo_box.arrow.glyph.fill @ variant warning` | rule |
 | K1.250 | `expander.arrow.glyph.fill @ context expander.header {hover}` (the title's hover) | rule |
 | K1.251 | `expander.values.presentations (@expand, @collapse: the content's height; duration and timing the source's)` | field |
@@ -360,10 +411,10 @@ rationale, each decided in the core's additions register (S22).
 | K1.260† | `link.text.text.decoration (Absent) @ variants {@url_label,@float}; link.text.text.decoration @ {hover} variants {@url_label,@float}` | rule |
 | K1.260† | `link.icon.icon @ {hover} variant @url_label (the alternate pixmap)` | rule |
 | K1.260† | `link.body.cursor @ variant @url_label` | rule |
-| K1.270 | `token.text.keyed.heading_1` | token |
-| K1.270 | `token.text.keyed.heading_2` | token |
-| K1.270 | `token.text.keyed.heading_3` | token |
-| K1.270 | `token.text.keyed.heading_4` | token |
+| K1.270 | `component.title_widget.title.text @ variant @level_1` (KTitleWidget's level 1: its size `= mul(round_pt(token.text.roles.body.font.size), 1.35)`, the level's factor times the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:36-54`, S2.2's `round_pt()`, ADD-A131; the weight the label's inherited font's; ledger queue #130, ADD-A125; Kirigami's `Heading` levels the row names too are Q1.3's `token.text.keyed.heading_<n>`) | component |
+| K1.270 | `component.title_widget.title.text @ variant @level_2` (KTitleWidget's level 2: its size `= mul(round_pt(token.text.roles.body.font.size), 1.20)`, the level's factor times the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:36-54`, S2.2's `round_pt()`, ADD-A131; the weight the label's inherited font's; ledger queue #130, ADD-A125; Kirigami's `Heading` levels the row names too are Q1.3's `token.text.keyed.heading_<n>`) | component |
+| K1.270 | `component.title_widget.title.text @ variant @level_3` (KTitleWidget's level 3: its size `= mul(round_pt(token.text.roles.body.font.size), 1.15)`, the level's factor times the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:36-54`, S2.2's `round_pt()`, ADD-A131; the weight the label's inherited font's; ledger queue #130, ADD-A125; Kirigami's `Heading` levels the row names too are Q1.3's `token.text.keyed.heading_<n>`) | component |
+| K1.270 | `component.title_widget.title.text @ variant @level_4` (KTitleWidget's level 4: its size `= mul(round_pt(token.text.roles.body.font.size), 1.10)`, the level's factor times the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:36-54`, S2.2's `round_pt()`, ADD-A131; the weight the label's inherited font's; ledger queue #130, ADD-A125; Kirigami's `Heading` levels the row names too are Q1.3's `token.text.keyed.heading_<n>`) | component |
 | K1.271 | `token.text.keyed.smallest_readable` | token |
 | K1.271 | `reader:kde:kdeglobals [General] smallestReadableFont (family, style, size)` | reader |
 | K1.272 | `token.text.keyed.flat_group_title` | token |
@@ -394,24 +445,26 @@ rationale, each decided in the core's additions register (S22).
 | Q1.4 | `token.text.keyed.heading_4_secondary` | token |
 | Q1.4 | `token.text.keyed.heading_5_primary` | token |
 | Q1.4 | `token.text.keyed.heading_5_secondary` | token |
-| Q1.5 | `dialog.title.text (= token.text.keyed.heading_1) @ cond flavor:kirigami` | rule |
-| Q1.5 | `toolbar.title.text (= token.text.keyed.heading_1) @ cond flavor:kirigami (the page title)` | rule |
-| Q1.5 | `card.banner_title.text (= token.text.keyed.heading_1) @ cond flavor:kirigami` | rule |
-| Q1.5 | `sheet.title.text, list.inline_header.text (= token.text.keyed.heading_2) @ cond flavor:kirigami` | rule |
-| Q1.5 | `form.section_title.text (= token.text.keyed.heading_3), form.field_label.text (= token.text.keyed.heading_5) @ cond flavor:kirigami` | rule |
-| Q1.5 | `list.section_header.text (= token.text.keyed.heading_4) @ context sidebar.pane cond flavor:kirigami (the global drawer's sections)` | rule |
+| Q1.5 | `dialog.title.text (leaf by leaf: token.text.keyed.heading_1) @ cond flavor:kirigami` | rule |
+| Q1.5 | `toolbar.title.text (leaf by leaf: token.text.keyed.heading_1) @ cond flavor:kirigami (the page title)` | rule |
+| Q1.5 | `card.banner_title.text (leaf by leaf: token.text.keyed.heading_1) @ cond flavor:kirigami` | rule |
+| Q1.5 | `sheet.title.text, list.inline_header.text (leaf by leaf: token.text.keyed.heading_2) @ cond flavor:kirigami` | rule |
+| Q1.5 | `form.group_title.text (the FormLayout's section title; leaf by leaf: token.text.keyed.heading_3), form.field_label.text (leaf by leaf: token.text.keyed.heading_5) @ cond flavor:kirigami` | rule |
+| Q1.5 | `list.section_header.text (leaf by leaf: token.text.keyed.heading_4) @ context sidebar.pane cond flavor:kirigami (the global drawer's sections)` | rule |
 | Q1.5 | `list.section_header.text (heading_5 with its weight restated) @ cond flavor:kirigami` | rule |
 | Q1.5 | `token.text.roles.title1, token.text.roles.title2, token.text.roles.title3, token.text.roles.subheadline (= token.text.keyed.heading_<n>); token.text.roles.headline (= token.text.roles.title3, the slot owning heading_3, S4.4); token.text.roles.display_large, token.text.roles.display_medium, token.text.roles.display_small, token.text.roles.large_title (= token.text.roles.title1, the slot owning heading_1, S4.4)` | token |
 | Q1.6 | `window.values.default_size (grid units)` | field |
 | Q1.6 | `window.values.default_size @ cond mobile_form_factor` | rule |
 | Q1.6 | `window.values.default_size ("absent") @ cond flavor:widgets` (a Qt Widgets window states no default size; Kirigami's window does) | rule |
 | Q1.7 | `token.size_classes (Kirigami's wideScreen width)` | token |
-| Q1.8 | `button.body.stroke (the highlighted pen) @ {focused} cond flavor:kirigami / variant @highlighted cond flavor:kirigami` | rule |
+| Q1.8 | `button.body.stroke (the highlighted pen) @ {focus_visible} cond flavor:kirigami` (QML passes `hasFocus` as active focus or `highlighted`, but Breeze draws the pen only with `State_KeyboardFocusChange`, `breezestyle.cpp:4518`, which the style item sets only after a keyboard focus reason, `kquickstyleitem.cpp:884-890`) | rule |
+| Q1.8 | `button.body.stroke (the highlighted pen) @ {@keyboard_focus_change} variant @highlighted cond flavor:kirigami` (a `@highlighted` button whose last focus change, in or out, was by keyboard keeps the pen unfocused: the keyed flag, ADD-A122) | rule |
 | Q1.8 | `button.icon.icon.fill (= the label's text colour) @ cond flavor:kirigami` | rule |
 | Q1.8 | `button.body.fill, button.body.stroke @ variant flat cond flavor:kirigami / {checked} cond flavor:kirigami / {default} cond flavor:kirigami` | rule |
 | Q1.8 | `button.menu_indicator.glyph @ variant menu cond flavor:kirigami` | rule |
-| Q1.9 | `button.body.bindings (surface Button) @ variant tool cond flavor:kirigami / (surface Window) @ variants {tool,flat} cond flavor:kirigami` | rule |
-| Q1.9 | `button.body.stroke (the highlighted pen) @ {focus_visible} variant tool cond flavor:kirigami / {pressed} variant tool !variant flat cond flavor:kirigami / variants {tool,@highlighted} cond flavor:kirigami` | rule |
+| Q1.9 | `button.body.bindings (surface Button) @ variant tool !variant flat cond flavor:kirigami` (a raised ToolButton binds the Button set; a flat one binds nothing and inherits its parent's theme, `ToolButton.qml:18-19`, `platformtheme.cpp:1060-1090`; disabled, Kirigami stops inheriting but keeps the set it had, `kirigami@6.31.0 src/platform/platformtheme.cpp:1063-1065`, `:1105-1110`, so a flat one's disabled colours are `surface.disabled.*`, a Header-set toolbar's in a toolbar, never `role.window.disabled.*`: ADD-A122) | rule |
+| Q1.9 | `button.body.stroke (the highlighted pen) @ {focus_visible} variant tool cond flavor:kirigami / {pressed} variant tool !variant flat cond flavor:kirigami` (`breezestyle.cpp:4577`) | rule |
+| Q1.9 | `button.body.stroke (the highlighted pen) @ {@keyboard_focus_change} variants {tool,@highlighted} cond flavor:kirigami` (`ToolButton.qml:60` passes `highlighted` as focus, and Breeze's pen needs `State_KeyboardFocusChange`, as Q1.8's: ADD-A122) | rule |
 | Q1.9 | `button.values.label_position @ variant tool cond flavor:kirigami (the tool button style: IconOnly, TextBesideIcon, TextUnderIcon)` | rule |
 | Q1.10 | `button.label.text.mnemonic_decoration @ cond mnemonics_visible` | rule |
 | Q1.10 | `cond mnemonics_visible (ADD-A12)` | condition |
@@ -419,13 +472,17 @@ rationale, each decided in the core's additions register (S22).
 | Q1.12 | `input.values.default_width` | field |
 | Q1.12 | `text_area.values.default_width, text_area.values.default_height` | field |
 | Q1.13 | `text_area.misspelling.text.decoration.paint @ cond flavor:kirigami (= role.view.negative)` | rule |
-| Q1.14 | `input.caret.min_width @ cond tablet_mode` | rule |
-| Q1.14 | `input.caret.fill @ cond tablet_mode` | rule |
-| Q1.14 | `input.selection_handle.glyph, input.selection_handle.min_width, input.selection_handle.min_height, input.selection_handle.corners (Full), input.selection_handle.fill (= kirigami_tint, ADD-A52) @ cond tablet_mode` | rule |
+| Q1.13 | `text_area.misspelling.text.fill @ cond flavor:kirigami (= role.view.negative: Sonnet's highlighter recolours the word too, `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:105`, its colour `qqc2-desktop-style@6.31.0 org.kde.desktop/TextArea.qml:94`; ADD-A130)` | rule |
+| Q1.13 | `text_area.misspelling.fill @ {@holds_caret} cond flavor:kirigami (= with_alpha(role.view.negative, 0.1): Sonnet's background on the word holding the caret, `spellcheckhighlighter.cpp:114-117`, `:380-381`; ADD-A130)` | rule |
+| Q1.13 | `text_area.misspelling {@holds_caret}` (the connector-set flag, Sonnet's word against the caret's document position, or the selection's end while text is selected, `spellcheckhighlighter.cpp:370-381`, `:610-624`; ADD-A130) | flag |
+| Q1.13 | `text_area.misspelling.text.decoration.{thickness,offset} @ cond flavor:kirigami` (Qt Quick's form: the position rounded to the nearest pixel, the thickness unrounded, a wavy line's stroke capped; register U753's, S2.8, ADD-A130, ADD-A147) | rule |
+| Q1.14 | `input.caret.min_width @ cond tablet_mode cond flavor:kirigami` (qqc2-desktop-style's mobile cursor, `org.kde.desktop/TextField.qml:50`, `private/MobileCursor.qml:23`) | rule |
+| Q1.14 | `input.caret.fill @ cond tablet_mode cond flavor:kirigami` | rule |
+| Q1.14 | `input.selection_handle.glyph, input.selection_handle.min_width, input.selection_handle.min_height, input.selection_handle.corners (Full), input.selection_handle.fill (= kirigami_tint, ADD-A52) @ cond tablet_mode cond flavor:kirigami` | rule |
 | Q1.15 | `input.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100), input.icon.icon.fill (= surface.disabled.foreground), input.icon.padding @ variant leading context any search_field cond flavor:kirigami` | rule |
 | Q1.15 | `input.body.padding (the text inset) @ context any search_field cond flavor:kirigami` | rule |
 | Q1.15 | `button.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100) @ variant clear_field context any search_field cond flavor:kirigami` | rule |
-| Q1.16 | `menu.body.fill, menu.body.stroke, menu.body.corners, menu.body.shadow, menu.body.padding, menu.body.bindings (Surface(View)) @ context autocomplete context any search_field cond flavor:kirigami` | rule |
+| Q1.16 | `menu.body.fill, menu.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast): qqc2's own QML, SearchField.qml:183; the field's own frame is Breeze's style item, :117), menu.body.corners, menu.body.shadow, menu.body.padding, menu.body.bindings (Surface(View)) @ context autocomplete context any search_field cond flavor:kirigami` | rule |
 | Q1.16 | `autocomplete.values.placement (its gap below the field) @ context any search_field cond flavor:kirigami` | rule |
 | Q1.16 | `menu.item.padding @ context autocomplete context any search_field cond flavor:kirigami` | rule |
 | Q1.17 | `input.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100), input.icon.icon.fill (= the placeholder's colour) @ variant leading context any search_field cond flavor:kirigami` | rule |
@@ -463,7 +520,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.36 | `tooltip.values.show_on_press, tooltip.values.show_delay (= token.behavior.long_press) @ cond tablet_mode cond flavor:kirigami` | rule |
 | Q1.37 | `tooltip.body.bindings (Surface(Tooltip))` | field |
 | Q1.37 | `tooltip.body.bindings (Surface(Complementary)) @ context any (surface Complementary) (ContextMatch.surface, ADD-A68)` | rule |
-| Q1.38 | `tooltip.body.stroke (mix of background and text by frame contrast)` | field |
+| Q1.38 | `tooltip.body.stroke (Breeze's frame colour role.tooltip.border, Q3.15, breeze@6.8.2 kstyle/breezestyle.cpp:4738; under cond flavor:kirigami = kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), qqc2's ToolTip.qml:115, Q3.15)` | field |
 | Q1.39 | `scrollbar.track.padding` | field |
 | Q1.39 | `scrollbar.values.trough_click` | field |
 | Q1.40 | `scrollbar.thumb.transitions, scrollbar.track.transitions (Fill, Opacity: the hover cross-fade; = token.motion.durations.long) @ cond flavor:kirigami` | rule |
@@ -475,7 +532,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.44 | `slider.thumb.min_width, slider.thumb.min_height @ cond flavor:kirigami` | rule |
 | Q1.44 | `slider.tick @ variant ticks_before / variant ticks_after (only where the tick step is set) cond flavor:kirigami` | rule |
 | Q1.45 | `slider.body.padding, slider.thumb.min_width, slider.thumb.min_height, slider.thumb.corners, slider.thumb.fill, slider.track.min_height, slider.track.fill, slider.value_fill.fill @ variant range cond flavor:kirigami` | rule |
-| Q1.46 | `slider.thumb.stroke @ variant range cond flavor:kirigami` | rule |
+| Q1.46 | `slider.thumb.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), RangeSlider.qml:32, :52) @ variant range cond flavor:kirigami` | rule |
 | Q1.46 | `slider.thumb.stroke @ {focused} variant range cond flavor:kirigami` | rule |
 | Q1.47 | `slider.thumb.shadow @ variant range cond flavor:kirigami` | rule |
 | Q1.48 | `progress_bar.track @ cond flavor:kirigami; progress_bar.indicator.fill @ {indeterminate} cond flavor:kirigami (Breeze's busy stripes, K1.110)` | rule |
@@ -512,13 +569,13 @@ rationale, each decided in the core's additions register (S22).
 | Q1.62 | `list.row.text.fill (= alpha(base, <fraction>): the label only, `GlobalDrawerActionItem.qml:74-82`) @ {disabled} context sidebar.pane[@global]` | rule |
 | Q1.62 | `list.disclosure.glyph (size = token.icons.sizes.keyed.small.size; fill at reduced alpha) @ context sidebar.pane[@global]` | rule |
 | Q1.62 | `list.row.text.fill @ {selected} context sidebar.pane[@global] / {checked} context sidebar.pane[@global]` | rule |
-| Q1.63 | `sidebar.header.text (= token.text.keyed.heading_1), sidebar.header.icon, sidebar.header.padding, sidebar.values.header_icon_gap @ variant @global` (the title icon to the title: largeSpacing) | rule |
-| Q1.63 | `list.section_header.text (= token.text.keyed.heading_4), list.section_header.icon.size (= token.icons.sizes.keyed.small_medium.size) @ context sidebar.pane[@global]` | rule |
+| Q1.63 | `sidebar.header.text (leaf by leaf: token.text.keyed.heading_1), sidebar.header.icon, sidebar.header.padding, sidebar.values.header_icon_gap @ variant @global` (the title icon to the title: largeSpacing) | rule |
+| Q1.63 | `list.section_header.text (leaf by leaf: token.text.keyed.heading_4), list.section_header.icon.size (= token.icons.sizes.keyed.small_medium.size) @ context sidebar.pane[@global]` | rule |
 | Q1.64 | `sidebar.values.presentations (@submenu_push, @submenu_pop: Slide and Fade together, = token.motion.durations.very_long; the content's Fade, = token.motion.durations.long; each its timing) @ variant @global` | rule |
 | Q1.65 | `tooltip @ context sidebar.pane[compact] cond flavor:kirigami (the "Open Sidebar" tooltip on the collapsed rail)` | rule |
 | Q1.65 | `tooltip.values.show_delay @ context sidebar.pane[compact] cond flavor:kirigami (toolTipDelay)` | rule |
 | Q1.66 | `sidebar.values.width @ variant @context` | rule |
-| Q1.66 | `sidebar.header.min_height (= the global toolbar's height), sidebar.header.padding, sidebar.header.text (= token.text.keyed.heading_1) @ variant @context` | rule |
+| Q1.66 | `sidebar.header.min_height (= the global toolbar's height), sidebar.header.padding, sidebar.header.text (leaf by leaf: token.text.keyed.heading_1) @ variant @context` | rule |
 | Q1.66 | `list.row.padding @ context sidebar.pane[@context]` | rule |
 | Q1.66 | `list.row.text.font.size (= mul(base, <factor>)) @ {@expandable} context sidebar.pane[@context]` | rule |
 | Q1.66 | `list.row.opacity @ {disabled} context sidebar.pane[@context]` | rule |
@@ -531,7 +588,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.70 | `toolbar.separator.stroke, toolbar.separator.min_height @ cond flavor:kirigami` | rule |
 | Q1.71 | `toolbar.bar.bindings (Surface(Header)) @ variant @page_header` | rule |
 | Q1.71 | `toolbar.bar.stroke (bottom edge) @ variant @page_header` | rule |
-| Q1.72 | `toolbar.title.text (= token.text.keyed.heading_1, elision End), toolbar.title.padding @ variant @global` | rule |
+| Q1.72 | `toolbar.title.text (leaf by leaf: token.text.keyed.heading_1, elision End), toolbar.title.padding @ variant @global` | rule |
 | Q1.72 | `toolbar.bar.padding, toolbar.bar.min_height, toolbar.values.item_gap @ variant @global` | rule |
 | Q1.73 | `toolbar.separator.stroke, toolbar.separator.bindings (Surface(Header)) @ variant @global {scrolled} (before the title while the columns scroll)` | rule |
 | Q1.73 | `button.icon.glyph (ThemeIcon) @ variants {tool,icon_only,previous} context toolbar.bar[@global] / variants {tool,icon_only,next} context toolbar.bar[@global]` | rule |
@@ -566,7 +623,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.85 | `list.values.indent_per_level, list.values.disclosure_gap, list.row.padding @ cond flavor:kirigami` | rule |
 | Q1.86 | `list.header_section.fill, list.header_section.text, list.sort_indicator.glyph @ cond flavor:kirigami` | rule |
 | Q1.86 | `list.values.header_fills_trailing` | field |
-| Q1.87 | `list.secondary_text.text (font = token.text.keyed.smallest_readable; fill = mix of the title's fill and the background) @ cond flavor:kirigami` | rule |
+| Q1.87 | `list.secondary_text.text (leaf by leaf: token.text.keyed.smallest_readable; fill = kirigami_lerp(widget.row.text.fill, surface.background, 0.25), TitleSubtitle.qml:69-71) @ cond flavor:kirigami` | rule |
 | Q1.87 | `list.secondary_text.text.fill @ {selected} cond flavor:kirigami` | rule |
 | Q1.87 | `list.leading_icon.icon.size (= token.icons.sizes.keyed.medium.size) @ variant with_subtitle cond flavor:kirigami / (= token.icons.sizes.keyed.small_medium.size) @ !variant with_subtitle cond flavor:kirigami` | rule |
 | Q1.87 | `list.values.leading_gap @ cond flavor:kirigami` (mediumSpacing) | rule |
@@ -587,8 +644,8 @@ rationale, each decided in the core's additions register (S22).
 | Q1.93 | `layout.values.column_min_width @ variant @column_view` | rule |
 | Q1.94 | `layout.values.column_width @ variant @column_view` | rule |
 | Q1.94 | `layout.values.presentations (@column_scroll: = token.motion.durations.very_long, its timing) @ variant @column_view` | rule |
-| Q1.95 | `separator.line.stroke (Normal: mix by token.params.color.frame_contrast) @ cond flavor:kirigami` | rule |
-| Q1.95 | `separator.line.stroke (Light: mix by half the frame contrast) @ variant @light cond flavor:kirigami` | rule |
+| Q1.95 | `separator.line.stroke (Normal: = kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)) @ cond flavor:kirigami` (`Separator.qml:65-69`) | rule |
+| Q1.95 | `separator.line.stroke (Light: = kirigami_lerp(surface.background, surface.foreground, div(token.params.color.frame_contrast, 2)), Kirigami's lightFrameContrast, platformtheme.cpp:762-767) @ variant @light cond flavor:kirigami` | rule |
 | Q1.96 | `separator.line.stroke (= the bound surface's roles)` | field |
 | Q1.96 | `separator.line.bindings (Surface(Header)) @ context any toolbar / context any sidebar / context splitter.divider[@column_view]` | rule |
 | Q1.97 | `token.params.layout.small_spacing, token.params.layout.medium_spacing, token.params.layout.large_spacing, token.params.layout.grid_unit (ADD-A44)` | token |
@@ -596,10 +653,10 @@ rationale, each decided in the core's additions register (S22).
 | Q1.98 | `layout.values.container_margin @ variant @page cond flavor:kirigami` (qqc2's Page: no padding) | rule |
 | Q1.98 | `layout.values.container_margin @ variants {@page,@kirigami_page} cond flavor:kirigami` (Kirigami's Page: a grid unit, `= token.params.layout.grid_unit`) | rule |
 | Q1.98 | `layout.values.container_margin @ cond flavor:kirigami` (a plain qqc2 Control's padding, from the style's `layout*margin` pixel metric) | rule |
-| Q1.99 | `switch.values.track_inset (= floor(mul(token.params.layout.grid_unit, <fraction>)))` | field |
+| Q1.99 | `switch.track.min_height (= sub(token.params.layout.grid_unit, mul(2, floor(mul(token.params.layout.grid_unit, <fraction>)))))` (the track shorter than the handle by its top and bottom margins, `qqc2-desktop-style@6.31.0 org.kde.desktop/private/SwitchIndicator.qml:41-46`; the handle the full height and centred across the track, flush along it, `:68`, so `switch.track.padding` zero; ADD-A146) | field |
 | Q1.99 | `switch.track.min_width, switch.track.min_height, switch.thumb.min_height` | field |
 | Q1.100 | `switch.track_fill.fill (from the track's start to the thumb's trailing edge, under the thumb when unchecked)` | field |
-| Q1.101 | `switch.thumb.stroke (= mix by token.params.color.frame_contrast)` | field |
+| Q1.101 | `switch.thumb.stroke (= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast): the indicator's own Button set)` (`private/SwitchIndicator.qml:21-22`, `:30`) | field |
 | Q1.101 | `switch.thumb.stroke @ {hover} / {focus_visible}` | rule |
 | Q1.101 | `switch.track.stroke @ {checked}` | rule |
 | Q1.101 | `switch.track.stroke (the thumb's stroke) @ !{checked}` | rule |
@@ -611,7 +668,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.103 | `switch.label.opacity @ {disabled}` | rule |
 | Q1.104 | `dialog.scrim.fill @ cond flavor:kirigami` | rule |
 | Q1.104 | `dialog.values.presentations (Appear, Disappear: part scrim, Fade; ADD-B09)` | field |
-| Q1.105 | `dialog.values.presentations (Appear, Disappear: Fade; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
+| Q1.105 | `dialog.values.presentations (Appear, Disappear: Fade; = token.motion.durations.long, = token.motion.timings.in_out_quad, `qqc2-desktop-style@6.31.0 org.kde.desktop/Dialog.qml:53`, `:63`) @ cond flavor:kirigami` | rule |
 | Q1.106 | `dialog.body.shadow @ cond flavor:kirigami` | rule |
 | Q1.107 | `dialog.body.corners, dialog.body.stroke (Absent), dialog.{header,title,subtitle} (absent = true) @ variant separate_window cond flavor:kirigami` (the title nested in the header has its own rule: Nesting) | rule |
 | Q1.108 | `dialog.body.padding @ cond flavor:kirigami` | rule |
@@ -622,14 +679,14 @@ rationale, each decided in the core's additions register (S22).
 | Q1.109 | `dialog.values.action_layout (its alignment) @ cond flavor:kirigami` | rule |
 | Q1.110 | `dialog.values.standard_button_icons` | field |
 | Q1.110 | `dialog.values.button_icons @ cond flavor:kirigami` | rule |
-| Q1.111 | `dialog.values.presentations (Appear: Fade with a Translate rise, ADD-B10, ADD-A25) @ cond flavor:kirigami` | rule |
-| Q1.112 | `dialog.scrim.fill, dialog.body.shadow, dialog.body.stroke (= mix by token.params.color.frame_contrast), dialog.body.bindings (Surface(View)) @ cond flavor:kirigami` | rule |
-| Q1.112 | `dialog.scrim.transitions (Opacity; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
+| Q1.111 | `dialog.values.presentations (Appear, Disappear: Fade, and a Translate of mul(token.params.layout.grid_unit, 2) downward at zero opacity, rising in and sinking out with it; = token.motion.durations.long, = token.motion.timings.in_out_quad, `kirigami@6.31.0 src/dialogs/Dialog.qml:307`, `:310`, as Q1.105's; ADD-B10, ADD-A25) @ cond flavor:kirigami !variant @ka_dialog !variant @search_dialog` (Kirigami's own `Dialog`: its `y` bound to its opacity, `kirigami@6.31.0 src/dialogs/Dialog.qml:303`, the opacity animated in and out, `:306-311`; `SearchDialog.qml:64`, `:168`, a centred `QQC2.Dialog`, and kirigami-addons' `@ka_dialog` dialogs fade with no rise by Q1.105: `DatePopup.qml:16`, `TimePopup.qml:18` and `FormCardDialog.qml:51` are `QQC2.Dialog`s, centred, `qqc2-desktop-style@6.31.0 org.kde.desktop/Dialog.qml:19`, `:48-65`, and `MessageDialog.qml:412-430` states the same fade, `kirigami-addons@1.15.0 src/`) | rule |
+| Q1.112 | `dialog.scrim.fill, dialog.body.shadow, dialog.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)), dialog.body.bindings (Surface(View)) @ cond flavor:kirigami` (the stroke: qqc2's `Dialog.qml:85`, Kirigami's `Dialog.qml:341`) | rule |
+| Q1.112 | `dialog.values.presentations (Appear, Disappear: a Fade step on scrim; = token.motion.durations.long, its timing) @ cond flavor:kirigami` (the scrim's fade is a presentation step, the scrim coming and going with the dialog; ADD-A146) | rule |
 | Q1.113 | `dialog.body.max_width, dialog.body.max_height (= sub(element.window_width, <margins>), sub(element.window_height, <margins>), ADD-A78) @ cond flavor:kirigami` | rule |
 | Q1.113 | `dialog.values.window_margin @ cond flavor:kirigami` | rule |
 | Q1.114 | `dialog.header.padding @ cond flavor:kirigami` | rule |
 | Q1.114 | `dialog.header.stroke @ {overflowing} cond flavor:kirigami` | rule |
-| Q1.114 | `dialog.title.text (= token.text.keyed.heading_1, elision End) @ cond flavor:kirigami` | rule |
+| Q1.114 | `dialog.title.text (leaf by leaf: token.text.keyed.heading_1, elision End) @ cond flavor:kirigami` | rule |
 | Q1.114 | `tooltip @ context dialog.title cond flavor:kirigami (the elided title's full text)` | rule |
 | Q1.114 | `button.icon.glyph (ThemeIcon) @ variant close context dialog.header cond flavor:kirigami / variant close {hover} context dialog.header cond flavor:kirigami (the other icon, while the button is hovered)` | rule |
 | Q1.115 | `dialog.action_area.padding, dialog.action_area.min_height (the empty footer's buffer) @ cond flavor:kirigami` | rule |
@@ -652,21 +709,23 @@ rationale, each decided in the core's additions register (S22).
 | Q1.122 | `combo_box.body.fill, combo_box.body.stroke, combo_box.arrow.glyph, combo_box.label.text @ cond flavor:kirigami (the same Breeze element)` | rule |
 | Q1.123 | `combo_box.body.bindings (Surface(Button))` | field |
 | Q1.123 | `combo_box.body.bindings (Surface(View)) @ variant editable` | rule |
-| Q1.124 | `combo_box.body.padding @ cond flavor:kirigami` | rule |
-| Q1.124 | `combo_box.body.padding (its trailing padding) @ variant editable cond flavor:kirigami` | rule |
-| Q1.124 | `combo_box.body.min_width (the content's minimum) @ cond flavor:kirigami` | rule |
+| Q1.124 | `combo_box.body.padding, combo_box.values.label_arrow_gap @ variant editable cond flavor:kirigami; input.body.padding @ context any combo_box cond flavor:kirigami` (qqc2's padding of 5 on every side and its editable end padding of 24, `qqc2-desktop-style@6.31.0 org.kde.desktop/ComboBox.qml:33-35`, place only the text field, its own padding 0, `:59-60`, the input's padding 0 at the start and end and 2 at the top and bottom so the row's height is the style item's, Breeze's frame round Qt's `fontHeight + 2`, `breeze@6.8.2 kstyle/breezestyle.cpp:3366-3370`, the text field centring its text, `qqc2-desktop-style@6.31.0 org.kde.desktop/ComboBox.qml:84`: outside `editable` the field is hidden, `ComboBox.qml:68`, and the Breeze style item draws the label, icon and arrow at the control's whole size, `ComboBox.qml:121-139`, `qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1830-1837`, so K1.240's rows hold there; editable the padding's start, top and bottom 5 and its end Breeze's frame 2, the 24 being the gap 2 to the arrow's square and the square, `breeze@6.8.2 kstyle/breezestyle.cpp:2990-2999`, the column counted once; ADD-A127) | rule |
+| Q1.124 | `combo_box.values.{content_width,content_slack} @ cond flavor:kirigami; combo_box.values.{content_width,content_slack} @ variant editable cond flavor:kirigami; combo_box.placeholder (absent = true) @ cond flavor:kirigami` (the style item sized over the widest item's text, at least 75, `qqc2-desktop-style@6.31.0 org.kde.desktop/ComboBox.qml:46-53`, `plugin/kquickstyleitem.cpp:1186-1191`, `Widest` at least 75, no `empty`, without `or_shown`, and with it under `variant editable` alone, where the text field's own width, `ComboBox.qml:22-23`, a row 29 wide beside its text, can pass the style item's (outside `editable` its 10 never does); a combo created with no items keeps the style item's content width 0, `plugin/kquickstyleitem.cpp:126`, as the floor not applying to the no-text row says (one emptied after holding items keeps 75, a history the model does not follow, R25.16); the slack 10, editable 9; Qt Quick's combo has no placeholder, `qtdeclarative@6.12.0 src/quicktemplates/qquickcombobox_p.h`; ADD-A127) | rule |
+| Q1.124 | `combo_box.values.content_slack @ variant with_icon cond flavor:kirigami / variants {editable,with_icon} cond flavor:kirigami; combo_box.icon.margin (top, bottom) @ variant with_icon cond flavor:kirigami; combo_box.icon.margin (start, end) @ variants {editable,with_icon} cond flavor:kirigami` (the style item adds `iconSize` without Qt's 4, `qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1186-1191`, so the slack 7; editable the text field still starts at the padding, `org.kde.desktop/ComboBox.qml:33-35`, over the icon QCommonStyle draws at 8, `qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:2189-2210`: the icon's margin start 3 and end the negative of 3 and the icon's own `part.icon.size`, its margin box taking no width, and the slack 9 plus that icon's width, which the combo always takes as `PM_ButtonIconSize`, passing none, `kquickstyleitem.cpp:673-682`, `ComboBox.qml:134-138`, stated by the reference the icon's own uses; the icon the control's own style-hint icon, `ComboBox.qml:136`, so every item's row takes the control's form; its size KDE's small icon size, `frameworkintegration@6.31.0 src/kstyle/kstyle.cpp:438-440`, which the style item's height ignores, `kquickstyleitem.cpp:1189`, so the icon's top and bottom margins each the negative of half its own size, its margin box taking no height, where QWidgets' 7 hold Qt's reserve; an icon taller than the edit field is cut to it, K1.240's `icon_clip_inset_px`, as the style item's content, `fontHeight + 2` and at least 20, `breeze@6.8.2 kstyle/breezestyle.cpp:3363`, can leave the field shorter than the icon: an icon taller than the larger of the two (QWidgets reserves the icon's height, so never); ADD-A127) | rule |
+| Q1.124 | `combo_box.body.padding, combo_box.arrow_area.margin, combo_box.values.{label_arrow_gap,content_slack} @ variants {editable,flat} cond flavor:kirigami` (the frameless editable Kirigami combo: the style item passes `flat`, `qqc2-desktop-style@6.31.0 org.kde.desktop/ComboBox.qml:125`, so Breeze's square lies at the edge, `breeze@6.8.2 kstyle/breezestyle.cpp:2979`, `:2992-2994`, while the text field keeps qqc2's padding, `ComboBox.qml:33-35`: the padding 5 at the start, top and bottom and 0 at the end, the gap 4, the area's margin 0, the slack 9; ADD-A127) | rule |
+| Q1.124 | `combo_box.icon.margin, combo_box.values.content_slack @ variants {editable,flat,with_icon} cond flavor:kirigami` (the frameless field starting at the edge, `breeze@6.8.2 kstyle/breezestyle.cpp:3008`, the icon's rect there with the pixmap centred, at 2, `qtbase@6.12.0 src/widgets/styles/qcommonstyle.cpp:2194-2203`, while the text field keeps the padding's 5: the icon's margin start −3 and end 3 less its own `part.icon.size`, its margin box taking no width; the style item adding the icon's size, `qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1188`, the slack 9 plus that size, stated by the reference the icon's own uses; ADD-A127) | rule |
 | Q1.125 | `menu.body, menu.item @ context combo_box cond flavor:kirigami (the qqc2 Menu: Q1.23-Q1.32 apply)` | rule |
 | Q1.125 | `menu.values.presentations @ context combo_box cond flavor:kirigami` | rule |
 | Q1.126 | `card.body.fill (= kirigami_tint, ADD-A52) @ {hover} cond flavor:kirigami / {pressed} cond flavor:kirigami / {checked} cond flavor:kirigami` | rule |
 | Q1.127 | `card.body.shadow @ cond flavor:kirigami` | rule |
 | Q1.128 | `card.body.shadow (a zero-blur lift layer, = qt_darker, ADD-A50) @ cond flavor:kirigami` | rule |
 | Q1.128 | `card.body.shadow (without the lift layer) @ {pressed} cond flavor:kirigami` | rule |
-| Q1.129 | `card.body.stroke, card.body.corners @ cond flavor:kirigami` | rule |
+| Q1.129 | `card.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), DefaultCardBackground.qml:70), card.body.corners @ cond flavor:kirigami` | rule |
 | Q1.129 | `card.body.bindings (Surface(View)) @ cond flavor:kirigami` | rule |
 | Q1.130 | `card.body.padding @ cond flavor:kirigami` | rule |
 | Q1.130 | `card.values.section_gap` | field |
-| Q1.131 | `card.banner_title.text (= token.text.keyed.heading_1; its fill over images), card.banner_title.icon.size (= token.icons.sizes.keyed.large.size) @ variant @banner` | rule |
-| Q1.131 | `card.banner_band.fill, card.banner.padding @ variant @banner / card.banner.padding (with the icon) @ variant @banner` | rule |
+| Q1.131 | `card.banner_title.text (leaf by leaf: token.text.keyed.heading_1; its fill over images), card.banner_title.icon.size (= token.icons.sizes.keyed.large.size) @ variant @banner` | rule |
+| Q1.131 | `card.banner_band.fill, card.banner.padding @ variant @banner / card.banner.padding @ variants {@banner,with_icon}` | rule |
 | Q1.131 | `card.values.banner_band_height_factor` | field |
 | Q1.131 | `checkbox @ context card.banner (the optional check box)` | rule |
 | Q1.132 | `toolbar.bar @ variant bottom context card.body cond flavor:kirigami` | rule |
@@ -681,34 +740,35 @@ rationale, each decided in the core's additions register (S22).
 | Q1.136 | `link.values.shows_url_tooltip @ variant @url` | rule |
 | Q1.136 | `tooltip.values.show_delay @ context link cond flavor:kirigami` | rule |
 | K2.1 | `menu_bar.item.padding` | field |
-| K2.1 | `menu_bar.item.fill, menu_bar.item.corners @ {hover} cond system_setting:menu_item_strong_focus / {pressed} cond system_setting:menu_item_strong_focus` (the fill only under strong focus, `breezestyle.cpp:5864`; the weak-focus line otherwise, below) | rule |
+| K2.1 | `menu_bar.item.fill, menu_bar.item.corners @ {hover} cond system_setting:menu_item_strong_focus / {pressed} cond system_setting:menu_item_strong_focus` (the fill only under strong focus, `breezestyle.cpp:5859`; the weak-focus line otherwise, below) | rule |
 | K2.1 | `menu_bar.item_label.text.fill @ {pressed} cond system_setting:menu_item_strong_focus` | rule |
-| K2.1 | `menu_bar.item_label.stroke @ {hover} / {pressed} !cond system_setting:menu_item_strong_focus` (the weak-focus line under the item's text, breezestyle.cpp:5926-5941: the same setting as the menu's, K1.62) | rule |
+| K2.1 | `menu_bar.item_label.stroke @ {hover} / {pressed} !cond system_setting:menu_item_strong_focus` (the weak-focus line under the item's text, breezestyle.cpp:5921-5936: the same setting as the menu's, K1.62) | rule |
 | K2.1 | `menu_bar.bar.bindings (Surface(Header))` | field |
 | K2.1 | `role.header.background @ cond window_inactive (the inactive Header group, K1.150)` | role |
 | K2.3 | `stepper.increment.min_width, stepper.decrement.min_width (the arrow column)` | field |
 | K2.3 | `stepper.increment_glyph.glyph, stepper.decrement_glyph.glyph (fill = arrowColor)` | field |
-| K2.3 | `stepper.increment_glyph.glyph.fill @ context stepper.increment {hover} / context stepper.increment {disabled}; stepper.decrement_glyph.glyph.fill @ context stepper.decrement {hover} / context stepper.decrement {disabled}` | rule |
+| K2.3 | `stepper.increment_glyph.glyph.fill @ {hover} / {disabled}; stepper.decrement_glyph.glyph.fill @ {hover} / {disabled}` (each glyph a plain part of its half, selected by that half's own states, the per-arrow hover) | rule |
 | K2.3 | `stepper.increment_glyph.transitions, stepper.decrement_glyph.transitions (Glyph: the hover fade)` | field |
 | K2.3 | `stepper.values.button_layout` | field |
 | K2.3 | `stepper.body.stroke (Absent) @ variant flat; input @ context stepper (the line-edit frame)` | rule |
 | K2.4 | `button @ variant previous context calendar.header / variant next context calendar.header; button @ context calendar.header (the month and year buttons)` | rule |
 | K2.4 | `calendar.weekday_label.text, calendar.week_number.text` | field |
 | K2.4 | `calendar.day.fill @ {today} / {selected}; calendar.day_label.text.fill @ {@non_working_day} / {other_month}` | rule |
-| K2.5 | `dial.groove.fill, dial.value_arc.fill, dial.values.stroke_width (the arcs' width, Slider_ControlThickness), dial.values.cap` | field |
+| K2.5 | `dial.groove.fill, dial.value_arc.fill, dial.values.stroke_width (the arcs' width, Slider_ControlThickness), dial.values.cap, dial.values.{start_angle,end_angle}` (the angles of the least and the greatest value, `breezestyle.cpp:8423-8427`) | field |
+| K2.5 | `dial.values.{start_angle,end_angle} @ variant @wrapping` (QDial's `wrapping`: the full circle, `breezestyle.cpp:8423-8425`) | rule |
 | K2.5 | `dial.handle.fill, dial.handle.stroke, dial.handle.shadow (the slider's handle)` | field |
 | K2.5 | `dial.handle.stroke @ {hover}` | rule |
 | K2.6 | `component.lcd_number.frame.stroke, component.lcd_number.frame.bindings (the palette colours its digits take)` | component |
 | K2.6 | `component.lcd_number.segment.fill, component.lcd_number.segment.stroke @ variant @outline / variant @filled / variant @flat` | component |
 | K2.7 | `button.body.fill, button.body.stroke @ variant @command_link` | rule |
 | K2.7 | `button.icon.icon @ variant @command_link` | rule |
-| K2.7 | `button.label.text (= token.text.keyed.command_link_title) @ variant @command_link` | rule |
+| K2.7 | `button.label.text (leaf by leaf: token.text.keyed.command_link_title; the title's drawItemText call has no wrap flag, its fill the ButtonText role, breeze@6.8.2 kstyle/breezestyle.cpp:2032-2041) @ variant @command_link` | rule |
 | K2.7 | `button.subtitle.text (wrap Word) @ variant @command_link` | rule |
 | K2.7 | `button.values.icon_text_gap @ variant @command_link` | rule |
 | K2.8 | `group_box.body.fill, group_box.body.stroke, group_box.body.corners, group_box.title.text` | field |
-| K2.8 | `group_box.body.fill, group_box.body.stroke (Absent), group_box.title.text (= token.text.keyed.flat_group_title) @ variant flat` | rule |
+| K2.8 | `group_box.body.fill, group_box.body.stroke (Absent), group_box.title.text (leaf by leaf: token.text.keyed.flat_group_title; the title's drawItemText call has no wrap flag, its fill the WindowText role unless the group box sets a text colour, breeze@6.8.2 kstyle/breezestyle.cpp:7642-7654) @ variant flat` | rule |
 | K2.8 | `checkbox @ context any group_box (the checkable title)` | rule |
-| K2.8 | `group_box.focus_line.{stroke,transitions} @ {focus_visible}` (the line and its fade) | rule |
+| K2.8 | `group_box.focus_line.stroke @ {focus_visible}` (the line, with no fade: Breeze's engine for it is first updated while the box has focus, which sets its state without running it, `kstyle/animations/breezewidgetstatedata.cpp:14-17`, and a box losing focus returns before it is updated again, `kstyle/breezestyle.cpp:7684-7692`, so no change runs it: no transition, as the base states none for a zero to override (S12), the line gone at once as focus leaves, S2.7, ADD-A126) | rule |
 | K2.9 | `component.tool_box.page_button.min_width` (`ToolBox_TabMinWidth`; one home) | component |
 | K2.9 | `component.tool_box.outline.stroke, component.tool_box.outline.corners` (the tab-shaped outline round every tab, in the frame outline colour at rest) | component |
 | K2.9 | `component.tool_box.outline.stroke @ {hover} / {selected}` (the hover colour; the open page's focus colour, a later rule: Breeze takes no hover on the open page) | component |
@@ -720,12 +780,12 @@ rationale, each decided in the core's additions register (S22).
 | K2.10 | `component.dock_widget.frame.stroke` | component |
 | K2.10 | `button.icon.glyph (ThemeIcon or the standard pixmap) @ variant @float context component.dock_widget / variant close context component.dock_widget` | rule |
 | K2.10 | `button.body.fill (Absent: frameless), button.icon.glyph.fill @ variant @float {hover} context component.dock_widget / variant @float {pressed} context component.dock_widget / variant @float {disabled} context component.dock_widget / variant close {hover} context component.dock_widget / variant close {pressed} context component.dock_widget / variant close {disabled} context component.dock_widget` (the buttons' own states) | rule |
-| K2.10 | `component.dock_widget.separator.stroke; component.dock_widget.separator (absent = true) @ variant @vertical_title_bar` (Breeze draws the line under a horizontal title bar only, `st:7550-7557`) | component |
+| K2.10 | `component.dock_widget.separator.stroke; component.dock_widget.separator (absent = true) @ variant @vertical_title_bar` (Breeze draws the line under a horizontal title bar only, `st:7545-7552`) | component |
 | K2.10 | `component.dock_widget.frame.stroke (Absent) @ !cond system_setting:dock_widget_draw_frame` (breezerc `DockWidgetDrawFrame`, a read switch) | component |
 | K2.10 | `reader:kde:breezerc [Style] DockWidgetDrawFrame` | reader |
 | K2.11 | `component.mdi_sub_window.title_bar.fill (= role.@wm_active_background), component.mdi_sub_window.title_bar.corners (top rounded), component.mdi_sub_window.title.text (fill = role.@wm_active_foreground)` | component |
 | K2.11 | `component.mdi_sub_window.title_bar.fill (= role.@wm_inactive_background), component.mdi_sub_window.title.text.fill (= role.@wm_inactive_foreground) @ !{@active}` | rule |
-| K2.11 | `role.@wm_active_background, role.@wm_active_foreground, role.@wm_inactive_background, role.@wm_inactive_foreground` (KDE's `[WM]` colours, keyed roles: the preset states Breeze's scheme files' `[WM]` values, `BreezeLight.colors:194-200`; the reader kdeglobals' `[WM]`, which `applyScheme()` always writes, the scheme's `[WM]` or its `Header` set's colours, `colorsapplicator.cpp:287-309`, with the accent's override, `:318-338`; where kdeglobals has none, Breeze's fallback, references to the `Selection` set's active and disabled background and foreground, `breezehelper.cpp:98-102`, in the reader's `for_preset.kde-breeze` part; the accent layer states them as `kde_accent_wm(<key>)`, Plasma's derivation, over `input.kde_scheme.wm.*`; a mapping palette states them and a KDE port converts `[WM]`, S2.2, S9.1, S12, S14) | role |
+| K2.11 | `role.@wm_active_background, role.@wm_active_foreground, role.@wm_inactive_background, role.@wm_inactive_foreground` (KDE's `[WM]` colours, keyed roles: the preset states Breeze's scheme files' `[WM]` values, `BreezeLight.colors:194-200`; the reader kdeglobals' `[WM]`, which `applyScheme()` always writes, the scheme's `[WM]` or its `Header` set's colours, `colorsapplicator.cpp:287-309`, with the accent's override, `:318-338`; where kdeglobals has none, Breeze's fallback, references to the `Selection` set's active and disabled background and foreground, `breezehelper.cpp:98-102`, in the reader's `for_preset.kde-breeze` part; the accent-derivation layer states them as `kde_accent_wm(<key>)`, Plasma's derivation, over `input.kde_scheme.wm.*`; a mapping palette states them and a KDE port converts `[WM]`, S2.2, S9.1, S12, S14) | role |
 | K2.11 | `reader:kde:kdeglobals [WM] activeBackground, activeForeground, inactiveBackground, inactiveForeground` (where kdeglobals has no `[WM]`, the `Selection` references Breeze falls back to, `breezehelper.cpp:98-102`) | reader |
 | K2.11 | `component.mdi_sub_window.frame.stroke @ !{@active}` | rule |
 | K2.11 | `component.mdi_sub_window.active_separator.stroke @ {@active}; component.mdi_sub_window.active_separator (absent = true) @ !{@active}` | rule |
@@ -739,17 +799,17 @@ rationale, each decided in the core's additions register (S22).
 | K2.13 | `banner.edge_line.stroke, banner.body.corners (none) @ variant @header cond flavor:widgets / variant @footer cond flavor:widgets` | rule |
 | K2.13 | `banner.icon.icon.size (= token.icons.sizes.toolbar.size)` | field |
 | K2.13 | `button @ variant close context banner` | rule |
-| K2.13 | `banner.values.presentations (Appear, Disappear: the height and Fade, its timing quadratic in the timeline's progress; = token.motion.durations.kf_timeline)` | field |
+| K2.13 | `banner.values.presentations (Appear, Disappear: the height and Fade, its timing quadratic in the timeline's progress; = token.motion.durations.message_widget)` | field |
 | K2.14 | `list.leading_icon.icon.size (= the icon view's size) @ context component.page_view` | rule |
 | K2.14 | `component.title_widget.{container.padding,title.text} @ context component.page_view` (the page title header is KTitleWidget, one home) | rule |
 | K2.14 | `component.page_view.header_separator.stroke` | component |
 | K2.14 | `input @ context component.page_view; component.page_view.search_container.padding (its container's margins, per side)` (the search line edit) | component |
-| K2.15 | `component.title_widget.title.text (= token.text.keyed.heading_<n>) @ variant @level_1 … (one per declared level of K1.270)` | component |
+| K2.15 | `component.title_widget.title.text @ variant @level_1 … @level_4` (KTitleWidget's own level style per level, not Kirigami's `heading_<n>`: the label's inherited font's weight, the application font by default, and K1.270's factor of the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`; not yet stated exactly, ledger queue #130, ADD-A125) | component |
 | K2.15 | `component.title_widget.comment.text.fill, component.title_widget.comment.fill @ variant @info / variant @warning / variant @error` (one look for the three, from the palette's highlighted text and highlight as Qt applies the source's style sheet, value phase; `MessageType` has no positive type, `ktitlewidget.h:115-120`) | component |
 | K2.15 | `component.title_widget.icon.icon` | component |
 | K2.16 | `component.multi_tab_bar.tab_button.fill, component.multi_tab_bar.tab_button.padding` | component |
 | K2.16 | `component.multi_tab_bar.tab_button.fill @ {checked} / {hover} / {pressed}` | component |
-| K2.16 | `component.multi_tab_bar.separator.stroke; component.multi_tab_bar.separator (absent = true) @ variant @top / variant @bottom` (Breeze draws the line beside a vertical bar only, `st:1412-1414`) | component |
+| K2.16 | `component.multi_tab_bar.separator.stroke; component.multi_tab_bar.separator (absent = true) @ variant @top / variant @bottom` (Breeze draws the line beside a vertical bar only, `st:1407-1409`) | component |
 | K2.16 | `component.multi_tab_bar.tab_button.padding @ variant @left / variant @right (the vertical tabs)` | component |
 | K2.16 | `component.multi_tab_bar.tab_icon.icon, component.multi_tab_bar.tab_label.text` | component |
 | K2.17 | `splitter.collapser.{fill,opacity} / @ {hover} / @ {pressed}` (KSplitterCollapserButton, a part of the splitter it sits on) | rule |
@@ -764,7 +824,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.20 | `color_button.swatch.corners, color_button.swatch.stroke, color_button.body.padding` (the swatch at the push button's contents rectangle less half `PM_ButtonMargin`, `kcolorbutton.cpp:159-161`) | field |
 | K2.21 | `group_box.body.fill, group_box.body.stroke, group_box.body.corners @ variant @styled_panel` | rule |
 | K2.21 | `group_box.body.stroke @ {hover} variant @styled_panel / {focused} variant @styled_panel` | rule |
-| K2.21 | `scroll_view.frame (drawn_as = { widget = "group_box", variants = ["@styled_panel"] }: Breeze's frame of a scroll area, the substitute carrying the view's hover and focus, breezestyle.cpp:3924-3980; qqc2's framed ScrollView the same styled panel, kquickstyleitem.cpp:496-503)` | field |
+| K2.21 | `scroll_view.frame (drawn_as = { widget = "group_box", variants = ["@styled_panel"] }: Breeze's frame of a scroll area, the substitute carrying the view's hover and focus, breezestyle.cpp:3919-3975; qqc2's framed ScrollView the same styled panel, kquickstyleitem.cpp:496-503)` | field |
 | K2.21 | `group_box.body.stroke (= role.@shade_light, role.@shade_dark …, K3.53) @ variant @box / variant @panel / variant @win_panel` | rule |
 | K2.22 | `wizard.header.padding, wizard.title.text, wizard.subtitle.text, wizard.banner.fill, wizard.action_area.padding` (the classic style, `kde-breeze`'s base) | field |
 | K2.23† | `date_picker.field @ variant with_popup cond flavor:widgets` (`drawn_as = { widget = "combo_box", variants = ["editable"] }`: KDateComboBox paints the editable `CC_ComboBox`, its constructor calling `setEditable(true)` whatever its options, kdatecombobox.cpp:214, as KTimeComboBox, K2.24†) `/ variant text_field cond flavor:widgets` (`drawn_as = { widget = "stepper", variants = [] }`: QDateEdit without the popup, K2.3) | rule |
@@ -782,12 +842,12 @@ rationale, each decided in the core's additions register (S22).
 | K2.24† | `time_picker.values.invalid_entry (the error message box, K1.224†)` | field |
 | K2.24† | `layout.values.widget_gap (the date and time fields paired, KDateTimeEdit)` | field |
 | K2.25† | `color_picker.plane.stroke, color_picker.plane.cursor @ variant @qt_dialog` | rule |
-| K2.25† | `color_picker.{crosshair_line_horizontal,crosshair_line_vertical}.{fill,min_width,min_height}, color_picker.values.crosshair_spans_plane (false) @ variant @qt_dialog` (QColorDialog's cross of two short bars centred on the point, K2.25†'s row) | rule |
+| K2.25† | `color_picker.crosshair_line.fill, color_picker.values.{crosshair_line_width,crosshair_length}, color_picker.values.crosshair_spans_plane (false) @ variant @qt_dialog` (QColorDialog's cross of two short bars centred on the point, K2.25†'s row) | rule |
 | K2.25† | `color_picker.value_strip.stroke (the shade panel: role.@shade_light, role.@shade_dark) @ variant @qt_dialog` | rule |
 | K2.25† | `color_picker.swatch.stroke, color_picker.swatch.focus @ variant @qt_dialog` | rule |
 | K2.25† | `stepper @ context color_picker; input @ context color_picker; button @ context color_picker (the screen picker)` | rule |
 | K2.25† | `combo_box @ context any color_button (KColorCombo's colour list)` | rule |
-| K2.26† | `file_chooser.preview_pane.fill, file_chooser.values.icon_size_slider` | field |
+| K2.26† | `file_chooser.preview_pane.fill` (the slider that zooms the icons is the `slider` of the next line) | field |
 | K2.26† | `sidebar @ context any file_chooser; breadcrumb @ context any file_chooser; list @ context any file_chooser; slider @ context any file_chooser; combo_box @ context any file_chooser; button @ context any file_chooser` | rule |
 | K2.27† | `breadcrumb.crumb.padding` | field |
 | K2.27† | `breadcrumb.crumb_label.text.fill @ {@navigator_active} / !{@navigator_active} / !{@navigator_active} !{hover}` | rule |
@@ -796,8 +856,8 @@ rationale, each decided in the core's additions register (S22).
 | K2.27† | `breadcrumb.separator.glyph @ {hover}; menu @ context breadcrumb (the sub-folder menu)` | rule |
 | K2.27† | `breadcrumb.crumb_label.text.elision (Fade, ADD-A38)` | field |
 | K2.27† | `button @ variant menu context breadcrumb (the places selector); input @ context breadcrumb; breadcrumb.values.editable` | rule |
-| K2.28† | `font_chooser.font_label.{fill,stroke,corners,padding}` (KFontRequester's sunken styled-panel label, its frame forced on Breeze, `_breeze_force_frame`) | field |
-| K2.28† | `font_chooser.font_label.text (in the chosen font); button @ context font_chooser (the document-edit button)` | rule |
+| K2.28† | `font_button.font_label.{fill,stroke,corners,padding}` (KFontRequester's sunken styled-panel label, its frame forced on Breeze, `_breeze_force_frame`) | field |
+| K2.28† | `font_button.font_label.text (in the chosen font); button @ context font_button (the document-edit button)` | rule |
 | K2.28† | `font_chooser.preview.text, font_chooser.values.preview_min_lines` | field |
 | K2.28† | `list @ context any font_chooser; stepper @ context any font_chooser; checkbox @ context any font_chooser` | rule |
 | K2.29† | `menu.body.stroke @ context autocomplete; autocomplete.values.placement (QtCompletionBox: width = the field's, AnchorWidth; max_visible_items)` | placement |
@@ -822,13 +882,14 @@ rationale, each decided in the core's additions register (S22).
 | Q2.3 | `button.body.{fill,stroke,corners} @ variant tool context component.delay_button` (the button is Breeze's tool-button panel, `PE_PanelButtonTool`: one home) | rule |
 | Q2.3 | `component.delay_button.progress_overlay.fill, component.delay_button.progress_overlay.opacity` | component |
 | Q2.3 | `component.delay_button.progress_overlay.transitions (Geometry: = mul(values.delay, sub(1, element.progress)) @ {pressed}; = mul(values.delay, mul(<fraction>, element.progress)) @ !{pressed}; ADD-B12)` (the overlay laid out at the extent the progress heads for, the whole button while pressed and none while released; `element.progress` the progress shown when the pressed state changed; `DelayButton.qml:48-52`) | component |
-| Q2.4 | `button.body.min_width, button.body.min_height, button.body.padding, button.icon.icon.size, button.body.corners, button.values.icon_text_gap @ variant circular cond flavor:kirigami` | rule |
+| Q2.4 | `button.body.min_width, button.body.min_height, button.body.padding, button.icon.icon.size, button.body.corners, button.values.icon_text_gap @ variant circular cond flavor:kirigami` (the corners `Full`: Kirigami's RoundButton, qqc2-desktop-style's background `Rectangle` with the control's radius, `qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:83`, which defaults to half the control's smaller side, `qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:48`) | rule |
 | Q2.5 | `button.body.fill @ variant circular cond flavor:kirigami / variant circular {checked} cond flavor:kirigami / variant circular {pressed} cond flavor:kirigami / variants {circular,flat} cond flavor:kirigami` | rule |
-| Q2.5 | `button.body.stroke @ variant circular cond flavor:kirigami / variants {circular,flat} cond flavor:kirigami / variants {circular,flat} !{hover} cond flavor:kirigami (no width)` | rule |
+| Q2.5 | `button.body.stroke (= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast): the control's palette.button and palette.buttonText, RoundButton.qml:77) @ variant circular !variant flat cond flavor:kirigami / button.body.stroke (= role.selection.background: a flat RoundButton strokes with Kirigami.Theme.highlightColor, the Selection set's background, RoundButton.qml:94) @ variants {circular,flat} cond flavor:kirigami / button.body.stroke (no width, RoundButton.qml:95) @ variants {circular,flat} !{hover} !{focused} !variant @highlighted cond flavor:kirigami / button.body.fill (= kirigami_tint(surface.foreground, with_alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8), 1): Qt.tint of the text colour with the border colour at alpha 0.8, RoundButton.qml:86, `Qt.tint(base, tint)` being `kirigami_tint(base, tint, 1)` and `Qt.alpha` `with_alpha`, S2.2, so it holds for a translucent border colour too; ADD-A123) @ {checked} variant circular cond flavor:kirigami / {pressed} variant circular cond flavor:kirigami` | rule |
 | Q2.6 | `button.body.fill.append (a linear gloss layer) @ variant circular !variant flat cond flavor:kirigami` | rule |
+| Q2.6 | `button.body.stroke.{top,right,bottom,left}.paint.append (the same gloss over the border, which the gloss's child rectangle covers too, RoundButton.qml:94-106; S2.3, ADD-A134) @ variant circular !variant flat cond flavor:kirigami` | rule |
 | Q2.7 | `button.body.shadow @ variant circular cond flavor:kirigami` | rule |
 | Q2.7 | `button.body.shadow (Absent) @ variant circular {pressed} / variant circular {checked} / variants {circular,flat}` | rule |
-| Q2.7 | `button.label.transform, button.icon.transform @ variant circular {pressed} / variant circular {checked}` | rule |
+| Q2.7 | `button.body.transform (a translation right and down) @ variant circular {pressed} cond flavor:kirigami / variant circular {checked} cond flavor:kirigami` (a `Translate` on the whole control, `RoundButton.qml:27-30`, not its content) | rule |
 | Q2.8 | `button.body.bindings (Surface(Selection)) @ variant circular !variant flat {focused} / variants {circular,@highlighted} !variant flat` | rule |
 | Q2.9 | `menu_bar.bar.bindings (Surface(Header)), menu_bar.item.padding, menu_bar.item.min_height, menu_bar.item.min_width @ cond flavor:kirigami` | rule |
 | Q2.10 | `menu_bar.item.fill @ {pressed} cond flavor:kirigami / {hover} cond flavor:kirigami` | rule |
@@ -839,7 +900,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.11 | `page_indicator.values.dot_gap, page_indicator.body.padding` | field |
 | Q2.11 | `page_indicator.dot.transitions (Opacity; = token.motion.durations.short)` | field |
 | Q2.12 | `group_box.body.stroke, group_box.body.corners, group_box.body.padding @ variant @quick_frame; group_box.body.fill (Absent: the transparent box) @ variant @quick_frame` | rule |
-| Q2.13 | `group_box.body.stroke, group_box.body.corners (square: no radius), group_box.title.text, group_box.body.padding, group_box.values.title_position (AboveTop) @ variant @quick_group_box` | rule |
+| Q2.13 | `group_box.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), GroupBox.qml:39), group_box.body.corners (square: no radius), group_box.title.text, group_box.body.padding, group_box.values.title_position (AboveTop) @ cond flavor:kirigami` (qqc2-desktop-style's GroupBox is the flavour's base, not a variant, R1.6) | rule |
 | Q2.14 | `navigation_view.values.presentations (@push, @pop, @replace: Slide and Fade together, = token.motion.durations.long, its timing; ADD-B10, ADD-A25, ADD-A26)` | field |
 | Q2.15 | `navigation_view.values.presentations (@push, @pop, @replace: Fade and Slide together, each its timing; ADD-B10, ADD-A25) @ variant @layer` | rule |
 | Q2.16 | `banner.body.fill (the type colour: InlineMessage's outer rectangle, which shows round `inner` as the border, `InlineMessage.qml:16-33`); banner.body.stroke (Absent) @ variant info / variant success / variant warning / variant error cond flavor:kirigami` | rule |
@@ -849,36 +910,36 @@ rationale, each decided in the core's additions register (S22).
 | Q2.19 | `banner.body.padding` | field |
 | Q2.19 | `banner.icon.icon.size (= token.icons.sizes.keyed.small_medium.size), banner.icon.glyph (ThemeIcon) @ variant info / variant success / variant warning / variant error` | rule |
 | Q2.19 | `banner.values.content_gap (the text's leading margin)` | field |
-| Q2.19 | `banner.values.icon_alignment (Start: the icon top-aligned) @ {multiline}` | rule |
+| Q2.19 | `banner.values.icon_alignment (Top: the icon top-aligned) @ {multiline}` | rule |
 | Q2.20 | `banner.action_area.opacity; toolbar @ context banner (the non-flat action toolbar)` | rule |
 | Q2.20 | `banner.values.actions_wrap` | field |
 | Q2.20 | `button.icon.glyph (ThemeIcon dialog-close) @ variant close context banner` | rule |
 | Q2.21 | `banner.values.presentations (Appear, Disappear: the height, = token.motion.durations.long; Fade, = token.motion.durations.short; the content's Fade, step part, twice that)` | field |
 | Q2.22 | `chip.body.fill` | field |
 | Q2.22 | `chip.body.fill @ {checked} / {pressed}` | rule |
-| Q2.23 | `chip.body.stroke, chip.body.corners` | field |
+| Q2.23 | `chip.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), DefaultChipBackground.qml:30), chip.body.corners` | field |
 | Q2.23 | `chip.body.stroke @ {hover} / {checked} / {pressed}` | rule |
 | Q2.24 | `chip.leading_icon.icon.size (= token.icons.sizes.keyed.small.size), chip.body.padding, chip.values.icon_text_gap; chip.body.padding @ !variant with_icon` (the extra padding without an icon) | rule |
 | Q2.24 | `button.icon.glyph (ThemeIcon), button.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100) @ variant remove context chip` | rule |
 | Q2.24 | `chip @ variant @interactive / variant closable` | rule |
 | Q2.25 | `badge.body.stroke, badge.body.fill @ variant info / variant success / variant warning / variant error` | rule |
-| Q2.26 | `badge.label.text.fill (= kirigami_badge_text, ADD-A53)` | field |
-| Q2.26 | `badge.body.stroke (= mix(element.color, the text, <fraction>)) @ variant custom_color` (where the application gives a colour; `badge.body` declares `color`, ADD-B16) | rule |
-| Q2.27 | `badge.label.text (= token.text.keyed.smallest_readable, its weight restated), badge.body.padding, badge.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100)` | field |
+| Q2.26 | `badge.label.text.fill (= kirigami_badge_text(surface.foreground, widget.body.fill), ADD-A53: its last step kirigami_lerp(<the text colour>, <the background>, 0.17), Badge.qml:80)` | field |
+| Q2.26 | `badge.body.stroke (= kirigami_lerp(element.color, surface.foreground, 0.5)) @ variant custom_color` (`Badge.qml:49-51`) (where the application gives a colour; `badge.body` declares `color`, ADD-B16) | rule |
+| Q2.27 | `badge.label.text (leaf by leaf: token.text.keyed.smallest_readable, its weight restated), badge.body.padding, badge.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100)` | field |
 | Q2.27 | `badge.body.corners (Full) @ !{multiline} / (the corner radius) @ {multiline}` | rule |
 | Q2.27 | `badge.body.padding (the pill's extra horizontal padding) @ !{multiline}` | rule |
 | Q2.28 | `avatar.values.default_size (= token.icons.sizes.keyed.large.size)` | field |
 | Q2.28 | `avatar.body.fill (= pick(name_index(element.text, <count>, kirigami), …), ADD-B14)` | field |
 | Q2.29 | `avatar.body.fill (= kirigami_tint of the avatar colour, ADD-A52), avatar.body.stroke (the avatar colour), avatar.initials.text (fill the avatar colour; text.font.size = an expression on element.width, ADD-B11)` | field |
 | Q2.29 | `avatar.fallback_icon.icon, avatar.values.fallback_icon_inset, avatar.image.corners (Full), avatar.body.padding` | field |
-| Q2.30 | `status_page.title.text (= token.text.keyed.heading_1_primary); status_page.description.text` | field |
+| Q2.30 | `status_page.title.text (leaf by leaf: token.text.keyed.heading_1_primary); status_page.description.text` | field |
 | Q2.30 | `status_page.values.icon_to_title, status_page.values.title_to_description, status_page.values.description_to_actions, status_page.action_area.padding` | field |
 | Q2.30 | `status_page.icon.icon (size = floor(add(mul(token.icons.sizes.keyed.huge.size, <factor>), 0.5)), the source's round(); fill = surface.foreground)` | field |
 | Q2.31 | `status_page.icon.opacity, status_page.title.opacity, status_page.description.opacity @ variant @informational` | rule |
 | Q2.32 | `status_page.body.max_width @ variant loading` | rule |
 | Q2.32 | `progress_bar @ context any status_page (indeterminate)` | rule |
 | Q2.33 | `bottom_tab_bar.bar.fill (the toolbar's background)` | field |
-| Q2.33 | `bottom_tab_bar.values.max_content_width (= mul(mul(token.params.layout.grid_unit, <n>), max(element.item_count, <n>)), centred; `item_count` declared under `values`, the values queried with an `item` element, whose `item_count` is the bar's), bottom_tab_bar.values.equal_width_items` | field |
+| Q2.33 | `bottom_tab_bar.values.max_content_width (= mul(mul(token.params.layout.grid_unit, <n>), max(element.item_count, <n>)), centred; `item_count` declared under `values`, the values queried with the bar's own element, which carries the bar's item count), bottom_tab_bar.values.equal_width_items` | field |
 | Q2.34 | `bottom_tab_bar.item.bindings (Surface(Window)), bottom_tab_bar.item.padding @ cond flavor:kirigami` | rule |
 | Q2.34 | `bottom_tab_bar.item.min_height @ variant stacked cond flavor:kirigami` (the background's height) | rule |
 | Q2.34 | `bottom_tab_bar.item.min_height (zero: the background takes no height) @ variant inline cond flavor:kirigami` | rule |
@@ -891,16 +952,17 @@ rationale, each decided in the core's additions register (S22).
 | Q2.35 | `bottom_tab_bar.item.transitions (Fill, Stroke; = token.motion.durations.short)` | field |
 | Q2.36 | `bottom_tab_bar.item.focus (Ring: its width, offset outside, paint, corners) @ {focus_visible}` | rule |
 | Q2.37 | `sheet.body.fill (= the card's background, Q1.126) @ variant @overlay` | rule |
-| Q2.38 | `sheet.scrim.fill, sheet.scrim.transitions (Opacity; = token.motion.durations.long, its timing) @ variant @overlay` | rule |
-| Q2.38 | `sheet.title.text (= token.text.keyed.heading_2), sheet.header.padding @ variant @overlay` | rule |
+| Q2.38 | `sheet.scrim.fill, sheet.values.presentations (Appear, Disappear: a Fade step on scrim; ADD-A146) @ variant @overlay` | rule |
+| Q2.38 | `sheet.title.text (leaf by leaf: token.text.keyed.heading_2), sheet.header.padding @ variant @overlay` | rule |
 | Q2.38 | `sheet.header_separator.stroke, sheet.footer_separator.stroke, sheet.footer.padding @ variant @overlay` | rule |
-| Q2.39 | `sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.min_width, sheet.handle.min_height @ cond mobile_form_factor` | rule |
+| Q2.39 | `sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.min_width, sheet.handle.min_height @ cond input:touch` (the bar is drawn by Kirigami's transient-touch setting, `kirigami@6.31.0 src/templates/OverlaySheet.qml:264-275`, not by `isMobile`) | rule |
 | Q2.40 | `sheet.values.presentations (Appear, Disappear: Fade and Slide together, its distance = mul(token.params.layout.grid_unit, <n>); = token.motion.durations.long, its timing; ADD-B10, ADD-A25)` | field |
-| Q2.40 | `sheet.values.min_top_inset, sheet.values.swipe_to_close` | field |
-| Q2.41 | `list.section_header.text (= token.text.keyed.heading_5_primary, its weight restated; fill at reduced alpha), list.section_header.icon.size (= token.icons.sizes.keyed.small_medium.size), list.section_header.padding @ cond flavor:kirigami` | rule |
+| Q2.40 | `sheet.values.placement (its edge_margin.top the sheet's top floor) @ variant @overlay` | rule |
+| Q2.40 | `sheet.values.swipe_to_close` | field |
+| Q2.41 | `list.section_header.text (leaf by leaf: token.text.keyed.heading_5_primary, its weight restated; fill at reduced alpha), list.section_header.icon.size (= token.icons.sizes.keyed.small_medium.size), list.section_header.padding @ cond flavor:kirigami` | rule |
 | Q2.41 | `list.section_header_line.stroke (filling the rest of the row)` | field |
 | Q2.41 | `list.section_header.fill (Absent: no hover or background) @ cond flavor:kirigami` | rule |
-| Q2.42 | `list.inline_header.fill (= kirigami_tint, ADD-A52), list.inline_header.padding, list.inline_header.text (= token.text.keyed.heading_2)` | field |
+| Q2.42 | `list.inline_header.fill (= kirigami_tint, ADD-A52), list.inline_header.padding, list.inline_header.text (leaf by leaf: token.text.keyed.heading_2)` | field |
 | Q2.42 | `list.inline_header.stroke` (its bottom edge) `/ list.inline_header.stroke @ variant @inline_footer` (the top edge, placed as the view's footer) | rule |
 | Q2.42 | `button @ context list.inline_header (the trailing actions)` | rule |
 | Q2.43 | `list.accessory.icon.size (= token.icons.sizes.keyed.small_medium.size) @ variant reorder cond flavor:kirigami` (Kirigami's ListItemDragHandle: the reorder accessory, one structure with iOS's) | rule |
@@ -915,7 +977,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.45 | `form.values.row_gap, form.values.column_gap, form.values.narrow_max_width, form.values.collapse @ cond flavor:kirigami` | rule |
 | Q2.46 | `form.values.label_alignment (both members: the label's horizontal alignment and its vertical alignment against the field, its text vertically centred) @ cond flavor:kirigami` | rule |
 | Q2.46 | `form.values.label_alignment (both members restated: the label above the field) @ variant collapsed cond flavor:kirigami` | rule |
-| Q2.47 | `form.section_title.text (= token.text.keyed.heading_3_primary, centred), form.field_label.text (= token.text.keyed.heading_5) @ cond flavor:kirigami` | rule |
+| Q2.47 | `form.group_title.text (the section title; leaf by leaf: token.text.keyed.heading_3_primary, centred), form.field_label.text (leaf by leaf: token.text.keyed.heading_5) @ cond flavor:kirigami` | rule |
 | Q2.47 | `form.values.group_gap, form.values.field_label_gap @ cond flavor:kirigami / variant collapsed cond flavor:kirigami` | rule |
 | Q2.48 | `button.icon.glyph (ThemeIcon help-contextual-symbolic), button.values.help_tooltip_on_click, button.body.cursor (WhatsThis, ADD-A59) @ variants {help,icon_only} cond flavor:kirigami` | rule |
 | Q2.48 | `tooltip.values.display_time ("none": no timeout), tooltip.values.show_delay @ context button[help] cond flavor:kirigami` | rule |
@@ -924,16 +986,16 @@ rationale, each decided in the core's additions register (S22).
 | Q2.50 | `toast.body.max_width (= min(mul(token.params.layout.grid_unit, <n>), mul(element.window_width, <fraction>)), ADD-A78) @ cond flavor:kirigami` | rule |
 | Q2.51 | `toast.values.durations (short, default, long)` | field |
 | Q2.52 | `toast.values.presentations (Appear: Fade and Translate rise; Disappear: Fade, Translate drop and Scale; @displace: the displaced toasts; each = token.motion.durations.long with its timing; ADD-B10, ADD-A25, ADD-A26)` | field |
-| Q2.53† | `edit_menu.body.fill, edit_menu.body.corners, edit_menu.body.shadow, edit_menu.body.padding @ cond input:touch cond flavor:kirigami` | rule |
+| Q2.53† | `edit_menu.body.fill, edit_menu.body.corners, edit_menu.body.shadow, edit_menu.body.padding @ cond tablet_mode cond flavor:kirigami` (the bar is loaded under Kirigami's tablet mode, `qqc2-desktop-style@6.31.0 org.kde.desktop/private/MobileTextActionsToolBar.qml:17-20`, not by its touch-input setting) | rule |
 | Q2.53† | `button.icon.glyph (ThemeIcon), button.body.fill @ variants {tool,icon_only} context edit_menu (Cut, Copy, Paste)` (in a password field Cut and Copy are left out: which commands the field offers is the content the connector supplies, so the menu holds no button for them, S6.3; no absence rule) | rule |
-| Q2.53† | `edit_menu.values.placement (KirigamiTextActions: centred on the selection's start, above, else below its end), edit_menu.values.gap_to_selection` | placement |
+| Q2.53† | `edit_menu.values.placement (KirigamiTextActions: centred on the selection's start, above, else below its end; its gap the offset below the selection's end, MobileTextActionsToolBarImpl.qml:42-48)` | placement |
 | Q2.53† | `menu @ context any input / menu @ context any text_area (the desktop context menu)` | rule |
 | Q2.54† | `pull_to_refresh.strip.min_height, pull_to_refresh.indicator.padding` | field |
-| Q2.54† | `spinner.indicator.glyph (the arc; its draw_extent = element.progress, the pull progress, ADD-B12), spinner.icon (absent = true: no busy icon while pulling) @ !{indeterminate} context pull_to_refresh {pulling}; pull_to_refresh.values.progress_sweep (Arc)` | rule |
+| Q2.54† | `spinner.indicator.glyph (the arc; its draw_extent = element.progress, the pull progress, ADD-B12), spinner.icon (absent = true: no busy icon while pulling) @ !{indeterminate} context pull_to_refresh {pulling}` | rule |
 | Q2.54† | `pull_to_refresh.values.refresh_delay, pull_to_refresh.values.content_shift` | field |
 | Q2.54† | `spinner @ context pull_to_refresh {refreshing} (the BusyIndicator, Q1.119); spinner.indicator @ context pull_to_refresh {refreshing}` (`absent = true`: no arc while refreshing) | rule |
 | Q2.54† | `pull_to_refresh.values.presentations (@content_shift: = token.motion.durations.long, its timing)` | field |
-| Q2.55† | `form.group_title.text (= token.text.keyed.heading_5, its weight restated), form.group_title.padding @ variant @cards` | rule |
+| Q2.55† | `form.group_title.text (leaf by leaf: token.text.keyed.heading_5, its weight restated), form.group_title.padding @ variant @cards` | rule |
 | Q2.55† | `form.card.fill, form.card.stroke, form.card.corners, form.card.shadow, form.card.min_width @ variant @cards (the card, Q1.126-Q1.130) / form.card.padding (past both sides) @ variants {@cards,collapsed}` | rule |
 | Q2.55† | `form.row.padding, form.row.min_width, form.row_subtitle.text.fill (= surface.disabled.foreground) @ variant @cards` | rule |
 | Q2.55† | `form.field_label.text @ variant @cards / variants {@cards,collapsed} (the inline label above)` | rule |
@@ -943,12 +1005,12 @@ rationale, each decided in the core's additions register (S22).
 | Q2.56† | `form.row_separator.opacity, form.row_separator.margin @ variant @cards` | rule |
 | Q2.56† | `form.row_separator.opacity @ prev form.row[activatable] {hover} / next form.row[activatable] {hover}; form.row_separator.transitions (Opacity; = token.motion.durations.long)` | rule |
 | Q2.56† | `form.row_icon.icon.size (= token.icons.sizes.keyed.small_medium.size), form.row_arrow.icon.size (= token.icons.sizes.keyed.small.size) @ variant action` | rule |
-| Q2.56† | `form.page.padding, form.section_title.text (= token.text.keyed.heading_3_primary), form.values.group_gap, form.values.row_gap @ variant flat` | rule |
+| Q2.56† | `form.page.padding, form.group_title.text (the section title; leaf by leaf: token.text.keyed.heading_3_primary), form.values.group_gap, form.values.row_gap @ variant flat` | rule |
 | Q2.56† | `separator @ context form variant flat (the groups' separator, its margins)` | rule |
 | Q2.56† | `button @ context form.row variant action variant flat (actions as push buttons)` | rule |
 | Q2.56† | `form.values.collapse, form.values.narrow_max_width` | field |
 | Q2.57† | `about_dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size), about_dialog.values.icon_max_width_fraction, about_dialog.values.gap @ cond flavor:kirigami` | rule |
-| Q2.57† | `about_dialog.name.text, about_dialog.version.text (= token.text.keyed.heading_1: name and version one Heading at its default level, Q1.5), about_dialog.description.text (= token.text.keyed.heading_3_secondary) @ cond flavor:kirigami` | rule |
+| Q2.57† | `about_dialog.name.text, about_dialog.version.text (leaf by leaf: token.text.keyed.heading_1: name and version one Heading at its default level, Q1.5), about_dialog.description.text (leaf by leaf: token.text.keyed.heading_3_secondary) @ cond flavor:kirigami` | rule |
 | Q2.57† | `form @ variant @cards context any about_dialog (the sections as groups split by separators)` | rule |
 | Q2.57† | `avatar.body.min_width, avatar.body.min_height (= token.icons.sizes.keyed.medium.size) @ context any about_dialog` | rule |
 | Q2.58† | `dialog.values.window_margin, dialog.header.padding, dialog.title.text (a heading, elision End) @ cond mobile_form_factor` | rule |
@@ -957,11 +1019,11 @@ rationale, each decided in the core's additions register (S22).
 | Q2.58† | `dialog @ variant full_size cond mobile_form_factor (a narrower window: the full-window layer, Q2.15) / variant separate_window (the desktop); dialog.values.natural_size @ variant separate_window` | rule |
 | Q2.58† | `dialog.values.breakpoints @ cond mobile_form_factor` (measured Window, width AtMost the row's grid-unit width, setting `full_size`: the complement of `PageRow`'s "wider than" for the in-window dialog; R16) | rule |
 | K3.1 | `window.frame.shadow (= Shadow::Elevation of the ShadowSize step the reader reads; its box radius follows window.frame.corners)` | field |
-| K3.1 | `token.elevation.<key> (Breeze's window shadow sizes: two layers and a composite offset each)` | token |
+| K3.1 | `token.elevation.<key> (Breeze's window shadow sizes: two layers and a composite offset each, each layer's spread Shadow_Overlap negated and its own corner radius the window's radius plus half a pixel; S2.5, ADD-A135, ADD-A136)` | token |
 | K3.1 | `token.params.shadow.strength (ADD-A44)` | token |
 | K3.1 | `reader:kde:breezerc [Common] ShadowSize, ShadowStrength, ShadowColor` | reader |
 | K3.2 | `menu.body.shadow, tooltip.body.shadow, popover.body.shadow, toolbar.bar.shadow @ variant floating, menu.body.shadow @ context combo_box` | field |
-| K3.2 | `token.elevation.<key> (Breeze's popup shadow sizes)` | token |
+| K3.2 | `token.elevation.<key> (Breeze's popup shadow sizes: each layer's spread kstyle's Shadow_Overlap negated and its own corner radius the frame radius; S2.5, ADD-A136)` | token |
 | K3.2 | `reader:kde:breezerc [Common] ShadowSize, ShadowStrength, ShadowColor` | reader |
 | K3.3 | `component.mdi_sub_window.frame.shadow (the K3.2 table round sub-windows)` | component |
 | K3.4 | `button.body.shadow` | field |
@@ -979,24 +1041,28 @@ rationale, each decided in the core's additions register (S22).
 | K3.30 | `token.motion.speed_factor` | token |
 | K3.30 | `reader:kde:kdeglobals [KDE] AnimationDurationFactor` | reader |
 | K3.30 | `cond animations_off (factor 0)` | condition |
-| K3.31 | `token.motion.durations.breeze_state (factor times a base while the factor is set, breezerc AnimationsDuration otherwise)` | token |
-| K3.31 | `token.motion.timings.breeze_state (Steps: its count read from AnimationSteps)` | token |
-| K3.31 | `token.motion.durations.breeze_state` (the reader states it zero while breezerc [Style] AnimationsEnabled is off: Breeze's own switch stops only the Breeze engines the widgets flavour's parts use, not the Kirigami animations that `cond animations_off`, the global factor's condition, K3.30, stops) | token |
-| K3.31 | `PartStyle.transitions per part (each Breeze engine's parts in the rows above; the enable/disable cross-fade a transition on {disabled})` | field |
+| K3.31 | `token.motion.durations.animations (Breeze's Animations class, S4.1: while the factor is set, = floor(mul(<base>, token.motion.speed_factor)), truncated to whole ms, `breeze@6.8.2 kstyle/breezestyle.cpp:2080`, zero, which a factor below 0.01 gives, turning Breeze's animations off, `:2085`, a positive result turning them on, `:2081-2083`; breezerc AnimationsDuration otherwise)` | token |
+| K3.31 | `token.motion.timings.animations (Steps: its count read from AnimationSteps)` | token |
+| K3.31 | `token.motion (color_space PremultipliedSrgb: Breeze's fades paint KColorUtils::mix, kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166, S2.7, ADD-A125)` | token |
+| K3.31 | `token.motion.durations.animations` (the reader states it zero while kdeglobals sets no `AnimationDurationFactor` and breezerc [Style] AnimationsEnabled is off; a factor set overrides that switch, its product with 100 truncated to whole ms turning Breeze's animations on where positive and off where zero, as a factor below 0.01 gives, `breezestyle.cpp:2076-2085`: Breeze's own switch stops only the Breeze engines the widgets flavour's parts use, not the Kirigami animations that `cond animations_off`, the global factor's condition, K3.30, stops) | token |
+| K3.31 | `PartStyle.transitions per part (each Breeze engine's parts in the rows above; the enable/disable cross-fade a transition on {disabled}; each names its engine, Breeze, or BreezeTabBar for the tab bar's and the header view's, its test quoted from its updateState call, S2.7, ADD-A126)` | field |
 | K3.31 | `navigation_view.values.presentations (Fade) @ cond system_setting:stacked_widget_transitions (the stacked-widget fade, off by default)` | rule |
 | K3.31 | `reader:kde:breezerc [Style] AnimationsEnabled, AnimationSteps, AnimationsDuration, StackedWidgetTransitionsEnabled` | reader |
 | K3.33 | - | out (R1.1) |
 | K3.34 | - | out (R1.1) |
 | K3.35 | - (KWin's squash and maximize effects, which KWin runs on every window; its sliding popups, which only a window that asks for them through `KWindowEffects::slideWindow` gets: Plasma's own popups ask, `libplasma src/plasmaquick/popupplasmawindow.cpp:115`, `:132`, `src/plasmaquick/dialog.cpp:318`, and no Breeze, Kirigami, qqc2-desktop-style or plasma-integration source does, by search) | out (R1.1) |
-| K3.37 | `banner.values.presentations (Appear, Disappear: the message widget's height and opacity; = token.motion.durations.kf_timeline, = token.motion.timings.qt_timeline)` | field |
-| K3.37 | `expander.values.presentations (@expand, @collapse: the collapsible group; = token.motion.durations.kf_timeline, = token.motion.timings.qt_timeline)` | field |
-| K3.37 | `token.motion.durations.kf_timeline` | token |
-| K3.37 | `token.motion.timings.qt_timeline` | token |
-| K3.38† | `component.dock_widget.values.presentations (Move: the dock widgets' re-layout slide; = token.motion.durations.breeze_state, its timing)` | component |
-| K3.38† | `toolbar.values.presentations (Move: the toolbars' re-layout slide; = token.motion.durations.breeze_state, its timing)` | field |
+| K3.37 | `banner.values.presentations (Appear, Disappear: the message widget's height and opacity; = token.motion.durations.message_widget, = token.motion.timings.in_out_sine)` | field |
+| K3.37 | `expander.values.presentations (@expand, @collapse: the collapsible group; = max(<the source's floor>, token.motion.durations.animations), the style hint's duration, kcollapsiblegroupbox.cpp:114-116; = token.motion.timings.in_out_sine)` | field |
+| K3.37 | `token.motion.durations.message_widget` | token |
+| K3.37 | `token.motion.timings.in_out_sine` | token |
+| K3.38† | `component.dock_widget.values.presentations (Move: the dock widgets' re-layout slide; = token.motion.durations.animations, = token.motion.timings.in_out_quad, `qtbase@6.12.0 src/widgets/widgets/qwidgetanimator.cpp:62`)` | component |
+| K3.38† | `toolbar.values.presentations (Move: the toolbars' re-layout slide; = token.motion.durations.animations, = token.motion.timings.in_out_quad, `qtbase@6.12.0 src/widgets/widgets/qwidgetanimator.cpp:62`)` | field |
 | K3.39† | - | out (R1.1) |
-| K3.20 | `token.focus (FilledRing: width, paint, offset; corners Radius::FollowPart, R12's concentric default)` | token |
-| K3.20 | `input.body.focus, text_area.body.focus, combo_box.body.focus, button.body.focus, checkbox.box.focus, radio.ring.focus (circular), slider.thumb.focus (circular), dial.handle.focus, stepper.body.focus, group_box.body.focus (= token.focus)` | field |
+| K3.20 | `token.focus (Ring, the filled frame, S2.10's One ring, ADD-A141: width, paint, offset; offset 0, the ring's inner edge on the widget's box in Breeze's default branch, `breeze@6.8.2 kstyle/breezestyle.cpp:6626`, `:6628`, `:6771-6773`, which rings none of Breeze's own focus targets, each having a branch of its own, `:1658-1663`, so every part below states its offset; corners Radius::Px at Frame_FrameRadius, the ring's inner corner whatever the part's radius, its outer corner that plus the margin, `breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632`, `kstyle/breezemetrics.h:42`, S2.10)` | token |
+| K3.20 | `button.body.focus, combo_box.body.focus @ !variant editable (= token.focus, its offset from the part's box: Breeze draws these frames with `renderButtonFrame`, its box the widget rect less the shadow margin, `PenWidth::Shadow`, `breeze@6.8.2 kstyle/breezehelper.cpp:670`, `kstyle/breezehelper.h:360-363`, `kstyle/breezemetrics.h:28`, `kstyle/breezestyle.cpp:4566`, `:7865`, and the ring's inner edge is the widget rect less Breeze's inset, `innerRect.adjust(1, 1, -1, -1)`, `:6648`, so the offset is the shadow margin less that inset, positive: the ring's inner edge just outside the body's box; ADD-A123)` | field |
+| K3.20 | `input.body.focus, text_area.body.focus, stepper.body.focus, combo_box.body.focus @ variant editable (= token.focus, its offset from the part's box negative by Breeze's inset, `innerRect.adjust(1, 1, -1, -1)`, `breeze@6.8.2 kstyle/breezestyle.cpp:6648`: these frames are `renderFrame` on the whole widget rect, the line edit's, the text area's (a `QFrame`), the spin box's and the editable combo box's, `:4080`, `:3970`, `:7956`, `:7845`, `kstyle/breezehelper.cpp:479`, so the ring's inner edge lies inside the body's box by the inset; ADD-A123)` | field |
+| K3.20 | `checkbox.box.focus, radio.ring.focus (= token.focus, the ring flush with the drawn indicator: offset 0 to the indicator rect inset by 2, where Breeze draws the box and the circle, `breezestyle.cpp:6669`, `:6689`, `kstyle/breezehelper.cpp:843-844`, `:895`, `:995-996`; the radio's corners `Radius::Full { maximum: Absent }`, `breezestyle.cpp:6691`; a checkable group box's title checkbox is a `checkbox` and is ringed so, `:6764-6770`)` | field |
+| K3.20 | `slider.thumb.focus (= token.focus, flush with the drawn handle, the path renderSliderHandle draws, its inner edge inside the handle rect, a `Slider_ControlThickness` square, `breezestyle.cpp:3270`, by the inset Breeze adjusts it by plus half the frame pen, `strokedRect`, `kstyle/breezehelper.cpp:1160-1161`, `:1747-1757`, an ellipse: corners `Radius::Full { maximum: Absent }`, `breezestyle.cpp:6700`, `kstyle/breezehelper.cpp:1155-1167`), dial.handle.focus (= token.focus, its inner edge inside the handle rect, a `Slider_ControlThickness` square, `:3241`, by the inset Breeze adjusts it by, corners `Radius::Full { maximum: Absent }`, `breezestyle.cpp:6729`, `:6731`)` | field |
 | K3.20 | `<widget>.values.focus_visible_when (FocusVisibleWhen::Keyboard { … }, ADD-A16)` | field |
 | K3.21 | `tab.label.focus (Underline), group_box.focus_line.stroke, menu.item_label.stroke (the weak-focus line under the text, K1.62), menu_bar.item_label.stroke (K2.1)` | field |
 | K3.22 | `FocusIndicator.kind Underline (= qt_lighter of the highlight): the focus of parts with no frame; list.row_background.focus (the item views' rounded rect)` | field |
@@ -1004,7 +1070,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.23 | `slider.thumb.stroke @ {focused}` (K1.100); `scrollbar.thumb.fill @ context any scroll_view {focus_within}` (K1.92): the thumbs' focus colour, each on its own part | rule |
 | K3.23 | `role.window.decoration_focus` | role |
 | K3.24 | `FocusIndicator.transition` | field |
-| K3.24 | `PartStyle.transitions group Focus` | field |
+| K3.24 | `FocusIndicator.transition (each focus line's own engine, no group of its own: the tab's line, BreezeTabBar, K1.129; the check box's and radio button's label line is no indicator (one function draws both, `kstyle/breezestyle.cpp:1445-1450`): Breeze draws it on any focus, `enabled && State_HasFocus`, `kstyle/breezestyle.cpp:5739-5752`, a click's included, fading both ways, while the check box's focus frame shows on a keyboard focus alone, `:1650-1664`, so it is the label part's stroke under `{focused}`, as the group box's line is a stroke, K2.8, its fade a Stroke transition, engine Breeze any [focused] none [disabled], the KDE lane stating the part with its facts; the group box's line has none, K2.8; S2.10, ADD-A126)` | field |
 | K3.40 | `role.selection.<role> @ cond window_inactive (= kde_effects(kde_selection_inactive(<Selection's inactive input of that role>, <Window's inactive input of that role>, active(role.selection.background), <role kind>), kde_selection_inactive(<Selection's inactive background input>, <Window's inactive background input>, active(role.selection.background), background), inactive, <role kind>): KColorScheme's start for the Selection set's Inactive group, Window's colours (the background tinted toward Selection's) while token.kde.inactive_change_selection_color holds, else Selection's own (kcolorscheme.cpp:304-316, :374-378), with the inactive effects applied over it (:380-391; S2.2, R5.1))` | rule |
 | K3.40 | `token.kde.inactive, token.kde.inactive_change_selection_color, token.kde.inactive_enabled` | token |
 | K3.40 | `reader:kde:kdeglobals [ColorEffects:Inactive] ChangeSelectionColor, Enable` | reader |
@@ -1020,8 +1086,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.46 | `Font.weight, Font.width, Font.style (the style name mapped to them)` | field |
 | K3.46 | `TextStyle.case (ADD-A39)` | field |
 | K3.46 | `reader:kde:kdeglobals font strings (capitalization, letter and word spacing, stretch, style name, features, axes)` | reader |
-| K3.46 | `reader:kde:kcmfonts [General] forceFontDPI, Xft.dpi -> ReaderState.font_dpi` (the DPI the font strings' point sizes convert by, S9.4: platform-facts' *Font DPI override*, Plasma 6.7 on X11; none on Wayland or from Plasma 6.8, where the preset's `token.text.font_dpi` applies) | reader |
-| K3.46 | `token.text.font_dpi` (Plasma's DPI where the reader reports none, from the facts, S9.4, ADD-A103) | token |
+| K3.46 | `token.text.font_dpi` (Plasma's DPI, the reader reporting none (S9.4, ADD-A146), from the facts, S9.4, ADD-A103) | token |
 | K3.47 | - (`taskbarFont`, the Plasma panel's font: the shell draws the panel, no application does) | out (R1.1) |
 | K3.48† | `input.preedit.text, text_area.preedit.text (TextStyle.decoration and fill from the input method's attributes)` | field |
 | K3.48† | `input.caret @ {composing}; text_area.caret @ {composing}` | rule |
@@ -1031,32 +1096,35 @@ rationale, each decided in the core's additions register (S22).
 | K3.51 | `role.* @ cond window_inactive (kde_* over the inactive input roles)` | rule |
 | K3.51 | `input.inactive (KDE stated Inactive values)` | input |
 | K3.51 | `input.inactive.<set>.<key> in the preset's bases (Breeze's values as Plasma's applyScheme() writes them on its default path, "Accent color from color scheme", with no accent derivation; the reader states kdeglobals' [Colors:*][Inactive] results, S9.1, R25.1, ADD-A109)` | input |
-| K3.51 | `input.inactive.<set>.<key> in the accent layer (= kde_accent(<set>, <key>, inactive) over the scheme inputs in force, while no mapping palette applies, S2.2, S9.2)` | input |
+| K3.51 | `input.inactive.<set>.<key> in the accent-derivation layer (= kde_accent(<set>, <key>, inactive) over the accent and the scheme inputs in force, at each slot where a layer above the preset gives the accent in force and nothing elsewhere, beneath the reader or stand-in, each layer above replacing it, S2.2, S9.2)` | input |
 | K3.51 | `token.kde.inactive, token.kde.inactive_enabled` | token |
 | K3.51 | `reader:kde:kdeglobals [ColorEffects:Inactive], [Colors:*][Inactive]` | reader |
 | K3.52 | `role.<set>.background_active / background_link / background_visited / background_negative / background_neutral / background_positive (ADD-A48)` | role |
-| K3.53 | `role.@shade_light, role.@shade_midlight, role.@shade_mid, role.@shade_dark, role.@shade_shadow (ADD-A48)` | role |
-| K3.53 | `token.params.color.contrast (ADD-A44)` | token |
+| K3.53 | `role.@shade_light, role.@shade_midlight, role.@shade_mid, role.@shade_dark, role.@shade_shadow (ADD-A48; each = kde_shade(role.window.background, <role>, token.params.color.contrast), ADD-A121)` | role |
+| K3.53 | `token.params.color.contrast (ADD-A44; kdeglobals' [KDE] contrast as stored, kde_shade scaling it as KColorScheme's contrastF does)` | token |
 | K3.53 | `reader:kde:kdeglobals [KDE] contrast` | reader |
 | K3.54 | `role.complementary.*` | role |
 | K3.54 | `role.<set>.foreground_inactive / foreground_active / link / link_visited / negative / neutral / positive / background_alternate / decoration_focus / decoration_hover (tooltip, header, button, selection)` | role |
 | K3.54 | `reader:kde:kdeglobals [Colors:*] all seven sets` | reader |
+| K3.54 | `reader:kde:kdeglobals [General] AccentColor -> input.accent (both schemes, where set and not equal to transparent; else [Colors:Selection] BackgroundNormal at the read scheme, the portal's Highlight, and #00000000 at that scheme in for_preset.kde-breeze, S9.3)` | reader |
 | K3.54 | `role.<set>.<role> for each accent-dependent role, in the preset's bases (Breeze's scheme values as Plasma's default path, "Accent color from color scheme", writes them, with no accent derivation; the reader overrides them with kdeglobals' results, S9.1, R25.1, ADD-A109)` | role |
-| K3.54 | `role.<set>.<role> for each accent-dependent role, in the accent layer (= kde_accent(<set>, <key>, active) over the scheme inputs in force, while no mapping palette applies: the roles plasma-workspace's applyScheme() derives from the accent, S9.1's list from colorsapplicator.cpp, S2.2, S9.2)` | role |
+| K3.54 | `role.<set>.<role> for each accent-dependent role, in the accent-derivation layer (= kde_accent(<set>, <key>, active) over the accent and the scheme inputs in force, at each slot where a layer above the preset gives the accent in force and nothing elsewhere, beneath the reader or stand-in, each layer above replacing it: the roles plasma-workspace's applyScheme() derives from the accent, S9.1's list from colorsapplicator.cpp, S2.2, S9.2)` | role |
 | K3.54 | `input.kde_scheme.<set>.<key>` (the scheme file's values before Plasma applies the accent: Breeze's in the preset, the file `[General] ColorScheme` names in the reader, S9.1) | input |
-| K3.54 | `input.kde_scheme.<set>.inactive.<key>` (the scheme file's `[Colors:<Set>][Inactive]` values, for every set: a set without an `[Inactive]` group states its active values, as KColorScheme reads it; the accent layer's `kde_accent(<set>, <key>, inactive)` reads them, S2.2, S9.1, S9.2) | input |
+| K3.54 | `input.kde_scheme.<set>.inactive.<key>` (the scheme file's `[Colors:<Set>][Inactive]` values, for every set: a set without an `[Inactive]` group states its active values, as KColorScheme reads it; the accent-derivation layer's `kde_accent(<set>, <key>, inactive)` reads them, S2.2, S9.1, S9.2) | input |
 | K3.54 | `input.kde_scheme.inactive_groups` (per scheme, the sets whose scheme file has an `[Inactive]` group: Breeze's `Header` in the preset, K3.55; the user's file in the reader; a port's own; `kde_accent` branches on it, S2.2, S9.1) | input |
 | K3.60 | `IconStyle.state_effect @ {disabled} / {hover} (keys declared in icon_state_effects, each implemented to KIconEffect's source; S2.9)` | field |
 | K3.60 | `PartStyle.icon.state_effect, PartStyle.opacity @ {disabled} (to gray and semi-transparent)` | rule |
 | K3.60 | `token.params.icon_effect.<key> (the effects' amounts: the gamma of the active effect, the gray and transparency of the disabled one)` | token |
-| K3.61 | `IconStyle.fill (= surface.foreground), IconStyle.status_colors (= the status roles) per icon mode (ADD-A37)` | field |
+| K3.61 | `IconStyle.fill (= surface.foreground, ColorScheme-Text), IconStyle.symbolic_colors (background, highlight, highlighted_text, positive_text, neutral_text, negative_text, accent: KIconLoader's stylesheet classes, `kiconcolors.cpp:16-23`) per icon mode (ADD-A37, ADD-A130)` | field |
+| K3.61 | `PartStyle.icon.rendering_mode (from_icon: KIconLoader recolours an SVG's colour-scheme stylesheet classes in a theme that follows the colour scheme, Breeze's; S2.9, ADD-A130)` | field |
 | K3.62 | `PartStyle.icon.fill @ {selected} / {pressed} (selection foreground)` | rule |
 | K3.63 | `token.icons.sizes.toolbar, token.icons.sizes.keyed.main_toolbar, token.icons.sizes.small, token.icons.sizes.large, token.icons.sizes.dialog, token.icons.sizes.panel` | token |
-| K3.63 | `reader:kde:icon theme index.theme *Default sizes` | reader |
+| K3.63 | `reader:kde:icon theme index.theme *Default sizes` (`MainToolbarDefault` among them; a key the theme omits KIconTheme's own default for its group, `kiconthemes@6.31.0 src/kicontheme.cpp:160-167`, from KDE facts; S9.3, ADD-A140) | reader |
+| K3.63 | `reader:kde:kdeglobals [Icons] Theme` (into `token.icons.theme` under `for_preset.kde-breeze` wherever the value is not empty, also where it is no plain path component or names a theme not installed, the lookup then falling back by `token.icons.theme_fallback`; no such key leaving the preset's `breeze`, `kiconthemes@6.31.0 src/kicontheme.cpp:686`; S9.3, ADD-A148) | reader |
 | K3.64 | `token.pointer.theme, token.pointer.size (ADD-A46)` | token |
 | K3.64 | `reader:kde:kcminputrc [Mouse] cursorTheme, cursorSize` | reader |
 | K3.65† | `PartStyle.cursor per part: link.body.cursor, splitter.divider.cursor @ variant @column_view, list.accessory.cursor @ variant reorder, button.body.cursor @ variant help, sidebar.handle (the drawer edges)` | field |
-| K3.65† | `selectable_label.body.cursor` (Text: Kirigami's `SelectableLabel`, `kirigami@81ada72b src/controls/SelectableLabel.qml:266`; qqc2-desktop-style's `Label`, `org.kde.desktop/Label.qml:23`) | field |
+| K3.65† | `selectable_label.body.cursor @ cond flavor:kirigami` (Text: Kirigami's `SelectableLabel`, `kirigami@6.31.0 src/controls/SelectableLabel.qml:266`; qqc2-desktop-style's `Label` shows a pointing hand over a link only, `org.kde.desktop/Label.qml:22-24`, the `link`'s cursor) | rule |
 | K3.65† | `token.behavior.{hide_pointer_while_typing,hide_pointer_delay}` (KLineEdit hides the pointer after its delay, ADD-A86) | token |
 | K3.66† | - | out (R1.1) |
 | K3.70 | `token.behavior.double_click_time` | token |
@@ -1064,7 +1132,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.71 | `token.behavior.drag_threshold` | token |
 | K3.71 | `token.behavior.drag_time (ADD-A45)` | token |
 | K3.71 | `reader:kde:kdeglobals [KDE] StartDragDist, StartDragTime` | reader |
-| K3.72 | `token.behavior.scroll_lines_per_step` | token |
+| K3.72 | `token.behavior.scroll.wheel_step_lines` (ADD-A130) | token |
 | K3.72 | `reader:kde:kdeglobals [KDE] WheelScrollLines` | reader |
 | K3.73 | `token.behavior.single_click_activates @ cond system_setting:single_click (a `Tokens` rule; one route, S4.2; ADD-A45)` | token |
 | K3.73 | `reader:kde:kdeglobals [KDE] SingleClick -> cond system_setting:single_click` | reader |
@@ -1081,7 +1149,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.90 | `token.motion.speed_factor` | token |
 | K3.90 | `reader:kde:kdeglobals [KDE] AnimationDurationFactor` | reader |
 | K3.90 | `cond reduced_motion` | condition |
-| K3.91 | `token.params.color.contrast (ADD-A44)` | token |
+| K3.91 | `token.params.color.contrast (ADD-A44; kdeglobals' [KDE] contrast as stored, no reader conversion: kde_shade scales it by 0.1 as KColorScheme::contrastF does, kcolorscheme.cpp:519-527, ADD-A121)` | token |
 | K3.91 | `token.params.color.frame_contrast` | token |
 | K3.91 | `reader:kde:kdeglobals [KDE] contrast, frameContrast` | reader |
 | K3.92 | `menu.body.fill (translucent, Color.a)` | field |
@@ -1099,16 +1167,19 @@ rationale, each decided in the core's additions register (S22).
 | Q3.4 | `role.<set>.disabled.*` | role |
 | Q3.4 | `PartStyle fill, text, icon @ {disabled} (refer to disabled roles)` | rule |
 | Q3.5 | `role.global.status.info = role.<set>.foreground_active` | role |
+| Q3.5 | `role.global.accent_standalone = role.window.foreground_active` (the plain accent `applyScheme()` writes into ForegroundActive while the Selection background takes `accentBackground`, `colorsapplicator.cpp:178-181`, `:197-217`, `:229-236`; ADD-A122) | role |
 | Q3.10 | `role.<set>.negative / neutral / positive foregrounds` | role |
+| Q3.10 | `role.global.status.{success,warning,error}.fill, .standalone (= role.window.positive / neutral / negative: Kirigami's InlineMessage and Badge draw the status in Theme.*TextColor, `kirigami@6.31.0 src/controls/InlineMessage.qml:26-31`, `src/controls/Badge.qml:53-62`), .foreground (= role.window.foreground: KMessageWidget keeps the parent's WindowText, `kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:185-186`), .background (= role.window.background_positive / neutral / negative, K3.52), .background_solid (absent)` (ADD-A122) | role |
 | Q3.11 | `role.<set>.decoration_hover` | role |
-| Q3.11 | `chip.body.stroke @ {hover}` (the chip's hover border, = role.<set>.decoration_hover); `switch.thumb.stroke` (the handle's border) | rule |
+| Q3.11 | `chip.body.stroke @ {hover}` (the chip's hover border, = role.<set>.decoration_hover); `switch.thumb.stroke @ {hover} / {focus_visible}` (= role.button.decoration_hover: the handle's border hovered or with visual focus, its own Button set; at rest it is Q1.101's `kirigami_lerp`; `qqc2-desktop-style@6.31.0 org.kde.desktop/private/SwitchIndicator.qml:21-22`, `:30`; Kirigami's `hoverColor`, `kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:311`; ADD-A122) | rule |
 | Q3.12 | `role.<set>.decoration_focus` | role |
 | Q3.12 | `PartStyle.fill @ {focus_visible}` | rule |
 | Q3.13 | `role.<set>.background_alternate` | role |
 | Q3.13 | `list.row_background.fill @ pos parity even variant alternating_rows (ADD-B06; Qt's views alternate on current & 1, zero-based)` | rule |
 | Q3.14 | `token.params.color.frame_contrast (ADD-A44)` | token |
 | Q3.14 | `reader:kde:kdeglobals [KDE] frameContrast (store the factor, not only finished colours)` | reader |
-| Q3.15 | `role.<set>.border = mix(background, foreground, token.params.color.frame_contrast)` | role |
+| Q3.15 | `role.<set>.border = kcu_mix(background, foreground, token.params.color.frame_contrast)` (Breeze's frame colour, `breezehelper.cpp:144`; Breeze draws Kirigami's buttons and fields with it too, `:250`, `:684-706`) | role |
+| Q3.15 | `group_box.body.stroke @ variant @quick_frame cond flavor:kirigami / cond flavor:kirigami; menu.body.stroke, popover.body.stroke, tooltip.body.stroke @ cond flavor:kirigami = kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)` (the frames qqc2-desktop-style's own QML draws, `Frame.qml:25`, `GroupBox.qml:39`, `Menu.qml:133`, `Popup.qml:50`, `ToolTip.qml:115`; the same expression on its own rows: qqc2's `Dialog.qml:85` and Kirigami's `Dialog.qml:341` (Q1.112), the search field's popup `SearchField.qml:183` (Q1.16), the range slider's handles `RangeSlider.qml:32`, `:52` (Q1.46), Kirigami's card `DefaultCardBackground.qml:70` (Q1.129), chip `DefaultChipBackground.qml:30` (Q2.23) and separator `Separator.qml:65-69` (Q1.95), kirigami-addons' dialog surface `DialogRoundedBackground.qml:25` (K-KA-18†), segmented button `SegmentedButton.qml:112` (K-KA-24†), floating buttons `FloatingButton.qml:137` (K-KA-26†), banner line `Banner.qml:239` (K-KA-29†), video controls `VideoMaximizeDelegate.qml:349`, `:365` (K-KA-35†) and onboarding tip `OnboardToolTip.qml:52`, `OnboardingOverlay.qml:164`, `:187` (K-KA-45†); on the Button set, not the surface in scope: the switch's thumb `private/SwitchIndicator.qml:30` (Q1.101), RoundButton `RoundButton.qml:77` (Q2.5) and the double floating button's halves `DoubleFloatingButton.qml:159`, `:256` (K-KA-27†); ADD-A121) | rule |
 | Q3.16 | `PartStyle.fill.append = alpha(...) @ {hover} / {pressed} / {checked}` | rule |
 | Q3.17 | `PartStyle.icon.fill (text or highlighted-text role)` | field |
 | Q3.17 | `PartStyle.icon.fill @ {selected}` | rule |
@@ -1121,32 +1192,34 @@ rationale, each decided in the core's additions register (S22).
 | Q3.21 | `PartStyle.shadow Elevation(key) per surface part: menu.body.shadow, popover.body.shadow, tooltip.body.shadow, dialog.body.shadow, menu.body.shadow @ context autocomplete, card.body.shadow (with its lift layer, Q1.128), toast.body.shadow, button.body.shadow @ variant circular, slider.thumb.shadow @ variant range, sidebar.edge_shadow.fill, list.swipe_area.shadow` | field |
 | Q3.22 | `role.global.scrim` | role |
 | Q3.22 | `dialog.scrim.fill @ cond flavor:kirigami; sidebar.scrim.fill @ variant overlay; sheet.scrim.fill @ variant @overlay` | rule |
-| Q3.22 | `dialog.scrim.transitions, sidebar.scrim.transitions, sheet.scrim.transitions (Opacity; = token.motion.durations.long, its timing)` | field |
+| Q3.22 | `dialog.values.presentations (Appear, Disappear: a Fade step on scrim; ADD-A146), sidebar.scrim.transitions (Opacity; = token.motion.durations.long, its timing), sheet.values.presentations (Appear, Disappear: a Fade step on scrim)` | field |
 | Q3.23 | `token.motion.durations.very_short, token.motion.durations.short, token.motion.durations.long, token.motion.durations.very_long` | token |
-| Q3.24 | `token.motion.durations.long (= max(mul(<the read longDuration>, token.motion.speed_factor), <floor>), ADD-A56)` | token |
-| Q3.24 | `token.motion.durations.very_short, token.motion.durations.short, token.motion.durations.very_long (= mul(token.motion.durations.long, <factor>))` | token |
+| Q3.24 | `token.motion.durations.long (= max(round(mul(<the read longDuration>, token.motion.speed_factor)), <floor>): `qRound`, then `qMax`, `qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:45`, `:49`; ADD-A56, ADD-A122)` | token |
+| Q3.24 | `token.motion.durations.very_short, token.motion.durations.short (= floor(div(token.motion.durations.long, <divisor>)): C++'s integer division, `plasmadesktopunits.cpp:51-52`; ADD-A122), token.motion.durations.very_long (= mul(token.motion.durations.long, <factor>), `:54`)` | token |
 | Q3.24 | `reader:kde:plasmarc [Units] longDuration` | reader |
 | Q3.24 | `reader:kde:kdeglobals [KDE] AnimationDurationFactor` | reader |
 | Q3.25 | `token.motion.speed_factor @ cond animations_off` | rule |
 | Q3.25 | `token.motion.durations.* (the floor through max, ADD-A56) @ cond animations_off; the transitions whose duration resolves to zero run instantly; spinner.values.loop @ cond animations_off (Q1.120)` | token |
 | Q3.26 | `token.motion.timings.<key> (one declared timing per easing curve in use)` | token |
+| Q3.26 | `token.motion @ cond flavor:kirigami (color_space StraightSrgb8: QML's ColorAnimation through QVariantAnimation's colour interpolator, qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22, S2.7, ADD-A125)` | rule |
 | Q3.26 | `Timing::Platform(PlatformCurve::KirigamiVelocity)` (SmoothedAnimation by velocity, CONTRA-2) | token |
+| Q3.26 | `PartStyle.transitions @ cond flavor:kirigami (engine QtQuick, for the QML `Behavior`s Kirigami and qqc2-desktop-style state, the parts qqc2 draws through Breeze's style being Breeze's, K1.30: those Behaviors start from the value drawn over their full duration, animate a theme switch, and retarget a SmoothedAnimation with its velocity, `qtdeclarative@6.12.0 src/quick/util/qquickbehavior.cpp:361-426`; S2.7, ADD-A126)` | rule |
 | Q3.27 | `token.motion.durations.human_moment (unscaled)` | token |
 | Q3.28 | `tooltip.values.show_delay` | field |
-| Q3.28 | `tooltip.values.show_delay (= token.behavior.long_press) @ cond tablet_mode` | rule |
+| Q3.28 | `tooltip.values.show_delay (= token.behavior.long_press) @ cond tablet_mode cond flavor:kirigami` (qqc2's ToolTip, `ToolTip.qml:44`, as Q1.36) | rule |
 | Q3.29 | `token.params.layout.grid_unit (ADD-A44)` | token |
 | Q3.29 | `Length expressions mul(token.params.layout.grid_unit, <n>)` | field |
 | Q3.30 | `checkbox.label.focus, radio.label.focus (Q1.21); button.body.focus, input.body.focus, tab.label.focus (keyboard only: focus_visible_when); bottom_tab_bar.item.focus (Q2.36)` | field |
 | Q3.30 | `link.text.text.font.weight @ {focus_visible} (Q1.135); list.row_background.fill @ {focus_visible} (Q1.78); switch.thumb.stroke @ {focus_visible} (Q1.101)` | rule |
 | Q3.31 | `cond tablet_mode` | condition |
 | Q3.31 | `cond input:touch` | condition |
-| Q3.31 | `menu.item.min_height, menu.item_icon.icon.size @ cond input:touch` | rule |
-| Q3.31 | `scrollbar.thumb.fill, scrollbar.thumb.min_width, scrollbar.thumb.corners, scrollbar.values.auto_hide_delay, scrollbar.values.presentations @ cond tablet_mode cond flavor:kirigami / cond input:touch cond flavor:kirigami (the overlay scroll bar, Q1.41)` | rule |
-| Q3.31 | `tooltip.values.show_on_press @ cond tablet_mode` | rule |
-| Q3.31 | `input.body.fill, input.body.stroke @ {hover} cond tablet_mode (as at rest: no hover look)` | rule |
-| Q3.31 | `input.selection_handle.fill, input.selection_handle.min_width, input.selection_handle.min_height @ cond tablet_mode` | rule |
+| Q3.31 | `menu.item.padding, menu.item_icon.icon.size @ cond flavor:kirigami cond input:touch` (Q1.28's and Q1.29's lines: the row's vertical padding and its icon, both by the transient-touch setting, `MenuItem.qml:34`, `:64`; this row restates no fact of its own) | rule |
+| Q3.31 | `scrollbar.thumb.fill, scrollbar.thumb.min_width, scrollbar.thumb.corners, scrollbar.values.auto_hide_delay, scrollbar.values.presentations @ cond input:touch cond flavor:kirigami` (the overlay scroll bar, Q1.41's lines: `ScrollBar.qml:24` reads the transient-touch setting alone, no tablet mode) | rule |
+| Q3.31 | `tooltip.values.show_on_press @ cond tablet_mode cond flavor:kirigami` (Q1.36's line, `ToolTip.qml:39-44`) | rule |
+| Q3.31 | `input.body.fill, input.body.stroke @ {hover} cond tablet_mode cond flavor:kirigami` (as at rest: no hover look, `TextField.qml:46`) | rule |
+| Q3.31 | `input.selection_handle.fill, input.selection_handle.min_width, input.selection_handle.min_height @ cond tablet_mode cond flavor:kirigami` (Q1.14's line, `private/MobileCursor.qml:23`) | rule |
 | Q3.31 | `sidebar.handle @ cond tablet_mode cond flavor:kirigami` | rule |
-| Q3.31 | `sheet.handle @ cond mobile_form_factor` | rule |
+| Q3.31 | `sheet.handle @ cond input:touch` (Q2.39's line: the transient-touch setting, `OverlaySheet.qml:275`) | rule |
 | Q3.31 | `cond mobile_form_factor` | condition |
 | Q3.31 | `reader:kde:Kirigami Settings.isMobile (what it reads, to verify) -> cond mobile_form_factor` | reader |
 | Q3.32 | `token.text.rendering.engine @ cond unit_scale (native rendering, ADD-A76) / !cond unit_scale (Qt's rendering) (ADD-B04)` | rule |
@@ -1171,12 +1244,12 @@ rationale, each decided in the core's additions register (S22).
 | K-SF09† | `code_editor.dynamic_wrap_indicator.fill (Pattern QtBrush Dense4 in the marker's colour, ADD-B01)` | field |
 | K-SF10† | `code_editor.syntax_span.text (fill, weight, style, decoration), code_editor.syntax_span.fill @ variant comment / variant string / variant function / variant constant / variant preprocessor / variant special_char / variant error / variant warning / variant type / variant decimal / variant base_n / variant float / variant @<role> (the keyed roles and per-language overrides)` | rule |
 | K-SF10† | `code_editor.syntax_span.text.fill @ {text_selected}` (a span whose text lies in the selection: the style's selected-text colour) | rule |
-| K-SF11† | `code_editor.misspelling.text (its decoration's paint; its `thickness` and `offset` = `element.font_underline_thickness`, `element.font_underline_offset`, S2.8)` | field |
+| K-SF11† | `code_editor.misspelling.text (its decoration's paint; its `thickness` and `offset` Qt's drawn line, register U754's, S2.8, ADD-A130, ADD-A147)` | field |
 | K-SF11† | `code_editor.template_field.fill` | field |
 | K-SF11† | `code_editor.template_placeholder.fill / @ {focused} / @ {read_only}` | rule |
 | K-SF12† | `rich_text.heading_1.text … rich_text.heading_6.text (the weight restated; text.font.size = mul(base, <factor>) each, base the document's font) @ variant markdown` | rule |
-| K-SF13† | `rich_text.inline_code.text (= token.text.roles.monospace, as the catalogue states it), rich_text.inline_code.fill (Absent) @ variant markdown` | rule |
-| K-SF13† | `rich_text.code_block.text (= token.text.roles.monospace), rich_text.code_block.fill (Absent), rich_text.code_block.margin (none) @ variant markdown` | rule |
+| K-SF13† | `rich_text.inline_code.text (leaf by leaf: token.text.roles.monospace, but its font.size, the enclosing text's: on a code span the importer clears the fixed font's point and pixel sizes, qtbase@6.12.0 src/gui/text/qtextmarkdownimporter.cpp:451-456), rich_text.inline_code.fill (Absent) @ variant markdown` | rule |
+| K-SF13† | `rich_text.code_block.text (leaf by leaf: token.text.roles.monospace), rich_text.code_block.fill (Absent), rich_text.code_block.margin (none) @ variant markdown` | rule |
 | K-SF13† | `rich_text.code_block.text.wrap @ variants {markdown,fenced}` (`fenced` the `code_block` element's content variant, `markdown` its widget's, which the element's query sees: a fenced block's lines do not wrap) | rule |
 | K-SF14† | `rich_text.block_quote.fill (Absent), rich_text.block_quote.stroke (Absent)` | field |
 | K-SF14† | `rich_text.block_quote.margin (the right margin), rich_text.values.quote_indent_per_level` | field |
@@ -1192,7 +1265,7 @@ rationale, each decided in the core's additions register (S22).
 | K-SF20† | - | out (R1.1) |
 | K-SF21† | `dialog.values.placement @ cond flavor:kirigami (CenteredInHost)` | placement |
 | K-SF22† | `dialog.values.placement (CenteredInHost, host Overlay) @ cond flavor:kirigami` | placement |
-| K-SF23† | `sheet.values.anchor, sheet.values.min_top_inset @ variant @overlay` | field |
+| K-SF23† | `sheet.values.placement (CenteredInHost, its edge_margin.top the top floor) @ variant @overlay` | placement |
 | K-RL01† | `component.command_bar.frame.fill, component.command_bar.frame.stroke, component.command_bar.frame.padding` | component |
 | K-RL01† | `component.command_bar.frame.shadow (a ShadowLayer coloured role.@shade_dark)` | component |
 | K-RL01† | `input @ variant flat context component.command_bar` | rule |
@@ -1205,10 +1278,9 @@ rationale, each decided in the core's additions register (S22).
 | K-RL01† | `component.command_bar.frame.{min_width,max_width} (= max(div(element.window_width, <divisor>), <minimum width>)), component.command_bar.frame.{min_height,max_height} (= max(div(element.window_height, <divisor>), <minimum height>))` (its width and height follow the space it opens in, with a floor: one home in the frame's fields) | component |
 | K-RL01† | `component.command_bar.values.placement (KCommandBar; the top offset its edge_margin.top)` | placement |
 | K-RL01† | `role.@shade_dark, role.@shade_shadow` | role |
-| K-RL02† | `list.disclosure.glyph @ context shortcuts_dialog / context shortcuts_dialog dir rtl / {open} context shortcuts_dialog (the in-row extender's arrow on the item panel, open: its own state)` | rule |
+| K-RL02† | `list.disclosure.glyph @ context shortcuts_dialog / context shortcuts_dialog dir rtl / context list.row {open} context shortcuts_dialog (the in-row extender's arrow on the item panel; the extended row's open, read by context, ADD-A146)` | rule |
 | K-RL02† | `list.row_background @ context shortcuts_dialog (the item panel)` | rule |
-| K-RL02† | `button.icon.glyph (ThemeIcon configure), button.label.text (the native shortcut text) @ variant @key_sequence context shortcuts_dialog` | rule |
-| K-RL02† | `button.body.fill, button.body.stroke (held pressed), button.label.text @ variant @key_sequence {@recording} context shortcuts_dialog` | rule |
+| K-RL02† | `button.icon.glyph (ThemeIcon configure), button.label.text (the native shortcut text) @ variant @key_sequence context shortcuts_dialog` (while it records, only the string changes, to "Input" or the partial sequence and " …", the button keeping its usual states: its click starts the recorder, `kxmlgui@6.31.0 src/kkeysequencewidget.cpp:416`, `:526-530`, and the private `startRecording()` that would hold it pressed, `:373-377`, has no caller; ADD-A139) | rule |
 | K-RL02† | `button.icon.glyph (ThemeIcon by direction) @ variants {tool,clear_field} context shortcuts_dialog / variants {tool,clear_field} context shortcuts_dialog dir rtl` | rule |
 | K-RL03† | - (plasma-emojier, Plasma's emoji picker: a separate Plasma program, `emojier/app/org.kde.plasma.emojier.desktop`, which no application draws) | out (R1.1) |
 | K-RL04† | `component.char_select.table.fill (Surface View background), component.char_select.table.bindings` | component |
@@ -1230,12 +1302,12 @@ rationale, each decided in the core's additions register (S22).
 | K-FM03† | `Selector.direction Rtl (S7): the dir rtl rules per part` | rule |
 | K-FM03† | `Glyph.mirroring, token.icons.mirroring (S2.9)` | field |
 | K-FM03† | `window.values.caption_button_layout @ dir rtl` | rule |
-| K-FM03† | `reader:kde:QGuiApplication layoutDirection` | reader |
+| K-FM03† | `RootInputs.direction, Element.direction (the layout direction, S8)` (the connector's: its toolkit's layout direction, else the application's; Qt's is `QGuiApplication::layoutDirection()`, which no reader calls, a reader linking no Qt and `ReaderState` holding no direction) | field |
 | K-P3-1† | `window.values.resize_band (outside per side, = token.params.layout.large_spacing; the top band above the title bar)` | field |
 | K-P3-1† | `window.values.resize_band (the sides and the bottom) @ cond system_setting:no_borders / (the sides only) @ cond system_setting:no_side_borders` | rule |
 | K-P3-1† | `window.values.resize_band (Absent on a maximised axis) @ cond maximized / cond tiled:top / cond tiled:bottom / cond tiled:left / cond tiled:right` | rule |
 | K-P3-1† | `window.resize_zone.cursor @ variant top / variant right / variant bottom / variant left / variant top_left / variant top_right / variant bottom_right / variant bottom_left (the theme's resize shapes, K3.64)` | rule |
-| K-P3-2† | `window.values.caption_button_capabilities (Closable, Maximizable, Minimizable, Shadeable, ProvidesHelp; WhenMissing Hide)` | field |
+| K-P3-2† | `window.values.caption_item_requirements (Closable, Maximizable, Minimizable, Shadeable, ProvidesHelp, each on its button; WhenMissing Hide)` | field |
 | K-P3-3† | - | out (R1.1) |
 | K-P3-4† | `tab.label.text.elision (None)` | field |
 | K-P3-4† | `tab.values.overflow, tab.values.scroll_to_selected, tab.values.scroll_margin` | field |
@@ -1246,22 +1318,22 @@ rationale, each decided in the core's additions register (S22).
 | K-P3-5† | `combo_box.values.popup_placement (below the control) @ cond flavor:kirigami` | rule |
 | K-P3-5† | `menu.body.corners @ {placed_below} / {placed_above} (the joined edge, K1.64)` | rule |
 | K-P3-6† | `tooltip.values.placement (QtTooltip)` | placement |
-| K-P3-7† | `dialog.values.message_wrap.{wrap_above_px,min_width_px,elide_above_px,scroll_above_px} @ variant alert (expressions on element.screen_width, element.screen_height and widget.message.char_width, the message part's font: a widget value has none, S2.2; ADD-B17)` | field |
-| K-P3-7† | `dialog.values.message_wrap.item_list_max_width_px (= mul(element.screen_width, <fraction>)), dialog.values.message_wrap.details_min_lines @ variant alert` | field |
+| K-P3-7† | `dialog.values.message_wrap.{wrap_above,min_width,elide_above,scroll_above} @ variant alert (expressions on element.screen_width, element.screen_height and widget.message.char_width, the message part's font: a widget value has none, S2.2; ADD-B17)` | field |
+| K-P3-7† | `dialog.values.message_wrap.item_list_max_width (= mul(element.screen_width, <fraction>)), dialog.values.message_wrap.details_min_lines @ variant alert` | field |
 | K-P3-8† | `about_dialog.icon.icon.size, about_dialog.name.text, about_dialog.version.text @ cond flavor:widgets` | rule |
 | K-P3-8† | `tab @ context about_dialog` | rule |
 | K-P3-8† | `tab.scroll_arrow (absent = true) @ context about_dialog` | rule |
 | K-P3-8† | `about_dialog.credits.text (word-wrapped, with links); about_dialog.section_title.text (the components' names, their weight restated) @ cond flavor:widgets` | rule |
 | K-P3-8† | `about_dialog.person_name.text (its weight restated), about_dialog.person_task.text, about_dialog.person_task.opacity @ cond flavor:widgets` | rule |
 | K-P3-8† | `button.icon.glyph (ThemeIcon) @ variant icon_only context about_dialog (internet-services, mail-send)` | rule |
-| K-P3-8† | `dialog.action_area @ context about_dialog` | rule |
-| K-P3-8† | `button @ variant close context dialog.action_area context about_dialog` | rule |
+| K-P3-8† | `dialog.action_area @ variant about cond flavor:widgets` (the hosting dialog's own part: the dialog is the about content's ancestor, so selected by its content variant, as K-KA-44†'s `natural_size`) | rule |
+| K-P3-8† | `button @ variant close context dialog.action_area variant about` | rule |
 | K-P3-9† | `dialog; input @ context dialog; list @ context dialog; expander @ context dialog; checkbox @ context dialog` (QPrintDialog, QPageSetupDialog and KIO's KOpenWithDialog, widget dialogs drawn in the application's process, in by R1.1: KOpenWithDialog's URL requester an `input`, its application tree a `list` with its header hidden, so no header is queried, its "Terminal options" group the KCollapsibleGroupBox `expander` of K1.250–K1.251, its check boxes `checkbox`) | rule |
-| K-P3-9† | `page_preview.{body.padding,body.min_width,body.min_height,page_shadow.stroke,page_shadow.transform,page.fill,margins.stroke,margins.padding,filler_text.text}, page_preview.values.{filler_gap_fraction,shadow_lines}` (QPageSetupDialog's page preview, `qpagesetupdialog_unix.cpp:104-141`: the page `= role.@shade_light`; its shadow lines, one `page_shadow` element each, the bottom and right edges of the page's box moved out by the line's step, in `role.@shade_mid` at an opacity falling with `element.item_index`; the dotted margin rectangle and the filler text in `role.@shade_dark`, the filler text's font scaled from the body font by the source's factor) | field |
+| K-P3-9† | `page_preview.{body.padding,body.min_width,body.min_height,page_shadow.stroke,page_shadow.transform,page.fill,margins.stroke,margins.padding,filler_text.text}, page_preview.values.{filler_gap_fraction,shadow_lines}` (QPageSetupDialog's page preview, `qpagesetupdialog_unix.cpp:106-144` at `qtbase@6.12.0`: the page `= role.@shade_light`; its shadow lines, one `page_shadow` element each, the bottom and right edges of the page's box moved out by the line's step, in `role.@shade_mid` at an opacity falling with `element.item_index`; the dotted margin rectangle and the filler text in `role.@shade_dark`, the filler text's font scaled from the body font by the source's factor) | field |
 | K-P3-9† | - (the print and Open With dialogs of a request that goes through the portal, which xdg-desktop-portal-kde draws in its own process: `xdg-desktop-portal-kde src/print.cpp:520`, `src/AppChooserDialog.qml`) | out (R1.1) |
-| K-P3-10† | `chart.body.fill, chart.body.bindings (Surface(View)) @ variant @line / variant @pie` | rule |
+| K-P3-10† | `chart.body.fill, chart.body.bindings (Surface(View)) @ variant line / variant @pie` | rule |
 | K-P3-10† | `chart.series.fill, chart.legend_swatch.fill (= kqc_series_color(<seed> = role.global.accent, element.item_count, element.item_index), ADD-A57, ADD-B15)` | field |
-| K-P3-10† | `chart.series.stroke @ variant @line` (the line chart's stroked series, its width and paint by the same expression) | rule |
+| K-P3-10† | `chart.series.stroke @ variant line` (the line chart's stroked series, its width and paint by the same expression) | rule |
 | K-P3-10† | `chart.grid_line_major.stroke, chart.grid_line_minor.stroke (a stated colour, not a role), chart.values.grid_lines` | field |
 | K-P3-10† | `chart.axis_label.text, chart.values.labels_per_axis` | field |
 | K-P3-10† | `chart.legend.padding, chart.legend_entry.padding (each entry's padding, `LegendDelegate.qml`), chart.legend_swatch.min_width, chart.legend_label.text, chart.values.legend_gap` | field |
@@ -1280,7 +1352,7 @@ rationale, each decided in the core's additions register (S22).
 | K-P3-13† | `autocomplete.values.placement (KTextEditorCompletion: under the completion's start, its gap = an expression on the font's height; kept inside the window) @ context code_editor` | placement |
 | K-P3-13† | `autocomplete.details_pane @ context code_editor (the argument hints and the documentation tip)` | rule |
 | K-P3-14† | `code_editor.annotation_border.stroke @ {hover}; code_editor.annotation_border.padding` | rule |
-| K-P3-15† | `token.theme_change (the toolkit's own: KWin fades the windows)` | token |
+| K-P3-15† | `token.theme_change (Instant: Breeze's engines and Qt Quick's behaviours stop nothing on a palette change and add no window effect, `breeze@6.8.2 kstyle/breezestyle.cpp:1693-1696`, `:2059-2107`; KWin's fade of every window is KWin's own, the row below; S4.3, ADD-A126)` | token |
 | K-P3-15† | - (KWin's Blend Changes cross-fade of every window) | out (R1.1) |
 | K-P3-16† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | K-P3-16† | `token.behavior.key_repeat` (kcminputrc's `KeyRepeat` off, keys never repeating: `none`, `Behavior.key_repeat`'s `None`; ADD-A104) | token |
@@ -1301,9 +1373,9 @@ rationale, each decided in the core's additions register (S22).
 | K-P3-21† | - | out (R1.1) |
 | K-P3-22† | - | out (R1.1) |
 | K-P3-23† | - | out (R1.1) |
-| K-P3-24† | `cond system_setting:ui_effects (ADD-A04)` | condition |
-| K-P3-24† | `menu.values.presentations, tooltip.values.presentations @ !cond system_setting:ui_effects` (the empty list: the menu and the tooltip appear without animation; `UI_AnimateMenu`, `UI_FadeMenu`, `UI_AnimateTooltip`, `UI_FadeTooltip`) | rule |
-| K-P3-24† | `menu.values.presentations @ !cond system_setting:ui_effects context combo_box` (the combo box's popup, `UI_AnimateCombo`; the tool box's page animation, `UI_AnimateToolBox`, on `component.tool_box` where the value phase confirms it) | rule |
+| K-P3-24† | `cond system_setting:graphic_effects_level (ADD-A04)` (KDE's own key: `ui_effects` is Win32's `SPI_GETUIEFFECTS`, one key naming one setting) | condition |
+| K-P3-24† | `menu.values.presentations, tooltip.values.presentations @ !cond system_setting:graphic_effects_level` (the empty list: the menu and the tooltip appear without animation; `UI_AnimateMenu`, `UI_FadeMenu`, `UI_AnimateTooltip`, `UI_FadeTooltip`) | rule |
+| K-P3-24† | `menu.values.presentations @ !cond system_setting:graphic_effects_level context combo_box` (the combo box's popup, `UI_AnimateCombo`; the tool box's page animation, `UI_AnimateToolBox`, on `component.tool_box` where the value phase confirms it) | rule |
 | K-P3-24† | `reader:kde:kdeglobals [KDE] GraphicEffectsLevel` | reader |
 | K-RV1† | `scrollbar.values.trough_click` | field |
 | K-RV1† | `reader:kde:kdeglobals [KDE] ScrollbarLeftClickNavigatesByPage -> scrollbar.values.trough_click` | reader |
@@ -1349,15 +1421,16 @@ rationale, each decided in the core's additions register (S22).
 | K-P4-13† | `scrollbar.thumb.min_height, scrollbar.thumb.min_width (whether it bounds the shortened thumb: to verify)` | field |
 | K-P4-14† | `rich_text.heading_1.text … rich_text.heading_6.text (heading_1 to heading_5 with the weight restated and text.font.size = mul(base, <factor>); heading_6 without either) @ variant html` | rule |
 | K-P4-14† | `rich_text.heading_1.margin … rich_text.heading_6.margin, rich_text.{paragraph,preformatted,block_quote,definition_term,definition_description}.margin, rich_text.values.list_indent_per_level (the list's) @ variant html` | rule |
-| K-P4-14† | `rich_text.inline_code.text, rich_text.preformatted.text (font = token.text.keyed.fixed; preserved white space) @ variant html` | rule |
+| K-P4-14† | `rich_text.inline_code.text, rich_text.preformatted.text (font.family = token.text.keyed.fixed.font.family, every other leaf the enclosing text's: Qt's HTML parser gives code and preformatted text the fixed font's family alone, qtbase@6.12.0 src/gui/text/qtexthtmlparser.cpp:2182-2197; preserved white space) @ variant html` | rule |
 | K-P4-14† | `rich_text.list_marker @ variant html (nested lists indent, rich_text.values.list_indent_per_level)` | rule |
 | K-P4-14† | `link.text.text (fill = the link role, underlined) @ variant inline context rich_text` | rule |
 | K-P4-14† | `rich_text.table_header_cell.text (its weight restated, centred), rich_text.table_cell.text @ variant html` | rule |
 | K-KA-1† | `form.card.bindings (Surface(View)) @ variant @ka_form_card cond flavor:kirigami` | rule |
-| K-KA-1† | `form.card.stroke (= ka_card_border(background, text), ADD-A66) @ variant @ka_form_card` | rule |
+| K-KA-1† | `form.card.stroke (= ka_card_border(surface.background, surface.foreground), ADD-A66: kirigami_lerp(surface.background, surface.foreground, 0.15) on a light background, FormCardBackground.qml:18-23) @ variant @ka_form_card` | rule |
 | K-KA-1† | `form.card.shadow (one layer) @ variant @ka_form_card / variant @ka_form_card cond scheme:dark (its blur)` | rule |
 | K-KA-1† | `form.values.breakpoints (the card width limit: measured Allocation, the card's width, width Above it, `FormCard.qml:97`'s "wider than", setting `@width_limited`; R16)` | field |
 | K-KA-1† | `form.card.corners (rounded), form.card.padding @ variants {@ka_form_card,@width_limited} (set by form.values.breakpoints, R16); form.card.corners (square), form.card.padding (past both sides) @ variant @ka_form_card !variant @width_limited` | rule |
+| K-KA-2† | `form.row.fill (= alpha(surface.foreground, 0)) @ variant @ka_form_card` (transparent at rest: the row's background is the text colour at an opacity that is zero while the row is neither pressed, focused nor hovered, `kirigami-addons@1.15.0 src/formcard/FormDelegateBackground.qml:39-46`; stated drawn so the state rules' appends draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1; the radio selector's row, which draws no background, K-KA-25†) | rule |
 | K-KA-2† | `form.row.fill.append (= alpha(surface.foreground, <fraction>)) @ {hover} variant @ka_form_card !cond tablet_mode / {focus_visible} variant @ka_form_card / {pressed} variant @ka_form_card / {disabled} variant @ka_form_card` | rule |
 | K-KA-2† | `form.row.transitions (Fill; = token.motion.durations.short, Timing::Linear: no easing set) @ variant @ka_form_card` | rule |
 | K-KA-2† | `form.row.corners @ pos first variants {@ka_form_card,@width_limited} / pos last variants {@ka_form_card,@width_limited} (the card's radius)` | rule |
@@ -1375,7 +1448,7 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-5† | `button @ variant tool context form.group_title (the trailing actions)` | rule |
 | K-KA-5† | `form.group_description.text (fill = surface.disabled.foreground; centred) @ variant @ka_form_card` | rule |
 | K-KA-5† | `form.group_description.{max_width,margin} @ variant @ka_form_card` | rule |
-| K-KA-6† | `form.page.fill (= mix(role.window.background, role.view.background, <fraction>)) @ variant @ka_form_card` | rule |
+| K-KA-6† | `form.page.fill (= kirigami_lerp(role.window.background, role.view.background, 0.5), FormCardPage.qml:45-56) @ variant @ka_form_card` | rule |
 | K-KA-6† | `form.page.padding (none: the cards reach the page's edges) @ variant @ka_form_card !variant @width_limited (below the card breakpoint, R16)` | rule |
 | K-KA-7† | `form.row_arrow.icon (the arrow theme icon and its size), form.values.arrow_gap @ variant @ka_form_card / variant @ka_form_card dir rtl` | rule |
 | K-KA-7† | `form.row_arrow @ !{hover} !{focus_visible} !{pressed} variant @ka_form_card` (`absent = true`: shown only while the row has its background) | rule |
@@ -1390,11 +1463,11 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-9† | `form.field_label.text (above the field; wrap Word, max_lines, ADD-A67), form.values.field_label_gap @ variant @ka_form_card` | rule |
 | K-KA-9† | `form.field_label.text.fill (= surface.disabled.foreground) @ {disabled} variant @ka_form_card` | rule |
 | K-KA-9† | `form.row_subtitle.text.fill (= surface.disabled.foreground) @ variants {entry,@ka_form_card} (the description under the field)` | rule |
-| K-KA-9† | `input.counter.text (= token.text.keyed.smallest_readable; aligned to the end), input.counter.text.fill @ {@at_limit} context form.row variant @ka_form_card` | rule |
+| K-KA-9† | `input.counter.text (leaf by leaf: token.text.keyed.smallest_readable; aligned to the end), input.counter.text.fill @ {@at_limit} context form.row variant @ka_form_card` | rule |
 | K-KA-9† | `slider.value_label.text, slider.values.value_label_position @ context form.row variant @ka_form_card (the value beside the label)` | rule |
 | K-KA-9† | `form.row_edit_icon.icon.size (= token.icons.sizes.keyed.small_medium.size), form.row_subtitle.text.fill (the value) @ variants {entry,@ka_form_card} cond mobile_form_factor` | rule |
 | K-KA-9† | `input @ context form.row cond mobile_form_factor {editing}; button.icon.glyph (ThemeIcon dialog-ok) @ variant done context form.row` | rule |
-| K-KA-10† | `banner.body.fill (= mix(background, the type's colour, <fraction>), opaque), banner.body.corners, banner.body.padding @ variants {@ka_inline_message,info} / variants {@ka_inline_message,success} / variants {@ka_inline_message,warning} / variants {@ka_inline_message,error}` | rule |
+| K-KA-10† | `banner.body.fill (= kirigami_lerp(surface.background, surface.foreground_active / surface.positive / surface.neutral / surface.negative, 0.2), the type's colour in the variants' order, FormInlineMessage.qml:20-31, :37), banner.body.corners, banner.body.padding @ variants {@ka_inline_message,info} / variants {@ka_inline_message,success} / variants {@ka_inline_message,warning} / variants {@ka_inline_message,error}` | rule |
 | K-KA-10† | `banner.body.stroke (Absent), banner.inner (absent = true: the body's one fill), banner.icon.icon.size (= token.icons.sizes.keyed.small_medium.size), banner.icon.icon.fill (the type's colour; top-aligned), banner.icon.glyph (ThemeIcon), banner.values.content_gap @ variant @ka_inline_message` | rule |
 | K-KA-10† | `banner @ variant @ka_inline_message context form.row (its gap above the field)` | rule |
 | K-KA-11† | `input.values.strength_meter_segments, input.values.strength_meter_gap, input.strength_meter.corners, input.strength_meter.min_height @ variant secure` | rule |
@@ -1419,25 +1492,26 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-14† | `form.row_suffix.icon.size (= token.icons.sizes.keyed.small.size) @ variants {@icon_row,@ka_form_card}` (the chosen icon) | rule |
 | K-KA-15† | `form.values.grid_columns, form.values.grid_min_cell_width, form.values.grid_gap @ variant @ka_info_card` | rule |
 | K-KA-15† | `form.card.padding, form.card.corners @ variant @ka_info_card / variants {@ka_info_card,@width_limited}` | rule |
-| K-KA-15† | `form.row_icon.icon (top-aligned), form.row_title.text (= token.text.keyed.heading_4_primary; centred without an icon), form.row_subtitle.opacity @ variant @ka_info_card` | rule |
+| K-KA-15† | `form.row_icon.icon (top-aligned), form.row_title.text (leaf by leaf: token.text.keyed.heading_4_primary; centred without an icon), form.row_subtitle.opacity @ variant @ka_info_card` | rule |
+| K-KA-15† | `form.row.fill (= alpha(surface.foreground, 0)) @ variant @ka_info_card` (transparent at rest: the info card's overlay is the text colour at an alpha that is zero while the card is neither pressed, focused nor hovered, `kirigami-addons@1.15.0 src/formcard/private/FormInfoGrid.qml:94-107`; stated drawn so the state rules' appends draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1) | rule |
 | K-KA-15† | `form.row.fill.append (= alpha(surface.foreground, <fraction>)) @ {hover} variant @ka_info_card / {focus_visible} variant @ka_info_card / {pressed} variant @ka_info_card; form.row.transitions (Fill; = token.motion.durations.short)` | rule |
 | K-KA-15† | `tooltip.values.show_delay @ context form.card variant @ka_info_card` | rule |
-| K-KA-16† | `status_page.icon.icon.size (= token.icons.sizes.keyed.medium.size), status_page.icon.opacity, status_page.title.text (= token.text.keyed.heading_3_primary), status_page.title.opacity, status_page.description.opacity @ variant @ka_card_placeholder` | rule |
+| K-KA-16† | `status_page.icon.icon.size (= token.icons.sizes.keyed.medium.size), status_page.icon.opacity, status_page.title.text (leaf by leaf: token.text.keyed.heading_3_primary), status_page.title.opacity, status_page.description.opacity @ variant @ka_card_placeholder` | rule |
 | K-KA-16† | `status_page.values.icon_to_title, status_page.values.title_to_description, status_page.body.padding, status_page.body.fill (Absent) @ variant @ka_card_placeholder` | rule |
 | K-KA-17† | `dialog.body.fill, dialog.body.corners, dialog.body.stroke, dialog.body.shadow (the K-KA-18† surface) @ variant @ka_form_card_dialog` | rule |
 | K-KA-17† | `dialog.values.natural_size (= sub(element.window_width, <margins>)) @ variant @ka_form_card_dialog / (= min(sub(element.window_width, <margins>), max(<n> grid units, the header's width))) @ variants {@ka_form_card_dialog,@wide}; dialog.values.breakpoints (measured Window, width Above the row's threshold, setting @wide), dialog.values.window_margin @ variant @ka_form_card_dialog` | rule |
 | K-KA-17† | `dialog.title.text (a heading), dialog.header.padding (none below) @ variant @ka_form_card_dialog` | rule |
 | K-KA-17† | `button.icon.glyph (ThemeIcon) @ variant close context dialog.header variant @ka_form_card_dialog / {hover} variant close context dialog.header variant @ka_form_card_dialog (the other icon)` (the connector draws the close button only while the dialog has a Cancel button, the dialog's `{@has_cancel}`: content, no absence rule) | rule |
-| K-KA-17† | `dialog.action_area.padding, dialog.values.action_layout (row_gap) @ variant @ka_form_card_dialog` | rule |
-| K-KA-18† | `dialog.body.corners, dialog.body.bindings (surface View), dialog.body.stroke, dialog.body.shadow @ variant @ka_dialog cond flavor:kirigami` | rule |
-| K-KA-18† | `popover.body.corners, popover.body.bindings, popover.body.stroke, popover.body.shadow @ variant @ka_dialog cond flavor:kirigami` | rule |
+| K-KA-17† | `dialog.action_area.padding, dialog.values.action_layout (gap) @ variant @ka_form_card_dialog` | rule |
+| K-KA-18† | `dialog.body.corners, dialog.body.bindings (surface View), dialog.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), DialogRoundedBackground.qml:25), dialog.body.shadow @ variant @ka_dialog cond flavor:kirigami` | rule |
+| K-KA-18† | `popover.body.corners, popover.body.bindings, popover.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), DialogRoundedBackground.qml:25), popover.body.shadow @ variant @ka_dialog cond flavor:kirigami` | rule |
 | K-KA-19† | `dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size), dialog.icon.glyph (ThemeIcon: the default type's here, each other type's by the same rule selecting that type too: info, warning, error, success), dialog.body.padding, dialog.values.natural_size, dialog.body.max_height, dialog.values.window_margin @ variants {alert,@ka_message_dialog}` (`natural_size`'s two width formulas by `@wide`, as K-KA-17†'s) | rule |
-| K-KA-19† | `dialog.icon.padding, dialog.values.title_alignment (centred above), dialog.values.action_layout (stacked, full width, its side margins) @ variants {@ka_message_dialog,narrow}; dialog.values.breakpoints (measured Window, width Below the narrow width plus the dialog's side margins, setting narrow: MessageDialog.qml's own-width test restated exactly, R16), dialog.values.narrow_when_actions_overflow (true: also narrow while the buttons do not fit) @ variant @ka_message_dialog` | rule |
-| K-KA-19† | `checkbox @ context dialog.action_area variant @ka_message_dialog; dialog.values.action_layout (row_gap), dialog.action_area.padding, dialog.values.standard_button_icons @ variant @ka_message_dialog` | rule |
+| K-KA-19† | `dialog.icon.padding, dialog.values.icon_position (Above, where the base's is Start: the grid's one column, MessageDialog.qml:246, the icon centred, :256; ADD-A146), dialog.values.action_layout (stacked, full width, its side margins) @ variants {@ka_message_dialog,narrow}; dialog.values.breakpoints (measured Window, width Below the narrow width plus the dialog's side margins, setting narrow: MessageDialog.qml's own-width test restated exactly, R16), dialog.values.narrow_when_actions_overflow (true: also narrow while the buttons do not fit) @ variant @ka_message_dialog` | rule |
+| K-KA-19† | `checkbox @ context dialog.action_area variant @ka_message_dialog; dialog.values.action_layout (gap), dialog.action_area.padding, dialog.values.standard_button_icons @ variant @ka_message_dialog` | rule |
 | K-KA-19† | `dialog.values.presentations (Appear, Disappear: Fade; = token.motion.durations.long, its timing), dialog.scrim.fill @ variant @ka_message_dialog` | rule |
 | K-KA-20† | `date_picker.popup @ variant with_popup cond flavor:kirigami` (`drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }`: the dialog draws the one box; under `kirigami` every `with_popup` picker is kirigami-addons') | rule |
 | K-KA-20† | `dialog.body.{fill,corners,shadow,min_width,max_width,min_height,padding} @ variant @ka_dialog context date_picker.body[with_popup] cond flavor:kirigami` (the popup is a `dialog` element, the K-KA-18† surface; narrower on small windows: `max_width` an expression over `element.window_width`) | rule |
-| K-KA-20† | `dialog.scrim.fill, dialog.scrim.transitions (Opacity; = token.motion.durations.long) @ variant @ka_dialog context date_picker` | rule |
+| K-KA-20† | `dialog.scrim.fill, dialog.values.presentations (Appear, Disappear: a Fade step on scrim; = token.motion.durations.long; ADD-A146) @ variant @ka_dialog context date_picker` | rule |
 | K-KA-20† | `segmented_control @ variant @ka_segmented_button context dialog.body context date_picker (day, month, year: the view switch)` | rule |
 | K-KA-20† | `segmented_control @ variant @ka_segmented_button context dialog.body context date_picker (previous, today, next: icon only; the glyph's rtl form @ dir rtl)` | rule |
 | K-KA-20† | `calendar.values.presentations (@view_switch); calendar.values.scroll_physics (deceleration, snap) @ variant @ka_date_popup` | rule |
@@ -1446,8 +1520,8 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-21† | `calendar.day.fill (= kirigami_tint, ADD-A52) @ {today} variant @ka_date_popup / {selected} variant @ka_date_popup / {hover} variant @ka_date_popup; calendar.day.focus (a stroke) @ {focus_visible} variant @ka_date_popup` | rule |
 | K-KA-21† | `calendar.day.fill (Absent), calendar.day.opacity @ {other_month} variant @ka_date_popup; calendar.day.opacity @ {disabled} variant @ka_date_popup` (a day outside the allowed range) | rule |
 | K-KA-21† | `calendar.month.fill @ {today} variant @ka_date_popup; calendar.year.opacity @ {@other_decade} variant @ka_date_popup` | rule |
-| K-KA-22† | `date_picker.field.fill (flat), date_picker.glyph.glyph (ThemeIcon view-calendar-symbolic), date_picker.field_label.text @ context form.row variant @date_time; time_picker.field.fill (flat), time_picker.glyph.glyph (ThemeIcon clock-symbolic), time_picker.field_label.text @ context form.row variant @date_time` (the time half, kirigami-addons' `with_popup` time picker, whose click opens the K-KA-23† popup) | rule |
-| K-KA-22† | `date_picker.field.fill.append @ {hover} / {focus_visible} / {pressed} context form.row; time_picker.field.fill @ {hover} / {focus_visible} / {pressed} context form.row` | rule |
+| K-KA-22† | `date_picker.field.fill (= alpha(surface.foreground, 0): transparent at rest, each half's background being K-KA-2†'s, `kirigami-addons@1.15.0 src/formcard/FormDateTimeDelegate.qml:326-329`, `:495-498`; stated drawn so the state rules' appends draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1), date_picker.glyph.glyph (ThemeIcon view-calendar-symbolic), date_picker.field_label.text @ context form.row variant @date_time; time_picker.field.fill (= alpha(surface.foreground, 0), as the date half), time_picker.glyph.glyph (ThemeIcon clock-symbolic), time_picker.field_label.text @ context form.row variant @date_time` (the time half, kirigami-addons' `with_popup` time picker, whose click opens the K-KA-23† popup) | rule |
+| K-KA-22† | `date_picker.field.fill.append @ {hover} / {focus_visible} / {pressed} context form.row; time_picker.field.fill.append @ {hover} / {focus_visible} / {pressed} context form.row` | rule |
 | K-KA-22† | `date_picker.segment_separator.opacity, date_picker.segment_separator.margin @ context form.row variant @date_time` | rule |
 | K-KA-22† | `date_picker.segment_separator.opacity (none) @ {hover} context form.row / next time_picker {hover} context form.row (either half hovered; position among Kinds, ADD-B07)` | rule |
 | K-KA-22† | `form.field_label.padding, form.row_subtitle (status and description inset) @ variants {@ka_form_card,@date_time}; date_picker.field.fill (Absent) @ {read_only} context form.row; time_picker.field.fill (Absent) @ {read_only} context form.row` | rule |
@@ -1460,35 +1534,36 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-24† | `segmented_control.segment.padding, segmented_control.segment.min_width (= part.min_height: a square segment), segmented_control.icon.icon.size (= token.icons.sizes.keyed.small_medium.size), segmented_control.values.item_gap (negative: the overlap) @ variant @ka_segmented_button` | rule |
 | K-KA-24† | `segmented_control.segment.corners (the outer only) @ pos first variant @ka_segmented_button / pos last variant @ka_segmented_button / pos first variant @ka_segmented_button dir rtl / pos last variant @ka_segmented_button dir rtl` | rule |
 | K-KA-24† | `segmented_control.segment.fill (= role.<set>.background_alternate) @ {pressed} variant @ka_segmented_button / {selected} variant @ka_segmented_button` | rule |
-| K-KA-24† | `segmented_control.segment.stroke (= mix by token.params.color.frame_contrast) @ variant @ka_segmented_button; segmented_control.segment.stroke (= surface.decoration_focus) @ {hover} / {focus_visible} / {pressed} / {selected} variant @ka_segmented_button (the highlighted segment drawn above its neighbours: the connector's paint order)` | rule |
+| K-KA-24† | `segmented_control.segment.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), SegmentedButton.qml:112) @ variant @ka_segmented_button; segmented_control.segment.stroke (= surface.decoration_focus) @ {hover} / {focus_visible} / {pressed} / {selected} variant @ka_segmented_button (the highlighted segment drawn above its neighbours: the connector's paint order)` | rule |
 | K-KA-24† | `segmented_control.segment.transitions (Fill, Stroke; = token.motion.durations.short, its timing) @ {hover} / {focus_visible} / {pressed} / {selected} variant @ka_segmented_button (the Behaviors run only while the segment is highlighted)` | rule |
 | K-KA-24† | `segmented_control.segment.shadow (a hard layer, one pixel lower) @ !{pressed} !{disabled} variant @ka_segmented_button` | rule |
 | K-KA-25† | `segmented_control.segment.fill.append @ {hover} variant @ka_radio_selector; segmented_control.segment.corners, segmented_control.segment.min_height, segmented_control.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100) @ variant @ka_radio_selector` | rule |
 | K-KA-25† | `segmented_control.segment.transitions (= token.motion.durations.short, its timing) @ variant @ka_radio_selector !cond input:touch` | rule |
-| K-KA-25† | `segmented_control.indicator.fill, segmented_control.indicator.stroke, segmented_control.indicator.corners, segmented_control.indicator.shadow @ variant @ka_radio_selector` | rule |
+| K-KA-25† | `segmented_control.indicator.fill (= kirigami_lerp(surface.decoration_hover, surface.background, 0.8), RadioSelector.qml:193), segmented_control.indicator.stroke (= kirigami_lerp(surface.decoration_hover, surface.background, 0.5), RadioSelector.qml:196), segmented_control.indicator.corners, segmented_control.indicator.shadow @ variant @ka_radio_selector` | rule |
 | K-KA-25† | `segmented_control.values.presentations (@indicator_move, step part indicator; = token.motion.durations.long, its timing) @ variant @ka_radio_selector` | rule |
 | K-KA-25† | `segmented_control.label.text (its weight restated), segmented_control.icon.icon.fill (= surface.decoration_hover) @ {selected} variant @ka_radio_selector; segmented_control.label.transitions, segmented_control.icon.transitions (= token.motion.durations.long)` | rule |
-| K-KA-25† | `form.row.padding, form.row.fill (Absent) @ variant @ka_form_card (the radio selector's row)` | rule |
+| K-KA-25† | `form.row.padding, form.row.fill (Absent) @ variants {@ka_form_card,@ka_radio_selector}` (the radio selector's row, which draws no background, `kirigami-addons@1.15.0 src/formcard/FormRadioSelectorDelegate.qml:58-62`) | rule |
 | K-KA-26† | `button.body.bindings (Surface(Button)), button.icon.icon.size (= token.icons.sizes.keyed.medium.size), button.body.corners, button.body.padding @ variant @ka_floating / button.body.padding @ variant @ka_floating cond input:touch` | rule |
-| K-KA-26† | `button.body.fill, button.body.stroke (= kirigami_tint, ADD-A52) @ variant @ka_floating / {hover} variant @ka_floating / {pressed} variant @ka_floating / {focused} variant @ka_floating` | rule |
+| K-KA-26† | `button.body.fill (= surface.background), button.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), FloatingButton.qml:137) @ variant @ka_floating; button.body.fill, button.body.stroke (= kirigami_tint, ADD-A52) @ {hover} variant @ka_floating / {pressed} variant @ka_floating / {focused} variant @ka_floating` | rule |
 | K-KA-26† | `button.body.shadow, button.body.transitions (Fill, Stroke; = token.motion.durations.very_short) @ variant @ka_floating` | rule |
 | K-KA-26† | `button.body.touch_target @ variant @ka_floating (the margins enlarge the hit area)` | rule |
 | K-KA-27† | `split_button.primary.corners, split_button.secondary.corners (the outer only) @ variant @ka_double_floating / variant @ka_double_floating dir rtl` | rule |
 | K-KA-27† | `split_button.body.shadow (one shared) @ variant @ka_double_floating` | rule |
-| K-KA-27† | `split_button.primary.fill, split_button.secondary.fill, split_button.primary.stroke, split_button.secondary.stroke (as K-KA-26†) @ {hover} / {pressed} / {focused} variant @ka_double_floating` | rule |
+| K-KA-27† | `split_button.primary.fill, split_button.secondary.fill (= role.button.background), split_button.primary.stroke, split_button.secondary.stroke (= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast): each half's own Button set, DoubleFloatingButton.qml:142-143, :159, :239-240, :256) @ variant @ka_double_floating; split_button.primary.fill, split_button.secondary.fill, split_button.primary.stroke, split_button.secondary.stroke (as K-KA-26†) @ {hover} / {pressed} / {focused} variant @ka_double_floating` | rule |
 | K-KA-27† | `split_button.primary.transitions, split_button.secondary.transitions (= token.motion.durations.long, its timing) @ variant @ka_double_floating (the hovered or pressed half drawn above: the connector's paint order)` | rule |
 | K-KA-27† | `tooltip.values.show_delay @ context split_button` | rule |
 | K-KA-28† | `toolbar.bar.bindings (Surface(Window)), toolbar.bar.corners, toolbar.bar.shadow, toolbar.bar.stroke (= kirigami_tint by token.params.color.frame_contrast) @ variant floating cond flavor:kirigami` | rule |
 | K-KA-29† | `banner.body.fill (= role.<set>.background_active / background_positive / background_neutral / background_negative) @ variants {@ka_banner,info} / variants {@ka_banner,success} / variants {@ka_banner,warning} / variants {@ka_banner,error}; banner.inner (absent = true: the body's one fill) @ variant @ka_banner` | rule |
 | K-KA-29† | `banner.body.padding, banner.values.content_gap @ variant @ka_banner` | rule |
-| K-KA-29† | `banner.edge_line.stroke (= ka_banner_line(the type's text, the frame colour), ADD-A66) @ variants {@ka_banner,@header} (bottom edge) / variants {@ka_banner,@footer} (top edge)` | rule |
-| K-KA-29† | `banner.icon.icon.size (= token.icons.sizes.keyed.medium.size; top-aligned), banner.icon.glyph (ThemeIcon), banner.title.text (= token.text.keyed.heading_2) @ variant @ka_banner` | rule |
+| K-KA-29† | `banner.edge_line.stroke (= ka_banner_line(<the type's text: surface.foreground_active, surface.positive, surface.neutral or surface.negative>, kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)), ADD-A66, Banner.qml:239-255) @ variants {@ka_banner,@header} (bottom edge) / variants {@ka_banner,@footer} (top edge)` | rule |
+| K-KA-29† | `banner.icon.icon.size (= token.icons.sizes.keyed.medium.size; top-aligned), banner.icon.glyph (ThemeIcon), banner.title.text (leaf by leaf: token.text.keyed.heading_2) @ variant @ka_banner` | rule |
 | K-KA-29† | `button.icon.glyph (ThemeIcon dialog-close) @ variant close context banner variant @ka_banner; tooltip.values.show_on_press @ context banner cond tablet_mode` | rule |
 | K-KA-29† | `toolbar @ context banner variant @ka_banner (the non-flat action toolbar, aligned to the end)` | rule |
 | K-KA-29† | `banner.values.presentations (Appear, Disappear: Instant) @ variant @ka_banner` | rule |
-| K-KA-30† | `sheet.body.max_height (its height limit, a fraction of element.window_height), sheet.body.corners, sheet.header.corners, sheet.body.shadow @ variants {bottom,@ka_bottom_drawer}` | rule |
-| K-KA-30† | `sheet.handle.min_width, sheet.handle.min_height, sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.padding @ variant @ka_bottom_drawer` | rule |
-| K-KA-30† | `sheet.header.bindings (Surface(Window)), sheet.header_separator.stroke, sheet.body.bindings (Surface(View)), sheet.body.padding (the bottom safe area) @ variant @ka_bottom_drawer` | rule |
+| K-KA-30† | `sheet.body.max_height (its height limit, a fraction of element.window_height), sheet.body.corners, sheet.header.corners, sheet.body.shadow @ variant bottom` (the BottomDrawer is `kde-breeze`'s `bottom`, the one bottom sheet KDE's rows hold) | rule |
+| K-KA-30† | `sheet.handle.min_width, sheet.handle.min_height, sheet.handle.fill, sheet.handle.opacity, sheet.handle.corners (Full), sheet.handle.padding @ variant bottom` | rule |
+| K-KA-30† | `sheet.header.bindings (Surface(Window)), sheet.header_separator.stroke, sheet.body.bindings (Surface(View)), sheet.body.padding (the bottom safe area) @ variant bottom` | rule |
+| K-KA-30† | `sheet.values.placement (BottomSheet) @ variant bottom` (the drawer at the window's bottom edge, its full width, `kirigami-addons@1.15.0 src/components/BottomDrawer.qml:80-81`; ADD-A146) | placement |
 | K-KA-31† | `menu.body, menu.item (the qqc2 Menu, Q1.23-Q1.32) @ cond flavor:kirigami` | rule |
 | K-KA-31† | `menu.values.convergent_variant` (`"none"`; `ka_bottom_drawer` `@ cond mobile_form_factor cond flavor:kirigami`: the variant the connector sets where the application states no display mode, `displayMode`'s default; else the connector sets `@ka_bottom_drawer` or `@ka_dialog` from the application's mode; both declared under `[declare.flavor.kirigami.widget.menu]` only) | rule |
 | K-KA-31† | `sheet @ variant @ka_bottom_drawer context menu (K-KA-30†)` | rule |
@@ -1498,7 +1573,7 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-31† | `form.row @ context menu variant @ka_bottom_drawer / context menu variant @ka_dialog (K-KA-2†, K-KA-3†); form.row_arrow.icon (a submenu); form.row_separator @ context menu variant @ka_bottom_drawer / context menu variant @ka_dialog` | rule |
 | K-KA-31† | `checkbox @ context form.row context menu / radio @ context form.row context menu (checkable actions)` | rule |
 | K-KA-31† | `button.icon.glyph (ThemeIcon draw-arrow-back-symbolic) @ variant back context sheet.header` | rule |
-| K-KA-31† | `sheet.title.text (= token.text.keyed.heading_2) @ variant @ka_bottom_drawer (a submenu's page)` | rule |
+| K-KA-31† | `sheet.title.text (leaf by leaf: token.text.keyed.heading_2) @ variant @ka_bottom_drawer (a submenu's page)` | rule |
 | K-KA-31† | `dialog.body (the K-KA-18† surface), dialog.values.natural_size, dialog.header.padding, dialog.header.stroke @ context menu variant @ka_dialog` | rule |
 | K-KA-31† | `button @ variant close context dialog.header context menu` | rule |
 | K-KA-32† | `input.body.opacity @ {focused} context search_field variant @ka_search_popup (the field's frame fading out)` | rule |
@@ -1509,7 +1584,7 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-33† | `avatar.body.fill (= pick(name_index(element.text, <count>, kirigami), …), ADD-B14) @ variant @ka_avatar` (kirigami-addons' own `nameutils.cpp:82-130`, the row's "same palette"; whether its hash is Kirigami's is the value phase's check, and a difference would add a member to the core's `NameIndexMethod`) | rule |
 | K-KA-33† | `avatar.body.stroke (the ring's width), avatar.initials.text (text.font.size = an expression on element.width, the avatar square, ADD-B11) @ variant @ka_avatar` | rule |
 | K-KA-33† | `avatar.fallback_icon.icon (fill = ka_contrast_text(the avatar colour), ADD-A66) @ variant @ka_avatar` | rule |
-| K-KA-33† | `avatar.body.padding, avatar.body.cursor, avatar.body.bindings (Surface(Button)) @ variants {@ka_avatar,@button}; avatar.body.focus (FilledRing, = surface.decoration_focus) @ {focus_visible} variants {@ka_avatar,@button}; avatar.body.shadow (one layer, no blur, no offset, its spread the padding, = surface.decoration_focus) @ {pressed} variants {@ka_avatar,@button}` (the circle shown on `visualFocus` or `down`, `AvatarButton.qml:105-109`; a focus indicator is drawn only under `FocusVisible`, S2.10) | rule |
+| K-KA-33† | `avatar.body.padding, avatar.body.cursor, avatar.body.bindings (Surface(Button)) @ variants {@ka_avatar,@button}; avatar.body.focus (Ring, S2.10's One ring, ADD-A141, = surface.decoration_focus) @ {focus_visible} variants {@ka_avatar,@button}; avatar.body.shadow (one layer, no blur, no offset, its spread the padding, = surface.decoration_focus) @ {pressed} variants {@ka_avatar,@button}` (the circle shown on `visualFocus` or `down`, `AvatarButton.qml:105-109`; a focus indicator is drawn only under `FocusVisible`, S2.10) | rule |
 | K-KA-33† | `tooltip.values.show_delay @ context avatar` | rule |
 | K-KA-34† | `component.album_viewer.scrim.fill` | component |
 | K-KA-34† | `component.album_viewer.header.fill (= surface.background_alternate, the colour set in scope), component.album_viewer.header.padding, component.album_viewer.header_separator.stroke` | component |
@@ -1519,12 +1594,12 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-34† | `component.album_viewer.footer.fill, component.album_viewer.footer.padding, component.album_viewer.footer.max_height, component.album_viewer.footer_separator.stroke` | component |
 | K-KA-34† | `component.album_viewer.values.image_inset, component.album_viewer.image.transitions (Transform: the zoom and the rotation; = token.motion.durations.long, its timing)` | component |
 | K-KA-34† | `spinner @ context component.album_viewer` | rule |
-| K-KA-35† | `media_controls.bar.fill, media_controls.bar.opacity, media_controls.bar.corners, media_controls.bar.stroke, media_controls.bar.shadow @ variant @ka_album` | rule |
+| K-KA-35† | `media_controls.bar.fill, media_controls.bar.opacity, media_controls.bar.corners, media_controls.bar.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), VideoMaximizeDelegate.qml:365), media_controls.bar.shadow @ variant @ka_album` | rule |
 | K-KA-35† | `button.icon.glyph (ThemeIcon) @ variant play context media_controls.bar / variant play {checked} context media_controls.bar / variant volume context media_controls.bar` | rule |
 | K-KA-35† | `button.icon.glyph (ThemeIcon) @ variant volume {checked} context media_controls.bar` (the muted volume icon, `player-volume-muted`) | rule |
 | K-KA-35† | `slider @ context media_controls (the seek bar)` | rule |
 | K-KA-35† | `media_controls.time_label.text` | field |
-| K-KA-35† | `popover.body.opacity, popover.body.corners, popover.body.stroke, popover.body.shadow @ context media_controls` | rule |
+| K-KA-35† | `popover.body.opacity, popover.body.corners, popover.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), VideoMaximizeDelegate.qml:349), popover.body.shadow @ context media_controls` | rule |
 | K-KA-35† | `slider @ variant vertical context popover context media_controls (its height)` | rule |
 | K-KA-35† | `media_controls.values.auto_hide, media_controls.values.volume_popup_hide_delay` | field |
 | K-KA-35† | `button.body.fill, button.icon.icon.size (= token.icons.sizes.large.size) @ variant @ka_download context media_controls variant @ka_album` (the download Button in the middle before download: a `button` element with states of its own, Nested controls; a keyed `kde-breeze` variant of `button`; the play overlay part is absent on `kde-breeze`) | rule |
@@ -1541,7 +1616,7 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-38† | `list.row.text.fill @ {selected} variant @ka_rounded (unchanged)` | rule |
 | K-KA-38† | `list.row.padding, list.values.leading_gap, list.row.min_height, list.leading_icon.icon.size @ variant @ka_rounded / variant @ka_rounded cond tablet_mode / variants {@ka_rounded,with_subtitle}` | rule |
 | K-KA-38† | `checkbox @ context list.row[@ka_rounded,check] / radio @ context list.row[@ka_rounded,radio]; list.row_background.fill (Absent) @ {checked} variants {@ka_rounded,check} / {checked} variants {@ka_rounded,radio}` | rule |
-| K-KA-39† | `list.secondary_text.text (= token.text.keyed.smallest_readable; fill at reduced alpha) @ variant @ka_rounded / variants {@ka_rounded,@emphasized}` | rule |
+| K-KA-39† | `list.secondary_text.text (leaf by leaf: token.text.keyed.smallest_readable; fill at reduced alpha) @ variant @ka_rounded / variants {@ka_rounded,@emphasized}` | rule |
 | K-KA-39† | `list.leading_icon.min_width, list.leading_icon.min_height (the icon's margins) @ variants {@ka_rounded,with_subtitle}` | rule |
 | K-KA-39† | `list.values.row_background_inset (none), list.row_background.corners (none), list.row.padding, list.leading_icon.icon.size @ variant @ka_indicator / list.leading_icon.icon.size @ variants {@ka_indicator,with_subtitle}` | rule |
 | K-KA-39† | `list.unread_indicator.fill, list.unread_indicator.min_width, list.unread_indicator.padding @ {@unread} variant @ka_indicator` | rule |
@@ -1559,29 +1634,29 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-42† | `dialog @ variants {@search_dialog,@ka_dialog} (the K-KA-18† surface)` | rule |
 | K-KA-42† | `list @ variant @ka_rounded context dialog variant @search_dialog; list.trailing_text.text.fill (= role.window.disabled.foreground) @ context dialog variant @search_dialog` | rule |
 | K-KA-42† | `status_page @ context dialog variant @search_dialog ("No results found")` | rule |
-| K-KA-43† | `shortcuts_dialog.values.natural_size @ variant @ka_quick` | rule |
+| K-KA-43† | `dialog.values.natural_size @ variants {@ka_dialog,shortcuts}` (the dialog layer the editor opens in, a grid-unit square, the About page's call with the same arguments, `StatefulWindow.qml:92-100`, `:103-110`: the editor's ancestor, so selected by the content variant `shortcuts` the connector sets on a dialog hosting the editor, not by `context shortcuts_dialog`) | rule |
 | K-KA-43† | `search_field @ context shortcuts_dialog` | rule |
 | K-KA-43† | `list @ variant @ka_rounded context shortcuts_dialog` | rule |
 | K-KA-43† | `toolbar @ variant bottom context shortcuts_dialog (Save and Reset); toolbar.bar.padding @ variant bottom context shortcuts_dialog` | rule |
-| K-KA-43† | `button.icon.glyph (ThemeIcon configure), button.label.text @ variant @key_sequence context shortcuts_dialog / variant @key_sequence {checked} context shortcuts_dialog / variant @key_sequence {@recording} context shortcuts_dialog` | rule |
+| K-KA-43† | `button.icon.glyph (ThemeIcon configure), button.label.text @ variants {toggle,@key_sequence} context shortcuts_dialog / variants {toggle,@key_sequence} {checked} context shortcuts_dialog` (the checkable main button, which records while it is checked, `kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:121-122`, `:148-153`; ADD-A139) | rule |
 | K-KA-43† | `button.body.min_width, button.body.min_height (square), button.icon.glyph (ThemeIcon by direction) @ variant clear_field context shortcuts_dialog / variant clear_field context shortcuts_dialog dir rtl` | rule |
-| K-KA-43† | `button.icon.glyph (ThemeIcon dialog-cancel) @ variant clear_field context shortcuts_dialog prev button {@recording} (ADD-B07)` | rule |
+| K-KA-43† | `button.icon.glyph (ThemeIcon dialog-cancel) @ variant clear_field context shortcuts_dialog prev button {checked} (while the main button records, ADD-B07, ADD-A139)` | rule |
 | K-KA-43† | `dialog @ variant @ka_form_card_dialog context shortcuts_dialog (K-KA-17†)` | rule |
 | K-KA-43† | `dialog @ variants {@ka_message_dialog,warning} context shortcuts_dialog (the conflict)` | rule |
-| K-KA-44† | `about_dialog.body.padding (its margins), about_dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size), about_dialog.values.icon_max_width_fraction, about_dialog.name.text, about_dialog.version.text, about_dialog.description.text (= token.text.keyed.heading_3_secondary) @ variant @ka_about` | rule |
+| K-KA-44† | `about_dialog.body.padding (its margins), about_dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size), about_dialog.values.icon_max_width_fraction, about_dialog.name.text, about_dialog.version.text, about_dialog.description.text (leaf by leaf: token.text.keyed.heading_3_secondary) @ variant @ka_about` | rule |
 | K-KA-44† | `badge @ variant success context about_dialog ("What's new")` | rule |
 | K-KA-44† | `dialog @ variant @ka_dialog context about_dialog (the release history: the K-KA-18† surface, its natural_size, max height, heading, close button, separator); about_dialog.values.release_gap` | rule |
 | K-KA-44† | `dialog.values.natural_size @ variants {@ka_dialog,about}` (the dialog layer the About page itself opens in, a grid-unit square: the about page's ancestor, so selected by the content variant `about` the connector sets on a dialog hosting an `about_dialog`, not by `context about_dialog`) | rule |
 | K-KA-44† | `form @ variant @ka_info_card context about_dialog (the link rows, K-KA-15†, their theme icons)` | rule |
-| K-KA-44† | `about_dialog.person_name.text, about_dialog.person_task.text (= token.text.keyed.smallest_readable; fill = surface.disabled.foreground)` | field |
+| K-KA-44† | `about_dialog.person_name.text, about_dialog.person_task.text (leaf by leaf: token.text.keyed.smallest_readable; fill = surface.disabled.foreground)` | field |
 | K-KA-44† | `avatar.body.min_width @ context about_dialog` | rule |
 | K-KA-44† | `button @ variant icon_only context about_dialog` | rule |
 | K-KA-44† | `sheet @ context about_dialog (the licence text and its margin)` | rule |
 | K-KA-45† | `teaching_tip.target_frame.stroke, teaching_tip.target_frame.transitions (Geometry; = token.motion.durations.long, its timing) @ variant @ka_onboarding` | rule |
 | K-KA-45† | `teaching_tip.backdrop.fill (Material blur over everything but the target: its blur radius) @ variant @ka_onboarding` | rule |
-| K-KA-45† | `teaching_tip.body.bindings (Surface(Tooltip)), teaching_tip.body.corners, teaching_tip.body.stroke, teaching_tip.body.padding, teaching_tip.body.min_height, teaching_tip.body.max_width, teaching_tip.body.fill (= surface.background) @ variant @ka_onboarding` (it never times out: `teaching_tip` has no timeout on any platform, so nothing to state) | rule |
+| K-KA-45† | `teaching_tip.body.bindings (Surface(Tooltip)), teaching_tip.body.corners, teaching_tip.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast), OnboardToolTip.qml:52), teaching_tip.body.padding, teaching_tip.body.min_height, teaching_tip.body.max_width, teaching_tip.body.fill (= surface.background) @ variant @ka_onboarding` (it never times out: `teaching_tip` has no timeout on any platform, so nothing to state) | rule |
 | K-KA-45† | `teaching_tip.values.placement (KirigamiAddonsOnboardingTip: above the control, below without room; its gap; ADD-A21)` | placement |
-| K-KA-45† | `separator @ context teaching_tip` | rule |
+| K-KA-45† | `separator @ context teaching_tip` (its line Q1.95's Normal stroke in the tip's Tooltip set, `OnboardingOverlay.qml:164`, `:187`) | rule |
 | K-KA-45† | `button @ variants {tool,icon_only,previous} context teaching_tip / variants {tool,icon_only,next} context teaching_tip / variants {tool,icon_only,close} context teaching_tip` | rule |
 | K-KA-46† | `list @ variant @ka_rounded (the sound list); checkbox.mark.glyph (ThemeIcon object-select-symbolic) @ variant selection {checked} context list.row[@ka_rounded] (the current sound's check)` | rule |
 | K-KA-47† | `icon_theme_fallback (the preset's icon fields, S4.5: Breeze for an application started through KirigamiApp; ADD-A65)` | field |

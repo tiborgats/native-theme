@@ -12,7 +12,7 @@ section, and a `[v0.7.0]` item that would sit under Deferred (pre-1.0) is under 
 (v0.7.0). Closed items move to [`archive/todo_closed.md`](archive/todo_closed.md) as they
 close, under the headings they had, each with the commit that closed it. Cite an entry by
 its file, its `###` heading and its opening words, quoted, as many as make it unique
-under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux readers'"): a
+under that heading (`docs/todo.md`, *Font DPI*, "An X11 client through Xwayland"): a
 `docs/todo.md:N` citation is valid at the commit that wrote it
 (`git show <commit>:docs/todo.md`), since entries move as they close. A preset
 value is cited by its TOML key path, which no preset edit shifts (`adwaita.toml`
@@ -36,10 +36,9 @@ cannot tell which file a bare number continues, so it does not look for one.
       `org.gnome.desktop.interface font-hinting` / `font-antialiasing`,
       Windows ClearType, macOS font smoothing.
 
-      We already read `Xft.dpi` for scaling (`detect::read_xft_dpi`,
-      `native-theme/src/detect.rs:459`, in the font-DPI chain the KDE reader shares),
-      but nothing reads the *rendering*
-      preferences. A Qt or GTK app obeys the user's hinting and antialiasing
+      Nothing reads the *rendering* preferences (nor `Xft.dpi`: the
+      toolkits' X11 scale factor carries the font DPI, the 0.8.0
+      specification's S9.4). A Qt or GTK app obeys the user's hinting and antialiasing
       choice; an app built on our connectors silently ignores it. Reading OS
       appearance settings is exactly this crate's remit, so this is a real gap
       rather than a nice-to-have — it is the same shape as reading colours and
@@ -143,7 +142,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 ### Tab: the border is the selected tab's, and KDE's live tab colours
 
 - [ ] [1.0] `kde-breeze` now states `tab.border.color`, `line_width_px`,
-      `corner_radius_px` and `shadow_enabled` (`docs/platform-facts.md:1354-1357`,
+      `corner_radius_px` and `shadow_enabled` (`docs/platform-facts.md@fc6109d1:1354-1357`,
       §2.11). Breeze strokes only the selected tab; an unselected tab has no
       pen and rounds 5 on the row's outer ends only (breezehelper.cpp:1488-1507,
       breezestyle.cpp:7248-7253), and Windows' cell (`:1341`) is also
@@ -158,8 +157,8 @@ cannot tell which file a bare number continues, so it does not look for one.
       the gpui connector cannot show `tab.background_color`; its contrast
       contract records `kde-breeze/dark` as an exception for the `tab label`
       pair (`IDLE_TAB_SURFACE`, `connectors/native-theme-gpui/src/contract.rs`).
-      On the live path the KDE reader (`native-theme/src/kde/colors.rs`) sets no
-      `tab` colour, so the full preset's stock-Breeze values
+      On the live path the KDE reader (`native-theme/src/kde/colors.rs` at
+      2e7c8e11) sets no `tab` colour, so the full preset's stock-Breeze values
       (`Window.darker(120)`, `mix(Window, WindowText, 0.2)`) stand for any colour
       scheme; computing them from the user's scheme needs `QColor::darker`
       ([qcolor.cpp:2993-3004](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/gui/painting/qcolor.cpp#L2993-L3004))
@@ -167,6 +166,12 @@ cannot tell which file a bare number continues, so it does not look for one.
       ([kcolorutils.cpp:144-165](https://invent.kde.org/frameworks/kguiaddons/-/blob/7c766f6f99238c13acb8c50d8391600e964f3b8a/src/colors/kcolorutils.cpp#L144-L165))
       ported to the reader, with `[KDE] frameContrast` read from kdeglobals
       (default 0.2, [kcolorscheme.cpp:529-538](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L529-L538)).
+      0.8.0 (ADD-A145): the KDE reader (`native-theme/src/kde/mod.rs`)
+      states the scheme's colour roles and `token.params.color.frame_contrast`
+      (kdeglobals' `[KDE] frameContrast`, else KColorScheme's 0.2), and no
+      widget colour; the KDE tab colours are the catalogue's rules over those
+      roles (K1.121–K1.123), whose facts the containers unit writes (M3). The
+      gpui connector's idle tab is M2.1's.
 
 ### Segmented control: the join and the divider
 
@@ -176,7 +181,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       divider are rounded — and the colour of the divider line between
       segments, then add what the platforms state to `SegmentedControlTheme`
       (`native-theme/src/model/widgets/mod.rs:944-976`), which states the
-      divider's width, `separator_width` (`docs/platform-facts.md:991`), and
+      divider's width, `separator_width` (`docs/platform-facts.md@fc6109d1:991`), and
       no colour or join. Until the model states them, the egui widgets crate
       draws its segments `separator_width` apart as separate segments, with no
       divider line (`docs/archive/todo_egui-widgets-spec.md` §4.4); nothing is to be
@@ -188,7 +193,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       box and its stroke width — in `docs/platform-facts.md` §2.5 **first**,
       then add to `CheckboxTheme` what the platforms state. The model has no
       field for the mark: `indicator_width` is the box
-      (`docs/platform-facts.md:984`), and §2.5 says of the mark only that it
+      (`docs/platform-facts.md@fc6109d1:984`), and §2.5 says of the mark only that it
       fills the indicator, except for GNOME's `padding: 3` (`:1237-1238`).
       Each toolkit draws its own: egui a three-point line in an 8 px square
       (`Spacing::icon_width_inner`, `egui/src/style.rs:1467`, read at
@@ -214,7 +219,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 - [ ] [1.0] `SliderTheme` states the thumb's fill and diameter, and nothing
       round it: no border and no shadow (`docs/property-registry.toml`
       `[slider]`). macos-tahoe light leaves `slider.thumb_color` to
-      inheritance, `defaults.surface_color` (`docs/inheritance-rules.toml:211`),
+      inheritance, `defaults.surface_color` (`docs/inheritance-rules.toml@fc6109d1:211`),
       `#ffffff` (`macos-tahoe.toml` `[light.defaults] surface_color`), on a
       `#ffffff` window (`[light.defaults] background_color`), and the iced
       connector draws the handle with iced's own `border_width` 0
@@ -328,11 +333,11 @@ cannot tell which file a bare number continues, so it does not look for one.
 
 - [ ] [1.0] `docs/platform-facts.md` derives macOS `border.padding_vertical` as the
       outer height less the content height, halved — "3 **(measured)**
-      (22−16)/2" for the button (`docs/platform-facts.md:1185`), and the same
+      (22−16)/2" for the button (`docs/platform-facts.md@fc6109d1:1185`), and the same
       shape for the text input (`:1214`), the menu (`:1262`), the tab
       (`:1353`) and the list (`:1434`). Outer less content is border plus padding, yet the outer-box
       rule counts border, padding and content as separate parts
-      (`docs/platform-facts.md:901-906`), and a padding is what lies inside the
+      (`docs/platform-facts.md@fc6109d1:901-906`), and a padding is what lies inside the
       border. So each of those cells includes the border's width on its side:
       `macos-monterey` states the button's `padding_top_px = 1.0` and
       `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml`
@@ -349,20 +354,20 @@ cannot tell which file a bare number continues, so it does not look for one.
       M2a Step 7 (2026-10-11) took the button's row from the OS probe:
       AppKit's title rect sits 1 below the top and 3 above the bottom of the
       20-tall bezel, measured from its outer (alignment-rect) edge
-      (`docs/platform-facts.md:1185`), and the pop-up button's likewise
+      (`docs/platform-facts.md@fc6109d1:1185`), and the pop-up button's likewise
       (`:1623`). Those are offsets from the outer edge, so the border's
       share is still open on those two rows, as on the text input, menu, tab
       and list rows.
       M2a Step 8 (2026-10-11) took the text input's row from the probe too:
       the title rect sits 2 below the top and 2 above the bottom of the
-      21-tall field on macOS 14.8.9 (`docs/platform-facts.md:1214`), from the
+      21-tall field on macOS 14.8.9 (`docs/platform-facts.md@fc6109d1:1214`), from the
       outer edge again, so its border's share is open as the other two's.
 
 ### Presets: a spinner stroke width platform-facts does not give
 
 - [ ] [1.0] `docs/platform-facts.md` §2.23 gives the spinner a stroke width on
       Windows only — macOS draws fins, KDE and GNOME rotate an icon — and
-      states **(none)** for the other three (`docs/platform-facts.md:1601`),
+      states **(none)** for the other three (`docs/platform-facts.md@fc6109d1:1601`),
       yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
       (`native-theme/src/presets/macos-monterey.toml`,
@@ -378,7 +383,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       field where the icon set has no animated indicator
       (`docs/archive/todo_egui-widgets-spec.md` §4.3).
       Found again 2026-09-28 (iced review): §2.23 gives KDE and GNOME no
-      `min_diameter` either (**(none)**, `docs/platform-facts.md:1600`), yet
+      `min_diameter` either (**(none)**, `docs/platform-facts.md@fc6109d1:1600`), yet
       `kde-breeze` and `adwaita` (and their `-live` twins, until M1-T4-01
       removed them) state `min_diameter_px = 16.0` in both variants.
       `min_diameter` is required in `ResolvedSpinnerTheme` too
@@ -390,7 +395,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 
 - [ ] [1.0] `docs/platform-facts.md` §2.8 measures `scrollbar.thumb_color` for
       macOS, `#80808080` (Sonoma), and for Windows, `#c2c2c2`
-      (`docs/platform-facts.md:1305`), yet neither `macos-monterey` nor
+      (`docs/platform-facts.md@fc6109d1:1305`), yet neither `macos-monterey` nor
       `windows-11` states it: their scrollbar sections state
       `thumb_hover_color` and `thumb_active_color` (and macOS the overlay
       `track_color`) but not it
@@ -399,7 +404,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       `[dark.scrollbar]`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
-      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:205`),
+      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml@fc6109d1:205`),
       a fallback the same file lists among its wrong safety nets, a text
       colour for "a semi-transparent UI control" (`:559-561`), and the egui
       connector's base style fills unscoped `ScrollArea` handles, checkbox
@@ -420,7 +425,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       `ScrollBarThumbFillPointerOver` are both `ControlStrongFillColorDefault`,
       `#72000000` / `#8BFFFFFF` (ScrollBar_themeresources.xaml:138-139, :26-27;
       Common_themeresources_any.xaml:226, :22, microsoft-ui-xaml 8463f45; now
-      beside the measurement in `docs/platform-facts.md:1305-1306`). The
+      beside the measurement in `docs/platform-facts.md@fc6109d1:1305-1306`). The
       preset states what WinUI 3 draws elsewhere, but its measured hover and
       pressed thumbs (`#a0a0a0`, `#787878`) are lighter or darker than that
       brush, and WinUI does not change the thumb on hover: decide whether
@@ -437,12 +442,12 @@ cannot tell which file a bare number continues, so it does not look for one.
       option with no source. Two citations were one line off: the dark scroll
       bar this entry cited as `macos-monterey.toml:640-654` was `:641-655` at 2ca74471, and
       the egui entry's dark `track_color` (`:646`) was `:647`. The validator also
-      named `docs/platform-facts.md:1307` and `:181` as "citing probe 15" (its
+      named `docs/platform-facts.md@fc6109d1:1307` and `:181` as "citing probe 15" (its
       words; `:1307` gives the macOS 14.8.9 probe's legacy 15): re-check what
       each should cite now that the reader reads the width live (e6c5c737).
       *W2-j (2026-10-26):* §2.8's KDE `thumb_hover_color` cell now has its
       source and value, Breeze's `DecorationHover` at half alpha over the
-      window, #96cfed / #2f6888 (`docs/platform-facts.md:1306`), which
+      window, #96cfed / #2f6888 (`docs/platform-facts.md@fc6109d1:1306`), which
       kde-breeze states and the reader writes (D7). The KDE `thumb_color`
       cell (`:1305`) is still the placeholder "thumb color". By the same
       source a resting handle is `WindowText` at alpha 0.5 (breezehelper.cpp:279
@@ -492,8 +497,11 @@ cannot tell which file a bare number continues, so it does not look for one.
       Accent is mixed 85 % `accent`, 15 % `highlightedText` (`:114-130`). Map each class to its
       `ResolvedTheme` leaf. The KDE reader takes `text_color` from
       `[Colors:Window] ForegroundNormal` but the status colours from
-      `[Colors:View]` (`native-theme/src/kde/colors.rs:18`, `:23`, `:39-43`),
-      so check which group Qt's palette fills from. Then `FreedesktopLoader`
+      `[Colors:View]` (`native-theme/src/kde/colors.rs:18`, `:23`, `:39-43` at
+      5cfe6220), so check which group Qt's palette fills from (settled for
+      0.8.0, ADD-A145: the palette's colours are S9.3's colours' source,
+      `palette_colors` in `native-theme/src/kde/mod.rs`, and the icon's
+      colours S2.9's). Then `FreedesktopLoader`
       takes those colours, not the one colour `color` takes, which would turn
       all eight classes into one colour
       (`/usr/include/KF6/KIconThemes/kiconcolors.h:40-42`), and rewrites the
@@ -511,7 +519,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       source (Breeze's style, libadwaita's CSS, WinUI's templates, AppKit's
       measured rendering) with citations, then register the shape there.
 - [ ] [1.0] Open question: does a Windows 11 text box show the system focus
-      visual at all? `docs/platform-facts.md` §2.1.5 gives WinUI's focus
+      visual at all? `docs/platform-facts.md@fc6109d1` §2.1.5 gives WinUI's focus
       visual (`focus_ring_*`) and §2.4 Text Input (`:1219`), for the
       field's own line, the accent underline a focused `TextBox` thickens
       to 2 (`focus_border_color`, `TextBox_themeresources.xaml:136`,
@@ -529,7 +537,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 
 - [ ] [1.0] `defaults.selection_inactive_background` is the selection fill of a
       window that has lost focus. Only macOS states it
-      (`docs/platform-facts.md:1061`, `unemphasizedSelectedContentBackgroundColor`;
+      (`docs/platform-facts.md@fc6109d1:1061`, `unemphasizedSelectedContentBackgroundColor`;
       the reader, `native-theme/src/macos.rs:107`), and `ResolvedTheme` has no
       text colour to pair with it: a toolkit that swapped the fill in on focus
       loss would paint the active `selection_text_color` on it. The egui
@@ -545,7 +553,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       A question, not a claim: the macOS reader also writes the unemphasised
       colour into `input.selection_background` (`native-theme/src/macos.rs:490`,
       `:502`), where platform-facts gives an input's selection as
-      `← defaults.text_selection_background` (`docs/platform-facts.md:1210`),
+      `← defaults.text_selection_background` (`docs/platform-facts.md@fc6109d1:1210`),
       `selectedTextBackgroundColor` on macOS (`:1062`). Neither the reader's
       comments nor the commit that added the assignment (`d87483c8`) say why a text
       field's selection takes the unfocused colour. Is it intended? Fix the
@@ -554,7 +562,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       `input.selection_background`, and
       `read_macos_leaves_the_text_field_selection_to_inheritance`
       (`native-theme/src/macos.rs:1017`) pins it, so the field inherits
-      `defaults.text_selection_background`, as `docs/platform-facts.md:1210`
+      `defaults.text_selection_background`, as `docs/platform-facts.md@fc6109d1:1210`
       gives it. The research task above (the text colour on the unemphasised
       selection) stays open.
 
@@ -588,10 +596,10 @@ cannot tell which file a bare number continues, so it does not look for one.
       *M2b fix round 2 (2026-10-11):* windows-11's `defaults.border.color` is
       now `CardStrokeColorDefault` as the resource gives it, `#0000000f` light
       and `#00000019` dark (Common_themeresources_any.xaml:250, :46,
-      microsoft-ui-xaml 8463f45; `docs/platform-facts.md:1055`), so its dark
+      microsoft-ui-xaml 8463f45; `docs/platform-facts.md@fc6109d1:1055`), so its dark
       `#454545` is closed. `splitter.hover_color` keeps the old `#e5e5e5` /
       `#454545` with no source ❓: WinUI 3 has no draggable divider
-      (`docs/platform-facts.md:1468`); it is for M3 with the other soft
+      (`docs/platform-facts.md@fc6109d1:1468`); it is for M3 with the other soft
       options that have no facts row.
       *M2e Step 7 (2026-10-11):* adwaita's `defaults.border.color` is now the
       computed `#dcdcde` / `#434347`, and its popover outline libadwaita
@@ -620,7 +628,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       Breeze 6.7).
       *M2e fix round 1 (2026-10-11):* kde-breeze's `separator.line_color`
       (`#c4c8c6` / `#3e4550`, no source) is no longer stated: the separator
-      inherits `defaults.border.color` (`docs/platform-facts.md:1476`), so
+      inherits `defaults.border.color` (`docs/platform-facts.md@fc6109d1:1476`), so
       the unsourced `#bcc0bf` / `#4d545b` above is now its line colour too.
       kde-breeze light's `button.active_text_color`, the text on the accent
       fill, is `#ffffff` (`[Colors:Selection] ForegroundNormal`,
@@ -634,9 +642,9 @@ cannot tell which file a bare number continues, so it does not look for one.
       *M4 T36 (2026-10-13):* kde-breeze's disabled switch thumb, the
       `#fcfcfc80` above, is the handle's Disabled shade since 74fc414d,
       Disabled `[Colors:Button] BackgroundNormal` (`#f0f0f0` / `#272a2e`,
-      `docs/platform-facts.md:1523`). kde-breeze's `defaults.border.color` is
+      `docs/platform-facts.md@fc6109d1:1523`). kde-breeze's `defaults.border.color` is
       still open, and two facts cells disagree on it:
-      `docs/platform-facts.md:1055` gives KDE's `border.color` as "(preset) —
+      `docs/platform-facts.md@fc6109d1:1055` gives KDE's `border.color` as "(preset) —
       derived from background", while `:1476` gives the separator, which
       inherits it, as Breeze's `separatorColor()`, mix(Window, WindowText,
       frameContrast). State the computed mix in the preset and the `:1051` cell
@@ -675,26 +683,6 @@ cannot tell which file a bare number continues, so it does not look for one.
       presets above only ios-13 (0.3, `ios-13.toml` `[light.defaults] disabled_opacity`,
       `[dark.defaults] disabled_opacity`) and the ten
       community presets (0.5) still state both.
-
-### KDE: the live reader's disabled text colour
-
-- [ ] [1.0] `native-theme/src/kde/colors.rs` reads `defaults.disabled_text_color`
-      from `[Colors:View] ForegroundInactive`; Breeze paints disabled text
-      from the palette's Disabled group, which KColorScheme derives with the
-      scheme's `[ColorEffects:Disabled]` (`docs/platform-facts.md` §2.1.3,
-      §2.1.6: Breeze `#a0a1a3`, Breeze Dark `#686a6c`, which kde-breeze
-      states). Port KColorScheme's `StateEffects` (`kcolorscheme.cpp:36-101`
-      at 27066d47: Fade by `mix`, Darken in KColorUtils' HCY space) to the
-      reader, check it against the computed values, and derive the widgets'
-      disabled colours from it as the preset states them (Button, View and
-      Window sets, `ForegroundLink`); until then the live reader's
-      `defaults.disabled_text_color` is not Breeze's.
-      M8 T16c (2026-10-17): the switch's disabled outlines join them,
-      `switch.disabled_unchecked_track_border_color` (`handleBorderColor` in
-      the Disabled Button set, #e2e2e2 / #34373b) and
-      `disabled_checked_track_border_color` (Disabled Selection, #e3e5e7 /
-      #1f2124; `docs/platform-facts.md` §2.21), which kde-breeze states and the
-      reader leaves to the preset.
 
 ### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28)
 
@@ -760,7 +748,7 @@ model, the platform presets and the three connectors
       for the progress bar (and for the text field, check box, drop-down,
       segmented control and expander), as `docs/platform-facts.md`'s macOS cells give.
 
-### macOS 27 Golden Gate: no preset of its own yet
+### macOS 27 Golden Gate and iOS 27: no preset of their own yet
 
 - [ ] [1.0] When GitHub offers a non-preview macOS 27 runner image (today only the
       `xcode-27` preview, actions/runner-images #14404), run the OS probe on it and
@@ -768,8 +756,8 @@ model, the platform presets and the three connectors
       carries. If it does, build `macos-golden-gate` (D8's key: Apple's codename for
       27) with a row in `pipeline.rs`'s `MACOS_GENERATIONS`; if not, raise
       `macos-tahoe`'s `last_verified` to 27. Until then a Mac on 27 gets
-      `macos-tahoe`, and `SystemTheme::version_match` reports `PresetOlder` (plan
-      D4). The preview probe already differs from 26.6.2 in the segmented
+      `macos-tahoe`, and `SystemTheme::version_match` reports `PresetOlder` (the
+      code-review plan's D4, `docs/archive/`). The preview probe already differs from 26.6.2 in the segmented
       control's width (98 against 91), the stepper's height (24 against 26),
       `underPageBackgroundColor` and the text field's render fill
       (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-xcode-27`).
@@ -778,6 +766,20 @@ model, the platform presets and the three connectors
       disabled slider's bar left of the knob #d9d9d9 / #3d3d3d (26: #dfdfdf /
       #393939; `docs/platform-facts.md` §2.9 `disabled_fill_color`, §2.21
       `disabled_checked_background`).
+      Carried here from the v0.7.1 specification by the 0.8.0 plan's D12
+      (2026-10-29: `macos-tahoe` and `ios-26` describe 26.x), what only 27
+      draws, each a model addition for 27's preset: macOS's pull to refresh
+      (`NSScrollView.refreshController`, MAC-N24; a `pull_to_refresh` on the
+      macOS preset), a status item's expanded interface
+      (`NSStatusItemExpandedInterfaceSession`, MAC-N34†; a `menu_bar` variant
+      `@expanded_interface` and its `extra_window` look), iOS 27's sheet
+      placements (`preferredPlacement`: `@placement_center`, `_leading`,
+      `_trailing`, with a side anchor, SF-7†), iOS 27.2's navigation-bar
+      `titleAlignment` (C-1), and iOS 27.1's `UIVerticalBarBehavior` and
+      `UIBarButtonItem.axisBehavior` (the iOS gap map's 26 column); the gap
+      maps' rows and the traces' `newest (R1.5)` lines name them. For iOS 27
+      the same decision is taken when a non-preview runner image carries its
+      simulator: `ios-26` re-described, or a preset of its own.
 
 ### macOS: the window background macOS 14 and 15 draw is not the one they read
 
@@ -809,7 +811,7 @@ model, the platform presets and the three connectors
 ### macOS: what the OS probe does not render yet
 
 - [ ] [1.0] The OS probe renders no hovered control on macOS, so
-      `docs/platform-facts.md` gives no hover colour for a slider knob
+      `docs/platform-facts.md@fc6109d1` gives no hover colour for a slider knob
       (§2.9, `:1324`), a sidebar row (§2.12, `:1379`), a table row (§2.15,
       `:1435`) or a switch (§2.21, `:1527-1528`). The macOS presets draw a
       hovered table or sidebar row in its own background (D9) and a hovered
@@ -834,78 +836,6 @@ model, the platform presets and the three connectors
       in both appearances, and the controls section renders five controls
       disabled; OS-probe run 40348854007 holds the first measurement. The
       hovered half stays open.
-
-### material-3: the display names "Material 3" and "Material 3 Expressive"
-
-- [ ] [v0.7.x] When M2d rewrites the preset
-      (`docs/archive/todo_v0.7.0_code-review-plan.md`, M2d Step 15), its line of
-      the `bundled_presets!` table (`native-theme/src/presets.rs`) and its TOML
-      `name` become "Material 3", with "Material 3 Expressive" for the second
-      Material preset; the menus say "Material" until then. The screenshot half of
-      the entry this continues closed at the v0.7.0 release asset run
-      (`docs/archive/todo_closed.md`, *material-3: the screenshot names and the
-      display name*).
-
-### ios-26: 38 required fields have no iOS 26 source
-
-- [ ] [v0.7.x] Step 17 of the code-review plan (`docs/archive/todo_v0.7.0_code-review-plan.md`,
-      M2c) writes `ios-26.toml`, the Liquid Glass look of iOS 26; it is
-      deferred (2026-10-11). The resolver requires 59 leaves per variant
-      that no inheritance rule fills (`ResolutionIncomplete` otherwise,
-      `native-theme/src/resolve/validate.rs`), Step 17 forbids copying
-      `ios-13`'s values into them, and 38 of the 59 have no iOS 26 source:
-      `defaults.link_color`, `defaults.border.corner_radius_lg_px`,
-      `defaults.border.shadow_enabled`, `defaults.icon_sizes.toolbar_px`,
-      `small_px`, `large_px`, `dialog_px`, `panel_px`,
-      `button.icon_text_gap_px`, `checkbox.label_gap_px`,
-      `menu.icon_text_gap_px`, `tooltip.max_width_px`,
-      `scrollbar.groove_width_px`, `min_thumb_length_px`, `thumb_width_px`,
-      `slider.thumb_diameter_px`, `progress_bar.min_width_px`,
-      `tab.min_width_px`, `min_height_px`, `list.alternate_row_background`,
-      `splitter.divider_width_px`, `switch.thumb_diameter_px`,
-      `track_radius_px`, `dialog.min_width_px`, `max_width_px`,
-      `min_height_px`, `max_height_px`, `button_gap_px`, `icon_size_px`,
-      `spinner.diameter_px`, `min_diameter_px`, `stroke_width_px`,
-      `combo_box.min_width_px`, `arrow_icon_size_px`,
-      `segmented_control.segment_height_px`, `separator_width_px`,
-      `expander.header_height_px` and `arrow_icon_size_px`. Three of them
-      need only a mapping ruling, since WebKit draws them at de320ba3: the
-      slider thumb is a 24 × 16 capsule, the switch thumb a 39.857 × 26.571
-      capsule, the select's chevron 0.55 em wide. The other 21 leaves have
-      a source (9 confirmed, 12 plausible); their values and citations are
-      kept in `docs/archive/todo_v0.7.0_code-review-findings.md`, `## M2c — iOS`,
-      *Steps 16–18*. Three of those carry an open choice:
-      `defaults.disabled_opacity` 1.0 (the disabled colours are stated,
-      `docs/inheritance-rules.toml:364-371`) or WebKit's 0.4 (html.css:945-947,
-      RenderThemeCocoa.mm:1585); `defaults.selection_text_color` white on
-      the inherited accent or label on UIKit's grey row selection;
-      `button.min_width_px` 44 (the HIG's default control size) or 28 (its
-      minimum). Also to re-rule before the file is written: WebKit's iOS 26
-      controls draw a plain button's and a select's text in `label`, not
-      systemBlue (RenderThemeCocoa.mm@de320ba3:3324-3329, :3229-3232,
-      :3373-3376; a UA-sheet colour is not "explicitly set"), so the
-      systemBlue `button.font.color`, `button.active_text_color` and
-      `combo_box.font.color` M2c gave for iOS 26 are the pre-refresh look.
-      The route to the missing values: an iOS Simulator probe on a GitHub
-      macOS runner (the `macos-26` image), a dev-only app printing UIKit's
-      intrinsic sizes and colours, as M2d Step 3's reference app does; the
-      CI dispatch is the maintainer's.
-      *M2 final review (2026-10-11), an open question kept from the ledger:*
-      `ios-13` cites RenderThemeCocoa.mm@de320ba3:763 (`thumbColor =
-      Color::white`) for `switch.thumb_background` and
-      `switch.disabled_thumb_color`, "white, disabled too". Is that thumb the
-      pre-refresh (iOS ≤ 18) path? The code says it is the classic painter:
-      `renderThemePaintSwitchThumb` sends the refreshed look to
-      `renderThemePaintLiquidGlassSwitchThumb` when
-      `formControlRefreshEnabled()` (:737-742), and the classic painter
-      changes nothing for a disabled thumb (:744-797). Not checked: that
-      the classic path at de320ba3 is what iOS 18's WebKit drew (the
-      pre-refresh tag, 31adf9d1, has `RenderThemeIOS.mm` instead), nor what
-      UIKit's `UISwitch` draws. Step 17 cites the refreshed path's
-      `liquidGlassSwitchThumbColor` (:475-493) for `ios-26`.
-      Retagged `[v0.7.x]` at the review's close (2026-10-26, the controller, as told to the
-      maintainer): 38 of the 59 leaves still have no iOS 26 source, so `ios-26.toml` waits for
-      the route above, after 0.7.0.
 
 ### Model: one `*_text_color` field, two meanings
 
@@ -940,22 +870,6 @@ model, the platform presets and the three connectors
       break), or carry a resolved layout in `Resolved`/`SystemTheme` and let the
       generated check replace `check_layout`. Kept unchanged in M3 because no
       break was approved for it.
-
-### macOS: the reader and the SF Symbols loader on macOS 10.15 and earlier
-
-- [ ] [1.0] For the platform readers (M4-44, deferred by M4's triage,
-      2026-10-13): the macOS reader calls
-      `NSAppearance.performAsCurrentDrawingAppearance(_:)` and the SF Symbols
-      loader `NSImage(systemSymbolName:accessibilityDescription:)`, both
-      introduced in macOS 11.0 (Apple's documentation JSON, `introducedAt`,
-      read 2026-10-13; objc2-app-kit 0.3.2 does not encode availability).
-      On macOS 10.15 and earlier the unrecognised selector raises an
-      Objective-C exception, which objc2's `msg_send` unwinds (objc2 0.6.4
-      `src/macros/mod.rs:983-985`), instead of an `Err`; no GitHub runner is
-      older than macOS 14, so this is unreproduced. Since M4 T24 the crate
-      README states macOS 11 as the minimum. Gate it at runtime: in
-      `read_macos`, `os_version().major >= 11` (or objc2's `available!`)
-      else `Error::ReaderFailed`; in `load_sf_icon_by_name`, `None`.
 
 ### System icons: `.scale()` after a measurement on macOS and Windows
 
@@ -1024,11 +938,17 @@ model, the platform presets and the three connectors
 
 - [ ] [1.0] Research (M4 T11 ruling, 2026-10-12): a Qt 6 font string can carry a
       `styleName` in field 16, which the KDE reader's parser ignores
-      (`parse_qt_font_with_weight`, `native-theme/src/kde/fonts.rs:65`).
+      (`parse_qt_font_with_weight`, `native-theme/src/kde/fonts.rs:65` at
+      2ca74471).
       Unverified: whether a set `styleName` overrides fields 4 and 5 (weight
       and style) in Qt's font matching; read `qfont.cpp` at a pinned Qt tag. If
       it does, a KDE font with a `styleName` renders another weight than the
       reader reports. No user report.
+      0.8.0 (ADD-A145): the clean room's `qfont_from_string`
+      (`native-theme/src/cleanroom_readers/qfont_from_string.rs`) parses the
+      style name, which S9.3's fonts keep none of (`native-theme/src/kde/font.rs`);
+      whether it overrides the weight and style is a question for the clean
+      room's describer, not a read of `qfont.cpp` (D10).
 
 ### GNOME: the reader's dark mode does not read `GTK_THEME`
 
@@ -1066,7 +986,7 @@ model, the platform presets and the three connectors
       `DwmGetColorizationColor` as `window.title_bar_background` whether or not
       the user turned on *Show accent colour on title bars*; since 8c133614 it
       does not, and outside high contrast the title bar is the preset's Mica
-      fallback (bcb1d2c2; `docs/platform-facts.md:1160`, `:374`). With the
+      fallback (bcb1d2c2; `docs/platform-facts.md@fc6109d1:1160`, `:374`). With the
       setting on, Windows draws the title bar in an accent colour the theme then
       misses. The probe reads the setting as `ColorPrevalence` under
       `HKCU\Software\Microsoft\Windows\DWM` (0 on the Windows 11 25H2 runner,
@@ -1126,7 +1046,7 @@ model, the platform presets and the three connectors
 ### KDE reader: `switch.thumb_background` and `menu.icon_size` are not read
 
 - [ ] [v0.7.x] From M4 T36 (2026-10-13): kde-breeze states the switch thumb as
-      `[Colors:Button] BackgroundNormal` (a7da50c7; `docs/platform-facts.md:1523`)
+      `[Colors:Button] BackgroundNormal` (a7da50c7; `docs/platform-facts.md@fc6109d1:1523`)
       and the menu icon size as KIconLoader's Small, 16 (`:1268`), but the KDE
       reader writes neither: a custom colour scheme keeps Breeze's thumb, and
       an icon theme whose `SmallDefault` differs keeps 16 (the reader reads
@@ -1143,7 +1063,7 @@ model, the platform presets and the three connectors
       Breeze's Qt Widgets menu is filled with `frameBackgroundColor()`,
       mix(Window, Base, 0.3) (breezestyle.cpp `drawPanelMenuPrimitive`;
       breezehelper.cpp:200-203, as the T36 implementer read them), while
-      `docs/platform-facts.md:1253` gives KDE's `menu.background_color` as
+      `docs/platform-facts.md@fc6109d1:1253` gives KDE's `menu.background_color` as
       `[Colors:Window] BackgroundNormal`, which qqc2-desktop-style's `Menu.qml`
       uses (`Kirigami.Theme.backgroundColor`). The row depends on which toolkit
       it describes. Cite both at v6.7.5 / v6.31.0 in the facts cell, decide
@@ -1196,7 +1116,7 @@ model, the platform presets and the three connectors
       `one-dark.toml`, `solarized.toml` and `tokyo-night.toml`, each
       `[light.expander] hover_background` and `[dark.expander] hover_background`).
       kde-breeze's was unset in M6 T16b: the
-      §2.27 `frame_enabled` row (`docs/platform-facts.md:1686`) says
+      §2.27 `frame_enabled` row (`docs/platform-facts.md@fc6109d1:1686`) says
       `KCollapsibleGroupBox::paintEvent` paints the arrow and the title and
       nothing else. Find each platform's source for a hovered expander header
       (a facts row), or unset the value; the gpui connector's
@@ -1427,13 +1347,16 @@ model, the platform presets and the three connectors
       hover tracks, which now differ from its rest tracks where §2.21 gives
       them equal.
       M8 T16 fix round 1 (2026-10-17): the KDE reader
-      (`native-theme/src/kde/colors.rs`) derives none of kde-breeze's new
+      (`native-theme/src/kde/colors.rs` at 13cee001) derives none of kde-breeze's new
       colour values, so under another colour scheme or accent they keep
       Breeze's. Three of them followed the reader before T16 and are frozen
       now: `slider.thumb_color` (it inherited the surface colour),
       `toolbar.background_color` (the window colour) and
       `switch.checked_background` (the accent): M8 T16b's (the T16 review's
-      finding 6). Also in fix round 1: the card's padding is 7, not 8, inside
+      finding 6). (Obsolete in 0.8.0's model, ADD-A145: those values become
+      KDE facts over the reader's colour roles in their units, M3, and the
+      presets are generated from the facts.) Also in fix round 1: the card's
+      padding is 7, not 8, inside
       its border line (Kirigami's 8 is from the outer edge; §2.26 corrected,
       b7f16c0d, 60841b4f); adwaita's text input and drop-down fill with
       `$button_color`, #e6e6e7 / #38383c (§2.4, §2.24 corrected), its input
@@ -1450,7 +1373,8 @@ model, the platform presets and the three connectors
       compute them (`button.hover_background`, `slider.thumb_color`, both
       switch tracks, the toolbar's fill and edge, the popover's and the
       card's edges), in Qt's arithmetic, checked against Qt 6.11.2 test
-      vectors (`scripts/generate_qt_color_vectors.py`); the toolbar fill's
+      vectors (`scripts/generate_qt_color_vectors.py`, deleted with the
+      ports at 0.8.0's switch, D10); the toolbar fill's
       kwinrc condition is the next entry.
       M8 T16c (2026-10-17): the switch's outlines are in the model
       (`switch.*_track_border_color`, `track_border_line_width`,
@@ -1465,7 +1389,7 @@ model, the platform presets and the three connectors
       M8 T16c fix round 1 (2026-10-17): kde-breeze states those four now,
       `disabled_checked_background` #e6e7e8 / #26292c and
       `disabled_unchecked_background` #e9e9e9 / #2e3135
-      (`docs/platform-facts.md:1529-1530`); the switch's disabled tracks close.
+      (`docs/platform-facts.md@fc6109d1:1529-1530`); the switch's disabled tracks close.
       M8 final fix (2026-10-17): adwaita `button.hover_background` `#d5d5d5` /
       `#464649` (`adwaita.toml` `[light.button] hover_background`,
       `[dark.button] hover_background`; §2.3 `hover_background`, whose GNOME
@@ -1473,7 +1397,7 @@ model, the platform presets and the three connectors
       15 %, a translucent replacement of the rest fill, #dcdcde / #434347 over
       the window).
       M9a T17 (2026-10-18): the sidebar padding is stated from §2.12's rows
-      (`docs/platform-facts.md:1380-1381`): adwaita 6 across, 6 top and 4
+      (`docs/platform-facts.md@fc6109d1:1380-1381`): adwaita 6 across, 6 top and 4
       bottom (`adwaita.toml`
       `[light.sidebar.border] padding_horizontal_px, padding_top_px, padding_bottom_px`,
       the same in `[dark.sidebar.border]`); windows-11 3 across
@@ -1495,11 +1419,18 @@ model, the platform presets and the three connectors
       BorderSizeAuto` / `BorderSize`; breezehelper.cpp:1904-1941 at breeze
       f0b1d75; `docs/platform-facts.md` §2.13 `background_color`); otherwise
       the toolbar shows the window colour. The KDE reader
-      (`native-theme/src/kde/colors.rs`, `populate_colors`) assumes Plasma's
+      (`native-theme/src/kde/colors.rs` at e0ba719e, `populate_colors`) assumes Plasma's
       default, automatic, and gives `toolbar.background_color` the Header
       colour whatever the user set. Read kwinrc's border size, as Breeze
       does, and give the toolbar the window colour where it is another
       size.
+      0.8.0 (ADD-A145): the KDE reader (`native-theme/src/kde/mod.rs`)
+      reads no kwinrc and states the scheme's colour roles, no toolbar
+      colour. ADD-A145 records the catalogue binding the toolbar to
+      `Surface(Header)` at `variant top` with no border-size condition
+      (K1.150), K1.11's kwinrc read serving the window frame: whether the
+      toolbar's fill takes the border size is a KDE trace question for the
+      toolbar's unit (M3).
 
 ### windows-11: values WinUI 3 states no source for
 
@@ -1537,7 +1468,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.x] From the windows-11 `preset-validator` after M4 T35 (2026-10-13;
       the stopping rule sent everything T35's fix round did not take here):
-      - `defaults.shadow_color`: `docs/platform-facts.md:1057` gives Windows
+      - `defaults.shadow_color`: `docs/platform-facts.md@fc6109d1:1057` gives Windows
         two layers (the ambient one drawn, 14 % low, 20 % high), and the
         model's one shadow colour serves both the popup and the window
         shadows; unchanged. Decide what the one field states, or split it.
@@ -1549,7 +1480,7 @@ model, the platform presets and the three connectors
         wrong kind.
       - Under high contrast the reader writes `input.background_color` as
         `COLOR_BTNFACE` (`native-theme/src/windows.rs:363`), where the facts'
-        Win32 cell names `COLOR_WINDOW` (`docs/platform-facts.md:1203`); the
+        Win32 cell names `COLOR_WINDOW` (`docs/platform-facts.md@fc6109d1:1203`); the
         Win32 cell is not the HC mapping, and the HC writes have no facts rows.
         Give the HC mappings their rows.
       - The link's hover and pressed text have no high-contrast mapping
@@ -1566,32 +1497,6 @@ model, the platform presets and the three connectors
       `SolidBackgroundFillColorTertiary`, `#f9f9f9` / `#282828`, and
       *windows-11: what WinUI 3 draws* is closed, in
       `docs/archive/todo_closed.md`.
-
-### Linux font DPI: the `xrandr` fallback has no facts row
-
-- [ ] [v0.7.x] From the kde-breeze validator after M4 T34 (D3, deferred to Step
-      8): the font-DPI chain ends with the physical DPI `xrandr` reports
-      (`detect_physical_dpi`, `native-theme/src/detect.rs:473-485`, the last
-      step of `detect_system_font_dpi`, `:636`), and no
-      `docs/platform-facts.md` row says that any desktop uses it for fonts.
-      Find a source (Plasma, gnome-settings-daemon) and add the row, or drop
-      the step so the chain ends at 96.
-
-### CI: the macOS and Windows legs and the strict-panic steps have not run
-
-- [ ] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
-      `windows,watch,system-icons` (9ed71649) and strict-panic steps for both
-      targets (c373fdb0, `.github/workflows/ci.yml`, *Strict panic lints
-      (native-theme, macOS and Windows targets)*, `:82-89`). CI runs on a push to
-      `main`, a tag or a pull request (`ci.yml:3-7`), not on a branch push, so
-      none of them has run, nor the macOS and Windows runtime tests the M4
-      fixes wrote (the watcher, reader and icon tests of T2, T3, T5, T7, T19–T24
-      and T26, known-unrun). Run them at the next pull request or push to
-      `main`, and fix what fails.
-      M8 T21 (2026-10-17): since M8 T11 (60dcffbb) ci.yml has no tag trigger
-      of its own (its `on:` block, `ci.yml:6-10`): a `v*` tag runs it inside
-      publish.yml, whose `ci-full` job calls it (`workflow_call`) on the
-      tag's commit before the upload; a branch push still runs nothing.
 
 ### Dependencies: zbus 6 and the three unmaintained-crate advisories
 
@@ -1687,6 +1592,14 @@ model, the platform presets and the three connectors
       keeps #cccfd2 / #4e5359 where Plasma draws #3daee9. Decide whether the
       model gains hover outline fields (and the KDE reader derives them from
       `DecorationHover`) and a disabled thumb outline.
+      From *KDE: the live reader's disabled text colour* (closed 2026-11-09,
+      ADD-A145, `docs/archive/todo_closed.md`): the disabled track outlines
+      join them, `switch.disabled_unchecked_track_border_color`
+      (`handleBorderColor` in the Disabled Button set, #e2e2e2 / #34373b) and
+      `disabled_checked_track_border_color` (Disabled Selection, #e3e5e7 /
+      #1f2124; `docs/platform-facts.md` §2.21), which 0.7.0's reader left to
+      the preset: in 0.8.0 each is a KDE fact of the switch's parts over the
+      disabled roles `kde_effects` gives (M3 unit buttons and toggles).
 
 ### KDE: Union, the Application Style that is data (issue #4)
 
@@ -1747,7 +1660,9 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
       (`breezestyle.cpp:4875-4880`), not a `DecorationHover` blend. (7)
       `defaults.disabled_text_color`: the reader reads `[Colors:View] ForegroundInactive`
       (`native-theme/src/kde/colors.rs:493` at caeddd6b), KDE derives it through
-      `[ColorEffects:Disabled]` (`kcolorscheme.cpp:21-56`). (8) `input.caret_color`: Qt
+      `[ColorEffects:Disabled]` (`kcolorscheme.cpp:21-56`); fixed in 0.8.0 as
+      *KDE: the live reader's disabled text colour* (`docs/archive/todo_closed.md`,
+      ADD-A145). (8) `input.caret_color`: Qt
       may draw the line edit's caret in the text colour, not `DecorationFocus`; to measure.
       (9) `defaults.focus_ring_*`: Breeze's focus frame is a filled ring between two
       rounded rectangles, `Highlight` at `Blend_Value` 0.3 (`breezestyle.cpp:6770-6786`,
@@ -1783,36 +1698,36 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
 The gap map's cross-check (pass 2, 2026-10-28) found more; `platform-facts.md` lines are at
 caeddd6b, each platform file's *Cross-check* section has the detail.
 
-- [ ] [v0.7.x] **Menu items are rounded on four platforms.** `platform-facts.md:1265`
+- [ ] [v0.7.x] **Menu items are rounded on four platforms.** `platform-facts.md@fc6109d1:1265`
       (§2.6 `border.corner_radius`) calls the items rectangular. WinUI draws the menu in
       `OverlayCornerRadius` and each item in `ControlCornerRadius`
       (`MenuFlyout_themeresources.xaml:285`, `:309` at microsoft-ui-xaml 8463f45), Breeze's
       highlighted item is rounded, macOS 11+ rounds its hover highlight (gap map
       MAC-MN01), and libadwaita's is `$menu_radius` (the GNOME entry above).
-- [ ] [v0.7.x] **macOS.** (1) `platform-facts.md:1622` says the 12–15 pop-up button casts
+- [ ] [v0.7.x] **macOS.** (1) `platform-facts.md@fc6109d1:1622` says the 12–15 pop-up button casts
       no shadow, and `:1644` the same of the selected segment; the gap map (MAC-X01,
       MAC-SG02) finds both, and the cells were likely read from the non-key render, which
       cannot show them; settle them on the macOS 14 key-window render (the review of
       2026-10-28 found the pop-up's alpha fading below its bezel like the push button's,
-      which `platform-facts.md` calls a soft shadow). (2) `:1236`, no
+      which `platform-facts.md@fc6109d1` calls a soft shadow). (2) `:1236`, no
       checkbox shadow on 12–15, was never measured on a 12–15 render. (3) The reader does
       not read `NSColor.shadowColor` for `defaults.shadow_color`
       (`native-theme/src/macos.rs:157` at caeddd6b), and the sidebar's width is readable
       at run time (MAC-SB09†). (4) `:1568` gives the 12–15 dialog icon 64 px with no
       source (MAC-IC04†).
 - [ ] [v0.7.x] **Windows.** (1) The reader never sets `scrollbar.overlay_mode`, which
-      `platform-facts.md:1310` ties to `UISettings.AutoHideScrollBars` (W1-152†). (2)
+      `platform-facts.md@fc6109d1:1310` ties to `UISettings.AutoHideScrollBars` (W1-152†). (2)
       WinUI's TextBox template has no read-only and no invalid state
       (`TextBox_themeresources.xaml:255-291`): settles W1-033. The layout cells
       (`:1503-1506`) are the first Windows entry's (2).
-- [ ] [v0.7.x] **GNOME, more "(none)" cells libadwaita states.** `platform-facts.md:1600`
+- [ ] [v0.7.x] **GNOME, more "(none)" cells libadwaita states.** `platform-facts.md@fc6109d1:1600`
       spinner `min_diameter` (16), `:1601` spinner `stroke_width` (radius ÷ 8, AdwSpinner),
       `:1639` segmented `separator_width` (1 px, `_misc.scss:20-23`), `:1641` segmented
       `border.corner_radius` (9); `:1061` gives a reason (":backdrop handles this") for a
       rule libadwaita does not have.
 - [ ] [v0.7.x] **Material has a scrollbar.** Compose Material 3 draws one
       (`Scrollbar.kt`, `NonInteractiveScrollbarDefaults` at `:119-148`, androidx
-      1e677685), against `platform-facts.md:1304-1311` and the gap map's "M3 has no
+      1e677685), against `platform-facts.md@fc6109d1:1304-1311` and the gap map's "M3 has no
       scrollbar component" (MAT-SC3†). Its `Text` also styles the links of rich text,
       `colorScheme.primary` and an underline (`Text.kt:673-695`), where
       `platform-facts.md` §2.28 states no Material link value.
@@ -1836,12 +1751,6 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
 
 ### native-theme-egui connector
 
-- [ ] [1.0] Implement the companion widget crate, `native-theme-egui-widgets`, per
-      `docs/archive/todo_egui-widgets-spec.md` (rationale:
-      `docs/archive/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
-      segmented control and link wrappers. Milestone undecided; it starts after
-      the connector, whose API it consumes. When it is scheduled, re-verify the
-      spec against the connector as built, then write its plan.
 - [ ] [1.0] Map the platform font-rendering preferences (see Core API above) onto
       `Visuals::text_options` (`egui/src/style.rs:1001`) and the faces egui
       draws with. Map `font_hinting` (default `true`,
@@ -1892,7 +1801,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
 
 - [ ] [1.0] **For M6: two defects in gpui's pressed button fill, shown by
       `macos-tahoe`** (M2a Step 9). macOS 26 draws the push button in a
-      translucent fill, `#00000014` / `#ffffff14` (`docs/platform-facts.md:1177`),
+      translucent fill, `#00000014` / `#ffffff14` (`docs/platform-facts.md@fc6109d1:1177`),
       and no source gives its pressed fill, so the connector derives one.
       (1) `tc.button_active = tc.button.blend(tc.secondary_active)`
       (`connectors/native-theme-gpui/src/colors.rs:355`): `Hsla::blend` keeps
@@ -1906,9 +1815,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `DERIVED_PRESSED_FILL` once the pressed fill is opaque or stated. The
       hover fill is not affected: `macos-tahoe` states `macos-monterey`'s
       opaque `button.hover_background` (`#e0e0e5` / `#444446`), carried and
-      marked "no macOS 26 source" (`docs/platform-facts.md:1192` is ❓; the
+      marked "no macOS 26 source" (`docs/platform-facts.md@fc6109d1:1192` is ❓; the
       inherited window colour is a wrong safety net,
-      `docs/inheritance-rules.toml:167`), so the contract's check that a
+      `docs/inheritance-rules.toml@fc6109d1:167`), so the contract's check that a
       `TRANSLUCENT_BUTTON_FILL` combination's hover layer is opaque holds
       for that stated value.
       (1) fixed (M6 T9, 2026-10-15): `colors::over` composites the pressed
@@ -2574,13 +2483,13 @@ What is still open on the iced side:
       modes and `list.hover_background` and `sidebar.hover_background` in
       light; dark's list and sidebar hover is `#2e4a5e`. The facts cells
       give no colour: "`[Colors:View] DecorationHover` blend"
-      (`docs/platform-facts.md:1379`, `:1435`), "(Breeze src) thumb hover"
+      (`docs/platform-facts.md@fc6109d1:1379`, `:1435`), "(Breeze src) thumb hover"
       (`:1306`). `segmented_control.hover_background` and
       `expander.hover_background` (`#dee0e2`, dark `#31363b`, which is no
       BreezeDark colour) have no facts row. Values unchanged until a source
       gives them.
       M8 T21 (2026-10-17): since M8 T15 that row's KDE cell
-      (`docs/platform-facts.md:1192`) reads "← `background_color`: no hover
+      (`docs/platform-facts.md@fc6109d1:1192`) reads "← `background_color`: no hover
       fill" (breezehelper.cpp:693-707), hover being the `Highlight` outline;
       the button's `#93cee9` is listed in *Presets: values the M8 T15
       platform-facts rows disagree with* ("From M8 T15 (2026-10-17)", fix
@@ -2762,248 +2671,6 @@ What is still open on the iced side:
       The other three questions in that section answered themselves: the
       work landed on the v0.5.9 branch, the six Button variants' field names
       were corrected by the citation pass, and `Command` has a real demo.
-- [ ] [1.0] **Finish auditing the Widget Info "Not themeable" entries for
-      *resolvability*.** 257 entries over 107 panels; 99 cite an upstream
-      symbol, 158 do not, and an uncited one is an assertion nobody checked.
-      The audit is not "is this sentence accurate" but "could the connector
-      do something about it" -- those are the same question, because "not
-      themeable" is itself a claim about resolvability.
-
-      Method, one entry at a time: (1) does native-theme model a field for
-      this property; (2) does a `geometry::` builder carry it; (3) does
-      upstream apply the caller's refinement to the element that would
-      receive it, or to an ancestor of it. A "no" at (3) with a "yes" at (1)
-      is Tier U, not an absence, and the note should say which.
-
-      Scoped by where the answer can differ: **70 of the 158 are under
-      widgets native-theme models no counterpart for at all** (Alert, Tag,
-      Badge, Kbd, the charts, Avatar, Breadcrumb, Skeleton, the text
-      samples) -- those claims are true, but because of *our* model rather
-      than upstream, so the note should say that and the fix is a model
-      addition. The other **88 sit under one of the 27 modelled widgets**
-      and are where a resolvable gap can hide.
-
-      Three done, and the hit rate justifies the rest: a Button's
-      `font-weight` was called hardcoded on ten panels and was simply not
-      carried -- fixed, `geometry::button` now applies it. A Separator's
-      thickness and a Slider's track height and thumb size are genuinely
-      unreachable, but the model carries all three, so they are Tier U
-      (already in "inner geometry exposed", now under *Upstream PRs to
-      gpui-component*, "PR: expose checkbox/radio indicator size as theme
-      token") and the notes now say so
-      rather than "hardcoded".
-
-      Forty more checked 2026-09-22, and the largest single finding is a
-      **whole category the model is missing**: `Theme::motion` is a public,
-      writable `MotionTokens` field (`gpui-component/theme/mod.rs:170`,
-      `theme/motion.rs:8-20`: four durations, three easings, two springs, two
-      distances) read by at least eighteen call sites — `Checkbox`, `Switch`,
-      `Slider`, `Accordion`, `Collapsible`, `Progress`, `ProgressCircle`,
-      `TabBar`, `TabPanel`, `Carousel`, the charts and the plot tooltip. The
-      connector replaces the whole `Theme` on every `apply` and so overwrites
-      `motion` with `Default::default()`, because **native-theme models no
-      motion at all** (`model/animated.rs` is animated *icons*: frames and
-      transforms, nothing about widget transitions). Four "animation:
-      hardcoded" notes were therefore false — Progress, Accordion,
-      Collapsible and the Switch's timing all read the theme — and the notes
-      now say whose gap it is. Five others are true literals with no token
-      behind them (Skeleton, Notification, Sheet, Dialog, Spinner), and the
-      Carousel's note already had it right. **Decide whether to model motion**:
-      the platforms do state some of it (KDE's `AnimationDurationFactor`,
-      Windows' `SPI_GETCLIENTAREAANIMATION`, the existing
-      `prefers_reduced_motion()` detect), and a `MotionSpec` would light up
-      those eighteen readers at once.
-
-      Also corrected: a `Button Sizes` panel called padding and min-height
-      "varies per Size" where upstream copies the caller's style *before* the
-      Size arm and re-applies it after (`button/button.rs:576`, `:690`), so a
-      refinement wins — that demo simply omits it on purpose, and the note now
-      says so. `TabBar`'s padding looked like the same shape
-      (`tab/tab_bar.rs:517-518`), and that was wrong for the bar in question:
-      the showcase's `TabBar` is an Underline one, whose bar and tabs have no
-      horizontal padding at all, and its spacing is a per-Size gap on an inner
-      row the refinement never reaches (corrected in the sixth pass below).
-      The three `Link` notes became Tier U and an upstream PR candidate above.
-
-      Six more were wrong in the plainest way — they described upstream
-      inaccurately. A `Tree`'s "indent per depth level" and "hardcoded
-      ChevronRight" are in neither this demo nor upstream: `Tree::new` takes a
-      `render_item` closure and `tree.rs` draws no row content at all, so both
-      are the application's to draw and this demo draws neither. A
-      `DropdownButton`'s arrow is a `Caret` reached through
-      `Button::dropdown_caret`, and its colour is the button variant's own
-      text colour at 75% — themed, where the note said hardcoded. An `Alert`'s
-      variant icon is a default that `Alert::icon` replaces. A `Tooltip`'s
-      delay is the application's only for a tooltip set on an element: a
-      `Button`'s goes through `Root`'s overlay, whose 500ms is a module const
-      (corrected in the sixth pass). A
-      `Sidebar`'s 255px is a fallback the caller's own `.w()` displaces. And a
-      `DataTable`'s row height has an escape hatch.
-
-      A third batch found the mistake behind several of the others at once:
-      **gpui-component sets the rem to `Theme::font_size`** (`root.rs:582`), so
-      a `rems()` or a `text_base()` upstream is already the platform's size.
-      Six Button panels had called their label size Tier U when it is
-      `button_text_size` — `text_xs`/`text_sm`/`text_base`, a fixed ratio of
-      the platform's body text.
-      0.7.1 (2026-10): no longer true of a Medium Button label —
-      `button_text_size` is `text_sm` at Medium (`sizing.rs:337-343`); see the
-      `Size::Size(px)` item below and `geometry::button_label` (v0.6.1).
-      The `Headings` panel listed px figures that
-      were its rem ladder at a 16px rem, which no bundled preset produces. A
-      `Buttons with Icons` panel listed its icon colour as not themeable when
-      it follows the button's own text token, and its icon size is rems too.
-      And an `Editor`'s line height is only what the widget sets *first*:
-      upstream applies the caller's refinement last and says in a comment that
-      this is on purpose. Seven more were true and gained the citation that
-      proves it — Breadcrumb, Clipboard, Calendar and DatePicker glyphs built
-      inline with no setter, `DescriptionList` spacing, `Empty`'s dashed
-      border, and a `ButtonGroup` that has no gap to set because it joins its
-      buttons by turning edges off.
-
-      A fourth pass sharpened the three remaining `inner element (Tier U)`
-      notes that could be checked cheaply. All three are Tier U, but each was
-      hiding half the answer: a `Checkbox`'s indicator and a `Select`'s caret
-      are sized in rems and so already follow the platform's font, and the
-      caret's *colour* is themed. What is genuinely unreachable is the
-      absolute-px field the model states beside each -- `indicator_width`,
-      `arrow_icon_size` -- because both consumers fold `Size::Size` into the
-      catch-all arm.
-
-      A fifth pass took the "unmodelled widget" bucket, and it collapsed:
-      Alert, Tag, Kbd and Breadcrumb are each `Styled` and apply the caller's
-      refinement after their own paddings, so "hardcoded" was wrong about
-      every one of them -- what is absent is a model, not a receiver. That
-      pass put `Badge` in the same list, and the sixth pass found it does not
-      belong there: `Badge::render` applies the refinement to the wrapper
-      around the badged element (`badge.rs:116`), and the pill is an absolute
-      child built after it with its own literals, so nothing reaches it.
-      Two outright falsehoods fell out with it: a `Kbd` was said to use a
-      monospace font, and `kbd.rs` sets no family at all, so it inherits the
-      window's platform UI font; and a `Label`'s "font weights: hardcoded"
-      turned out to be the opposite -- nothing sets a weight anywhere, which
-      is now its own item above.
-
-      After five passes: sixty-three entries audited, thirty-one wrong. The
-      73 left uncited were set aside as "API facts no theme could set" --
-      and that label was itself unchecked.
-
-      **A sixth pass (2026-09-22) read all 73: sixteen were wrong, and four more were themed facts filed under the wrong heading.** A
-      disabled `Button`'s cursor is the default arrow, not `not-allowed`. The
-      `Loading Button` demo showed no spinner at all, because a `Button` draws
-      its spinner *in place of its icon* and that one had none (the demo now
-      has one). An `Input`'s placeholder is painted with `muted_foreground`,
-      a theme field, where the note said it was not -- and the model states
-      `input.placeholder_color` from each platform's own placeholder colour, so
-      that is Tier U. A `DatePicker` defaults to `%Y/%m/%d`, not `YYYY-MM-DD`.
-      An `AvatarGroup` drops the fourth avatar with no marker, because its
-      overflow marker is a `⋯` avatar, not a `+N` count, and only
-      `.ellipsis()` adds it. `Empty`'s "hardcoded 2rem" is rems and settable.
-      Markdown headings are sized from a **fixed 14px**, not from the base
-      font. The code `Editor`'s background is a fixed `#0a0a0a`/`#ffffff`,
-      because the highlight theme the connector installs sets one and the
-      `input_background()` fallback is never reached. A `Popover`'s anchor is
-      an `Anchor`, not a `Corner`; a `Sidebar`'s children implement
-      `SidebarItem`; a `ContextMenu` needs `InteractiveElement` too; a
-      candlestick's colours are `chart_bullish`/`chart_bearish`, not green and
-      red. And the **`AppMenuBar` was empty**: it reads gpui-base's
-      `GlobalState` menus, which only `set_app_menus` fills, and the showcase
-      only called `cx.set_menus` (fixed: it now fills both).
-
-      Fifteen entries in all were themed facts filed under "Not themeable":
-      those four -- the icon sizes and paddings the `Attachment`, `Toolbar` and
-      `Dialog` demos apply themselves -- the `Dialog`'s footer gap, and the ten
-      Button panels' font-weight, carried by `geometry::button` since the
-      first pass. They are config lines now.
-
-      Re-reading found three of this audit's own corrections wrong -- the
-      `Badge` padding (above), the `Tooltip` delay and the `TabBar` padding --
-      and three more cited entries: the `Badge`'s text and size notes, and a
-      `SidebarToggleButton` icon called hardcoded that is 1rem.
-
-      **The colour claims have the same failure, and the gate cannot see
-      it.** The citation gate checks that the cited line reads the named
-      token -- not that the line is on this widget's path, in this demo's
-      variant. Ten claims named the wrong token and passed: the navigation
-      `TabBar` is an Underline bar, and its "active bg `tab_active`" and "bar
-      bg `tab_bar`" are the `Tab` variant's (an Underline bar has no fill and
-      marks the active tab with a `primary` underline); a `Calendar` has no
-      `popover` fill; a `Collapsible` paints neither the `accordion` fill nor
-      the `border` it was given; a `Rating`'s empty star, a `Pagination`'s
-      page numbers and a `SidebarToggleButton`'s icon are not `foreground`;
-      a `Combobox` row hovers with `accent`, not `list_hover`; and a
-      `GroupBox`'s edge is the card's, through `geometry::group_box_content`.
-      Nine more had the right token at a line borrowed from another widget,
-      and five config lines were wrong (three `radius` lines the builders
-      override or the variant ignores, a `Calendar` that is `radius_lg`, and
-      a `ProgressCircle` that draws `spinner.diameter` at 75%).
-
-      Tally after six passes: 136 "Not themeable" entries audited, 47
-      wrong, 15 misfiled across the section, and three of the corrections
-      themselves wrong.
-
-      **A seventh pass (2026-09-22) read the 100 entries that already
-      carried a citation when the audit began** and had not changed since
-      -- the prose gate held their symbols, nothing held their meaning.
-      Seventeen were wrong and nine more were true but hid the resolvable
-      half. The wrong ones repeat the earlier shapes. "Hardcoded" said of
-      rems a refinement reaches: a `Bubble`'s padding, a `Message`'s slot
-      gap, a `Marker`'s row gap, a `TitleBar`'s 34px (settable; the model
-      states no title-bar height). Fills called absent that are painted: an
-      unchecked `Checkbox`, a `Radio` and an `OtpInput` box are all
-      `input_background()`, and a `Carousel` does draw a `ring` focus ring.
-      And plain misreadings: a `Radio`'s indicator is a circle, not half the
-      theme radius; a `Textarea`'s rows are Input's 1.25rem, not the font's
-      line height; an `Alert`'s tints are its colour faded into transparent
-      white, not mixed toward white; `sheet.margin_top` is gpui-component's
-      own setting, not a native-theme field; gpui *does* have a motion switch
-      and `with_animation` honours it; the spacing tokens have a reader (a
-      `Dialog`'s viewport margin), they just have no field behind them. Two
-      Tier U verdicts were wrong the other way: a `Toggle` folds the caller's
-      refinement into its *checked* style, so `segmented_control`'s active
-      colours reach a checked toggle, and its size is settable too.
-
-      The colour claims beside them had the same rate. **A named `Avatar`
-      takes no theme colour at all** -- fill, initials and edge are OKLCH
-      literals hashed from the initials, twelve hues -- so the three claims
-      on that panel and one on `Message` described an anonymous avatar the
-      demo does not show. An `OtpInput`'s digits are `foreground`, not the
-      `secondary_foreground` of a masked asterisk. `MessageScroller`'s jump
-      button is refined to `background`/`border`/`foreground` over its
-      `secondary` variant. And **the theme's `shadow` flag has one reader**:
-      `ButtonVariant::shadow` is `false` for every variant but `Custom`
-      (`button/button.rs:1050-1055`), so the "shadow" config line on eleven
-      panels -- six buttons, Input, NumberInput, Checkbox, Radio, Slider --
-      described nothing on screen.
-
-      Tally: 236 "Not themeable" entries audited, 64 wrong, 15 misfiled.
-
-      **An eighth pass (2026-09-22) read every remaining colour claim
-      against the code that paints the demo**, not only the cited line. The
-      recurring error is a claim that names upstream's token where a
-      `geometry::` builder the demo applies has replaced it: ten builders set
-      a corner radius and seven a colour, and they land last. So the
-      "border-radius: radius" line on eighteen panels -- ten buttons,
-      Textarea, InputGroup, NumberInput, Combobox, Select, Radio, Dialog,
-      AlertDialog -- showed a radius the builder overrides, and is gone; a
-      Radio's and a Select's label colour is the platform's font colour, not
-      the `foreground` the claim named (both now say "upstream"). Four claims
-      described a variant the demo does not build: an icon badge, a `Label`'s
-      highlights, an outline `Kbd`'s edge, an empty `ColorPicker` swatch (the
-      demo's has a value, painted with itself). Three had no reader at all:
-      `ThemeColor::list` on List and Tree, and `group_box` on a Settings page,
-      whose groups are `GroupBoxVariant::Normal`. And the code `Editor`'s
-      edge is the Input frame's `input`, while the `border` it claimed paints
-      the indent guides. Fourteen more cited a line from another widget
-      (InputGroup, NumberInput, Combobox and DatePicker borrowed `Input`'s;
-      DataTable borrowed the declarative `Table`'s header and a column
-      selection line for its row selection).
-
-      Tally for the colour claims: 374 read, 30 wrong, 25 cited on a
-      borrowed line; for the config lines, 36 wrong (eleven `shadow`, twenty
-      radii, five others). The audit of the Widget Info panels is complete:
-      every "Not themeable" entry, colour claim and config line has now been
-      read against the source that paints it.
 - [ ] [1.0] Two focus claims hold only while `Theme::focus_ring` is on — the
       Switch panel's ring and the DataTable panel's keyboard-focus line: with
       it off a bordered element's border is tinted instead
@@ -3241,9 +2908,6 @@ the gap — closing it is a change, and each wants its own decision.
       tests — it wants splitting per connector or a shared home. It also
       parses TOML, so it needs a `toml` dev-dependency, which the citation
       check did not. It works today, so this is tidying, not a fix.
-      `scripts/generate_gifs_spinners.py` is deliberately **not** included: it is
-      release tooling a human runs, not a gate, and nothing can silently
-      skip it because its output is the screenshots the asset stamp checks.
 - [ ] [1.0] Split the showcases into modules: `showcase-gpui.rs` and
       `showcase-iced.rs` are several thousand lines each after gaining every
       widget and their self-tests. The gpui half is done: the example is
@@ -3342,7 +3006,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-monterey, kde-breeze, adwaita 120 |
       | `combo_box.arrow_icon_size` | macOS: a chevron measured 6 × 10, not a square (§2.24) | macos-monterey 17 |
       | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
-      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1638`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
+      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md@fc6109d1:1638`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
       | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
       | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-monterey 40, kde-breeze 40 |
       | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-monterey 16 |
@@ -3357,18 +3021,18 @@ the gap — closing it is a change, and each wants its own decision.
       `progress_bar.min_width` 100, `tab.min_width` 64, the dialog bounds
       320/560/140/600, `spinner.stroke_width` 2, `combo_box.min_width` 120,
       `combo_box.arrow_icon_size` 17 (the chevron measures 7 × 10.5 on macOS
-      26, `docs/platform-facts.md:1619`, not a square either),
+      26, `docs/platform-facts.md@fc6109d1:1619`, not a square either),
       `expander.header_height` 40 and the icon sizes small 16, large 32,
       dialog 22 and panel 20; it makes
       `macos-monterey`'s choice of the small toolbar mode, 24 (the cell's
       macOS 26 tag: "same"). It does not carry `scrollbar.groove_width`:
       macOS 26 reports `scrollerWidth` 17 in both modes
-      (`docs/platform-facts.md:1307`), which `macos-tahoe` states; and it
+      (`docs/platform-facts.md@fc6109d1:1307`), which `macos-tahoe` states; and it
       leaves `layout.container_margin` unstated. It carries the same way,
       wherever else the model requires a number that no source gives for
       macOS 26: `focus_ring_offset` -1, `border.corner_radius_lg` 10 (Tahoe's
       window radii are larger per third-party measurements,
-      `docs/platform-facts.md:177`; not adopted, no API gives them),
+      `docs/platform-facts.md@fc6109d1:177`; not adopted, no API gives them),
       `border.line_width` 0.5, `border.shadow_enabled`,
       `button.icon_text_gap` and `menu.icon_text_gap` 4, `tooltip.max_width`
       300, `scrollbar.min_thumb_length` 40, `tab.min_height` 24,
@@ -3391,7 +3055,7 @@ the gap — closing it is a change, and each wants its own decision.
       kde-breeze states 8. Two value mismatches the audit noticed and did
       not follow: adwaita's `checkbox.indicator_width` 20 against §2.5's
       "libadwaita CSS: 14" (Ch. 1 gives 20 with padding:
-      `docs/platform-facts.md:1233` gives GNOME 14, the CSS `min-width`,
+      `docs/platform-facts.md@fc6109d1:1233` gives GNOME 14, the CSS `min-width`,
       which is the content box, while `adwaita.toml` states the 20-point box
       that `:980` defines, 14 + 2 · `padding: 3px`, so the table cell should
       read 20; it does since 963bcdd2, which closes this mismatch), and windows-11's
@@ -3983,8 +3647,6 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 ## Deferred (pre-1.0)
 
 ### Font DPI
-- [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (`docs/archive/todo_closed.md`, *Closed items from Font DPI*, "For M4 (connectors): on GNOME and Budgie X11"; its Xwayland half is the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
-  M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
 - [ ] [upstream] An X11 client through Xwayland on a GNOME or Budgie Wayland session draws the text-scaling factor twice: it gets the `Xft.dpi` gnome-settings-daemon writes as 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), winit 0.30.13 and gpui-pre-linux 0.3.9 take their X11 scale factor from it (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:145-146`; `src/linux/x11/client.rs:2671-2678`), and the GNOME reader, which sees a `wayland` session, reports the factor, which the connectors apply again. Core cannot see a client's backend, and the connectors' entry points take no window (M8 Step 6 ruling, 2026-10-16). The lengths winit and gpui scale by the factor on X11, which GTK does not, are theirs, not ours. The same holds for an X11 session started with `startx` from a text login: it runs in the text login's session, whose `XDG_SESSION_TYPE` is `tty` (one of pam_systemd's session types, `pam_systemd(8)` `type=`, systemd 262), so the reader reports the factor and the X11 toolkit's `Xft.dpi` scale carries it too. The rule stays `x11` exactly (Step 6 ruling); `DISPLAY` or `WAYLAND_DISPLAY` would guess the backend, not know it. Waits on a way for the reader to learn the backend the client actually uses (Xwayland, `startx`), which no toolkit exposes to a theme reader today.
   *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: gpui-pre-linux 0.3.10 takes its X11 scale factor from `Xft.dpi` at `src/linux/x11/client.rs:2674-2681` (0.3.9 `:2671-2678`), and gpui-fast-linux 0.1.12 does the same (`:2711-2718`).
 
@@ -4001,7 +3663,7 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 - [ ] [v0.7.x] On macOS the iced showcase puts its menus into the system menu bar from `update`, on a message `boot`'s task sends (`system_menu` and `boot` in `connectors/native-theme-iced/examples/showcase-iced.rs`, M9b T17), which an `iced::application` runs once its window is open (`iced_winit-0.14.0/src/lib.rs:108-113`), so possibly after the window's first frame, and winit's default app menu can stand for that frame. Not in `boot`: iced 0.14 builds winit's event loop with winit's default menu on and offers no way to turn it off (`iced_winit-0.14.0/src/lib.rs:79-81`; the egui showcase turns it off through eframe's `event_loop_builder`, `with_default_menu(false)`), and winit installs that menu when the application has finished launching (`winit-0.30.13/src/platform_impl/macos/app_state.rs:139-143`), inside the event loop's run (`iced_winit-0.14.0/src/lib.rs:451`), which `boot` comes before (`:105`), so it would replace a menu `boot` installed. Proposal: run the showcase as an `iced::daemon`. A daemon opens no window of its own (`iced-0.14.0/src/daemon.rs:76-78`), so its boot task runs at once (`iced_winit-0.14.0/src/lib.rs:108-119`); an `update` on its message installs the menus and then opens the window (`window::open` with `main`'s and `capture_window_settings`' settings), `view`, `title` and `theme` take the `window::Id`, and the run exits on the window's close. The menus are then in before any window or frame exists, provided winit's launch handling, which installs its default menu, has run by the time `update` handles the boot task's message: that order is assumed here, not read from the sources, so when the entry is picked up, check that winit's launch handling cannot replace a daemon's menus. Not taken in M9b (controller's ruling, M9b T17 fix round 1): a daemon opens and closes its window itself, which changes the start, the exit and the window settings on every platform, for one frame of winit's menu on macOS that no capture shows.
 
 ### macOS: the stated font family "SF Pro" is not a family iced's font database holds
-- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-monterey.toml`, renamed from `macos-sonoma.toml` in 11017186, `[light.defaults.font] family` and `[dark.defaults.font] family`, and the reader's non-macOS testable build, the test fixtures `sample_widget_fonts`, `sample_light_defaults` and `sample_dark_defaults`, `macos.rs:590-661`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`fontspec_from_nsfont`, `macos.rs:297-298`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
+- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-monterey.toml`, renamed from `macos-sonoma.toml` in 11017186, `[light.defaults.font] family` and `[dark.defaults.font] family`, and the reader's non-macOS testable build, the test fixtures `sample_widget_fonts`, `sample_light_defaults` and `sample_dark_defaults`, `macos.rs:590-661`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md@fc6109d1` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`fontspec_from_nsfont`, `macos.rs:297-298`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
 
 ### gpui: Settings and dock splitters draw upstream's renderer
 - [ ] [upstream] gpui-component 0.7.0's `Settings` divider and the dock's edges install gpui-component's own resize-handle renderer internally (`setting/settings.rs:416`, `dock/dock.rs:143`), so the splitter colours `base_layer::resizable_theme` writes do not reach them. Ask upstream for a handle-appearance setter on `Settings` (and the dock), then route the splitter colours through it.
@@ -4069,7 +3731,7 @@ M8 T21 fix round 1 (2026-10-17): its M7, M8 and M9a items are closed, in
 [`archive/todo_closed.md`](archive/todo_closed.md) under *Closed items from M6 close
 (2026-10-16): items carried to M7, M8, M9a and the presets*; the three `[1.0]` preset
 items below stay.
-- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, `kde-breeze.toml` `[light.segmented_control] hover_background`, `[dark.segmented_control] hover_background`). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
+- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, `kde-breeze.toml` `[light.segmented_control] hover_background`, `[dark.segmented_control] hover_background`). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md@fc6109d1:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
       M8 T21 fix round 1 (2026-10-17): its
       `segmented_control.hover_background` and `expander.arrow_color` are also
       items of *Presets: values the M8 T15 platform-facts rows disagree with*
@@ -4077,7 +3739,7 @@ items below stay.
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
       M8 T16 (2026-10-17): the inherited value is the stated token:
       `card.background_color` inherits `defaults.surface_color`
-      (`docs/inheritance-rules.toml:274`), which windows-11 states as
+      (`docs/inheritance-rules.toml@fc6109d1:274`), which windows-11 states as
       `CardBackgroundFillColorDefault`, #ffffffb3 / #ffffff0d
       (`windows-11.toml` `[light.defaults] surface_color`,
       `[dark.defaults] surface_color`), so the card is filled in the
@@ -4121,7 +3783,7 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
 - [ ] [1.0] The egui showcase's command palette moves its highlighted row only by the keys (`command_palette`, `palette_highlight` and `PaletteState::selected` in `connectors/native-theme-egui/examples/showcase-egui/chrome.rs` at 5de1f8b1); gpui-component's `Command` also moves it to the row under the pointer (each enabled row's `on_hover` calls `select`, gpui-component 0.8.0 `src/command/state.rs:854-858`; `select`, `:534-551`, highlights without scrolling). With the pointer resting on the palette, egui paints the hovered row's hover fill beside the highlighted row, so two rows can look marked where gpui marks one. A known parity gap that M9-119 did not ask for (M9c T11 review, *Parity: hover*; the controller's ruling of 2026-10-24). A fix needs "the pointer moved this pass and is over a row", so a resting pointer does not override the arrow keys, one more writer of `PaletteState::selected` and a kittest that moves the pointer.
 
 ### Connectors: an unstated `button.active_background` gives egui's and gpui's pressed fill two colours
-- [ ] [1.0] For the maintainer to decide. Where a theme states neither `button.checked_background` nor `button.active_background` (macos-tahoe, `macos-tahoe.toml` `[light.button]` and `[dark.button]`; neither inherits, `docs/inheritance-rules.toml:409`, `:411`), the two connectors give a pressed button different fills, and the showcases' Basic "On" toggle shows it. egui's connector presses in `button.hover_background` (`active_background.unwrap_or(hover_background)`, `connectors/native-theme-egui/src/style/roles.rs:206` and `src/style/base.rs:354` at 5de1f8b1), and the egui showcase draws the toggle in that leaf, naming it under Not themeable (`pages/basic.rs`, the toggle's `fill_instead`). gpui's connector derives a colour no theme states, `secondary_active` = `active_color(secondary, is_dark)` (`connectors/native-theme-gpui/src/colors.rs:315-322`, `src/derive.rs:40`), and lays it over the button fill as `button_active` (`colors.rs:381`); `geometry::button_checked` sets no fill there (`src/geometry.rs:1339-1342`), so the gpui toggle keeps upstream's selected fill in that token. Each showcase draws its toolkit's own pressed look, and the colours differ because the connectors' fallbacks do. Copying gpui's derived colour into the egui showcase would draw a colour the theme does not state, and the egui toggle would then disagree with egui's own pressed button, so the showcase keeps reading theme data (M9c B1 item 13 (e)). macos-tahoe is offered on macOS alone. Settle before 1.0 whether the connectors share one fallback for an unstated `button.active_background`.
+- [ ] [1.0] For the maintainer to decide. Where a theme states neither `button.checked_background` nor `button.active_background` (macos-tahoe, `macos-tahoe.toml` `[light.button]` and `[dark.button]`; neither inherits, `docs/inheritance-rules.toml@fc6109d1:409`, `:411`), the two connectors give a pressed button different fills, and the showcases' Basic "On" toggle shows it. egui's connector presses in `button.hover_background` (`active_background.unwrap_or(hover_background)`, `connectors/native-theme-egui/src/style/roles.rs:206` and `src/style/base.rs:354` at 5de1f8b1), and the egui showcase draws the toggle in that leaf, naming it under Not themeable (`pages/basic.rs`, the toggle's `fill_instead`). gpui's connector derives a colour no theme states, `secondary_active` = `active_color(secondary, is_dark)` (`connectors/native-theme-gpui/src/colors.rs:315-322`, `src/derive.rs:40`), and lays it over the button fill as `button_active` (`colors.rs:381`); `geometry::button_checked` sets no fill there (`src/geometry.rs:1339-1342`), so the gpui toggle keeps upstream's selected fill in that token. Each showcase draws its toolkit's own pressed look, and the colours differ because the connectors' fallbacks do. Copying gpui's derived colour into the egui showcase would draw a colour the theme does not state, and the egui toggle would then disagree with egui's own pressed button, so the showcase keeps reading theme data (M9c B1 item 13 (e)). macos-tahoe is offered on macOS alone. Settle before 1.0 whether the connectors share one fallback for an unstated `button.active_background`.
 
 ### Showcases: gpui's keyboard shield also stops its own macOS menu shortcuts
 - [ ] [1.0] For the maintainer to decide. Under `--capture`, `--screenshot` and `--dump-layout` on macOS, gpui's keyboard shield stops ⌘Q, ⌘H, ⌥⌘H, ⌘M and ⌘W too, which are its own keymap bindings: a key equivalent reaches gpui's window first (gpui-pre-macos 0.3.9 `src/window.rs:2572-2574`, `handle_key_equivalent`, and `:2659-2668`, the event reported as handled where it did not propagate), and the shield stops every keystroke (`cx.intercept_keystrokes`, gpui-pre 0.3.9 `src/window.rs:6075-6092`, installed by the gpui showcase's `apply_cli_args`). The egui showcase leaves AppKit's predefined items (Close, Quit, Hide, Hide Others, Minimize) running there, as its `shields_keyboard` doc says since M9c B1 FR-M3 (d2e34ccc), and drops only the showcase's own menu actions. Read from the source, not run on macOS. Settle before 1.0 whether the two shields cover the same keys.

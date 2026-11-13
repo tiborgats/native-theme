@@ -442,7 +442,7 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     // `chart/radar_chart.rs:507`): the model's grid-line colour, which
     // platform-facts §2.15 states as macOS `gridColor` and Material's
     // `outline-variant`, and which elsewhere inherits `defaults.border.color`
-    // (`docs/inheritance-rules.toml:245`).
+    // (`docs/inheritance-rules.toml@fc6109d1:245`).
     tc.chart_grid = c.list_grid;
     // Derivation (spec §6.2): upstream paints a table footer
     // (`table/table.rs:340-341`) and the model states no footer colour of any
@@ -1439,7 +1439,7 @@ mod tests {
     /// the pressed button covers more than its idle fill (C17).
     ///
     /// macos-tahoe light is the combination where both are translucent: macOS
-    /// 26 draws the push button in `#00000014` (docs/platform-facts.md:1177),
+    /// 26 draws the push button in `#00000014` (docs/platform-facts.md@fc6109d1:1177),
     /// and with no stated pressed fill the connector derives one from it, as
     /// translucent. A blend that keeps the base's alpha leaves the pressed
     /// fill at the idle fill's 0.0784 (docs/todo.md, M6).

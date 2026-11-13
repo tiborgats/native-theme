@@ -1,0 +1,22 @@
+# Synthetic facts (S17 *The accent run*): the preset's no-accent facts of the roles the accent facts state, which the
+# run compares on each own file with the preset's no-accent accent set; each the derivation the preset states.
+
+[[fact]]
+key = "role.view.link"
+value = "= input.kde_scheme.view.foreground_link"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.view.decoration_focus"
+value = "= input.kde_scheme.view.decoration_focus"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.cpp:1"
+quote = "synthetic"

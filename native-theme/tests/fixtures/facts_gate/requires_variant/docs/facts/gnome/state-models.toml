@@ -1,0 +1,12 @@
+# A synthetic state model (S17): a button that requires one of its two variants.
+[[model]]
+widget = "button"
+available = true
+variants = ["tool", "primary"]
+requires_variants = ["tool", "primary"]
+exclusive_variants = [["tool", "primary"]]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+rows = []

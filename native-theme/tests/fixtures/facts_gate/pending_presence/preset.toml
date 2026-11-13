@@ -1,0 +1,17 @@
+# A synthetic preset (S17, ADD-A131): the subtitle's presence listed, as its fact is pending with
+# no presence beneath; the base states the subtitle's fields and no presence.
+[pending]
+"widgets.button.subtitle" = "U7"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

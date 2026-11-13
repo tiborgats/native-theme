@@ -1,0 +1,17 @@
+[declare.widget.button]
+variants = ["tool", "@probe_arrow"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+# The subtitle left out where the facts draw it too.
+[[rules]]
+target = "button.subtitle"
+set = { absent = true }

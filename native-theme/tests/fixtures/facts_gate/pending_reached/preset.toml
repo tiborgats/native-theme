@@ -1,0 +1,36 @@
+# A synthetic preset (S17, ADD-A128): three listed paths, each read through functions that map many
+# values to one (max, min, floor, round, a mix all the way, a pick).
+# base without: width_px = 2
+# base without: speed_factor = 1
+# base without: selection_text_background = "#3366cc"
+# base without: selection_text_background = "#3366cc"
+[pending]
+"tokens.focus.width_px" = "U5"
+"tokens.motion.speed_factor" = "U6"
+"colors.light.global.selection_text_background" = "U7"
+"colors.dark.global.selection_text_background" = "U7"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "tokens"
+set = { focus.offset.top_px = "= max(token.focus.width, 1px)", focus.offset.bottom_px = "= min(token.focus.width, 0px)" }
+
+[[rules]]
+target = "button.body"
+set = { transform.scale_x = "= floor(token.motion.speed_factor)", transform.scale_y = "= round(token.motion.speed_factor)" }
+
+[[rules]]
+target = "colors"
+set = { global.drop_highlight = "= mix(role.global.selection_text_background, #000000, 1)", global.scrim = "= pick(0, #000000, role.global.selection_text_background)" }

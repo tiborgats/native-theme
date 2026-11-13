@@ -909,6 +909,147 @@ and many have since drifted, as the archive's [README](README.md) warns.
 
 ---
 
+### CI: the macOS and Windows legs and the strict-panic steps have not run
+
+
+- [x] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
+      `windows,watch,system-icons` (9ed71649) and strict-panic steps for both
+      targets (c373fdb0, `.github/workflows/ci.yml`, *Strict panic lints
+      (native-theme, macOS and Windows targets)*, `:82-89`). CI runs on a push to
+      `main`, a tag or a pull request (`ci.yml:3-7`), not on a branch push, so
+      none of them has run, nor the macOS and Windows runtime tests the M4
+      fixes wrote (the watcher, reader and icon tests of T2, T3, T5, T7, T19–T24
+      and T26, known-unrun). Run them at the next pull request or push to
+      `main`, and fix what fails.
+      M8 T21 (2026-10-17): since M8 T11 (60dcffbb) ci.yml has no tag trigger
+      of its own (its `on:` block, `ci.yml:6-10`): a `v*` tag runs it inside
+      publish.yml, whose `ci-full` job calls it (`workflow_call`) on the
+      tag's commit before the upload; a branch push still runs nothing.
+  *Closed 2026-10-29 (0.8.0 M0 triage):* they ran: CI run 40962868944 (pull request #6) passed all 39 jobs, the macOS and Windows test legs with their features and the strict-panic steps among them, as the v0.7.0 publish run 40580852144 had.
+
+### ios-26: 38 required fields have no iOS 26 source
+
+- [x] [v0.7.x] Step 17 of the code-review plan (`docs/archive/todo_v0.7.0_code-review-plan.md`,
+      M2c) writes `ios-26.toml`, the Liquid Glass look of iOS 26; it is
+      deferred (2026-10-11). The resolver requires 59 leaves per variant
+      that no inheritance rule fills (`ResolutionIncomplete` otherwise,
+      `native-theme/src/resolve/validate.rs`), Step 17 forbids copying
+      `ios-13`'s values into them, and 38 of the 59 have no iOS 26 source:
+      `defaults.link_color`, `defaults.border.corner_radius_lg_px`,
+      `defaults.border.shadow_enabled`, `defaults.icon_sizes.toolbar_px`,
+      `small_px`, `large_px`, `dialog_px`, `panel_px`,
+      `button.icon_text_gap_px`, `checkbox.label_gap_px`,
+      `menu.icon_text_gap_px`, `tooltip.max_width_px`,
+      `scrollbar.groove_width_px`, `min_thumb_length_px`, `thumb_width_px`,
+      `slider.thumb_diameter_px`, `progress_bar.min_width_px`,
+      `tab.min_width_px`, `min_height_px`, `list.alternate_row_background`,
+      `splitter.divider_width_px`, `switch.thumb_diameter_px`,
+      `track_radius_px`, `dialog.min_width_px`, `max_width_px`,
+      `min_height_px`, `max_height_px`, `button_gap_px`, `icon_size_px`,
+      `spinner.diameter_px`, `min_diameter_px`, `stroke_width_px`,
+      `combo_box.min_width_px`, `arrow_icon_size_px`,
+      `segmented_control.segment_height_px`, `separator_width_px`,
+      `expander.header_height_px` and `arrow_icon_size_px`. Three of them
+      need only a mapping ruling, since WebKit draws them at de320ba3: the
+      slider thumb is a 24 × 16 capsule, the switch thumb a 39.857 × 26.571
+      capsule, the select's chevron 0.55 em wide. The other 21 leaves have
+      a source (9 confirmed, 12 plausible); their values and citations are
+      kept in `docs/archive/todo_v0.7.0_code-review-findings.md`, `## M2c — iOS`,
+      *Steps 16–18*. Three of those carry an open choice:
+      `defaults.disabled_opacity` 1.0 (the disabled colours are stated,
+      `docs/inheritance-rules.toml@fc6109d1:364-371`) or WebKit's 0.4 (html.css:945-947,
+      RenderThemeCocoa.mm:1585); `defaults.selection_text_color` white on
+      the inherited accent or label on UIKit's grey row selection;
+      `button.min_width_px` 44 (the HIG's default control size) or 28 (its
+      minimum). Also to re-rule before the file is written: WebKit's iOS 26
+      controls draw a plain button's and a select's text in `label`, not
+      systemBlue (RenderThemeCocoa.mm@de320ba3:3324-3329, :3229-3232,
+      :3373-3376; a UA-sheet colour is not "explicitly set"), so the
+      systemBlue `button.font.color`, `button.active_text_color` and
+      `combo_box.font.color` M2c gave for iOS 26 are the pre-refresh look.
+      The route to the missing values: an iOS Simulator probe on a GitHub
+      macOS runner (the `macos-26` image), a dev-only app printing UIKit's
+      intrinsic sizes and colours, as M2d Step 3's reference app does; the
+      CI dispatch is the maintainer's.
+      *M2 final review (2026-10-11), an open question kept from the ledger:*
+      `ios-13` cites RenderThemeCocoa.mm@de320ba3:763 (`thumbColor =
+      Color::white`) for `switch.thumb_background` and
+      `switch.disabled_thumb_color`, "white, disabled too". Is that thumb the
+      pre-refresh (iOS ≤ 18) path? The code says it is the classic painter:
+      `renderThemePaintSwitchThumb` sends the refreshed look to
+      `renderThemePaintLiquidGlassSwitchThumb` when
+      `formControlRefreshEnabled()` (:737-742), and the classic painter
+      changes nothing for a disabled thumb (:744-797). Not checked: that
+      the classic path at de320ba3 is what iOS 18's WebKit drew (the
+      pre-refresh tag, 31adf9d1, has `RenderThemeIOS.mm` instead), nor what
+      UIKit's `UISwitch` draws. Step 17 cites the refreshed path's
+      `liquidGlassSwitchThumbColor` (:475-493) for `ios-26`.
+      Retagged `[v0.7.x]` at the review's close (2026-10-26, the controller, as told to the
+      maintainer): 38 of the 59 leaves still have no iOS 26 source, so `ios-26.toml` waits for
+      the route above, after 0.7.0.
+  *Closed 2026-11-06 in 4d145467:* the 0.8.0 plan's M1b creates `ios-26` from the iOS facts instead of 0.7.0's field list: `PresetId::Ios26`, `native-theme/src/presets/ios-26.toml` generated by `scripts/generate_preset.py`, iOS 26 its generation (`ios-26`, xcode@26.6); the values no fact gives are the `[pending]` table's register ids, which the build test loads through the synthetic route (S17, S19.1).
+
+### KDE: the live reader's disabled text colour
+
+- [x] [1.0] `native-theme/src/kde/colors.rs` reads `defaults.disabled_text_color`
+      from `[Colors:View] ForegroundInactive`; Breeze paints disabled text
+      from the palette's Disabled group, which KColorScheme derives with the
+      scheme's `[ColorEffects:Disabled]` (`docs/platform-facts.md` §2.1.3,
+      §2.1.6: Breeze `#a0a1a3`, Breeze Dark `#686a6c`, which kde-breeze
+      states). Port KColorScheme's `StateEffects` (`kcolorscheme.cpp:36-101`
+      at 27066d47: Fade by `mix`, Darken in KColorUtils' HCY space) to the
+      reader, check it against the computed values, and derive the widgets'
+      disabled colours from it as the preset states them (Button, View and
+      Window sets, `ForegroundLink`); until then the live reader's
+      `defaults.disabled_text_color` is not Breeze's.
+      M8 T16c (2026-10-17): the switch's disabled outlines join them,
+      `switch.disabled_unchecked_track_border_color` (`handleBorderColor` in
+      the Disabled Button set, #e2e2e2 / #34373b) and
+      `disabled_checked_track_border_color` (Disabled Selection, #e3e5e7 /
+      #1f2124; `docs/platform-facts.md` §2.21), which kde-breeze states and the
+      reader leaves to the preset.
+  *Closed 2026-11-09 (ADD-A145), fixed by e43dd1f2, decb44c8 and ce325f32:* KColorScheme's effects are the platform function `kde_effects` (S2.2, the clean room's, `native-theme/src/platform/kde_effects.rs`, e43dd1f2); kde-breeze's disabled roles, `role.<set>.disabled.*`, are its KDE facts over the active roles and `token.kde` (`docs/facts/kde/roles.toml`, the preset generated from them at decb44c8); and the KDE reader states the active roles and `token.kde` from kdeglobals' `[ColorEffects:*]` and no disabled colour of its own (`native-theme/src/kde/mod.rs`, ce325f32), so the disabled roles follow the user's scheme as KColorScheme derives them. The item's `colors.rs` is 0.7.0's reader (`native-theme/src/kde/colors.rs` at 265e9abb, removed by 1bfa44d9). The switch's disabled outlines continue under *KDE: the switch's hover and disabled thumb outlines* in `docs/todo.md` (M3 unit buttons and toggles).
+
+### material-3: the display names "Material 3" and "Material 3 Expressive"
+
+- [x] [v0.7.x] When M2d rewrites the preset
+      (`docs/archive/todo_v0.7.0_code-review-plan.md`, M2d Step 15), its line of
+      the `bundled_presets!` table (`native-theme/src/presets.rs`) and its TOML
+      `name` become "Material 3", with "Material 3 Expressive" for the second
+      Material preset; the menus say "Material" until then. The screenshot half of
+      the entry this continues closed at the v0.7.0 release asset run
+      (`docs/archive/todo_closed.md`, *material-3: the screenshot names and the
+      display name*).
+  *Closed 2026-11-09 in a55cdcd2:* `PresetId::display_name` (S16) names `material-3` "Material 3" (`native-theme/src/presets/mod.rs`, the presets table, which holds each preset's key, file and name on one line); Expressive is a flavour of `material-3`, not a second preset (R1.6), so no preset is named "Material 3 Expressive"; the 0.8.0 preset files hold no `name` (S11's `[preset]` table: `id` and `generation`). The connectors take their theme's name from `Theme::preset().display_name()` when M2.1 ports them to the model (S16).
+
+### macOS: the reader and the SF Symbols loader on macOS 10.15 and earlier
+
+- [x] [1.0] For the platform readers (M4-44, deferred by M4's triage,
+      2026-10-13): the macOS reader calls
+      `NSAppearance.performAsCurrentDrawingAppearance(_:)` and the SF Symbols
+      loader `NSImage(systemSymbolName:accessibilityDescription:)`, both
+      introduced in macOS 11.0 (Apple's documentation JSON, `introducedAt`,
+      read 2026-10-13; objc2-app-kit 0.3.2 does not encode availability).
+      On macOS 10.15 and earlier the unrecognised selector raises an
+      Objective-C exception, which objc2's `msg_send` unwinds (objc2 0.6.4
+      `src/macros/mod.rs:983-985`), instead of an `Err`; no GitHub runner is
+      older than macOS 14, so this is unreproduced. Since M4 T24 the crate
+      README states macOS 11 as the minimum. Gate it at runtime: in
+      `read_macos`, `os_version().major >= 11` (or objc2's `available!`)
+      else `Error::ReaderFailed`; in `load_sf_icon_by_name`, `None`.
+  *Closed 2026-11-09, fixed by f551c4ee and a55cdcd2:* the macOS reader refuses macOS before 11 with `ReaderFailure::Platform` (`native-theme/src/macos.rs` `read`, `has_drawing_appearance`: `performAsCurrentDrawingAppearance:` is `API_AVAILABLE(macos(11.0))`, AppKit's `NSAppearance.h:36` at xcode@26.6; f551c4ee), and the SF Symbols loader returns `None` there without sending the selector (`native-theme/src/sficons.rs` `has_symbol_images`: `imageWithSystemSymbolName:accessibilityDescription:` is `API_AVAILABLE(macos(11.0))`, `NSImage.h:82`; a55cdcd2).
+
+### Linux font DPI: the `xrandr` fallback has no facts row
+
+- [x] [v0.7.x] From the kde-breeze validator after M4 T34 (D3, deferred to Step
+      8): the font-DPI chain ends with the physical DPI `xrandr` reports
+      (`detect_physical_dpi`, `native-theme/src/detect.rs:473-485`, the last
+      step of `detect_system_font_dpi`, `:636`), and no
+      `docs/platform-facts.md` row says that any desktop uses it for fonts.
+      Find a source (Plasma, gnome-settings-daemon) and add the row, or drop
+      the step so the chain ends at 96.
+  *Closed 2026-11-09 (ADD-A140, queue #180), fixed by 3ca6715d:* the step is dropped. The KDE reader's font DPI is `Xft.dpi` on an X11 session alone (`native-theme/src/kde/font_dpi.rs`, `read_font_dpi`), as Qt's xcb plugin takes no physical DPI for its logical DPI (`qtbase@6.12.0 src/plugins/platforms/xcb/qxcbscreen.cpp:856-876`); 0.7.0's chain, with its `xrandr` step, went with the old model at f873f462.
+
 ## Toolkit Connectors
 
 ### Closed items from native-theme-egui connector
@@ -1007,6 +1148,14 @@ and many have since drifted, as the archive's [README](README.md) warns.
       the theme's `defaults.background_color`, as the showcase does
       (`connectors/native-theme-egui/examples/showcase-egui/app.rs:895-897`).
   Archived 2026-10-17 (M8 T21): ticked in be1fbf49.
+
+- [x] [1.0] Implement the companion widget crate, `native-theme-egui-widgets`, per
+      `docs/archive/todo_egui-widgets-spec.md` (rationale:
+      `docs/archive/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
+      segmented control and link wrappers. Milestone undecided; it starts after
+      the connector, whose API it consumes. When it is scheduled, re-verify the
+      spec against the connector as built, then write its plan.
+  *Closed 2026-10-29 (0.8.0 M0 triage):* done: `connectors/native-theme-egui-widgets` (the switch, slider, spinner, segmented control and link wrappers, with a combo box, expander, progress bar and radio button) shipped in 0.6.0 and 0.7.0.
 
 ### Closed items from native-theme-gpui connector
 
@@ -1328,6 +1477,250 @@ and many have since drifted, as the archive's [README](README.md) warns.
       Dialog, the two Sheets, the Popover, the HoverCard, the menus' hover colours)
       was not opened on screen; that look is the open `[v0.7.x]` entry *gpui
       showcase: look at the overlays that open on input*.
+
+- [x] [1.0] **Finish auditing the Widget Info "Not themeable" entries for
+      *resolvability*.** 257 entries over 107 panels; 99 cite an upstream
+      symbol, 158 do not, and an uncited one is an assertion nobody checked.
+      The audit is not "is this sentence accurate" but "could the connector
+      do something about it" -- those are the same question, because "not
+      themeable" is itself a claim about resolvability.
+
+      Method, one entry at a time: (1) does native-theme model a field for
+      this property; (2) does a `geometry::` builder carry it; (3) does
+      upstream apply the caller's refinement to the element that would
+      receive it, or to an ancestor of it. A "no" at (3) with a "yes" at (1)
+      is Tier U, not an absence, and the note should say which.
+
+      Scoped by where the answer can differ: **70 of the 158 are under
+      widgets native-theme models no counterpart for at all** (Alert, Tag,
+      Badge, Kbd, the charts, Avatar, Breadcrumb, Skeleton, the text
+      samples) -- those claims are true, but because of *our* model rather
+      than upstream, so the note should say that and the fix is a model
+      addition. The other **88 sit under one of the 27 modelled widgets**
+      and are where a resolvable gap can hide.
+
+      Three done, and the hit rate justifies the rest: a Button's
+      `font-weight` was called hardcoded on ten panels and was simply not
+      carried -- fixed, `geometry::button` now applies it. A Separator's
+      thickness and a Slider's track height and thumb size are genuinely
+      unreachable, but the model carries all three, so they are Tier U
+      (already in "inner geometry exposed", now under *Upstream PRs to
+      gpui-component*, "PR: expose checkbox/radio indicator size as theme
+      token") and the notes now say so
+      rather than "hardcoded".
+
+      Forty more checked 2026-09-22, and the largest single finding is a
+      **whole category the model is missing**: `Theme::motion` is a public,
+      writable `MotionTokens` field (`gpui-component/theme/mod.rs:170`,
+      `theme/motion.rs:8-20`: four durations, three easings, two springs, two
+      distances) read by at least eighteen call sites — `Checkbox`, `Switch`,
+      `Slider`, `Accordion`, `Collapsible`, `Progress`, `ProgressCircle`,
+      `TabBar`, `TabPanel`, `Carousel`, the charts and the plot tooltip. The
+      connector replaces the whole `Theme` on every `apply` and so overwrites
+      `motion` with `Default::default()`, because **native-theme models no
+      motion at all** (`model/animated.rs` is animated *icons*: frames and
+      transforms, nothing about widget transitions). Four "animation:
+      hardcoded" notes were therefore false — Progress, Accordion,
+      Collapsible and the Switch's timing all read the theme — and the notes
+      now say whose gap it is. Five others are true literals with no token
+      behind them (Skeleton, Notification, Sheet, Dialog, Spinner), and the
+      Carousel's note already had it right. **Decide whether to model motion**:
+      the platforms do state some of it (KDE's `AnimationDurationFactor`,
+      Windows' `SPI_GETCLIENTAREAANIMATION`, the existing
+      `prefers_reduced_motion()` detect), and a `MotionSpec` would light up
+      those eighteen readers at once.
+
+      Also corrected: a `Button Sizes` panel called padding and min-height
+      "varies per Size" where upstream copies the caller's style *before* the
+      Size arm and re-applies it after (`button/button.rs:576`, `:690`), so a
+      refinement wins — that demo simply omits it on purpose, and the note now
+      says so. `TabBar`'s padding looked like the same shape
+      (`tab/tab_bar.rs:517-518`), and that was wrong for the bar in question:
+      the showcase's `TabBar` is an Underline one, whose bar and tabs have no
+      horizontal padding at all, and its spacing is a per-Size gap on an inner
+      row the refinement never reaches (corrected in the sixth pass below).
+      The three `Link` notes became Tier U and an upstream PR candidate above.
+
+      Six more were wrong in the plainest way — they described upstream
+      inaccurately. A `Tree`'s "indent per depth level" and "hardcoded
+      ChevronRight" are in neither this demo nor upstream: `Tree::new` takes a
+      `render_item` closure and `tree.rs` draws no row content at all, so both
+      are the application's to draw and this demo draws neither. A
+      `DropdownButton`'s arrow is a `Caret` reached through
+      `Button::dropdown_caret`, and its colour is the button variant's own
+      text colour at 75% — themed, where the note said hardcoded. An `Alert`'s
+      variant icon is a default that `Alert::icon` replaces. A `Tooltip`'s
+      delay is the application's only for a tooltip set on an element: a
+      `Button`'s goes through `Root`'s overlay, whose 500ms is a module const
+      (corrected in the sixth pass). A
+      `Sidebar`'s 255px is a fallback the caller's own `.w()` displaces. And a
+      `DataTable`'s row height has an escape hatch.
+
+      A third batch found the mistake behind several of the others at once:
+      **gpui-component sets the rem to `Theme::font_size`** (`root.rs:582`), so
+      a `rems()` or a `text_base()` upstream is already the platform's size.
+      Six Button panels had called their label size Tier U when it is
+      `button_text_size` — `text_xs`/`text_sm`/`text_base`, a fixed ratio of
+      the platform's body text.
+      0.7.1 (2026-10): no longer true of a Medium Button label —
+      `button_text_size` is `text_sm` at Medium (`sizing.rs:337-343`); see the
+      `Size::Size(px)` item below and `geometry::button_label` (v0.6.1).
+      The `Headings` panel listed px figures that
+      were its rem ladder at a 16px rem, which no bundled preset produces. A
+      `Buttons with Icons` panel listed its icon colour as not themeable when
+      it follows the button's own text token, and its icon size is rems too.
+      And an `Editor`'s line height is only what the widget sets *first*:
+      upstream applies the caller's refinement last and says in a comment that
+      this is on purpose. Seven more were true and gained the citation that
+      proves it — Breadcrumb, Clipboard, Calendar and DatePicker glyphs built
+      inline with no setter, `DescriptionList` spacing, `Empty`'s dashed
+      border, and a `ButtonGroup` that has no gap to set because it joins its
+      buttons by turning edges off.
+
+      A fourth pass sharpened the three remaining `inner element (Tier U)`
+      notes that could be checked cheaply. All three are Tier U, but each was
+      hiding half the answer: a `Checkbox`'s indicator and a `Select`'s caret
+      are sized in rems and so already follow the platform's font, and the
+      caret's *colour* is themed. What is genuinely unreachable is the
+      absolute-px field the model states beside each -- `indicator_width`,
+      `arrow_icon_size` -- because both consumers fold `Size::Size` into the
+      catch-all arm.
+
+      A fifth pass took the "unmodelled widget" bucket, and it collapsed:
+      Alert, Tag, Kbd and Breadcrumb are each `Styled` and apply the caller's
+      refinement after their own paddings, so "hardcoded" was wrong about
+      every one of them -- what is absent is a model, not a receiver. That
+      pass put `Badge` in the same list, and the sixth pass found it does not
+      belong there: `Badge::render` applies the refinement to the wrapper
+      around the badged element (`badge.rs:116`), and the pill is an absolute
+      child built after it with its own literals, so nothing reaches it.
+      Two outright falsehoods fell out with it: a `Kbd` was said to use a
+      monospace font, and `kbd.rs` sets no family at all, so it inherits the
+      window's platform UI font; and a `Label`'s "font weights: hardcoded"
+      turned out to be the opposite -- nothing sets a weight anywhere, which
+      is now its own item above.
+
+      After five passes: sixty-three entries audited, thirty-one wrong. The
+      73 left uncited were set aside as "API facts no theme could set" --
+      and that label was itself unchecked.
+
+      **A sixth pass (2026-09-22) read all 73: sixteen were wrong, and four more were themed facts filed under the wrong heading.** A
+      disabled `Button`'s cursor is the default arrow, not `not-allowed`. The
+      `Loading Button` demo showed no spinner at all, because a `Button` draws
+      its spinner *in place of its icon* and that one had none (the demo now
+      has one). An `Input`'s placeholder is painted with `muted_foreground`,
+      a theme field, where the note said it was not -- and the model states
+      `input.placeholder_color` from each platform's own placeholder colour, so
+      that is Tier U. A `DatePicker` defaults to `%Y/%m/%d`, not `YYYY-MM-DD`.
+      An `AvatarGroup` drops the fourth avatar with no marker, because its
+      overflow marker is a `⋯` avatar, not a `+N` count, and only
+      `.ellipsis()` adds it. `Empty`'s "hardcoded 2rem" is rems and settable.
+      Markdown headings are sized from a **fixed 14px**, not from the base
+      font. The code `Editor`'s background is a fixed `#0a0a0a`/`#ffffff`,
+      because the highlight theme the connector installs sets one and the
+      `input_background()` fallback is never reached. A `Popover`'s anchor is
+      an `Anchor`, not a `Corner`; a `Sidebar`'s children implement
+      `SidebarItem`; a `ContextMenu` needs `InteractiveElement` too; a
+      candlestick's colours are `chart_bullish`/`chart_bearish`, not green and
+      red. And the **`AppMenuBar` was empty**: it reads gpui-base's
+      `GlobalState` menus, which only `set_app_menus` fills, and the showcase
+      only called `cx.set_menus` (fixed: it now fills both).
+
+      Fifteen entries in all were themed facts filed under "Not themeable":
+      those four -- the icon sizes and paddings the `Attachment`, `Toolbar` and
+      `Dialog` demos apply themselves -- the `Dialog`'s footer gap, and the ten
+      Button panels' font-weight, carried by `geometry::button` since the
+      first pass. They are config lines now.
+
+      Re-reading found three of this audit's own corrections wrong -- the
+      `Badge` padding (above), the `Tooltip` delay and the `TabBar` padding --
+      and three more cited entries: the `Badge`'s text and size notes, and a
+      `SidebarToggleButton` icon called hardcoded that is 1rem.
+
+      **The colour claims have the same failure, and the gate cannot see
+      it.** The citation gate checks that the cited line reads the named
+      token -- not that the line is on this widget's path, in this demo's
+      variant. Ten claims named the wrong token and passed: the navigation
+      `TabBar` is an Underline bar, and its "active bg `tab_active`" and "bar
+      bg `tab_bar`" are the `Tab` variant's (an Underline bar has no fill and
+      marks the active tab with a `primary` underline); a `Calendar` has no
+      `popover` fill; a `Collapsible` paints neither the `accordion` fill nor
+      the `border` it was given; a `Rating`'s empty star, a `Pagination`'s
+      page numbers and a `SidebarToggleButton`'s icon are not `foreground`;
+      a `Combobox` row hovers with `accent`, not `list_hover`; and a
+      `GroupBox`'s edge is the card's, through `geometry::group_box_content`.
+      Nine more had the right token at a line borrowed from another widget,
+      and five config lines were wrong (three `radius` lines the builders
+      override or the variant ignores, a `Calendar` that is `radius_lg`, and
+      a `ProgressCircle` that draws `spinner.diameter` at 75%).
+
+      Tally after six passes: 136 "Not themeable" entries audited, 47
+      wrong, 15 misfiled across the section, and three of the corrections
+      themselves wrong.
+
+      **A seventh pass (2026-09-22) read the 100 entries that already
+      carried a citation when the audit began** and had not changed since
+      -- the prose gate held their symbols, nothing held their meaning.
+      Seventeen were wrong and nine more were true but hid the resolvable
+      half. The wrong ones repeat the earlier shapes. "Hardcoded" said of
+      rems a refinement reaches: a `Bubble`'s padding, a `Message`'s slot
+      gap, a `Marker`'s row gap, a `TitleBar`'s 34px (settable; the model
+      states no title-bar height). Fills called absent that are painted: an
+      unchecked `Checkbox`, a `Radio` and an `OtpInput` box are all
+      `input_background()`, and a `Carousel` does draw a `ring` focus ring.
+      And plain misreadings: a `Radio`'s indicator is a circle, not half the
+      theme radius; a `Textarea`'s rows are Input's 1.25rem, not the font's
+      line height; an `Alert`'s tints are its colour faded into transparent
+      white, not mixed toward white; `sheet.margin_top` is gpui-component's
+      own setting, not a native-theme field; gpui *does* have a motion switch
+      and `with_animation` honours it; the spacing tokens have a reader (a
+      `Dialog`'s viewport margin), they just have no field behind them. Two
+      Tier U verdicts were wrong the other way: a `Toggle` folds the caller's
+      refinement into its *checked* style, so `segmented_control`'s active
+      colours reach a checked toggle, and its size is settable too.
+
+      The colour claims beside them had the same rate. **A named `Avatar`
+      takes no theme colour at all** -- fill, initials and edge are OKLCH
+      literals hashed from the initials, twelve hues -- so the three claims
+      on that panel and one on `Message` described an anonymous avatar the
+      demo does not show. An `OtpInput`'s digits are `foreground`, not the
+      `secondary_foreground` of a masked asterisk. `MessageScroller`'s jump
+      button is refined to `background`/`border`/`foreground` over its
+      `secondary` variant. And **the theme's `shadow` flag has one reader**:
+      `ButtonVariant::shadow` is `false` for every variant but `Custom`
+      (`button/button.rs:1050-1055`), so the "shadow" config line on eleven
+      panels -- six buttons, Input, NumberInput, Checkbox, Radio, Slider --
+      described nothing on screen.
+
+      Tally: 236 "Not themeable" entries audited, 64 wrong, 15 misfiled.
+
+      **An eighth pass (2026-09-22) read every remaining colour claim
+      against the code that paints the demo**, not only the cited line. The
+      recurring error is a claim that names upstream's token where a
+      `geometry::` builder the demo applies has replaced it: ten builders set
+      a corner radius and seven a colour, and they land last. So the
+      "border-radius: radius" line on eighteen panels -- ten buttons,
+      Textarea, InputGroup, NumberInput, Combobox, Select, Radio, Dialog,
+      AlertDialog -- showed a radius the builder overrides, and is gone; a
+      Radio's and a Select's label colour is the platform's font colour, not
+      the `foreground` the claim named (both now say "upstream"). Four claims
+      described a variant the demo does not build: an icon badge, a `Label`'s
+      highlights, an outline `Kbd`'s edge, an empty `ColorPicker` swatch (the
+      demo's has a value, painted with itself). Three had no reader at all:
+      `ThemeColor::list` on List and Tree, and `group_box` on a Settings page,
+      whose groups are `GroupBoxVariant::Normal`. And the code `Editor`'s
+      edge is the Input frame's `input`, while the `border` it claimed paints
+      the indent guides. Fourteen more cited a line from another widget
+      (InputGroup, NumberInput, Combobox and DatePicker borrowed `Input`'s;
+      DataTable borrowed the declarative `Table`'s header and a column
+      selection line for its row selection).
+
+      Tally for the colour claims: 374 read, 30 wrong, 25 cited on a
+      borrowed line; for the config lines, 36 wrong (eleven `shadow`, twenty
+      radii, five others). The audit of the Widget Info panels is complete:
+      every "Not themeable" entry, colour claim and config line has now been
+      read against the source that paints it.
+  *Closed 2026-10-29 (0.8.0 M0 triage):* done: the item's own eighth pass (2026-09-22) records the audit complete, every "Not themeable" entry, colour claim and config line read against the source that paints it.
 
 ### Closed items from Upstream PR candidates from v0.5.8 (Tier U)
 
@@ -2175,6 +2568,9 @@ platform (`native-theme/src/watch/`).
 - [x] [v0.7.0] For M4 (connectors): on GNOME and Budgie X11 the connectors apply a text-scaling factor the toolkit already applied. gnome-settings-daemon 51.0 writes XSETTINGS `Xft/DPI` and the `Xft.dpi` resource as 96 × `text-scaling-factor` × the window scale (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), and winit 0.30.13 (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:146`) and gpui-pre-linux 0.3.8 (`src/linux/x11/client.rs:2672-2677`) take their X11 scale factor from that DPI over 96. On an X11 session, and for any client through Xwayland, the window scale then carries the factor, and `AccessibilityPreferences::scaled` multiplies text by it again: text at factor² × the UI scale, and every other length scaled by the factor, which GTK does not do. Native Wayland clients are right. The connectors should not apply the factor where winit or gpui already did. Found in the M2e Step 7 review (2026-10-11).
   *Closed by M8 T8 (2026-10-17, d6ca9889):* on an `x11` session (`$XDG_SESSION_TYPE`, `detect::session_type`, now also under the `portal` feature) the GNOME reader reports `text_scaling_factor = 1.0` (`toolkit_scale_carries_text_scale` in `native-theme/src/gnome/mod.rs`, injected through `GnomePortalData::session_type` as the KDE DPI chain injects it), so the connectors apply nothing the toolkit's `Xft.dpi` scale factor carried; on a `wayland` session, or where the session type is not set, the factor is reported and applied once, as before. `AccessibilityPreferences::text_scaling_factor`'s doc says it is the factor the toolkit has not applied. The Xwayland half stays, the next entry.
   Archived 2026-10-17 (M8 T21): ticked in 775b26c0; its "above", "below" and "next entry" mean `docs/todo.md` at 6980aa05.
+- [x] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (`docs/archive/todo_closed.md`, *Closed items from Font DPI*, "For M4 (connectors): on GNOME and Budgie X11"; its Xwayland half is the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
+  M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
+  *Closed 2026-11-09 (ADD-A140, queue #180; ADD-A135), fixed by 3ca6715d and 3d465b6f:* no Linux reader's font DPI carries the display scale on Wayland. The KDE reader reads `Xft.dpi` on an X11 session only and reports none on Wayland, where Qt's logical DPI is the preset's (`qtbase@6.12.0 src/plugins/platforms/wayland/qwaylandscreen.cpp:150-160`) and the `Xft.dpi` Plasma sets for Xwayland is the Xwayland scale; `forceFontDPI` is no longer read (`native-theme/src/kde/font_dpi.rs`, 3ca6715d). The GNOME reader reports none, the preset's `token.text.font_dpi` standing (S9.4; `native-theme/src/gnome/mod.rs`, 3d465b6f). Its "the next entry" is the [upstream] Xwayland item, which stays open in `docs/todo.md`, *Font DPI*.
 
 ### Icon-theme detection commands have no timeout
 - [x] [v0.7.0] The icon-theme detection runs `gsettings get <schema> icon-theme` (`native-theme/src/model/icons.rs` `gsettings_icon_theme`) and `xfconf-query -c xsettings -p /Net/IconThemeName` (`detect_xfce_icon_theme`) with `Command::output()`, which waits as long as the command runs; a hung D-Bus session blocks the caller (pre-existing). `detect.rs`'s `run_gsettings_with_timeout` (`:180-218`) bounds its own gsettings calls by `SUBPROCESS_TIMEOUT` (2 s), but it runs only `gsettings` and returns `Option<String>`, dropping why a call gave nothing (not found, unsuccessful status, stderr, empty output, timed out) — which the icon-theme error now reports. Needed: a general run-with-timeout helper that takes the program and its arguments and returns `io::Result<Output>`, with a timeout reported as its own reason ("timed out after 2 s"), so `command_icon_theme` keeps naming every failure.

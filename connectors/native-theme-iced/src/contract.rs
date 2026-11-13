@@ -3683,7 +3683,7 @@ fn a_hovered_button_composites_the_state_layer_over_its_idle_fill() -> native_th
     // (windows-11 states WinUI's replacing fill flattened,
     // native-theme/src/presets/windows-11.toml:127), so the fixture is
     // windows-11 light with that brush as the resource gives it,
-    // `ControlFillColorSecondary` `#80F9F9F9` (docs/platform-facts.md:1192).
+    // `ControlFillColorSecondary` `#80F9F9F9` (docs/platform-facts.md@fc6109d1:1192).
     let mut resolved = native_theme::theme::Theme::preset("windows-11")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
@@ -4369,7 +4369,7 @@ fn an_unset_hover_soft_option_is_the_idle_fill() -> native_theme::Result<()> {
 }
 
 /// D15: a disabled windows-11 segmented control's group and edge, faded as
-/// one by 0.55 over the window, are the values `docs/platform-facts.md:1646`
+/// one by 0.55 over the window, are the values `docs/platform-facts.md@fc6109d1:1646`
 /// composites: the group #f0f0f0 / #1e1e1e and the edge #ebebeb / #292929.
 #[cfg(feature = "widgets")]
 #[test]
@@ -4463,7 +4463,7 @@ fn within(a: Color, b: Color, tolerance: f32) -> bool {
 }
 
 /// The presets whose platform states no link hover background
-/// (docs/platform-facts.md:1698, §2.28: macOS, KDE and GNOME, and Windows,
+/// (docs/platform-facts.md@fc6109d1:1698, §2.28: macOS, KDE and GNOME, and Windows,
 /// whose inline `Hyperlink` has no background), which they express as fully
 /// transparent.
 #[cfg(feature = "widgets")]
@@ -4480,7 +4480,7 @@ const LINK_HOVER_NONE: [&str; 5] = [
 /// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408),
 /// macOS 26 draws the push button in `secondarySystemFillColor`'s value, `#00000014` light and
 /// `#ffffff14` dark, and WinUI 3's `ButtonBackground` is `ControlFillColorDefault`, `#B3FFFFFF`
-/// light and `#0FFFFFFF` dark (docs/platform-facts.md:1177).
+/// light and `#0FFFFFFF` dark (docs/platform-facts.md@fc6109d1:1177).
 #[cfg(feature = "widgets")]
 const TRANSLUCENT_BUTTON_FILL: [&str; 5] = [
     "macos-monterey/dark",
@@ -4626,7 +4626,7 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
         // give what painting the base on the surface and then the layer gives.
         // Both colors are WinUI 3's, as its resources give them: windows-11
         // states `button.background_color` as `ControlFillColorDefault`
-        // (`#B3FFFFFF` light, `#0FFFFFFF` dark, docs/platform-facts.md:1177),
+        // (`#B3FFFFFF` light, `#0FFFFFFF` dark, docs/platform-facts.md@fc6109d1:1177),
         // and the layer is the pressed button's `ControlFillColorTertiary`
         // (`#4DF9F9F9`, `#08FFFFFF`, :1192). The preset states that one
         // flattened over the window, so it is set here, not read from it.

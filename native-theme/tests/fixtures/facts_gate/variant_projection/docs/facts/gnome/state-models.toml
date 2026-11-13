@@ -1,0 +1,11 @@
+# A synthetic state model (S17): `flat`, a typed variant the model does not hold, which has no spelling.
+[[model]]
+widget = "button"
+available = true
+variants = ["tool", "flat", "@x", "@raised", "@both", "@unheld", "with_icon"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+exclusive_variants = [["tool", "@x", "@raised"]]
+rows = []

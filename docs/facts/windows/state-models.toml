@@ -1,0 +1,264 @@
+# windows-11's state models (S17): the combinations WinUI 2.5.1's control templates and their C++ draw.
+# Written by the Windows facts lane.
+# Variants (ADD-A121): each is one control class or one style (WinUI's `Style` holds one), so an element holds one of
+# them; the sets of two are the app-bar toggle (AppBarToggleButton, a ToggleButton), `toggle` with `tool`, and the
+# app-bar button with a Flyout (its HasFlyout chevron), `menu` with `tool`.
+# Contexts (ADD-A125, ledger queue #86): a dialog's action area and a command bar (`toolbar.bar`, W1-099, W1-102).
+# The command bar inside the tabbed command bar, whose items are CommandBars placing their labels beside the icons,
+# is the ordered chain `[{ widget = "component.tabbed_command_bar" }, { widget = "toolbar", part = "bar" }]`
+# (W-RV-3†, W1-102), which check_facts.py does not read yet ("axes.contexts[2] is not a table"): added with it.
+# The buttons WinUI draws only inside another control (S17's *What the axes and sets hold*, ADD-A141, the WN-C1
+# tie-break): AutoSuggestBox's query button (`@query`, W2-15), the date and time picker flyouts' accept and dismiss
+# buttons (`@accept`, `@dismiss`, W2-04), PagerControl's first-page, last-page and number buttons (`@first`, `@last`,
+# `@page_number`, W2-21) and SemanticZoom's zoom-out button (`@zoom_out`, W2-34), each a style of its own, declared
+# with its host's context and not drawn outside it; the gate skips their combinations until the hosts' units are
+# enabled, and their facts and the states only those hosts draw (the number button's `selected`) come with them.
+
+
+[[model]]
+widget = "button"
+available = true
+variants = ["primary", "flat", "toggle", "menu", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed", "disabled", "focus_visible", "checked", "indeterminate", "default"], conditions = ["scheme:light", "scheme:dark", "contrast_high", "window_inactive"], contexts = [{ widget = "dialog", part = "action_area" }, { widget = "toolbar", part = "bar" }, { widget = "search_field", part = "body" }, { widget = "date_picker", part = "popup" }, { widget = "time_picker", part = "popup" }, { widget = "page_indicator", part = "body" }, { widget = "component.semantic_zoom" }] }
+exclusive = [["disabled", "pressed", "hover"], ["indeterminate", "checked"]]
+exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"], ["primary", "flat", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]]
+variant_sets = [["toggle", "tool"], ["menu", "tool"]]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["indeterminate"], variants = ["tool"] }, { states = ["disabled", "focus_visible"] }, { states = ["default"], not_context = [{ widget = "dialog", part = "action_area" }] }, { states = ["focus_visible"], conditions = ["window_inactive"] }, { variants = ["@query"], not_context = [{ widget = "search_field", part = "body" }] }, { variants = ["@accept"], not_context = [{ widget = "date_picker", part = "popup" }, { widget = "time_picker", part = "popup" }] }, { variants = ["@dismiss"], not_context = [{ widget = "date_picker", part = "popup" }, { widget = "time_picker", part = "popup" }] }, { variants = ["@first"], not_context = [{ widget = "page_indicator", part = "body" }] }, { variants = ["@last"], not_context = [{ widget = "page_indicator", part = "body" }] }, { variants = ["@page_number"], not_context = [{ widget = "page_indicator", part = "body" }] }, { variants = ["@zoom_out"], not_context = [{ widget = "component.semantic_zoom" }] }]
+rows = ["W1-018", "W1-019", "W1-020", "W1-022", "W1-099", "W1-102"]
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/Button_Partial.cpp:29-43"
+quote = "if (!bIsEnabled) { IFC(GoToState(bUseTransitions, L\"Disabled\", &bIgnored)); } else if (bIsPressed) { IFC(GoToState(bUseTransitions, L\"Pressed\", &bIgnored)); } else if (bIsPointerOver)"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:102-152"
+quote = "IFC(GoToState(bUseTransitions, L\"IndeterminateDisabled\", &bIgnored));"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:129"
+quote = "IFC(GoToState(bUseTransitions, L\"CheckedPointerOver\", &bIgnored));"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/Button_Partial.cpp:54"
+quote = "IFC(GoToState(bUseTransitions, L\"Focused\", &bIgnored));"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/Button_Partial.cpp:46"
+quote = "if (xaml::FocusState_Unfocused != focusState && bIsEnabled)"
+
+# An inactive window draws no focus rectangle: the window's deactivation sets the plugin unfocused, and the focus
+# manager then gives no focus target, the element keeping its focus for the window's return (S7.2: a platform that
+# keeps the focus flags states the inactive window's focus; the tie-break of WN-C1, from the verifier's model).
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/ContentRoot/ActivationManager.cpp:37-40"
+quote = "if (focusManager->IsPluginFocused() != m_fWindowActive) { IFC_RETURN(focusManager->SetWindowFocus(m_fWindowActive, shiftPressed)); }"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:3252"
+quote = "SetPluginFocusStatus(isFocused);"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:2704-2705"
+quote = "// Get the element we need to draw the focus rect on.  Returning nullptr will cause the focus rectangle // to not be drawn"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:2724-2727"
+quote = "if (!IsPluginFocused()) { return nullptr; }"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:235-296"
+quote = "<Style x:Key=\"AccentButtonStyle\" TargetType=\"Button\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:297-377"
+quote = "<Style x:Key=\"SubtleButtonStyle\" TargetType=\"Button\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:3-103"
+quote = "<Style x:Key=\"DefaultDropDownButtonStyle\" TargetType=\"controls:DropDownButton\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:78-148"
+quote = "<Style x:Key=\"DefaultRepeatButtonStyle\" TargetType=\"RepeatButton\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:125-381"
+quote = "<Style x:Key=\"DefaultAppBarButtonStyle\" TargetType=\"AppBarButton\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:212-495"
+quote = "<Style x:Key=\"DefaultAppBarToggleButtonStyle\" TargetType=\"AppBarToggleButton\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ToggleButton_themeresources.xaml:180-363"
+quote = "<Style x:Key=\"DefaultToggleButtonStyle\" TargetType=\"ToggleButton\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ToggleButton_themeresources.xaml:244"
+quote = "<VisualState x:Name=\"Checked\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ToggleButton_themeresources.xaml:305"
+quote = "<VisualState x:Name=\"Indeterminate\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:212-495"
+quote = "<Style x:Key=\"DefaultAppBarToggleButtonStyle\" TargetType=\"AppBarToggleButton\">"
+absent = ["Indeterminate"]
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:4"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:102"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:53"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-118"
+quote = "if (!spIsCheckedReference) { if (!bIsEnabled) { IFC(GoToState(bUseTransitions, L\"IndeterminateDisabled\", &bIgnored)); } else if (bIsPressed) { IFC(GoToState(bUseTransitions, L\"IndeterminatePressed\", &bIgnored)); } else if (bIsPointerOver) { IFC(GoToState(bUseTransitions, L\"IndeterminatePointerOver\", &bIgnored)); } else { IFC(GoToState(bUseTransitions, L\"Indeterminate\", &bIgnored)); } } else if (bIsChecked)"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:194-198"
+quote = "<VisualStateGroup x:Name=\"DefaultButtonStates\"> <VisualState x:Name=\"NoDefaultButton\" /> <VisualState x:Name=\"PrimaryAsDefaultButton\"> <VisualState.Setters> <Setter Target=\"PrimaryButton.Style\" Value=\"{StaticResource AccentButtonStyle}\" />"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/ToggleButton.g.h:22-23"
+quote = "class __declspec(novtable) ToggleButtonGenerated: public DirectUI::ButtonBase"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/RepeatButton.g.h:22-23"
+quote = "class __declspec(novtable) RepeatButtonGenerated: public DirectUI::ButtonBase"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/Button.g.h:23-24"
+quote = "class __declspec(novtable) ButtonGenerated: public DirectUI::ButtonBase"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/AppBarButton.g.h:24-25"
+quote = "class __declspec(novtable) AppBarButtonGenerated: public DirectUI::Button"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/AppBarToggleButton.g.h:24-25"
+quote = "class __declspec(novtable) AppBarToggleButtonGenerated: public DirectUI::ToggleButton"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.idl:6"
+quote = "unsealed runtimeclass DropDownButton : Microsoft.UI.Xaml.Controls.Button"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AppBarButton_Partial.cpp:337-345"
+quote = "if (flyout) { IFC_RETURN(GoToState(useTransitions, L\"HasFlyout\", &ignored)); }"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:344-346"
+quote = "<VisualState x:Name=\"HasFlyout\"> <VisualState.Setters> <Setter Target=\"SubItemChevronPanel.Visibility\" Value=\"{ThemeResource AppBarButtonHasFlyoutChevronVisibility}\" />"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CommandBar_themeresources.xaml:77"
+quote = "<Style x:Key=\"DefaultCommandBarStyle\" TargetType=\"CommandBar\">"
+
+[[model.cite]]
+kind = "published"
+source = "CommunityToolkit-Windows@8.2.251219 components/TabbedCommandBar/src/TabbedCommandBarItem.xaml:65-69"
+quote = "<Style x:Key=\"DefaultTabbedCommandBarItemStyle\" BasedOn=\"{StaticResource DefaultCommandBarStyle}\" TargetType=\"controls:TabbedCommandBarItem\"> <Setter Property=\"HorizontalAlignment\" Value=\"Stretch\" /> <Setter Property=\"DefaultLabelPosition\" Value=\"Right\" />"
+
+# the nested buttons, each in its host's template
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AutoSuggestBox/AutoSuggestBox_themeresources.xaml:242"
+quote = "<Button x:Name=\"QueryButton\""
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/DatePicker_themeresources.xaml:275"
+quote = "<ControlTemplate TargetType=\"DatePickerFlyoutPresenter\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/DatePicker_themeresources.xaml:305-306"
+quote = "<Button x:Name=\"AcceptButton\""
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/DatePicker_themeresources.xaml:305-306"
+quote = "<Button x:Name=\"DismissButton\""
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TimePicker_themeresources.xaml:273"
+quote = "<ControlTemplate TargetType=\"TimePickerFlyoutPresenter\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TimePicker_themeresources.xaml:306-307"
+quote = "<Button x:Name=\"AcceptButton\""
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TimePicker_themeresources.xaml:306-307"
+quote = "<Button x:Name=\"DismissButton\""
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/PagerControl/PagerControl.xaml:146"
+quote = "<Button x:Name=\"FirstPageButton\""
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/PagerControl/PagerControl.xaml:172"
+quote = "<Button x:Name=\"LastPageButton\""
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/PagerControl/PagerControl.cpp:56"
+quote = "static constexpr auto c_numberPanelButtonStyleName = L\"PagerControlNumberPanelButtonStyle\"sv;"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:9971"
+quote = "<ControlTemplate TargetType=\"SemanticZoom\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:10085"
+quote = "<Button x:Name=\"ZoomOutButton\""

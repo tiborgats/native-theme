@@ -1,0 +1,16 @@
+# The declarations whole (S10 *Later names*): every variant but `flat`, which has no spelling, the exclusive group
+# with `@raised`, and `@raised` under `later`.
+[declare.widget.button]
+variants = ["tool", "@x", "@raised", "@both", "@unheld", "with_icon"]
+exclusive_variants = [["tool", "@x", "@raised"]]
+later = { variants = ["@raised"] }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

@@ -1,0 +1,23 @@
+# The twin (S6.3, ADD-A126): the tool button's rule patches the subtitle's field alone, which states no presence
+# and leaves the subtitle absent where the facts draw it.
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "button.subtitle"
+set = { absent = true }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.subtitle"
+set = { text = "= token.text.roles.body" }

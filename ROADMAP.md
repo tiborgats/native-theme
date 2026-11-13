@@ -226,17 +226,16 @@ each, framed as theming flexibility:
 Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-full-theme.md);
 limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
 
-## Also in the 0.7.x releases
+## The `[v0.7.x]` items
 
-[`docs/todo.md`](docs/todo.md) tags 29 open items `[v0.7.x]`, follow-ups of
-the v0.7.0 review that a 0.7 patch release takes beside the milestones
-above; an item that touches a property v0.7.1 changes waits for that
-change. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
-while 38 of the values the resolver requires have no iOS 26 source;
-material-3's rewrite (the code-review plan's M2d), after which its display
-name becomes "Material 3"; the theme watchers' open questions on Windows and
-macOS; details of the Linux desktop detection and of the KDE reader; and
-showcase follow-ups. The items tagged `[1.0]` are settled before 1.0.
+No 0.7.x release is planned. The open items [`docs/todo.md`](docs/todo.md)
+tags `[v0.7.x]`, follow-ups of the v0.7.0 review, are triaged with every
+other open item in the 0.8.0 plan's ledger
+([`docs/todo_v0.7.1_model-completeness-ledger.md`](docs/todo_v0.7.1_model-completeness-ledger.md),
+*Triage*): each goes to a milestone or unit of 0.8.0, to one of the releases
+that follow it, or past them, with its reason. Only an emergency, an upstream
+release that breaks 0.7.0, gets a 0.7.N release of its own. The items tagged
+`[1.0]` are settled before 1.0.
 
 ## Beyond v0.7
 

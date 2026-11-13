@@ -1,0 +1,31 @@
+# derivation_accent_group's preset with its `highlight` listed in the light scheme (S17, ADD-A132):
+# the pass's stand-in carries the preset's folded synthetic value there as the accent group's
+# (S9.2), still marked synthetic, so a light pass reading it is skipped, never compared; a dark
+# pass, reading the preset's stated value, is compared.
+# base without: [declare]
+# base without: text_styles = ["body"]
+# base without: inputs = ["accent"]
+# base without: surface_sets = ["window"]
+[pending]
+"inputs.highlight.light" = "U9"
+
+[declare]
+text_styles = ["body"]
+inputs = ["accent", "highlight"]
+accent_inputs = ["accent", "highlight"]
+surface_sets = ["window"]
+
+[inputs.highlight]
+dark = "#cc3366"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+target = "button.body"
+set = { fill = "= mix(input.accent, input.highlight, 0.5)" }

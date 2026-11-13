@@ -1,908 +1,2764 @@
-# GNOME Adwaita theme - sourced from libadwaita CSS variables
-# Colours: a cited colour libadwaita gives with alpha is stated with it or composited to solid hex, as its comment says
-# Style: libadwaita 1.10.0 (c9ab1186, GNOME 51), with GTK 4.24.1 and
-# gsettings-desktop-schemas 51.0.
-# Covers: libadwaita 1.10. libadwaita 1.9 differs at least in the popover
-# outline, a 1px CSS border of RGB(0 0 0 / 14%) (_popovers.scss at 1.9.3).
-# Verified on: libadwaita 1.10.0, GTK 4.24.1 and gsettings-desktop-schemas 51.0,
-# 2026-10-11 (code review M2e), for every value that cites docs/platform-facts.md;
-# an uncited value is unchecked, and a value marked ❓ has no source.
-name = "Adwaita"
-icon_set = "freedesktop"
-icon_theme = "Adwaita"
-
-# === Light variant ===
-
-[light.defaults]
-# platform-facts.md:1052 (§2.1.3): the portal accent; libadwaita's default, blue #3584e4 (libadwaita 1.10.0 adw-accent-color.c:16, :53-54)
-accent_color = "#3584e4"
-# platform-facts.md:1050 (§2.1.3): window_bg_color #fafafb (libadwaita 1.10.0 _colors.scss:32)
-background_color = "#fafafb"
-# ❓ platform-facts.md:1051 (§2.1.3): no source for #2e3436 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
-text_color = "#2e3436"
-# platform-facts.md:1054 (§2.1.3): view_bg_color #ffffff (libadwaita 1.10.0 _colors.scss:36)
-surface_color = "#ffffff"
-# ❓ platform-facts.md:1056 (§2.1.3): no source for #929292 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
-muted_color = "#929292"
-# ❓ platform-facts.md:1057 (§2.1.3): no source for #00000018 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
-shadow_color = "#00000018"
-
-# platform-facts.md:1084 (§2.1.4): destructive_bg_color @red_3 #e01b24 (libadwaita 1.10.0 _colors.scss:12, _palette.scss:23)
-danger_color = "#e01b24"
-# platform-facts.md:1085 (§2.1.4): destructive_fg_color white (libadwaita 1.10.0 _colors.scss:13)
-danger_text_color = "#ffffff"
-# platform-facts.md:1086 (§2.1.4): warning_bg_color @yellow_5 #e5a50a (libadwaita 1.10.0 _colors.scss:19, _palette.scss:15)
-warning_color = "#e5a50a"
-# ❓ platform-facts.md:1087 (§2.1.4): no source for #2e3436 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
-warning_text_color = "#2e3436"
-# platform-facts.md:1088 (§2.1.4): success_bg_color @green_4 #2ec27e (libadwaita 1.10.0 _colors.scss:16, _palette.scss:9)
-success_color = "#2ec27e"
-# platform-facts.md:1089 (§2.1.4): success_fg_color white (libadwaita 1.10.0 _colors.scss:17)
-success_text_color = "#ffffff"
-# platform-facts.md:1090 (§2.1.4): libadwaita 1.10.0 names no info colour; the deprecated GtkInfoBar draws its info type from --accent-bg-color (_deprecated.scss:174), the default accent #3584e4 (adw-accent-color.c:53-54)
-info_color = "#3584e4"
-# platform-facts.md:1091 (§2.1.4): accent_fg_color white, the text on the accent (libadwaita 1.10.0 adw-style-manager.c:161)
-info_text_color = "#ffffff"
-
-# platform-facts.md:1059 (§2.1.3): theme_selected_bg_color = accent_bg_color, #3584e4 (libadwaita 1.10.0 _compat-colors.scss:9)
-selection_background = "#3584e4"
-# platform-facts.md:1060 (§2.1.3): theme_selected_fg_color = accent_fg_color, white (libadwaita 1.10.0 _compat-colors.scss:10, adw-style-manager.c:161)
-selection_text_color = "#ffffff"
-# ❓ platform-facts.md:1058 (§2.1.3): no source for #1b6acb at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
-link_color = "#1b6acb"
-# platform-facts.md §2.1.5 focus_ring_color: $focus_border_color, the standalone accent #0461be at 50 % (libadwaita 1.10.0
-# _drawing.scss:20, _colors.scss:260, :307, :146; adw-accent-color.c:130-157)
-focus_ring_color = "#0461be80"
-# platform-facts.md:1064 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
-disabled_text_color = "#2e3436"
-# platform-facts.md:1053 (§2.1.3): accent_fg_color white (libadwaita 1.10.0 adw-style-manager.c:161)
-accent_text_color = "#ffffff"
-
-# platform-facts.md:1119 (§2.1.6): --disabled-opacity 50%, the only disabled mechanism
-disabled_opacity = 0.5
-line_height = 1.21
-focus_ring_width_px = 2.0
-focus_ring_offset_px = -2.0
-
-
-[light.defaults.border]
-# platform-facts.md:1055 (§2.1.3): $border_color, window fg RGB(0 0 6 / 80%) at --border-opacity 15% over #fafafb (libadwaita 1.10.0 _colors.scss:32-33, :257, :263, :318)
-color = "#dcdcde"
-corner_radius_px = 9.0
-corner_radius_lg_px = 15.0
-line_width_px = 1.0
-opacity = 0.15
-shadow_enabled = true
-[light.defaults.font]
-family = "Adwaita Sans"
-size_pt =11.0
-weight = 400
-
-[light.defaults.mono_font]
-family = "Adwaita Mono"
-size_pt =11.0
-weight = 400
-
-[light.defaults.icon_sizes]
-toolbar_px = 16.0
-small_px = 16.0
-large_px = 32.0
-dialog_px = 22.0
-panel_px = 20.0
-
-[light.text_scale.caption]
-size_pt =9.0
-
-[light.text_scale.section_heading]
-weight = 700
-
-[light.text_scale.dialog_title]
-size_pt =15.0
-weight = 800
-
-[light.text_scale.display]
-size_pt =20.0
-weight = 800
-
-[light.window]
-# platform-facts.md:1166 (§2.2): headerbar:backdrop fills --headerbar-backdrop-color = @window_bg_color #fafafb (libadwaita 1.10.0 _header-bar.scss:41-42, _colors.scss:43, :32)
-inactive_title_bar_background = "#fafafb"
-# no inactive_title_bar_text_color: platform-facts.md:1167 (§2.2), (none), libadwaita's :backdrop state
-
-[light.window.title_bar_font]
-color = "#2e3436"
-weight = 700
-
-[light.button]
-# platform-facts.md §2.3 background_color: a raised button fills with $button_color, currentColor 10 %, over the window, #e6e6e7
-# (libadwaita 1.10.0 _buttons.scss:1, :28-29, _colors.scss:32-33, :95-96)
-background_color = "#e6e6e7"
-min_width_px = 64.0
-min_height_px = 34.0
-icon_text_gap_px = 8.0
-hover_background = "#d5d5d5"
-hover_text_color = "#2e3436"
-active_background = "#c8c8c8"
-active_text_color = "#2e3436"
-# platform-facts.md:1194-1195 (§2.3): $button_checked_color is the pressed fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
-checked_background = "#c8c8c8"
-checked_text_color = "#2e3436"
-# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled button is its enabled self at disabled_opacity
-
-
-[light.button.border]
-# platform-facts.md:1184-1185 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
-padding_horizontal_px = 17.0
-padding_vertical_px = 5.0
-# platform-facts.md §2.3 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
-line_width_px = 0.0
-
-[light.button.font]
-color = "#2e3436"
-[light.input]
-# platform-facts.md §2.4 background_color: an entry fills with $button_color, currentColor 10 %, over the window, #e6e6e7
-# (libadwaita 1.10.0 _entries.scss:9, _buttons.scss:1, _colors.scss:32-33, :95-96)
-background_color = "#e6e6e7"
-placeholder_color = "#929595"
-min_height_px = 34.0
-# platform-facts.md:1209 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
-caret_color = "#2e3436"
-# hover_border_color not stated: platform-facts.md §2.4 hover_border_color, (none), the entry's only :hover rule is its
-# icons' opacity (_entries.scss:49)
-# platform-facts.md §2.4 focus_border_color: $focus_border_color, the focus ring's colour (_entries.scss:17, _colors.scss:307)
-focus_border_color = "#0461be80"
-# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
-
-
-[light.input.border]
-# platform-facts.md:1213-1214 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
-padding_horizontal_px = 9.0
-padding_vertical_px = 0.0
-# platform-facts.md §2.4 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_entries.scss:9-15)
-line_width_px = 0.0
-# platform-facts.md §2.4 border.shadow_enabled: no shadow
-shadow_enabled = false
-
-[light.text_area.border]
-# platform-facts.md:1714-1715 (§2.29): textview sets no padding, GtkTextView's margins default to 0
-padding_horizontal_px = 0.0
-padding_vertical_px = 0.0
-
-[light.input.font]
-color = "#2e3436"
-[light.checkbox]
-# platform-facts.md:1233 (§2.5): min-width 14 plus padding 3 on each side
-indicator_width_px = 20.0
-# platform-facts.md:1241 (§2.5): bullet.svg, a circle of radius 4
-radio_dot_diameter_px = 8.0
-# platform-facts.md:1242 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
-check_mark_stroke_width_px = 2.0
-label_gap_px = 8.0
-hover_background = "#d5d5d5"
-# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled check is its enabled self at disabled_opacity
-unchecked_background = "#ffffff"
-unchecked_border_color = "#d5d5d5"
-
-
-[light.checkbox.border]
-# platform-facts.md:1237-1238 (§2.5): Adwaita CSS check { padding: 3px }
-padding_horizontal_px = 3.0
-padding_vertical_px = 3.0
-# platform-facts.md §2.5 border.shadow_enabled: no shadow
-shadow_enabled = false
-
-[light.tooltip]
-background_color = "#2e3436"
-max_width_px = 360.0
-# platform-facts.md:1290 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
-show_delay_ms = 500
-
-
-[light.tooltip.border]
-# platform-facts.md:1283-1284 (§2.7): Adwaita CSS 10; 6
-padding_horizontal_px = 10.0
-padding_vertical_px = 6.0
-
-[light.tooltip.font]
-color = "#ffffff"
-[light.scrollbar]
-groove_width_px = 12.0
-thumb_width_px = 8.0
-# platform-facts.md:1310 (§2.8): gsettings overlay-scrolling, default true (gsettings-desktop-schemas 51.0 org.gnome.desktop.interface.gschema.xml.in:261-262)
-overlay_mode = true
-min_thumb_length_px = 40.0
-thumb_hover_color = "#6e6e6e"
-thumb_active_color = "#4e4e4e"
-
-[light.slider]
-track_height_px = 10.0
-thumb_diameter_px = 20.0
-tick_mark_length_px = 4.0
-# platform-facts.md §2.9 thumb_color: $slider_color, white 80 % over the view's #ffffff (libadwaita 1.10.0 _scale.scss:50, _colors.scss:288, :36)
-thumb_color = "#ffffff"
-thumb_hover_color = "#ebebeb"
-# no disabled_*_color: platform-facts.md:1119 (§2.1.6), a disabled scale is its enabled self at disabled_opacity
-
-[light.progress_bar]
-track_height_px = 8.0
-min_width_px = 80.0
-
-[light.progress_bar.border]
-# platform-facts.md:1340 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
-line_width_px = 0.0
-# platform-facts.md:1341-1342 (§2.10): Adwaita CSS 0; 0, the progress fills the trough (_scale.scss:12-17, _progress-bar.scss:6, :27-31)
-padding_horizontal_px = 0.0
-padding_vertical_px = 0.0
-
-[light.tab]
-min_width_px = 64.0
-min_height_px = 30.0
-# platform-facts.md:1360 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
-item_gap_px = 0.0
-active_background = "#fafafb"
-active_text_color = "#2e3436"
-hover_background = "#e8e8e8"
-hover_text_color = "#2e3436"
-# platform-facts.md:1361-1363 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
-active_indicator_color = "#3584e4"
-active_indicator_width_px = 4.0
-active_indicator_side = "bottom"
-
-
-[light.tab.border]
-# platform-facts.md:1352-1353 (§2.11): Adwaita CSS 12; 3
-padding_horizontal_px = 12.0
-padding_vertical_px = 3.0
-[light.menu]
-row_height_px = 32.0
-icon_text_gap_px = 8.0
-hover_background = "#e8e8e8"
-hover_text_color = "#2e3436"
-# no disabled_text_color: platform-facts.md:1119 (§2.1.6), the enabled text at disabled_opacity
-
-
-[light.menu.border]
-# platform-facts.md:1261-1262 (§2.6): Adwaita CSS 12 ($menu_padding); 0
-padding_horizontal_px = 12.0
-padding_vertical_px = 0.0
-[light.list]
-# platform-facts.md:1429 (§2.15): the header's buttons are transparent (_column-view.scss:12-13) over the column view's
-# .view fill, --view-bg-color #ffffff (_column-view.scss:72-76, _views.scss:1-4, _colors.scss:36, libadwaita 1.10.0)
-header_background = "#ffffff"
-alternate_row_background = "#f5f5f5"
-# row_height not stated: platform-facts.md:1431 (§2.15), plain list context, no min-height
-# platform-facts.md:1432 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
-header_height_px = 30.0
-hover_background = "#ebebed"
-hover_text_color = "#2e3436"
-# no disabled_text_color: platform-facts.md:1119 (§2.1.6), the enabled text at disabled_opacity
-
-
-[light.list.border]
-# platform-facts.md:1433-1434 (§2.15): Adwaita CSS plain list context, 2
-padding_horizontal_px = 2.0
-padding_vertical_px = 2.0
-[light.toolbar]
-# bar_height not stated: platform-facts.md:1390 (§2.13), .toolbar sets no min-height
-# platform-facts.md:1391 (§2.13): Adwaita CSS .toolbar border-spacing 6
-item_gap_px = 6.0
-
-
-[light.toolbar.border]
-# platform-facts.md:1392-1393 (§2.13): Adwaita CSS .toolbar { padding: 6px }
-padding_horizontal_px = 6.0
-padding_vertical_px = 6.0
-# platform-facts.md §2.13 border.line_width, border.shadow_enabled: .toolbar sets no border and casts no shadow (_toolbars.scss:1-110)
-line_width_px = 0.0
-shadow_enabled = false
-
-
-[light.status_bar.border]
-# platform-facts.md:1414-1415 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
-padding_horizontal_px = 10.0
-padding_vertical_px = 6.0
-
-[light.sidebar]
-background_color = "#ebebed"
-hover_background = "#e0e0e2"
-
-
-[light.sidebar.font]
-color = "#2e3436"
-
-
-[light.sidebar.border]
-# platform-facts.md:1380 (§2.12): 6, `.navigation-sidebar > row { margin: 0 $menu_margin 2px }`, $menu_margin = 6; the list itself has no side padding (libadwaita 1.10.0 _sidebars.scss:189-193, _common.scss:11)
-padding_horizontal_px = 6.0
-# platform-facts.md:1381 (§2.12): 6 top / 4 bottom, `padding-top: $menu_margin; padding-bottom: $menu_margin - 2px`, the last row's 2px bottom margin making up the difference (_sidebars.scss:149-150, :193)
-padding_top_px = 6.0
-padding_bottom_px = 4.0
-[light.popover]
-background_color = "#ffffff"
-
-
-[light.popover.font]
-color = "#2e3436"
-
-
-[light.popover.border]
-# platform-facts.md:1457 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
-color = "#0000000d"
-# platform-facts.md:1458 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
-line_width_px = 1.0
-# platform-facts.md:1461-1462 (§2.16): Adwaita CSS popover > contents { padding: 8px }
-padding_horizontal_px = 8.0
-padding_vertical_px = 8.0
-[light.separator]
-line_color = "#d5d5d5"
-
-[light.splitter]
-divider_width_px = 1.0
-hover_color = "#d5d5d5"
-
-[light.switch]
-unchecked_background = "#d5d5d5"
-thumb_background = "#ffffff"
-track_width_px = 46.0
-track_height_px = 26.0
-thumb_diameter_px = 20.0
-track_radius_px = 14.0
-hover_checked_background = "#2e78cc"
-hover_unchecked_background = "#c8c8c8"
-# no disabled_*: platform-facts.md:1119 (§2.1.6), a disabled switch is its enabled self at disabled_opacity
-
-[light.dialog]
-button_order = "primary_right"
-# platform-facts.md:1569 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
-entrance = "scale_fade"
-min_width_px = 300.0
-max_width_px = 372.0
-min_height_px = 140.0
-max_height_px = 600.0
-button_gap_px = 12.0
-icon_size_px =32.0
-
-
-[light.dialog.title_font]
-# platform-facts.md:1561-1562 (§2.22): .title-2, ≈15pt ExtraBold
-size_pt =15.0
-weight = 800
-
-
-[light.dialog.border]
-corner_radius_px = 18.0
-# platform-facts.md:1556-1557 (§2.22): 24; 32 top / 24 bottom
-padding_horizontal_px = 24.0
-padding_top_px = 32.0
-padding_bottom_px = 24.0
-[light.link]
-underline_enabled = true
-background_color = "#00000000"
-# platform-facts.md:1698 (§2.28): GNOME hover_background **(none)**, transparent as background_color
-hover_background = "#00000000"
-hover_text_color = "#1b6acb"
-active_text_color = "#1b6acb"
-# platform-facts.md:1119 (§2.1.6): the enabled link colour, at disabled_opacity
-disabled_text_color = "#1b6acb"
-
-[light.spinner]
-diameter_px = 16.0
-min_diameter_px = 16.0
-stroke_width_px = 2.0
-
-[light.combo_box]
-# platform-facts.md §2.24 background_color: the trigger button's $button_color over the window, #e6e6e7
-# (libadwaita 1.10.0 _buttons.scss:28-29; _dropdowns.scss:1-12 adds no fill)
-background_color = "#e6e6e7"
-min_height_px = 34.0
-min_width_px = 120.0
-arrow_icon_size_px =16.0
-# arrow_area_width not stated: platform-facts.md:1620 (§2.24), (none), inline icon
-hover_background = "#d5d5d5"
-# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
-
-
-[light.combo_box.border]
-# platform-facts.md:1618, :1623 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
-padding_horizontal_px = 10.0
-padding_vertical_px = 5.0
-# platform-facts.md §2.24 border.line_width: 0 at rest, the button's (§2.3); the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
-line_width_px = 0.0
-# platform-facts.md §2.24 border.shadow_enabled: no shadow
-shadow_enabled = false
-[light.segmented_control]
-# platform-facts.md §2.25 background_color: AdwToggleGroup's $button_color, currentColor 10 % (_toggle-group.scss:12, _buttons.scss:1),
-# the window fg RGB(0 0 6 / 80%) so 8 % of #000006, laid over the window's #fafafb (libadwaita 1.10.0 _colors.scss:32-33)
-background_color = "#e6e6e7"
-segment_height_px = 28.0
-separator_width_px = 1.0
-# platform-facts.md:1636-1637 (§2.25): AdwToggleGroup's checked toggle, --active-toggle-bg-color #ffffff and
-# --active-toggle-fg-color RGB(0 0 6 / 80%) over it (libadwaita 1.10.0 _toggle-group.scss:79-81, _colors.scss:238-239)
-active_background = "#ffffff"
-active_text_color = "#333338"
-hover_background = "#d5d5d5"
-
-
-[light.segmented_control.border]
-# platform-facts.md:1640, :1645 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
-padding_horizontal_px = 8.0
-padding_vertical_px = 0.0
-# platform-facts.md §2.25 border.shadow_enabled: none
-shadow_enabled = false
-
-[light.card]
-
-
-[light.card.border]
-corner_radius_px = 12.0
-[light.expander]
-header_height_px = 50.0
-arrow_icon_size_px =16.0
-# platform-facts.md:1683-1686 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
-# the content before it, the nested list unindented, the whole a boxed-list card
-arrow_side = "trailing"
-arrow_gap_px = 9.0
-content_indent_px = 0.0
-frame_enabled = true
-hover_background = "#ebebed"
-arrow_color = "#2e3436"
-
-
-[light.expander.border]
-# platform-facts.md §2.27 border.corner_radius: $card_radius 12 at the boxed list's outer corners, 0 between rows
-# (_lists.scss:533-553, _common.scss:9); one radius carries a lone collapsed row, which is first and last
-corner_radius_px = 12.0
-# platform-facts.md §2.27 border.color, border.line_width: the boxed-list card's outline, 0 0 0 1px RGB(0 0 6 / 3%),
-# in both modes (libadwaita 1.10.0 _misc.scss:202-208); the shadow is the card's too (§2.27 border.shadow_enabled)
-color = "#00000608"
-line_width_px = 1.0
-# platform-facts.md:1677-1678 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
-padding_horizontal_px = 14.0
-padding_vertical_px = 8.0
-
-# === Dark variant ===
-
-[dark.defaults]
-accent_color = "#3584e4"
-background_color = "#222226"
-text_color = "#ffffff"
-# platform-facts.md:1054 (§2.1.3): view_bg_color #1d1d20 (libadwaita 1.10.0 _colors.scss:99)
-surface_color = "#1d1d20"
-muted_color = "#929292"
-shadow_color = "#00000040"
-
-danger_color = "#c01c28"
-danger_text_color = "#ffffff"
-warning_color = "#cd9309"
-# ❓ platform-facts.md:1087 (§2.1.4): no source for #ffffff at libadwaita 1.10.0, whose
-# warning_fg_color is RGB(0 0 0 / 80%) in both schemes (_colors.scss:20; the dark block, :82-143,
-# does not redefine it) (docs/todo.md, "Presets: colours with no reproducible source")
-warning_text_color = "#ffffff"
-success_color = "#26a269"
-success_text_color = "#ffffff"
-info_color = "#3584e4"
-info_text_color = "#ffffff"
-
-selection_background = "#3584e4"
-selection_text_color = "#ffffff"
-link_color = "#5b9bf8"
-# platform-facts.md §2.1.5 focus_ring_color: $focus_border_color, the standalone accent #81d0ff at 50 % (libadwaita 1.10.0
-# _drawing.scss:20, _colors.scss:260, :307, :151; adw-accent-color.c:130-157)
-focus_ring_color = "#81d0ff80"
-# platform-facts.md:1064 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
-disabled_text_color = "#ffffff"
-accent_text_color = "#ffffff"
-
-# platform-facts.md:1119 (§2.1.6): --disabled-opacity 50%, the only disabled mechanism
-disabled_opacity = 0.5
-line_height = 1.21
-focus_ring_width_px = 2.0
-focus_ring_offset_px = -2.0
-
-
-[dark.defaults.border]
-# platform-facts.md:1055 (§2.1.3): $border_color, white at --border-opacity 15% over #222226 (libadwaita 1.10.0 _colors.scss:95-96, :257, :263, :318)
-color = "#434347"
-corner_radius_px = 9.0
-corner_radius_lg_px = 15.0
-line_width_px = 1.0
-opacity = 0.15
-shadow_enabled = true
-[dark.defaults.font]
-family = "Adwaita Sans"
-size_pt =11.0
-weight = 400
-
-[dark.defaults.mono_font]
-family = "Adwaita Mono"
-size_pt =11.0
-weight = 400
-
-[dark.defaults.icon_sizes]
-toolbar_px = 16.0
-small_px = 16.0
-large_px = 32.0
-dialog_px = 22.0
-panel_px = 20.0
-
-[dark.text_scale.caption]
-size_pt =9.0
-
-[dark.text_scale.section_heading]
-weight = 700
-
-[dark.text_scale.dialog_title]
-size_pt =15.0
-weight = 800
-
-[dark.text_scale.display]
-size_pt =20.0
-weight = 800
-
-[dark.window]
-# platform-facts.md:1160 (§2.2): headerbar fills --headerbar-bg-color = headerbar_bg_color #2e2e32 (libadwaita 1.10.0 _header-bar.scss:3, _colors.scss:103)
-title_bar_background = "#2e2e32"
-# platform-facts.md:1166 (§2.2): headerbar:backdrop fills --headerbar-backdrop-color = @window_bg_color #222226 (libadwaita 1.10.0 _header-bar.scss:41-42, _colors.scss:43, :95)
-inactive_title_bar_background = "#222226"
-# no inactive_title_bar_text_color: platform-facts.md:1167 (§2.2), (none), libadwaita's :backdrop state
-
-[dark.window.title_bar_font]
-color = "#ffffff"
-weight = 700
-
-[dark.button]
-# platform-facts.md §2.3 background_color: a raised button fills with $button_color, currentColor 10 %, over the window, #38383c
-# (libadwaita 1.10.0 _buttons.scss:1, :28-29, _colors.scss:32-33, :95-96)
-background_color = "#38383c"
-min_width_px = 64.0
-min_height_px = 34.0
-icon_text_gap_px = 8.0
-hover_background = "#464649"
-hover_text_color = "#ffffff"
-active_background = "#2e2e32"
-active_text_color = "#ffffff"
-# platform-facts.md:1194-1195 (§2.3): $button_checked_color is the pressed fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
-checked_background = "#2e2e32"
-checked_text_color = "#ffffff"
-# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled button is its enabled self at disabled_opacity
-
-
-[dark.button.border]
-# platform-facts.md:1184-1185 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
-padding_horizontal_px = 17.0
-padding_vertical_px = 5.0
-# platform-facts.md §2.3 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
-line_width_px = 0.0
-
-[dark.button.font]
-color = "#ffffff"
-[dark.input]
-# platform-facts.md §2.4 background_color: an entry fills with $button_color, currentColor 10 %, over the window, #38383c
-# (libadwaita 1.10.0 _entries.scss:9, _buttons.scss:1, _colors.scss:32-33, :95-96)
-background_color = "#38383c"
-placeholder_color = "#8b8b8b"
-min_height_px = 34.0
-# platform-facts.md:1209 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
-caret_color = "#ffffff"
-# hover_border_color not stated: platform-facts.md §2.4 hover_border_color, (none), the entry's only :hover rule is its
-# icons' opacity (_entries.scss:49)
-# platform-facts.md §2.4 focus_border_color: $focus_border_color, the focus ring's colour (_entries.scss:17, _colors.scss:307)
-focus_border_color = "#81d0ff80"
-# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
-
-
-[dark.input.border]
-# platform-facts.md:1213-1214 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
-padding_horizontal_px = 9.0
-padding_vertical_px = 0.0
-# platform-facts.md §2.4 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_entries.scss:9-15)
-line_width_px = 0.0
-# platform-facts.md §2.4 border.shadow_enabled: no shadow
-shadow_enabled = false
-
-[dark.text_area.border]
-# platform-facts.md:1714-1715 (§2.29): textview sets no padding, GtkTextView's margins default to 0
-padding_horizontal_px = 0.0
-padding_vertical_px = 0.0
-
-[dark.input.font]
-color = "#ffffff"
-[dark.checkbox]
-# platform-facts.md:1233 (§2.5): min-width 14 plus padding 3 on each side
-indicator_width_px = 20.0
-# platform-facts.md:1241 (§2.5): bullet.svg, a circle of radius 4
-radio_dot_diameter_px = 8.0
-# platform-facts.md:1242 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
-check_mark_stroke_width_px = 2.0
-label_gap_px = 8.0
-hover_background = "#464649"
-# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled check is its enabled self at disabled_opacity
-unchecked_background = "#303034"
-unchecked_border_color = "#4a4a4e"
-
-
-[dark.checkbox.border]
-# platform-facts.md:1237-1238 (§2.5): Adwaita CSS check { padding: 3px }
-padding_horizontal_px = 3.0
-padding_vertical_px = 3.0
-# platform-facts.md §2.5 border.shadow_enabled: no shadow
-shadow_enabled = false
-
-[dark.tooltip]
-background_color = "#3a3a3e"
-max_width_px = 360.0
-# platform-facts.md:1290 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
-show_delay_ms = 500
-
-
-[dark.tooltip.border]
-# platform-facts.md:1283-1284 (§2.7): Adwaita CSS 10; 6
-padding_horizontal_px = 10.0
-padding_vertical_px = 6.0
-
-[dark.tooltip.font]
-color = "#ffffff"
-[dark.scrollbar]
-groove_width_px = 12.0
-thumb_width_px = 8.0
-# platform-facts.md:1310 (§2.8): gsettings overlay-scrolling, default true (gsettings-desktop-schemas 51.0 org.gnome.desktop.interface.gschema.xml.in:261-262)
-overlay_mode = true
-min_thumb_length_px = 40.0
-thumb_hover_color = "#a0a0a0"
-thumb_active_color = "#c0c0c0"
-
-[dark.slider]
-track_height_px = 10.0
-thumb_diameter_px = 20.0
-tick_mark_length_px = 4.0
-# platform-facts.md §2.9 thumb_color: $slider_color, white 80 % over the view's #1d1d20 (libadwaita 1.10.0 _scale.scss:50, _colors.scss:288, :99)
-thumb_color = "#d2d2d2"
-thumb_hover_color = "#3a3a3e"
-# no disabled_*_color: platform-facts.md:1119 (§2.1.6), a disabled scale is its enabled self at disabled_opacity
-
-[dark.progress_bar]
-track_height_px = 8.0
-min_width_px = 80.0
-
-[dark.progress_bar.border]
-# platform-facts.md:1340 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
-line_width_px = 0.0
-# platform-facts.md:1341-1342 (§2.10): Adwaita CSS 0; 0, the progress fills the trough (_scale.scss:12-17, _progress-bar.scss:6, :27-31)
-padding_horizontal_px = 0.0
-padding_vertical_px = 0.0
-
-[dark.tab]
-min_width_px = 64.0
-min_height_px = 30.0
-# platform-facts.md:1360 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
-item_gap_px = 0.0
-active_background = "#222226"
-active_text_color = "#ffffff"
-hover_background = "#3a3a3e"
-hover_text_color = "#ffffff"
-# platform-facts.md:1361-1363 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
-active_indicator_color = "#3584e4"
-active_indicator_width_px = 4.0
-active_indicator_side = "bottom"
-
-
-[dark.tab.border]
-# platform-facts.md:1352-1353 (§2.11): Adwaita CSS 12; 3
-padding_horizontal_px = 12.0
-padding_vertical_px = 3.0
-[dark.menu]
-row_height_px = 32.0
-icon_text_gap_px = 8.0
-hover_background = "#3a3a3e"
-hover_text_color = "#ffffff"
-# no disabled_text_color: platform-facts.md:1119 (§2.1.6), the enabled text at disabled_opacity
-
-
-[dark.menu.border]
-# platform-facts.md:1261-1262 (§2.6): Adwaita CSS 12 ($menu_padding); 0
-padding_horizontal_px = 12.0
-padding_vertical_px = 0.0
-[dark.list]
-# platform-facts.md:1429 (§2.15): the header's buttons are transparent (_column-view.scss:12-13) over the column view's
-# .view fill, --view-bg-color #1d1d20 (_column-view.scss:72-76, _views.scss:1-4, _colors.scss:99, libadwaita 1.10.0)
-header_background = "#1d1d20"
-alternate_row_background = "#2a2a2e"
-# row_height not stated: platform-facts.md:1431 (§2.15), plain list context, no min-height
-# platform-facts.md:1432 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
-header_height_px = 30.0
-hover_background = "#303034"
-hover_text_color = "#ffffff"
-# no disabled_text_color: platform-facts.md:1119 (§2.1.6), the enabled text at disabled_opacity
-
-
-[dark.list.border]
-# platform-facts.md:1433-1434 (§2.15): Adwaita CSS plain list context, 2
-padding_horizontal_px = 2.0
-padding_vertical_px = 2.0
-[dark.toolbar]
-# bar_height not stated: platform-facts.md:1390 (§2.13), .toolbar sets no min-height
-# platform-facts.md:1391 (§2.13): Adwaita CSS .toolbar border-spacing 6
-item_gap_px = 6.0
-
-
-[dark.toolbar.border]
-# platform-facts.md:1392-1393 (§2.13): Adwaita CSS .toolbar { padding: 6px }
-padding_horizontal_px = 6.0
-padding_vertical_px = 6.0
-# platform-facts.md §2.13 border.line_width, border.shadow_enabled: .toolbar sets no border and casts no shadow (_toolbars.scss:1-110)
-line_width_px = 0.0
-shadow_enabled = false
-
-
-[dark.status_bar.border]
-# platform-facts.md:1414-1415 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
-padding_horizontal_px = 10.0
-padding_vertical_px = 6.0
-
-[dark.sidebar]
-background_color = "#2e2e32"
-hover_background = "#36363a"
-
-
-[dark.sidebar.font]
-color = "#ffffff"
-
-
-[dark.sidebar.border]
-# platform-facts.md:1380 (§2.12): 6, `.navigation-sidebar > row { margin: 0 $menu_margin 2px }`, $menu_margin = 6; the list itself has no side padding (libadwaita 1.10.0 _sidebars.scss:189-193, _common.scss:11)
-padding_horizontal_px = 6.0
-# platform-facts.md:1381 (§2.12): 6 top / 4 bottom, `padding-top: $menu_margin; padding-bottom: $menu_margin - 2px`, the last row's 2px bottom margin making up the difference (_sidebars.scss:149-150, :193)
-padding_top_px = 6.0
-padding_bottom_px = 4.0
-[dark.popover]
-background_color = "#36363a"
-
-
-[dark.popover.font]
-color = "#ffffff"
-
-
-[dark.popover.border]
-# platform-facts.md:1457 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
-color = "#0000000d"
-# platform-facts.md:1458 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
-line_width_px = 1.0
-# platform-facts.md:1461-1462 (§2.16): Adwaita CSS popover > contents { padding: 8px }
-padding_horizontal_px = 8.0
-padding_vertical_px = 8.0
-[dark.separator]
-line_color = "#4a4a4e"
-
-[dark.splitter]
-divider_width_px = 1.0
-hover_color = "#4a4a4e"
-
-[dark.switch]
-unchecked_background = "#4a4a4e"
-thumb_background = "#ffffff"
-# platform-facts.md:1526 (§2.21): $slider_color, white 80% over view_bg_color #1d1d20; checked is white
-unchecked_thumb_background = "#d2d2d2"
-track_width_px = 46.0
-track_height_px = 26.0
-thumb_diameter_px = 20.0
-track_radius_px = 14.0
-hover_checked_background = "#2e78cc"
-hover_unchecked_background = "#56565a"
-# no disabled_*: platform-facts.md:1119 (§2.1.6), a disabled switch is its enabled self at disabled_opacity
-
-[dark.dialog]
-button_order = "primary_right"
-# platform-facts.md:1569 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
-entrance = "scale_fade"
-min_width_px = 300.0
-max_width_px = 372.0
-min_height_px = 140.0
-max_height_px = 600.0
-button_gap_px = 12.0
-icon_size_px =32.0
-
-
-[dark.dialog.title_font]
-# platform-facts.md:1561-1562 (§2.22): .title-2, ≈15pt ExtraBold
-size_pt =15.0
-weight = 800
-
-
-[dark.dialog.border]
-corner_radius_px = 18.0
-# platform-facts.md:1556-1557 (§2.22): 24; 32 top / 24 bottom
-padding_horizontal_px = 24.0
-padding_top_px = 32.0
-padding_bottom_px = 24.0
-[dark.link]
-underline_enabled = true
-background_color = "#00000000"
-# platform-facts.md:1698 (§2.28): GNOME hover_background **(none)**, transparent as background_color
-hover_background = "#00000000"
-hover_text_color = "#5b9bf8"
-active_text_color = "#5b9bf8"
-# platform-facts.md:1119 (§2.1.6): the enabled link colour, at disabled_opacity
-disabled_text_color = "#5b9bf8"
-
-[dark.spinner]
-diameter_px = 16.0
-min_diameter_px = 16.0
-stroke_width_px = 2.0
-
-[dark.combo_box]
-# platform-facts.md §2.24 background_color: the trigger button's $button_color over the window, #38383c
-# (libadwaita 1.10.0 _buttons.scss:28-29; _dropdowns.scss:1-12 adds no fill)
-background_color = "#38383c"
-min_height_px = 34.0
-min_width_px = 120.0
-arrow_icon_size_px =16.0
-# arrow_area_width not stated: platform-facts.md:1620 (§2.24), (none), inline icon
-hover_background = "#464649"
-# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
-
-
-[dark.combo_box.border]
-# platform-facts.md:1618, :1623 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
-padding_horizontal_px = 10.0
-padding_vertical_px = 5.0
-# platform-facts.md §2.24 border.line_width: 0 at rest, the button's (§2.3); the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
-line_width_px = 0.0
-# platform-facts.md §2.24 border.shadow_enabled: no shadow
-shadow_enabled = false
-[dark.segmented_control]
-# platform-facts.md §2.25 background_color: AdwToggleGroup's $button_color, currentColor 10 % (_toggle-group.scss:12, _buttons.scss:1),
-# the window fg white at 10 %, laid over the window's #222226 (libadwaita 1.10.0 _colors.scss:95-96)
-background_color = "#38383c"
-segment_height_px = 28.0
-separator_width_px = 1.0
-# platform-facts.md:1636-1637 (§2.25): AdwToggleGroup's checked toggle, --active-toggle-bg-color white at 20 %
-# over the group's #38383c, and --active-toggle-fg-color #ffffff (libadwaita 1.10.0 _toggle-group.scss:79-81,
-# _colors.scss:245-248)
-active_background = "#606063"
-active_text_color = "#ffffff"
-hover_background = "#464649"
-
-
-[dark.segmented_control.border]
-# platform-facts.md:1640, :1645 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
-padding_horizontal_px = 8.0
-padding_vertical_px = 0.0
-# platform-facts.md §2.25 border.shadow_enabled: none
-shadow_enabled = false
-
-[dark.card]
-# platform-facts.md:1657 (§2.26): .card fills var(--card-bg-color) = card_bg_color RGB(255 255 255 / 8%), alpha 0x14 (libadwaita 1.10.0 _misc.scss:203, _colors.scss:123)
-background_color = "#ffffff14"
-
-[dark.card.border]
-corner_radius_px = 12.0
-[dark.expander]
-header_height_px = 50.0
-arrow_icon_size_px =16.0
-# platform-facts.md:1683-1686 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
-# the content before it, the nested list unindented, the whole a boxed-list card
-arrow_side = "trailing"
-arrow_gap_px = 9.0
-content_indent_px = 0.0
-frame_enabled = true
-hover_background = "#303034"
-arrow_color = "#ffffff"
-
-
-[dark.expander.border]
-# platform-facts.md §2.27 border.corner_radius: $card_radius 12 at the boxed list's outer corners, 0 between rows
-# (_lists.scss:533-553, _common.scss:9); one radius carries a lone collapsed row, which is first and last
-corner_radius_px = 12.0
-# platform-facts.md §2.27 border.color, border.line_width: the boxed-list card's outline, 0 0 0 1px RGB(0 0 6 / 3%),
-# in both modes (libadwaita 1.10.0 _misc.scss:202-208); the shadow is the card's too (§2.27 border.shadow_enabled)
-color = "#00000608"
-line_width_px = 1.0
-# platform-facts.md:1677-1678 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
-padding_horizontal_px = 14.0
-padding_vertical_px = 8.0
-
-[layout]
-widget_gap_px = 6.0
-container_margin_px = 12.0
-window_margin_px = 12.0
-section_gap_px = 18.0
+# adwaita (S11): generated by scripts/generate_preset.py from docs/facts/gnome/, each value's comment naming its fact.
+# The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
+# written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
+# `generate_preset.py <id> --write` regenerates every other line and carries them over.
+# generated lines: sha256 ff1d4be8fa17bc92bbdb15a85d36f3979a65a52adbe60d7da8abd6328b3607de
+
+[preset]
+id = "adwaita"
+# hand-written: begin preset
+# docs/facts/sources.toml:571 (libadwaita@1.10.0)
+generation = "libadwaita-1.10"
+# hand-written: end preset
+
+[declare]
+# hand-written: begin declare
+surface_sets = [
+    "window",  # docs/facts/gnome/roles.toml:5
+    "view",  # docs/facts/gnome/roles.toml:49
+    "header",  # docs/facts/gnome/roles.toml:93
+    "sidebar",  # docs/facts/gnome/roles.toml:213
+    "secondary_sidebar",  # docs/facts/gnome/roles.toml:321
+    "card",  # docs/facts/gnome/roles.toml:429
+    "dialog",  # docs/facts/gnome/roles.toml:495
+    "popover",  # docs/facts/gnome/roles.toml:539
+    "selection",  # docs/facts/gnome/roles.toml:999
+    "osd",  # docs/facts/gnome/roles.toml:1031
+]
+text_styles = [
+    "title_1",  # docs/facts/gnome/tokens.toml:2885
+    "title_2",  # docs/facts/gnome/tokens.toml:3165
+    "title_3",  # docs/facts/gnome/tokens.toml:3445
+    "title_4",  # docs/facts/gnome/tokens.toml:3725
+    "heading",  # docs/facts/gnome/tokens.toml:4005
+    "body",  # docs/facts/gnome/tokens.toml:4283
+    "caption",  # docs/facts/gnome/tokens.toml:4834
+    "monospace",  # docs/facts/gnome/tokens.toml:5393
+]
+symbolic_colors = [
+    "success",  # docs/facts/gnome/tokens.toml:7087
+    "warning",  # docs/facts/gnome/tokens.toml:7087
+    "error",  # docs/facts/gnome/tokens.toml:7087
+    "accent",  # docs/facts/gnome/tokens.toml:7087
+]
+inputs = [
+    "accent",  # docs/facts/gnome/roles.toml:5565
+]
+# S9.1: every declared input but on kde-breeze
+accent_inputs = ["accent"]
+
+[declare.params.opacity]
+# S4.6, S10: one unit per group, the opacity group's `fraction` (S10's `opacity = { unit = "fraction" }`): its facts
+# state fractions, each converted from its quote's percent (percent_to_fraction, docs/facts/gnome/tokens.toml:1296)
+unit = "fraction"
+keys = [
+    "border",  # docs/facts/gnome/tokens.toml:1296
+    "focus_border",  # docs/facts/gnome/tokens.toml:1312
+    "dim",  # docs/facts/gnome/tokens.toml:1379
+    "disabled",  # docs/facts/gnome/tokens.toml:1390
+]
+# hand-written: end declare
+
+# docs/facts/gnome/state-models.toml:6
+[declare.widget.button]
+available = true
+variants = ["primary", "toggle", "with_icon", "@raised", "@osd", "@opaque", "@card", "@with_arrow", "@arrow_only", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button", "@tab_overflow", "@custom_child", "@image_text_box"]
+later = { variants = ["@raised", "@osd", "@opaque", "@card", "@with_arrow", "@arrow_only", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button", "@tab_overflow", "@custom_child", "@image_text_box"] }
+sizes = []
+densities = []
+exclusive = [["disabled", "hover"], ["disabled", "pressed"], ["disabled", "focused"], ["disabled", "focus_visible"]]
+exclusive_variants = [["with_icon", "@custom_child"], ["@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none"], ["@with_arrow", "@arrow_only"]]
+# docs/facts/gnome/button.toml:465, docs/facts/gnome/button.toml:480
+data = { label = ["font_underline_thickness"] }
+
+[inputs.accent]
+# docs/facts/gnome/roles.toml:5565
+light = "#3584e4"
+# docs/facts/gnome/roles.toml:5565
+dark = "#3584e4"
+
+[colors.light.surfaces.window]
+# docs/facts/gnome/roles.toml:5
+background = "#fafafb"
+# docs/facts/gnome/roles.toml:27
+foreground = "#000006cc"
+# docs/facts/gnome/roles.toml:659
+shade = "srgb(0, 0, 0.0235294, 0.07)"
+# docs/facts/gnome/roles.toml:1062
+foreground_inactive = "= alpha(role.window.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1072
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1087
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1103
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1113
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1123
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1133
+border = "= alpha(role.window.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:2076
+disabled.background = "= mix(role.window.background, role.view.background, 0.4)"
+# docs/facts/gnome/roles.toml:2087
+disabled.foreground = "= alpha(role.window.foreground, 0.5)"
+# docs/facts/gnome/roles.toml:2204
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2214
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2224
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2234
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2244
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2254
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2264
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2274
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2284
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2294
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2304
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:3294
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3304
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:3314
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3324
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:3334
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:3344
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:3354
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:3364
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:3374
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3384
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3394
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:3404
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3414
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:3424
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:3434
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:3444
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:3454
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:3464
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3474
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.view]
+# docs/facts/gnome/roles.toml:49
+background = "#ffffff"
+# docs/facts/gnome/roles.toml:71
+foreground = "#000006cc"
+# docs/facts/gnome/roles.toml:1144
+foreground_inactive = "= alpha(role.view.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1154
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1169
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1185
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1195
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1205
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1215
+border = "= alpha(role.view.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1226
+shade = "= role.window.shade"
+# docs/facts/gnome/roles.toml:2053
+disabled.foreground = "= alpha(role.view.foreground, token.params.opacity.disabled)"
+# docs/facts/gnome/roles.toml:2063
+disabled.background = "= mix(role.window.background, role.view.background, 0.4)"
+# docs/facts/gnome/roles.toml:2314
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2324
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2334
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2344
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2354
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2364
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2374
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2384
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2394
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2404
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2414
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:3484
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3494
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:3504
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3514
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:3524
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:3534
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:3544
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:3554
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:3564
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3574
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3584
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:3594
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3604
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:3614
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:3624
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:3634
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:3644
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:3654
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3664
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.header]
+# docs/facts/gnome/roles.toml:93
+background = "#ffffff"
+# docs/facts/gnome/roles.toml:115
+foreground = "#000006cc"
+# docs/facts/gnome/roles.toml:137
+border = "= alpha(#000006cc, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:169
+shade = "srgb(0, 0, 0.0235294, 0.12)"
+# docs/facts/gnome/roles.toml:191
+shade_darker = "srgb(0, 0, 0.0235294, 0.12)"
+# docs/facts/gnome/roles.toml:1237
+foreground_inactive = "= alpha(role.header.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1247
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1262
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1278
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1288
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1298
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:2424
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2434
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2444
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2454
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2464
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2474
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2484
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2494
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2504
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2514
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:3674
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:3684
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3694
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:3704
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:3714
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3724
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:3734
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:3744
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:3754
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:3764
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:3774
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3784
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3794
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:3804
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3814
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:3824
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:3834
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:3844
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:3854
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:3864
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3874
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.sidebar]
+# docs/facts/gnome/roles.toml:213
+background = "#ebebed"
+# docs/facts/gnome/roles.toml:235
+foreground = "#000006cc"
+# docs/facts/gnome/roles.toml:257
+shade = "srgb(0, 0, 0.0235294, 0.07)"
+# docs/facts/gnome/roles.toml:289
+border = "srgb(0, 0, 0.0235294, 0.07)"
+# docs/facts/gnome/roles.toml:1309
+foreground_inactive = "= alpha(role.sidebar.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1319
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1334
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1350
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1360
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1370
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:2524
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2534
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2544
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2554
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2564
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2574
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2584
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2594
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2604
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2614
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2624
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:3884
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:3894
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3904
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:3914
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:3924
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3934
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:3944
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:3954
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:3964
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:3974
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:3984
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3994
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4004
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4014
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4024
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4034
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4044
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4054
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4064
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4074
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4084
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.secondary_sidebar]
+# docs/facts/gnome/roles.toml:321
+background = "#f3f3f5"
+# docs/facts/gnome/roles.toml:343
+foreground = "#000006cc"
+# docs/facts/gnome/roles.toml:365
+shade = "srgb(0, 0, 0.0235294, 0.07)"
+# docs/facts/gnome/roles.toml:397
+border = "srgb(0, 0, 0.0235294, 0.07)"
+# docs/facts/gnome/roles.toml:1381
+foreground_inactive = "= alpha(role.secondary_sidebar.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1391
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1406
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1422
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1432
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1442
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:2634
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2644
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2654
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2664
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2674
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2684
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2694
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2704
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2714
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2724
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2734
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4094
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4104
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4114
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4124
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4134
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4144
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4154
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:4164
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:4174
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:4184
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:4194
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:4204
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4214
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4224
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4234
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4244
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4254
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4264
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4274
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4284
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4294
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.card]
+# docs/facts/gnome/roles.toml:429
+background = "#ffffff"
+# docs/facts/gnome/roles.toml:451
+foreground = "#000006cc"
+# docs/facts/gnome/roles.toml:473
+shade = "srgb(0, 0, 0.0235294, 0.07)"
+# docs/facts/gnome/roles.toml:1453
+foreground_inactive = "= alpha(role.card.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1463
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1478
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1494
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1504
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1514
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1524
+border = "= alpha(role.card.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:2744
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2754
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2764
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2774
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2784
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2794
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2804
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2814
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2824
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2834
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2844
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4304
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4314
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4324
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4334
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4344
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4354
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4364
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:4374
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:4384
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:4394
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:4404
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:4414
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4424
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4434
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4444
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4454
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4464
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4474
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4484
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4494
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4504
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.dialog]
+# docs/facts/gnome/roles.toml:495
+background = "#fafafb"
+# docs/facts/gnome/roles.toml:517
+foreground = "#000006cc"
+# docs/facts/gnome/roles.toml:1535
+foreground_inactive = "= alpha(role.dialog.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1545
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1560
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1576
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1586
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1596
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1606
+border = "= alpha(role.dialog.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1617
+shade = "= role.window.shade"
+# docs/facts/gnome/roles.toml:2854
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2864
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2874
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2884
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2894
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2904
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2914
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2924
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2934
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2944
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2954
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4514
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4524
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4534
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4544
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4554
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4564
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4574
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:4584
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:4594
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:4604
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:4614
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:4624
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4634
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4644
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4654
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4664
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4674
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4684
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4694
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4704
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4714
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.popover]
+# docs/facts/gnome/roles.toml:539
+background = "#ffffff"
+# docs/facts/gnome/roles.toml:561
+foreground = "#000006cc"
+# docs/facts/gnome/roles.toml:583
+shade = "srgb(0, 0, 0.0235294, 0.07)"
+# docs/facts/gnome/roles.toml:1628
+foreground_inactive = "= alpha(role.popover.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1638
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1653
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1669
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1679
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1689
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1699
+border = "= alpha(role.popover.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:2964
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2974
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2984
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2994
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3004
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3014
+background_active = "absent"
+# docs/facts/gnome/roles.toml:3024
+background_link = "absent"
+# docs/facts/gnome/roles.toml:3034
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:3044
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:3054
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3064
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4724
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4734
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4744
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4754
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4764
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4774
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4784
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:4794
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:4804
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:4814
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:4824
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:4834
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4844
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4854
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4864
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4874
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4884
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4894
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4904
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4914
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4924
+disabled.background_positive = "absent"
+
+[colors.light.global]
+# hand-written: begin bases colors.light.global
+# docs/facts/gnome/roles.toml:928
+accent = "= input.accent"
+# hand-written: end bases colors.light.global
+# docs/facts/gnome/roles.toml:681
+status.destructive.fill = "#e01b24"
+# docs/facts/gnome/roles.toml:713
+status.destructive.foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:723
+status.success.fill = "#2ec27e"
+# docs/facts/gnome/roles.toml:755
+status.success.foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:765
+status.warning.fill = "#e5a50a"
+# docs/facts/gnome/roles.toml:792
+status.warning.foreground = "#000000cc"
+# docs/facts/gnome/roles.toml:802
+status.error.fill = "#e01b24"
+# docs/facts/gnome/roles.toml:834
+status.error.foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:845
+status.destructive.standalone = "= adw_standalone(role.global.status.destructive.fill, scheme)"
+# docs/facts/gnome/roles.toml:866
+status.success.standalone = "= adw_standalone(role.global.status.success.fill, scheme)"
+# docs/facts/gnome/roles.toml:887
+status.warning.standalone = "= adw_standalone(role.global.status.warning.fill, scheme)"
+# docs/facts/gnome/roles.toml:908
+status.error.standalone = "= adw_standalone(role.global.status.error.fill, scheme)"
+# docs/facts/gnome/roles.toml:948
+accent_foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:968
+accent_standalone = "= adw_standalone(role.global.accent, scheme)"
+# docs/facts/gnome/roles.toml:989
+accent_ramp = {}
+# docs/facts/gnome/roles.toml:2098
+scrim = "= alpha(role.window.shade, 2)"
+# docs/facts/gnome/roles.toml:2108
+selection_text_background = "= alpha(role.global.accent, 0.3)"
+# docs/facts/gnome/roles.toml:2119
+selection_text_background_unfocused = "= alpha(role.view.foreground, 0.1)"
+# docs/facts/gnome/roles.toml:2131
+selection_text_foreground = "absent"
+# docs/facts/gnome/roles.toml:2141
+drop_highlight = "= role.global.accent"
+# docs/facts/gnome/roles.toml:5354
+shadow_reference = "absent"
+# docs/facts/gnome/roles.toml:5364
+find_highlight = "absent"
+# docs/facts/gnome/roles.toml:5374
+selection_text_foreground_unfocused = "absent"
+# docs/facts/gnome/roles.toml:5384
+status.destructive.background = "absent"
+# docs/facts/gnome/roles.toml:5394
+status.destructive.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5404
+status.success.background = "absent"
+# docs/facts/gnome/roles.toml:5414
+status.success.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5424
+status.warning.background = "absent"
+# docs/facts/gnome/roles.toml:5434
+status.warning.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5444
+status.error.background = "absent"
+# docs/facts/gnome/roles.toml:5454
+status.error.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5464
+status.info.fill = "absent"
+# docs/facts/gnome/roles.toml:5474
+status.info.foreground = "absent"
+# docs/facts/gnome/roles.toml:5484
+status.info.standalone = "absent"
+# docs/facts/gnome/roles.toml:5494
+status.info.background = "absent"
+# docs/facts/gnome/roles.toml:5504
+status.info.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5514
+status.neutral.fill = "absent"
+# docs/facts/gnome/roles.toml:5524
+status.neutral.foreground = "absent"
+# docs/facts/gnome/roles.toml:5534
+status.neutral.standalone = "absent"
+# docs/facts/gnome/roles.toml:5544
+status.neutral.background = "absent"
+# docs/facts/gnome/roles.toml:5554
+status.neutral.background_solid = "absent"
+
+[colors.light.surfaces.selection]
+# docs/facts/gnome/roles.toml:999
+background = "= alpha(role.global.accent, 0.25)"
+# docs/facts/gnome/roles.toml:1016
+foreground = "= role.view.foreground"
+# docs/facts/gnome/roles.toml:1710
+foreground_inactive = "= alpha(role.selection.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1720
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1735
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1751
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1761
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1771
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1781
+border = "= alpha(role.selection.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1792
+shade = "= role.window.shade"
+# docs/facts/gnome/roles.toml:3074
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3084
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3094
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3104
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3114
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3124
+background_active = "absent"
+# docs/facts/gnome/roles.toml:3134
+background_link = "absent"
+# docs/facts/gnome/roles.toml:3144
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:3154
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:3164
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3174
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4934
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4944
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4954
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4964
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4974
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4984
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4994
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:5004
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:5014
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:5024
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:5034
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:5044
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:5054
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:5064
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:5074
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:5084
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:5094
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:5104
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:5114
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:5124
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:5134
+disabled.background_positive = "absent"
+
+[colors.light.surfaces.osd]
+# docs/facts/gnome/roles.toml:1031
+background = "srgb(0, 0, 0, 0.7)"
+# docs/facts/gnome/roles.toml:1046
+foreground = "srgb(1, 1, 1, 0.9)"
+# docs/facts/gnome/roles.toml:1803
+foreground_inactive = "= alpha(role.osd.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1814
+link = "= mix(srgb(1, 1, 1, 0.75), #ffffff, 0.5)"
+# docs/facts/gnome/roles.toml:1835
+link_visited = "= mix(srgb(1, 1, 1, 0.75), #ffffff, 0.25)"
+# docs/facts/gnome/roles.toml:1857
+negative = "= adw_standalone(role.global.status.error.fill, dark)"
+# docs/facts/gnome/roles.toml:1878
+neutral = "= adw_standalone(role.global.status.warning.fill, dark)"
+# docs/facts/gnome/roles.toml:1899
+positive = "= adw_standalone(role.global.status.success.fill, dark)"
+# docs/facts/gnome/roles.toml:1919
+border = "= alpha(role.osd.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1930
+shade = "= role.window.shade"
+# docs/facts/gnome/roles.toml:3184
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3194
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3204
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3214
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3224
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3234
+background_active = "absent"
+# docs/facts/gnome/roles.toml:3244
+background_link = "absent"
+# docs/facts/gnome/roles.toml:3254
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:3264
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:3274
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3284
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:5144
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:5154
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:5164
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:5174
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:5184
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:5194
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:5204
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:5214
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:5224
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:5234
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:5244
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:5254
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:5264
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:5274
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:5284
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:5294
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:5304
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:5314
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:5324
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:5334
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:5344
+disabled.background_positive = "absent"
+
+[colors.light]
+# S10
+keyed = {}
+
+[colors.dark.surfaces.window]
+# docs/facts/gnome/roles.toml:16
+background = "#222226"
+# docs/facts/gnome/roles.toml:38
+foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:670
+shade = "srgb(0, 0, 0.0235294, 0.25)"
+# docs/facts/gnome/roles.toml:1062
+foreground_inactive = "= alpha(role.window.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1072
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1087
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1103
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1113
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1123
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1133
+border = "= alpha(role.window.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:2076
+disabled.background = "= mix(role.window.background, role.view.background, 0.4)"
+# docs/facts/gnome/roles.toml:2087
+disabled.foreground = "= alpha(role.window.foreground, 0.5)"
+# docs/facts/gnome/roles.toml:2204
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2214
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2224
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2234
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2244
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2254
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2264
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2274
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2284
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2294
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2304
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:3294
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3304
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:3314
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3324
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:3334
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:3344
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:3354
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:3364
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:3374
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3384
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3394
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:3404
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3414
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:3424
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:3434
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:3444
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:3454
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:3464
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3474
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.view]
+# docs/facts/gnome/roles.toml:60
+background = "#1d1d20"
+# docs/facts/gnome/roles.toml:82
+foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:1144
+foreground_inactive = "= alpha(role.view.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1154
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1169
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1185
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1195
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1205
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1215
+border = "= alpha(role.view.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1226
+shade = "= role.window.shade"
+# docs/facts/gnome/roles.toml:2053
+disabled.foreground = "= alpha(role.view.foreground, token.params.opacity.disabled)"
+# docs/facts/gnome/roles.toml:2063
+disabled.background = "= mix(role.window.background, role.view.background, 0.4)"
+# docs/facts/gnome/roles.toml:2314
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2324
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2334
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2344
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2354
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2364
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2374
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2384
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2394
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2404
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2414
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:3484
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3494
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:3504
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3514
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:3524
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:3534
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:3544
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:3554
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:3564
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3574
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3584
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:3594
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3604
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:3614
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:3624
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:3634
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:3644
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:3654
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3664
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.header]
+# docs/facts/gnome/roles.toml:104
+background = "#2e2e32"
+# docs/facts/gnome/roles.toml:126
+foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:153
+border = "= alpha(#ffffff, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:180
+shade = "srgb(0, 0, 0.0235294, 0.36)"
+# docs/facts/gnome/roles.toml:202
+shade_darker = "srgb(0, 0, 0.0470588, 0.9)"
+# docs/facts/gnome/roles.toml:1237
+foreground_inactive = "= alpha(role.header.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1247
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1262
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1278
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1288
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1298
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:2424
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2434
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2444
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2454
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2464
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2474
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2484
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2494
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2504
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2514
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:3674
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:3684
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3694
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:3704
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:3714
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3724
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:3734
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:3744
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:3754
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:3764
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:3774
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3784
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3794
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:3804
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3814
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:3824
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:3834
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:3844
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:3854
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:3864
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3874
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.sidebar]
+# docs/facts/gnome/roles.toml:224
+background = "#2e2e32"
+# docs/facts/gnome/roles.toml:246
+foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:273
+shade = "srgb(0, 0, 0.0235294, 0.25)"
+# docs/facts/gnome/roles.toml:305
+border = "srgb(0, 0, 0.0235294, 0.36)"
+# docs/facts/gnome/roles.toml:1309
+foreground_inactive = "= alpha(role.sidebar.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1319
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1334
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1350
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1360
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1370
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:2524
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2534
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2544
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2554
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2564
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2574
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2584
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2594
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2604
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2614
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2624
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:3884
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:3894
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3904
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:3914
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:3924
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3934
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:3944
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:3954
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:3964
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:3974
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:3984
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3994
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4004
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4014
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4024
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4034
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4044
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4054
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4064
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4074
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4084
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.secondary_sidebar]
+# docs/facts/gnome/roles.toml:332
+background = "#28282c"
+# docs/facts/gnome/roles.toml:354
+foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:381
+shade = "srgb(0, 0, 0.0235294, 0.25)"
+# docs/facts/gnome/roles.toml:413
+border = "srgb(0, 0, 0.0235294, 0.36)"
+# docs/facts/gnome/roles.toml:1381
+foreground_inactive = "= alpha(role.secondary_sidebar.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1391
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1406
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1422
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1432
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1442
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:2634
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2644
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2654
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2664
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2674
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2684
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2694
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2704
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2714
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2724
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2734
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4094
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4104
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4114
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4124
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4134
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4144
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4154
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:4164
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:4174
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:4184
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:4194
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:4204
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4214
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4224
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4234
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4244
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4254
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4264
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4274
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4284
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4294
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.card]
+# docs/facts/gnome/roles.toml:440
+background = "srgb(1, 1, 1, 0.08)"
+# docs/facts/gnome/roles.toml:462
+foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:484
+shade = "srgb(0, 0, 0.0235294, 0.36)"
+# docs/facts/gnome/roles.toml:1453
+foreground_inactive = "= alpha(role.card.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1463
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1478
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1494
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1504
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1514
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1524
+border = "= alpha(role.card.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:2744
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2754
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2764
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2774
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2784
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2794
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2804
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2814
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2824
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2834
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2844
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4304
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4314
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4324
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4334
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4344
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4354
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4364
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:4374
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:4384
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:4394
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:4404
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:4414
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4424
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4434
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4444
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4454
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4464
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4474
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4484
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4494
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4504
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.dialog]
+# docs/facts/gnome/roles.toml:506
+background = "#36363a"
+# docs/facts/gnome/roles.toml:528
+foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:1535
+foreground_inactive = "= alpha(role.dialog.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1545
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1560
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1576
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1586
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1596
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1606
+border = "= alpha(role.dialog.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1617
+shade = "= role.window.shade"
+# docs/facts/gnome/roles.toml:2854
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2864
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2874
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2884
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:2894
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:2904
+background_active = "absent"
+# docs/facts/gnome/roles.toml:2914
+background_link = "absent"
+# docs/facts/gnome/roles.toml:2924
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:2934
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:2944
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:2954
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4514
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4524
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4534
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4544
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4554
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4564
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4574
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:4584
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:4594
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:4604
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:4614
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:4624
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4634
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4644
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4654
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4664
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4674
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4684
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4694
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4704
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4714
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.popover]
+# docs/facts/gnome/roles.toml:550
+background = "#36363a"
+# docs/facts/gnome/roles.toml:572
+foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:599
+shade = "srgb(0, 0, 0.0235294, 0.25)"
+# docs/facts/gnome/roles.toml:1628
+foreground_inactive = "= alpha(role.popover.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1638
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1653
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1669
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1679
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1689
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1699
+border = "= alpha(role.popover.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:2964
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:2974
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:2984
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:2994
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3004
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3014
+background_active = "absent"
+# docs/facts/gnome/roles.toml:3024
+background_link = "absent"
+# docs/facts/gnome/roles.toml:3034
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:3044
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:3054
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3064
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4724
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4734
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4744
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4754
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4764
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4774
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4784
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:4794
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:4804
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:4814
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:4824
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:4834
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:4844
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:4854
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:4864
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:4874
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:4884
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:4894
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:4904
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:4914
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:4924
+disabled.background_positive = "absent"
+
+[colors.dark.global]
+# hand-written: begin bases colors.dark.global
+# docs/facts/gnome/roles.toml:928
+accent = "= input.accent"
+# hand-written: end bases colors.dark.global
+# docs/facts/gnome/roles.toml:697
+status.destructive.fill = "#c01c28"
+# docs/facts/gnome/roles.toml:713
+status.destructive.foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:739
+status.success.fill = "#26a269"
+# docs/facts/gnome/roles.toml:755
+status.success.foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:781
+status.warning.fill = "#cd9309"
+# docs/facts/gnome/roles.toml:792
+status.warning.foreground = "#000000cc"
+# docs/facts/gnome/roles.toml:818
+status.error.fill = "#c01c28"
+# docs/facts/gnome/roles.toml:834
+status.error.foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:845
+status.destructive.standalone = "= adw_standalone(role.global.status.destructive.fill, scheme)"
+# docs/facts/gnome/roles.toml:866
+status.success.standalone = "= adw_standalone(role.global.status.success.fill, scheme)"
+# docs/facts/gnome/roles.toml:887
+status.warning.standalone = "= adw_standalone(role.global.status.warning.fill, scheme)"
+# docs/facts/gnome/roles.toml:908
+status.error.standalone = "= adw_standalone(role.global.status.error.fill, scheme)"
+# docs/facts/gnome/roles.toml:948
+accent_foreground = "#ffffff"
+# docs/facts/gnome/roles.toml:968
+accent_standalone = "= adw_standalone(role.global.accent, scheme)"
+# docs/facts/gnome/roles.toml:989
+accent_ramp = {}
+# docs/facts/gnome/roles.toml:2098
+scrim = "= alpha(role.window.shade, 2)"
+# docs/facts/gnome/roles.toml:2108
+selection_text_background = "= alpha(role.global.accent, 0.3)"
+# docs/facts/gnome/roles.toml:2119
+selection_text_background_unfocused = "= alpha(role.view.foreground, 0.1)"
+# docs/facts/gnome/roles.toml:2131
+selection_text_foreground = "absent"
+# docs/facts/gnome/roles.toml:2141
+drop_highlight = "= role.global.accent"
+# docs/facts/gnome/roles.toml:5354
+shadow_reference = "absent"
+# docs/facts/gnome/roles.toml:5364
+find_highlight = "absent"
+# docs/facts/gnome/roles.toml:5374
+selection_text_foreground_unfocused = "absent"
+# docs/facts/gnome/roles.toml:5384
+status.destructive.background = "absent"
+# docs/facts/gnome/roles.toml:5394
+status.destructive.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5404
+status.success.background = "absent"
+# docs/facts/gnome/roles.toml:5414
+status.success.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5424
+status.warning.background = "absent"
+# docs/facts/gnome/roles.toml:5434
+status.warning.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5444
+status.error.background = "absent"
+# docs/facts/gnome/roles.toml:5454
+status.error.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5464
+status.info.fill = "absent"
+# docs/facts/gnome/roles.toml:5474
+status.info.foreground = "absent"
+# docs/facts/gnome/roles.toml:5484
+status.info.standalone = "absent"
+# docs/facts/gnome/roles.toml:5494
+status.info.background = "absent"
+# docs/facts/gnome/roles.toml:5504
+status.info.background_solid = "absent"
+# docs/facts/gnome/roles.toml:5514
+status.neutral.fill = "absent"
+# docs/facts/gnome/roles.toml:5524
+status.neutral.foreground = "absent"
+# docs/facts/gnome/roles.toml:5534
+status.neutral.standalone = "absent"
+# docs/facts/gnome/roles.toml:5544
+status.neutral.background = "absent"
+# docs/facts/gnome/roles.toml:5554
+status.neutral.background_solid = "absent"
+
+[colors.dark.surfaces.selection]
+# docs/facts/gnome/roles.toml:999
+background = "= alpha(role.global.accent, 0.25)"
+# docs/facts/gnome/roles.toml:1016
+foreground = "= role.view.foreground"
+# docs/facts/gnome/roles.toml:1710
+foreground_inactive = "= alpha(role.selection.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1720
+link = "= role.global.accent_standalone"
+# docs/facts/gnome/roles.toml:1735
+link_visited = "= mix(role.global.accent_standalone, role.view.foreground, 0.2)"
+# docs/facts/gnome/roles.toml:1751
+negative = "= role.global.status.error.standalone"
+# docs/facts/gnome/roles.toml:1761
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/gnome/roles.toml:1771
+positive = "= role.global.status.success.standalone"
+# docs/facts/gnome/roles.toml:1781
+border = "= alpha(role.selection.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1792
+shade = "= role.window.shade"
+# docs/facts/gnome/roles.toml:3074
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3084
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3094
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3104
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3114
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3124
+background_active = "absent"
+# docs/facts/gnome/roles.toml:3134
+background_link = "absent"
+# docs/facts/gnome/roles.toml:3144
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:3154
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:3164
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3174
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:4934
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:4944
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:4954
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:4964
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:4974
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:4984
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:4994
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:5004
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:5014
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:5024
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:5034
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:5044
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:5054
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:5064
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:5074
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:5084
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:5094
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:5104
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:5114
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:5124
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:5134
+disabled.background_positive = "absent"
+
+[colors.dark.surfaces.osd]
+# docs/facts/gnome/roles.toml:1031
+background = "srgb(0, 0, 0, 0.7)"
+# docs/facts/gnome/roles.toml:1046
+foreground = "srgb(1, 1, 1, 0.9)"
+# docs/facts/gnome/roles.toml:1803
+foreground_inactive = "= alpha(role.osd.foreground, token.params.opacity.dim)"
+# docs/facts/gnome/roles.toml:1814
+link = "= mix(srgb(1, 1, 1, 0.75), #ffffff, 0.5)"
+# docs/facts/gnome/roles.toml:1835
+link_visited = "= mix(srgb(1, 1, 1, 0.75), #ffffff, 0.25)"
+# docs/facts/gnome/roles.toml:1857
+negative = "= adw_standalone(role.global.status.error.fill, dark)"
+# docs/facts/gnome/roles.toml:1878
+neutral = "= adw_standalone(role.global.status.warning.fill, dark)"
+# docs/facts/gnome/roles.toml:1899
+positive = "= adw_standalone(role.global.status.success.fill, dark)"
+# docs/facts/gnome/roles.toml:1919
+border = "= alpha(role.osd.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1930
+shade = "= role.window.shade"
+# docs/facts/gnome/roles.toml:3184
+background_alternate = "absent"
+# docs/facts/gnome/roles.toml:3194
+foreground_active = "absent"
+# docs/facts/gnome/roles.toml:3204
+decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:3214
+decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:3224
+shade_darker = "absent"
+# docs/facts/gnome/roles.toml:3234
+background_active = "absent"
+# docs/facts/gnome/roles.toml:3244
+background_link = "absent"
+# docs/facts/gnome/roles.toml:3254
+background_visited = "absent"
+# docs/facts/gnome/roles.toml:3264
+background_negative = "absent"
+# docs/facts/gnome/roles.toml:3274
+background_neutral = "absent"
+# docs/facts/gnome/roles.toml:3284
+background_positive = "absent"
+# docs/facts/gnome/roles.toml:5144
+disabled.background = "absent"
+# docs/facts/gnome/roles.toml:5154
+disabled.background_alternate = "absent"
+# docs/facts/gnome/roles.toml:5164
+disabled.foreground = "absent"
+# docs/facts/gnome/roles.toml:5174
+disabled.foreground_inactive = "absent"
+# docs/facts/gnome/roles.toml:5184
+disabled.foreground_active = "absent"
+# docs/facts/gnome/roles.toml:5194
+disabled.link = "absent"
+# docs/facts/gnome/roles.toml:5204
+disabled.link_visited = "absent"
+# docs/facts/gnome/roles.toml:5214
+disabled.negative = "absent"
+# docs/facts/gnome/roles.toml:5224
+disabled.neutral = "absent"
+# docs/facts/gnome/roles.toml:5234
+disabled.positive = "absent"
+# docs/facts/gnome/roles.toml:5244
+disabled.decoration_focus = "absent"
+# docs/facts/gnome/roles.toml:5254
+disabled.decoration_hover = "absent"
+# docs/facts/gnome/roles.toml:5264
+disabled.shade = "absent"
+# docs/facts/gnome/roles.toml:5274
+disabled.shade_darker = "absent"
+# docs/facts/gnome/roles.toml:5284
+disabled.border = "absent"
+# docs/facts/gnome/roles.toml:5294
+disabled.background_active = "absent"
+# docs/facts/gnome/roles.toml:5304
+disabled.background_link = "absent"
+# docs/facts/gnome/roles.toml:5314
+disabled.background_visited = "absent"
+# docs/facts/gnome/roles.toml:5324
+disabled.background_negative = "absent"
+# docs/facts/gnome/roles.toml:5334
+disabled.background_neutral = "absent"
+# docs/facts/gnome/roles.toml:5344
+disabled.background_positive = "absent"
+
+[colors.dark]
+# S10
+keyed = {}
+
+[tokens.motion]
+# docs/facts/gnome/tokens.toml:659
+speed_factor = 1
+
+[tokens.params]
+# docs/facts/gnome/tokens.toml:1296
+opacity.border = 0.15
+# docs/facts/gnome/tokens.toml:1312
+opacity.focus_border = 0.5
+# docs/facts/gnome/tokens.toml:1379
+opacity.dim = 0.55
+# docs/facts/gnome/tokens.toml:1390
+opacity.disabled = 0.5
+
+[tokens.focus]
+# docs/facts/gnome/tokens.toml:1442
+kind = "ring"
+# docs/facts/gnome/tokens.toml:1452
+width_px = 2
+# docs/facts/gnome/tokens.toml:1467
+paint = "= alpha(role.global.accent_standalone, token.params.opacity.focus_border)"
+# docs/facts/gnome/tokens.toml:1503
+dash = "solid"
+# docs/facts/gnome/tokens.toml:1513
+offset.top_px = "= sub(0px, token.focus.width)"
+# docs/facts/gnome/tokens.toml:1534
+offset.right_px = "= token.focus.offset.top"
+# docs/facts/gnome/tokens.toml:1555
+offset.bottom_px = "= token.focus.offset.top"
+# docs/facts/gnome/tokens.toml:1576
+offset.left_px = "= token.focus.offset.top"
+# docs/facts/gnome/tokens.toml:1597
+corners.top_left = "follow_part"
+# docs/facts/gnome/tokens.toml:1607
+corners.top_right = "follow_part"
+# docs/facts/gnome/tokens.toml:1617
+corners.bottom_right = "follow_part"
+# docs/facts/gnome/tokens.toml:1627
+corners.bottom_left = "follow_part"
+# docs/facts/gnome/tokens.toml:1637
+corners.curve = "circular"
+# docs/facts/gnome/tokens.toml:1647
+shadow = "absent"
+
+[tokens.behavior]
+# docs/facts/gnome/tokens.toml:1998
+mnemonics = { on_alt = { delay_ms = 300 } }
+# docs/facts/gnome/tokens.toml:2008
+focus_visible_when = { keyboard = { timeout_ms = 3000 } }
+# docs/facts/gnome/tokens.toml:2121
+mnemonic_when_disabled = false
+
+[tokens]
+# docs/facts/gnome/tokens.toml:2283
+size_classes = {}
+# docs/facts/gnome/tokens.toml:7961
+kde = "absent"
+# docs/facts/gnome/tokens.toml:7978
+material = "absent"
+# S10
+elevation = {}
+
+[tokens.text]
+# docs/facts/gnome/tokens.toml:2885
+keyed.title_1.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:2902
+keyed.title_1.font.size = "= mul(token.text.roles.body.font.size, 1.81)"
+# docs/facts/gnome/tokens.toml:2914
+keyed.title_1.font.weight = 800
+# docs/facts/gnome/tokens.toml:2925
+keyed.title_1.font.style = "normal"
+# docs/facts/gnome/tokens.toml:2941
+keyed.title_1.line_height = "auto"
+# docs/facts/gnome/tokens.toml:2958
+keyed.title_1.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:2974
+keyed.title_1.case = "mixed"
+# docs/facts/gnome/tokens.toml:2990
+keyed.title_1.decoration = "absent"
+# docs/facts/gnome/tokens.toml:3002
+keyed.title_1.font.width = 100
+# docs/facts/gnome/tokens.toml:3034
+keyed.title_1.font.axes = {}
+# docs/facts/gnome/tokens.toml:3056
+keyed.title_1.font.features = {}
+# docs/facts/gnome/tokens.toml:3078
+keyed.title_1.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:3089
+keyed.title_1.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3102
+keyed.title_1.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:3120
+keyed.title_1.elision = "absent"
+# docs/facts/gnome/tokens.toml:3131
+keyed.title_1.wrap = "absent"
+# docs/facts/gnome/tokens.toml:3142
+keyed.title_1.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:3154
+keyed.title_1.fill = "absent"
+# docs/facts/gnome/tokens.toml:3165
+keyed.title_2.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:3182
+keyed.title_2.font.size = "= mul(token.text.roles.body.font.size, 1.36)"
+# docs/facts/gnome/tokens.toml:3194
+keyed.title_2.font.weight = 800
+# docs/facts/gnome/tokens.toml:3205
+keyed.title_2.font.style = "normal"
+# docs/facts/gnome/tokens.toml:3221
+keyed.title_2.line_height = "auto"
+# docs/facts/gnome/tokens.toml:3238
+keyed.title_2.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3254
+keyed.title_2.case = "mixed"
+# docs/facts/gnome/tokens.toml:3270
+keyed.title_2.decoration = "absent"
+# docs/facts/gnome/tokens.toml:3282
+keyed.title_2.font.width = 100
+# docs/facts/gnome/tokens.toml:3314
+keyed.title_2.font.axes = {}
+# docs/facts/gnome/tokens.toml:3336
+keyed.title_2.font.features = {}
+# docs/facts/gnome/tokens.toml:3358
+keyed.title_2.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:3369
+keyed.title_2.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3382
+keyed.title_2.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:3400
+keyed.title_2.elision = "absent"
+# docs/facts/gnome/tokens.toml:3411
+keyed.title_2.wrap = "absent"
+# docs/facts/gnome/tokens.toml:3422
+keyed.title_2.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:3434
+keyed.title_2.fill = "absent"
+# docs/facts/gnome/tokens.toml:3445
+keyed.title_3.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:3462
+keyed.title_3.font.size = "= mul(token.text.roles.body.font.size, 1.36)"
+# docs/facts/gnome/tokens.toml:3474
+keyed.title_3.font.weight = 700
+# docs/facts/gnome/tokens.toml:3485
+keyed.title_3.font.style = "normal"
+# docs/facts/gnome/tokens.toml:3501
+keyed.title_3.line_height = "auto"
+# docs/facts/gnome/tokens.toml:3518
+keyed.title_3.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3534
+keyed.title_3.case = "mixed"
+# docs/facts/gnome/tokens.toml:3550
+keyed.title_3.decoration = "absent"
+# docs/facts/gnome/tokens.toml:3562
+keyed.title_3.font.width = 100
+# docs/facts/gnome/tokens.toml:3594
+keyed.title_3.font.axes = {}
+# docs/facts/gnome/tokens.toml:3616
+keyed.title_3.font.features = {}
+# docs/facts/gnome/tokens.toml:3638
+keyed.title_3.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:3649
+keyed.title_3.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3662
+keyed.title_3.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:3680
+keyed.title_3.elision = "absent"
+# docs/facts/gnome/tokens.toml:3691
+keyed.title_3.wrap = "absent"
+# docs/facts/gnome/tokens.toml:3702
+keyed.title_3.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:3714
+keyed.title_3.fill = "absent"
+# docs/facts/gnome/tokens.toml:3725
+keyed.title_4.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:3742
+keyed.title_4.font.size = "= mul(token.text.roles.body.font.size, 1.18)"
+# docs/facts/gnome/tokens.toml:3754
+keyed.title_4.font.weight = 700
+# docs/facts/gnome/tokens.toml:3765
+keyed.title_4.font.style = "normal"
+# docs/facts/gnome/tokens.toml:3781
+keyed.title_4.line_height = "auto"
+# docs/facts/gnome/tokens.toml:3798
+keyed.title_4.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3814
+keyed.title_4.case = "mixed"
+# docs/facts/gnome/tokens.toml:3830
+keyed.title_4.decoration = "absent"
+# docs/facts/gnome/tokens.toml:3842
+keyed.title_4.font.width = 100
+# docs/facts/gnome/tokens.toml:3874
+keyed.title_4.font.axes = {}
+# docs/facts/gnome/tokens.toml:3896
+keyed.title_4.font.features = {}
+# docs/facts/gnome/tokens.toml:3918
+keyed.title_4.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:3929
+keyed.title_4.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:3942
+keyed.title_4.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:3960
+keyed.title_4.elision = "absent"
+# docs/facts/gnome/tokens.toml:3971
+keyed.title_4.wrap = "absent"
+# docs/facts/gnome/tokens.toml:3982
+keyed.title_4.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:3994
+keyed.title_4.fill = "absent"
+# docs/facts/gnome/tokens.toml:4005
+keyed.heading.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:4021
+keyed.heading.font.size = "= token.text.roles.body.font.size"
+# docs/facts/gnome/tokens.toml:4037
+keyed.heading.font.weight = 700
+# docs/facts/gnome/tokens.toml:4047
+keyed.heading.font.style = "normal"
+# docs/facts/gnome/tokens.toml:4062
+keyed.heading.line_height = "auto"
+# docs/facts/gnome/tokens.toml:4078
+keyed.heading.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:4093
+keyed.heading.case = "mixed"
+# docs/facts/gnome/tokens.toml:4108
+keyed.heading.decoration = "absent"
+# docs/facts/gnome/tokens.toml:4120
+keyed.heading.font.width = 100
+# docs/facts/gnome/tokens.toml:4152
+keyed.heading.font.axes = {}
+# docs/facts/gnome/tokens.toml:4174
+keyed.heading.font.features = {}
+# docs/facts/gnome/tokens.toml:4196
+keyed.heading.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:4207
+keyed.heading.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:4220
+keyed.heading.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:4238
+keyed.heading.elision = "absent"
+# docs/facts/gnome/tokens.toml:4249
+keyed.heading.wrap = "absent"
+# docs/facts/gnome/tokens.toml:4260
+keyed.heading.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:4272
+keyed.heading.fill = "absent"
+# docs/facts/gnome/tokens.toml:4283
+keyed.body.font.family = "Adwaita Sans"
+# docs/facts/gnome/tokens.toml:4293
+keyed.body.font.size_pt = 11
+# docs/facts/gnome/tokens.toml:4309
+keyed.body.font.weight = 400
+# docs/facts/gnome/tokens.toml:4320
+keyed.body.font.style = "normal"
+# docs/facts/gnome/tokens.toml:4336
+keyed.body.line_height = "= mul(font_size, 1.4)"
+# docs/facts/gnome/tokens.toml:4347
+keyed.body.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:4363
+keyed.body.case = "mixed"
+# docs/facts/gnome/tokens.toml:4379
+keyed.body.decoration = "absent"
+# docs/facts/gnome/tokens.toml:4391
+keyed.body.font.width = 100
+# docs/facts/gnome/tokens.toml:4423
+keyed.body.font.axes = {}
+# docs/facts/gnome/tokens.toml:4445
+keyed.body.font.features = {}
+# docs/facts/gnome/tokens.toml:4467
+keyed.body.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:4478
+keyed.body.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:4491
+keyed.body.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:4509
+keyed.body.elision = "absent"
+# docs/facts/gnome/tokens.toml:4520
+keyed.body.wrap = "absent"
+# docs/facts/gnome/tokens.toml:4531
+keyed.body.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:4543
+keyed.body.fill = "absent"
+# docs/facts/gnome/tokens.toml:4834
+keyed.caption.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/tokens.toml:4851
+keyed.caption.font.size = "= mul(token.text.roles.body.font.size, 0.82)"
+# docs/facts/gnome/tokens.toml:4863
+keyed.caption.font.weight = 400
+# docs/facts/gnome/tokens.toml:4874
+keyed.caption.font.style = "normal"
+# docs/facts/gnome/tokens.toml:4890
+keyed.caption.line_height = "= mul(font_size, 1.4)"
+# docs/facts/gnome/tokens.toml:4901
+keyed.caption.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:4917
+keyed.caption.case = "mixed"
+# docs/facts/gnome/tokens.toml:4933
+keyed.caption.decoration = "absent"
+# docs/facts/gnome/tokens.toml:4945
+keyed.caption.font.width = 100
+# docs/facts/gnome/tokens.toml:4977
+keyed.caption.font.axes = {}
+# docs/facts/gnome/tokens.toml:4999
+keyed.caption.font.features = {}
+# docs/facts/gnome/tokens.toml:5021
+keyed.caption.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:5032
+keyed.caption.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:5045
+keyed.caption.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:5063
+keyed.caption.elision = "absent"
+# docs/facts/gnome/tokens.toml:5074
+keyed.caption.wrap = "absent"
+# docs/facts/gnome/tokens.toml:5085
+keyed.caption.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:5097
+keyed.caption.fill = "absent"
+# docs/facts/gnome/tokens.toml:5393
+keyed.monospace.font.family = "Adwaita Mono"
+# docs/facts/gnome/tokens.toml:5413
+keyed.monospace.font.size_pt = 11
+# docs/facts/gnome/tokens.toml:5433
+keyed.monospace.font.weight = 400
+# docs/facts/gnome/tokens.toml:5460
+keyed.monospace.font.style = "normal"
+# docs/facts/gnome/tokens.toml:5481
+keyed.monospace.line_height = "auto"
+# docs/facts/gnome/tokens.toml:5497
+keyed.monospace.letter_spacing_px = 0
+# docs/facts/gnome/tokens.toml:5512
+keyed.monospace.case = "mixed"
+# docs/facts/gnome/tokens.toml:5527
+keyed.monospace.decoration = "absent"
+# docs/facts/gnome/tokens.toml:5539
+keyed.monospace.font.width = 100
+# docs/facts/gnome/tokens.toml:5571
+keyed.monospace.font.axes = {}
+# docs/facts/gnome/tokens.toml:5593
+keyed.monospace.font.features = {}
+# docs/facts/gnome/tokens.toml:5615
+keyed.monospace.scaling_role = "none"
+# docs/facts/gnome/tokens.toml:5626
+keyed.monospace.word_spacing_px = 0
+# docs/facts/gnome/tokens.toml:5639
+keyed.monospace.mnemonic_decoration = "absent"
+# docs/facts/gnome/tokens.toml:5657
+keyed.monospace.elision = "absent"
+# docs/facts/gnome/tokens.toml:5668
+keyed.monospace.wrap = "absent"
+# docs/facts/gnome/tokens.toml:5679
+keyed.monospace.max_lines = "absent"
+# docs/facts/gnome/tokens.toml:5691
+keyed.monospace.fill = "absent"
+# docs/facts/gnome/tokens.toml:6599
+roles.body = "= token.text.keyed.body"
+# docs/facts/gnome/tokens.toml:6609
+roles.caption = "= token.text.keyed.caption"
+# docs/facts/gnome/tokens.toml:6619
+roles.title1 = "= token.text.keyed.title_2"
+# docs/facts/gnome/tokens.toml:6629
+roles.title2 = "= token.text.keyed.title_3"
+# docs/facts/gnome/tokens.toml:6639
+roles.title3 = "= token.text.keyed.title_4"
+# docs/facts/gnome/tokens.toml:6649
+roles.headline = "= token.text.keyed.heading"
+# docs/facts/gnome/tokens.toml:6669
+roles.large_title = "= token.text.keyed.title_1"
+# docs/facts/gnome/tokens.toml:6679
+roles.display_large = "= token.text.roles.large_title"
+# docs/facts/gnome/tokens.toml:6699
+roles.display_small = "= token.text.roles.large_title"
+# docs/facts/gnome/tokens.toml:6769
+roles.monospace = "= token.text.keyed.monospace"
+# docs/facts/gnome/tokens.toml:6789
+font_dpi = 96
+# docs/facts/gnome/tokens.toml:6799
+scaling = "linear"
+
+[tokens.icons]
+# docs/facts/gnome/tokens.toml:6927
+theme = "Adwaita"
+# docs/facts/gnome/tokens.toml:6937
+theme_fallback = "hicolor"
+# docs/facts/gnome/tokens.toml:6952
+set = "freedesktop"
+# docs/facts/gnome/tokens.toml:6979
+sizes.small.size_px = 16
+# docs/facts/gnome/tokens.toml:6994
+sizes.toolbar.size_px = 16
+# docs/facts/gnome/tokens.toml:7005
+sizes.large.size_px = 32
+# docs/facts/gnome/tokens.toml:7015
+sizes.large.weight = 134
+# docs/facts/gnome/tokens.toml:7087
+sizes.toolbar.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
+# docs/facts/gnome/tokens.toml:7097
+sizes.toolbar.axes = {}
+# docs/facts/gnome/tokens.toml:7107
+sizes.toolbar.symbol_variants = []
+# docs/facts/gnome/tokens.toml:7117
+sizes.small.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
+# docs/facts/gnome/tokens.toml:7127
+sizes.small.axes = {}
+# docs/facts/gnome/tokens.toml:7137
+sizes.small.symbol_variants = []
+# docs/facts/gnome/tokens.toml:7147
+sizes.large.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
+# docs/facts/gnome/tokens.toml:7157
+sizes.large.axes = {}
+# docs/facts/gnome/tokens.toml:7167
+sizes.large.symbol_variants = []
+# docs/facts/gnome/tokens.toml:7302
+sizes.small.fill = "= surface.foreground"
+# docs/facts/gnome/tokens.toml:7318
+sizes.small.rendering_mode = "absent"
+# docs/facts/gnome/tokens.toml:7334
+sizes.small.scale = "absent"
+# docs/facts/gnome/tokens.toml:7345
+sizes.small.state_effect = "absent"
+# docs/facts/gnome/tokens.toml:7384
+sizes.small.weight = 400
+# docs/facts/gnome/tokens.toml:7405
+sizes.toolbar.fill = "= surface.foreground"
+# docs/facts/gnome/tokens.toml:7415
+sizes.toolbar.rendering_mode = "absent"
+# docs/facts/gnome/tokens.toml:7425
+sizes.toolbar.scale = "absent"
+# docs/facts/gnome/tokens.toml:7436
+sizes.toolbar.state_effect = "absent"
+# docs/facts/gnome/tokens.toml:7463
+sizes.toolbar.weight = 400
+# docs/facts/gnome/tokens.toml:7478
+sizes.large.fill = "= surface.foreground"
+# docs/facts/gnome/tokens.toml:7494
+sizes.large.rendering_mode = "absent"
+# docs/facts/gnome/tokens.toml:7510
+sizes.large.scale = "absent"
+# docs/facts/gnome/tokens.toml:7521
+sizes.large.state_effect = "absent"
+# docs/facts/gnome/tokens.toml:7933
+sizes.dialog = "absent"
+# docs/facts/gnome/tokens.toml:7944
+sizes.panel = "absent"
+# S10
+sizes.keyed = {}
+
+[widgets.button.body]
+# docs/facts/gnome/button.toml:8
+bindings = []
+# docs/facts/gnome/button.toml:53
+min_height_px = "= add(24px, add(part.padding.top, part.padding.bottom))"
+# docs/facts/gnome/button.toml:73
+min_width_px = "= add(16px, add(part.padding.left, part.padding.right))"
+# docs/facts/gnome/button.toml:96
+padding = { top_px = 5, right_px = 17, bottom_px = 5, left_px = 17 }
+# docs/facts/gnome/button.toml:122
+corners = { top_left_px = 9, top_right_px = 9, bottom_right_px = 9, bottom_left_px = 9, curve = "circular" }
+# docs/facts/gnome/button.toml:154
+margin = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+# docs/facts/gnome/button.toml:165
+stroke = "absent"
+# docs/facts/gnome/button.toml:176
+max_width_px = "auto"
+# docs/facts/gnome/button.toml:186
+transform = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
+# docs/facts/gnome/button.toml:208
+cursor = "absent"
+# docs/facts/gnome/button.toml:220
+touch_target_px = "absent"
+# docs/facts/gnome/button.toml:1059
+focus = "= token.focus"
+# docs/facts/gnome/button.toml:1169
+interaction = "absent"
+# docs/facts/gnome/button.toml:1180
+fill = "= alpha(surface.foreground, 0.1)"
+# docs/facts/gnome/button.toml:1198
+shadow = "absent"
+# docs/facts/gnome/button.toml:1539
+opacity = 1
+
+[widgets.button.label]
+# docs/facts/gnome/button.toml:232
+text.font.family = "= token.text.roles.body.font.family"
+# docs/facts/gnome/button.toml:242
+text.font.size = "= token.text.roles.body.font.size"
+# docs/facts/gnome/button.toml:252
+text.font.style = "= token.text.roles.body.font.style"
+# docs/facts/gnome/button.toml:268
+text.font.width = "= token.text.roles.body.font.width"
+# docs/facts/gnome/button.toml:284
+text.font.axes = "= token.text.roles.body.font.axes"
+# docs/facts/gnome/button.toml:300
+text.font.features = "= token.text.roles.body.font.features"
+# docs/facts/gnome/button.toml:317
+text.scaling_role = "= token.text.roles.body.scaling_role"
+# docs/facts/gnome/button.toml:327
+text.letter_spacing = "= token.text.roles.body.letter_spacing"
+# docs/facts/gnome/button.toml:344
+text.word_spacing = "= token.text.roles.body.word_spacing"
+# docs/facts/gnome/button.toml:358
+text.line_height = "auto"
+# docs/facts/gnome/button.toml:384
+text.case = "= token.text.roles.body.case"
+# docs/facts/gnome/button.toml:401
+text.decoration = "absent"
+# docs/facts/gnome/button.toml:420
+text.mnemonic_decoration.line = "underline_low"
+# docs/facts/gnome/button.toml:440
+text.mnemonic_decoration.style = "solid"
+# docs/facts/gnome/button.toml:455
+text.mnemonic_decoration.by_word = false
+# docs/facts/gnome/button.toml:465
+text.mnemonic_decoration.thickness_px = "= element.font_underline_thickness"
+# docs/facts/gnome/button.toml:480
+text.mnemonic_decoration.offset_px = "= element.font_underline_thickness"
+# docs/facts/gnome/button.toml:490
+text.mnemonic_decoration.paint = "= surface.foreground"
+# docs/facts/gnome/button.toml:506
+text.elision = "none"
+# docs/facts/gnome/button.toml:522
+text.wrap = "none"
+# docs/facts/gnome/button.toml:532
+text.max_lines = "none"
+# docs/facts/gnome/button.toml:542
+text.font.weight = 700
+# docs/facts/gnome/button.toml:563
+text.fill = "= surface.foreground"
+# docs/facts/gnome/button.toml:573
+padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+
+[widgets.button.icon]
+# docs/facts/gnome/button.toml:583
+icon.size_px = 16
+# docs/facts/gnome/button.toml:594
+icon.fill = "= surface.foreground"
+# docs/facts/gnome/button.toml:606
+icon.rendering_mode = "from_icon"
+# docs/facts/gnome/button.toml:632
+icon.weight = 400
+# docs/facts/gnome/button.toml:648
+icon.symbolic_colors = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
+# docs/facts/gnome/button.toml:659
+icon.axes = {}
+# docs/facts/gnome/button.toml:670
+icon.symbol_variants = []
+# docs/facts/gnome/button.toml:680
+icon.scale = "absent"
+# docs/facts/gnome/button.toml:690
+icon.state_effect = "absent"
+# docs/facts/gnome/button.toml:736
+glyph = "absent"
+
+[widgets.button.values]
+# docs/facts/gnome/button.toml:808
+icon_text_gap_px = 0
+# docs/facts/gnome/button.toml:854
+icon_placement = "leading"
+# docs/facts/gnome/button.toml:904
+focus_visible_when = "= token.behavior.focus_visible_when"
+# docs/facts/gnome/button.toml:915
+shows_icon = "absent"
+# docs/facts/gnome/button.toml:946
+subtitle_gap_px = "absent"
+# docs/facts/gnome/button.toml:956
+label_position = "absent"
+# docs/facts/gnome/button.toml:966
+repeat_delay_ms = "absent"
+# docs/facts/gnome/button.toml:976
+repeat_interval_ms = "absent"
+# docs/facts/gnome/button.toml:1029
+hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+
+[widgets.button.subtitle]
+# docs/facts/gnome/button.toml:927
+absent = true
+
+[widgets.button.menu_indicator]
+# docs/facts/gnome/button.toml:3575
+absent = true
+
+[[rules]]
+when = { not_states = ["focused"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1077
+focus.width_px = 0
+# docs/facts/gnome/button.toml:1093
+focus.offset = { top_px = "= add(add(token.focus.offset.top, token.focus.width), 4px)", right_px = "= add(add(token.focus.offset.right, token.focus.width), 4px)", bottom_px = "= add(add(token.focus.offset.bottom, token.focus.width), 4px)", left_px = "= add(add(token.focus.offset.left, token.focus.width), 4px)" }
+
+[[rules]]
+when = { not_states = ["focus_visible"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1109
+focus.width_px = 0
+# docs/facts/gnome/button.toml:1125
+focus.offset = { top_px = "= add(add(token.focus.offset.top, token.focus.width), 4px)", right_px = "= add(add(token.focus.offset.right, token.focus.width), 4px)", bottom_px = "= add(add(token.focus.offset.bottom, token.focus.width), 4px)", left_px = "= add(add(token.focus.offset.left, token.focus.width), 4px)" }
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1208
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
+
+[[rules]]
+when = { states = ["hover"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1322
+fill = "= alpha(surface.foreground, 0.15)"
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1339
+fill = "= alpha(surface.foreground, 0.3)"
+
+[[rules]]
+when = { states = ["checked"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1356
+fill = "= alpha(surface.foreground, 0.3)"
+
+[[rules]]
+when = { states = ["checked", "hover"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1417
+fill = "= alpha(surface.foreground, 0.35)"
+
+[[rules]]
+when = { states = ["checked", "pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1478
+fill = "= alpha(surface.foreground, 0.4)"
+
+[[rules]]
+when = { states = ["disabled"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1549
+opacity = "= token.params.opacity.disabled"
+
+[[rules]]
+when = { variants = ["with_icon"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:1597
+padding = { top_px = 5, right_px = 9, bottom_px = 5, left_px = 9 }
+
+[[rules]]
+when = { variants = ["primary"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:2039
+bindings = [{ role = { role = { surface = "foreground" }, value = "= role.global.accent_foreground" } }]
+# docs/facts/gnome/button.toml:2050
+fill = "= role.global.accent"
+# docs/facts/gnome/button.toml:2061
+shadow = "absent"
+# docs/facts/gnome/button.toml:2074
+focus.offset = { top_px = 1, right_px = 1, bottom_px = 1, left_px = 1 }
+
+[[rules]]
+when = { variants = ["primary"], not_states = ["focused"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:2090
+focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
+
+[[rules]]
+when = { variants = ["primary"], not_states = ["focus_visible"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:2111
+focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
+
+[[rules]]
+when = { variants = ["primary"], states = ["hover"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:2132
+fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
+
+[[rules]]
+when = { variants = ["primary"], states = ["pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:2149
+fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "#00000633" }, blend = "normal" }] }
+
+[[rules]]
+when = { variants = ["primary"], states = ["checked"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:2165
+fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
+
+[[rules]]
+when = { variants = ["primary"], states = ["checked", "hover"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:2202
+fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
+
+[[rules]]
+when = { variants = ["primary"], states = ["checked", "pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:2239
+fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
+
+[[rules]]
+when = { variants = ["with_icon"] }
+target = "button.values"
+
+[rules.set]
+# docs/facts/gnome/button.toml:3860
+icon_text_gap_px = 6
+
+[[rules]]
+when = { variants = ["with_icon"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/gnome/button.toml:3872
+padding = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 0 }
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "colors"
+
+[rules.set]
+# docs/facts/gnome/roles.toml:1940
+surfaces.sidebar.border = "= alpha(role.sidebar.foreground, token.params.opacity.border)"
+# docs/facts/gnome/roles.toml:1956
+surfaces.secondary_sidebar.border = "= alpha(role.secondary_sidebar.foreground, token.params.opacity.border)"
+
+[[rules]]
+when = { conditions = ["animations_off"] }
+target = "tokens"
+
+[rules.set]
+# docs/facts/gnome/tokens.toml:674
+motion.speed_factor = 0
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "tokens"
+
+[rules.set]
+# docs/facts/gnome/tokens.toml:1323
+params.opacity.focus_border = 0.8
+# docs/facts/gnome/tokens.toml:1401
+params.opacity.border = 0.5
+# docs/facts/gnome/tokens.toml:1418
+params.opacity.dim = 0.9
+# docs/facts/gnome/tokens.toml:1430
+params.opacity.disabled = 0.4
+# docs/facts/gnome/tokens.toml:1487
+focus.paint = "= alpha(role.global.accent_standalone, token.params.opacity.focus_border)"

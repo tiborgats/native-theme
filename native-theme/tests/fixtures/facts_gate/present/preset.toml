@@ -1,0 +1,23 @@
+# A synthetic preset (S17, ADD-A126): the subtitle absent, drawn again on a tool button by `absent = false`,
+# its fields the base's, kept beneath the absence.
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "button.subtitle"
+set = { absent = true }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.subtitle"
+set = { absent = false }

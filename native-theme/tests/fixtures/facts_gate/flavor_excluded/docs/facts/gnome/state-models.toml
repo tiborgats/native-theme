@@ -1,0 +1,21 @@
+# Synthetic state models (S17): a button in two flavours, `@main_only` the default flavour's alone.
+[[model]]
+widget = "button"
+available = true
+variants = ["tool", "@main_only"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+rows = []
+
+[[model]]
+widget = "button"
+when = { conditions = ["flavor:alt"] }
+available = true
+variants = ["tool"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+rows = []

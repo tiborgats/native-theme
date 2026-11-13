@@ -1,0 +1,77 @@
+# A synthetic preset (S17, ADD-A144): a second surface set, the view, stated whole beside the window
+# set's listed `neutral` role, at both schemes.
+# base without: [declare]
+# base without: text_styles = ["body"]
+# base without: inputs = ["accent"]
+# base without: surface_sets = ["window"]
+# base without: neutral = "absent"
+# base without: neutral = "absent"
+[pending]
+"colors.light.surfaces.window.neutral" = "U30"
+"colors.dark.surfaces.window.neutral" = "U30"
+
+[declare]
+text_styles = ["body"]
+inputs = ["accent"]
+surface_sets = ["window", "view"]
+
+[declare.widget.button]
+variants = ["tool"]
+
+[colors.light.surfaces.view]
+foreground = "#101010"
+background = "#ffffff"
+background_alternate = "absent"
+foreground_inactive = "= role.view.foreground"
+foreground_active = "absent"
+link = "= role.view.foreground"
+link_visited = "absent"
+negative = "= role.view.foreground"
+neutral = "absent"
+positive = "absent"
+decoration_focus = "absent"
+decoration_hover = "absent"
+shade = "absent"
+shade_darker = "absent"
+border = "= role.view.foreground"
+background_active = "absent"
+background_link = "absent"
+background_visited = "absent"
+background_negative = "absent"
+background_neutral = "absent"
+background_positive = "absent"
+disabled = { background = "absent", background_alternate = "absent", foreground = "absent", foreground_inactive = "absent", foreground_active = "absent", link = "absent", link_visited = "absent", negative = "absent", neutral = "absent", positive = "absent", decoration_focus = "absent", decoration_hover = "absent", shade = "absent", shade_darker = "absent", border = "absent", background_active = "absent", background_link = "absent", background_visited = "absent", background_negative = "absent", background_neutral = "absent", background_positive = "absent" }
+
+[colors.dark.surfaces.view]
+foreground = "#fafafa"
+background = "#101010"
+background_alternate = "absent"
+foreground_inactive = "= role.view.foreground"
+foreground_active = "absent"
+link = "= role.view.foreground"
+link_visited = "absent"
+negative = "= role.view.foreground"
+neutral = "absent"
+positive = "absent"
+decoration_focus = "absent"
+decoration_hover = "absent"
+shade = "absent"
+shade_darker = "absent"
+border = "= role.view.foreground"
+background_active = "absent"
+background_link = "absent"
+background_visited = "absent"
+background_negative = "absent"
+background_neutral = "absent"
+background_positive = "absent"
+disabled = { background = "absent", background_alternate = "absent", foreground = "absent", foreground_inactive = "absent", foreground_active = "absent", link = "absent", link_visited = "absent", negative = "absent", neutral = "absent", positive = "absent", decoration_focus = "absent", decoration_hover = "absent", shade = "absent", shade_darker = "absent", border = "absent", background_active = "absent", background_link = "absent", background_visited = "absent", background_negative = "absent", background_neutral = "absent", background_positive = "absent" }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }

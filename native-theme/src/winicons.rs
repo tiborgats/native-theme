@@ -18,7 +18,7 @@
 
 // Win32 GDI FFI -- no safe alternative
 #![allow(unsafe_code)]
-use crate::IconData;
+use crate::icons::IconData;
 
 #[cfg(target_os = "windows")]
 use std::mem;
@@ -266,15 +266,16 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
 
 /// Held for each stock icon load, so that one runs at a time.
 ///
-/// A mitigation for an unconfirmed cause. On GitHub's `windows-latest` image
-/// one test thread's load of `SIID_WARNING` returned `None` while another's,
-/// with the same arguments in the same process, returned the icon (CI run
-/// 38478340750): the failure depends on timing, and which step failed was not
-/// recorded. Loads running at once are one cause that fits; a first-use
-/// initialisation inside the shell fits equally well. Microsoft documents no
-/// thread rule for SHGetStockIconInfo. The lock is this crate's own: it does
-/// not serialise other code in the process that calls the shell's icon
-/// functions.
+/// On GitHub's `windows-latest` image one test thread's load of
+/// `SIID_WARNING` returned `None` while another's, with the same arguments
+/// in the same process, returned the icon (CI run 38478340750). Loads
+/// running at once are the cause, not COM uninitialized under them: with
+/// COM's MTA kept for the process ([`crate::windows::mta_kept`]) and no
+/// lock, `winicons`' tests failed in each of 30 runs, stock loads returning
+/// `None`, and with the lock passed in each of 30 (CI runs 42565816772 and
+/// 42565651243). Microsoft documents no thread rule for SHGetStockIconInfo.
+/// The lock is this crate's own: it does not serialise other code in the
+/// process that calls the shell's icon functions.
 #[cfg(target_os = "windows")]
 static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
@@ -282,10 +283,15 @@ static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 ///
 /// Maps the name to a SHSTOCKICONID, calls SHGetStockIconInfo to get
 /// an HICON, extracts RGBA pixels, and cleans up the icon handle, one load
-/// at a time ([`STOCK_ICON_LOCK`]).
+/// at a time ([`STOCK_ICON_LOCK`]), with COM's MTA kept for the process
+/// ([`crate::windows::mta_kept`]).
 #[cfg(target_os = "windows")]
 fn load_stock_icon(name: &str) -> Option<IconData> {
     let siid = siid_from_name(name)?;
+    if let Err(err) = crate::windows::mta_kept() {
+        note_failure(format_args!("CoIncrementMTAUsage: {err}"));
+        return None;
+    }
     // The lock guards no data, so a load that panicked leaves nothing to
     // repair.
     let _one_at_a_time = STOCK_ICON_LOCK
@@ -683,7 +689,7 @@ pub(crate) fn load_windows_icon_by_name(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::{IconRole, IconSet, icon_name};
+    use crate::icons::{IconRole, IconSet, icon_name};
 
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the Segoe set.
@@ -980,6 +986,40 @@ mod tests {
                 );
             }
         });
+    }
+
+    /// After a first load, every stock icon role loads, two hundred times
+    /// over, while another thread joins the process's multithreaded apartment
+    /// and leaves it again and again. A thread that has not initialized COM
+    /// uses it as a member of the MTA while one exists, and the last thread to
+    /// uninitialize COM in the process unloads the servers COM loaded
+    /// (combase's `ProcessUninitialize`), the shell's server a load was
+    /// running in among them (CI run 42554706381, where the Windows watcher's
+    /// thread, subscribed and dropped a thousand times, uninitialized it).
+    /// The first load comes before the other thread starts, so that, with
+    /// the MTA kept, its leaving never uninitializes COM in the process under
+    /// another test's COM work.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn stock_icons_load_while_another_thread_leaves_the_mta() {
+        let first = load_role(IconRole::DialogWarning);
+        assert!(
+            matches!(first, Some(IconData::Rgba(_))),
+            "DialogWarning should load as RGBA; failed at: {}",
+            last_failure()
+        );
+        let loads: Vec<_> = crate::windows::while_another_thread_leaves_the_mta(|| {
+            (0..200)
+                .flat_map(|_| stock_roles())
+                .map(|role| (role, load_role(role), last_failure()))
+                .collect()
+        });
+        for (role, icon, failure) in loads {
+            assert!(
+                matches!(icon, Some(IconData::Rgba(_))),
+                "{role:?} should load as RGBA; failed at: {failure}"
+            );
+        }
     }
 
     #[cfg(target_os = "windows")]

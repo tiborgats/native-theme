@@ -40,7 +40,8 @@
 family                       = "string"
 # At most one of size_pt or size_px: both is a parse error ("set `size_pt` or
 # `size_px`, not both", model/font.rs:214); a widget font with neither inherits
-# its size ([font_inheritance] in docs/inheritance-rules.toml).
+# its size ([font_inheritance],
+# docs/inheritance-rules.toml@fc6109d1:120).
 #   size_pt -- typographic points (1/72 inch), used by platform presets
 #   size_px -- logical pixels, used by community presets
 size_pt                      = "f32"
@@ -81,8 +82,8 @@ panel_px                     = "f32"
 # At most one of size_pt or size_px, and at most one of line_height_pt or
 # line_height_px: both is a parse error (model/font.rs:332, :337). An entry
 # with neither inherits its size, and its line height is computed
-# ([text_scale_inheritance] in docs/inheritance-rules.toml). The line height's
-# unit need not match the size's.
+# ([text_scale_inheritance], docs/inheritance-rules.toml@fc6109d1:662). The
+# line height's unit need not match the size's.
 size_pt                      = "f32"
 size_px                      = "f32"
 weight                       = "u16"

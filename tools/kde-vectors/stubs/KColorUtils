@@ -1,0 +1,3 @@
+// The forwarding header KGuiAddons installs, pointing at the fetched
+// kcolorutils.h rather than the system's.
+#include "kcolorutils.h"

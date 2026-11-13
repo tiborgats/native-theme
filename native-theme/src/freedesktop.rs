@@ -9,22 +9,14 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
-use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use crate::IconData;
+use crate::icons::IconData;
 use crate::icons::{
     MAX_ICON_DECODE_BYTES, has_theme_index, icon_base_dirs, ini_value, installed_themes,
     theme_index,
 };
-use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use std::path::{Component, Path, PathBuf};
-
-/// Frame duration for freedesktop sprite sheet animations (80ms per frame).
-const FREEDESKTOP_FRAME_DURATION_MS: u32 = 80;
-
-/// Spin duration for single-frame icons animated with rotation (1 second).
-const FREEDESKTOP_SPIN_DURATION_MS: u32 = 1000;
 
 /// The themes listed by the `Inherits=` key of an `index.theme`'s
 /// `[Icon Theme]` group, in order.
@@ -522,161 +514,6 @@ fn fg_to_replacement(fg_color: Option<[u8; 3]>) -> String {
     }
 }
 
-/// Parse a vertical SVG sprite sheet into individual frame SVGs.
-///
-/// Detection: if the viewBox height > width and is an exact multiple,
-/// the SVG is treated as a sprite sheet with `height/width` frames.
-/// Each frame's SVG is the original with viewBox rewritten to window
-/// into the correct vertical slice.
-///
-/// Returns `None` if the SVG is not a sprite sheet (single-frame,
-/// non-multiple dimensions, a non-finite viewBox or a width below 1, or
-/// parse error), or if its frames would exceed [`MAX_ICON_DECODE_BYTES`].
-fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
-    let svg_str = std::str::from_utf8(svg_bytes).ok()?;
-
-    // Find viewBox attribute (handle both double and single quotes)
-    let (vb_attr_start, vb_val_start, quote) = svg_str
-        .find("viewBox=\"")
-        .map(|i| (i, i.saturating_add(9), '"'))
-        .or_else(|| {
-            svg_str
-                .find("viewBox='")
-                .map(|i| (i, i.saturating_add(9), '\''))
-        })?;
-
-    let tail = svg_str.get(vb_val_start..)?;
-    let vb_val_end = tail.find(quote)?.saturating_add(vb_val_start);
-    let vb_value = svg_str.get(vb_val_start..vb_val_end)?;
-
-    // Split on whitespace or commas
-    let parts: Vec<f64> = vb_value
-        .split(|c: char| c.is_whitespace() || c == ',')
-        .filter(|s| !s.is_empty())
-        .filter_map(|s| s.parse().ok())
-        .collect();
-
-    let [_, _, width, height] = parts.as_slice() else {
-        return None;
-    };
-    if !parts.iter().all(|v| v.is_finite()) {
-        return None;
-    }
-    let (width, height) = (*width, *height);
-    if width < 1.0 || height <= width {
-        return None; // Degenerate, or single-frame: not a sprite sheet
-    }
-
-    let frames_exact = height / width;
-    let frame_count = frames_exact.round() as usize;
-    if frame_count < 2 {
-        return None;
-    }
-
-    // Verify exact division (within floating-point tolerance, in frames)
-    if (frames_exact - frame_count as f64).abs() > 0.01 {
-        return None;
-    }
-
-    if frame_count.checked_mul(svg_bytes.len())? > MAX_ICON_DECODE_BYTES {
-        return None;
-    }
-
-    // Build the full original viewBox attribute string for replacement
-    let original_vb_attr = svg_str.get(vb_attr_start..vb_val_end.saturating_add(1))?; // includes closing quote
-
-    let frames = (0..frame_count)
-        .map(|i| {
-            let y_offset = width * i as f64;
-            let new_vb = format!("viewBox={quote}0 {y_offset} {width} {width}{quote}");
-            svg_str.replacen(original_vb_attr, &new_vb, 1).into_bytes()
-        })
-        .collect();
-
-    Some(frames)
-}
-
-/// Load the freedesktop loading spinner from the active icon theme.
-///
-/// Strategy:
-/// 1. Try "process-working" (plain) at size 22 -- may be a sprite sheet -> Frames
-/// 2. If found but single-frame (parse_sprite_sheet returns None) -> Transform::Spin
-/// 3. Try "process-working-symbolic" at size 22 -- single frame -> Transform::Spin,
-///    its GTK foreground placeholders turned into `currentColor` as for any
-///    symbolic icon ([`normalize_gtk_symbolic`])
-/// 4. Return None if neither found; no other icon set stands in
-///
-/// Each pass searches the theme and the themes of its `Inherits=` chain,
-/// in the specification's order, never `hicolor` unless the theme is
-/// `hicolor` (see [`theme_chain`]); the plain pass searches the whole
-/// chain before the symbolic pass starts.
-///
-/// A `theme` of `None` is the system's icon theme, and where that cannot be
-/// detected there is no spinner.
-pub(crate) fn load_freedesktop_spinner(theme: Option<&str>) -> Option<AnimatedIcon> {
-    load_freedesktop_spinner_with(theme, crate::system_icon_theme)
-}
-
-/// [`load_freedesktop_spinner`], with `detect` giving the system's icon
-/// theme where `theme` is `None`.
-fn load_freedesktop_spinner_with(
-    theme: Option<&str>,
-    detect: impl FnOnce() -> crate::Result<String>,
-) -> Option<AnimatedIcon> {
-    let detected;
-    let theme: &str = match theme {
-        Some(t) => t,
-        None => {
-            detected = detect().ok()?;
-            &detected
-        }
-    };
-    let chain = cached_theme_chain(theme)?;
-    spinner_in_chain(&chain, lookup_in_chain)
-}
-
-/// The spinner [`load_freedesktop_spinner`] finds in the themes of
-/// `chain`, with `lookup_in_chain` looking a name up in it.
-fn spinner_in_chain(
-    chain: &[String],
-    lookup_in_chain: impl Fn(&str, u16, &[String]) -> Option<PathBuf>,
-) -> Option<AnimatedIcon> {
-    // First pass: plain name (finds sprite sheets in animations/ dirs)
-    if let Some(path) = lookup_in_chain("process-working", 22, chain) {
-        let bytes = std::fs::read(&path).ok()?;
-        let frame_dur = NonZeroU32::new(FREEDESKTOP_FRAME_DURATION_MS)?;
-        let spin_dur = NonZeroU32::new(FREEDESKTOP_SPIN_DURATION_MS)?;
-        if let Some(frames) = parse_sprite_sheet(&bytes) {
-            let frame_icons: Vec<IconData> = frames
-                .into_iter()
-                .map(|b| IconData::Svg(Cow::Owned(b)))
-                .collect();
-            return AnimatedIcon::frames(frame_icons, frame_dur).ok();
-        }
-        // Not a sprite sheet -- treat as single frame with spin
-        return Some(AnimatedIcon::transform(
-            IconData::Svg(Cow::Owned(bytes)),
-            TransformAnimation::Spin {
-                duration_ms: spin_dur,
-            },
-        ));
-    }
-
-    // Second pass: symbolic name (always single frame)
-    if let Some(path) = lookup_in_chain("process-working-symbolic", 22, chain) {
-        let bytes = normalize_gtk_symbolic(std::fs::read(&path).ok()?, "currentColor");
-        let spin_dur = NonZeroU32::new(FREEDESKTOP_SPIN_DURATION_MS)?;
-        return Some(AnimatedIcon::transform(
-            IconData::Svg(Cow::Owned(bytes)),
-            TransformAnimation::Spin {
-                duration_ms: spin_dur,
-            },
-        ));
-    }
-
-    None
-}
-
 /// The GTK symbolic icon foreground placeholder colors.
 ///
 /// GTK's icon rendering pipeline replaces these at paint time with the
@@ -747,7 +584,7 @@ fn normalize_gtk_symbolic(svg_bytes: Vec<u8>, replacement: &str) -> Vec<u8> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::{IconRole, IconSet, icon_name};
+    use crate::icons::{IconRole, IconSet, icon_name};
 
     #[test]
     fn lookup_size_clamps_to_i16() {
@@ -804,7 +641,7 @@ mod tests {
         if !native_theme_test_fixtures::in_child() {
             return in_fixture_theme("freedesktop::tests::load_icon_returns_some_for_dialog_error");
         }
-        let theme = crate::system_icon_theme().expect("the fixture names the icon theme");
+        let theme = crate::detect::system_icon_theme().expect("the fixture names the icon theme");
         assert_eq!(theme, "fixture");
         let name = icon_name(IconRole::DialogError, IconSet::Freedesktop).unwrap();
         let result = load_freedesktop_icon_by_name(name, &theme, 24, None);
@@ -856,7 +693,7 @@ mod tests {
         if !native_theme_test_fixtures::in_child() {
             return in_fixture_theme("freedesktop::tests::load_icon_returns_svg_variant");
         }
-        let theme = crate::system_icon_theme().expect("the fixture names the icon theme");
+        let theme = crate::detect::system_icon_theme().expect("the fixture names the icon theme");
         let name = icon_name(IconRole::ActionCopy, IconSet::Freedesktop).unwrap();
         let result = load_freedesktop_icon_by_name(name, &theme, 24, None);
         assert!(result.is_some(), "ActionCopy should resolve to an icon");
@@ -865,21 +702,6 @@ mod tests {
             "Expected Svg variant"
         );
         Ok(())
-    }
-
-    /// With no theme given and no icon theme detected, there is no spinner:
-    /// no theme stands in for the one that could not be detected.
-    #[test]
-    fn spinner_without_a_detected_theme_is_none() {
-        let spinner = load_freedesktop_spinner_with(None, || {
-            Err(crate::Error::PlatformUnsupported {
-                platform: "the test's failing detection",
-            })
-        });
-        assert!(
-            spinner.is_none(),
-            "a spinner loaded though no icon theme was detected"
-        );
     }
 
     #[test]
@@ -893,7 +715,7 @@ mod tests {
         if !native_theme_test_fixtures::in_child() {
             return in_fixture_theme("freedesktop::tests::load_icon_by_name_finds_edit_copy");
         }
-        let theme = crate::system_icon_theme().expect("the fixture names the icon theme");
+        let theme = crate::detect::system_icon_theme().expect("the fixture names the icon theme");
         let result = load_freedesktop_icon_by_name("edit-copy", &theme, 24, None);
         assert_eq!(
             result,
@@ -1564,160 +1386,6 @@ mod tests {
     fn load_icon_by_name_returns_none_for_nonexistent() {
         let result = load_freedesktop_icon_by_name("zzz-nonexistent-icon", "hicolor", 24, None);
         assert!(result.is_none());
-    }
-
-    // === Sprite sheet parser tests ===
-
-    #[test]
-    fn test_parse_sprite_sheet_two_frames() {
-        // 10x20 viewBox = 2 frames of 10x10
-        let svg = br#"<svg viewBox="0 0 10 20" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="10" height="10" fill="red"/>
-            <rect x="0" y="10" width="10" height="10" fill="blue"/>
-        </svg>"#;
-
-        let frames = parse_sprite_sheet(svg).expect("should parse 2-frame sprite sheet");
-        assert_eq!(frames.len(), 2);
-
-        let frame0 = std::str::from_utf8(&frames[0]).unwrap();
-        assert!(
-            frame0.contains(r#"viewBox="0 0 10 10""#),
-            "frame 0 viewBox: {frame0}"
-        );
-
-        let frame1 = std::str::from_utf8(&frames[1]).unwrap();
-        assert!(
-            frame1.contains(r#"viewBox="0 10 10 10""#),
-            "frame 1 viewBox: {frame1}"
-        );
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_fifteen_frames() {
-        // 22x330 viewBox = 15 frames (Breeze-like)
-        let svg = br#"<svg viewBox="0 0 22 330" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 0"/>
-        </svg>"#;
-
-        let frames = parse_sprite_sheet(svg).expect("should parse 15-frame sprite sheet");
-        assert_eq!(frames.len(), 15);
-
-        // Verify first and last frame viewBox values
-        let first = std::str::from_utf8(&frames[0]).unwrap();
-        assert!(first.contains(r#"viewBox="0 0 22 22""#));
-
-        let last = std::str::from_utf8(&frames[14]).unwrap();
-        assert!(last.contains(r#"viewBox="0 308 22 22""#));
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_single_frame_returns_none() {
-        // 22x22 = single frame, not a sprite sheet
-        let svg = br#"<svg viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="11" cy="11" r="10"/>
-        </svg>"#;
-        assert!(parse_sprite_sheet(svg).is_none());
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_non_multiple_returns_none() {
-        // 22x33: height is not an exact multiple of width
-        let svg = br#"<svg viewBox="0 0 22 33" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 0"/>
-        </svg>"#;
-        assert!(parse_sprite_sheet(svg).is_none());
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_invalid_svg_returns_none() {
-        assert!(parse_sprite_sheet(b"not svg at all").is_none());
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_comma_separated_viewbox() {
-        // viewBox with commas instead of spaces
-        let svg = br#"<svg viewBox="0,0,10,20" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="10" height="10" fill="red"/>
-        </svg>"#;
-
-        let frames = parse_sprite_sheet(svg).expect("should parse comma-separated viewBox");
-        assert_eq!(frames.len(), 2);
-
-        let frame0 = std::str::from_utf8(&frames[0]).unwrap();
-        assert!(frame0.contains(r#"viewBox="0 0 10 10""#));
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_preserves_svg_content() {
-        let svg = br#"<svg viewBox="0 0 10 20" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="10" height="10" fill="red" id="unique-marker"/>
-            <rect x="0" y="10" width="10" height="10" fill="blue"/>
-        </svg>"#;
-
-        let frames = parse_sprite_sheet(svg).unwrap();
-        // Both frames should preserve the full SVG content
-        for frame in &frames {
-            let s = std::str::from_utf8(frame).unwrap();
-            assert!(
-                s.contains("unique-marker"),
-                "SVG content should be preserved in all frames"
-            );
-            assert!(s.contains("<rect"), "rect elements should be preserved");
-            assert!(s.contains("xmlns="), "namespace should be preserved");
-        }
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_zero_width_returns_none() {
-        assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 0 0.005"/>"#).is_none());
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_frames_over_decode_bound_returns_none() {
-        assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 1 1000000000"/>"#).is_none());
-    }
-
-    #[test]
-    fn test_parse_sprite_sheet_non_finite_viewbox_returns_none() {
-        assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 1 inf"/>"#).is_none());
-        assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 NaN 20"/>"#).is_none());
-    }
-
-    /// A GTK-convention theme's symbolic spinner fills with a placeholder
-    /// (`#2e3436`); it comes back as `currentColor`, as every other symbolic
-    /// icon does, for the connectors to colour.
-    #[test]
-    fn a_symbolic_spinner_s_placeholder_becomes_current_color() {
-        let dir = std::env::temp_dir().join(format!(
-            "native-theme-symbolic-spinner-{}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("process-working-symbolic.svg");
-        std::fs::write(
-            &path,
-            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#2e3436" d="M0 0h16v16H0z"/></svg>"##,
-        )
-        .unwrap();
-        let spinner = spinner_in_chain(&["gtk-like".to_string()], |name, _, _| {
-            (name == "process-working-symbolic").then(|| path.clone())
-        });
-        let _ = std::fs::remove_dir_all(&dir);
-        let spinner = spinner.expect("the symbolic spinner loads");
-        let IconData::Svg(bytes) = spinner.first_frame() else {
-            panic!("the symbolic spinner is not an SVG");
-        };
-        let svg = std::str::from_utf8(bytes).unwrap();
-        assert!(
-            svg.contains(r#"fill="currentColor""#) && !svg.contains("#2e3436"),
-            "{svg}"
-        );
-    }
-
-    #[test]
-    fn test_load_freedesktop_spinner_no_panic() {
-        // Just verify the function doesn't panic -- result is theme-dependent
-        let _result = load_freedesktop_spinner(None);
     }
 
     // === GTK symbolic icon normalization tests ===

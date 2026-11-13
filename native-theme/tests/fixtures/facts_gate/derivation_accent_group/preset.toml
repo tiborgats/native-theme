@@ -1,0 +1,29 @@
+# The fixtures' preset declaring a second accent input, `highlight` (S9.1): a pass varying the
+# accent alone resolves with the preset's own `highlight` beside it, its stand-in stating the
+# accent inputs as one group (S9.2, S17 *A measured derivation*); the fill reads both, so each
+# pass's result is the preset's own `highlight` at the pass's scheme mixed in.
+# base without: [declare]
+# base without: text_styles = ["body"]
+# base without: inputs = ["accent"]
+# base without: surface_sets = ["window"]
+[declare]
+text_styles = ["body"]
+inputs = ["accent", "highlight"]
+accent_inputs = ["accent", "highlight"]
+surface_sets = ["window"]
+
+[inputs.highlight]
+light = "#3366cc"
+dark = "#cc3366"
+
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+target = "button.body"
+set = { fill = "= mix(input.accent, input.highlight, 0.5)" }

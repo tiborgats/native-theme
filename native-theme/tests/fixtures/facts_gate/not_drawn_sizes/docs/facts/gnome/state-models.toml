@@ -1,0 +1,13 @@
+# A synthetic state model (S17): a button with one variant, two flags and two sizes; pressed is not
+# drawn at the small size, its default, the size in force while the sizes unit is not enabled (S10).
+[[model]]
+widget = "button"
+available = true
+variants = ["tool"]
+sizes = ["small", "regular"]
+default_size = "small"
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+not_drawn = [{ states = ["pressed"], sizes = ["small"] }]
+rows = []

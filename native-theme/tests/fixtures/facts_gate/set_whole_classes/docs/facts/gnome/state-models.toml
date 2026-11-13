@@ -1,0 +1,10 @@
+# A synthetic state model (S17): high contrast on its axis, where the indication box's outset differs.
+[[model]]
+widget = "button"
+available = true
+variants = ["tool"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [] }
+exclusive = []
+rows = []

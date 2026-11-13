@@ -1,0 +1,13 @@
+[declare.widget.button]
+variants = ["tool"]
+
+# Wrong where both ancestors of the chain hold.
+[[rules]]
+when = { context = [{ widget = "button", states = ["hover"] }, { widget = "button", variants = ["tool"] }] }
+target = "button.body"
+set = { min_width_px = 99 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

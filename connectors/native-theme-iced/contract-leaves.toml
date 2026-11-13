@@ -287,7 +287,7 @@ moves = [
 named = "UNREAD_COLOURS"
 entry = "defaults.disabled_text_color"
 kind = "inherited"
-why = "iced has no application-wide disabled colour. The disabled text colours of the button, the input, the check box, the list and the link inherit this one, and rows read each of them (`docs/inheritance-rules.toml:169`, `:178`, `:191`, `:282`, `:300`); the menu's and the combo box's inherit it too (`:199`, `:291`) and have no receiver, as their entries here say"
+why = "iced has no application-wide disabled colour. The disabled text colours of the button, the input, the check box, the list and the link inherit this one, and rows read each of them (`docs/inheritance-rules.toml@fc6109d1:169`, `:178`, `:191`, `:282`, `:300`); the menu's and the combo box's inherit it too (`:199`, `:291`) and have no receiver, as their entries here say"
 
 [leaves."defaults.focus_ring_color"]
 moves = [
@@ -325,7 +325,7 @@ why = "the same: an iced `Font` has no colour (`iced_core-0.14.0/src/font.rs:6-1
 named = "UNREAD_COLOURS"
 entry = "defaults.muted_color"
 kind = "ruled"
-why = "iced's secondary text, `text::secondary`, paints `extended.secondary.base.color` (`iced_core-0.14.0/src/widget/text.rs:452-456`), and the connector fills that slot from `input.placeholder_color` (`src/extended.rs:99-100`) on purpose: the slot is also `button::secondary`'s fill, and the contract counts the labels `readable()` substitutes on it (`SECONDARY_LABEL_SUBSTITUTED`). The muted colour reaches iced through the leaves that inherit it, `input.placeholder_color` among them (`docs/inheritance-rules.toml:174`, `:205`, `:206`, `:210`, `:216`). Ruling T12a C3"
+why = "iced's secondary text, `text::secondary`, paints `extended.secondary.base.color` (`iced_core-0.14.0/src/widget/text.rs:452-456`), and the connector fills that slot from `input.placeholder_color` (`src/extended.rs:99-100`) on purpose: the slot is also `button::secondary`'s fill, and the contract counts the labels `readable()` substitutes on it (`SECONDARY_LABEL_SUBSTITUTED`). The muted colour reaches iced through the leaves that inherit it, `input.placeholder_color` among them (`docs/inheritance-rules.toml@fc6109d1:174`, `:205`, `:206`, `:210`, `:216`). Ruling T12a C3"
 
 [leaves."defaults.selection_background"]
 moves = [
@@ -342,7 +342,7 @@ why = "iced draws a text field's selection only while the field is focused (`ice
 named = "UNREAD_COLOURS"
 entry = "defaults.selection_text_color"
 kind = "inherited"
-why = "the selected-item labels that rows read inherit it: `menu.hover_text_color`, `sidebar.selection_text_color` and `list.selection_text_color` (`docs/inheritance-rules.toml:198`, `:227`, `:243`)"
+why = "the selected-item labels that rows read inherit it: `menu.hover_text_color`, `sidebar.selection_text_color` and `list.selection_text_color` (`docs/inheritance-rules.toml@fc6109d1:198`, `:227`, `:243`)"
 
 [leaves."defaults.shadow_color"]
 named = "UNREAD_COLOURS"
@@ -385,7 +385,7 @@ moves = [
 named = "UNREAD_COLOURS"
 entry = "defaults.text_selection_background"
 kind = "inherited"
-why = "`input.selection_background` inherits it (`docs/inheritance-rules.toml:175`), and `styles::text_input` and `styles::text_editor` emit that as their `selection`"
+why = "`input.selection_background` inherits it (`docs/inheritance-rules.toml@fc6109d1:175`), and `styles::text_input` and `styles::text_editor` emit that as their `selection`"
 
 [leaves."defaults.text_selection_color"]
 named = "UNREAD_COLOURS"

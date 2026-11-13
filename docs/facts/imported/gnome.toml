@@ -1,0 +1,4614 @@
+# Today's platform-facts.md cells for gnome, from platform-facts.md@fc6109d1: lane input, not facts (specification S17;
+# the 0.8.0 plan's *What carries over*). The facts gate and check_fact_citations.py do not read this folder; a lane
+# turns each entry into a verified fact or records it as not a model value, and removes it. Written by
+# scripts/import_platform_facts.py, whose docstring states the rules. `text` is the cell as written, its links
+# relative to docs/; `targets` are the trace's, of the gap-map `rows` that name the cell.
+
+[[row]]
+line = "platform-facts.md@fc6109d1:731"
+section = "1.4.1 Fonts"
+property = "org.gnome.desktop.interface font-name"
+text = "Body text | ⚙ Adwaita Sans 11 | Cantarell 11 | ✅"
+columns = "Role | Default (GNOME 48+) | Pre-48 default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:732"
+section = "1.4.1 Fonts"
+property = "org.gnome.desktop.interface document-font-name"
+text = "Document text | ⚙ GNOME 48: Adwaita Sans 11 · GNOME 49+: Adwaita Sans 12 | Cantarell 11 | ✅ 12 since [87022e2b](https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas/-/commit/87022e2b695f8fe3b95f3b8cfff9053855701470) \"schemas: Increase document font size to 12\" (first in 49.beta); [51.0 :158-159](https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas/-/blob/51.0/schemas/org.gnome.desktop.interface.gschema.xml.in#L158-L159)"
+columns = "Role | Default (GNOME 48+) | Pre-48 default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:733"
+section = "1.4.1 Fonts"
+property = "org.gnome.desktop.interface monospace-font-name"
+text = "Monospace | ⚙ Adwaita Mono 11 | Source Code Pro 10 | ✅"
+columns = "Role | Default (GNOME 48+) | Pre-48 default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:734"
+section = "1.4.1 Fonts"
+property = "org.gnome.desktop.wm.preferences titlebar-font"
+text = "Title bar | ⚙ Adwaita Sans Bold 11 | Cantarell Bold 11 | ✅"
+columns = "Role | Default (GNOME 48+) | Pre-48 default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:748"
+section = "1.4.1 Fonts"
+property = ".caption"
+text = "82% | ≈ 9pt | 400 | ✅"
+columns = "CSS `font-size` | Computed size | Weight | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:749"
+section = "1.4.1 Fonts"
+property = ".caption-heading"
+text = "82% | ≈ 9pt | 700 | ✅"
+columns = "CSS `font-size` | Computed size | Weight | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:750"
+section = "1.4.1 Fonts"
+property = ".body"
+text = "(inherited) | (base font) | 400 | ✅"
+columns = "CSS `font-size` | Computed size | Weight | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:751"
+section = "1.4.1 Fonts"
+property = ".heading"
+text = "(inherited) | (base font) | 700 | ✅"
+columns = "CSS `font-size` | Computed size | Weight | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:752"
+section = "1.4.1 Fonts"
+property = ".title-4"
+text = "118% | ≈ 13pt | 700 | ✅"
+columns = "CSS `font-size` | Computed size | Weight | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:753"
+section = "1.4.1 Fonts"
+property = ".title-3"
+text = "136% | ≈ 15pt | 700 | ✅"
+columns = "CSS `font-size` | Computed size | Weight | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:754"
+section = "1.4.1 Fonts"
+property = ".title-2"
+text = "136% | ≈ 15pt | 800 | ✅"
+columns = "CSS `font-size` | Computed size | Weight | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:755"
+section = "1.4.1 Fonts"
+property = ".title-1"
+text = "181% | ≈ 20pt | 800 | ✅"
+columns = "CSS `font-size` | Computed size | Weight | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:766"
+section = "1.4.2 Colors"
+property = "color-scheme"
+text = "Dark/light preference (0=no-preference, 1=prefer-dark, 2=prefer-light) | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:767"
+section = "1.4.2 Colors"
+property = "accent-color"
+text = "User-chosen accent hue (RGB doubles, out-of-range = unset) | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:768"
+section = "1.4.2 Colors"
+property = "contrast"
+text = "Contrast preference (0=normal, 1=high) | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:769"
+section = "1.4.2 Colors"
+property = "reduced-motion"
+text = "Motion preference (0=no-preference, 1=reduce) | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:781"
+section = "1.4.3 Geometry"
+property = "Control radius"
+text = "`$button_radius` | 9px | ✅ _common.scss"
+columns = "CSS source | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:782"
+section = "1.4.3 Geometry"
+property = "Card radius"
+text = "`$card_radius` | 12px | ✅ _common.scss"
+columns = "CSS source | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:783"
+section = "1.4.3 Geometry"
+property = "Window/dialog radius"
+text = "`$button_radius + 6` | 15px | ✅ for windows; AdwAlertDialog uses `$alert_radius: 18px` instead (see §1.4.4)"
+columns = "CSS source | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:784"
+section = "1.4.3 Geometry"
+property = "Frame/border width"
+text = "libadwaita CSS `border-width` | 1px | ✅"
+columns = "CSS source | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:785"
+section = "1.4.3 Geometry"
+property = "Focus ring width"
+text = "libadwaita CSS `outline-width` | 2px | ✅ focus-ring mixin"
+columns = "CSS source | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:786"
+section = "1.4.3 Geometry"
+property = "Focus ring offset"
+text = "libadwaita CSS `outline-offset` | -2px (inset) | ✅ `$offset: -$width`"
+columns = "CSS source | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:787"
+section = "1.4.3 Geometry"
+property = "Disabled opacity"
+text = "`--disabled-opacity` | 0.5 (CSS: `50%`) | ✅ _colors.scss"
+columns = "CSS source | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:788"
+section = "1.4.3 Geometry"
+property = "Drop shadows"
+text = "libadwaita CSS `box-shadow` | yes | ✅"
+columns = "CSS source | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:796"
+section = "1.4.4 Widget Metrics"
+property = "Button"
+text = "CSS min-height | 24px (34px with padding) | ✅ _buttons.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:797"
+section = "1.4.4 Widget Metrics"
+property = "Entry (input)"
+text = "CSS min-height | 34px | ✅ _entries.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:798"
+section = "1.4.4 Widget Metrics"
+property = "CheckButton"
+text = "indicator size | 14px (20px with padding) | ✅ _checks.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:799"
+section = "1.4.4 Widget Metrics"
+property = "Scale (slider)"
+text = "trough min-height | 10px | ✅ _scale.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:800"
+section = "1.4.4 Widget Metrics"
+property = "Scale"
+text = "thumb diameter | 20px | ✅ _scale.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:801"
+section = "1.4.4 Widget Metrics"
+property = "ProgressBar"
+text = "bar height | 8px | ✅ _progress-bar.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:802"
+section = "1.4.4 Widget Metrics"
+property = "Notebook (tab)"
+text = "tab min height | 30px | ✅ _notebook.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:803"
+section = "1.4.4 Widget Metrics"
+property = "Scrollbar"
+text = "slider/thumb width | 8px | ✅ _scrolling.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:804"
+section = "1.4.4 Widget Metrics"
+property = "Tooltip"
+text = "padding | 6px vert / 10px horiz | ✅ _tooltip.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:805"
+section = "1.4.4 Widget Metrics"
+property = "GtkSwitch"
+text = "thumb size | 20 × 20px | ✅"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:806"
+section = "1.4.4 Widget Metrics"
+property = "GtkSwitch"
+text = "padding (track) | 3px | ✅"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:807"
+section = "1.4.4 Widget Metrics"
+property = "GtkSwitch"
+text = "track radius | 14px (pill) | ✅"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:808"
+section = "1.4.4 Widget Metrics"
+property = "GtkSwitch"
+text = "total track size | ~46 × 26px (derived) | ✅ derived checks out"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:809"
+section = "1.4.4 Widget Metrics"
+property = "GtkSpinner"
+text = "default size | 16 × 16px | ✅ the CSS `-gtk-icon-size`, initial 16px ([gtkcssstylepropertyimpl.c:1285-1290](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtkcssstylepropertyimpl.c#L1285-L1290)), which `gtk_spinner_measure` returns ([gtkspinner.c:122](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtkspinner.c#L122)); the file's `DEFAULT_SIZE` 16 (:97) is unused (GTK 4.24.1)"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:810"
+section = "1.4.4 Widget Metrics"
+property = "GtkDropDown"
+text = "arrow size | 16 × 16px | ✅ _dropdowns.scss `min-height/min-width: 16px`"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:811"
+section = "1.4.4 Widget Metrics"
+property = "GtkDropDown"
+text = "box spacing | 6px | ✅ _dropdowns.scss `border-spacing: 6px`"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:812"
+section = "1.4.4 Widget Metrics"
+property = "AdwAlertDialog"
+text = "preferred width | 300sp | ✅ adw-alert-dialog.c"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:813"
+section = "1.4.4 Widget Metrics"
+property = "AdwAlertDialog"
+text = "max width | 372sp (wide: 600sp) | ✅ adw-alert-dialog.c"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:814"
+section = "1.4.4 Widget Metrics"
+property = "AdwAlertDialog"
+text = "button spacing | 12px | ✅ _message-dialog.scss `.response-area { border-spacing: 12px }`"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:815"
+section = "1.4.4 Widget Metrics"
+property = "AdwAlertDialog"
+text = "message padding | 24px sides, 32px top | ✅ _message-dialog.scss `.message-area` padding values"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:816"
+section = "1.4.4 Widget Metrics"
+property = "AdwAlertDialog"
+text = "button padding | 24px (top: 12px) | ✅ _message-dialog.scss `.response-area { padding: 24px; padding-top: 12px }`"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:817"
+section = "1.4.4 Widget Metrics"
+property = "AdwAlertDialog"
+text = "border radius | 18px (`$alert_radius`) | ✅ confirmed in _message-dialog.scss; distinct from `$dialog_radius` (15px)"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:818"
+section = "1.4.4 Widget Metrics"
+property = "GtkExpander"
+text = "arrow size | 16 × 16px | ✅ _expanders.scss `min-width/min-height: 16px`"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:819"
+section = "1.4.4 Widget Metrics"
+property = "AdwExpanderRow"
+text = "header min-height | 50px | ✅ _lists.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:820"
+section = "1.4.4 Widget Metrics"
+property = "Card (`.card`)"
+text = "border radius | 12px | ✅ = $card_radius"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:821"
+section = "1.4.4 Widget Metrics"
+property = "Button"
+text = "padding | 5px 10px; a label-only `.text-button` 5px 17px | ✅ _buttons.scss (`.text-button` :72-75, see §2.3)"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:822"
+section = "1.4.4 Widget Metrics"
+property = "Entry (input)"
+text = "horizontal padding | 9px | ✅ _entries.scss `padding-left: 9px; padding-right: 9px`"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:823"
+section = "1.4.4 Widget Metrics"
+property = "Menu item"
+text = "min-height | 32px | ✅ _menus.scss `modelbutton { min-height: 32px }`"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:824"
+section = "1.4.4 Widget Metrics"
+property = "Menu item"
+text = "padding | 0 12px | ✅ _menus.scss `padding: 0 $menu_padding`; `$menu_padding=12` from _common.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:825"
+section = "1.4.4 Widget Metrics"
+property = "Notebook (tab)"
+text = "tab padding | 3px 12px | ✅ _notebook.scss `padding: 3px 12px`"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:826"
+section = "1.4.4 Widget Metrics"
+property = "Headerbar"
+text = "min-height | 47px | ✅ _header-bar.scss"
+columns = "Property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:843"
+section = "1.4.6 Icon Sizes"
+property = "GTK_ICON_SIZE_INHERIT"
+text = "(parent) | (inherited) | ✅"
+columns = "CSS class | Adwaita default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:844"
+section = "1.4.6 Icon Sizes"
+property = "GTK_ICON_SIZE_NORMAL"
+text = "`.normal-icons` | 16px | ✅"
+columns = "CSS class | Adwaita default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:845"
+section = "1.4.6 Icon Sizes"
+property = "GTK_ICON_SIZE_LARGE"
+text = "`.large-icons` | 32px | ✅"
+columns = "CSS class | Adwaita default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:854"
+section = "1.4.7 Accessibility"
+property = "Text scaling factor"
+text = "`org.gnome.desktop.interface text-scaling-factor` | ✅"
+columns = "Source | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:855"
+section = "1.4.7 Accessibility"
+property = "High contrast"
+text = "`org.gnome.desktop.a11y.interface high-contrast` | ✅"
+columns = "Source | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:856"
+section = "1.4.7 Accessibility"
+property = "Reduce motion"
+text = "gsettings `enable-animations` / GtkSettings `gtk-enable-animations` / Portal `reduced-motion` | ✅"
+columns = "Source | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:857"
+section = "1.4.7 Accessibility"
+property = "Contrast preference"
+text = "Portal `org.freedesktop.appearance` `contrast` | ✅"
+columns = "Source | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1029"
+section = "2.1.1 Base Font"
+property = "family"
+text = "`font-name` gsetting"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1030"
+section = "2.1.1 Base Font"
+property = "size"
+text = "`font-name` gsetting → size"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1031"
+section = "2.1.1 Base Font"
+property = "weight"
+text = "`font-name` gsetting → wt"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1032"
+section = "2.1.1 Base Font"
+property = "style"
+text = "`font-name` gsetting → style"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1033"
+section = "2.1.1 Base Font"
+property = "color"
+text = "**(Adwaita CSS)** body `color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1034"
+section = "2.1.1 Base Font"
+property = "line_height"
+text = "✅ Cantarell (pre-48): 1.2 **(font metrics)** — `USE_TYPO_METRICS` (fsSelection bit 7) is **not set**, so FreeType/HarfBuzz falls back to Win metrics: usWinAscent=983 (=739+244, lineGap folded), usWinDescent=217 → (983+217)/1000=1.2 (all three metric sets — sTypo (739+217+244)/1000, Win (983+217)/1000, hhea (983+217)/1000 — agree on 1.2); Adwaita Sans (GNOME 48+)=1.21 **(font metrics)** from Inter metrics: (1984+494+0)/2048 (`USE_TYPO_METRICS` IS set, lineGap=0)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1040"
+section = "2.1.2 Monospace Font"
+property = "family"
+text = "`monospace-font-name` gsetting"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1041"
+section = "2.1.2 Monospace Font"
+property = "size"
+text = "`monospace-font-name` → size"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1042"
+section = "2.1.2 Monospace Font"
+property = "weight"
+text = "`monospace-font-name` → weight"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1043"
+section = "2.1.2 Monospace Font"
+property = "style"
+text = "`monospace-font-name` → style"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1044"
+section = "2.1.2 Monospace Font"
+property = "color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1050"
+section = "2.1.3 Base Colors"
+property = "background_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1051"
+section = "2.1.3 Base Colors"
+property = "text_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1052"
+section = "2.1.3 Base Colors"
+property = "accent_color"
+text = "Portal `accent-color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1053"
+section = "2.1.3 Base Colors"
+property = "accent_text_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1054"
+section = "2.1.3 Base Colors"
+property = "surface_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1055"
+section = "2.1.3 Base Colors"
+property = "border.color"
+text = "**(Adwaita CSS)** `$border_color`: `currentColor` at `--border-opacity` 15% (§2.1.6 `border.opacity`), as a final colour over the window — L #dcdcde (window fg RGB(0 0 6 / 80%) over #fafafb), D #434347 (white over #222226) ([_colors.scss:257, :263, :318](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L257); window colours :32-33, :95-96)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1056"
+section = "2.1.3 Base Colors"
+property = "muted_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1057"
+section = "2.1.3 Base Colors"
+property = "shadow_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1058"
+section = "2.1.3 Base Colors"
+property = "link_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1059"
+section = "2.1.3 Base Colors"
+property = "selection_background"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1060"
+section = "2.1.3 Base Colors"
+property = "selection_text_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1061"
+section = "2.1.3 Base Colors"
+property = "selection_inactive_background"
+text = "**(none)** — `:backdrop` CSS state handles this"
+rows = [
+    "GN-3.40",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:799",
+]
+targets = [
+    "input.selection.fill @ context input.body !{focus_within}; text_area.selection.fill @ context text_area.body !{focus_within}` (the field's focus, not the selection element's own)",
+    "role.global.selection_text_background_unfocused (ADD-A49)",
+]
+none_cell = "b: GN-3.40: text selection in an unfocused widget is view fg 10 %. List selection has no `:backdrop` rule (grep of `A/w`), so in an unfocused window it stays as it is; the cell's reason (\"`:backdrop` handles this\") names a rule that does not exist (Appendix item 10)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1062"
+section = "2.1.3 Base Colors"
+property = "text_selection_background"
+text = "← `defaults.selection_background`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1063"
+section = "2.1.3 Base Colors"
+property = "text_selection_color"
+text = "← `defaults.selection_text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1064"
+section = "2.1.3 Base Colors"
+property = "disabled_text_color"
+text = "← `defaults.text_color` — libadwaita dims a disabled widget by opacity alone (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1084"
+section = "2.1.4 Status Colors"
+property = "danger_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1085"
+section = "2.1.4 Status Colors"
+property = "danger_text_color"
+text = "**(Adwaita CSS)** ²"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1086"
+section = "2.1.4 Status Colors"
+property = "warning_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1087"
+section = "2.1.4 Status Colors"
+property = "warning_text_color"
+text = "**(Adwaita CSS)** ²"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1088"
+section = "2.1.4 Status Colors"
+property = "success_color"
+text = "**(Adwaita CSS)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1089"
+section = "2.1.4 Status Colors"
+property = "success_text_color"
+text = "**(Adwaita CSS)** ²"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1090"
+section = "2.1.4 Status Colors"
+property = "info_color"
+text = "**(Adwaita CSS)** none named — libadwaita 1.10.0 defines no info colour; the deprecated GtkInfoBar draws its `info` type from `--accent-bg-color` ([_deprecated.scss:174](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_deprecated.scss#L174)), the accent, default `#3584e4` (adw-accent-color.c:53-54)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1091"
+section = "2.1.4 Status Colors"
+property = "info_text_color"
+text = "**(Adwaita CSS)** ²"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1108"
+section = "2.1.5 Focus Ring"
+property = "focus_ring_color"
+text = "**(Adwaita CSS)** `$focus_border_color`: the `focus-ring` mixin colours every focus ring with it (`outline-color: $focus_border_color`, [_drawing.scss:20](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_drawing.scss#L20)), `color-mix(in srgb, var(--accent-color) 50%, transparent)` (_colors.scss:260, :307) — the default blue's standalone colour #0461be / #81d0ff ([doc/css-variables.md:137-140](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/doc/css-variables.md#L137-L140); the dark blue channel clipped to the sRGB gamut, :97-99) at 50 %, L #0461be80, D #81d0ff80 (as §2.4 `focus_border_color`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1109"
+section = "2.1.5 Focus Ring"
+property = "focus_ring_width"
+text = "libadwaita CSS: 2px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1110"
+section = "2.1.5 Focus Ring"
+property = "focus_ring_offset"
+text = "libadwaita CSS: -2px (inset)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1116"
+section = "2.1.6 Global Geometry"
+property = "border.corner_radius"
+text = "Adwaita: 9px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1117"
+section = "2.1.6 Global Geometry"
+property = "border.corner_radius_lg"
+text = "Adwaita: 15px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1118"
+section = "2.1.6 Global Geometry"
+property = "border.line_width"
+text = "Adwaita: 1px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1119"
+section = "2.1.6 Global Geometry"
+property = "disabled_opacity"
+text = "**(Adwaita CSS)** 0.5 — the only disabled mechanism: `filter: Opacity(var(--disabled-opacity))` on the whole widget (buttons, checks, switches, entries, progress bars: `_buttons.scss:58-59`, `_checks.scss:62-64`, `_switch.scss:20-22`, `_entries.scss:40`, `_progress-bar.scss:23-25`), `--disabled-opacity: 50%` (40% under `prefers-contrast: more`, [_colors.scss:318-327](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L318-L327)); a disabled widget keeps its normal colours"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1120"
+section = "2.1.6 Global Geometry"
+property = "border.opacity"
+text = "**(Adwaita CSS)** 0.15 — `$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent)`, `--border-opacity: 15%` (50% under `prefers-contrast: more`, [_colors.scss:257-264, :318-327](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L257-L264))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1121"
+section = "2.1.6 Global Geometry"
+property = "border.shadow_enabled"
+text = "yes"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1127"
+section = "2.1.7 Accessibility"
+property = "text_scaling_factor"
+text = "`text-scaling-factor` gsetting"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1128"
+section = "2.1.7 Accessibility"
+property = "reduce_motion"
+text = "gsettings `enable-animations` (Bool)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1129"
+section = "2.1.7 Accessibility"
+property = "high_contrast"
+text = "`a11y.interface high-contrast`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1130"
+section = "2.1.7 Accessibility"
+property = "reduce_transparency"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: No such GNOME setting (GN-3.10)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1136"
+section = "2.1.8 Icon Sizes"
+property = "toolbar"
+text = "`GTK_ICON_SIZE_NORMAL`: 16"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1137"
+section = "2.1.8 Icon Sizes"
+property = "small"
+text = "`GTK_ICON_SIZE_NORMAL`: 16"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1138"
+section = "2.1.8 Icon Sizes"
+property = "large"
+text = "`GTK_ICON_SIZE_LARGE`: 32"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1139"
+section = "2.1.8 Icon Sizes"
+property = "dialog"
+text = "**(none)** — 48 (GTK3 legacy)"
+rows = []
+targets = []
+none_cell = "a: AdwAlertDialog and GTK 4's GtkMessageDialog draw no icon (no image in `A/c/adw-alert-dialog.ui` or `G/gtkmessagedialog.c`); the large icons are the status page's and the about dialog's (GN-3.59)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1140"
+section = "2.1.8 Icon Sizes"
+property = "panel"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: The toolkit has no panel; GNOME Shell's top bar is not drawn by the app"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1147"
+section = "2.1.9 Icon Theme"
+property = "icon_theme"
+text = "⚙ `icon-theme` gsetting of `org.gnome.desktop.interface`, default `'Adwaita'` ([org.gnome.desktop.interface.gschema.xml.in:86-87](https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas/-/blob/51.0/schemas/org.gnome.desktop.interface.gschema.xml.in#L86-L87), gsettings-desktop-schemas 51.0), one key for both variants (§1.4.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1157"
+section = "2.2 Window / Application Chrome"
+property = "background_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1158"
+section = "2.2 Window / Application Chrome"
+property = "border.color"
+text = "**(Adwaita CSS)** window border"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1159"
+section = "2.2 Window / Application Chrome"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1160"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_background"
+text = "libadwaita `headerbar` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1161"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.family"
+text = "`titlebar-font` gsetting → family"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1162"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.size"
+text = "`titlebar-font` gsetting → size"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1163"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.weight"
+text = "`titlebar-font` gsetting → weight (typically 700)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1164"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.style"
+text = "`titlebar-font` gsetting → style"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1165"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.color"
+text = "libadwaita `headerbar` fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1166"
+section = "2.2 Window / Application Chrome"
+property = "inactive_title_bar_background"
+text = "libadwaita `headerbar:backdrop` bg: `--headerbar-backdrop-color` = `@window_bg_color` ([_header-bar.scss:41-42](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_header-bar.scss#L41-L42); [_colors.scss:43](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L43)) — L #fafafb, D #222226 (:32, :95)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1167"
+section = "2.2 Window / Application Chrome"
+property = "inactive_title_bar_text_color"
+text = "**(none)** — `:backdrop` CSS state"
+rows = [
+    "GN-1.16",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:803",
+]
+targets = [
+    "window.title_bar_content.opacity @ cond window_inactive",
+    "window.title_bar.fill @ cond window_inactive",
+    "window.title_bar.transitions (fill)",
+    "window.title_bar_content.transitions (opacity)",
+]
+none_cell = "b: GN-1.16: the bar's contents fade to opacity 0.5, not to a colour"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1168"
+section = "2.2 Window / Application Chrome"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius_lg`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1169"
+section = "2.2 Window / Application Chrome"
+property = "border.shadow_enabled"
+text = "← `defaults.border.shadow_enabled`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1170"
+section = "2.2 Window / Application Chrome"
+property = "border.padding_horizontal"
+text = "**(none)** — use §2.20 layout margins"
+rows = []
+targets = []
+none_cell = "a: The window draws no padding; content margins are the widgets' own"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1171"
+section = "2.2 Window / Application Chrome"
+property = "border.padding_vertical"
+text = "**(none)** — use §2.20 layout margins"
+rows = []
+targets = []
+none_cell = "a: As 1170"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1177"
+section = "2.3 Button"
+property = "background_color"
+text = "**(Adwaita CSS)** `$button_color` = `color-mix(in srgb, currentColor 10%, transparent)`: a raised button fills with it (`%button_basic_raised`, [_buttons.scss:28-29](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L28-L29); [_buttons.scss:1](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L1)) — over the window, L #e6e6e7, D #38383c (as §2.4 `background_color`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1178"
+section = "2.3 Button"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1179"
+section = "2.3 Button"
+property = "font.color"
+text = "libadwaita `.button` fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1180"
+section = "2.3 Button"
+property = "border.color"
+text = "**(none)** at rest — a button is a `$button_color` fill with no border; only under `prefers-contrast: more` does it draw an inset 1px `box-shadow` in `$border_color` ([_buttons.scss:28-33](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L28-L33))"
+rows = []
+targets = []
+none_cell = "a: No border at rest; the high-contrast ring is GN-1.38"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1181"
+section = "2.3 Button"
+property = "border.line_width"
+text = "0 at rest — no border (`border.color`); 1 under `prefers-contrast: more`, the inset `box-shadow` (_buttons.scss:31-33)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1182"
+section = "2.3 Button"
+property = "min_width"
+text = "**(Adwaita CSS)**: none"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1183"
+section = "2.3 Button"
+property = "min_height"
+text = "**(Adwaita CSS)**: CSS min-height: 24 (outer-box: 34)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1184"
+section = "2.3 Button"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**, per child: a label-only button 17 — GTK gives a button whose child is a label the `.text-button` class ([gtkbutton.c:431](https://gitlab.gnome.org/GNOME/gtk/-/blob/57f569a23cc23402eb122e337b69d57e4aeecd2b/gtk/gtkbutton.c#L431); `gtk_button_set_label`, :863-893), and `.text-button { padding-left: 17px; padding-right: 17px }` ([_buttons.scss:72-75](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_buttons.scss#L72-L75)); any other child keeps the base `padding: 5px 10px` (:17-22), 10; an icon-only `.image-button` 5 (:66-70); icon and label 9 (:77-80)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1185"
+section = "2.3 Button"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 5 — base `padding: 5px 10px` ([_buttons.scss:17-22](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_buttons.scss#L17-L22)), which `.text-button` keeps"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1186"
+section = "2.3 Button"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1187"
+section = "2.3 Button"
+property = "icon_text_gap"
+text = "**(Adwaita CSS)**: 8"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1188"
+section = "2.3 Button"
+property = "primary_background"
+text = "← `defaults.accent_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1189"
+section = "2.3 Button"
+property = "primary_text_color"
+text = "← `defaults.accent_text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1190"
+section = "2.3 Button"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1191"
+section = "2.3 Button"
+property = "border.shadow_enabled"
+text = "← `defaults.border.shadow_enabled`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1192"
+section = "2.3 Button"
+property = "hover_background"
+text = "**(Adwaita CSS)** `$button_hover_color` = `color-mix(in srgb, currentColor 15%, transparent)` on `:hover`, in place of the rest `$button_color` (10 %) (`%button_basic_raised`, [_buttons.scss:2, :35-37](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L2)): a translucent replacement, `currentColor` the window's text, RGB(0 0 6 / 80%) / white ([_colors.scss:33](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L33), :96) — over the window's #fafafb / #222226 (:32, :95), L #dcdcde, D #434347 (computed as §2.4 `background_color`: 12 % of #000006, 15 % of white; L 250 × 0.88 = 220.0, 6 × 0.12 + 251 × 0.88 = 221.6; D 255 × 0.15 + 34 × 0.85 = 67.2, 255 × 0.15 + 38 × 0.85 = 70.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1193"
+section = "2.3 Button"
+property = "hover_text_color"
+text = "← `font.color` (no change)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1194"
+section = "2.3 Button"
+property = "checked_background"
+text = "**(Adwaita CSS)** `$button_checked_color` = `color-mix(in srgb, currentColor 30%, transparent)`, the same 30 % as `$button_active_color`, the pressed fill ([_buttons.scss:3-6, :44-55](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_buttons.scss#L3-L6))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1195"
+section = "2.3 Button"
+property = "checked_text_color"
+text = "← `font.color`: no `:checked` rule sets a colour (_buttons.scss:44-55)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1196"
+section = "2.3 Button"
+property = "active_background"
+text = "**(Adwaita CSS)** `$button_active_color` = `color-mix(in srgb, currentColor 30%, transparent)` on `:active` and `.keyboard-activating`, in place of the rest `$button_color` (10 %) ([_buttons.scss:1-3, :39-42](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L1-L3)): a translucent replacement, the window showing through it"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1197"
+section = "2.3 Button"
+property = "active_text_color"
+text = "← `font.color`: no `:active` rule sets a colour ([_buttons.scss:39-42](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L39-L42))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1198"
+section = "2.3 Button"
+property = "disabled_background"
+text = "← `background_color`: libadwaita dims a disabled button by opacity alone, `filter: Opacity(var(--disabled-opacity))` ([_buttons.scss:58-59](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L58-L59); §2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1199"
+section = "2.3 Button"
+property = "disabled_text_color"
+text = "← `font.color`: the same opacity rule (_buttons.scss:58-59)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1203"
+section = "2.4 Text Input"
+property = "background_color"
+text = "**(Adwaita CSS)** `$button_color` = `color-mix(in srgb, currentColor 10%, transparent)`: an entry fills with it ([_entries.scss:9](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_entries.scss#L9); [_buttons.scss:1](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L1)), `currentColor` the window's text, RGB(0 0 6 / 80%) / white ([_colors.scss:33](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L33), :96) — over the window's #fafafb / #222226 (:32, :95), L #e6e6e7, D #38383c (computed: 8 % of #000006, 10 % of white)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1204"
+section = "2.4 Text Input"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1205"
+section = "2.4 Text Input"
+property = "font.color"
+text = "libadwaita `.entry` fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1206"
+section = "2.4 Text Input"
+property = "border.color"
+text = "**(none)** at rest — the entry is a `$button_color` fill with no border; only under `prefers-contrast: more` does it draw an inset 1px `box-shadow` in `$border_color` ([_entries.scss:9-15](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_entries.scss#L9-L15))"
+rows = []
+targets = []
+none_cell = "a: No border at rest; the high-contrast ring is GN-1.51"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1207"
+section = "2.4 Text Input"
+property = "border.line_width"
+text = "0 at rest — no border (`border.color`); 1 under `prefers-contrast: more` (_entries.scss:13-15)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1208"
+section = "2.4 Text Input"
+property = "placeholder_color"
+text = "libadwaita `.dim-label`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1209"
+section = "2.4 Text Input"
+property = "caret_color"
+text = "libadwaita `currentColor`, the entry's text colour ([_entries.scss:11](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_entries.scss#L11))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1210"
+section = "2.4 Text Input"
+property = "selection_background"
+text = "← `defaults.text_selection_background`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1211"
+section = "2.4 Text Input"
+property = "selection_text_color"
+text = "← `defaults.text_selection_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1212"
+section = "2.4 Text Input"
+property = "min_height"
+text = "**(Adwaita CSS)**: 34"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1213"
+section = "2.4 Text Input"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: 9"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1214"
+section = "2.4 Text Input"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 0 (CSS sets no vertical padding; visual whitespace comes from `min-height: 34` centering the text)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1215"
+section = "2.4 Text Input"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1216"
+section = "2.4 Text Input"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: No shadow"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1217"
+section = "2.4 Text Input"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1218"
+section = "2.4 Text Input"
+property = "hover_border_color"
+text = "**(none)** — the entry draws no border line: it is a `$button_color` fill with an inset 1px border only under `prefers-contrast: more` ([_entries.scss:9-15](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_entries.scss#L9-L15)), and its only `:hover` rule is its icons' opacity (:49)"
+rows = []
+targets = []
+none_cell = "a: No border, so no hover border; the high-contrast ring does not change on hover (GN-1.51)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1219"
+section = "2.4 Text Input"
+property = "focus_border_color"
+text = "**(Adwaita CSS)** `$focus_border_color` = `color-mix(in srgb, var(--accent-color) 50%, transparent)` ([_colors.scss:260, :307](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L260)): no border line but the focus ring, a 2px outline the entry draws inside its edge on `:focus-within` (`focus-ring($focus-state: ':focus-within')`, [_entries.scss:17](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_entries.scss#L17); `outline-offset: -$width`, [_drawing.scss:12-27](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_drawing.scss#L12-L27)) — `--accent-color` is the accent background #3584e4 with its OKLab lightness capped at 0.5 in light and raised to 0.85 in dark ([_colors.scss:146](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L146), :151, :168-170; libadwaita's own `adw_rgba_to_standalone`, [adw-accent-color.c:130-157](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/adw-accent-color.c#L130-L157)), #0461be / #81d0ff as libadwaita states them for the default blue ([doc/css-variables.md:137-140](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/doc/css-variables.md#L137-L140); the dark blue channel clipped to the sRGB gamut, :97-99), here at 50 %: L #0461be80, D #81d0ff80"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1220"
+section = "2.4 Text Input"
+property = "disabled_background"
+text = "← `background_color`: `entry:disabled { filter: Opacity(var(--disabled-opacity)) }` ([_entries.scss:40](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_entries.scss#L40))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1221"
+section = "2.4 Text Input"
+property = "disabled_text_color"
+text = "← `font.color`: the same opacity rule (_entries.scss:40)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1227"
+section = "2.5 Checkbox / Radio Button"
+property = "background_color"
+text = "**(Adwaita CSS)** check bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1228"
+section = "2.5 Checkbox / Radio Button"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1229"
+section = "2.5 Checkbox / Radio Button"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1230"
+section = "2.5 Checkbox / Radio Button"
+property = "border.color"
+text = "**(Adwaita CSS)** check border"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1231"
+section = "2.5 Checkbox / Radio Button"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1232"
+section = "2.5 Checkbox / Radio Button"
+property = "indicator_color"
+text = "**(Adwaita CSS)** white"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1233"
+section = "2.5 Checkbox / Radio Button"
+property = "indicator_width"
+text = "**(Adwaita CSS)**: 20 — `check, radio { min-height: 14px; min-width: 14px; padding: 3px }` ([_checks.scss:20-26](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L20-26)): GTK sizes the content box at least the CSS minimum and adds the padding, border and margin to it ([gtksizerequest.c:194-205, :297-298](https://gitlab.gnome.org/GNOME/gtk/-/blob/57f569a23cc23402eb122e337b69d57e4aeecd2b/gtk/gtksizerequest.c#L194-L205)), and the indicator has no border, its outline being an inset `box-shadow` (:27): 14 + 2 × 3"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1234"
+section = "2.5 Checkbox / Radio Button"
+property = "label_gap"
+text = "**(Adwaita CSS)**: 8"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1235"
+section = "2.5 Checkbox / Radio Button"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1236"
+section = "2.5 Checkbox / Radio Button"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: No drop shadow; the ring is an inset shadow (GN-1.59)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1237"
+section = "2.5 Checkbox / Radio Button"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: 3 — `check, radio { padding: 3px }` ([_checks.scss:20-26](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L20-26))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1238"
+section = "2.5 Checkbox / Radio Button"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 3 — same `check, radio` rule"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1239"
+section = "2.5 Checkbox / Radio Button"
+property = "checked_background"
+text = "← `defaults.accent_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1240"
+section = "2.5 Checkbox / Radio Button"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1241"
+section = "2.5 Checkbox / Radio Button"
+property = "radio_dot_diameter"
+text = "**(Adwaita CSS)**: 8 — `radio:checked` draws `assets/bullet.svg` ([_checks.scss:76](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L76)), one circle of radius 4 in its 14px canvas ([bullet.svg](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/assets/bullet.svg))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1242"
+section = "2.5 Checkbox / Radio Button"
+property = "check_mark_stroke_width"
+text = "**(Adwaita CSS)** 2 — `check:checked` draws `assets/check.svg` ([_checks.scss:70](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L70)), the filled outline of a round-capped stroke 2 wide, its ends arcs of radius 1 ([check.svg](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/assets/check.svg)); libadwaita 1.7–1.9 draw `check-symbolic.svg`, a stroke 2.5 wide, its ends arcs of radius 1.25 ([1.9.3](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/5789add99c79cee0fae624b56706c7c0bea7fb2b/src/stylesheet/assets/check-symbolic.svg))"
+rows = [
+    "GN-P3-18†",
+    "GN-P4-7†",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:1214",
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:1251",
+]
+targets = [
+    "checkbox.mark.glyph (GlyphSource::Path from check.svg)",
+    "radio.dot.glyph (GlyphSource::Path from bullet.svg)",
+]
+verdicts = [
+    "GN-P3-18†: newest (R1.5)",
+]
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1243"
+section = "2.5 Checkbox / Radio Button"
+property = "radio_indicator_width"
+text = "← `indicator_width`: one `check, radio` rule sizes both ([_checks.scss:20-26](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L20-26))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1244"
+section = "2.5 Checkbox / Radio Button"
+property = "hover_background"
+text = "**(Adwaita CSS)** unchecked: no fill — the 2px inset ring turns `$trough_hover_color`, `currentColor` at 20 % ([_checks.scss:33-36](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L33-L36); [_colors.scss:281](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L281)); checked: `background-image: image(color-mix(in srgb, currentColor 10%, transparent))` over the accent fill, a layer, `currentColor` being `--accent-fg-color` (_checks.scss:52-58)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1245"
+section = "2.5 Checkbox / Radio Button"
+property = "disabled_background"
+text = "← `background_color`: `check:disabled, radio:disabled { filter: Opacity(var(--disabled-opacity)) }` ([_checks.scss:62-63](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L62-L63))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1246"
+section = "2.5 Checkbox / Radio Button"
+property = "disabled_text_color"
+text = "← `font.color`: the label fades with `label:disabled { filter: Opacity(var(--disabled-opacity)) }` ([_labels.scss:8-10](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_labels.scss#L8-L10))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1247"
+section = "2.5 Checkbox / Radio Button"
+property = "unchecked_background"
+text = "**(none)** — transparent: an unchecked `check` sets no `background-color`, only its inset ring ([_checks.scss:20-27](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L20-L27))"
+rows = []
+targets = []
+none_cell = "a: Transparent at rest; the pressed fill is GN-1.55"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1248"
+section = "2.5 Checkbox / Radio Button"
+property = "unchecked_border_color"
+text = "**(Adwaita CSS)** `$trough_color` = `color-mix(in srgb, currentColor 15%, transparent)`, drawn as a 2px inset `box-shadow` ring ([_checks.scss:27](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L27); [_colors.scss:280](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L280))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1253"
+section = "2.6 Menu"
+property = "background_color"
+text = "libadwaita `popover.menu` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1254"
+section = "2.6 Menu"
+property = "separator_color"
+text = "**(Adwaita CSS)** separator"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1255"
+section = "2.6 Menu"
+property = "font.family"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1256"
+section = "2.6 Menu"
+property = "font.size"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1257"
+section = "2.6 Menu"
+property = "font.weight"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1258"
+section = "2.6 Menu"
+property = "font.style"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1259"
+section = "2.6 Menu"
+property = "font.color"
+text = "libadwaita `popover.menu` fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1260"
+section = "2.6 Menu"
+property = "row_height"
+text = "**(Adwaita CSS)**: 32"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1261"
+section = "2.6 Menu"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: 12 (`$menu_padding`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1262"
+section = "2.6 Menu"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 0 (vertical space from min-height)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1263"
+section = "2.6 Menu"
+property = "border.color"
+text = "**(none)** — popup border from §2.16"
+rows = [
+    "GN-1.179",
+    "GN-3.02",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:812",
+]
+targets = [
+    "popover.body.shadow (three layers)",
+    "PartStyle.stroke.position Outside (S2.4)",
+    "PartStyle.shadow (ShadowLayer.spread, S2.5)",
+]
+none_cell = "b: GN-1.179: the popover's outline is its first shadow layer, `0 0 0 1px` (GN-3.02)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1264"
+section = "2.6 Menu"
+property = "border.line_width"
+text = "**(none)** — popup border from §2.16"
+rows = [
+    "GN-1.179",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:813",
+]
+targets = [
+    "popover.body.shadow (three layers)",
+]
+none_cell = "b: GN-1.179 (1 px, as a shadow spread)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1265"
+section = "2.6 Menu"
+property = "border.corner_radius"
+text = "**(none)** — items are rectangular"
+rows = [
+    "GN-1.68",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:814",
+]
+targets = [
+    "menu.item.corners",
+]
+none_cell = "b: GN-1.68: items are rounded, 9; the cell (\"items are rectangular\") is wrong (Appendix item 2)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1266"
+section = "2.6 Menu"
+property = "border.shadow_enabled"
+text = "**(none)** — popup shadow from §2.16"
+rows = [
+    "GN-1.179",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:815",
+]
+targets = [
+    "popover.body.shadow (three layers)",
+]
+none_cell = "b: GN-1.179"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1267"
+section = "2.6 Menu"
+property = "icon_text_gap"
+text = "**(Adwaita CSS)**: 8"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1268"
+section = "2.6 Menu"
+property = "icon_size"
+text = "`GTK_ICON_SIZE_NORMAL`: 16"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1269"
+section = "2.6 Menu"
+property = "hover_background"
+text = "**(Adwaita CSS)** `:hover` modelbutton bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1270"
+section = "2.6 Menu"
+property = "hover_text_color"
+text = "**(Adwaita CSS)** `:hover` fg (no change)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1271"
+section = "2.6 Menu"
+property = "disabled_text_color"
+text = "← `font.color` — the menu item at `disabled_opacity` (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1277"
+section = "2.7 Tooltip"
+property = "background_color"
+text = "libadwaita `.tooltip` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1278"
+section = "2.7 Tooltip"
+property = "font.family"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1279"
+section = "2.7 Tooltip"
+property = "font.size"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1280"
+section = "2.7 Tooltip"
+property = "font.weight"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1281"
+section = "2.7 Tooltip"
+property = "font.style"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1282"
+section = "2.7 Tooltip"
+property = "font.color"
+text = "libadwaita `.tooltip` fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1283"
+section = "2.7 Tooltip"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: 10"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1284"
+section = "2.7 Tooltip"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1285"
+section = "2.7 Tooltip"
+property = "max_width"
+text = "**(none)** — preset: 360"
+rows = [
+    "GN-1.283†",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:146",
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:816",
+]
+targets = [
+    "tooltip.body.max_width (= mul(widget.label.char_width, <n>): the label's font, body having none, S2.2; the data declared on body; ADD-B17)",
+]
+none_cell = "b: GN-1.283†: the label wraps at 50 characters"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1286"
+section = "2.7 Tooltip"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1287"
+section = "2.7 Tooltip"
+property = "border.color"
+text = "**(Adwaita CSS)** `.tooltip` border"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1288"
+section = "2.7 Tooltip"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1289"
+section = "2.7 Tooltip"
+property = "border.shadow_enabled"
+text = "**(Adwaita CSS)** box-shadow"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1290"
+section = "2.7 Tooltip"
+property = "show_delay"
+text = "500 **(impl)** — `HOVER_TIMEOUT` ([gtktooltip.c:71-73](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtktooltip.c#L71-L73), used at :827)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1304"
+section = "2.8 Scrollbar"
+property = "track_color"
+text = "**(Adwaita CSS)** scrollbar"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1305"
+section = "2.8 Scrollbar"
+property = "thumb_color"
+text = "**(Adwaita CSS)** scrollbar"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1306"
+section = "2.8 Scrollbar"
+property = "thumb_hover_color"
+text = "**(Adwaita CSS)** :hover"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1307"
+section = "2.8 Scrollbar"
+property = "groove_width"
+text = "slider: 8 + margins"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1308"
+section = "2.8 Scrollbar"
+property = "min_thumb_length"
+text = "**(Adwaita CSS)**: 40"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1309"
+section = "2.8 Scrollbar"
+property = "thumb_width"
+text = "**(Adwaita CSS)**: 8"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1310"
+section = "2.8 Scrollbar"
+property = "overlay_mode"
+text = "gsettings `overlay-scrolling` / `gtk-overlay-scrolling`, default true ([org.gnome.desktop.interface schema:261-262](https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas/-/blob/51.0/schemas/org.gnome.desktop.interface.gschema.xml.in#L261-L262), 51.0)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1311"
+section = "2.8 Scrollbar"
+property = "thumb_active_color"
+text = "**(Adwaita CSS)** `slider:active` = `color-mix(in srgb, currentColor 60%, transparent)`, in place of the hover 40 % and the rest 20 % ([_scrolling.scss:19-23](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_scrolling.scss#L19-L23))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1317"
+section = "2.9 Slider"
+property = "fill_color"
+text = "← `defaults.accent_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1318"
+section = "2.9 Slider"
+property = "track_color"
+text = "← `defaults.muted_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1319"
+section = "2.9 Slider"
+property = "thumb_color"
+text = "**(Adwaita CSS)** `$slider_color` = `color-mix(in srgb, white 80%, var(--view-bg-color))` — L #ffffff, D #d2d2d2 ([_scale.scss:50](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_scale.scss#L50); [_colors.scss:288](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L288); view bg #ffffff, #1d1d20, :36, :99)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1320"
+section = "2.9 Slider"
+property = "track_height"
+text = "libadwaita `.scale`: 10"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1321"
+section = "2.9 Slider"
+property = "thumb_diameter"
+text = "libadwaita: 20"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1322"
+section = "2.9 Slider"
+property = "tick_mark_length"
+text = "**(none)** — no ticks"
+rows = [
+    "GN-1.100",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:817",
+]
+targets = [
+    "slider.tick.{min_width,min_height,fill}",
+    "slider.values.tick_gap",
+    "slider.tick.min_height @ context slider.body {@fine_tune} / slider.tick.min_width @ context slider.body variant vertical {@fine_tune}",
+]
+none_cell = "b: GN-1.100: marks are 6 px; the cell (\"no ticks\") is wrong (Appendix item 7)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1323"
+section = "2.9 Slider"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1324"
+section = "2.9 Slider"
+property = "thumb_hover_color"
+text = "**(Adwaita CSS)** `$slider_hover_color` = white in both modes, a replacement of the rest `$slider_color` (L #ffffff, D #d2d2d2, §2.21 `unchecked_thumb_background`) on `scale:hover` and `scale:active` ([_scale.scss:62-76](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_scale.scss#L62-L76); [_colors.scss:288-289](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L288-L289))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1325"
+section = "2.9 Slider"
+property = "disabled_fill_color"
+text = "← `fill_color`: `scale:disabled { filter: Opacity(var(--disabled-opacity)) }` ([_scale.scss:80-81](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_scale.scss#L80-L81))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1326"
+section = "2.9 Slider"
+property = "disabled_track_color"
+text = "← `track_color`: the same opacity rule (_scale.scss:80-81)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1327"
+section = "2.9 Slider"
+property = "disabled_thumb_color"
+text = "← `thumb_color`: the same opacity rule, which also drops the slider's drop shadow (_scale.scss:80-84)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1333"
+section = "2.10 Progress Bar"
+property = "fill_color"
+text = "← `defaults.accent_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1334"
+section = "2.10 Progress Bar"
+property = "track_color"
+text = "← `defaults.muted_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1335"
+section = "2.10 Progress Bar"
+property = "track_height"
+text = "libadwaita `.progressbar`: 8"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1336"
+section = "2.10 Progress Bar"
+property = "min_width"
+text = "**(Adwaita CSS)**: 80"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1337"
+section = "2.10 Progress Bar"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1338"
+section = "2.10 Progress Bar"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: No shadow"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1339"
+section = "2.10 Progress Bar"
+property = "border.color"
+text = "**(none)** — no border"
+rows = []
+targets = []
+none_cell = "a: No border at rest; the high-contrast inset border is GN-1.115"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1340"
+section = "2.10 Progress Bar"
+property = "border.line_width"
+text = "**(Adwaita CSS)** 0 — the trough (`%scale_trough`) has no border; `box-shadow: inset 0 0 0 1px $border_color` only under `prefers-contrast: more` ([_scale.scss:1-10](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_scale.scss#L1-L10); `_progress-bar.scss:27-31`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1341"
+section = "2.10 Progress Bar"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)** 0 — `progressbar > trough > progress` sets no margin, padding or border (`%scale_highlight`, [_scale.scss:12-17](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_scale.scss#L12-L17); [_progress-bar.scss:27-31](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_progress-bar.scss#L27-L31))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1342"
+section = "2.10 Progress Bar"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)** 0 — the trough and the progress share one `min-height: 8px` ([_progress-bar.scss:6](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_progress-bar.scss#L6)) and the progress has no margin (as across)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1346"
+section = "2.11 Tab Bar"
+property = "background_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1347"
+section = "2.11 Tab Bar"
+property = "active_background"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1348"
+section = "2.11 Tab Bar"
+property = "active_text_color"
+text = "← `defaults.text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1349"
+section = "2.11 Tab Bar"
+property = "bar_background"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1350"
+section = "2.11 Tab Bar"
+property = "min_width"
+text = "**(Adwaita CSS)**: none"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1351"
+section = "2.11 Tab Bar"
+property = "min_height"
+text = "**(Adwaita CSS)**: 30"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1352"
+section = "2.11 Tab Bar"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: 12"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1353"
+section = "2.11 Tab Bar"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 3 (CSS `padding: 3px 12px`; visual 8px from min-height: 30 centering)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1354"
+section = "2.11 Tab Bar"
+property = "border.color"
+text = "Notebook: none per-tab (header has 1px `$border_color`); AdwTabBar: none (high-contrast only)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1355"
+section = "2.11 Tab Bar"
+property = "border.line_width"
+text = "Notebook: 0; AdwTabBar: 0 (high-contrast: 1)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1356"
+section = "2.11 Tab Bar"
+property = "border.corner_radius"
+text = "Notebook: 0; AdwTabBar: 9 (`$button_radius`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1357"
+section = "2.11 Tab Bar"
+property = "border.shadow_enabled"
+text = "no"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1358"
+section = "2.11 Tab Bar"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1359"
+section = "2.11 Tab Bar"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1360"
+section = "2.11 Tab Bar"
+property = "item_gap"
+text = "**(GTK)** 0 — GtkNotebook places each tab at the previous one's end, `anchor += child_allocation.width` ([gtknotebook.c:5236](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtknotebook.c#L5236)), and `notebook > header > tabs > tab` sets no margin ([_notebook.scss:119-124](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_notebook.scss#L119-L124)); AdwTabBar, not modelled, spaces its tabs 5 (`SPACING`, [adw-tab-box.c:24](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/adw-tab-box.c#L24))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1361"
+section = "2.11 Tab Bar"
+property = "active_indicator_color"
+text = "**(Adwaita CSS)** `--accent-bg-color`: a checked GtkNotebook tab is `box-shadow: inset 0 -4px var(--accent-bg-color)` ([_notebook.scss:19](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_notebook.scss#L19)); a hovered one `$border_color` (:17)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1362"
+section = "2.11 Tab Bar"
+property = "active_indicator_width"
+text = "4 — the inset shadow's offset ([_notebook.scss:19](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_notebook.scss#L19))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1363"
+section = "2.11 Tab Bar"
+property = "active_indicator_side"
+text = "bottom — `inset 0 -4px` for tabs above their pages (`.top`), `inset 0 4px` below them (`.bottom`) ([_notebook.scss:12-34](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_notebook.scss#L12-34))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1364"
+section = "2.11 Tab Bar"
+property = "hover_background"
+text = "**(Adwaita CSS)** `$hover_color` = `color-mix(in srgb, currentColor 7%, transparent)` on `:hover` and `:active` ([_notebook.scss:127-129](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_notebook.scss#L127-L129); [_colors.scss:268](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L268)), with an inset 4px `$border_color` line along the tab's edge (_notebook.scss:17)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1365"
+section = "2.11 Tab Bar"
+property = "hover_text_color"
+text = "← `font.color`: the hover rule sets no colour (_notebook.scss:127-129)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1366"
+section = "2.11 Tab Bar"
+property = "active_outward_corner_radius"
+text = "**(none)** — a GtkNotebook tab is square: `notebook > header > tabs > tab` sets no `border-radius` ([_notebook.scss:119](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_notebook.scss#L119)); AdwTabBar, not modelled, rounds every corner, `border-radius: $button_radius` ([_tab-view.scss:160](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_tab-view.scss#L160))"
+rows = []
+targets = []
+none_cell = "a: Notebook tabs are square; AdwTabBar tabs are rounded on all four corners (GN-1.124), with no outward curve"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1370"
+section = "2.12 Sidebar"
+property = "background_color"
+text = "libadwaita `.sidebar` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1371"
+section = "2.12 Sidebar"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1372"
+section = "2.12 Sidebar"
+property = "font.color"
+text = "libadwaita `.sidebar` fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1373"
+section = "2.12 Sidebar"
+property = "selection_background"
+text = "← `defaults.selection_background`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1374"
+section = "2.12 Sidebar"
+property = "selection_text_color"
+text = "← `defaults.selection_text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1375"
+section = "2.12 Sidebar"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1376"
+section = "2.12 Sidebar"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1377"
+section = "2.12 Sidebar"
+property = "border.corner_radius"
+text = "**(none)** — rectangular pane"
+rows = []
+targets = []
+none_cell = "a: A docked sidebar pane is square; its rows are rounded (GN-1.140)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1378"
+section = "2.12 Sidebar"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: No shadow when docked; the overlaid pane's transition shadow and dimming are GN-2.19"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1379"
+section = "2.12 Sidebar"
+property = "hover_background"
+text = "**(Adwaita CSS)** row `:hover` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1380"
+section = "2.12 Sidebar"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)** 6 — `.navigation-sidebar > row { margin: 0 $menu_margin 2px }` ([_sidebars.scss:189-193](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_sidebars.scss#L189-L193)), `$menu_margin` = 6 ([_common.scss:11](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_common.scss#L11)); the list itself has no side padding"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1381"
+section = "2.12 Sidebar"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)** 6 top / 4 bottom — `padding-top: $menu_margin; padding-bottom: $menu_margin - 2px`, the last row's 2px bottom margin making up the difference ([_sidebars.scss:149-150](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_sidebars.scss#L149-L150), :193)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1385"
+section = "2.13 Toolbar"
+property = "font.family"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1386"
+section = "2.13 Toolbar"
+property = "font.size"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1387"
+section = "2.13 Toolbar"
+property = "font.weight"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1388"
+section = "2.13 Toolbar"
+property = "font.style"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1389"
+section = "2.13 Toolbar"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1390"
+section = "2.13 Toolbar"
+property = "bar_height"
+text = "**(none)** — `.toolbar` sets no min-height ([_toolbars.scss:99-101](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toolbars.scss#L99-101)); the 47 is `headerbar`'s `min-height` ([_header-bar.scss:2](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_header-bar.scss#L2)), not the toolbar's"
+rows = []
+targets = []
+none_cell = "a: No fixed height: the bar is its padding plus its tallest child; the 47 is the header bar's (GN-1.11)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1391"
+section = "2.13 Toolbar"
+property = "item_gap"
+text = "**(Adwaita CSS)**: 6 — `.toolbar { border-spacing: 6px }` ([_toolbars.scss:99-101](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toolbars.scss#L99-101))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1392"
+section = "2.13 Toolbar"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: 6 — `.toolbar { padding: 6px }` ([_toolbars.scss:99-101](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toolbars.scss#L99-101))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1393"
+section = "2.13 Toolbar"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 6 — same `.toolbar { padding: 6px }` rule"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1394"
+section = "2.13 Toolbar"
+property = "background_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1395"
+section = "2.13 Toolbar"
+property = "icon_size"
+text = "16 — see §2.1.8 toolbar"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1396"
+section = "2.13 Toolbar"
+property = "border.color"
+text = "**(none)** — `.toolbar` and the `%toolbar` it extends set no border ([_toolbars.scss:1-110](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toolbars.scss#L1-L110)); an `AdwToolbarView` top bar in its `.raised` style draws a 1px shade line below it, `color-mix(in srgb, var(--headerbar-shade-color) 50%, transparent)` (:314-316)"
+rows = []
+targets = []
+none_cell = "a: `.toolbar` draws no border; AdwToolbarView's `.border` line is GN-1.154"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1397"
+section = "2.13 Toolbar"
+property = "border.corner_radius"
+text = "**(none)** — `.toolbar` sets no radius; only a stand-alone `.toolbar.osd` is rounded, `$button_radius + 6px` = 15 ([_toolbars.scss:99-110](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toolbars.scss#L99-L110); [_common.scss:8](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_common.scss#L8))"
+rows = []
+targets = []
+none_cell = "a: Square; the `.osd` toolbar's 15 is GN-1.149"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1398"
+section = "2.13 Toolbar"
+property = "border.line_width"
+text = "0 — no border (`border.color`); the raised `AdwToolbarView` top bar's line is a 1px `box-shadow` (_toolbars.scss:314-316)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1399"
+section = "2.13 Toolbar"
+property = "border.shadow_enabled"
+text = "**(none)** for `.toolbar` (`border.color`); an `AdwToolbarView` top bar casts `0 2px 4px` in `.raised` (_toolbars.scss:314-316)"
+rows = [
+    "GN-1.153",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:826",
+]
+targets = [
+    "toolbar.bar.{fill,shadow,bindings} @ variants {@raised,top} / variants {@raised,bottom}",
+    "toolbar.bar.shadow @ variants {@raised,top} cond contrast_high / variants {@raised,bottom} cond contrast_high",
+]
+none_cell = "b: GN-1.153: AdwToolbarView's raised bars cast a two-layer shadow"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1404"
+section = "2.14 Status Bar"
+property = "font.family"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1405"
+section = "2.14 Status Bar"
+property = "font.size"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1406"
+section = "2.14 Status Bar"
+property = "font.weight"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1407"
+section = "2.14 Status Bar"
+property = "font.style"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1408"
+section = "2.14 Status Bar"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1409"
+section = "2.14 Status Bar"
+property = "background_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1410"
+section = "2.14 Status Bar"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1411"
+section = "2.14 Status Bar"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1412"
+section = "2.14 Status Bar"
+property = "border.corner_radius"
+text = "**(none)** — rectangular bar"
+rows = []
+targets = []
+none_cell = "a: Square"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1413"
+section = "2.14 Status Bar"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: No shadow"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1414"
+section = "2.14 Status Bar"
+property = "border.padding_horizontal"
+text = "✅ **(Adwaita CSS)** 10 — `statusbar { padding: 6px 10px 6px 10px; }` ([_deprecated.scss:197-199](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_deprecated.scss#L197-199)); `GtkStatusbar` \"Deprecated: 4.10\" ([gtkstatusbar.c:83](https://gitlab.gnome.org/GNOME/gtk/-/blob/57f569a23cc23402eb122e337b69d57e4aeecd2b/gtk/deprecated/gtkstatusbar.c#L83))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1415"
+section = "2.14 Status Bar"
+property = "border.padding_vertical"
+text = "✅ **(Adwaita CSS)** 6 — same `statusbar` rule"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1421"
+section = "2.15 List / Table"
+property = "background_color"
+text = "libadwaita `.list` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1422"
+section = "2.15 List / Table"
+property = "item_font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1423"
+section = "2.15 List / Table"
+property = "item_font.color"
+text = "libadwaita `.list` fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1424"
+section = "2.15 List / Table"
+property = "alternate_row_background"
+text = "**(Adwaita CSS)** even row"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1425"
+section = "2.15 List / Table"
+property = "selection_background"
+text = "← `defaults.selection_background`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1426"
+section = "2.15 List / Table"
+property = "selection_text_color"
+text = "← `defaults.selection_text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1427"
+section = "2.15 List / Table"
+property = "header_font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1428"
+section = "2.15 List / Table"
+property = "header_font.color"
+text = "**(Adwaita CSS)** columnview header"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1429"
+section = "2.15 List / Table"
+property = "header_background"
+text = "**(Adwaita CSS)** the column view's `.view` fill, `--view-bg-color`: the header's buttons are transparent ([widgets/_column-view.scss:12-13](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_column-view.scss#L12-L13)) over the column view, which carries `.view` (:72-76; [widgets/_views.scss:1-4](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_views.scss#L1-L4)) — #ffffff / #1d1d20 ([_colors.scss:36, :99](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L36), libadwaita 1.10.0), `surface_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1430"
+section = "2.15 List / Table"
+property = "grid_color"
+text = "**(none)** — columnview uses CSS separator"
+rows = [
+    "GN-1.169",
+    "GN-1.162",
+    "GN-1.279†",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:829",
+]
+targets = [
+    "list.column_separator.stroke, list.header_separator.stroke @ variant column_separators",
+    "list.row_separator.stroke @ variant row_separators",
+    "list.row_separator.stroke @ variants {row_separators,horizontal}` (on the left edge in a horizontal list)",
+    "list.branch_line.stroke (dash, ADD-A32), list.row_separator.stroke, list.column_separator.stroke (dash, ADD-A32) @ variant @tree_view / variant @tree_view cond contrast_high",
+    "list.values.indent_per_level, list.values.indent_includes_disclosure @ variant @tree_view",
+    "list.disclosure.glyph @ variant @tree_view / {hover} variant @tree_view / {pressed} variant @tree_view (the glyph's fill at a reduced alpha at rest)",
+    "list.row_background.corners @ {selected} variant @tree_view",
+    "list.drop_indicator.stroke; list.row_background.stroke @ {drop_target} variant @tree_view",
+    "list.header_section.padding, list.header.stroke.bottom @ variant @tree_view",
+    "progress_bar.{track,indicator}.fill @ context list.cell context any list variant @tree_view",
+    "input.body.{corners,fill,stroke} @ context list.cell context any list variant @tree_view / {focused} context list.cell context any list variant @tree_view",
+    "stepper.body.{corners,fill,stroke} @ context list.cell context any list variant @tree_view / {focus_within} context list.cell context any list variant @tree_view",
+    "list.values.typeahead_hide, list.values.drag_hover_delay",
+]
+none_cell = "b: GN-1.169 (column separators), GN-1.162 (row separators), GN-1.279† (GtkTreeView's dotted grid and tree lines)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1431"
+section = "2.15 List / Table"
+property = "row_height"
+text = "**(Adwaita CSS)**: rich-list=32 (`.rich-list` row min-height), plain list=content-driven (no min-height)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1432"
+section = "2.15 List / Table"
+property = "header_height"
+text = "30 **(Adwaita CSS)** — the column title button's `min-height: 24px` + padding 3 + 3 ([_column-view.scss:12-35](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_column-view.scss#L12-L35), [_buttons.scss:18-22](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L18-L22))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1433"
+section = "2.15 List / Table"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: rich-list=12, plain list=2"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1434"
+section = "2.15 List / Table"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: rich-list=8 (`padding: 8px 12px`), plain list=2 (`padding: 2px`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1435"
+section = "2.15 List / Table"
+property = "hover_background"
+text = "**(Adwaita CSS)** row `:hover` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1436"
+section = "2.15 List / Table"
+property = "hover_text_color"
+text = "← `item_font.color`: `row.activatable:hover` sets only `background-color: $view_hover_color` ([_lists.scss:75-76](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L75-L76))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1437"
+section = "2.15 List / Table"
+property = "disabled_text_color"
+text = "← `item_font.color`: `list.view:disabled { color: var(--view-fg-color) }` keeps the text colour ([_lists.scss:12-14](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L12-L14)); a disabled row's labels fade by `label:disabled` ([_labels.scss:8-10](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_labels.scss#L8-L10))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1438"
+section = "2.15 List / Table"
+property = "border.color"
+text = "**(none)** for a plain `list`: it sets `border-color: $border_color` but no border width or style ([_lists.scss:5-10](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L5-L10)), and GTK's `border-style` is CSS's ([css-properties.md:246-249](https://gitlab.gnome.org/GNOME/gtk/-/blob/57f569a23cc23402eb122e337b69d57e4aeecd2b/docs/reference/gtk/css-properties.md#L246-L249)), initially `none`. A `list.boxed-list` is a card (_lists.scss:520-521), outlined by the first of its box shadows, `0 0 0 1px RGB(0 0 6 / 3%)` ([_misc.scss:202-208](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_misc.scss#L202-L208))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1439"
+section = "2.15 List / Table"
+property = "border.corner_radius"
+text = "**(none)** for a plain `list`: no rule sets a radius (_lists.scss:5-38); a `list.boxed-list` has the card's `$card_radius` = 12 (_misc.scss:205; [_common.scss:9](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_common.scss#L9))"
+rows = []
+targets = []
+none_cell = "a: A plain list is square; the boxed list's 12 is GN-1.165"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1440"
+section = "2.15 List / Table"
+property = "border.line_width"
+text = "0 for a plain `list` (`border.color`); a `list.boxed-list`'s outline is a 1px `box-shadow` spread, outside the card (_misc.scss:206)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1441"
+section = "2.15 List / Table"
+property = "border.shadow_enabled"
+text = "**(none)** for a plain `list`; a `list.boxed-list` casts the card's `0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%)` (_misc.scss:206-208)"
+rows = []
+targets = []
+none_cell = "a: A plain list has none; the boxed list's is GN-1.165"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1454"
+section = "2.16 Popover / Dropdown"
+property = "background_color"
+text = "libadwaita `.popover` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1455"
+section = "2.16 Popover / Dropdown"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1456"
+section = "2.16 Popover / Dropdown"
+property = "font.color"
+text = "libadwaita `.popover` fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1457"
+section = "2.16 Popover / Dropdown"
+property = "border.color"
+text = "**(Adwaita CSS)** RGB(0 0 0 / 5%) — `popover > contents` sets no `border`; its outline is the first of three box shadows, `0 0 0 1px RGB(0 0 0 / 5%)`, light and dark alike (`$border_color` under `prefers-contrast: more`) ([_popovers.scss:13-27](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_popovers.scss#L13-L27)); libadwaita 1.9 drew `border: 1px solid RGB(0 0 0 / 14%)` ([1.9.3 _popovers.scss:13-24](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/5789add99c79cee0fae624b56706c7c0bea7fb2b/src/stylesheet/widgets/_popovers.scss#L13-L24))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1458"
+section = "2.16 Popover / Dropdown"
+property = "border.line_width"
+text = "**(Adwaita CSS)** 1 — the outline above is 1px wide, a box-shadow spread outside the contents, so it takes no layout space: `padding: 8px` (`border.padding_*`) is measured from the contents' edge, 9px from the outline's ([_popovers.scss:13-27](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_popovers.scss#L13-L27)); 1.9.3 had a 1px CSS border (:18)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1459"
+section = "2.16 Popover / Dropdown"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius_lg`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1460"
+section = "2.16 Popover / Dropdown"
+property = "border.shadow_enabled"
+text = "**(Adwaita CSS)** box-shadow"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1461"
+section = "2.16 Popover / Dropdown"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: 8 — `popover > contents { padding: 8px }` ([_popovers.scss:7-14](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_popovers.scss#L7-14)); a menu popover's contents have 0 (`popover.menu > contents { padding: 0 }`, [_menus.scss:1, :58-59](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_menus.scss#L58-59))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1462"
+section = "2.16 Popover / Dropdown"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 8 — same `popover > contents` rule"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1468"
+section = "2.17 Splitter"
+property = "divider_width"
+text = "**(Adwaita CSS)** paned: 1 (default) / 5 (wide)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1469"
+section = "2.17 Splitter"
+property = "divider_color"
+text = "**(Adwaita CSS)** paned separator"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1470"
+section = "2.17 Splitter"
+property = "hover_color"
+text = "← `divider_color`: `paned > separator` has no `:hover` rule ([_paned.scss:1-36](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_paned.scss#L1-L36))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1476"
+section = "2.18 Separator"
+property = "line_color"
+text = "libadwaita `.separator` CSS"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1477"
+section = "2.18 Separator"
+property = "line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1485"
+section = "2.19 Text Scale"
+property = "caption"
+text = "`.caption`: ≈9pt, 400"
+context = "What it is: Smallest readable (footnotes, timestamps)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1486"
+section = "2.19 Text Scale"
+property = "section_heading"
+text = "`.heading`: 11pt, **700**"
+context = "What it is: Section divider (settings group header)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1487"
+section = "2.19 Text Scale"
+property = "dialog_title"
+text = "`.title-2`: ≈15pt, **800**"
+context = "What it is: Dialog/page title (sheet header)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1488"
+section = "2.19 Text Scale"
+property = "display"
+text = "`.title-1`: ≈20pt, **800**"
+context = "What it is: Large hero text (onboarding, banners)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1503"
+section = "2.20 Layout Container Defaults"
+property = "widget_gap"
+text = "6 **(measured)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1504"
+section = "2.20 Layout Container Defaults"
+property = "container_margin"
+text = "12 **(measured)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1505"
+section = "2.20 Layout Container Defaults"
+property = "window_margin"
+text = "12 **(measured)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1506"
+section = "2.20 Layout Container Defaults"
+property = "section_gap"
+text = "18 **(measured)**"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1517"
+section = "2.21 Switch / Toggle"
+property = "track_width"
+text = "~46px (derived: 2×thumb+pad)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1518"
+section = "2.21 Switch / Toggle"
+property = "track_height"
+text = "~26px (20+2×3 padding)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1519"
+section = "2.21 Switch / Toggle"
+property = "thumb_diameter"
+text = "20px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1520"
+section = "2.21 Switch / Toggle"
+property = "track_radius"
+text = "14 (> `track_height`/2, pill)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1521"
+section = "2.21 Switch / Toggle"
+property = "checked_background"
+text = "← `defaults.accent_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1522"
+section = "2.21 Switch / Toggle"
+property = "unchecked_background"
+text = "Adwaita `$trough_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1523"
+section = "2.21 Switch / Toggle"
+property = "thumb_background"
+text = "Adwaita `$slider_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1524"
+section = "2.21 Switch / Toggle"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1525"
+section = "2.21 Switch / Toggle"
+property = "unchecked_thumb_diameter"
+text = "← `thumb_diameter`: one `> slider { min-width: 20px; min-height: 20px }` in both states ([_switch.scss:24-26](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_switch.scss#L24-26))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1526"
+section = "2.21 Switch / Toggle"
+property = "unchecked_thumb_background"
+text = "**(derived)** `$slider_color` = `color-mix(in srgb, white 80%, var(--view-bg-color))` ([_colors.scss:288](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L288)) over `view_bg_color` `#ffffff` / dark `#1d1d20` (:36, :99) — L `#ffffff`, D `#d2d2d2`; checked `$slider_hover_color` white ([_switch.scss:48-49](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_switch.scss#L48-49), _colors.scss:289)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1527"
+section = "2.21 Switch / Toggle"
+property = "hover_checked_background"
+text = "**(Adwaita CSS)** a layer: `switch:checked:hover` lays `background-image: image(color-mix(in srgb, currentColor 10%, transparent))` over the accent fill, `currentColor` being `--accent-fg-color` ([_switch.scss:41-45](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_switch.scss#L41-L45))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1528"
+section = "2.21 Switch / Toggle"
+property = "hover_unchecked_background"
+text = "**(Adwaita CSS)** `$trough_hover_color` = `color-mix(in srgb, currentColor 20%, transparent)`, in place of the rest `$trough_color` (15 %) ([_switch.scss:6-8](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_switch.scss#L6-L8); [_colors.scss:280-281](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L280-L281))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1529"
+section = "2.21 Switch / Toggle"
+property = "disabled_checked_background"
+text = "← `checked_background`: `switch:disabled { filter: Opacity(var(--disabled-opacity)) }` ([_switch.scss:20-22](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_switch.scss#L20-L22))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1530"
+section = "2.21 Switch / Toggle"
+property = "disabled_unchecked_background"
+text = "← `unchecked_background`: the same opacity rule (_switch.scss:20-22)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1531"
+section = "2.21 Switch / Toggle"
+property = "disabled_thumb_color"
+text = "← `thumb_background`: the same opacity rule, which also drops the slider's shadow (_switch.scss:20-22, :31-33)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1532"
+section = "2.21 Switch / Toggle"
+property = "unchecked_track_border_color"
+text = "**(none)** — `_switch.scss` sets no `border` on `switch` or its `> slider`, in any state or under `prefers-contrast: more` ([_switch.scss:1-62](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_switch.scss#L1-L62)); GTK's initial `border-style` is `none` and its width 0 ([gtkcssstylepropertyimpl.c:1072-1083](https://gitlab.gnome.org/GNOME/gtk/-/blob/57f569a23cc23402eb122e337b69d57e4aeecd2b/gtk/gtkcssstylepropertyimpl.c#L1072-L1083))"
+rows = []
+targets = []
+none_cell = "a: No border in any state"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1533"
+section = "2.21 Switch / Toggle"
+property = "hover_unchecked_track_border_color"
+text = "**(none)** — as `unchecked_track_border_color`; hover changes only the fill (`hover_unchecked_background`). Keyboard focus draws no border either: a 2 px focus ring 1 px outside the track (`focus-ring($offset: 1px, $outer: true)`, [_switch.scss:18](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_switch.scss#L18); `_drawing.scss:12-28`)"
+rows = []
+targets = []
+none_cell = "a: As 1532"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1534"
+section = "2.21 Switch / Toggle"
+property = "disabled_unchecked_track_border_color"
+text = "**(none)** — as `unchecked_track_border_color`"
+rows = []
+targets = []
+none_cell = "a: As 1532"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1535"
+section = "2.21 Switch / Toggle"
+property = "checked_track_border_color"
+text = "**(none)** — as `unchecked_track_border_color`"
+rows = []
+targets = []
+none_cell = "a: As 1532"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1536"
+section = "2.21 Switch / Toggle"
+property = "disabled_checked_track_border_color"
+text = "**(none)** — as `unchecked_track_border_color`"
+rows = []
+targets = []
+none_cell = "a: As 1532"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1537"
+section = "2.21 Switch / Toggle"
+property = "track_border_line_width"
+text = "0 — no border (`unchecked_track_border_color`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1538"
+section = "2.21 Switch / Toggle"
+property = "thumb_border_color"
+text = "**(none)** — no `border` on `> slider` ([_switch.scss:24-34](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_switch.scss#L24-L34)); its edge is a shadow, `box-shadow: 0 2px 4px RGB(0 0 6 / 20%)` (:29)"
+rows = []
+targets = []
+none_cell = "a: No border; the thumb's edge is its shadow (GN-1.201)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1539"
+section = "2.21 Switch / Toggle"
+property = "hover_thumb_border_color"
+text = "**(none)** — as `thumb_border_color`; hover changes only the fill (_switch.scss:36-39)"
+rows = []
+targets = []
+none_cell = "a: As 1538"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1540"
+section = "2.21 Switch / Toggle"
+property = "disabled_thumb_border_color"
+text = "**(none)** — as `thumb_border_color`"
+rows = []
+targets = []
+none_cell = "a: As 1538"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1541"
+section = "2.21 Switch / Toggle"
+property = "thumb_border_line_width"
+text = "0 — no border (`thumb_border_color`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1548"
+section = "2.22 Dialog"
+property = "background_color"
+text = "**(Adwaita CSS)** `messagedialog` bg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1549"
+section = "2.22 Dialog"
+property = "body_font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1550"
+section = "2.22 Dialog"
+property = "body_font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1551"
+section = "2.22 Dialog"
+property = "border.shadow_enabled"
+text = "**(Adwaita CSS)** box-shadow"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1552"
+section = "2.22 Dialog"
+property = "min_width"
+text = "AdwAlertDialog: 300sp"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1553"
+section = "2.22 Dialog"
+property = "max_width"
+text = "AdwAlertDialog: 372sp (wide: 600sp)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1554"
+section = "2.22 Dialog"
+property = "min_height"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: Sizes to its content"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1555"
+section = "2.22 Dialog"
+property = "max_height"
+text = "**(none)**"
+rows = [
+    "GN-1.218",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:841",
+]
+targets = [
+    "dialog.values.window_margin (growing with the window)",
+]
+none_cell = "b: GN-1.218: bounded by the window less the floating sheet's vertical margins"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1556"
+section = "2.22 Dialog"
+property = "border.padding_horizontal"
+text = "24px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1557"
+section = "2.22 Dialog"
+property = "border.padding_vertical"
+text = "32 top / 24 bottom (`.message-area` padding-top=32; `.response-area` padding-top=12, padding-bottom=24)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1558"
+section = "2.22 Dialog"
+property = "button_gap"
+text = "12px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1559"
+section = "2.22 Dialog"
+property = "button_order"
+text = "cancel left, affirmative right"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1560"
+section = "2.22 Dialog"
+property = "title_font.family"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1561"
+section = "2.22 Dialog"
+property = "title_font.size"
+text = "136% of base ≈15pt (`.title-2`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1562"
+section = "2.22 Dialog"
+property = "title_font.weight"
+text = "800 (ExtraBold, `.title-2`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1563"
+section = "2.22 Dialog"
+property = "title_font.style"
+text = "Normal"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1564"
+section = "2.22 Dialog"
+property = "title_font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1565"
+section = "2.22 Dialog"
+property = "border.corner_radius"
+text = "18px (`$alert_radius`) — distinct from window radius (15px)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1566"
+section = "2.22 Dialog"
+property = "border.color"
+text = "**(Adwaita CSS)** dialog border"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1567"
+section = "2.22 Dialog"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1568"
+section = "2.22 Dialog"
+property = "icon_size"
+text = "**(none)** — no default icon"
+rows = []
+targets = []
+none_cell = "a: No icon (as 1139)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1569"
+section = "2.22 Dialog"
+property = "entrance"
+text = "`scale_fade` **(impl)** — the floating `AdwDialog`'s sheet fades in while its scale rises from `MIN_SCALE` 0.8 to 1 on a spring ([adw-floating-sheet.c:22, :34-35, :101, :220-226](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/adw-floating-sheet.c#L22)); with reduced motion it only fades (:482)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1599"
+section = "2.23 Spinner / Progress Ring"
+property = "diameter"
+text = "GtkSpinner: 16"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1600"
+section = "2.23 Spinner / Progress Ring"
+property = "min_diameter"
+text = "**(none)**"
+rows = [
+    "GN-1.228",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:843",
+]
+targets = [
+    "spinner.body.{min_width,min_height,max_width,max_height}",
+]
+none_cell = "b: GN-1.228: AdwSpinner's minimum is 16; the cell is wrong"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1601"
+section = "2.23 Spinner / Progress Ring"
+property = "stroke_width"
+text = "**(none)** — icon-based"
+rows = [
+    "GN-1.227",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:844",
+]
+targets = [
+    "spinner.values.stroke_width = mul(element.width, <fraction>), scaled by values.stroke_weight within the source's bounds (the track's width; data declared under values: data = { values = [\"width\", \"height\"] }; R25.3)",
+    "spinner.values.stroke_weight (the icon weight the stroke is scaled by, within the source's bounds)",
+    "spinner.indicator.glyph.stroke` (the arc: a stroked circle path, its cap, ADD-A34, and its width `= values.stroke_width`, the arc drawn at the track's width)",
+]
+none_cell = "b: GN-1.227: AdwSpinner's stroke is radius / 8; the cell (\"icon-based\") describes GtkSpinner only"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1602"
+section = "2.23 Spinner / Progress Ring"
+property = "fill_color"
+text = "← `defaults.text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1611"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "background_color"
+text = "**(Adwaita CSS)** the button's `$button_color` (`%button_basic_raised`, [_buttons.scss:28-29](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L28-L29)), which GtkDropDown's trigger button keeps: `dropdown` adds no fill to it ([_dropdowns.scss:1-12](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_dropdowns.scss#L1-L12)) — over the window, L #e6e6e7, D #38383c (as §2.4 `background_color`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1612"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1613"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "font.color"
+text = "libadwaita button fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1614"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.color"
+text = "**(none)** at rest — GtkDropDown's trigger is a button (`border.padding_horizontal` below) and draws the button's high-contrast-only border: an inset 1px `$border_color` `box-shadow` under `prefers-contrast: more` alone ([_buttons.scss:28-33](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L28-L33))"
+rows = []
+targets = []
+none_cell = "a: No border at rest; the high-contrast ring is GN-1.38"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1615"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.line_width"
+text = "0 at rest — as the button (§2.3 `border.line_width`); 1 under `prefers-contrast: more`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1616"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "min_height"
+text = "← button min-height (24+pad)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1617"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "min_width"
+text = "**(none)** — sizes to content"
+rows = []
+targets = []
+none_cell = "a: Sizes to its content"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1618"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)**: 10 — GtkDropDown's button is a `GtkToggleButton` whose child is a `GtkBox` ([gtkdropdown.ui:11-14](https://gitlab.gnome.org/GNOME/gtk/-/blob/57f569a23cc23402eb122e337b69d57e4aeecd2b/gtk/ui/gtkdropdown.ui#L11-L14)), so it has no `.text-button` class and keeps the base button `padding: 5px 10px` ([_buttons.scss:17-22](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_buttons.scss#L17-L22))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1619"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "arrow_icon_size"
+text = "16px (pan-down-symbolic) — an open chevron, `min-width/height: 16px` ([_dropdowns.scss:14-18](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_dropdowns.scss#L14-L18))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1620"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "arrow_area_width"
+text = "**(none)** — inline icon"
+rows = []
+targets = []
+none_cell = "a: No separate arrow area: the arrow is a 16 px inline icon (GN-1.40) after a 6 px gap (GN-1.233)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1621"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1622"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: No shadow"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1623"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)**: 5 — the same base button rule"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1624"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1625"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "hover_background"
+text = "**(Adwaita CSS)** `$button_hover_color` = `color-mix(in srgb, currentColor 15%, transparent)`, in place of the rest `$button_color` (10 %) ([_buttons.scss:1-2, :35-37](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L1-L2)): GtkDropDown's trigger is a button (`border.padding_horizontal` above)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1626"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "disabled_background"
+text = "← `background_color`: the button's opacity rule ([_buttons.scss:58-59](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L58-L59))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1627"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "disabled_text_color"
+text = "← `font.color`: the same opacity rule (_buttons.scss:58-59)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1633"
+section = "2.25 Segmented Control"
+property = "background_color"
+text = "**(Adwaita CSS)** `AdwToggleGroup`: `background: $button_color`, `color-mix(in srgb, currentColor 10%, transparent)` ([_toggle-group.scss:12](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toggle-group.scss#L12); [_buttons.scss:1](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_buttons.scss#L1))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1634"
+section = "2.25 Segmented Control"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1635"
+section = "2.25 Segmented Control"
+property = "font.color"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: No colour of its own: an unchecked toggle inherits its parent's foreground; the checked one uses `--active-toggle-fg-color` (`A/w/_toggle-group.scss:80-81`, GN-1.277)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1636"
+section = "2.25 Segmented Control"
+property = "active_background"
+text = "**(Adwaita CSS)** `AdwToggleGroup`: a checked toggle is `--active-toggle-bg-color` ([_toggle-group.scss:79-80](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toggle-group.scss#L79-L80)), `#ffffff` in light and `rgb(255 255 255 / 20%)` in dark ([_colors.scss:238](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L238), :245-247), not the accent — the dark one over the group's own fill (`background_color`, #38383c) shows #606063"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1637"
+section = "2.25 Segmented Control"
+property = "active_text_color"
+text = "**(Adwaita CSS)** `AdwToggleGroup`: `--active-toggle-fg-color` ([_toggle-group.scss:81](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toggle-group.scss#L81)), `rgb(0 0 6 / 80%)` in light and `#ffffff` in dark ([_colors.scss:239](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L239), :248) — the light one over the #ffffff toggle shows #333338"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1638"
+section = "2.25 Segmented Control"
+property = "segment_height"
+text = "**(Adwaita CSS)** `AdwToggleGroup` (libadwaita ≥ 1.7): 28 — `toggle { min-height: calc(34px - var(---group-padding) * 2) }`, `---group-padding: 3px` ([_toggle-group.scss:10, :32](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_toggle-group.scss#L10-L32))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1639"
+section = "2.25 Segmented Control"
+property = "separator_width"
+text = "**(none)**"
+rows = [
+    "GN-1.243",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:850",
+]
+targets = [
+    "segmented_control.separator.stroke, segmented_control.separator.margin",
+    "segmented_control.separator.opacity @ prev segmented_control.segment{selected} / next segmented_control.segment{selected}",
+    "segmented_control.separator.transitions (Opacity)",
+]
+none_cell = "b: 1 px: `separator { min-width: 1px; min-height: 1px }` (`A/w/_misc.scss:20-23`) applies to the toggle group's separators, whose margins and fade are GN-1.243; the cell is wrong, the value is published"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1640"
+section = "2.25 Segmented Control"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)** `AdwToggleGroup` (libadwaita ≥ 1.7): 8 — a text toggle pads `calc(11px - var(---group-padding))` left and right, 11 − 3 ([_toggle-group.scss:38-41](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_toggle-group.scss#L38-L41)); toggles have the CSS name `toggle` ([adw-toggle-group.c:866](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/adw-toggle-group.c#L866)), so the `button` padding rule does not reach them; the group pads 3 around its toggles (:10, :14)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1641"
+section = "2.25 Segmented Control"
+property = "border.corner_radius"
+text = "**(none)**"
+rows = [
+    "GN-1.239",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:851",
+]
+targets = [
+    "segmented_control.track.padding, segmented_control.track.corners",
+    "segmented_control.segment.corners (Concentric)",
+]
+none_cell = "b: GN-1.239: the group's radius is 9 (`$button_radius`); the cell is wrong"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1642"
+section = "2.25 Segmented Control"
+property = "border.color"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: No border at rest; the high-contrast ring is GN-1.251"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1643"
+section = "2.25 Segmented Control"
+property = "border.line_width"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: As 1642"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1644"
+section = "2.25 Segmented Control"
+property = "border.shadow_enabled"
+text = "**(none)**"
+rows = [
+    "GN-1.240",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:854",
+]
+targets = [
+    "segmented_control.segment.shadow @ {selected}",
+]
+none_cell = "b: GN-1.240: the checked toggle's two-layer shadow"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1645"
+section = "2.25 Segmented Control"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)** `AdwToggleGroup`: 0 — no rule sets a `toggle`'s vertical padding ([_toggle-group.scss](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_toggle-group.scss)); its height is the 28 `min-height` (:32)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1646"
+section = "2.25 Segmented Control"
+property = "disabled_opacity"
+text = "**(none)**"
+rows = [
+    "GN-1.242",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:855",
+]
+targets = [
+    "segmented_control.track.fill @ {disabled}",
+    "segmented_control.segment.fill @ {selected,disabled}",
+    "segmented_control.label.opacity, segmented_control.icon.opacity @ {disabled}",
+]
+none_cell = "b: GN-1.242"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1647"
+section = "2.25 Segmented Control"
+property = "hover_background"
+text = "**(Adwaita CSS)** `AdwToggleGroup`: `toggle:hover { background-color: $hover_color }`, `color-mix(in srgb, currentColor 7%, transparent)` ([_toggle-group.scss:65-67](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_toggle-group.scss#L65-L67); [_colors.scss:268](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L268)), over the group's `$button_color` (_toggle-group.scss:12)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1657"
+section = "2.26 Card / Container"
+property = "background_color"
+text = "`var(--card-bg-color)`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1658"
+section = "2.26 Card / Container"
+property = "border.color"
+text = "**(none)** — `.card` sets no `border`; its outline is the first of three box shadows, `0 0 0 1px RGB(0 0 6 / 3%)` ([_misc.scss:201-208](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_misc.scss#L201-L208)); `$border_color` only under `prefers-contrast: more` (:210-214)"
+rows = [
+    "GN-1.252",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:856",
+]
+targets = [
+    "card.body.shadow",
+    "card.body.stroke @ cond contrast_high",
+]
+none_cell = "b: GN-1.252: the outline is the first shadow layer"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1659"
+section = "2.26 Card / Container"
+property = "border.line_width"
+text = "**(none)** — no CSS border (the 1px outline is a shadow, see `border.color`)"
+rows = [
+    "GN-1.252",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-gnome.md:857",
+]
+targets = [
+    "card.body.shadow",
+    "card.body.stroke @ cond contrast_high",
+]
+none_cell = "b: GN-1.252 (1 px, as a shadow spread)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1660"
+section = "2.26 Card / Container"
+property = "border.corner_radius"
+text = "`$card_radius` = 12px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1661"
+section = "2.26 Card / Container"
+property = "border.shadow_enabled"
+text = "Adwaita box-shadow"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1662"
+section = "2.26 Card / Container"
+property = "border.padding_horizontal"
+text = "**(none)** — app-defined"
+rows = []
+targets = []
+none_cell = "a: Set by the app"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1663"
+section = "2.26 Card / Container"
+property = "border.padding_vertical"
+text = "**(none)** — app-defined"
+rows = []
+targets = []
+none_cell = "a: As 1662"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1673"
+section = "2.27 Expander / Disclosure"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1674"
+section = "2.27 Expander / Disclosure"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1675"
+section = "2.27 Expander / Disclosure"
+property = "header_height"
+text = "AdwExpanderRow: 50"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1676"
+section = "2.27 Expander / Disclosure"
+property = "arrow_icon_size"
+text = "**(Adwaita CSS)** 16 — AdwExpanderRow's arrow is a `GtkImage` of `adw-expander-arrow-symbolic` ([adw-expander-row.ui:61-67](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/adw-expander-row.ui#L61-L67)) drawn at `-gtk-icon-size`, initially 16px ([gtkcssstylepropertyimpl.c:1285-1290](https://gitlab.gnome.org/GNOME/gtk/-/blob/57f569a23cc23402eb122e337b69d57e4aeecd2b/gtk/gtkcssstylepropertyimpl.c#L1285-L1290)), which no row rule changes. This column follows AdwExpanderRow, as `header_height`, `arrow_side` and the rows below do; GtkExpander's `expander` is 16 too ([_expanders.scss:1-4](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_expanders.scss#L1-L4))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1677"
+section = "2.27 Expander / Disclosure"
+property = "border.padding_horizontal"
+text = "**(Adwaita CSS)** `AdwExpanderRow` header: 14, a sum — the header is an `AdwActionRow` in the expander's `GtkListBox` ([adw-expander-row.ui:15-24](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/adw-expander-row.ui#L15-L24)), so `list > row { padding: 2px }` ([_lists.scss:16-17](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_lists.scss#L16-L17)) plus `row > box.header { margin-left: 12px; margin-right: 12px }` (:129-131)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1678"
+section = "2.27 Expander / Disclosure"
+property = "border.padding_vertical"
+text = "**(Adwaita CSS)** `AdwExpanderRow` header: 8 to the title, a sum — the row's 2 (`list > row { padding: 2px }`, [_lists.scss:16-17](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/a5030fc692855c62a0014ea784d3a80ce30f926f/src/stylesheet/widgets/_lists.scss#L16-L17)) plus `box.title { margin-top: 6px; margin-bottom: 6px }` (:139-141); the header box's `min-height: 50px` (:133) centres shorter content"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1679"
+section = "2.27 Expander / Disclosure"
+property = "border.corner_radius"
+text = "**(Adwaita CSS)** 12 at the list's outer corners: in a `list.boxed-list`, the first row's header takes `$card_radius` at its top corners and the last, collapsed one at its bottom corners ([_lists.scss:533-553](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L533-L553); [_common.scss:9](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_common.scss#L9)), 0 elsewhere"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1680"
+section = "2.27 Expander / Disclosure"
+property = "border.color"
+text = "**(Adwaita CSS)** the boxed list's card outline, `0 0 0 1px RGB(0 0 6 / 3%)`, the first of its box shadows ([_misc.scss:202-208](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_misc.scss#L202-L208)); between rows `border-bottom: 1px solid var(--card-shade-color)` ([_lists.scss:346](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L346)), which the expander row itself drops (`border: none`, :529-531)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1681"
+section = "2.27 Expander / Disclosure"
+property = "border.line_width"
+text = "1 — the card outline's 1px spread (_misc.scss:206), outside the card"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1682"
+section = "2.27 Expander / Disclosure"
+property = "border.shadow_enabled"
+text = "**(Adwaita CSS)** yes — the `list.boxed-list` card the AdwExpanderRow sits in casts `0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%)` ([_misc.scss:206-208](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_misc.scss#L206-L208)), as §2.15's boxed list does"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1683"
+section = "2.27 Expander / Disclosure"
+property = "arrow_side"
+text = "**(Adwaita src)** trailing — AdwExpanderRow's arrow image follows the header row's suffixes and enable switch ([adw-expander-row.ui:42-69](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/adw-expander-row.ui#L42-L69)); `adw-expander-arrow-symbolic`, a chevron"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1684"
+section = "2.27 Expander / Disclosure"
+property = "arrow_gap"
+text = "**(Adwaita CSS)** 9 — the arrow's `margin-start: 3px` ([_lists.scss:389-393](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L389-L393)) after the header box's `border-spacing: 6px` (:132): 3 + 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1685"
+section = "2.27 Expander / Disclosure"
+property = "content_indent"
+text = "**(Adwaita src)** 0 — the revealed `list.nested` fills the row ([adw-expander-row.ui:74-88](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/adw-expander-row.ui#L74-L88)); its rows carry their own padding"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1686"
+section = "2.27 Expander / Disclosure"
+property = "frame_enabled"
+text = "**(Adwaita CSS)** yes — an AdwExpanderRow in a `list.boxed-list`, a card (`@extend %card`, [_lists.scss:520-521](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L520-L521)), holds its header row and the revealed `list.nested` in one frame"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1687"
+section = "2.27 Expander / Disclosure"
+property = "hover_background"
+text = "**(Adwaita CSS)** a layer: in a `list.boxed-list` the expander row's header is a `%boxed_list_row` ([_lists.scss:524-526](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L524-L526)), whose activatable hover is `color-mix(in srgb, currentColor 3%, transparent)` (:352-355) over the card's fill"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1688"
+section = "2.27 Expander / Disclosure"
+property = "arrow_color"
+text = "**(Adwaita CSS)** the row's `currentColor` at `--dim-opacity` 55 %: `image.expander-row-arrow { @extend .dimmed }` ([_lists.scss:389-390](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_lists.scss#L389-L390); [_labels.scss:13-15](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_labels.scss#L13-L15); [_colors.scss:319](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L319))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1693"
+section = "2.28 Link"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1694"
+section = "2.28 Link"
+property = "font.color"
+text = "`var(--accent-color)`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1695"
+section = "2.28 Link"
+property = "visited_text_color"
+text = "Adwaita 80% mix accent+fg"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1696"
+section = "2.28 Link"
+property = "underline_enabled"
+text = "yes"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1697"
+section = "2.28 Link"
+property = "background_color"
+text = "**(none)** — inline"
+rows = []
+targets = []
+none_cell = "a: Inline text, no fill; `button.link` is transparent (GN-1.266)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1698"
+section = "2.28 Link"
+property = "hover_background"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: Hover changes the colour (`A/w/_links.scss:11-13`), not a fill"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1699"
+section = "2.28 Link"
+property = "hover_text_color"
+text = "**(Adwaita CSS)** `HSL(from $link_color h calc(s * 1.1) calc(l * 1.1))`: the accent 10 % more saturated and lighter ([_links.scss:11-13](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_links.scss#L11-L13); `$link_color` = `var(--accent-color)`, [_colors.scss:265](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/_colors.scss#L265))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1700"
+section = "2.28 Link"
+property = "active_text_color"
+text = "← `font.color`: `:active` sets `$link_color` again ([_links.scss:15-17](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_links.scss#L15-L17))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1701"
+section = "2.28 Link"
+property = "disabled_text_color"
+text = "**(Adwaita CSS)** `color-mix(in srgb, currentColor var(--disabled-opacity), transparent)`: the link colour at 50 % ([_links.scss:19](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_links.scss#L19)), inside a label that `label:disabled` also fades ([_labels.scss:8-10](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_labels.scss#L8-L10))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1714"
+section = "2.29 Text Area (multi-line)"
+property = "border.padding_horizontal"
+text = "**(GTK)** 0 — `textview` sets no padding ([_views.scss:20-44](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_views.scss#L20-L44)), and GtkTextView's `left-margin` and `right-margin` default to 0 ([gtktextview.c:1053-1070](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtktextview.c#L1053-L1070))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1715"
+section = "2.29 Text Area (multi-line)"
+property = "border.padding_vertical"
+text = "**(GTK)** 0 — `top-margin` and `bottom-margin` default to 0 (gtktextview.c:1083-1100)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1716"
+section = "2.29 Text Area (multi-line)"
+property = "border.color"
+text = "← `input.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1717"
+section = "2.29 Text Area (multi-line)"
+property = "border.line_width"
+text = "← `input.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1718"
+section = "2.29 Text Area (multi-line)"
+property = "border.corner_radius"
+text = "← `input.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1719"
+section = "2.29 Text Area (multi-line)"
+property = "border.shadow_enabled"
+text = "← `input.border.shadow_enabled`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"

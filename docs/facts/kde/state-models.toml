@@ -1,0 +1,486 @@
+# kde-breeze's state models (S17): the combinations Breeze 6.8.2 and qqc2-desktop-style 6.31.0 draw. Written by the
+# KDE facts lane. States combine (no exclusive group): renderButtonFrame reads each flag on its own and decides by
+# branch order (down, checked, default, rest), which the facts' order carries, not a group (K1.29).
+# Variants combine; `variant_products` gives the sets each kind of button draws, one product per kind, its groups the
+# features its drawing reads on their own, and `variant_sets` the lane's tool-button menu forms written without `menu`
+# (S17, ADD-A121, ADD-A122; round 6 added the products, from KD-C1's verifier, each group's source cited below).
+
+# Qt Widgets (the default flavour): QPushButton and QToolButton through Breeze's QStyle. The variants are the
+# catalogue's that Breeze and the KDE frameworks draw (the identities and keyed variants in their hosts' contexts:
+# the trace's K1.46†, K1.124, K1.155, K1.157, K2.7, K2.10, K2.11, K-RL02†); a disabled button is never down
+# (QAbstractButton releases it when it is disabled) nor focused (QWidget passes the focus on); a tool button is never
+# round (only the push button panel reads _kde_round_button); a deactivating window takes the focus flags (S7.2,
+# ADD-A126: Qt sets no focus widget while no window is active, and hasFocus() is being the focus widget)
+# No `@recording` state (the ledger's queue #79): KKeySequenceWidget's key button changes only its text while it
+# records ("Input" or the partial sequence, then " …"). Its click starts the recorder directly, and the private
+# startRecording() that would hold it down (setDown(true), kkeysequencewidget.cpp:373-377) has no caller at the pin;
+# so it draws the button's own states
+[[model]]
+widget = "button"
+available = true
+variants = ["flat", "warning", "circular", "toggle", "menu", "tool", "icon_only", "with_icon", "@inline_small", "@inline_large", "@command_link", "@key_sequence", "@float", "close", "previous", "next", "overflow", "clear_field", "reveal", "minimize", "maximize", "restore"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }] }
+exclusive = []
+exclusive_variants = [["icon_only", "with_icon"], ["@inline_small", "@inline_large"]]
+variant_sets = [["tool", "@inline_small"], ["tool", "@inline_small", "flat"], ["tool", "@inline_large"], ["tool", "@inline_large", "flat"]]
+variant_products = [
+  # QPushButton: its content, the round property, flat, the neutral highlight, checkable and a menu, each read on its own
+  [{ any = ["icon_only", "with_icon"] }, { any = ["circular"] }, { any = ["flat"] }, { any = ["warning"] }, { any = ["toggle"] }, { any = ["menu"] }],
+  # QToolButton without a menu: auto-raise and the neutral highlight read on their own, never round
+  [{ one = ["tool"] }, { any = ["icon_only", "with_icon"] }, { any = ["flat"] }, { any = ["warning"] }, { any = ["toggle"] }],
+  # QToolButton with an instant popup menu and no text: no arrow (ToolButtonMenuArrowStyle::None)
+  [{ one = ["tool"] }, { one = ["menu"] }, { one = ["icon_only"] }, { any = ["flat"] }, { any = ["warning"] }, { any = ["toggle"] }],
+  # QToolButton with a delayed popup menu: the small inline arrow, with or without text
+  [{ one = ["tool"] }, { one = ["menu"] }, { one = ["@inline_small"] }, { any = ["icon_only", "with_icon"] }, { any = ["flat"] }, { any = ["warning"] }, { any = ["toggle"] }],
+  # QToolButton with an instant popup menu and text: the large inline arrow
+  [{ one = ["tool"] }, { one = ["menu"] }, { one = ["@inline_large"] }, { any = ["with_icon"] }, { any = ["flat"] }, { any = ["warning"] }, { any = ["toggle"] }],
+  # QCommandLinkButton: never flat, checkable, the neutral highlight read from the widget
+  [{ one = ["@command_link"] }, { any = ["warning"] }, { any = ["toggle"] }],
+  # KKeySequenceWidget's key button (the configure icon and the shortcut) and its clear button (a QToolButton)
+  [{ one = ["@key_sequence"] }, { one = ["with_icon"] }, { any = ["warning"] }],
+  [{ one = ["clear_field"] }, { one = ["tool"] }, { one = ["icon_only"] }],
+  # QDockWidget's title buttons, auto-raise; QToolBarExtension, auto-raise and checkable
+  [{ one = ["close", "@float"] }, { one = ["tool"] }, { one = ["flat"] }, { one = ["icon_only"] }],
+  [{ one = ["overflow"] }, { one = ["tool"] }, { one = ["flat"] }, { one = ["icon_only"] }, { one = ["toggle"] }],
+  # QLineEdit's icon buttons (its clear button, KPasswordLineEdit's visibility action); QMdiSubWindow's title buttons
+  [{ one = ["clear_field", "reveal"] }, { one = ["icon_only"] }],
+  [{ one = ["minimize", "maximize", "restore", "close"] }, { one = ["icon_only"] }],
+]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { variants = ["circular", "tool"] }, { states = ["focused"], conditions = ["window_inactive"] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
+rows = ["K1.20", "K1.21", "K1.22", "K1.24", "K1.25", "K1.26", "K1.29", "K1.152", "K-RL02†"]
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4513-4530"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:233-246"
+quote = "const bool hasIcon = !toolButtonOption->icon.isNull() || (toolButtonOption->features & QStyleOptionToolButton::Arrow); const bool iconOnly = toolButtonOption->toolButtonStyle == Qt::ToolButtonIconOnly || (toolButtonOption->text.isEmpty() && hasIcon); if (hasPopupMenu) { return ToolButtonMenuArrowStyle::SubControl; } if (hasDelayedMenu) { return ToolButtonMenuArrowStyle::InlineSmall; } if (hasInlineIndicator && !iconOnly) { return ToolButtonMenuArrowStyle::InlineLarge; }"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4532-4544"
+quote = "flat = buttonOption->features & QStyleOptionButton::Flat;"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
+quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4581"
+quote = "bool flat = option->state & QStyle::State_AutoRaise;"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4602-4612"
+quote = "_helper->renderButtonFrame(painter, baseRect, option->palette, stateProperties, bgAnimation, penAnimation);"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:647-740"
+quote = "void Helper::renderButtonFrame(QPainter *painter,"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezepropertynames.cpp:18"
+quote = "const char PropertyNames::highlightNeutral[] = \"_kde_highlight_neutral\";"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezepropertynames.cpp:25"
+quote = "const char PropertyNames::roundButton[] = \"_kde_round_button\";"
+
+[[model.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:1145-1150"
+quote = "case QEvent::EnabledChange: if (!isEnabled() && d->down) { d->down = false; d->emitReleased(); }"
+
+[[model.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qwidget.cpp:3400-3403"
+quote = "if (!enable && q->window()->focusWidget() == q) { bool parentIsEnabled = (!q->parentWidget() || q->parentWidget()->isEnabled()); if (!parentIsEnabled || !q->focusNextChild()) q->clearFocus();"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4572-4618"
+quote = "bool Style::drawPanelButtonToolPrimitive(const QStyleOption *option, QPainter *painter, const QWidget *widget) const"
+absent = ["roundButton"]
+
+[[model.cite]]
+kind = "published"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:526-530"
+quote = "void KKeySequenceWidget::captureKeySequence() { d->recorder->setWindow(window()->windowHandle()); d->recorder->startRecording(); }"
+
+[[model.cite]]
+kind = "published"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:416"
+quote = "connect(d->keyButton, &QPushButton::clicked, this, &KKeySequenceWidget::captureKeySequence);"
+
+[[model.cite]]
+kind = "published"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:401-407"
+quote = "if (recorder->isRecording()) { // make it clear that input is still going on s.append(inputRecordingMarkupSuffix); } s = QLatin1Char(' ') + s + QLatin1Char(' '); keyButton->setText(s);"
+
+[[model.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:1891-1892"
+quote = "if (!QApplicationPrivate::active_window && QApplicationPrivate::focus_widget) { QApplicationPrivate::setFocusWidget(nullptr, Qt::ActiveWindowFocusReason);"
+
+[[model.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qwidget.cpp:6506"
+quote = "return (QApplication::focusWidget() == w);"
+
+[[model.cite]]   # the push button's groups: the neutral highlight, round
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526-4530"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option); bool roundButton = widget ? widget->property(PropertyNames::roundButton).toBool() : false;"
+
+[[model.cite]]   # flat and menu
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4534-4535"
+quote = "flat = buttonOption->features & QStyleOptionButton::Flat; hasMenu = buttonOption->features & QStyleOptionButton::HasMenu;"
+
+[[model.cite]]   # icon_only, with_icon
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5343-5344"
+quote = "const bool hasText(!buttonOption->text.isEmpty()); const bool hasIcon((showIconsOnPushButtons() || flat || !hasText) && !buttonOption->icon.isNull());"
+
+[[model.cite]]   # toggle: Qt checks only a checkable button
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:592-598"
+quote = "if (!d->checkable || d->checked == checked) {"
+
+[[model.cite]]   # warning on a tool button
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4582"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[model.cite]]   # a tool button's menu forms: none icon only, small delayed, large with text
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "if (hasPopupMenu) { return ToolButtonMenuArrowStyle::SubControl; } if (hasDelayedMenu) { return ToolButtonMenuArrowStyle::InlineSmall; } if (hasInlineIndicator && !iconOnly) { return ToolButtonMenuArrowStyle::InlineLarge; } return ToolButtonMenuArrowStyle::None;"
+
+[[model.cite]]   # @command_link: never flat, checked read
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1977-2001"
+quote = "const bool isFlat = false;"
+
+[[model.cite]]   # @command_link: the push button's frame, with its widget
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[model.cite]]   # @key_sequence with its icon; its clear button
+kind = "published"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:142-151"
+quote = "keyButton = new QPushButton(q); keyButton->setFocusPolicy(Qt::StrongFocus); keyButton->setIcon(QIcon::fromTheme(QStringLiteral(\"configure\")));"
+
+[[model.cite]]
+kind = "published"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:150"
+quote = "clearButton = new QToolButton(q);"
+
+[[model.cite]]   # warning on the key button
+kind = "published"
+source = "kxmlgui@6.31.0 src/kkeysequencewidget.cpp:589-600"
+quote = "d->keyButton->setProperty(_highlight, property(_highlight));"
+
+[[model.cite]]   # a tool button's default content
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtoolbutton.cpp:187"
+quote = "toolButtonStyle = Qt::ToolButtonIconOnly;"
+
+[[model.cite]]   # close, @float: QDockWidget's title buttons
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qdockwidget.cpp:169-197"
+quote = "opt.state |= QStyle::State_AutoRaise;"
+
+[[model.cite]]   # overflow
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtoolbarextension.cpp:15-24"
+quote = "setAutoRaise(true); setOrientation(m_orientation); setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum); setCheckable(true);"
+
+[[model.cite]]   # clear_field, reveal: QLineEdit's icon buttons
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlineedit.cpp:455-463"
+quote = "QAction *clearAction = new QAction(d->clearButtonIcon(), QString(), this);"
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kpasswordlineedit.cpp:40-41"
+quote = "toggleEchoModeAction = passwordLineEdit->addAction(visibilityIcon, QLineEdit::TrailingPosition);"
+
+[[model.cite]]   # minimize, maximize, restore, close: QMdiSubWindow's title buttons
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:8275-8280"
+quote = "static const QList<SubControl> subControls = {SC_TitleBarMinButton, SC_TitleBarMaxButton, SC_TitleBarCloseButton, SC_TitleBarNormalButton, SC_TitleBarSysMenu};"
+
+# Kirigami (qqc2-desktop-style's Button, ToolButton and RoundButton, Kirigami's and kirigami-addons' buttons): the
+# style item paints with no widget, so its window is always active for the default look (breezestyle.cpp:4563); a
+# disabled item loses the active focus (qquickitem.cpp:6835-6838). Button and ToolButton pass `highlighted` to the
+# style as focus, and Breeze draws that focus's pen only under State_KeyboardFocusChange, which the style item sets
+# from the control's last focus reason, in or out: the flag `@keyboard_focus_change` (Q1.8, Q1.9); a deactivating
+# window takes the focus flags (S7.2, ADD-A126: the window's content item gives up its focus)
+# No `@recording` state (the ledger's queue #79): kirigami-addons' KeySequenceItem's main button is checkable and
+# records while it is checked (KeySequenceItem.qml:121-122, :148-157), so it draws the `checked` state of a `toggle`
+# button, focused; recording changes only its text ("Input", then " ... ", :126-140)
+# `@keyboard_focus_change` is a state the drawing distinguishes, so it is among the axes' states as well as declared;
+# a ToolButton with a menu and a label draws Breeze's inline large arrow (`@inline_large`, one menu style at a time,
+# as the widgets'); transient touch input (`input:touch`) widens kirigami-addons' floating button's padding; the
+# search field's, input's and chip's buttons are the contexts the icon sizes name
+[[model]]
+widget = "button"
+when = { conditions = ["flavor:kirigami"] }
+available = true
+variants = ["flat", "circular", "toggle", "menu", "tool", "icon_only", "with_icon", "help", "@highlighted", "@inline_large", "@ka_floating", "@key_sequence", "@ka_download", "close", "back", "previous", "next", "overflow", "clear_field", "reveal", "remove", "play", "volume"]
+sizes = []
+densities = []
+flags = ["@keyboard_focus_change"]
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default", "@keyboard_focus_change"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "input:touch"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "chip" }] }
+exclusive = []
+exclusive_variants = [["icon_only", "with_icon"]]
+variant_sets = [["tool", "@inline_large"], ["tool", "@inline_large", "flat"], ["tool", "@inline_large", "@highlighted"], ["toggle", "@key_sequence"]]
+variant_products = [
+  # QQC2 Button (Breeze's push button through the style item): its icon display, flat, highlighted, checkable, a menu
+  [{ any = ["icon_only", "with_icon"] }, { any = ["flat"] }, { any = ["@highlighted"] }, { any = ["toggle"] }, { any = ["menu"] }],
+  # QQC2 ToolButton without a menu (flat unless the application unsets it)
+  [{ one = ["tool"] }, { any = ["icon_only", "with_icon"] }, { any = ["flat"] }, { any = ["@highlighted"] }, { any = ["toggle"] }],
+  # QQC2 ToolButton with a menu and no text: no arrow; with text: the large inline arrow (the style item sets no popup delay)
+  [{ one = ["tool"] }, { one = ["menu"] }, { one = ["icon_only"] }, { any = ["flat"] }, { any = ["@highlighted"] }, { any = ["toggle"] }],
+  [{ one = ["tool"] }, { one = ["menu"] }, { one = ["@inline_large"] }, { any = ["with_icon"] }, { any = ["flat"] }, { any = ["@highlighted"] }, { any = ["toggle"] }],
+  # QQC2 RoundButton (its own QML background)
+  [{ one = ["circular"] }, { any = ["icon_only", "with_icon"] }, { any = ["flat"] }, { any = ["@highlighted"] }, { any = ["toggle"] }],
+  # kirigami-addons' FloatingButton, an icon, round where its radius is Infinity
+  [{ one = ["@ka_floating"] }, { one = ["icon_only"] }, { any = ["circular"] }],
+  # Kirigami's ContextualHelpButton; kirigami-addons' FormCardDialog close button and Kirigami's Chip remove button
+  [{ one = ["help"] }, { one = ["tool"] }, { one = ["flat"] }, { one = ["icon_only"] }],
+  [{ one = ["close", "remove"] }, { one = ["tool"] }, { one = ["flat"] }, { one = ["icon_only"] }],
+  # kirigami-addons' KeySequenceItem: the key button (configure icon, checkable) and its clear button
+  [{ one = ["@key_sequence"] }, { one = ["with_icon"] }, { one = ["toggle"] }],
+  [{ one = ["clear_field"] }, { one = ["icon_only"] }],
+  # kirigami-addons' VideoMaximizeDelegate: the download button, the play and volume tool buttons
+  [{ one = ["@ka_download"] }, { one = ["icon_only"] }],
+  [{ one = ["play", "volume"] }, { one = ["tool"] }, { one = ["flat"] }, { any = ["icon_only", "with_icon"] }],
+]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["focused"], conditions = ["window_inactive"] }, { states = ["focus_visible"], conditions = ["window_inactive"] }]
+rows = ["Q1.8", "Q1.9", "Q2.4", "Q2.48", "K-KA-26†", "K-KA-43†"]
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:91"
+quote = "\"menu\": controlRoot.Accessible.role === Accessible.ButtonMenu,"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:412-414"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:233-246"
+quote = "const bool hasIcon = !toolButtonOption->icon.isNull() || (toolButtonOption->features & QStyleOptionToolButton::Arrow); const bool iconOnly = toolButtonOption->toolButtonStyle == Qt::ToolButtonIconOnly || (toolButtonOption->text.isEmpty() && hasIcon); if (hasPopupMenu) { return ToolButtonMenuArrowStyle::SubControl; } if (hasDelayedMenu) { return ToolButtonMenuArrowStyle::InlineSmall; } if (hasInlineIndicator && !iconOnly) { return ToolButtonMenuArrowStyle::InlineLarge; }"
+
+[[model.cite]]
+kind = "published"
+source = "kirigami-addons@1.15.0 src/components/FloatingButton.qml:64-66"
+quote = "readonly property real __padding: radius === Infinity ? Math.round(Math.max(__effectiveIconSize.width, __effectiveIconSize.height) * (Math.sqrt(2) - 1)) : Kirigami.Settings.hasTransientTouchInput ? (Kirigami.Units.largeSpacing * 2) : Kirigami.Units.largeSpacing"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:47-56"
+quote = "elementType: \"button\" sunken: controlRoot.down on: controlRoot.checkable && controlRoot.checked flat: controlRoot.flat hover: controlRoot.hovered"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:55"
+quote = "hasFocus: controlRoot.activeFocus || controlRoot.highlighted"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:60"
+quote = "hasFocus: controlRoot.visualFocus || (!controlRoot.flat && controlRoot.pressed) || controlRoot.highlighted"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:42-45"
+quote = "static bool isKeyFocusReason(Qt::FocusReason reason) { return reason == Qt::TabFocusReason || reason == Qt::BacktabFocusReason || reason == Qt::ShortcutFocusReason; }"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:884-890"
+quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::State_KeyboardFocusChange; }"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
+quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:647-740"
+quote = "void Helper::renderButtonFrame(QPainter *painter,"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:16-17"
+quote = "Kirigami.Theme.colorSet: !flat && (controlRoot.activeFocus || controlRoot.highlighted) ? Kirigami.Theme.Selection : Kirigami.Theme.Button"
+
+[[model.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/ContextualHelpButton.qml:101"
+quote = "cursorShape: Qt.WhatsThisCursor"
+
+[[model.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:6835-6838"
+quote = "if (scope && !effectiveEnable && activeFocus) { da->clearFocusInScope(scope, q, Qt::OtherFocusReason,"
+
+[[model.cite]]
+kind = "published"
+source = "kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:148-153"
+quote = "onCheckedChanged: { if (checked) { root.__previousSequence = helper.keySequenceNativeText(root.keySequence) helper.window = helper.renderWindow(parent.Window.window) mainButton.forceActiveFocus() helper.startRecording()"
+
+[[model.cite]]
+kind = "published"
+source = "kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:121-122"
+quote = "checkable: true focus: checked"
+
+[[model.cite]]
+kind = "published"
+source = "kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:139"
+quote = "return \" \" + text + (helper.isRecording ? \" ... \" : \" \");"
+
+[[model.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickwindow.cpp:225-229"
+quote = "void QQuickWindow::focusOutEvent(QFocusEvent *ev) { Q_D(QQuickWindow); if (d->contentItem) d->contentItem->setFocus(false, ev->reason());"
+
+[[model.cite]]   # icon_only, with_icon
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:58-59"
+quote = "\"icon\": controlRoot.display !== T.AbstractButton.TextOnly"
+
+[[model.cite]]   # menu on a Button
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:64"
+quote = "\"menu\": controlRoot.Accessible.role === Accessible.ButtonMenu"
+
+[[model.cite]]   # a ToolButton is flat unless unset
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:31"
+quote = "flat: true"
+
+[[model.cite]]   # no popup delay, no split menu: no @inline_small
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:379-433"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
+
+[[model.cite]]   # circular with flat, highlighted, checked
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:79"
+quote = "visible: !controlRoot.flat || controlRoot.hovered || controlRoot.activeFocus || controlRoot.highlighted || controlRoot.checked || controlRoot.down"
+
+[[model.cite]]   # @ka_floating
+kind = "published"
+source = "kirigami-addons@1.15.0 src/components/FloatingButton.qml:47"
+quote = "T.RoundButton {"
+
+[[model.cite]]   # [@ka_floating, circular]: a radius of Infinity
+kind = "published"
+source = "kirigami-addons@1.15.0 src/components/FloatingButton.qml:64-65"
+quote = "readonly property real __padding: radius === Infinity"
+
+[[model.cite]]   # help
+kind = "published"
+source = "kirigami@6.31.0 src/controls/ContextualHelpButton.qml:62"
+quote = "display: QQC2.ToolButton.IconOnly"
+
+[[model.cite]]   # remove
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Chip.qml:41-50"
+quote = "indicator: QQC2.ToolButton {"
+
+[[model.cite]]   # close
+kind = "published"
+source = "kirigami-addons@1.15.0 src/formcard/FormCardDialog.qml:103"
+quote = "display: QQC2.AbstractButton.IconOnly"
+
+[[model.cite]]   # @key_sequence with its icon
+kind = "published"
+source = "kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:119-121"
+quote = "icon.name: \"configure\""
+
+[[model.cite]]   # the clear button
+kind = "published"
+source = "kirigami-addons@1.15.0 src/actions/private/KeySequenceItem.qml:166-182"
+quote = "display: QQC2.Button.IconOnly"
+
+[[model.cite]]   # @ka_download
+kind = "published"
+source = "kirigami-addons@1.15.0 src/components/VideoMaximizeDelegate.qml:227"
+quote = "display: QQC2.AbstractButton.IconOnly"
+
+[[model.cite]]   # play, volume
+kind = "published"
+source = "kirigami-addons@1.15.0 src/components/VideoMaximizeDelegate.qml:256-276"
+quote = "QQC2.ToolButton { id: playButton"
+
+# KTitleWidget (component.title_widget, Qt Widgets only; K1.270, K2.15): its title's text level, one of four (level 1
+# where none is set), and its comment's message type, one of four (Info where none is set); no state, condition or
+# context: its style sheets hold one size and one colour, rebuilt on palette and font changes only. A QWidget, so the
+# `kirigami` flavour has none (the catalogue's `available = false` there)
+[[model]]
+widget = "component.title_widget"
+available = true
+variants = ["@level_1", "@level_2", "@level_3", "@level_4", "@plain", "@info", "@warning", "@error"]
+sizes = []
+densities = []
+axes = { states = [], conditions = [], contexts = [] }
+exclusive = []
+exclusive_variants = [["@level_1", "@level_2", "@level_3", "@level_4"], ["@plain", "@info", "@warning", "@error"]]
+variant_products = [[{ any = ["@level_1", "@level_2", "@level_3", "@level_4"] }, { any = ["@plain", "@info", "@warning", "@error"] }]]
+not_drawn = []
+rows = ["K1.270", "K2.15"]
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:34-55"
+quote = "QString textStyleSheet() const"
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:112"
+quote = "int level = 1;"
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.h:115-120"
+quote = "enum MessageType { PlainMessage, InfoMessage, WarningMessage, ErrorMessage, };"
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:29"
+quote = ", messageType(KTitleWidget::InfoMessage)"
+
+[[model]]
+widget = "component.title_widget"
+when = { conditions = ["flavor:kirigami"] }
+available = false
+rows = ["K2.15"]
+
+[[model.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.h:57"
+quote = "class KWIDGETSADDONS_EXPORT KTitleWidget : public QWidget"

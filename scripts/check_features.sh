@@ -15,11 +15,33 @@
 # left out of that crate's all-features run (it is still checked alone):
 # native-theme-gpui's `gpui-fast` moves the connector to another GPUI core.
 #
-#   scripts/check_features.sh
+#   scripts/check_features.sh [--skip CRATE]... [--only CRATE]...
+#
+# --skip leaves a crate out, --only checks the named crates alone; a name that
+# is not a workspace crate with a library is an error (exit 2).
+# scripts/check_release.sh passes them for a crate-level PLAN_EXCLUDED key
+# (`feature combinations (<crate>)`), and ci.yml's copy of such a key passes
+# `--skip`.
 #
 # Requires jq. scripts/check_release.sh, ci.yml (and through it publish.yml's
 # CI run) and dependency-canary.yml run it.
 set -euo pipefail
+
+usage() {
+    echo "usage: scripts/check_features.sh [--skip CRATE]... [--only CRATE]..." >&2
+    exit 2
+}
+
+SKIP=()
+ONLY=()
+while (($#)); do
+    case "$1" in
+        --skip) (($# >= 2)) || usage; SKIP+=("$2"); shift ;;
+        --only) (($# >= 2)) || usage; ONLY+=("$2"); shift ;;
+        *) usage ;;
+    esac
+    shift
+done
 
 if ! command -v jq &>/dev/null; then
     echo "check_features.sh: jq is required (it reads the crates' features from cargo metadata); install jq and rerun" >&2
@@ -42,6 +64,18 @@ CRATES=$(printf "%s" "$METADATA" | jq -r '
     .packages[]
     | select(any(.targets[]; any(.kind[]; . == "lib" or . == "proc-macro")))
     | .name')
+for crate in ${SKIP[@]+"${SKIP[@]}"} ${ONLY[@]+"${ONLY[@]}"}; do
+    if ! grep -qxF -- "$crate" <<<"$CRATES"; then
+        echo "check_features.sh: $crate is not a workspace crate with a library" >&2
+        exit 2
+    fi
+done
+if [ "${#ONLY[@]}" -gt 0 ]; then
+    CRATES=$(printf "%s\n" "${ONLY[@]}")
+fi
+if [ "${#SKIP[@]}" -gt 0 ]; then
+    CRATES=$(grep -vxF -f <(printf "%s\n" "${SKIP[@]}") <<<"$CRATES" || true)
+fi
 
 # The features of a crate its all-features run leaves out (see the header).
 backend_switches() {

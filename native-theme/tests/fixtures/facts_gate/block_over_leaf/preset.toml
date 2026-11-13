@@ -1,0 +1,17 @@
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+# The focus ring the token's in every combination: the block's fact stands after the leaf's (S17).
+[[rules]]
+target = "button.body"
+set = { focus = "= token.focus" }

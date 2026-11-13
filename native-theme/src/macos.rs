@@ -1,7 +1,39 @@
-//! macOS theme reader: reads semantic NSColor values with P3-to-sRGB conversion,
-//! resolves both light and dark appearance variants via NSAppearance, reads
-//! system/monospace/per-widget fonts via NSFont, the scroll bar style and its
-//! width, and accessibility flags.
+//! The macOS reader: the appearance, the semantic colours AppKit resolves
+//! under both appearances, the accessibility display options, overlay
+//! scroll bars and keyboard navigation, into a [`ReaderState`] and a reader
+//! layer (S8, S9.3, S9.5); the running macOS version, for the generation
+//! table; and the system UI font Core Text resolves, for [`crate::fonts`].
+//!
+//! Each colour is the `NSColor` class property its preset's fact measured
+//! (`docs/facts/macos/roles.toml`), resolved inside
+//! `performAsCurrentDrawingAppearance:` under `NSAppearanceNameAqua` and
+//! `NSAppearanceNameDarkAqua` and converted to sRGB, as the OS probe reads
+//! it, so on a measured OS the reader's layer states the preset's values.
+//! The five accent inputs (S9.1) are stated as one group per scheme (S9.3):
+//! `input.accent` in the common bases, which any preset takes, the other
+//! four under `for_preset.<own>` with the roles, which are macOS's own
+//! (S9.5). The roles that reference an input or another role
+//! (`role.global.accent`, `role.selection.background`, …) are left to the
+//! preset, which states them as those references; the reader reads the role
+//! referenced. Of the keyed roles the slice's port reads `role.@system_red`,
+//! `@system_orange`, `@system_green`, `@system_blue` and
+//! `@selected_control_secondary` (ADD-A138); the others are the readers
+//! unit's.
+//!
+//! While Increase Contrast is on, AppKit resolves both appearances to their
+//! increased-contrast colours (the os-probe's `increase-contrast-on` passes
+//! of runs 40320895749, 41006842699 and 41195846264, on macOS 14, 15 and
+//! 26), so the reads are stated as the inputs' `contrast.increased` bases
+//! and the roles as reader rules under `scheme:<s>`, `contrast_increased` and
+//! `preset:<own>`; while it is off, as the inputs' per-scheme values and the
+//! roles' bases. The other condition's slot is one the platform gives none
+//! at, no failure and no `Fallback` (S9.3, ADD-A138), the layers beneath
+//! keeping theirs: `appearanceNamed:` returns nil for the high-contrast
+//! appearance names (AppKit's `NSAppearance.h:73-74`, Xcode 26.6), and no
+//! API resolves the plain colours while the setting is on.
+//!
+//! The reader patches no text-role slot: System Settings has no font setting
+//! (S9.5), and the presets state each style's face from the facts.
 //!
 //! # Sources
 //!
@@ -11,15 +43,23 @@
 //! - `AppleInterfaceStyle`: light or dark, the global user default.
 //! - `NSColor`: the semantic colours, the accent and highlight colours among
 //!   them, read under both appearances.
-//! - `NSScroller.preferredScrollerStyle`: overlay scroll bars, and the groove
-//!   width AppKit gives that style.
-//! - `NSWorkspace.accessibilityDisplayOptions`: reduce motion, increase
-//!   contrast and reduce transparency.
+//! - `NSScroller.preferredScrollerStyle`: overlay scroll bars.
+//! - `NSWorkspace.accessibilityDisplayOptions`: increase contrast, reduce
+//!   motion and reduce transparency.
 //!
 //! # Sources not watched
 //!
-//! - `NSFont`: the system, monospaced, menu, tool-tip and title-bar fonts,
-//!   which System Settings has no setting for.
+//! - `NSApplication.isFullKeyboardAccessEnabled`: keyboard navigation
+//!   (System Settings › Keyboard), whose changes key-value observing does
+//!   not report (AppKit's `NSApplication.h:377-380`, Xcode 26.6); it shows
+//!   at the next read.
+//! - `NSProcessInfo.operatingSystemVersion`: the generation, fixed for a
+//!   process.
+//!
+//! `NSScroller.preferredScrollerStyle` and `isFullKeyboardAccessEnabled` are
+//! AppKit's main-thread API (`MainThreadMarker`): a read off the main
+//! thread leaves them unread, and the state keeps S16's no-reader `false`
+//! for both, as the GNOME reader keeps an unread `overlay-scrolling`.
 
 // Objective-C FFI via objc2 -- no safe alternative
 #![allow(unsafe_code)]
@@ -27,233 +67,477 @@
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use block2::RcBlock;
 #[cfg(all(target_os = "macos", feature = "macos"))]
+use objc2::rc::Retained;
+#[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_app_kit::{
-    NSAppearance, NSColor, NSColorSpace, NSControlSize, NSFont, NSFontTraitsAttribute,
-    NSFontWeightRegular, NSFontWeightTrait, NSScroller, NSScrollerStyle, NSWorkspace,
+    NSAppearance, NSApplication, NSColor, NSColorSpace, NSScroller, NSScrollerStyle, NSWorkspace,
 };
 #[cfg(all(target_os = "macos", feature = "macos"))]
-use objc2_foundation::{NSDictionary, NSNumber, NSProcessInfo, NSString};
+use objc2_foundation::{NSString, NSUserDefaults};
 
-/// Convert an NSColor to sRGB and extract RGBA components.
-///
-/// Converts the color to the sRGB color space via `colorUsingColorSpace`,
-/// handling P3-to-sRGB conversion automatically. Returns `None` if the
-/// color cannot be converted (e.g., pattern colors).
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn nscolor_to_rgba(color: &NSColor, srgb: &NSColorSpace) -> Option<crate::Rgba> {
-    let srgb_color = color.colorUsingColorSpace(srgb)?;
-    let r = srgb_color.redComponent() as f32;
-    let g = srgb_color.greenComponent() as f32;
-    let b = srgb_color.blueComponent() as f32;
-    let a = srgb_color.alphaComponent() as f32;
-    Some(crate::Rgba::from_f32(r, g, b, a))
+use crate::blocks::BlockPatch;
+use crate::color::Color;
+use crate::error::ReaderFailure;
+use crate::inputs::{Contrast, InputName, InputValue};
+use crate::key::Key;
+use crate::layer::{Bases, Layer};
+use crate::presets::PresetId;
+use crate::reader::Reading;
+use crate::resolve::ReaderState;
+use crate::roles::{
+    ColorRolesPatch, DisabledRolesPatch, GlobalRolesPatch, SurfaceRolesPatch, SurfaceSet,
+};
+use crate::selector::{Condition, Rule, RuleBody, Scheme, Selector, SetMatch};
+use crate::value::{SchemeMap, SurfaceMap, Value};
+
+/// The light appearance's name, which `appearanceNamed:` resolves.
+const AQUA: &str = "NSAppearanceNameAqua";
+
+/// The dark appearance's name.
+const DARK_AQUA: &str = "NSAppearanceNameDarkAqua";
+
+/// The text-scaling factor of unscaled text, S16's no-reader state's: the
+/// identity of S9.4's scaling, not a platform value. macOS's Text size
+/// setting has no public API to read (MAC-X26).
+const UNSCALED: f32 = 1.0;
+
+/// The first macOS major version with `performAsCurrentDrawingAppearance:`
+/// (`API_AVAILABLE(macos(11.0))`, AppKit's `NSAppearance.h:36`, Xcode 26.6).
+/// Below it the selector does not exist, so the reader does not send it.
+const DRAWING_APPEARANCE_MAJOR: u32 = 11;
+
+/// Whether `version` has `performAsCurrentDrawingAppearance:`.
+#[cfg_attr(
+    not(all(target_os = "macos", feature = "macos")),
+    allow(dead_code, reason = "the macOS reader's: not linked in this build")
+)]
+fn has_drawing_appearance(version: crate::pipeline::OsVersion) -> bool {
+    version.major >= DRAWING_APPEARANCE_MAJOR
 }
 
-/// The first macOS major version with `NSColor.textInsertionPointColor`
-/// ("introducedAt": "14.0" in Apple's documentation;
-/// docs/platform-facts.md:1209). Below it the selector does not exist, so
-/// the reader does not send it and the preset's caret stands.
-const TEXT_INSERTION_POINT_MAJOR: u32 = 14;
-
-/// Whether `version` has `NSColor.textInsertionPointColor`; the version is
-/// `os_version`'s, the one the generation table reads.
-#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-fn has_text_insertion_point_color(version: crate::pipeline::OsVersion) -> bool {
-    version.major >= TEXT_INSERTION_POINT_MAJOR
+/// One appearance's colours as AppKit resolved them, each `None` where it
+/// has no sRGB form. Each field's doc names the `NSColor` class property
+/// the presets' fact for its target measured, and the target.
+#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(
+    not(all(target_os = "macos", feature = "macos")),
+    allow(dead_code, reason = "the macOS reader's: not linked in this build")
+)]
+pub(crate) struct AppearanceColors {
+    /// `controlAccentColor`: `input.accent`.
+    pub(crate) accent: Option<Color>,
+    /// `selectedContentBackgroundColor`: `input.selected_content_background`.
+    pub(crate) selected_content_background: Option<Color>,
+    /// `selectedTextBackgroundColor`: `input.highlight`.
+    pub(crate) highlight: Option<Color>,
+    /// `keyboardFocusIndicatorColor`: `input.keyboard_focus_indicator`.
+    pub(crate) keyboard_focus_indicator: Option<Color>,
+    /// `selectedControlColor`: `input.selected_control`.
+    pub(crate) selected_control: Option<Color>,
+    /// `windowBackgroundColor`: `role.window.background`.
+    pub(crate) window_background: Option<Color>,
+    /// `labelColor`: `role.window.foreground`.
+    pub(crate) label: Option<Color>,
+    /// `secondaryLabelColor`: `role.window.foreground_inactive`.
+    pub(crate) secondary_label: Option<Color>,
+    /// `linkColor`: `role.window.link`.
+    pub(crate) link: Option<Color>,
+    /// `separatorColor`: `role.window.border`.
+    pub(crate) separator: Option<Color>,
+    /// `tertiaryLabelColor`: `role.window.disabled.foreground`.
+    pub(crate) tertiary_label: Option<Color>,
+    /// `controlBackgroundColor`: `role.view.background`.
+    pub(crate) control_background: Option<Color>,
+    /// `alternatingContentBackgroundColors[1]`:
+    /// `role.view.background_alternate`.
+    pub(crate) alternating_content_background: Option<Color>,
+    /// `alternateSelectedControlTextColor`: `role.selection.foreground` and
+    /// `role.global.accent_foreground`.
+    pub(crate) alternate_selected_control_text: Option<Color>,
+    /// `selectedTextColor`: `role.global.selection_text_foreground`.
+    pub(crate) selected_text: Option<Color>,
+    /// `systemRedColor`: `role.@system_red`.
+    pub(crate) system_red: Option<Color>,
+    /// `systemOrangeColor`: `role.@system_orange`.
+    pub(crate) system_orange: Option<Color>,
+    /// `systemGreenColor`: `role.@system_green`.
+    pub(crate) system_green: Option<Color>,
+    /// `systemBlueColor`: `role.@system_blue`.
+    pub(crate) system_blue: Option<Color>,
+    /// `secondarySelectedControlColor`: `role.@selected_control_secondary`,
+    /// the inactive selection the presets state
+    /// `role.selection.background` as under `window_inactive`.
+    pub(crate) secondary_selected_control: Option<Color>,
 }
 
-/// The alpha a disabled on switch's track draws its accent at: macOS draws
-/// the enabled on track at one half in macos-monterey's look and at about
-/// 0.45 in macos-tahoe's (docs/platform-facts.md:1529). The generation is
-/// `os_version`'s, as the generation table reads it, and each preset states
-/// `switch.disabled_checked_background` as its accent at its generation's
-/// alpha.
-#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-fn disabled_checked_alpha(version: crate::pipeline::OsVersion) -> u8 {
-    if crate::pipeline::macos_generation(version).0.name == "macos-tahoe" {
-        0x73
-    } else {
-        0x80
+#[cfg_attr(
+    not(all(target_os = "macos", feature = "macos")),
+    allow(dead_code, reason = "the macOS reader's: not linked in this build")
+)]
+impl AppearanceColors {
+    /// The five accent inputs, in the presets' `accent_inputs` order: each
+    /// input's key, the property read for it and its colour.
+    fn accent_inputs(&self) -> [(Key, &'static str, Option<Color>); 5] {
+        [
+            (crate::key!("accent"), "controlAccentColor", self.accent),
+            (
+                crate::key!("selected_content_background"),
+                "selectedContentBackgroundColor",
+                self.selected_content_background,
+            ),
+            (
+                crate::key!("highlight"),
+                "selectedTextBackgroundColor",
+                self.highlight,
+            ),
+            (
+                crate::key!("keyboard_focus_indicator"),
+                "keyboardFocusIndicatorColor",
+                self.keyboard_focus_indicator,
+            ),
+            (
+                crate::key!("selected_control"),
+                "selectedControlColor",
+                self.selected_control,
+            ),
+        ]
+    }
+
+    /// The colour-role patch of what was read: every role read, none the
+    /// preset states as a reference to an input.
+    fn roles(&self) -> ColorRolesPatch {
+        let stated = |color: Option<Color>| color.map(Value::Stated);
+        let window = SurfaceRolesPatch {
+            background: stated(self.window_background),
+            foreground: stated(self.label),
+            foreground_inactive: stated(self.secondary_label),
+            link: stated(self.link),
+            border: stated(self.separator),
+            disabled: self.tertiary_label.map(|color| DisabledRolesPatch {
+                foreground: Some(Value::Stated(color)),
+                ..DisabledRolesPatch::default()
+            }),
+            ..SurfaceRolesPatch::default()
+        };
+        let view = SurfaceRolesPatch {
+            background: stated(self.control_background),
+            background_alternate: stated(self.alternating_content_background),
+            ..SurfaceRolesPatch::default()
+        };
+        let selection = SurfaceRolesPatch {
+            foreground: stated(self.alternate_selected_control_text),
+            ..SurfaceRolesPatch::default()
+        };
+        let mut surfaces = SurfaceMap::default();
+        let mut any_surface = false;
+        for (set, patch) in [
+            (SurfaceSet::Window, window),
+            (SurfaceSet::View, view),
+            (SurfaceSet::Selection, selection),
+        ] {
+            if patch != SurfaceRolesPatch::default() {
+                surfaces.insert(set, BlockPatch::Fields(patch));
+                any_surface = true;
+            }
+        }
+        let global = GlobalRolesPatch {
+            accent_foreground: stated(self.alternate_selected_control_text),
+            selection_text_foreground: stated(self.selected_text),
+            ..GlobalRolesPatch::default()
+        };
+        let keyed: Vec<(Key, Value<Color>)> = [
+            (crate::key!("system_red"), self.system_red),
+            (crate::key!("system_orange"), self.system_orange),
+            (crate::key!("system_green"), self.system_green),
+            (crate::key!("system_blue"), self.system_blue),
+            (
+                crate::key!("selected_control_secondary"),
+                self.secondary_selected_control,
+            ),
+        ]
+        .into_iter()
+        .filter_map(|(key, color)| Some((key, Value::Stated(color?))))
+        .collect();
+        ColorRolesPatch {
+            surfaces: any_surface.then_some(surfaces),
+            global: (global != GlobalRolesPatch::default()).then_some(global),
+            keyed: (!keyed.is_empty()).then_some(keyed),
+            ..ColorRolesPatch::default()
+        }
     }
 }
 
-/// Write what macOS fades from the accent: a disabled on switch's track,
-/// the variant's accent at `disabled_checked_alpha`. A variant whose accent
-/// was not read keeps the preset's.
-#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-fn apply_accent_fades(v: &mut crate::ThemeMode, disabled_checked_alpha: u8) {
-    v.switch.disabled_checked_background = v
-        .defaults
-        .accent_color
-        .map(|a| crate::Rgba::new(a.r, a.g, a.b, disabled_checked_alpha));
+/// What AppKit gave, in plain types: built from its reads on macOS,
+/// directly in tests.
+#[cfg_attr(
+    not(all(target_os = "macos", feature = "macos")),
+    allow(dead_code, reason = "the macOS reader's: not linked in this build")
+)]
+pub(crate) struct MacosData {
+    /// The scheme: dark where `AppleInterfaceStyle` is `Dark`.
+    pub(crate) scheme: Scheme,
+    /// `accessibilityDisplayShouldIncreaseContrast`.
+    pub(crate) increase_contrast: bool,
+    /// `accessibilityDisplayShouldReduceMotion`.
+    pub(crate) reduce_motion: bool,
+    /// `accessibilityDisplayShouldReduceTransparency`.
+    pub(crate) reduce_transparency: bool,
+    /// Whether `preferredScrollerStyle` is the overlay style; `None`: not
+    /// read, off the main thread.
+    pub(crate) overlay_scrollbars: Option<bool>,
+    /// `isFullKeyboardAccessEnabled`; `None`: not read, off the main thread.
+    pub(crate) full_keyboard_access: Option<bool>,
+    /// The colours under [`AQUA`]; `None`: AppKit gives no such appearance.
+    pub(crate) light: Option<AppearanceColors>,
+    /// The colours under [`DARK_AQUA`]; `None`: AppKit gives no such
+    /// appearance.
+    pub(crate) dark: Option<AppearanceColors>,
 }
 
-/// Per-widget colors read from appearance-dependent NSColor APIs.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-#[derive(Default)]
-struct PerWidgetColors {
-    placeholder: Option<crate::Rgba>,
-    caret: Option<crate::Rgba>,
-    alternate_row: Option<crate::Rgba>,
-    header_foreground: Option<crate::Rgba>,
-    grid_color: Option<crate::Rgba>,
-    title_bar_foreground: Option<crate::Rgba>,
-}
-
-/// Read all semantic NSColor values for the current appearance context.
+/// The reader's state and layer from what AppKit gave, its own preset's
+/// part under `own` (S9.5). Zero I/O.
 ///
-/// Returns both the ThemeDefaults and per-widget color data. Must be called
-/// within an `NSAppearance::performAsCurrentDrawingAppearance` block so that
-/// dynamic colors resolve to the correct appearance.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
-    let srgb = NSColorSpace::sRGBColorSpace();
+/// - The state: the scheme; `Contrast::Increased` under Increase Contrast
+///   (macOS has one contrast condition); reduced motion and reduced
+///   transparency; overlay scroll bars and full keyboard access where they
+///   were read, else `false`; text unscaled ([`UNSCALED`]); no font DPI,
+///   macOS having no setting, so the preset's `token.text.font_dpi` of 72
+///   converts its points (S9.4).
+/// - Per appearance read, the five accent inputs as one group: none of them
+///   at a scheme where one has no sRGB form or the appearance is missing,
+///   reported as the status's fallback, naming the input (S9.3).
+///   `input.accent` in the common bases, the other four under
+///   `for_preset.<own>`; per-scheme values, or `contrast.increased` bases
+///   under Increase Contrast.
+/// - Per appearance read, the roles read: `colors.<scheme>` under
+///   `for_preset.<own>`, or under Increase Contrast a rule on the colours
+///   under `scheme:<s>`, `contrast_increased` and `preset:<own>`.
+#[cfg_attr(
+    not(all(target_os = "macos", feature = "macos")),
+    allow(dead_code, reason = "the macOS reader's: not linked in this build")
+)]
+pub(crate) fn build_reading(data: &MacosData, own: PresetId) -> Reading {
+    let mut state = ReaderState::new(data.scheme, UNSCALED);
+    state.contrast = data.increase_contrast.then_some(Contrast::Increased);
+    state.reduced_motion = data.reduce_motion;
+    state.reduced_transparency = data.reduce_transparency;
+    state.overlay_scrollbars = data.overlay_scrollbars.unwrap_or(false);
+    state.full_keyboard_access = data.full_keyboard_access.unwrap_or(false);
 
-    // Bind all NSColor temporaries before borrowing them.
-    let label_c = NSColor::labelColor();
-    let control_accent = NSColor::controlAccentColor();
-    let window_bg = NSColor::windowBackgroundColor();
-    let control_bg = NSColor::controlBackgroundColor();
-    let separator_c = NSColor::separatorColor();
-    let secondary_label = NSColor::secondaryLabelColor();
-    let alt_sel_text = NSColor::alternateSelectedControlTextColor();
-    let system_red = NSColor::systemRedColor();
-    let system_orange = NSColor::systemOrangeColor();
-    let system_green = NSColor::systemGreenColor();
-    let system_blue = NSColor::systemBlueColor();
-    let sel_content_bg = NSColor::selectedContentBackgroundColor();
-    let sel_text = NSColor::selectedTextColor();
-    let sel_text_bg = NSColor::selectedTextBackgroundColor();
-    let link_c = NSColor::linkColor();
-    let focus_c = NSColor::keyboardFocusIndicatorColor();
-    let disabled_text = NSColor::disabledControlTextColor();
+    let mut layer = Layer::default();
+    let mut own_bases = Bases::default();
+    let mut group: [SchemeMap<Value<Color>>; 5] = Default::default();
+    let mut fallback = None;
+    for (scheme, name, colors) in [
+        (Scheme::Light, AQUA, &data.light),
+        (Scheme::Dark, DARK_AQUA, &data.dark),
+    ] {
+        let Some(colors) = colors else {
+            fallback.get_or_insert_with(|| {
+                ReaderFailure::Platform(format!(
+                    "input.accent: AppKit gives no {name} appearance to read the accent inputs under"
+                ))
+            });
+            continue;
+        };
+        let inputs = colors.accent_inputs();
+        match inputs.iter().find(|(_, _, color)| color.is_none()) {
+            Some((key, property, _)) => {
+                fallback.get_or_insert_with(|| {
+                    ReaderFailure::Platform(format!(
+                        "input.{key}: NSColor.{property} has no sRGB form under {name}"
+                    ))
+                });
+            }
+            None => {
+                for (slot, (_, _, color)) in group.iter_mut().zip(inputs) {
+                    *slot.slot(scheme) = color.map(Value::Stated);
+                }
+            }
+        }
+        let roles = colors.roles();
+        if data.increase_contrast {
+            let selector = Selector {
+                conditions: SetMatch {
+                    all_of: vec![
+                        Condition::Scheme(scheme),
+                        Condition::ContrastIncreased,
+                        Condition::Preset(own),
+                    ],
+                    none_of: Vec::new(),
+                },
+                ..Selector::default()
+            };
+            layer
+                .rules
+                .push(Rule::new(selector, RuleBody::Colors(Box::new(roles))));
+        } else {
+            *own_bases.colors.slot(scheme) = Some(roles);
+        }
+    }
 
-    // Additional per-widget color bindings (MACOS-03).
-    let placeholder_c = NSColor::placeholderTextColor();
-    // platform-facts.md:1209 (§2.4): the insertion point's own colour, on
-    // macOS 14 and later only.
-    let insertion_point_c =
-        has_text_insertion_point_color(os_version()).then(NSColor::textInsertionPointColor);
-    let unemph_sel_bg = NSColor::unemphasizedSelectedContentBackgroundColor();
-    let alt_bg_colors = NSColor::alternatingContentBackgroundColors();
-    let header_text_c = NSColor::headerTextColor();
-    let grid_c = NSColor::gridColor();
-    let frame_text_c = NSColor::windowFrameTextColor();
-
-    let label = nscolor_to_rgba(&label_c, &srgb);
-
-    let defaults = crate::ThemeDefaults {
-        accent_color: nscolor_to_rgba(&control_accent, &srgb),
-        accent_text_color: nscolor_to_rgba(&alt_sel_text, &srgb),
-        background_color: nscolor_to_rgba(&window_bg, &srgb),
-        text_color: label,
-        surface_color: nscolor_to_rgba(&control_bg, &srgb),
-        // platform-facts.md:1055: border.color is separatorColor on macOS.
-        border: crate::model::border::DefaultsBorderSpec {
-            color: nscolor_to_rgba(&separator_c, &srgb),
-            ..Default::default()
-        },
-        muted_color: nscolor_to_rgba(&secondary_label, &srgb),
-        // shadow_color is not read: NSColor.shadowColor is an opaque black, while the
-        // shadow AppKit draws is NSShadow's default, black at 1/3, which the preset
-        // states (platform-facts.md:1057).
-        danger_color: nscolor_to_rgba(&system_red, &srgb),
-        danger_text_color: label,
-        warning_color: nscolor_to_rgba(&system_orange, &srgb),
-        warning_text_color: label,
-        success_color: nscolor_to_rgba(&system_green, &srgb),
-        success_text_color: label,
-        info_color: nscolor_to_rgba(&system_blue, &srgb),
-        info_text_color: label,
-        selection_background: nscolor_to_rgba(&sel_content_bg, &srgb),
-        // platform-facts.md:1060, :1062-1063: alternateSelectedControlTextColor on a
-        // selection; selectedTextBackgroundColor and selectedTextColor for selected text
-        selection_text_color: nscolor_to_rgba(&alt_sel_text, &srgb),
-        selection_inactive_background: nscolor_to_rgba(&unemph_sel_bg, &srgb),
-        text_selection_background: nscolor_to_rgba(&sel_text_bg, &srgb),
-        text_selection_color: nscolor_to_rgba(&sel_text, &srgb),
-        link_color: nscolor_to_rgba(&link_c, &srgb),
-        focus_ring_color: nscolor_to_rgba(&focus_c, &srgb),
-        disabled_text_color: nscolor_to_rgba(&disabled_text, &srgb),
-        ..Default::default()
-    };
-
-    // Alternate row: index 1 of alternatingContentBackgroundColors (index 0 is normal).
-    let alternate_row = if alt_bg_colors.count() >= 2 {
-        nscolor_to_rgba(&alt_bg_colors.objectAtIndex(1), &srgb)
-    } else {
-        None
-    };
-
-    let per_widget = PerWidgetColors {
-        placeholder: nscolor_to_rgba(&placeholder_c, &srgb),
-        caret: insertion_point_c
-            .as_ref()
-            .and_then(|c| nscolor_to_rgba(c, &srgb)),
-        alternate_row,
-        header_foreground: nscolor_to_rgba(&header_text_c, &srgb),
-        grid_color: nscolor_to_rgba(&grid_c, &srgb),
-        title_bar_foreground: nscolor_to_rgba(&frame_text_c, &srgb),
-    };
-
-    (defaults, per_widget)
+    let names = AppearanceColors::default().accent_inputs();
+    for ((key, _, _), per_scheme) in names.into_iter().zip(group) {
+        if per_scheme.light.is_none() && per_scheme.dark.is_none() {
+            continue;
+        }
+        let value = if data.increase_contrast {
+            InputValue {
+                per_scheme: SchemeMap::default(),
+                per_contrast: vec![(Contrast::Increased, per_scheme)],
+            }
+        } else {
+            InputValue::new(per_scheme)
+        };
+        let bases = if key == crate::key!("accent") {
+            &mut layer.bases
+        } else {
+            &mut own_bases
+        };
+        bases.inputs.entries.push((InputName::from_key(key), value));
+    }
+    if own_bases != Bases::default() {
+        layer.for_preset.push((own, own_bases));
+    }
+    Reading {
+        state,
+        layer,
+        fallback,
+    }
 }
 
-/// Read one appearance's colours: [`read_appearance_colors`] inside
-/// `performAsCurrentDrawingAppearance`, so that dynamic colours resolve to
-/// `appearance`.
+/// The colour `NSColor`'s sRGB components give: `None` where a component is
+/// not finite or the alpha lies outside `0..=1` (S2.1).
+#[cfg_attr(
+    not(all(target_os = "macos", feature = "macos")),
+    allow(dead_code, reason = "the macOS reader's: not linked in this build")
+)]
+fn color_from_components(r: f64, g: f64, b: f64, a: f64) -> Option<Color> {
+    let finite = [r, g, b, a].iter().all(|c| c.is_finite());
+    (finite && (0.0..=1.0).contains(&a)).then_some(Color {
+        r: r as f32,
+        g: g as f32,
+        b: b as f32,
+        a: a as f32,
+    })
+}
+
+/// `color` in sRGB (`colorUsingColorSpace:`, which converts Display P3
+/// colours), as the OS probe reads it; `None` where it has no sRGB form (a
+/// pattern colour).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_variant(appearance: &NSAppearance) -> (crate::ThemeDefaults, PerWidgetColors) {
-    let data = std::cell::Cell::new(None);
+fn srgb(color: &NSColor, space: &NSColorSpace) -> Option<Color> {
+    let color = color.colorUsingColorSpace(space)?;
+    color_from_components(
+        color.redComponent(),
+        color.greenComponent(),
+        color.blueComponent(),
+        color.alphaComponent(),
+    )
+}
+
+/// The colours of the appearance current for drawing; called inside
+/// `performAsCurrentDrawingAppearance:`, so that dynamic colours resolve to
+/// it.
+#[cfg(all(target_os = "macos", feature = "macos"))]
+fn drawing_appearance_colors() -> AppearanceColors {
+    let space = NSColorSpace::sRGBColorSpace();
+    let read = |color: Retained<NSColor>| srgb(&color, &space);
+    // The property `role.@selected_control_secondary`'s facts measured
+    // (ADD-A138), deprecated from macOS 11 for
+    // `unemphasizedSelectedContentBackgroundColor`, which AppKit's header
+    // calls its alias (`NSColor.h:222`, `:429`, Xcode 26.6).
+    #[allow(deprecated, reason = "the property the presets' facts measured")]
+    let secondary_selected_control = NSColor::secondarySelectedControlColor();
+    AppearanceColors {
+        accent: read(NSColor::controlAccentColor()),
+        selected_content_background: read(NSColor::selectedContentBackgroundColor()),
+        highlight: read(NSColor::selectedTextBackgroundColor()),
+        keyboard_focus_indicator: read(NSColor::keyboardFocusIndicatorColor()),
+        selected_control: read(NSColor::selectedControlColor()),
+        window_background: read(NSColor::windowBackgroundColor()),
+        label: read(NSColor::labelColor()),
+        secondary_label: read(NSColor::secondaryLabelColor()),
+        link: read(NSColor::linkColor()),
+        separator: read(NSColor::separatorColor()),
+        tertiary_label: read(NSColor::tertiaryLabelColor()),
+        control_background: read(NSColor::controlBackgroundColor()),
+        alternating_content_background: NSColor::alternatingContentBackgroundColors()
+            .iter()
+            .nth(1)
+            .and_then(read),
+        alternate_selected_control_text: read(NSColor::alternateSelectedControlTextColor()),
+        selected_text: read(NSColor::selectedTextColor()),
+        system_red: read(NSColor::systemRedColor()),
+        system_orange: read(NSColor::systemOrangeColor()),
+        system_green: read(NSColor::systemGreenColor()),
+        system_blue: read(NSColor::systemBlueColor()),
+        secondary_selected_control: read(secondary_selected_control),
+    }
+}
+
+/// `appearance`'s colours: [`drawing_appearance_colors`] inside
+/// `performAsCurrentDrawingAppearance:`; every colour `None` should AppKit
+/// not run the block.
+#[cfg(all(target_os = "macos", feature = "macos"))]
+fn appearance_colors(appearance: &NSAppearance) -> AppearanceColors {
+    let colors = std::cell::Cell::new(None);
     {
-        let block = RcBlock::new(|| data.set(Some(read_appearance_colors())));
+        let block = RcBlock::new(|| colors.set(Some(drawing_appearance_colors())));
         appearance.performAsCurrentDrawingAppearance(&block);
     }
-    data.into_inner().unwrap_or_default()
+    colors.into_inner().unwrap_or_default()
 }
 
-/// Apply one appearance's per-widget colours to its variant.
+/// The scheme `AppleInterfaceStyle` gives: dark where it is `Dark`; the
+/// default is absent in light mode, so any other answer is light.
 #[cfg(all(target_os = "macos", feature = "macos"))]
-fn apply_per_widget(v: &mut crate::ThemeMode, pw: PerWidgetColors) {
-    v.input.placeholder_color = pw.placeholder;
-    v.input.caret_color = pw.caret;
-    v.list.alternate_row_background = pw.alternate_row;
-    if let Some(color) = pw.header_foreground {
-        v.list.header_font.get_or_insert_default().color = Some(color);
-    }
-    v.list.grid_color = pw.grid_color;
-    if let Some(color) = pw.title_bar_foreground {
-        v.window.title_bar_font.get_or_insert_default().color = Some(color);
+fn system_scheme() -> Scheme {
+    let style = NSUserDefaults::standardUserDefaults()
+        .stringForKey(&NSString::from_str("AppleInterfaceStyle"));
+    if style.is_some_and(|style| style.to_string().eq_ignore_ascii_case("dark")) {
+        Scheme::Dark
+    } else {
+        Scheme::Light
     }
 }
 
-/// The scroll bar for the user's scroller style: `overlay` (else legacy)
-/// and the groove width AppKit gives that style, `width_for(overlay)`.
-/// The width differs per style and macOS version: legacy 15 and overlay 16
-/// on macOS 14.8.9, 17 for both on macOS 26 (docs/platform-facts.md:1307).
-#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-fn scrollbar_for_style(overlay: bool, width_for: impl Fn(bool) -> f64) -> crate::ScrollbarTheme {
-    crate::ScrollbarTheme {
-        groove_width: Some(width_for(overlay) as f32),
-        overlay_mode: Some(overlay),
-        ..Default::default()
-    }
-}
-
-/// Read the scroll bar from `NSScroller.preferredScrollerStyle` and
-/// `scrollerWidth(for: .regular, scrollerStyle:)` for that style.
-/// Requires main thread (MainThreadMarker).
+/// Read the macOS settings, its own preset's part under `own`.
+///
+/// Refused on macOS before 11, which lacks
+/// `performAsCurrentDrawingAppearance:`, and where AppKit gives neither
+/// appearance. Off the main thread the scroller style and keyboard
+/// navigation are not read (`MainThreadMarker`).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_scrollbar(mtm: objc2::MainThreadMarker) -> crate::ScrollbarTheme {
-    let overlay = NSScroller::preferredScrollerStyle(mtm) == NSScrollerStyle::Overlay;
-    scrollbar_for_style(overlay, |overlay| {
-        let style = if overlay {
-            NSScrollerStyle::Overlay
-        } else {
-            NSScrollerStyle::Legacy
-        };
-        NSScroller::scrollerWidthForControlSize_scrollerStyle(NSControlSize::Regular, style, mtm)
-    })
+pub(crate) fn read(own: PresetId) -> Result<Reading, ReaderFailure> {
+    let version = os_version();
+    if !has_drawing_appearance(version) {
+        return Err(ReaderFailure::Platform(format!(
+            "macOS {version} lacks performAsCurrentDrawingAppearance:, which the reader resolves the colours with (macOS 11 and later)"
+        )));
+    }
+    let light = NSAppearance::appearanceNamed(&NSString::from_str(AQUA));
+    let dark = NSAppearance::appearanceNamed(&NSString::from_str(DARK_AQUA));
+    if light.is_none() && dark.is_none() {
+        return Err(ReaderFailure::Platform(format!(
+            "AppKit gives neither the {AQUA} nor the {DARK_AQUA} appearance"
+        )));
+    }
+    let workspace = NSWorkspace::sharedWorkspace();
+    let main_thread = objc2::MainThreadMarker::new();
+    let data = MacosData {
+        scheme: system_scheme(),
+        increase_contrast: workspace.accessibilityDisplayShouldIncreaseContrast(),
+        reduce_motion: workspace.accessibilityDisplayShouldReduceMotion(),
+        reduce_transparency: workspace.accessibilityDisplayShouldReduceTransparency(),
+        overlay_scrollbars: main_thread
+            .map(|mtm| NSScroller::preferredScrollerStyle(mtm) == NSScrollerStyle::Overlay),
+        full_keyboard_access: main_thread
+            .map(|mtm| NSApplication::sharedApplication(mtm).isFullKeyboardAccessEnabled()),
+        light: light.as_deref().map(appearance_colors),
+        dark: dark.as_deref().map(appearance_colors),
+    };
+    Ok(build_reading(&data, own))
 }
 
 /// The running macOS version, from `NSProcessInfo.operatingSystemVersion`
@@ -262,111 +546,15 @@ fn read_scrollbar(mtm: objc2::MainThreadMarker) -> crate::ScrollbarTheme {
 /// a version of 0.0.0 gets `macos-monterey` with `VersionMatch::PresetNewer`.
 /// Early macOS 26 betas reported 16 here to a binary built against the macOS
 /// 15 SDK; `pipeline::MACOS_GENERATIONS` gives the sources and the mapping.
-#[cfg(all(target_os = "macos", feature = "macos"))]
+/// The SF Symbols loader reads it too (`sficons::has_symbol_images`).
+#[cfg(all(target_os = "macos", any(feature = "macos", feature = "system-icons")))]
 pub(crate) fn os_version() -> crate::pipeline::OsVersion {
-    let v = NSProcessInfo::processInfo().operatingSystemVersion();
+    let v = objc2_foundation::NSProcessInfo::processInfo().operatingSystemVersion();
     let part = |n: isize| u32::try_from(n).unwrap_or_default();
     crate::pipeline::OsVersion::new(
         part(v.majorVersion),
         part(v.minorVersion),
         part(v.patchVersion),
-    )
-}
-
-/// Whether the user asks for reduced motion
-/// (`NSWorkspace.accessibilityDisplayShouldReduceMotion`), as the reader
-/// reads it, for [`crate::detect::detect_reduced_motion`].
-#[cfg(all(target_os = "macos", feature = "macos"))]
-pub(crate) fn reduce_motion() -> bool {
-    NSWorkspace::sharedWorkspace().accessibilityDisplayShouldReduceMotion()
-}
-
-/// Read accessibility flags from NSWorkspace.
-///
-/// Returns (reduce_motion, high_contrast, reduce_transparency). No text-scaling
-/// factor: macOS's accessibility text size affects only a few Apple apps, and
-/// `preferredFont(forTextStyle:)` still returns fixed sizes
-/// (docs/platform-facts.md:1127), so the fonts the reader reads already carry
-/// whatever size the system gives them.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>) {
-    let workspace = NSWorkspace::sharedWorkspace();
-    (
-        Some(reduce_motion()),
-        Some(workspace.accessibilityDisplayShouldIncreaseContrast()),
-        Some(workspace.accessibilityDisplayShouldReduceTransparency()),
-    )
-}
-
-/// Map an AppKit font weight (-1.0..1.0) to the nearest CSS weight (100..900).
-///
-/// Uses the standard AppKit-to-CSS mapping thresholds. Returns `None` if the
-/// font descriptor's traits dictionary does not contain the weight key.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
-    // SAFETY: the two keys are AppKit's own NSString statics, declared in
-    // `extern` blocks; reading them is an FFI read of a constant.
-    let (traits_key, weight_key): (&NSString, &NSString) =
-        unsafe { (NSFontTraitsAttribute, NSFontWeightTrait) };
-    let traits_obj = font.fontDescriptor().objectForKey(traits_key)?;
-    let w = traits_obj
-        .downcast_ref::<NSDictionary>()?
-        .objectForKey(weight_key)?
-        .downcast_ref::<NSNumber>()?
-        .doubleValue();
-
-    // Map AppKit weight range to CSS weight buckets.
-    let css = if w <= -0.75 {
-        100
-    } else if w <= -0.35 {
-        200
-    } else if w <= -0.1 {
-        300
-    } else if w <= 0.1 {
-        400
-    } else if w <= 0.27 {
-        500
-    } else if w <= 0.35 {
-        600
-    } else if w <= 0.5 {
-        700
-    } else if w <= 0.6 {
-        800
-    } else {
-        900
-    };
-    Some(css)
-}
-
-/// Build a [`FontSpec`] from an NSFont, extracting family, size, and weight.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
-    crate::FontSpec {
-        family: font
-            .familyName()
-            .map(|n| std::sync::Arc::from(n.to_string())),
-        size: Some(crate::model::font::FontSize::Pt(font.pointSize() as f32)),
-        weight: nsfont_weight_to_css(font),
-        ..Default::default()
-    }
-}
-
-/// Read system and monospace font information via NSFont.
-///
-/// Fonts are appearance-independent, so this only needs to be called once
-/// (not per-appearance). Includes CSS weight extraction from the font descriptor.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_fonts() -> (crate::FontSpec, crate::FontSpec) {
-    let system_size = NSFont::systemFontSize();
-    let system_font = NSFont::systemFontOfSize(system_size);
-    // SAFETY: `NSFontWeightRegular` is an AppKit `extern` constant (a CGFloat,
-    // valid for the process's lifetime); the class method takes no pointer.
-    let mono_font =
-        unsafe { NSFont::monospacedSystemFontOfSize_weight(system_size, NSFontWeightRegular) };
-
-    (
-        fontspec_from_nsfont(&system_font),
-        fontspec_from_nsfont(&mono_font),
     )
 }
 
@@ -432,792 +620,5 @@ pub(crate) fn system_ui_font(italic: bool) -> Option<SystemUiFont> {
     Some(SystemUiFont { family, path })
 }
 
-/// Read per-widget fonts: menu, tooltip, and title bar.
-///
-/// Appearance-independent -- called once. Returns (menu, tooltip, title_bar).
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_per_widget_fonts() -> (crate::FontSpec, crate::FontSpec, crate::FontSpec) {
-    let menu_font = NSFont::menuFontOfSize(0.0);
-    let tooltip_font = NSFont::toolTipsFontOfSize(0.0);
-    let title_bar_font = NSFont::titleBarFontOfSize(0.0);
-
-    (
-        fontspec_from_nsfont(&menu_font),
-        fontspec_from_nsfont(&tooltip_font),
-        fontspec_from_nsfont(&title_bar_font),
-    )
-}
-
-/// Per-widget font and text scale data passed to [`build_theme`].
-///
-/// Collected once (appearance-independent) and applied to both variants.
-#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-struct WidgetFontData {
-    menu_font: crate::FontSpec,
-    tooltip_font: crate::FontSpec,
-    title_bar_font: crate::FontSpec,
-}
-
-/// Testable core: assemble a Theme from pre-read color and font data.
-///
-/// Takes pre-resolved ThemeDefaults for both light and dark variants, plus
-/// per-widget font data. Both variants are always
-/// populated (unlike KDE/GNOME/Windows which populate only the active one),
-/// since macOS can resolve colors for both appearances.
-#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-fn build_theme(
-    light_defaults: crate::ThemeDefaults,
-    dark_defaults: crate::ThemeDefaults,
-    widget_fonts: &WidgetFontData,
-) -> crate::Theme {
-    // The reader states only what macOS reports; the generation's design sizes
-    // come from its preset (M1-T1-02).
-    let variant = |defaults: crate::ThemeDefaults| crate::ThemeMode {
-        defaults,
-        menu: crate::MenuTheme {
-            font: Some(widget_fonts.menu_font.clone()),
-            ..Default::default()
-        },
-        tooltip: crate::TooltipTheme {
-            font: Some(widget_fonts.tooltip_font.clone()),
-            ..Default::default()
-        },
-        window: crate::WindowTheme {
-            title_bar_font: Some(widget_fonts.title_bar_font.clone()),
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-
-    crate::Theme {
-        name: "macOS".into(),
-        light: Some(variant(light_defaults)),
-        dark: Some(variant(dark_defaults)),
-        layout: crate::LayoutTheme::default(),
-        icon_set: Some(crate::IconSet::SfSymbols),
-        // macOS uses the same icon theme ("sf-symbols") for both variants; the
-        // Theme-level field is populated via the merged generation preset.
-        icon_theme: None,
-    }
-}
-
-/// Read the current macOS theme, resolving both light and dark appearance variants.
-///
-/// Uses `NSAppearance::performAsCurrentDrawingAppearance` (macOS 11+) to scope
-/// semantic color resolution to each appearance. Reads ~25 NSColor semantic
-/// colors per variant with P3-to-sRGB conversion, per-widget fonts with weight,
-/// the scroll bar style and width, and accessibility flags.
-///
-/// # Errors
-///
-/// Returns `Error::ReaderFailed` if neither light nor dark appearance can be created
-/// (extremely unlikely on any macOS version that supports these APIs).
-///
-/// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
-/// by [`crate::pipeline::select_reader`]; external consumers should use
-/// [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
-///
-/// The body contains no `.await` points — wrapping a sync implementation in
-/// an async trait method produces a future that resolves immediately.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-pub(crate) struct MacosReader;
-
-#[cfg(all(target_os = "macos", feature = "macos"))]
-#[async_trait::async_trait]
-impl crate::reader::ThemeReader for MacosReader {
-    async fn read(&self) -> crate::Result<crate::ReaderResult> {
-        read_macos()
-    }
-}
-
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_macos() -> crate::Result<crate::ReaderResult> {
-    let light_name = NSString::from_str("NSAppearanceNameAqua");
-    let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
-
-    let light_appearance = NSAppearance::appearanceNamed(&light_name);
-    let dark_appearance = NSAppearance::appearanceNamed(&dark_name);
-
-    if light_appearance.is_none() && dark_appearance.is_none() {
-        return Err(crate::Error::ReaderFailed {
-            reader: crate::error::reader_names::MACOS,
-            source: "neither light nor dark NSAppearance could be created".into(),
-        });
-    }
-
-    // Read appearance-independent data once.
-    let (font, mono_font) = read_fonts();
-    let (menu_font, tooltip_font, title_bar_font) = read_per_widget_fonts();
-    let widget_fonts = WidgetFontData {
-        menu_font,
-        tooltip_font,
-        title_bar_font,
-    };
-
-    let read = |appearance: Option<&NSAppearance>| match appearance {
-        Some(app) => {
-            let (mut defaults, pw) = read_variant(app);
-            defaults.font = font.clone();
-            defaults.mono_font = mono_font.clone();
-            (defaults, Some(pw))
-        }
-        None => (crate::ThemeDefaults::default(), None),
-    };
-    let (light_defaults, light_pw) = read(light_appearance.as_deref());
-    let (dark_defaults, dark_pw) = read(dark_appearance.as_deref());
-
-    let mut theme = build_theme(light_defaults, dark_defaults, &widget_fonts);
-
-    // The scroll bar is appearance-independent and requires the main thread.
-    let scrollbar = objc2::MainThreadMarker::new().map(read_scrollbar);
-    let disabled_on_alpha = disabled_checked_alpha(os_version());
-    for (variant, pw) in [(&mut theme.light, light_pw), (&mut theme.dark, dark_pw)] {
-        let Some(v) = variant else { continue };
-        if let Some(pw) = pw {
-            apply_per_widget(v, pw);
-        }
-        apply_accent_fades(v, disabled_on_alpha);
-        if let Some(scrollbar) = &scrollbar {
-            v.scrollbar.merge(scrollbar);
-        }
-    }
-
-    // Accessibility flags (appearance-independent).
-    let (reduce_motion, high_contrast, reduce_transparency) = read_accessibility();
-    let mut acc = crate::AccessibilityPreferences::default();
-    if let Some(rm) = reduce_motion {
-        acc.reduce_motion = rm;
-    }
-    if let Some(hc) = high_contrast {
-        acc.high_contrast = hc;
-    }
-    if let Some(rt) = reduce_transparency {
-        acc.reduce_transparency = rt;
-    }
-
-    // macOS coordinate system uses 72 DPI as its base.
-    // NSFont.pointSize() returns Apple points where 1pt = 1 logical pixel,
-    // so the formula pt * 72/72 = pt (identity) is correct.
-    let font_dpi = Some(72.0_f32);
-
-    let output = crate::ReaderOutput::Dual {
-        light: Box::new(theme.light.unwrap_or_default()),
-        dark: Box::new(theme.dark.unwrap_or_default()),
-        is_dark: crate::detect::detect_is_dark(),
-    };
-
-    Ok(crate::ReaderResult {
-        output,
-        name: theme.name,
-        icon_set: theme.icon_set,
-        layout: theme.layout,
-        font_dpi,
-        accessibility: acc,
-    })
-}
-
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod tests {
-    use super::*;
-    use crate::model::font::FontSize;
-
-    #[cfg(all(target_os = "macos", feature = "macos"))]
-    #[test]
-    fn from_system_mode_is_the_os_appearance() {
-        let sys = crate::SystemTheme::from_system().unwrap();
-        let expected = if crate::detect::detect_is_dark() {
-            crate::ColorMode::Dark
-        } else {
-            crate::ColorMode::Light
-        };
-        assert_eq!(
-            sys.mode, expected,
-            "SystemTheme::mode must follow AppleInterfaceStyle"
-        );
-    }
-
-    fn sample_widget_fonts() -> WidgetFontData {
-        use crate::model::font::FontSize;
-        WidgetFontData {
-            menu_font: crate::FontSpec {
-                family: Some("SF Pro".into()),
-                size: Some(FontSize::Pt(14.0)),
-                weight: Some(400),
-                ..Default::default()
-            },
-            tooltip_font: crate::FontSpec {
-                family: Some("SF Pro".into()),
-                size: Some(FontSize::Pt(11.0)),
-                weight: Some(400),
-                ..Default::default()
-            },
-            title_bar_font: crate::FontSpec {
-                family: Some("SF Pro".into()),
-                size: Some(FontSize::Pt(13.0)),
-                weight: Some(700),
-                ..Default::default()
-            },
-        }
-    }
-
-    fn sample_light_defaults() -> crate::ThemeDefaults {
-        use crate::model::font::FontSize;
-        crate::ThemeDefaults {
-            accent_color: Some(crate::Rgba::rgb(0, 122, 255)),
-            background_color: Some(crate::Rgba::rgb(246, 246, 246)),
-            text_color: Some(crate::Rgba::rgb(0, 0, 0)),
-            surface_color: Some(crate::Rgba::rgb(255, 255, 255)),
-            border: crate::model::border::DefaultsBorderSpec {
-                color: Some(crate::Rgba::rgb(200, 200, 200)),
-                ..Default::default()
-            },
-            font: crate::FontSpec {
-                family: Some("SF Pro".into()),
-                size: Some(FontSize::Pt(13.0)),
-                weight: None,
-                ..Default::default()
-            },
-            mono_font: crate::FontSpec {
-                family: Some("SF Mono".into()),
-                size: Some(FontSize::Pt(13.0)),
-                weight: None,
-                ..Default::default()
-            },
-            ..Default::default()
-        }
-    }
-
-    fn sample_dark_defaults() -> crate::ThemeDefaults {
-        use crate::model::font::FontSize;
-        crate::ThemeDefaults {
-            accent_color: Some(crate::Rgba::rgb(10, 132, 255)),
-            background_color: Some(crate::Rgba::rgb(30, 30, 30)),
-            text_color: Some(crate::Rgba::rgb(255, 255, 255)),
-            surface_color: Some(crate::Rgba::rgb(44, 44, 46)),
-            border: crate::model::border::DefaultsBorderSpec {
-                color: Some(crate::Rgba::rgb(56, 56, 58)),
-                ..Default::default()
-            },
-            font: crate::FontSpec {
-                family: Some("SF Pro".into()),
-                size: Some(FontSize::Pt(13.0)),
-                weight: None,
-                ..Default::default()
-            },
-            ..Default::default()
-        }
-    }
-
-    #[test]
-    fn build_theme_populates_both_variants() {
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-
-        assert!(theme.light.is_some(), "light variant should be Some");
-        assert!(theme.dark.is_some(), "dark variant should be Some");
-
-        // Colors should differ between variants
-        let light = theme.light.as_ref().unwrap();
-        let dark = theme.dark.as_ref().unwrap();
-        assert_ne!(light.defaults.accent_color, dark.defaults.accent_color);
-        assert_ne!(
-            light.defaults.background_color,
-            dark.defaults.background_color
-        );
-
-        // Fonts should be identical in both
-        assert_eq!(light.defaults.font, dark.defaults.font);
-    }
-
-    #[test]
-    fn build_theme_name_is_macos() {
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-        assert_eq!(theme.name, "macOS");
-    }
-
-    #[test]
-    fn build_theme_fonts_populated() {
-        use crate::model::font::FontSize;
-        let defaults = crate::ThemeDefaults {
-            font: crate::FontSpec {
-                family: Some("SF Pro".into()),
-                size: Some(FontSize::Pt(13.0)),
-                weight: None,
-                ..Default::default()
-            },
-            mono_font: crate::FontSpec {
-                family: Some("SF Mono".into()),
-                size: Some(FontSize::Pt(13.0)),
-                weight: None,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
-        let theme = build_theme(defaults.clone(), defaults, &sample_widget_fonts());
-
-        let light = theme.light.as_ref().unwrap();
-        assert_eq!(light.defaults.font.family.as_deref(), Some("SF Pro"));
-        assert_eq!(light.defaults.font.size, Some(FontSize::Pt(13.0)));
-        assert_eq!(light.defaults.mono_font.family.as_deref(), Some("SF Mono"));
-        assert_eq!(light.defaults.mono_font.size, Some(FontSize::Pt(13.0)));
-
-        let dark = theme.dark.as_ref().unwrap();
-        assert_eq!(dark.defaults.font.family.as_deref(), Some("SF Pro"));
-        assert_eq!(dark.defaults.font.size, Some(FontSize::Pt(13.0)));
-    }
-
-    #[test]
-    fn build_theme_defaults_empty_produces_nonempty_variant() {
-        let theme = build_theme(
-            crate::ThemeDefaults::default(),
-            crate::ThemeDefaults::default(),
-            &sample_widget_fonts(),
-        );
-
-        let light = theme.light.as_ref().unwrap();
-        // Variant should not be empty because widget defaults are populated
-        assert!(
-            !light.is_empty(),
-            "light variant should have widget defaults"
-        );
-
-        let dark = theme.dark.as_ref().unwrap();
-        assert!(!dark.is_empty(), "dark variant should have widget defaults");
-    }
-
-    #[test]
-    fn build_theme_colors_propagated_correctly() {
-        let blue = crate::Rgba::rgb(0, 122, 255);
-        let red = crate::Rgba::rgb(255, 59, 48);
-
-        let light_defaults = crate::ThemeDefaults {
-            accent_color: Some(blue),
-            ..Default::default()
-        };
-        let dark_defaults = crate::ThemeDefaults {
-            accent_color: Some(red),
-            ..Default::default()
-        };
-
-        let theme = build_theme(light_defaults, dark_defaults, &sample_widget_fonts());
-
-        let light = theme.light.as_ref().unwrap();
-        let dark = theme.dark.as_ref().unwrap();
-
-        assert_eq!(light.defaults.accent_color, Some(blue));
-        assert_eq!(dark.defaults.accent_color, Some(red));
-    }
-
-    /// A non-default accent reaches the four accent fills through inheritance:
-    /// macOS draws a checked checkbox and radio, an on switch, a slider's value
-    /// and a progress bar in `controlAccentColor` (docs/platform-facts.md:1239,
-    /// :1521, :1317, :1333, ← `defaults.accent_color`), the macOS presets state
-    /// none of them, and the reader writes the accent, not the fills.
-    #[test]
-    fn a_custom_accent_reaches_the_accent_fills() {
-        let red = crate::Rgba::rgb(255, 59, 48);
-        let defaults = |accent| crate::ThemeDefaults {
-            accent_color: Some(accent),
-            ..Default::default()
-        };
-        let theme = build_theme(defaults(red), defaults(red), &sample_widget_fonts());
-        for preset in ["macos-monterey", "macos-tahoe"] {
-            let mut mode = crate::Theme::preset(preset).unwrap().light.unwrap();
-            assert_ne!(mode.defaults.accent_color, Some(red), "{preset}");
-            mode.merge(theme.light.as_ref().unwrap());
-            let r = mode
-                .into_resolved(&crate::ResolutionContext::for_tests())
-                .unwrap();
-            assert_eq!(r.checkbox.checked_background, red, "{preset}");
-            assert_eq!(r.switch.checked_background, red, "{preset}");
-            assert_eq!(r.slider.fill_color, red, "{preset}");
-            assert_eq!(r.progress_bar.fill_color, red, "{preset}");
-        }
-    }
-
-    /// The reader states only what macOS reports (M1-T1-02): `build_theme`
-    /// carries the read colours and fonts and no design constant.
-    #[test]
-    fn build_theme_states_no_design_constants() {
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-        for variant in [theme.light.as_ref(), theme.dark.as_ref()] {
-            let mut rest = variant.unwrap().clone();
-            rest.defaults = crate::ThemeDefaults::default();
-            rest.menu.font = None;
-            rest.tooltip.font = None;
-            rest.window.title_bar_font = None;
-            assert_eq!(
-                rest,
-                crate::ThemeMode::default(),
-                "build_theme states a value macOS did not report"
-            );
-        }
-    }
-
-    #[test]
-    fn build_theme_has_icon_set_sf_symbols() {
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-
-        // icon_set is now on Theme, shared across variants
-        assert_eq!(theme.icon_set, Some(crate::IconSet::SfSymbols));
-    }
-
-    #[test]
-    fn build_theme_per_widget_fonts_populated() {
-        let wf = sample_widget_fonts();
-        let theme = build_theme(sample_light_defaults(), sample_dark_defaults(), &wf);
-
-        let light = theme.light.as_ref().unwrap();
-        assert_eq!(
-            light.menu.font.as_ref().unwrap().size,
-            Some(FontSize::Pt(14.0)),
-            "menu font size"
-        );
-        assert_eq!(
-            light.tooltip.font.as_ref().unwrap().size,
-            Some(FontSize::Pt(11.0)),
-            "tooltip font size"
-        );
-        assert_eq!(
-            light.window.title_bar_font.as_ref().unwrap().weight,
-            Some(700),
-            "title bar font weight"
-        );
-
-        // Both variants should have the same per-widget fonts
-        let dark = theme.dark.as_ref().unwrap();
-        assert_eq!(light.menu.font, dark.menu.font);
-        assert_eq!(light.tooltip.font, dark.tooltip.font);
-        assert_eq!(light.window.title_bar_font, dark.window.title_bar_font);
-    }
-
-    #[test]
-    fn build_theme_per_widget_colors_not_populated_by_build() {
-        // build_theme does not populate per-widget colors -- that's done by
-        // from_macos() after build_theme returns. Verify they start as None.
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-        let light = theme.light.as_ref().unwrap();
-        assert!(
-            light.input.placeholder_color.is_none(),
-            "placeholder_color starts None (set by from_macos)"
-        );
-        assert!(
-            light.list.alternate_row_background.is_none(),
-            "alternate_row_background starts None"
-        );
-        assert!(light.list.header_font.is_none(), "header_font starts None");
-        assert!(light.list.grid_color.is_none(), "grid_color starts None");
-    }
-
-    #[test]
-    fn build_theme_scrollbar_overlay_not_set_by_build() {
-        // Scrollbar overlay mode is set after build_theme by from_macos().
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-        let light = theme.light.as_ref().unwrap();
-        assert!(
-            light.scrollbar.overlay_mode.is_none(),
-            "overlay_mode starts None (set by from_macos)"
-        );
-    }
-
-    /// D12: each preset states its disabled on track as its accent at the
-    /// alpha the reader fades the user's accent by on that preset's
-    /// generation (docs/platform-facts.md:1529): 0x80 on macOS 12 to 15, and
-    /// on the 16 early macOS 26 betas report to an older SDK's binary, which
-    /// the generation table gives macos-monterey; 0x73 from 26.
-    #[test]
-    fn a_disabled_on_switch_is_the_accent_at_its_generations_alpha() {
-        use crate::pipeline::OsVersion;
-        for (version, preset) in [
-            (OsVersion::new(12, 0, 0), "macos-monterey"),
-            (OsVersion::new(15, 7, 9), "macos-monterey"),
-            (OsVersion::new(16, 0, 0), "macos-monterey"),
-            (OsVersion::new(26, 6, 2), "macos-tahoe"),
-            (OsVersion::new(27, 0, 1), "macos-tahoe"),
-        ] {
-            let theme = crate::Theme::preset(preset).unwrap();
-            for mode in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
-                let mut read = crate::ThemeMode {
-                    defaults: crate::ThemeDefaults {
-                        accent_color: mode.defaults.accent_color,
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                };
-                apply_accent_fades(&mut read, disabled_checked_alpha(version));
-                assert_eq!(
-                    read.switch.disabled_checked_background,
-                    mode.switch.disabled_checked_background,
-                    "{preset} on {version}"
-                );
-            }
-        }
-    }
-
-    /// D12: under another accent a disabled on switch is that accent at the
-    /// generation's alpha, and macos-tahoe's selected segment is the accent,
-    /// as macOS 26 draws it (docs/platform-facts.md:1529, :1636), while
-    /// macos-monterey's stays the raised neutral segment.
-    #[test]
-    fn a_custom_accent_reaches_the_disabled_on_switch_and_tahoes_segment() {
-        use crate::pipeline::OsVersion;
-        let red = crate::Rgba::rgb(224, 56, 62);
-        for (version, preset) in [
-            (OsVersion::new(15, 7, 9), "macos-monterey"),
-            (OsVersion::new(26, 6, 2), "macos-tahoe"),
-        ] {
-            let alpha = disabled_checked_alpha(version);
-            let mut read = crate::ThemeMode {
-                defaults: crate::ThemeDefaults {
-                    accent_color: Some(red),
-                    ..Default::default()
-                },
-                ..Default::default()
-            };
-            apply_accent_fades(&mut read, alpha);
-            let mut mode = crate::Theme::preset(preset).unwrap().light.unwrap();
-            mode.merge(&read);
-            let r = mode
-                .into_resolved(&crate::ResolutionContext::for_tests())
-                .unwrap();
-            assert_eq!(
-                r.switch.disabled_checked_background,
-                Some(crate::Rgba::new(224, 56, 62, alpha)),
-                "{preset}"
-            );
-            assert_eq!(
-                r.segmented_control.active_background == red,
-                preset == "macos-tahoe",
-                "{preset}"
-            );
-        }
-    }
-
-    /// D7: the reader asks for `textInsertionPointColor` from macOS 14 on,
-    /// macOS 26's early betas' 16 included, and not below, where the selector
-    /// does not exist.
-    #[test]
-    fn the_insertion_point_colour_is_read_from_macos_14() {
-        use crate::pipeline::OsVersion;
-        assert!(!has_text_insertion_point_color(OsVersion::new(13, 7, 8)));
-        assert!(!has_text_insertion_point_color(OsVersion::new(12, 0, 0)));
-        assert!(has_text_insertion_point_color(OsVersion::new(14, 0, 0)));
-        assert!(has_text_insertion_point_color(OsVersion::new(15, 7, 9)));
-        assert!(has_text_insertion_point_color(OsVersion::new(16, 0, 0)));
-        assert!(has_text_insertion_point_color(OsVersion::new(26, 6, 2)));
-    }
-
-    /// The groove width is the one AppKit gives the user's scroller style,
-    /// not the overlay style's always (docs/platform-facts.md:1307: legacy 15,
-    /// overlay 16 on macOS 14.8.9).
-    #[test]
-    fn scrollbar_for_style_takes_the_styles_width() {
-        let width_for = |overlay: bool| if overlay { 16.0 } else { 15.0 };
-        let overlay = scrollbar_for_style(true, width_for);
-        assert_eq!(overlay.overlay_mode, Some(true));
-        assert_eq!(
-            overlay.groove_width,
-            Some(16.0),
-            "the overlay style's width"
-        );
-        let legacy = scrollbar_for_style(false, width_for);
-        assert_eq!(legacy.overlay_mode, Some(false));
-        assert_eq!(legacy.groove_width, Some(15.0), "the legacy style's width");
-    }
-
-    #[test]
-    fn build_theme_dialog_button_order_not_set_by_build() {
-        // Dialog button order is set after build_theme by from_macos().
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-        let light = theme.light.as_ref().unwrap();
-        assert!(
-            light.dialog.button_order.is_none(),
-            "button_order starts None (set by from_macos)"
-        );
-    }
-
-    #[test]
-    fn build_theme_accessibility_not_set_by_build() {
-        // Accessibility flags are set after build_theme by from_macos().
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-        // Accessibility fields are no longer on ThemeDefaults;
-        // they live on AccessibilityPreferences (constructed by pipeline).
-        assert!(theme.light.is_some());
-    }
-
-    #[test]
-    fn test_macos_resolve_validate() {
-        // Load the macos-monterey preset as base (provides full color/geometry/spacing).
-        let mut base = crate::Theme::preset("macos-monterey").unwrap();
-        // Build reader output with sample data (simulates from_macos() on real hardware).
-        let reader_output = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-        // Merge reader output on top of preset.
-        base.merge(&reader_output);
-
-        // Test light variant.
-        let mut light = base
-            .light
-            .clone()
-            .expect("light variant should exist after merge");
-        light.resolve_all();
-        let resolved = light.validate().unwrap_or_else(|e| {
-            panic!("macOS resolve/validate pipeline failed (light): {e}");
-        });
-
-        // Spot-check: reader-sourced fields present.
-        assert_eq!(
-            resolved.defaults.accent_color,
-            crate::Rgba::rgb(0, 122, 255),
-            "accent should be from macOS reader"
-        );
-        assert_eq!(
-            resolved.defaults.font.family.as_ref(),
-            "SF Pro",
-            "font family should be from macOS reader"
-        );
-        // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
-
-        // Test dark variant too.
-        let mut dark = base
-            .dark
-            .clone()
-            .expect("dark variant should exist after merge");
-        dark.resolve_all();
-        let resolved_dark = dark.validate().unwrap_or_else(|e| {
-            panic!("macOS resolve/validate pipeline failed (dark): {e}");
-        });
-        assert_eq!(
-            resolved_dark.defaults.accent_color,
-            crate::Rgba::rgb(10, 132, 255),
-            "dark accent should be from macOS reader"
-        );
-    }
-
-    // === Border colour (platform-facts.md:1055: separatorColor) ===
-
-    #[cfg(all(target_os = "macos", feature = "macos"))]
-    #[test]
-    fn read_appearance_colors_reads_border_color_from_separator_color() {
-        let (defaults, _) = super::read_appearance_colors();
-        assert!(
-            defaults.border.color.is_some(),
-            "defaults.border.color should be read from NSColor.separatorColor"
-        );
-    }
-
-    // === The NSColor mapping (platform-facts.md:1057, :1060, :1062-1063, :1210) ===
-
-    #[cfg(all(target_os = "macos", feature = "macos"))]
-    #[test]
-    fn read_appearance_colors_maps_selection_and_shadow_as_platform_facts_names() {
-        let srgb = NSColorSpace::sRGBColorSpace();
-        let (defaults, _) = super::read_appearance_colors();
-        assert_eq!(
-            defaults.shadow_color, None,
-            "NSColor.shadowColor is not the drawn shadow (platform-facts.md:1057)"
-        );
-        assert_eq!(
-            defaults.selection_text_color,
-            nscolor_to_rgba(&NSColor::alternateSelectedControlTextColor(), &srgb)
-        );
-        assert_eq!(
-            defaults.text_selection_color,
-            nscolor_to_rgba(&NSColor::selectedTextColor(), &srgb)
-        );
-        assert_eq!(
-            defaults.text_selection_background,
-            nscolor_to_rgba(&NSColor::selectedTextBackgroundColor(), &srgb)
-        );
-    }
-
-    #[cfg(all(target_os = "macos", feature = "macos"))]
-    #[test]
-    fn from_system_reports_the_running_generation() {
-        let sys = crate::SystemTheme::from_system().unwrap();
-        let (preset, matched) = crate::pipeline::macos_generation(super::os_version());
-        assert_eq!(sys.preset, preset.name);
-        assert_eq!(sys.version_match, Some(matched));
-    }
-
-    #[cfg(all(target_os = "macos", feature = "macos"))]
-    #[test]
-    fn read_macos_leaves_the_text_field_selection_to_inheritance() {
-        let result = super::read_macos().unwrap();
-        assert!(
-            matches!(
-                &result.output,
-                crate::ReaderOutput::Dual { light, .. } if light.input.selection_background.is_none()
-            ),
-            "the reader should return both variants, light input.selection_background unset: it \
-             inherits defaults.text_selection_background (platform-facts.md:1210)"
-        );
-        assert!(
-            matches!(
-                &result.output,
-                crate::ReaderOutput::Dual { dark, .. } if dark.input.selection_background.is_none()
-            ),
-            "the reader should return both variants, dark input.selection_background unset: it \
-             inherits defaults.text_selection_background (platform-facts.md:1210)"
-        );
-    }
-
-    // === Plan 94-03 (G8): MacosReader ThemeReader impl ===
-    //
-    // Locks the G8 contract on the macOS side: a unit struct `MacosReader`
-    // exists at the module root and implements `crate::reader::ThemeReader`.
-    // Before Task 2 lands, this fails to compile (`no struct MacosReader` /
-    // `unresolved module crate::reader`).
-    //
-    // The trait object coercion is the structural object-safety probe. Body
-    // is gated on `cfg(all(target_os = "macos", feature = "macos"))` so that
-    // the non-macOS build only compile-checks the trait path reference.
-    #[test]
-    fn macos_reader_exists() {
-        // Reference the trait path once so name resolution fires on all
-        // targets regardless of whether the MacosReader struct is compiled.
-        let _: Option<&dyn crate::reader::ThemeReader> = None;
-
-        #[cfg(all(target_os = "macos", feature = "macos"))]
-        {
-            let r: Box<dyn crate::reader::ThemeReader> = Box::new(super::MacosReader);
-            let _ = &r;
-        }
-    }
-}
+pub(crate) mod tests;

@@ -38,8 +38,8 @@ Add the connector, with the OS readers (`native`), and this crate:
 ```toml
 [dependencies]
 eframe = "0.36.2"
-native-theme-egui = { version = "0.7", features = ["native"] }
-native-theme-egui-widgets = "0.7"
+native-theme-egui = { version = "0.8", features = ["native"] }
+native-theme-egui-widgets = "0.8"
 ```
 
 Install the connector's atlas once, as the connector's

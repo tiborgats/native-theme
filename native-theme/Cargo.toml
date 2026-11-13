@@ -2,10 +2,13 @@
 name = "native-theme"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+# `src/ripple.rs` and `src/platform/android_non_linear.rs` (ports of AOSP
+# code) and `src/platform/m3_role.rs` (a port of material-color-utilities) stay
+# under their own Apache-2.0 licence (the 0.8.0 plan's D10), whatever licence a
+# user picks for the rest.
+license = "(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT"
 rust-version.workspace = true
 repository.workspace = true
-homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
 readme = "README.md"
@@ -20,27 +23,37 @@ targets = [
 ]
 
 [features]
-# No feature is needed to load, merge and resolve presets and TOML files.
 # Each OS-specific dependency is compiled only on its own target.
+# On Linux, where the desktop's reader feature is off, `Theme::from_system`
+# reads the scheme and motion alone, as 0.7.0 did: `GTK_THEME`, gsettings and
+# `gtk-3.0/settings.ini`, over that reader's preset, its status
+# `ReaderStatus::Fallback`. On macOS and Windows a build without the
+# platform's feature is `ThemeError::FeatureDisabled`.
 
-# The KDE Plasma reader: kdeglobals and kcmfonts (Linux).
-kde = ["dep:configparser"]
-# The GNOME and Budgie reader: the XDG Desktop Portal settings and gsettings;
-# with `kde`, the portal's accent colour on KDE too (Linux).
+# The KDE Plasma reader: kdeglobals as KConfig cascades it and the colour
+# scheme file it names; and the KDE icon theme (Linux).
+kde = []
+# The GNOME and Budgie reader, and the portal-only read of the Linux desktops
+# with no reader of their own: the XDG Desktop Portal settings and gsettings
+# (Linux).
 portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
-# The Windows reader: UISettings, the system metrics and fonts.
+# The Windows reader: UISettings' colours, text scale and effects, high
+# contrast and its system colours (Windows); and the running Windows version,
+# for `pipeline::diagnose_platform_support`.
 windows = ["dep:windows", "dep:windows-version"]
-# The macOS reader: NSColor under both appearances, NSFont, accessibility.
+# The macOS reader: AppKit's appearances, colours and settings (macOS), and
+# the running macOS version, for `pipeline::diagnose_platform_support`.
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2", "dep:objc2-core-foundation"]
 # Aliases of `kde` and `portal`.
 linux-kde = ["kde"]
 linux-portal = ["portal"]
-# Both Linux readers.
+# `linux-kde` and `linux-portal`.
 linux = ["linux-kde", "linux-portal"]
-# Every platform reader.
+# Every platform feature.
 native = ["linux", "macos", "windows"]
-# `watch::on_theme_change`: OS theme-change notifications, on the platforms
-# whose reader feature is on.
+# `watch::on_theme_change`: OS theme-change notifications (KDE, with `kde`;
+# GNOME and the portal-only desktops, with `portal`; macOS, with `macos`;
+# Windows, with `windows`).
 watch = ["dep:notify", "zbus?/blocking-api"]
 # The bundled Material Symbols icon set.
 material-icons = []
@@ -67,15 +80,16 @@ system-icons = [
 
 [dependencies]
 arc-swap = "1.9.2"
-async-trait = "0.1.92"
+# KConfig's files, read by the KDE reader and by a KDE port's conversion,
+# `Palette::from_port`, in every build on every target (S14); used under its
+# MIT licence.
+configparser = "3.2.0"
 fontdb = { version = "0.23", optional = true, default-features = false, features = ["fs", "fontconfig", "memmap"] }
-inventory = "0.3.24"
-native-theme-derive = { version = "0.7.0", path = "../native-theme-derive" }
+native-theme-derive = { version = "0.8.0", path = "../native-theme-derive" }
 pollster = "1.0"
 resvg = { version = "0.48.1", optional = true, default-features = false }
 serde.workspace = true
-serde_with.workspace = true
-toml.workspace = true
+toml = { workspace = true, features = ["preserve_order"] }
 unicase = "2.9"
 
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -104,6 +118,8 @@ objc2-app-kit = { version = "0.3.2", optional = true, features = [
     "objc2-core-graphics",
     "NSWorkspace",
     "NSAccessibility",
+    "NSApplication",
+    "NSResponder",
 ] }
 block2 = { version = ">=0.6.2, <0.8.0", optional = true }
 objc2-core-text = { version = "0.3.2", optional = true, features = [
@@ -130,7 +146,6 @@ ashpd = { version = "0.13.13", optional = true, default-features = false, featur
     "settings",
 ] }
 async-io = { version = "2.6.0", optional = true }
-configparser = { version = "3.2.0", optional = true }
 freedesktop-icons = { version = "0.4", optional = true }
 notify = { version = "8.2", optional = true, default-features = false }
 png = { version = "0.18.1", optional = true, default-features = false }
@@ -156,6 +171,9 @@ windows-version = { version = "0.1.7", optional = true }
 # (tools/test-fixtures, never published). A path with no version: `cargo
 # package` strips it.
 native-theme-test-fixtures = { path = "../tools/test-fixtures" }
-pollster = "1.0"
+# The load budget's byte counts (tests/cost_bytes.rs, the probe's bytes
+# binary): a counting global allocator, since a hand-written `GlobalAlloc` is
+# an `unsafe impl` (the 0.8.0 plan's *The load budget*, rule 2).
+peak_alloc = "0.3"
 proptest = "1.11"
 serde_json = "1.0.151"

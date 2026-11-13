@@ -1,0 +1,34 @@
+# Synthetic token facts (S17, ADD-A128): two listed paths, each read through functions that map many
+# values to one, so no two values of the listed path tell a fact reading it apart.
+
+[[fact]]
+key = "token.focus.width"
+pending = "U5"
+rows = []
+
+# Reads the listed width through max: skipped, as its evaluation reaches the synthetic value.
+[[fact]]
+key = "token.focus.offset.top"
+value = "= max(token.focus.width, 1px)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# Reads the listed width through min: skipped.
+[[fact]]
+key = "token.focus.offset.bottom"
+value = "= min(token.focus.width, 0px)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.motion.speed_factor"
+pending = "U6"
+rows = []

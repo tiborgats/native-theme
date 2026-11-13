@@ -1,11 +1,13 @@
-//! GNOME theme change watcher using XDG Desktop Portal D-Bus signals.
+//! The portal's theme change watcher, through its `SettingChanged` D-Bus
+//! signal: the GNOME reader's ([`GNOME`]) and the portal-only read's
+//! ([`PORTAL`]).
 
 use std::sync::mpsc;
 
 use super::ThemeChangeEvent;
 
-/// The `SettingChanged` namespaces and keys the watcher fires on: the GNOME
-/// reader's sources (`gnome/mod.rs`, "Sources"). The portal's GNOME and GTK
+/// The `SettingChanged` namespaces and keys the GNOME reader's watcher
+/// fires on: its sources (`gnome/mod.rs`, "Sources"). The portal's GNOME and GTK
 /// backends forward a change of a key in `org.gnome.desktop.interface`,
 /// `org.gnome.desktop.wm.preferences` or `org.gnome.desktop.a11y.interface`
 /// under its schema's name, and the `org.freedesktop.appearance` settings
@@ -13,41 +15,56 @@ use super::ThemeChangeEvent;
 /// `:444-455`; xdg-desktop-portal-gtk 1.15.3 `src/settings.c:266-297`,
 /// `:303-314`), and the portal passes each on (xdg-desktop-portal 1.22.1
 /// `src/settings.c:240-250`).
-const WATCHED: &[(&str, &str)] = &[
+pub(super) const GNOME: &[(&str, &str)] = &[
     ("org.freedesktop.appearance", "color-scheme"),
     ("org.freedesktop.appearance", "accent-color"),
     ("org.freedesktop.appearance", "contrast"),
     ("org.freedesktop.appearance", "reduced-motion"),
     ("org.gnome.desktop.interface", "color-scheme"),
     ("org.gnome.desktop.interface", "enable-animations"),
-    ("org.gnome.desktop.interface", "font-name"),
-    ("org.gnome.desktop.interface", "monospace-font-name"),
     ("org.gnome.desktop.interface", "text-scaling-factor"),
     ("org.gnome.desktop.interface", "overlay-scrolling"),
     ("org.gnome.desktop.interface", "icon-theme"),
-    ("org.gnome.desktop.wm.preferences", "titlebar-font"),
+    ("org.gnome.desktop.interface", "font-name"),
+    ("org.gnome.desktop.interface", "monospace-font-name"),
     ("org.gnome.desktop.a11y.interface", "high-contrast"),
+    ("org.gnome.desktop.a11y.interface", "reduced-motion"),
 ];
 
-/// Whether the watcher fires on the `SettingChanged` of `namespace` `key`.
-pub(super) fn watches(namespace: &str, key: &str) -> bool {
-    WATCHED.contains(&(namespace, key))
+/// The `SettingChanged` namespaces and keys the portal-only read's watcher
+/// fires on: its sources (`gnome/portal.rs`, "Sources"), forwarded as
+/// [`GNOME`]'s are.
+pub(super) const PORTAL: &[(&str, &str)] = &[
+    ("org.freedesktop.appearance", "color-scheme"),
+    ("org.freedesktop.appearance", "accent-color"),
+    ("org.freedesktop.appearance", "contrast"),
+    ("org.freedesktop.appearance", "reduced-motion"),
+    ("org.gnome.desktop.interface", "color-scheme"),
+    ("org.gnome.desktop.interface", "enable-animations"),
+    ("org.gnome.desktop.a11y.interface", "reduced-motion"),
+];
+
+/// Whether a watcher of `watched` fires on the `SettingChanged` of
+/// `namespace` `key`.
+pub(super) fn watches(watched: &[(&str, &str)], namespace: &str, key: &str) -> bool {
+    watched.contains(&(namespace, key))
 }
 
-/// Whether `signal`, a `SettingChanged`, is of a setting the watcher fires
-/// on ([`watches`]); a body that does not decode is not.
-fn is_watched(signal: &ashpd::zbus::Message) -> bool {
+/// Whether `signal`, a `SettingChanged`, is of a setting of `watched`
+/// ([`watches`]); a body that does not decode is not.
+fn is_watched(watched: &[(&str, &str)], signal: &ashpd::zbus::Message) -> bool {
     signal
         .body()
         .deserialize::<(&str, &str, ashpd::zbus::zvariant::Value<'_>)>()
-        .is_ok_and(|(namespace, key, _)| watches(namespace, key))
+        .is_ok_and(|(namespace, key, _)| watches(watched, namespace, key))
 }
 
-/// Spawn a background thread that watches for GNOME theme changes via D-Bus.
+/// Spawn a background thread that watches for theme changes via the
+/// portal's D-Bus signal.
 ///
 /// Subscribes to the `SettingChanged` signal on the
 /// `org.freedesktop.portal.Settings` interface, and fires on the settings of
-/// [`WATCHED`], once per burst, 300ms after the last of them
+/// `watched` ([`GNOME`] or [`PORTAL`]), once per burst, 300ms after the last of them
 /// ([`super::fire_debounced`]): one change raises a gsettings key's signal
 /// and its `org.freedesktop.appearance` setting's. Uses `zbus::blocking` so
 /// no async runtime (tokio) is exposed to the consumer.
@@ -63,6 +80,7 @@ fn is_watched(signal: &ashpd::zbus::Message) -> bool {
 /// a setup step failed.
 pub(crate) fn watch_gnome(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
+    watched: &'static [(&'static str, &'static str)],
 ) -> crate::Result<super::ThemeSubscription> {
     let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>();
 
@@ -119,7 +137,7 @@ pub(crate) fn watch_gnome(
         // returns `None`.
         let signal_thread = std::thread::spawn(move || {
             for signal in signals {
-                if is_watched(&signal) && changed_tx.send(()).is_err() {
+                if is_watched(watched, &signal) && changed_tx.send(()).is_err() {
                     break;
                 }
             }
@@ -188,8 +206,8 @@ mod tests {
         let watched = [
             (
                 "org.gnome.desktop.interface",
-                "font-name",
-                Value::from("Cantarell 11"),
+                "icon-theme",
+                Value::from("Papirus"),
             ),
             (
                 "org.gnome.desktop.a11y.interface",
@@ -204,7 +222,7 @@ mod tests {
         ];
         for (namespace, key, value) in watched {
             assert!(
-                super::is_watched(&setting_changed(namespace, key, value)),
+                super::is_watched(super::GNOME, &setting_changed(namespace, key, value)),
                 "{namespace} {key} is not picked"
             );
         }
@@ -222,7 +240,7 @@ mod tests {
         ];
         for (namespace, key, value) in ignored {
             assert!(
-                !super::is_watched(&setting_changed(namespace, key, value)),
+                !super::is_watched(super::GNOME, &setting_changed(namespace, key, value)),
                 "{namespace} {key} is picked"
             );
         }
@@ -235,7 +253,7 @@ mod tests {
     /// ends at once, or `watch_gnome` errs, and the test passes vacuously.
     #[test]
     fn dropping_a_gnome_subscription_returns_without_a_signal() {
-        let subscription = match super::watch_gnome(|_| {}) {
+        let subscription = match super::watch_gnome(|_| {}, super::GNOME) {
             Ok(subscription) => subscription,
             Err(_) => return, // no session bus: nothing to discriminate
         };

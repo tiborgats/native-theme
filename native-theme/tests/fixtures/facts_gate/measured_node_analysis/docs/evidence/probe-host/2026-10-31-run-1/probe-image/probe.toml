@@ -1,0 +1,6 @@
+# A synthetic analysis output (S17 *`evidence`*): a colour converted from a render-node file's OKLab coordinates,
+# unrounded, as the colour function converts them; not read from drawn pixels.
+input_image = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/probe.node"
+
+[body]
+fill = "srgb(-0.17, 0.5, 0.5, 0.5)"

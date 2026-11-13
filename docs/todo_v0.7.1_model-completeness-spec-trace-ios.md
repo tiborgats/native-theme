@@ -184,15 +184,18 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | W-10† | - | out (R1.1) |
 | W-11† | `window.frame.corners @ cond full_screen / cond tiled:<edges>` (the radius the content is clipped to per state) | rule |
 | W-11† | - (the shadow per state, the window controls and the open, minimize and arrange motion, which the system draws, as W-2; the close is the scene's dismissal animation, P3-5†) | out (R1.1) |
-| B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ variant flat / variant @gray / variant tinted / variant primary / variant @borderless / variant @bordered / variants {@bordered,tinted} / variants {@bordered,primary}` (plain, gray, tinted, filled, borderless, bordered, borderedTinted, borderedProminent: fill and foreground) | rule |
-| B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ {pressed} variant flat / {pressed} variant @gray / {pressed} variant tinted / {pressed} variant primary / {pressed} variant @borderless / {pressed} variant @bordered / {pressed} variants {@bordered,tinted} / {pressed} variants {@bordered,primary}` (each style's pressed look) | rule |
-| B-2 | `button.body.fill @ variant glass / variants {glass,clear} / variants {glass,primary} / variants {glass,clear,primary}` (a `Material` layer; the prominent styles' tint is the material's `tint`) | rule |
+| B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ variant flat / variant @gray / variant tinted / variant primary` (plain, gray, tinted, filled: fill and foreground; borderless, bordered, borderedTinted and borderedProminent draw pixel-identically to these four on iOS 18.6 and 26.5, run 40984711960, so the connector maps them to the same variants: the catalogue) | rule |
+| B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ {pressed} variant flat / {pressed} variant @gray / {pressed} variant tinted / {pressed} variant primary` (each style's pressed look) | rule |
+| B-1 | `[declare.widget.button] exclusive_variants for ios-*: [flat, @gray, tinted, primary, @info, @contact_add, close, back, done, add, @share, @paste_control, route]; on ios-26 also [flat, @gray, tinted, glass, clear, the same forms]; on both [@cancel, @role_primary, destructive]; no requires_variants: the base is UIButton(type: .system) with no configuration` (one configuration style or form at a time, one role, S10, ADD-A121, ADD-A125) | field |
+| B-1 | `the iOS state model's button entry: axes.contexts for ios-*: the host contexts the rules select, dialog.action_area under variant alert and under variant @action_sheet, toolbar.bar, toolbar_editor, bottom_tab_bar.bar, search_field, input, the chain [search_field.body, input], calendar.header, edit_menu, find_bar, media_controls.bar, ink_toolbar, component.document_launch_view, status_page.action_area, teaching_tip.action_area` (a host-drawn button is the base in its host's context; the contexts the rules select, the combinations drawn there the iOS state model's, DL-5, DL-7, DL-8, C-11, B-11, B-13, X-MO-3, C-2, C-3, I-2, TB-4, TB-6, TB-8, P3-3†, P4-10†, C-1, T-13, C-22, C-29, C-6, C-14, C-25, C-42†, C-40†, C-44†, C-16, C-36†, ADD-A125) | field |
+| B-11 | `the iOS state model's button entry: variant_products for ios-*: each configuration style with { any = [@role_primary] }; on ios-26 [{ one = [glass, clear] }, { one = [primary] }, { any = [@role_primary] }]` (the role × style sets the host drew; where `@cancel` and `destructive` are drawn, the iOS state model's, the catalogue, ADD-A125) | field |
+| B-2 | `button.body.fill @ variant glass / variant clear / variants {glass,primary} / variants {clear,primary}` (glass, clearGlass, prominentGlass, prominentClearGlass: a `Material` layer; the prominent styles' tint is the material's `tint`) | rule |
 | B-2 | `button.body.{transform,fill} @ {pressed} variant glass` (the interactive press: scale and highlight) | rule |
 | B-2 | `button.body.transitions @ variant glass` (the press response's motion, groups `Transform`, `Fill`) | rule |
-| B-3 | `button.label.text, button.body.padding, button.body.corners, button.body.min_height @ size mini / small / regular (UIKit medium) / large` | rule |
-| B-3 | `[declare.widget.button] sizes for ios-* and its default size` | field |
+| B-3 | `button.label.text, button.body.padding, button.body.corners, button.body.min_height @ variant <style> size mini / variant <style> size small / variant <style> size regular (UIKit medium) / variant <style> size large` (per style, the title, padding and `min_height` stated at the default category, their scaling at the others a measurement, and `@ variant <style> size <s>`; the non-glass styles' corners at their base, UIKit's `.dynamic`, "adjusted based on dynamic type", `UIButtonConfiguration.h:43-44` in Xcode 26.6, the default `:102`, stated at the default category until measured, then `= uifm_scaled(<radius>, <text role>)`, the catalogue's Open items, ADD-A125) | rule |
+| B-3 | `[declare.widget.button] sizes for ios-* and its default size` (`mini` draws as `small` on iPhone: its facts under `idiom:phone` equal `small`'s, the catalogue) | field |
 | B-4 | `button.body.corners @ variant @corner_fixed / variant @corner_small / variant @corner_medium / variant @corner_large / variant pill` (capsule is `pill`) | rule |
-| B-4 | `button.body.corners @ variant @corner_dynamic size mini / variant @corner_dynamic size small / variant @corner_dynamic size regular / variant @corner_dynamic size large` (each radius `= uifm_scaled(<radius>, <text role>)`, following Dynamic Type; ADD-A55) | rule |
+| B-4 | `button.body.corners @ variants {glass,@corner_dynamic} size mini / variants {glass,@corner_dynamic} size small / variants {glass,@corner_dynamic} size regular / variants {glass,@corner_dynamic} size large / variants {clear,@corner_dynamic} size mini / variants {clear,@corner_dynamic} size small / variants {clear,@corner_dynamic} size regular / variants {clear,@corner_dynamic} size large` (`ios-26`, on the glass styles alone, the connector setting `@corner_dynamic` only with them; drawn by the host on `glass` at `regular` only, `clear`, the prominent glass styles and the other sizes measurements; stated at the default category until the host measures which text style's scaling it follows, then `= uifm_scaled(<radius>, <text role>)`, ADD-A55; the catalogue's Open items, ADD-A125) | rule |
 | B-4 | `reader:ios:the Dynamic Type category the dynamic radius follows` | readers (R18) |
 | B-5 | `button.body.opacity @ {pressed} variant flat` (13–18's plain button lowers its label's and image's alpha; it draws no bezel, so the group opacity is theirs) | rule |
 | B-5 | `button.body.transitions @ variant flat` (the alpha's fade, group `Opacity`) | rule |
@@ -206,23 +209,24 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-10 | `button flag @loading` (`ios-*`) | flag |
 | B-10 | `spinner.{spoke.fill,values.loop} @ context button {@loading}` (the activity indicator in the button: a `spinner` element, Nested controls; its own colour) | rule |
 | B-10 | `button.icon @ {@loading}` (`absent = true`: the image swapped out for the indicator; `icon` may be absent on `ios-*`) | rule |
-| B-11 | `button.label.text.fill @ variant destructive` | rule |
-| B-11 | `button.label.text.font.weight @ variant @cancel context dialog.action_area` (its weight in alerts and action sheets) | rule |
-| B-11 | `button.label.text @ variant @cancel` (the cancel role; iOS 26's further roles are an open item of the catalogue, not declared) | rule |
+| B-11 | `button.label.text @ variant destructive context dialog.action_area` (DL-7's rule, stated once there: the destructive action's colour in alerts and action sheets; a standalone button with the role draws as normal, ADD-A125) | rule |
+| B-11 | `button.label.text @ variant @cancel context dialog.action_area` (DL-7's rule, stated once there: its weight in alerts and action sheets, ADD-A125) | rule |
+| B-11 | `button.label.text.font.weight @ variant @role_primary` (the primary role's heavier title, weight trait 0.3, every style, the rule stated after B-13's style weight rules and without a size, measured at `regular` and pending at `mini`, `small` and `large`, ADD-A125) | rule |
 | B-12 | `button.icon.glyph, button.body.fill, button.body.min_width, button.body.min_height @ variant close / variant @info / variant @contact_add` | rule |
+| B-12 | `button.body.padding, button.label.text, button.label.text.fill` (the base at rest, UIButton(type: .system) with no configuration, the host's forms.<scheme>.system; its title a font of UIKit's own, its Dynamic Type scaling the catalogue's Open items; where its facts reach the host contexts the iOS state model's, ADD-A125) | field |
+| B-12 | `button.body.opacity, button.label.text.fill @ {pressed} / {disabled}` (the base's pressed and disabled looks, forms.<scheme>.system.highlighted and .disabled, ADD-A125) | rule |
 | B-12 | `button.body.fill, button.icon.glyph.fill @ {pressed} variant close / {pressed} variant @info / {pressed} variant @contact_add` | rule |
 | B-13 | `button.label.text.font.weight @ variant primary / variant tinted / variant @gray / variant flat` | rule |
-| B-13 | `button.label.text.font.weight @ variant done context toolbar.bar / variant primary context toolbar.bar` (the done and prominent bar items' weight) | rule |
-| B-14 | `button.body.fill, button.label.text.fill @ {disabled} variant flat / @gray / tinted / primary / @borderless / @bordered / variants {@bordered,tinted} / variants {@bordered,primary} / glass / clear / variants {glass,primary} / variants {clear,primary}` (the disabled look per declared style) | rule |
+| B-13 | `button.label.text.font.weight @ variant done context toolbar.bar / variant primary context toolbar.bar` (the done and prominent bar items' weight; on `ios-26` the done style is `primary`'s, ADD-A125) | rule |
+| B-14 | `button.body.fill, button.label.text.fill @ {disabled} variant flat / @gray / tinted / primary / glass / clear / variants {glass,primary} / variants {clear,primary}` (the disabled look per declared style) | rule |
 | B-15 | `button.body.fill, button.label.text.decoration @ cond button_shapes` | rule |
 | B-15 | `cond button_shapes (S7.1)` | condition |
 | B-15 | `reader:ios:the Button Shapes setting` | readers (R18) |
 | B-16 | `button.icon.transitions` (the symbol content transition: a `TransitionKind::Keyed` transition of group `Icon`, R25.12, ADD-A27) | field |
 | B-17 | `button.body.transform, button.body.fill, button.body.shadow @ {hover}` | rule |
 | B-17 | `button.body.transitions` (the lift's motion, groups `Transform`, `Shadow`, `Fill`) | field |
-| B-18† | `button.menu_indicator.glyph @ variant menu` (the automatic indicator) | rule |
 | B-18† | `button.menu_indicator.glyph @ variants {menu,@indicator_popup}` | rule |
-| B-18† | `button.menu_indicator @ variants {menu,@indicator_none}` (`absent = true`) | rule |
+| B-18† | `button.menu_indicator @ variants {menu} !variants {@indicator_popup}` (`absent = true`: the automatic indicator, and `none`, which draws alike, the base, ADD-A125) | rule |
 | B-18† | `button.values.menu_trigger @ variants {menu,@menu_on_hold}` (the touch-and-hold variant) | rule |
 | B-18† | `button.values.menu_placement @ variant menu` (`UiKitMenu`; the menu's own look and motion are the MN-* rows) | placement |
 | I-1 | `input.body.{stroke,corners,fill} @ variant line / @bezel / flat` | rule |
@@ -253,12 +257,12 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TA-4 | `text_area.writing_tools_glow.{fill,shadow,transitions}` | field |
 | TA-5 | `link.text.text @ variant inline context text_area` | rule |
 | TA-5 | - | readers (R18) |
-| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage) @ variant selection` | rule |
+| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage) @ variant selection; checkbox.mark (absent = true) @ !{checked} variant selection` (the check `Absent` unchecked, `checked` the selection's flag, written last, until CK-2†'s measurement says whether UIKit animates it in, which would make it a `shown` part, S2.7, ADD-A126) | rule |
 | CK-1 | `list.accessory.glyph @ variant @checkmark` (the list checkmark accessory) | rule |
 | CK-2† | `checkbox.box.stroke, checkbox.box.min_width, checkbox.box.min_height @ variant selection` | rule |
 | CK-2† | `checkbox.box.fill, checkbox.mark.glyph @ {checked} variant selection` | rule |
 | CK-2† | `checkbox.box.*, checkbox.mark.* @ {disabled} variant selection` | rule |
-| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected) | rule |
+| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected; the mark `Absent` unchecked, CK-1, and whether UIKit animates its check in a measurement, the catalogue's Open items, the input S2.7's rule takes to make it a `shown` part or keep it `Absent`, ADD-A126) | rule |
 | CK-2† | `checkbox.values.presentations event Appear @ variant selection` (the column sliding in with edit mode) | rule |
 | CK-2† | `checkbox.box.{min_width,min_height} @ variant selection` (`= uifm_scaled(<size>, body)`: the circle's size per Dynamic Type; ADD-A55) | rule |
 | CK-2† | `reader:ios:the Dynamic Type category the circle's size follows` | readers (R18) |
@@ -269,8 +273,9 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-3 | `menu.values.scrollable` | field |
 | MN-4 | `menu.item_subtitle.text` | field |
 | MN-5 | `menu.item_trailing_icon.icon` | field |
-| MN-6 | `menu.check_indicator.glyph @ {checked}` | rule |
-| MN-6 | `menu.check_indicator.glyph @ {indeterminate}` | rule |
+| MN-6 | `menu.check_indicator.glyph` (the checkmark, in the base, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | field |
+| MN-6 | `menu.check_indicator.glyph @ {indeterminate}` (the mixed mark, a patch of the base's) | rule |
+| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (MN-6), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | MN-6 | `menu.values.check_column` | field |
 | MN-7 | `menu.{item_label.text.fill,item_trailing_icon.icon.fill} @ variant destructive` | rule |
 | MN-8 | `menu.item.fill @ {pressed} (touch highlight)` | rule |
@@ -327,7 +332,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | PB-2 | `progress_bar.indicator.corners` | field |
 | PB-3 | `progress_bar.indicator.transitions` (`PropertyGroup::Geometry`: the animated progress change) | field |
 | PB-4† | `progress_bar.label.text; progress_bar.value_label.text` | field |
-| PB-4† | `progress_bar.values.label_position; progress_bar.values.label_gap` | field |
+| PB-4† | `progress_bar.values.label_gap; progress_bar.values.value_label_position; progress_bar.values.value_label_gap` (the title above the bar, the current-value label by its own position, ADD-A146) | field |
 | T-1 | `bottom_tab_bar.bar.fill (material)` | field |
 | T-1 | `bottom_tab_bar.bar.fill @ {scrolled} / !{scrolled}` (the standard and scroll-edge appearances) | rule |
 | T-1 | `reader:ios:UITabBarAppearance backgroundEffect` | readers (R18) |
@@ -348,7 +353,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | T-8 | `bottom_tab_bar.values.presentations event @indicator_move` (step `part: indicator`, kind `Morph`) | field |
 | T-8 | `bottom_tab_bar.indicator.{transform,transitions} @ {pressed} / {dragged}` (the lens following the finger across the bar and growing while it does, as `segmented_control.indicator`'s, SG-4) | rule |
 | T-9 | `bottom_tab_bar.bar.{corners,shadow,min_height} @ variant floating` (corners `Full`) | rule |
-| T-9 | `bottom_tab_bar.values.floating_inset` | field |
+| T-9 | `bottom_tab_bar.bar.margin @ variant floating` (the capsule's distance from the window's edges) | rule |
 | T-10 | `bottom_tab_bar.bar.*, bottom_tab_bar.item.* @ {minimized}` | rule |
 | T-10 | `bottom_tab_bar.values.presentations event @minimize` | field |
 | T-10 | `reader:ios:UITabBarController.tabBarMinimizeBehavior` | readers (R18) |
@@ -378,7 +383,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SD-5 | `reader:ios:UIListContentConfiguration.sidebarCell, accompaniedSidebarCell` | readers (R18) |
 | SD-6 | `sidebar.pane.{corners,shadow,padding} @ variant floating` (corners `Concentric`) | rule |
 | SD-6 | `sidebar.pane.fill @ variant floating` (the glass material) | rule |
-| SD-6 | `sidebar.values.floating_inset` | field |
+| SD-6 | `sidebar.pane.margin @ variant floating` (the pane's distance from the window's edges, its `Concentric` corners' inset, S2.4) | rule |
 | SD-6 | `background_extension.extension.fill @ context sidebar.pane variant floating` (the content extending beneath) | rule |
 | SD-7 | `sidebar.values.presentations events Appear, Disappear, @tab_sidebar_morph` | field |
 | SD-8 | `list.row.min_height @ variant sidebar` | rule |
@@ -394,18 +399,20 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TB-2 | `toolbar.bar.stroke.top (Edge.snap ToDevicePixel, ADD-A33)` | field |
 | TB-2 | `reader:ios:UIBarAppearance.shadowColor` | readers (R18) |
 | TB-3 | `toolbar.bar.min_height @ v_size_class compact (ADD-A20)` | rule |
-| TB-4 | `button.label.text.font.weight @ variant done context toolbar.bar` (the done item's weight) | rule |
-| TB-4 | `button.body.fill @ variant primary context toolbar.bar` (the prominent item's tinted glass fill) | rule |
+| TB-4 | `button.label.text.font.weight @ variant done context toolbar.bar` (the done item's weight: on `ios-13` the done style's and the system Done item's; on `ios-26` the system Done item's, the done style being the prominent one, `primary`, `UIBarButtonItem.h:34`, ADD-A125) | rule |
+| TB-4 | `button.body.fill @ variant primary context toolbar.bar` (the prominent item's tinted glass fill; on `ios-26` the done style too, which is the prominent one, `UIBarButtonItem.h:34`; its values pending the pass that reads them, ADD-A125) | rule |
 | TB-4 | `reader:ios:UIBarButtonItem.Style, doneButtonAppearance, prominentButtonAppearance` | readers (R18) |
+| TB-4 | `button.icon.glyph @ variant add context toolbar.bar` (the system add bar item, its glyph UIKit's, its values unread, the catalogue's Open items, ADD-A125) | rule |
 | TB-5 | `toolbar.item_group.{fill,corners,shadow,padding}` (fill a `Material`, corners `Full`) | field |
 | TB-5 | `toolbar.values.group_gap` | field |
 | TB-5 | `reader:ios:UIBarButtonItem.sharesBackground, hidesSharedBackground` | readers (R18) |
+| TB-6 | `button.label.text @ context toolbar.bar` (the plain bar item's title, forms.<scheme>.bar_plain, read on ios-13, pending on ios-26, ADD-A125) | rule |
 | TB-6 | `button.body.{opacity,fill} @ {pressed} context toolbar.bar` | rule |
 | TB-6 | `button.body.transitions @ context toolbar.bar` | rule |
 | TB-7 | `badge.* @ context toolbar.bar` | rule |
 | TB-7 | `reader:ios:UIBarButtonItem.Badge` | readers (R18) |
 | TB-8 | `toolbar.values.fixed_space_width, flexible_space_min_width` | field |
-| TB-8 | `button.body.padding @ variant @padding_removed context toolbar.bar` | rule |
+| TB-8 | `button.body.padding @ context toolbar.bar` (the bar item's padding; `isPaddingRemoved` names no API of the pinned headers, so no variant, the catalogue's Open items, ADD-A125) | rule |
 | L-1 | `list.view.fill, list.section.fill, list.row_background.fill @ variant plain / variant @grouped / variant inset / variant sidebar / variant @sidebar_plain` | rule |
 | L-1 | `reader:ios:UIBackgroundConfiguration list cells resolvedBackgroundColor` | readers (R18) |
 | L-2 | `list.section.corners @ variant inset` | rule |
@@ -457,6 +464,9 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | L-22† | `list.sort_indicator.glyph @ {sorted} variant table / {sorted,descending} variant table` | rule |
 | L-22† | `list.row_background.fill @ {selected} variant table` (the row selection) | rule |
 | L-22† | `list.header @ variant table h_size_class compact` (`absent = true`: the header hidden in a compact width; ADD-A20); `list.values.max_columns @ variant table h_size_class compact` (only the first column shown) | rule |
+| L-23† | `form.card.*, form.row.*, form.row_separator.*, form.group_title.*` (SwiftUI's `Form`, drawn through the inset-grouped list: its platter, cells, separators and section header, L-1, L-2, L-7, stated on the form's own parts as `adwaita` states its boxed list on `form` and on `list`, R20) | field |
+| L-23† | `form.row_value.text, form.values.control_alignment` (the value in secondary text, `LabeledContent`'s and a picker row's; the control's alignment in the row) | field |
+| L-23† | `combo_box.label.text, combo_box.arrow.glyph @ context form.row; switch.*, stepper.* @ context form.row` (the menu-style picker, the switch and stepper rows, in a form) | rule |
 | L-23† | `list.trailing_text.text @ variant @grouped / variant inset` (the value in secondary text) | rule |
 | L-23† | `combo_box.label.text, combo_box.arrow.glyph @ context list.row` (the menu-style picker: its value and indicator) | rule |
 | L-23† | `list.accessory.glyph @ variant @disclosure_indicator / variant @checkmark` (the navigation-link picker's chevron, the inline picker's checkmark rows) | rule |
@@ -508,7 +518,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | DL-5 | `button.body.{fill,corners,min_width} @ context dialog.action_area variant alert` (full-width cells; 26's capsules) | rule |
 | DL-5 | `button.body.fill @ {pressed} context dialog.action_area variant alert` | rule |
 | DL-5 | `button.body.fill @ {default} context dialog.action_area variant alert` (26's prominent default, to verify) | rule |
-| DL-5 | `dialog.values.action_layout.row_gap_px` | field |
+| DL-5 | `dialog.values.action_layout.gap` | field |
 | DL-6 | `dialog.values.action_layout.stack_rule (ByCount, long titles)` | field |
 | DL-6 | `dialog.values.action_layout.stacked_order` | field |
 | DL-7 | `button.label.text @ context dialog.action_area` (the other actions: regular, in tint) | rule |
@@ -532,10 +542,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SP-4a | `spinner.spoke.fill` | field |
 | SP-5a | `spinner.values.presentations (Appear, Disappear)` | field |
 | CB-1 | `combo_box.arrow.glyph` (the pop-up button's indicator, its `.popup` up/down chevron pair, in the base: its identity, colour and weight; iOS's pull-down button is `button @ variant menu`, B-18†) | field |
-| CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant @borderless / variant @bordered / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
-| CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
+| CB-1 | `combo_box.body.padding; combo_box.label.padding; combo_box.arrow.margin; combo_box.values.{label_arrow_gap,content_width,content_slack}` (the content row, the catalogue: the pop-up button the `UIButton` menu configuration with the `.popup` indicator, `button @ variant menu` in the facts' `indicator_popup` cells, which the iOS host measured at `regular` on `ios-13` and `ios-26`, the facts in `docs/facts/ios/combo_box.toml`: its padding's start and end 12, `:140-174`, `:56-90` and on `ios-26` `:523-567`, `:419-463`, the gap 4, `:207-241`, `:600-644`, the indicator's start and end margins 0, `:250-284`, `:292-326`, `:653-697`, `:705-749`; the other sizes pending, register row U120; the indicator's top and bottom margins pending, U121, `:334-344`, `:757-767`; the title's own padding inside the row not measured, U257, `:182-204`, `:575-597`; whether the width follows the selected title, where a wider pop-up puts the spare width and how a long title is cut not measured, register rows U173–U175: the width's basis and the slack pending; ADD-A127) | field |
+| CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
+| CB-3 | `combo_box.body.fill @ {open}; combo_box.arrow.{glyph,transform} @ context combo_box.body {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
-| CB-3 | `menu.check_indicator.glyph @ {selected} context combo_box` (the checkmark on the current item: a combo list's chosen value is `selected`, S7.2) | rule |
 | CB-4 | `combo_box.label.text.fill` | field |
 | SG-1 | `segmented_control.indicator.{fill,stroke,corners,shadow}` | field |
 | SG-1 | `segmented_control.track.padding (the indicator's inset)` | field |
@@ -560,7 +570,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CD-1 | `list.row_background.shadow` (its `shadowProperties`, layers S2.5; `card` is unavailable on `ios-*`, and GroupBox is `group_box`) | field |
 | CD-1 | `reader:ios:UIBackgroundConfiguration and UIShadowProperties` | readers (R18) |
 | EX-1 | `list.disclosure.glyph` (iOS's outline disclosure is a list row's `disclosure`; `expander` is unavailable on `ios-*`) | field |
-| EX-1 | `list.disclosure.transform @ {open}` | rule |
+| EX-1 | `list.disclosure.transform @ context list.row {open}` (the row's `open`, read by context, ADD-A146) | rule |
 | EX-1 | `reader:ios:UICellAccessory.outlineDisclosure options` | readers (R18) |
 | EX-2 | `list.disclosure.transitions (Transform)` | field |
 | EX-2 | `list.values.presentations events @expand, @collapse` (the child rows' insertion) | field |
@@ -584,7 +594,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-1 | `toolbar.title_menu_chevron.glyph` | field |
 | C-1 | `button.icon.glyph @ variant overflow context toolbar.bar` (the overflow button) | rule |
 | C-1 | `toolbar.large_title.{opacity,transform}, toolbar.large_subtitle.{opacity,transform}, toolbar.bar.min_height` as expressions on `element.scroll_offset` (the large-title collapse on scroll, ADD-B13) | field |
-| C-1 | `toolbar.values.title_alignment` (27.2's `titleAlignment`, to verify) | field |
+| C-1 | - (iOS 27.2's `titleAlignment`; `ios-26` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | C-1 | - | readers (R18) |
 | C-2 | `button.icon.glyph @ variant back context toolbar.bar` | rule |
 | C-2 | `button.label.text @ variant back context toolbar.bar` | rule |
@@ -604,7 +614,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-3 | `input.body.{fill,corners} @ context any search_field context toolbar.bar / context any search_field context bottom_tab_bar.bar` (the glass capsule) | rule |
 | C-3 | `button.* @ variant icon_only context toolbar.bar; search_field.values.presentations event @expand` (26's search button expanding into a field above the keyboard) | rule |
 | C-3 | - | readers (R18) |
-| C-4 | `stepper.body.{fill,corners,min_width,min_height}, stepper.separator.stroke` (the two-segment body, its divider and size) | field |
+| C-4 | `stepper.buttons.{fill,corners,min_width,min_height}, stepper.separator.stroke` (the two-segment body, its divider and size: the box of the two halves, `body` being the whole control with any text beside it) | field |
 | C-4 | `stepper.increment_glyph.glyph, stepper.decrement_glyph.glyph` (the plus and minus glyphs and colour) | field |
 | C-4 | `stepper.increment.fill, stepper.decrement.fill @ {pressed} / {disabled}` (the pressed segment; the segment disabled at a limit) | rule |
 | C-4 | `stepper.values.button_layout, stepper.values.repeat_delay, stepper.values.repeat_interval` | field |
@@ -617,7 +627,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-5 | `time_picker.field.fill, time_picker.field_label.text.fill @ {pressed} variant with_popup` | rule |
 | C-5 | `time_picker.values.placement (UiKitPopover)` | placement |
 | C-5 | - | readers (R18) |
-| C-6 | `calendar.header.padding, calendar.weekday_label.text, calendar.time_row.{text,padding}, calendar.decoration.{fill,corners,icon,min_width,min_height}` | field |
+| C-6 | `calendar.header.padding, calendar.weekday_label.text, calendar.decoration.{fill,corners,icon,min_width,min_height}` | field |
+| C-6 | `date_picker.time_row.{text,padding} @ variant inline` (the time row under the inline calendar, the picker's own part) | rule |
 | C-6 | `button.icon.glyph @ variant previous context calendar.header / variant next context calendar.header` (the navigation chevrons) | rule |
 | C-6 | `button.label.text, button.icon.glyph @ !variants {previous,next} context calendar.header` (the month-year toggle; `!variants` keeps out the navigation buttons, which the same context matches) | rule |
 | C-6 | `picker_wheel.* @ context calendar.frame variant @wheels` (the month-year wheels) | rule |
@@ -640,7 +651,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-9 | `page_indicator.values.edge_dots_shrink; page_indicator.* @ variant vertical` | rule |
 | C-9 | - | readers (R18) |
 | C-10 | `spinner.spoke.fill @ context pull_to_refresh.indicator` (the tint) | rule |
-| C-10 | `pull_to_refresh.values.progress_sweep` (`Spokes`: the spokes appear as the pull progresses) | field |
+| C-10 | `spinner.spoke @ !{indeterminate} context pull_to_refresh {pulling}` (the spokes appear as the pull progresses: the share of them a determinate spinner draws, the `spinner` entry's rule) | rule |
 | C-10 | `spinner.spoke.fill @ !{indeterminate} context pull_to_refresh.indicator {pulling}` (the pull-progress spinner, its `element.progress` the pull progress; ADD-B12) | rule |
 | C-10 | `pull_to_refresh.values.trigger_distance, pull_to_refresh.title.text, pull_to_refresh.values.presentations event Disappear` | field |
 | C-10 | - | readers (R18) |
@@ -659,7 +670,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-12 | `sheet.scrim.opacity, sheet.values.undimmed_up_to` (the dim per detent) | field |
 | C-12 | `sheet.values.presenter_transform, sheet.values.presenter_corners; sheet.presenter_backdrop.fill` (13–18's stacked-card effect and the black behind the presenter) | field |
 | C-12 | `sheet.body.{max_width,max_height} @ variant @page / variant @form` (iPad page and form sheet sizes) | rule |
-| C-12 | `sheet.body.corners, sheet.values.anchor @ variant @edge_attached v_size_class compact` (the edge-attached compact-height variant) | rule |
+| C-12 | `sheet.body.corners, sheet.values.placement @ variant @edge_attached v_size_class compact` (the edge-attached compact-height variant) | rule |
 | C-12 | `sheet.values.swipe_to_close` (the interactive dismiss) | field |
 | C-12 | `sheet.values.presentations events Appear, Disappear, @settle` (the presentation spring, the detent changes) | field |
 | C-12 | `sheet.body.{fill,corners,shadow} @ variant floating` (`ios-26`'s inset glass sheet at partial detents; to verify) | rule |
@@ -698,10 +709,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-19 | `background_extension.extension.fill` | field |
 | C-19 | `background_extension.values.mirrors_content` | field |
 | C-19 | - | readers (R18) |
-| C-20 | `glass_container.surface.fill` (the regular glass, the base) | field |
-| C-20 | `glass_container.surface.fill @ variant clear` | rule |
-| C-20 | `glass_container.surface.{transform,transitions} @ {pressed}` (the interactive glass) | rule |
-| C-20 | `glass_container.values.merge_gap` | field |
+| C-20 | `glass_view.surface.fill` (the regular glass, the base) | field |
+| C-20 | `glass_view.surface.fill @ variant clear` | rule |
+| C-20 | `glass_view.surface.{transform,transitions} @ {pressed}` (the interactive glass) | rule |
+| C-20 | `glass_view.values.merge_gap` | field |
 | C-20 | - | readers (R18) |
 | C-21 | `bottom_tab_bar.accessory.fill` | field |
 | C-21 | `bottom_tab_bar.accessory.corners` | field |
@@ -787,7 +798,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-44† | - | readers (R18) |
 | C-45† | `chart.grid_line_major.stroke, chart.axis_tick.stroke, chart.axis_label.text, chart.legend_label.text, chart.plot_area.padding` | field |
 | C-45† | `chart.series.fill = pick(element.item_index, …)` (the default series colour order; ADD-B15) | field |
-| C-45† | `chart.series.stroke` (a `LineMark` series' line, its width and paint per series) | field |
+| C-45† | `chart.series.stroke @ variant line` (a `LineMark` series' line, its width and paint per series; absent outside `line`, the filled marks the base) | rule |
 | C-45† | `chart.values.grid_lines` (`AxisMarks`' defaults) | field |
 | C-45† | - | readers (R18) |
 | C-46† | `component.activity_rings.ring.fill @ variant @move / variant @exercise / variant @stand` (each ring's paint, flat or a gradient); `component.activity_rings.values.stroke_width`, `component.activity_rings.values.cap` (the rings' width and ends) | component |
@@ -827,10 +838,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MT-7 | `PartStyle.fill @ {over_dark_content} (adaptive flip)` | rule |
 | X-MT-7 | state flag `over_dark_content` (S7.2) | flag |
 | X-MT-7 | `Material.{tint,luminosity} per widget (the large glass surfaces state their greater opacity in their own fill: sidebar.pane, menu.body, sheet.body)` | rule |
-| X-MT-8 | `glass_container.surface.{fill,transform,transitions} @ {pressed}; button.body.{fill,transform,transitions} @ {pressed} variant glass` (press scale, highlight, shimmer) | rule |
-| X-MT-9 | `glass_container.values.merge_gap` | field |
+| X-MT-8 | `glass_view.surface.{fill,transform,transitions} @ {pressed}; button.body.{fill,transform,transitions} @ {pressed} variant glass` (press scale, highlight, shimmer) | rule |
+| X-MT-9 | `glass_view.values.merge_gap` | field |
 | X-MT-9 | `PresentationKind::Morph` in the merging elements' `presentations` (S2.7) | field |
-| X-MT-10 | `glass_container.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the dimming layer over clear glass where the content beneath is bright: the clear glass alone) | rule |
+| X-MT-10 | `glass_view.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the dimming layer over clear glass where the content beneath is bright: the clear glass alone) | rule |
 | X-MT-11 | `cond system_setting:glass_look (ADD-A04)` | condition |
 | X-MT-11 | `PartStyle.fill @ cond system_setting:glass_look` | rule |
 | X-MT-11 | `reader:ios:user Liquid Glass look preference` | readers (R18) |
@@ -845,8 +856,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-CR-4 | `token.params.display.corner_radius_{top_left,top_right,bottom_right,bottom_left} @ cond device_model:<key>` (per device model; an unlisted model's `Absent`, S4.6, R25.11, ADD-A83) | rule |
 | X-MO-1 | `token.motion.durations.*` | token |
 | X-MO-1 | `token.motion.timings.*` | token |
+| X-MO-1 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | X-MO-1 | `Transition.delay` (S2.7) | field |
-| X-MO-2 | `token.motion.timings.spring_default (Timing::Spring)` | token |
+| X-MO-1 | `Transition.engine` (UIKit's and Core Animation's, measured: where an interrupted animation starts, its duration and curve, a spring's velocity, stacked changes, a theme change, a deactivation and an occlusion landing in it; until then the transitions are pending facts, the preset stating none, each path listed in its `[pending]` table (register U181), S2.7, S17, the catalogue's Open items, ADD-A126, ADD-A128) | field |
+| X-MO-2 | `token.motion.timings.default (Timing::Spring; S4.1's rule drops spring)` | token |
 | X-MO-3 | `navigation_view.values.presentations events @push, @pop` (a `PresentationKind::Keyed` parallax slide, ADD-A26) | field |
 | X-MO-3 | `navigation_view.edge_shadow.{fill,opacity}, navigation_view.scrim.{fill,opacity}` (the edge shadow or dim) | field |
 | X-MO-3 | `toolbar.values.presentations event @title_change` (the title's cross-fade); `button.values.presentations @ variant back context toolbar.bar` (event `@title_change`: the back label's transition) | rule |
@@ -918,7 +931,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SE-3 | `list.row_background.fill @ {pressed} / {selected}` (the grey touch highlight against the tint selection; per context by `context` rules) | rule |
 | X-FO-1 | `PartStyle.focus kind Ring (halo shape, position, width, colour)` | field |
 | X-FO-2 | `list.row_background.fill @ {focus_visible} (cell focus highlight)` | rule |
-| X-FO-2 | `FocusIndicator.transition kind FocusMove (ADD-A19)` | field |
+| X-FO-2 | `FocusIndicator.transition` (UIKit's focus moving between elements, `FocusMove`, ADD-A19: pending with X-MO-1's engine, the preset stating none, the path listed in its `[pending]` table (register U181), S17, ADD-A126, ADD-A128) | field |
 | X-PH-1 | `PartStyle.transform @ {hover} (pointer lift)` | rule |
 | X-PH-1 | `PartStyle.shadow @ {hover}` | rule |
 | X-PH-1 | `PartStyle.fill @ {hover} (highlight)` | rule |
@@ -934,7 +947,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SC-1 | `sheet.scrim.{fill,opacity}` (per detent, with `sheet.values.undimmed_up_to`) | field |
 | X-SC-1 | `component.context_menu_preview.scrim.{fill,opacity}` (the blur and dim) | component |
 | X-SC-1 | `sheet.values.presenter_transform, sheet.values.presenter_corners; sheet.presenter_backdrop.fill` (the 13–18 card-sheet background and its black backdrop) | field |
-| X-SC-1 | `glass_container.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the clear-glass dimming, X-MT-10) | rule |
+| X-SC-1 | `glass_view.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the clear-glass dimming, X-MT-10) | rule |
 | X-BT-1 | `token.behavior.long_press (ADD-A45)` | token |
 | X-BT-1 | `token.behavior.touch.delay (ADD-A45)` (the touch-highlight delay in scroll views) | token |
 | X-BT-1 | `token.caret.{blink_on,blink_off}` | token |
@@ -949,7 +962,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SV-2 | `declare.widget.*.sizes (UIButton.Configuration.Size and others)` | field |
 | X-SV-3 | `Selector.direction Rtl` | rule |
 | X-SV-3 | `token.icons.mirroring` (S2.9) | token |
-| X-SV-3 | `reader:ios:layoutDirection` | readers (R18) |
+| X-SV-3 | `RootInputs.direction, Element.direction (the layout direction, S8)` | field |
 | X-A11-1 | `cond contrast_increased` | condition |
 | X-A11-1 | `role.* and PartStyle.stroke @ cond contrast_increased` | rule |
 | X-A11-1 | `InputValue.per_contrast` | input |
@@ -980,7 +993,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-IC-5 | `list.accessory.glyph @ variant @disclosure_indicator / variant @checkmark / variant @detail / variant @delete / variant @insert / variant reorder` (each a `GlyphSource::NamedSystemImage`, the symbol UIKit draws, named by the row's M-q measurement: the disclosure chevron, checkmark, info and detail button, delete and insert controls, reorder grabber; as L-12) | rule |
 | X-IC-5 | `list.disclosure.glyph` (the outline chevron, `GlyphSource::NamedSystemImage`, named by M-q; as EX-1) | field |
 | X-IC-5 | `combo_box.arrow.glyph` (the pop-up chevrons, `GlyphSource::NamedSystemImage`, named by M-q; as CB-1) | field |
-| X-IC-5 | `button.icon.glyph @ variant clear_field / variant overflow / variant close / variant pane_toggle / variant @share` (the clear xmark in a circle, the more ellipsis, the close button, the sidebar toggle, the share glyph; each a `GlyphSource::NamedSystemImage`, named by M-q) | rule |
+| X-IC-5 | `button.icon.glyph @ variant clear_field / variant overflow / variant close / variant pane_toggle / variant @share context toolbar.bar` (the clear xmark in a circle, the more ellipsis, the close button, the sidebar toggle, the share glyph; each a `GlyphSource::NamedSystemImage`, named by M-q) | rule |
 | X-IC-6 | `<part>.transitions` (`PropertyGroup::Icon`, `TransitionKind::Keyed`: bounce, replace, appear, disappear, draw_on, draw_off, scale; R25.12, ADD-A27) | field |
 | X-IC-6 | `IconStyle.animation` (a `Loop`: pulse, variable color, breathe, rotate, wiggle while a state holds; R25.12) | field |
 | X-IC-7 | - | readers (R18) |
@@ -996,12 +1009,12 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SF-5† | `rich_text.{emphasis,strong,strikethrough}.text, rich_text.inline_code.{text,fill} @ variant markdown context any text_area / variant markdown` (UIKit's rendering of the presentation intents in a `UITextView`, or a `UILabel` with no host widget; which intents it renders, and the block parts' absence, the probe shows, to verify) | rule |
 | SF-6† | `rich_text.heading_1.text … rich_text.heading_6.text, rich_text.code_block.{text,fill}, rich_text.preformatted.text, rich_text.block_quote.{fill,stroke}, rich_text.list_marker.glyph, rich_text.table.stroke, rich_text.table_cell.{padding,stroke,text}, rich_text.table_header_cell.text, rich_text.heading_1.margin … rich_text.heading_6.margin, rich_text.{paragraph,code_block,preformatted,block_quote,table}.margin @ variant html` | rule |
 | SF-6† | `link.text.text @ variant inline context rich_text` | rule |
-| SF-7† | `sheet.values.anchor @ h_size_class compact / h_size_class regular / v_size_class compact / v_size_class regular` (ADD-A20) | rule |
+| SF-7† | `sheet.values.placement @ h_size_class compact / h_size_class regular / v_size_class compact / v_size_class regular` (ADD-A20; the strategies the placement unit states) | rule |
 | SF-7† | `sheet.scrim.fill @ variant @page / variant @form` (the dimming layer; the form sheet's glass layer on 26) | rule |
-| SF-7† | `sheet.values.anchor, sheet.body.corners @ variant @edge_attached v_size_class compact` (attached to the bottom edge) | rule |
-| SF-7† | `sheet.values.anchor (full_screen) @ variant @page v_size_class compact / variant @form v_size_class compact` (compact height: full screen, unless the application asks for the edge-attached form, `@edge_attached`) | rule |
+| SF-7† | `sheet.values.placement, sheet.body.corners @ variant @edge_attached v_size_class compact` (attached to the bottom edge) | rule |
+| SF-7† | `sheet.values.placement @ variant @page v_size_class compact / variant @form v_size_class compact` (compact height: filling the window, unless the application asks for the edge-attached form, `@edge_attached`) | rule |
 | SF-7† | `sheet.values.edge_attached_width @ variant @edge_attached / variants {@edge_attached,@width_follows_content}` (the container's safe-area width, or the content's preferred width where the application asks, `widthFollowsPreferredContentSizeWhenEdgeAttached`) | rule |
-| SF-7† | `sheet.values.anchor, sheet.body.{fill,corners,shadow} @ variant @placement_center / variant @placement_leading / variant @placement_trailing` (`ios-26`: iOS 27's `preferredPlacement`, set by the connector from the application's choice; where a leading or trailing sheet goes and how it looks is measured in the value phase) | rule |
+| SF-7† | - (iOS 27's `preferredPlacement`; `ios-26` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | SF-7† | - | readers (R18) |
 | SF-8† | `sheet.body.{max_width,max_height,corners} @ variant @form` (the automatic style's mapping on iOS 18) | rule |
 | SF-8† | - (the page sheet as the automatic style before iOS 18) | newest (R1.5) |
@@ -1024,7 +1037,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-2† | `bottom_tab_bar.values.max_items @ h_size_class compact / h_size_class regular / cond idiom:pad; bottom_tab_bar.item_label.text.elision` (per idiom and size class, ADD-A09, ADD-A20) | rule |
 | P3-2† | `bottom_tab_bar.values.presentations event @customize` | field |
 | P3-2† | `reader:ios:UITabBarController.moreNavigationController` | readers (R18) |
-| P3-3† | `button.body.{fill,corners}, button.icon.icon.fill, button.label.text.fill @ {selected} / {selected,pressed} / {selected,disabled} context toolbar.bar` | rule |
+| P3-3† | `button.body.{fill,corners}, button.icon.icon.fill, button.label.text.fill @ {checked} / {checked,pressed} / {checked,disabled} variant toggle context toolbar.bar` (the selected bar item is a toggle's on state, S7.2's `checked`, not `selected`, the current choice among siblings: `UIBarButtonItem.isSelected`, which the item toggles on and off as its primary action under `changesSelectionAsPrimaryAction` with no menu and no action, `xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:116-121`, `xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:131-136`, UIControl's `UIControlStateSelected`, the iOS state model's `checked` with `toggle`; macOS's selectable toolbar items, one of them selected, stay `selected`, MAC-TL11†) | rule |
 | P3-3† | `button.body.transitions @ context toolbar.bar` | rule |
 | P3-3† | `reader:ios:UIBarButtonItem.isSelected` | readers (R18) |
 | P3-4† | `toolbar.values.presentations event @items_change` | field |
@@ -1040,6 +1053,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-10† | - (the system's drop-progress indicator) | out (R1.1) |
 | P3-11† | `token.behavior.spring_loading (ADD-A45)` | token |
 | P3-11† | `button.values.presentations, list.values.presentations, segmented_control.values.presentations, bottom_tab_bar.values.presentations event @spring_load` (the visual effect while a drag hovers) | field |
+| P3-11† | `bottom_tab_bar.values.drag_hover_delay (= token.behavior.spring_loading)` | field |
 | P3-11† | `button.body.fill, list.row_background.fill, segmented_control.segment.fill, bottom_tab_bar.item.fill @ {drop_target}` (the activating states) | rule |
 | P3-12† | - (the pointer itself and its Color, Pointer Size, Increase Contrast and Automatically Hide Pointer settings, which the system draws, X-PH-2) | out (R1.1) |
 | P3-12† | `cond system_setting:pointer_animations (ADD-A04)` | condition |
@@ -1049,7 +1063,6 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-13† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | P3-14† | `token.icons.mirroring` (S2.9) | token |
 | P3-14† | `Element.language`, `Element.direction` (the icon lookup's inputs, S2.9, S8; ADD-B05) | field |
-| P3-14† | `reader:ios:semanticContentAttribute, layoutDirection` | readers (R18) |
 | P4-1† | - | out (R1.1) |
 | P4-2† | - | out (R1.1) |
 | P4-3† | `toolbar.values.presentations events Appear, Disappear` (the bars hidden on a swipe and shown again) | field |

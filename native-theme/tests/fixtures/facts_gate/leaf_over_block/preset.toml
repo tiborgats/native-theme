@@ -1,0 +1,23 @@
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+# The focus ring the token's, zero wide where the button is not focused: a patch over the reference
+# (S2.2), as the facts state the block and then its leaf.
+[[rules]]
+target = "button.body"
+set = { focus = "= token.focus" }
+
+[[rules]]
+when = { not_states = ["focused"] }
+target = "button.body"
+set = { focus.width_px = 0 }
