@@ -32,10 +32,6 @@ Writes these tables under `native-theme/tests/vectors/`:
   the palette `KColorScheme::createApplicationPalette` (KColorScheme 6.31) builds from it, and Qt's `qGray` of its
   window colour against the threshold read from both pinned files (`readers.cpp`); each row checked against the
   system's plasma-integration platform theme, `QStyleHints::colorScheme()` over the same kdeglobals.
-- `reader.qxcb_xft_dpi.tsv`, by the `public_api` route: the DPI Qt's xcb plugin (`qtbase@6.12.0
-  src/plugins/platforms/xcb/qxcbscreen.cpp:298-314`, `:366-373`, `:856-876`) forces from the X resources, the
-  system's Qt 6.12.0 run against an Xvfb server whose root window holds them (`readers.cpp`), each input also read
-  back through `xrdb -query`, which the KDE reader reads.
 - `kde_accent.tsv` and `kde_accent_wm.tsv`, by the `compiled_source` route: Plasma's colour scheme applier
   (`plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp` and `.h`, compiled unchanged with `accent.cpp`) applied to
   generated scheme files and accents, each case's kdeglobals read back through the system's KColorScheme 6.31 as the
@@ -66,10 +62,10 @@ row.
 
 The remaining sources Qt's and KDE's headers need are the system's: it requires g++, bubblewrap, Qt 6.12.0's
 development headers (private ones included) and `moc`, and the KF6 Config 6.31 headers and libraries; it refuses
-another Qt or KConfig. The readers' two tables also need the KF6 ColorScheme 6.31 headers and library, the
-plasma-integration platform theme, Qt's xcb plugin, Xvfb and xrdb; the accent's two the KF6 GuiAddons and ColorScheme
-6.31 headers and libraries and QtDBus's headers. Run from the repository root, the source cache's folder optional
-(`--only-readers`: the readers' two tables alone; `--only-accent`: the accent's two alone; `--only-icon`:
+another Qt or KConfig. The scheme test's table also needs the KF6 ColorScheme 6.31 headers and library and the
+plasma-integration platform theme; the accent's two the KF6 GuiAddons and ColorScheme 6.31 headers and libraries and
+QtDBus's headers. Run from the repository root, the source cache's folder optional (`--only-readers`:
+`reader.kde_color_scheme.tsv` alone; `--only-accent`: the accent's two alone; `--only-icon`:
 `kirigami_label_icon_size.tsv` alone, which needs Qt's QML headers and the Noto Sans and Hack fonts):
 
     python3 -I tools/kde-vectors/generate.py [--only-readers | --only-accent | --only-icon] [source cache]
@@ -932,17 +928,15 @@ def qfont_table(source_cache: Path, work: Path):
     print(f"reader.qfont_from_string.tsv: {len(rows)} rows")
 
 
-# ---- The KDE reader's scheme test and its font DPI (the public_api route: the system's Qt 6.12.0, KConfig 6.31 and
-# KColorScheme 6.31, plasma-integration's platform theme, Qt's xcb plugin on an Xvfb server)
+# ---- The KDE reader's scheme test (the public_api route: the system's Qt 6.12.0, KConfig 6.31 and KColorScheme 6.31,
+# plasma-integration's platform theme)
 
 PORTAL_KDE = "xdg-desktop-portal-kde@6.8.2"
 PORTAL_SETTINGS = "src/settings.cpp"
 HINTS = "qt6/src/platformtheme/khintssettings.cpp"
 # KColorScheme's minor, kcolorscheme@6.31.0's: the headers' KCOLORSCHEME_VERSION_STRING.
 KCOLORSCHEME_MINOR = "6.31"
-XVFB = "Xvfb"
-XRDB = "xrdb"
-READER_LIBS = ["-lKF6ColorScheme", "-lKF6ConfigGui", "-lKF6ConfigCore", "-lQt6Gui", "-lQt6Core", "-lxcb", "-ldl"]
+READER_LIBS = ["-lKF6ColorScheme", "-lKF6ConfigGui", "-lKF6ConfigCore", "-lQt6Gui", "-lQt6Core"]
 # Qt::ColorScheme's values (qnamespace.h): what QStyleHints::colorScheme() answers.
 QT_COLOR_SCHEME = {1: "light", 2: "dark"}
 # kconfiggroupgui.cpp:37-53: the values KConfig reads as an invalid colour (empty, "invalid") or hands to Qt's colour
@@ -999,9 +993,7 @@ def breeze_backgrounds(cache: Path):
 
 
 def readers_build(work: Path):
-    qt = [QT_INCLUDE, QT_INCLUDE / "QtCore", QT_INCLUDE / "QtGui", QT_INCLUDE / "QtCore" / QT_VERSION,
-          QT_INCLUDE / "QtCore" / QT_VERSION / "QtCore", QT_INCLUDE / "QtGui" / QT_VERSION,
-          QT_INCLUDE / "QtGui" / QT_VERSION / "QtGui"]
+    qt = [QT_INCLUDE, QT_INCLUDE / "QtCore", QT_INCLUDE / "QtGui"]
     kf6 = [KF6_INCLUDE / "KColorScheme", KF6_INCLUDE / "KConfig", KF6_INCLUDE / "KConfigCore",
            KF6_INCLUDE / "KConfigGui"]
     exe = work / "readers"
@@ -1016,12 +1008,8 @@ def text_line(s):
 
 
 def readers_run(exe: Path, mode, inputs):
-    """The harness's lines for inputs, sandboxed; the xcb mode on an Xvfb server started in the sandbox."""
+    """The harness's lines for inputs, sandboxed."""
     script = 'mkdir -p /tmp/w && exec "$0" "$1" /tmp/w'
-    if mode == "xcb":
-        script = ('mkdir -p /tmp/w && Xvfb :7 -noreset -nolisten tcp -screen 0 1280x720x24 >/tmp/xvfb.log 2>&1 & x=$!; '
-                  'n=0; while [ ! -S /tmp/.X11-unix/X7 ] && [ $n -lt 400 ]; do sleep 0.05; n=$((n+1)); done; '
-                  'DISPLAY=:7 "$0" "$1" /tmp/w; s=$?; kill $x; wait $x 2>/dev/null; exit $s')
     lines = [text_line(s) for s in inputs]
     out = pinned.sandboxed(["sh", "-c", script, exe, mode], readable=[exe.parent],
                            input="".join(x + "\n" for x in lines), capture_output=True, text=True, check=False)
@@ -1130,86 +1118,13 @@ def kde_color_scheme_table(source_cache: Path, work: Path, rng):
         rows,
     )
     print(f"reader.kde_color_scheme.tsv: {len(rows)} rows ({len(left_out)} left out)")
-    return exe
-
-
-# X resources: lines `<name>:\t<value>` as xrdb writes them, each value varied as Qt's xcb plugin reads Xft.dpi.
-XFT_TAIL = "Xft.hinting:\t1\nXft.hintstyle:\thintslight\nXft.rgba:\trgb\n"
-XFT_VALUES = ["96", "120", "144", "192", "288", "72", "1", "0", "-96", "+96", "096", " 96", "\t96", "96 ", "96\t",
-              "96\r", "96\v", "96\f", "96.0", "96.4", "96.5", "95.5", "97.5", "96.49999999999999", "0.5", "0.4",
-              "0.49999999999999994", "-0.4", "-0.5", "-1.5", "1e2", "1E2", "1e+2", "9.6e1", "96.", ".5e3", "+96.5",
-              " 96.5 ", "96,5", "9 6", "96 dpi", "96dpi", "0x60", "0x60.0", "abc", "", "1e", "1e400", "1e-400",
-              "0e5", "inf", "-inf", "nan", "Infinity", "2147483647", "2147483648", "-2147483648", "2147483647.4",
-              "2147483647.5", "-2147483648.4", "99999999999", "1e10", "96 ", "٩٦",
-              "96.000000"]
-XFT_RESOURCES = [
-    "", "Xft.dpi:\t96\n", "Xft.dpi:\t96", "Xcursor.size:\t24\nXcursor.theme:\tbreeze_cursors\nXft.antialias:\t1\n"
-    "Xft.dpi:\t96\n" + XFT_TAIL, "Xcursor.size:\t24\nXft.antialias:\t1\n" + XFT_TAIL,
-    "Xft.dpi: 96\n", "Xft.dpi:96\n", "Xft.dpi:  96\n", "xft.dpi:\t96\n", "Xft.DPI:\t96\n", "Xft.dpi :\t96\n",
-    " Xft.dpi:\t96\n", "*.dpi:\t96\n", "*dpi:\t96\n", "Xft*dpi:\t96\n", "Xft.dpix:\t96\n", "XXft.dpi:\t96\n",
-    "Xft.dpi:\t96\nXft.dpi:\t120\n", "Xft.dpi:\t120\nXft.dpi:\tabc\n", "Xft.dpi:\t120\nXft.dpi:\t0\n",
-    "Xft.dpi:\t120\nXft.dpi:\t-1\n", "Xft.dpi:\t120\nXft.dpi:\t\n", "Xft.dpi:\t120\nXft.dpi: 144\n",
-    "Xft.dpi:\t0\nXft.dpi:\t120\n", "Xft.dpi:\t120\r\nXft.hinting:\t1\r\n", "Xft.dpi:\t120\n\n\n",
-    "\nXft.dpi:\t120", "Xft.dpi:\t120\\\nXft.hinting:\t1\n", "! Xft.dpi:\t96\n", "Xft.dpi:\t144\n" + XFT_TAIL,
-    "Xft.antialias:\t1\nXft.dpi:\t96.5\n", "Xft.dpi:\t1e400\nXft.dpi:\t1e2\n", "Xft.dpi:\t120\nXft.dpi:\tnan\n",
-]
-
-
-def xrdb_version():
-    out = subprocess.run([XRDB, "-version"], capture_output=True, text=True, check=False)
-    return out.stdout.strip() or "version unknown"
-
-
-def qxcb_xft_dpi_table(exe: Path):
-    inputs = list(dict.fromkeys(XFT_RESOURCES + [f"Xft.dpi:\t{v}\n" for v in XFT_VALUES]))
-    results = readers_run(exe, "xcb", inputs)
-    rows, differing = [], []
-    for s, r in zip(inputs, results):
-        forced, logical, xrdb = int(r[0]), float(r[1]), r[2]
-        if forced < 0 or logical != (forced if forced > 0 else 96):
-            sys.exit(f"{s!r}: forcedDpi {forced} and logicalDpi {logical} disagree")
-        if xrdb == "!" or (unhex_text(xrdb) or "") != s:
-            differing.append((s, xrdb))
-        rows.append([string_cell(s), str(forced) if forced > 0 else "none"])
-    write_table(
-        VECTORS / "reader.qxcb_xft_dpi.tsv",
-        ["# function: reader.qxcb_xft_dpi",
-         "# route: public_api",
-         "# source: qtbase@6.12.0",
-         "# generations: kde-breeze",
-         "# generator: tools/kde-vectors",
-         "# inputs: resources:string",
-         "# outputs: dpi:option<number>",
-         f"# written by tools/kde-vectors/generate.py on Qt {qt_version()}; do not edit. Each row: the X resources",
-         "# (a JSON string literal), set as the root window's RESOURCE_MANAGER property of an Xvfb server (no",
-         "# property for the empty string), and the DPI Qt's xcb plugin forces from them at start: QXcbScreen::",
-         "# forcedDpi() of the system's libQt6XcbQpa, `none` where it forces none and Qt's logical DPI is its",
-         "# fallback (every row's QPlatformScreen::logicalDpi() checked to be the forced DPI, else 96). The server",
-         "# runs no XSETTINGS manager, so no Xft/DPI setting overrides the resources. The inputs: resources as xrdb",
-         "# writes them, the Xft.dpi line's name spelt otherwise, several Xft.dpi lines, and one line's value in the",
-         "# forms an integer and a decimal take, whitespace, signs, rounding, ranges and junk.",
-         *([f"# `xrdb -query` ({xrdb_version()}), which the reader reads the resources from, prints each input",
-            "# back unchanged."]
-           if not differing else
-           [f"# `xrdb -query` ({xrdb_version()}), which the reader reads the resources from, prints {len(differing)}",
-            f"# of the {len(inputs)} inputs otherwise (the input, then what xrdb prints):",
-            *(f"# {string_cell(s)} -> {'(xrdb failed)' if x == '!' else string_cell(unhex_text(x) or '')}"
-              for s, x in differing)])],
-        ["resources", "dpi"],
-        rows,
-    )
-    print(f"reader.qxcb_xft_dpi.tsv: {len(rows)} rows ({len(differing)} that xrdb prints otherwise)")
 
 
 def readers_tables(source_cache: Path, work: Path, rng):
     if not kcolorscheme_version().startswith(KCOLORSCHEME_MINOR + "."):
         sys.exit(f"KF6 ColorScheme {kcolorscheme_version() or '(none)'} found; the pin is KColorScheme "
                  f"{KCOLORSCHEME_MINOR}")
-    for tool in (XVFB, XRDB):
-        if subprocess.run(["sh", "-c", f"command -v {tool}"], capture_output=True, check=False).returncode != 0:
-            sys.exit(f"{tool} not found: the xcb plugin's table runs it")
-    exe = kde_color_scheme_table(source_cache, work, rng)
-    qxcb_xft_dpi_table(exe)
+    kde_color_scheme_table(source_cache, work, rng)
 
 
 # ---- The accent derivation: plasma-workspace's applyScheme() (`kde_accent`, `kde_accent_wm`), by the

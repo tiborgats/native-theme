@@ -14,9 +14,11 @@ Run from the repository root:
     python3 scripts/generate_platform_facts.py --self-test
 
 PATH defaults to `docs/platform-facts.md`, which this output has replaced since the switch (the plan's *The
-transition*): the document is generated, never edited, and `scripts/check_release.sh` runs `--check`. Today's
-hand-written document, which the planning documents cite by line, is the one commit fc6109d1 holds
-(`platform-facts.md@fc6109d1:N`). Exit 0 on success, 1 when `--check` finds a difference, 2 when a fact file cannot
+transition*): the document is generated, never edited, and not committed (S17; ADD-A147): the path is ignored, CI and
+each release generate it, and `scripts/check_release.sh`, in every mode, and CI's parity job run the generation into
+a scratch path and `--self-test`. A tool that cites the document's lines reads the facts or a copy generated on
+demand, and names the commit it was generated at. Today's hand-written document, which the planning documents cite by
+line, is the one commit fc6109d1 holds (`platform-facts.md@fc6109d1:N`). Exit 0 on success, 1 when `--check` finds a difference, 2 when a fact file cannot
 be read (check_facts.py names it) or on a wrong command line.
 
 The document
@@ -466,6 +468,15 @@ def self_test() -> int:
     if not failures:
         print("self-test ok")
     return 1 if failures else 0
+
+
+def document(root=Path(".")) -> str:
+    """The document a fresh run writes from the facts under `root`: what a script that reads `docs/platform-facts.md`
+    reads, the file not being committed (S17). InputError where a fact file cannot be read."""
+    try:
+        return generate(check_facts.Context(root))
+    except check_facts.InputError as err:
+        raise InputError(str(err)) from err
 
 
 def check_file(ctx, out: Path, quiet=True) -> int:

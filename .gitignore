@@ -41,6 +41,11 @@ proptest-regressions/
 ehthumbs.db
 Thumbs.db
 
+# The platform-facts document, generated from docs/facts by
+# scripts/generate_platform_facts.py; CI and each release generate it, it is
+# not committed (specification S17)
+/docs/platform-facts.md
+
 # Python byte-code (scripts/*.py)
 __pycache__/
 *.pyc

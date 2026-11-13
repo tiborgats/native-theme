@@ -41,8 +41,8 @@ batch once more (F1); the
 orchestrator's decisions on the checks correct this file's outcomes as follows, each open to the maintainer's veto
 (the veto list, `docs/todo_v0.7.1_model-completeness-d6-veto-list.md`):
 
-- Outcome 2: `button`'s `label_position`, `repeat_delay` and `repeat_interval` are at depth wherever a preset states
-  them with no later name; the staging design's figures are recounted (1,381 pending facts and 687 listed paths on
+- Outcome 2: `button`'s `label_position`, `repeat_delay` and `repeat_interval` are at depth where a button with no
+  later name reads them (ADD-A148); the staging design's figures are recounted (1,381 pending facts and 687 listed paths on
   0.8.0's path; ledger queue #258; veto list item 1).
 - Outcome 3: 21 of the 27 macOS motion facts pending at `7430a0a2`, by the D6 staging design's count, not 21 of 29.
 - Outcome 5: the rule rests on a witness, not on necessity: a typed role no source of the platform states is
@@ -62,3 +62,39 @@ orchestrator's decisions on the checks correct this file's outcomes as follows, 
 - Outcome 8: 40 MiB (41,943,040 bytes), and GitHub's warning at 50 MiB, not Git's (S17).
 - Outcome 14: Qt Quick's line position (U753) takes the non-breaking form, a field on `Decoration`; QPainter's wavy
   and strike lines are a row of their own, U754 (veto list item 27).
+
+## Corrections of the document pass (2026-11-12)
+
+The full document pass after ADD-A147 (outcome 15; eight reviewers) and the orchestrator's decision per finding,
+applied as ADD-A148 (ledger queue #288), correct this file's outcomes as follows, each open to the maintainer's veto:
+
+- Outcome 2: `full_keyboard_access` is at depth model-wide, as `contrast_high` is, so a macOS widget draws its focus
+  ring under keyboard navigation (veto list item 62); a part's `shown` stays at depth with its rest meaning (item
+  61); a 0.7.0 `defaults` colour that maps to a role brings no state flag to an entry's depth, the connectors drawing
+  those states from the typed roles through their deferred entries (item 64).
+- Outcome 3: each of the two motions is kept only if the Apple motion trial measures it on macOS 15 and 26 and iOS
+  18 and 26 (the plan's M2 task 1; veto list items 2, 6, 24); every widget's `loop` but the spinner's is the motion
+  unit's, and the press ripple stays (item 61).
+- Outcome 5: each field needs its own witness: a witness drawn as text or a mark alone pairs the `standalone` alone,
+  the `fill` and `foreground` absent, each field absent where its row's read finds no witness for it (the
+  specification's S3, U757–U760; veto list item 57). The HIG's Color, Feedback and Gauges pages, pinned and read
+  on 2026-11-12, name no system colour for error, warning, success or information on any of the four Apple presets;
+  the reads go on with the lanes' survey of measured elements (U757–U760; item 57).
+- Outcome 6: the stand-in entry for a widget a preset declares unavailable reads no field of that widget there: the
+  toolkit's own geometry, every colour and font from the theme's typed roles (veto list item 48). Where S15's
+  rendering is absent, wherever `render_system_control` returns `None`, the connector draws its toolkit's own mark, arrows and disclosure triangle, each colour from
+  the theme (item 60).
+- Outcome 7 **changes an earlier decision** (R19's "a palette on every platform", the maintainer's, 2026-10-28): a
+  preset whose widget colours are measured literals that follow no role declares that it takes no palette
+  (`macos-*`, `ios-*`); a mapping states every colour role a value of the preset reads unless that role follows the
+  mapping, a reference or a derivation over roles the mapping states or that so follow, or, through references
+  alone, an input it states (a literal, and a call that reads an input itself, follow nothing: `material-3`'s ladder
+  is mapped as `windows-11`'s literal keyed roles are); the bundled palettes' keyed tables for `windows-11` and `material-3` are written once, at M4, the bundled palettes offered over
+  `adwaita` and `kde-breeze` until then (veto list items 49, 63).
+- Outcome 10: M3a's approval is asked with M2's measured costs (the staging task, task 0's rounds, the connectors'
+  port), not with the first real unit's (veto list item 51).
+- Outcome 12: nothing changes; its two reversed decisions, the iOS tint and the palette suspended under a followed
+  scheme, are veto list items of their own (65, 66).
+- Outcome 14: U473 is not the maintainer's: 0.7.0's model holds no key repeat on iOS, so it is a later unit's (the
+  parking unit *behaviour*), and the line "U473, if 0.7.0 turns out to hold the value" under *What stays the
+  maintainer's* is withdrawn (veto list item 52).

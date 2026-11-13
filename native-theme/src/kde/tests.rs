@@ -394,14 +394,12 @@ BackgroundNormal=130,131,132
 activeBackground=140,141,142
 ";
 
-/// The fixtures' data: kdeglobals, the scheme file, no font DPI, no icon
-/// theme index.
+/// The fixtures' data: kdeglobals, the scheme file, no icon theme index.
 pub(crate) fn data(kdeglobals: &str, scheme_file: SchemeFile) -> KdeData {
     KdeData {
         kdeglobals: ini(kdeglobals),
         colors: None,
         scheme_file,
-        font_dpi: None,
         icon_index: None,
     }
 }
@@ -530,15 +528,13 @@ fn the_animation_factor_sets_the_motion() {
     assert!(own(&unset.layer).tokens.motion.is_none());
 }
 
-/// The state: the scheme read, the font DPI given, text unscaled; nothing
-/// else the KDE reader reads at the slice.
+/// The state: the scheme read, no font DPI, text unscaled; nothing else the
+/// KDE reader reads at the slice.
 #[test]
 fn the_state_is_what_kdeglobals_gives() {
-    let mut data = data(KDEGLOBALS_DARK, SchemeFile::Unnamed);
-    data.font_dpi = Some(120.0);
-    let state = reading(&data).state;
+    let state = reading(&data(KDEGLOBALS_DARK, SchemeFile::Unnamed)).state;
     assert_eq!(state.scheme, Scheme::Dark);
-    assert_eq!(state.font_dpi, Some(120.0));
+    assert_eq!(state.font_dpi, None);
     assert_eq!(state.text_scaling_factor, UNSCALED);
     assert_eq!(state.contrast, None);
     assert!(!state.overlay_scrollbars && !state.reduced_transparency);
@@ -1196,8 +1192,8 @@ fn an_unreadable_scheme_file_reads_kdeglobals_in_its_place() {
 }
 
 /// The fonts: `body`, `monospace` and `caption` in the common bases, their
-/// point sizes converted by the reader's DPI, else the preset's 96;
-/// `toolbar` under the own part (S9.4, S9.5).
+/// point sizes converted by the preset's 96; `toolbar` under the own part
+/// (S9.4, S9.5).
 #[test]
 fn the_fonts_patch_the_slots_kde_has_a_setting_for() {
     use crate::blocks::text::FontStyle;
@@ -1207,7 +1203,7 @@ fn the_fonts_patch_the_slots_kde_has_a_setting_for() {
         Some(BlockPatch::Fields(style)) => style.font.clone().unwrap(),
         other => panic!("a font patch: {other:?}"),
     };
-    let mut data = data(KDEGLOBALS_DARK, SchemeFile::Unnamed);
+    let data = data(KDEGLOBALS_DARK, SchemeFile::Unnamed);
     let reading = build_reading(&data, PresetId::KdeBreeze);
     let text = reading.layer.bases.tokens.text.as_ref().unwrap();
     let roles = text.roles.as_ref().unwrap();
@@ -1242,14 +1238,6 @@ fn the_fonts_patch_the_slots_kde_has_a_setting_for() {
         .unwrap();
     assert_eq!(keyed.len(), 1);
     assert_eq!(keyed.first().unwrap().0, crate::key!("toolbar"));
-
-    data.font_dpi = Some(144.0);
-    let reading = build_reading(&data, PresetId::KdeBreeze);
-    let roles = reading.layer.bases.tokens.text.unwrap().roles.unwrap();
-    assert_eq!(
-        fields(&roles.body).size,
-        Some(Value::Stated(FontSize::Px(22.0)))
-    );
 }
 
 /// A font entry Qt refuses patches nothing.
@@ -1645,26 +1633,6 @@ fn without_a_view_group_the_colours_are_the_palettes() -> Result<(), Box<dyn std
     Ok(())
 }
 
-/// The font DPI is the one Qt's xcb plugin forces from the X resources:
-/// the last `Xft.dpi` line it parses, a decimal rounded, where it is above
-/// zero; none without one; and it is read on X11 only.
-#[test]
-fn the_font_dpi_is_xft_dpi_on_x11() {
-    use font_dpi::{font_dpi_of, read_font_dpi};
-
-    assert_eq!(
-        font_dpi_of("Xft.antialias:\t1\nXft.dpi:\t120\nXft.hinting:\t1\n"),
-        Some(120.0)
-    );
-    assert_eq!(font_dpi_of("Xft.dpi:\t96\nXft.dpi:\t144\n"), Some(144.0));
-    assert_eq!(font_dpi_of("Xft.dpi:\t120.6\n"), Some(121.0));
-    for none in ["Xft.dpi:\t0\n", "Xft.dpi:\tbig\n", "*.dpi:\t96\n", ""] {
-        assert_eq!(font_dpi_of(none), None, "{none:?}");
-    }
-    assert_eq!(read_font_dpi(Some("wayland")), None);
-    assert_eq!(read_font_dpi(None), None);
-}
-
 // === The kdeglobals fixtures ===
 //
 // `tests/fixtures/kde/*.ini`, whole kdeglobals files (0.7.0's
@@ -1797,7 +1765,7 @@ fn the_custom_accent_fixture() -> Result<(), String> {
 }
 
 /// `forceFontDPI=192` in kdeglobals is no font DPI and no text scale: the
-/// reader takes its DPI from kcmfonts or `Xft.dpi` (`font_dpi`).
+/// reader reports no DPI (S9.3).
 #[test]
 fn the_high_dpi_fixture() {
     let reading = fixture_reading(include_str!("../../tests/fixtures/kde/high-dpi.ini"));

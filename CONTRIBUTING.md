@@ -82,8 +82,9 @@ plan's data checks, each with its `--self-test` (the plan's ledger,
 `scripts/check_sources.py`, and their cache, `scripts/update_sources.sh
 --verify`; the facts' form and citations, `scripts/check_facts.py` and
 `scripts/check_fact_citations.py`; the generated widget declarations,
-bundled presets, `sf_tracking` and `dynamic_type` tables and `docs/platform-facts.md`, each
-generator's `--check`; the platform functions' vector tables,
+bundled presets, `sf_tracking` and `dynamic_type` tables, each
+generator's `--check`; `docs/platform-facts.md`, which is not committed, its
+generation into a scratch directory, `scripts/generate_platform_facts.py`; the platform functions' vector tables,
 `scripts/check_function_vectors.py`; the enabled units' trace lines,
 `scripts/check_facts_trace.py --enabled`; the line citations of today's
 `platform-facts.md` at their commit, `scripts/check_pinned_citations.py`), per-crate
@@ -288,7 +289,7 @@ ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section.
 Design-level choices are captured in files under `docs/`:
 
 - [`docs/facts/`](docs/facts/) — the verified platform facts, one directory per platform: each value with its source, pinned in [`docs/facts/sources.toml`](docs/facts/sources.toml), or its measurement with the evidence in the evidence repository, [`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence), at the paths its citations name (`docs/evidence/…`) and at the commit `sources.toml` pins; the bundled presets are generated from them (`scripts/generate_preset.py`)
-- [`docs/platform-facts.md`](docs/platform-facts.md) — every value the facts state, per preset, generated from `docs/facts/` by `scripts/generate_platform_facts.py`; never edited (the hand-written document of 0.7.0, which the planning documents cite by line, is the one commit `fc6109d1` holds)
+- `docs/platform-facts.md` — every value the facts state, per preset, generated from `docs/facts/` by `scripts/generate_platform_facts.py` (`python3 scripts/generate_platform_facts.py` writes it); not committed, never edited (the hand-written document of 0.7.0, which the planning documents cite by line, is the one commit `fc6109d1` holds)
 - [`docs/property-registry.toml`](docs/property-registry.toml) — the registry of 0.7.0's theme fields, generated from the 0.8.0 model at its plan's M2.6
 - [`docs/todo.md`](docs/todo.md) — the backlog: the open items and follow-ups, each tagged by milestone; closed ones move to [`docs/archive/todo_closed.md`](docs/archive/todo_closed.md)
 

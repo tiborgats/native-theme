@@ -148,18 +148,6 @@ fn one_gsettings_read_per_key() {
     }
 }
 
-#[test]
-fn a_spent_deadline_reads_nothing() {
-    assert_eq!(
-        read_gsetting(
-            "org.gnome.desktop.interface",
-            "icon-theme",
-            std::time::Duration::ZERO
-        ),
-        None
-    );
-}
-
 // === the accent ===
 
 /// The portal's accent, classified, is the accent input at both schemes:

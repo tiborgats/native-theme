@@ -74,8 +74,9 @@ and the preset lists the path in its `[pending]` table. A value is never
 estimated, copied from another platform or left to a toolkit's default.
 
 `docs/platform-facts.md` lists every value the facts state, per preset, with
-its citations. It is generated (`scripts/generate_platform_facts.py`) and
-never edited; the hand-written document it replaced, which the planning
+its citations. It is generated (`scripts/generate_platform_facts.py`), never
+edited and not committed: CI and each release generate it, and a local copy
+is written on demand; the hand-written document it replaced, which the planning
 documents cite by line, is the one commit `fc6109d1` holds
 (`platform-facts.md@fc6109d1:N`).
 
@@ -211,7 +212,7 @@ how often an author and a verifier agree on a wrong value.
 ```sh
 python3 scripts/generate_preset.py <preset-id> --write   # the preset from its facts, the hand-written blocks carried over
 python3 scripts/generate_preset.py <preset-id> --check   # whether --write would change the file
-python3 scripts/generate_platform_facts.py               # docs/platform-facts.md from the facts
+python3 scripts/generate_platform_facts.py               # docs/platform-facts.md from the facts, a local copy (not committed)
 ```
 
 `--write` regenerates every line of `native-theme/src/presets/<id>.toml`

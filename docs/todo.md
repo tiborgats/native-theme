@@ -36,10 +36,9 @@ cannot tell which file a bare number continues, so it does not look for one.
       `org.gnome.desktop.interface font-hinting` / `font-antialiasing`,
       Windows ClearType, macOS font smoothing.
 
-      We already read `Xft.dpi` for scaling (`detect::read_xft_dpi`,
-      `native-theme/src/detect.rs:459`, in the font-DPI chain the KDE reader shares),
-      but nothing reads the *rendering*
-      preferences. A Qt or GTK app obeys the user's hinting and antialiasing
+      Nothing reads the *rendering* preferences (nor `Xft.dpi`: the
+      toolkits' X11 scale factor carries the font DPI, the 0.8.0
+      specification's S9.4). A Qt or GTK app obeys the user's hinting and antialiasing
       choice; an app built on our connectors silently ignores it. Reading OS
       appearance settings is exactly this crate's remit, so this is a real gap
       rather than a nice-to-have — it is the same shape as reading colours and

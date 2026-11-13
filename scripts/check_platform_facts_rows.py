@@ -4,7 +4,9 @@
 docs/property-registry.toml names each theme field; docs/platform-facts.md
 Chapter 2 gives each field a row whose cells say, per platform, where its
 value comes from. A field without a row has no source a preset can cite, so
-this script lists them.
+this script lists them. docs/platform-facts.md is not committed (specification
+S17): the script reads the document scripts/generate_platform_facts.py
+generates from the facts, on demand (generate_platform_facts.document).
 
 Run from the repository root:
 
@@ -63,8 +65,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+import generate_platform_facts
+
 REGISTRY = Path("docs/property-registry.toml")
-FACTS = Path("docs/platform-facts.md")
 
 SKIPPED_TABLES = {"theme_variant"}
 DEFAULTS_ONLY_BORDER = {"corner_radius_lg", "opacity"}
@@ -326,8 +329,8 @@ def main(argv: list[str]) -> int:
         print(__doc__, file=sys.stderr)
         return 2
     try:
-        missing = missing_rows(REGISTRY.read_text(encoding="utf-8"), FACTS.read_text(encoding="utf-8"))
-    except (OSError, InputError) as err:
+        missing = missing_rows(REGISTRY.read_text(encoding="utf-8"), generate_platform_facts.document())
+    except (OSError, UnicodeDecodeError, InputError, generate_platform_facts.InputError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
     for field, section, row in missing:

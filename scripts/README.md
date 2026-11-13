@@ -285,8 +285,8 @@ data documents' checks (the four on the registry, the platform-facts
 sections, `docs/todo.md` and the presets' definition comments, the first
 three `PLAN_EXCLUDED` until M2.6; then the 0.8.0 plan's: the ledger's
 triage, the pinned sources and their cache, the facts and their citations,
-the generated widgets, presets, `sf_tracking` and `dynamic_type` tables and
-`docs/platform-facts.md`, the function vectors, the trace lines, the
+the generated widgets, presets, `sf_tracking` and `dynamic_type` tables,
+`docs/platform-facts.md` generated into a scratch directory, the function vectors, the trace lines, the
 pinned line citations and no file tracked under `docs/evidence/`, whose
 evidence lives in `native-theme-evidence`), docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
@@ -331,7 +331,13 @@ installed, the test steps run `cargo nextest run` (`cargo_tests` in the
 script), and `cargo test --doc` where `cargo test` would have run doctests too.
 The step cache (`step_cache.sh`, below) skips a step whose declared inputs are
 unchanged since it last passed; the summary lists each as
-`unchanged since <commit>`, and `--no-cache` runs every step.
+`unchanged since <commit>`, and `--no-cache` runs every step. The facts
+gate's parts are shared steps: keyed on what can change their verdict alone,
+they are reused from any worktree of the repository, listed as
+`unchanged since <commit> in <worktree>, <date>`.
+`check_release.sh --quick --cache-keys` prints every step's key, its cache
+(`shared`, `worktree`, or `uncached` with the key `-`) and its description,
+and runs nothing.
 
 The facts gate (`native-theme/tests/facts_gate.rs`'s `facts_gate`) is a step
 of its own; the other test steps skip it (`-- --skip facts_gate --exact`), since no `cfg` reaches it and
@@ -375,13 +381,66 @@ build helper that probes the host (`pkg-config`, `cc`, …) or a workspace build
 script or procedural macro not reviewed for what it reads, the step is not
 cached. A failed step records nothing, nor does one whose inputs changed while
 it ran; a step with no declaration always runs. The records are in
-`target/check-release-cache/`, one file per step.
+`target/check-release-cache/`, one file per step. Paths are sorted bytewise,
+whatever the locale.
+
+A shared step (`CACHE_SHARED` in `check_release.sh`: the facts gate's parts,
+`facts gate (the facts, no preset)` and `facts gate (<preset>)`) is keyed
+narrowly, so a pass is reused wherever what decides its verdict is the same:
+the shared base, which `step_cache_start_shared` builds for both scripts (the
+tool versions, the settings that decide a step's inputs, and the text of the
+functions that key, look up and record a step: `step_cached`,
+`step_passed`, `step_key_of`, `cache_inputs`, `rust_reach`,
+`rust_reach_resolve` and `rust_config_inputs` in `check_release.sh`, and
+`step_cache.sh`'s own); the environment variables that can change the
+verdict, read for each key (`step_cache_verdict_environment`, whose comment
+gives each rule and its reason: `NT_*` but the gate's timing and
+listed-paths output, `FACTS_GATE_RELEASE`, `NATIVE_THEME_*` but the evidence
+root and the source cache, `CARGO_*` but incremental builds, terminal, log
+and directory settings, `RUSTFLAGS`, `RUSTDOCFLAGS`, `RUSTC*`, `RUSTDOC*`,
+`RUSTFMT`, `RUSTUP_*`, `RUST_*` but backtraces, logs and captured output,
+`NEXTEST_*` but its output, and `GIT_*` but git's editors, pager, prompts,
+tracing, identity and transport; the thread and job counts by their form
+alone: a plain positive number is left out, like the variable unset, any
+other value keyed by its text); the step's description and command; the
+text of the functions that wrap it between its call and its command's start
+(`run_tests` and `_run_tests_impl` for the gate's parts; one not defined is
+an error, the step not cached); and its declared inputs' content, each path
+under the worktree's root written relative to it and a missing path outside
+it left out. The scripts' own hashes and the rest of the environment (the
+working directory, the locale, the evidence root's path, whose content the
+pin in `docs/facts/sources.toml` fixes) are not in it. `check_release.sh`
+unsets `NT_FACTS_GATE_PRESETS`, `NT_FACTS_GATE_SHARD`, `NT_FACTS_GATE_MERGE`
+and `NT_FACTS_GATE_LISTED` in every mode. Its records are in the
+repository's common git directory (`git rev-parse --git-common-dir`, its
+`check-release-cache/`), shared by every worktree, one file per step and
+key, so each worktree's passed state keeps its own; each names the commit
+and worktree it passed in and when. A record is touched when it is found,
+and one not written or found for 30 days is removed when the cache starts.
+Where that folder cannot be created or written, the run says so and runs
+the shared steps uncached; a record that cannot be written is a warning. A
+failed step records nothing there either, and `--no-cache` and the full run
+never read or write it.
 
 `--self-test` shows that a declared file edited, added, renamed or removed, a
 glob's new match, the script edited, the command or the environment changed,
 re-run the step, that a file a `!<pattern>` leaves out changes nothing while
-its neighbours still do, and that a failure records nothing; `check_release.sh` runs it
-in every mode.
+its neighbours still do, and that a failure records nothing. Over two
+worktrees of a synthetic repository it shows that a shared step is reused
+after an unrelated edit of the calling script, from the other worktree (its
+record found there, and not from a cache of that worktree's own), under
+another thread count, locale, evidence path or unrelated variable, and
+re-runs after a declared input, a thread count the gate refuses,
+`RUSTFLAGS`, `FACTS_GATE_RELEASE`, `NT_FACTS_GATE_MERGE`, the command, a
+wrapping function's or a shared-base function's text or a tool version
+changes, while a step that is not shared re-runs after each of these (the
+other worktree's step even with the first one's record in its cache). It
+also shows two worktrees' records side by side, each found by its own key;
+an undefined wrapper refused; a shared folder that cannot be written
+turning the shared cache off with its reason, and a record there failing
+without ending the caller; and that the self-test's git, under a caller's
+`GIT_DIR` and `GIT_WORK_TREE`, leaves that repository untouched.
+`check_release.sh` runs it in every mode.
 
 ```sh
 bash scripts/step_cache.sh --self-test
@@ -719,7 +778,9 @@ cite. A registry table is looked for in the section its `# §2.x` comment
 names (`[defaults]` in all of §2.1), a field under its name without the unit
 suffix, and a `border`, `font` or `icon_sizes` field part by part, the
 per-side paddings under their axis rows; the script's docstring states the
-whole rule. Prints one line per missing field (field, section, row name) and
+whole rule. `docs/platform-facts.md` is not committed: the script reads the
+document `generate_platform_facts.py` generates from the facts, on demand.
+Prints one line per missing field (field, section, row name) and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read. `--self-test` runs the rule on a synthetic registry and facts file. `check_release.sh` (both modes)
 and `ci.yml`'s parity job run its self-test; the check itself is
@@ -727,7 +788,7 @@ and `ci.yml`'s parity job run its self-test; the check itself is
 registry names today's (0.7) fields, and the generated
 `docs/platform-facts.md` has none of today's `§2` sections.
 
-Requires Python 3.
+Requires Python 3.11 (the generator's).
 
 ```sh
 python3 scripts/check_platform_facts_rows.py
@@ -741,7 +802,9 @@ Lists every numbered `§` reference in `docs/property-registry.toml`,
 `docs/new-os-version-guide.md` that names no section of
 `docs/platform-facts.md` (`§2` a chapter, `§2.21` a `###`, `§2.1.9` a `####`
 heading); a lettered `§` or one after another `.md` file's name is another
-document's and is skipped, as the script's docstring states. Prints one line
+document's and is skipped, as the script's docstring states.
+`docs/platform-facts.md` is not committed: the script reads the document
+`generate_platform_facts.py` generates from the facts, on demand. Prints one line
 per dangling reference (file:line, reference) and exits 0 when there is none,
 1 when there are some, 2 on an input it cannot read. `--self-test` runs the
 rule on a synthetic document and facts file. `check_release.sh` (both modes)
@@ -750,7 +813,7 @@ and `ci.yml`'s parity job run its self-test; the check itself is
 is deleted, and the generated `docs/platform-facts.md` has no numbered
 sections.
 
-Requires Python 3.
+Requires Python 3.11 (the generator's).
 
 ```sh
 python3 scripts/check_section_refs.py
@@ -976,6 +1039,37 @@ python3 scripts/check_ledger.py --self-test
 python3 scripts/check_ledger.py --final --staged-file <path>
 ```
 
+## check_cost_budget.py
+
+The load budget's step (the 0.8.0 plan's *The load budget*): the probe's
+times (`native-theme/tests/timings.rs`, `bundled_preset_costs`) and bytes
+(`native-theme/tests/cost_bytes.rs`, `bundled_preset_bytes`, under
+`peak_alloc`'s counting allocator) against `scripts/cost_budget.toml`, which
+holds each budget line's number and, per case (line, preset and route), its
+record, "first measured by" a named task or "not binding", and the named
+misses. `--unit` (a unit's gate) and `--release` (the release run) set nice
+19 and idle I/O, build the two test binaries (release, all features), ask
+the probe for its list of measurable cases and, by name, for every armed
+case: three sweeps over the times, each pass judged by the mean runnable
+count the probe samples over it (`/proc/loadavg`'s fourth field), the
+release run sweeping again over the times with fewer than two passes that
+count, none started past the bound. It prints every figure beside its line
+and its record, a case with no record as "no record yet", and exits 0 or 1
+by the plan's four rules. It never writes `cost_budget.toml`. `--check-file`
+checks the file alone; `--self-test` runs every outcome of the four rules on
+made-up figures, per-pass means and sweep start times and checks that
+`cost_budget.toml` stays byte for byte the same. Run on the measuring machine
+only; not yet wired into `check_release.sh` (the plan's load task 6).
+
+Requires Python 3.11+ (for `tomllib`) and `ionice`.
+
+```sh
+python3 scripts/check_cost_budget.py --self-test
+python3 scripts/check_cost_budget.py --check-file
+python3 scripts/check_cost_budget.py --unit
+python3 scripts/check_cost_budget.py --release
+```
+
 ## citations.py
 
 Finds every citation in the 0.8.0 planning documents (the core, the
@@ -1047,7 +1141,9 @@ Checks the form of the 0.8.0 facts (specification S17): every
 `docs/facts/<platform>/*.toml` (gnome, kde, macos, ios, windows, material),
 each platform's `state-models.toml` and the palette facts in
 `docs/facts/palettes/`; `docs/facts/imported/` (lane input) and
-`docs/facts/staged/` (S19.2's staged bases) are skipped.
+`docs/facts/staged/` (S19.2's staged bases) are skipped. A file past 40 MiB
+(41,943,040 bytes) is a finding: it is split by key prefix into
+`docs/facts/<platform>/<stem>-<prefix>.toml` files (S17 *A file's size*).
 A fact has a key the catalogue (through `spec_catalogue.py`) or the core (its
 Rust sketches, as `check_spec_names.py` reads them) defines, without TOML's
 unit suffix (`button.body.min_width`, not `min_width_px`), a value spelled
@@ -1483,10 +1579,14 @@ per preset the value of the fact that applies there (the last in file
 order) with its citations. Writes `--out PATH`, by default
 `docs/platform-facts.md`, which its output has replaced since the switch:
 the document is generated and never edited (the hand-written one, which the
-planning documents cite by line, is the one `fc6109d1` holds). `--check`
-exits 1 when PATH differs from a fresh run; `check_release.sh` (both modes
-and `--quick`) runs it and the self-test. Offline. `--self-test` compares a
-fixture's document with the expected one and runs `--check`.
+planning documents cite by line, is the one `fc6109d1` holds), and not
+committed (specification S17): the path is ignored, CI and each release
+generate it, and a tool that cites its lines reads the facts or a copy
+generated on demand, naming the commit it was generated at. `--check` exits
+1 when PATH differs from a fresh run. `check_release.sh` (both modes and
+`--quick`) and `ci.yml`'s parity job run the generation into a scratch path
+and the self-test. Offline. `--self-test` compares a fixture's document with
+the expected one and runs `--check`.
 
 Requires Python 3.11.
 

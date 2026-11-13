@@ -7,6 +7,21 @@ and a query's result, orders the work, and lists what would defeat the design.
 One sentence of it changes a rationale rule (R2.8), a class-3 change the maintainer decides; like D6's other outcomes
 it is applied as proposed and open to the maintainer's veto ([O]:5-6, :30).
 
+## Correction of the document pass (2026-11-12)
+
+The full document pass after ADD-A147 and the orchestrator's decision per finding (ADD-A148, open to the
+maintainer's veto) change this design in two places; the body below is not rewritten. **The input checks**
+(revision 4's item for c3-14, 1.2, 3.8): where this note says "the input cycle check", read "the input checks": the
+cycle check and the absent-role check of an input's expression (an input whose expression reads a colour role that
+can be `Absent` at a scheme and contrast at which that value of the input is in force is refused), both run over the
+stack up to each layer at every change, beside each other; B's premise, that the checks over combinations read no
+input, stays true (K3-1; the code a task of its own after the staging task merges and before load task 1, ledger
+queue #280). **Task P and the trigger step** (3.5, 5): line 1 is `Theme::from_preset` timed whole on a preset whose
+table is empty and, on every preset until load task 1 has merged, the read alone as the case `read`; line 1's
+trigger is evaluated on the case `read` while load task 1 has not merged, a whole load over its line then taking a
+named miss whose cause is load task 1 and firing nothing (P-9). Task P closes on its code, its script and the
+self-test; its recorded runs are made once, at the trigger step, on the regenerated presets (P-19).
+
 ## Revision 8
 
 The seventh independent check (`load-design-check7.md`, "check 7", 0 serious, 3 should-fix, 10 minor; cited c7-1 to
@@ -448,7 +463,7 @@ seven. 0.7.0's `from_system` was not measured.
   exist yet (`grep 'fn bundled' src/palette` finds none).
 - The preset is parsed again by `set_preset` (`src/theme/mod.rs:126`) and by `PresetId::font_dpi`
   (`src/presets/mod.rs:80-94`), which the GNOME and KDE readers call at every read (`src/gnome/mod.rs:187`,
-  `src/kde/mod.rs:254`).
+  `src/kde/mod.rs:246`).
 
 **Mutations.** `pick`, `set_contrast`, `set_flavor`, `set_accent`, `add_layer`, `set_reader` and the rest go through
 `Stack::change`, which copies the stack, derives the palette's entry, the accent layer and the accent-derivation
@@ -1130,7 +1145,7 @@ declarations, layer and listed paths). The stack holds that `Arc` (today it hold
 wraps the layer in an `Arc` of its own, `src/resolve/mod.rs:605-606`, `:681`, so a cached `Arc` would drop as soon
 as `from_preset` returned, c2-13); a change's copy of the stack then copies no declarations. `set_preset`,
 `font_dpi` and `from_system` read through the cache; `from_system` takes the preset's `Arc` before the reader reads
-and holds it across the read, so the reader's `font_dpi` (`src/gnome/mod.rs:187`, `src/kde/mod.rs:254`) finds it.
+and holds it across the read, so the reader's `font_dpi` (`src/gnome/mod.rs:187`, `src/kde/mod.rs:246`) finds it.
 
 **E2. The last resolution kept per window**, in `WindowState` (section 4).
 
@@ -1751,8 +1766,8 @@ presets M2's task 0 empties)
     holds one, two themes of one preset holding the same read (`Arc::ptr_eq`), and `set_preset` back to a preset the
     test's live theme holds reading none; and in `from_system`'s path: `from_system_async` and a crate-internal test
     share one function that takes the preset's `Arc` from the cache, runs the read it is given and builds the theme,
-    and the test gives it the KDE and GNOME build functions over their fixtures with fonts set and, for KDE, no
-    `Xft.dpi`, so that `font_dpi` runs, at most one read on the thread (`src/gnome/mod.rs:187`, `src/kde/mod.rs:254`;
+    and the test gives it the KDE and GNOME build functions over their fixtures with fonts set, so that `font_dpi`
+    runs, at most one read on the thread (`src/gnome/mod.rs:187`, `src/kde/mod.rs:246`;
     c2-13); these two are compiled on Linux with the `kde` and `portal` features (`src/lib.rs:144-145`, `:164-165`)
     and run on CI's Linux job (c4-13);
   - a compile-time assertion that `Theme` is `Send`;

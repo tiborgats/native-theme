@@ -97,7 +97,9 @@ pub enum ThemeError {
     /// `Theme::from_system` on a platform or desktop this build has no
     /// reader and bundled preset for.
     PlatformUnsupported,
-    /// `Theme::from_system` where the platform's reader feature is off.
+    /// `Theme::from_system` on macOS or Windows where the platform's reader
+    /// feature is off; on Linux the reads that need no feature stand in
+    /// ([`ReaderStatus::Fallback`]).
     FeatureDisabled,
     /// `Theme::from_system(Some(id))` where `id` is not a generation of the
     /// running platform (R1.5).
@@ -161,7 +163,9 @@ pub enum ReaderStatus {
     /// Read, but one source failed and another stood in for it, which the
     /// failure names (the KDE scheme file, S9.1, the KDE palette's colours
     /// file, or an accent input the reader could not read, S9.3; the first
-    /// failure where several).
+    /// failure where several). On Linux also a desktop whose reader is not
+    /// compiled, read through the scheme and motion reads that need no
+    /// feature, the failure naming the reader and its feature (S16).
     Fallback(ReaderFailure),
     /// A re-read failed; the previous reader layer stays (S8, S16).
     Failed(ReaderFailure),
