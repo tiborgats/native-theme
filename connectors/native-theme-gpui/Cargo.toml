@@ -7,7 +7,7 @@ license.workspace = true
 # workspace. Set to the lowest toolchain that compiles the library; measured
 # 2026-11-13 on the 0.9.1 closure: 1.95.0 builds; 1.94.0 fails on
 # std::hint::cold_path in gpui-pre 0.3.12 (src/profiler.rs:475), which
-# gpui-fast 0.1.14 calls at the same line.
+# gpui-fast calls at the same line (0.1.14, and 0.1.15, the lock's).
 rust-version = "1.95.0"
 repository.workspace = true
 keywords = ["theme", "gpui", "gui", "native", "colors"]
@@ -77,7 +77,7 @@ gpui-kit = { version = "0.9.1", default-features = false }
 # `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
 # gpui already decoded instead of as bytes gpui decodes again in the
 # background. Pinned to the version both GPUI backends resolve (gpui-pre
-# 0.3.12 and gpui-fast 0.1.14 each ask for `image` 0.25.1 and up, which resolves
+# 0.3.12 and gpui-fast 0.1.15 each ask for `image` 0.25.1 and up, which resolves
 # to 0.25.10), because the connector's `image` and GPUI's have to be the same
 # for the `Frame` type to match; no default features, since the connector
 # encodes and decodes nothing itself.

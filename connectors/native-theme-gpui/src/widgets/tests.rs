@@ -2055,7 +2055,7 @@ fn loading_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, ProgressB
 
 /// The fill's bounds after `ms` milliseconds more, on a frame drawn then.
 /// The animation reads the executor's clock (gpui-pre 0.3.12
-/// `src/elements/animation.rs:271`, gpui-fast 0.1.14 the same line), which a
+/// `src/elements/animation.rs:271`, gpui-fast 0.1.15 the same line), which a
 /// test steps rather than waits out. Each draw that lays the running
 /// animation out asks for its next frame (`Window::request_animation_frame`,
 /// which queues a notify of its view), and `simulate_next_frame` delivers
