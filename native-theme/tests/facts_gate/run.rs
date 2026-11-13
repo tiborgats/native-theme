@@ -1897,14 +1897,7 @@ pub fn run_shard(
                 let shared = shard.shared(&mut report, &mut elsewhere);
                 let entries = projected(&platform, preset, flavor, shared);
                 derivations(
-                    &platform.name,
-                    &platform.units,
-                    preset,
-                    flavor,
-                    &keys,
-                    &entries,
-                    &not_drawn,
-                    shared,
+                    &platform, preset, flavor, &keys, &entries, &not_drawn, shared,
                 );
             }
             if shard.index == 0 {
@@ -3121,8 +3114,7 @@ fn check(
                     };
                     if global_vectors.contains(vector) {
                         check_globals(
-                            preset.id(),
-                            &platform.units,
+                            (preset.id(), &platform.units),
                             resolved,
                             keys,
                             vector,
@@ -3412,8 +3404,7 @@ impl<'a, 'f> Run<'a, 'f> {
 /// Every token, colour-role and input key under one condition vector whose
 /// every condition is at depth for it.
 fn check_globals(
-    preset: &str,
-    units: &Units,
+    (preset, units): (&str, &Units),
     resolved: &Resolved,
     keys: &[KeyFacts<'_>],
     vector: &[String],
@@ -4947,8 +4938,7 @@ type Undrawn = (usize, usize, String, String, String, Unread);
 /// vector and a stand-in is resolved once, the pairs in parallel, as many
 /// passes vary an input to the same values under the same conditions.
 fn derivations(
-    platform: &str,
-    units: &Units,
+    platform: &Platform,
     preset: &Preset,
     flavor: Option<&str>,
     keys: &[KeyFacts<'_>],
@@ -4959,7 +4949,8 @@ fn derivations(
     let root = root_inputs();
     let metrics = StubMetrics;
     let schemes = preset.schemes();
-    let drawing = drawing(platform, flavor);
+    let units = &platform.units;
+    let drawing = drawing(&platform.name, flavor);
     let mut checks: Vec<PassCheck<'_>> = Vec::new();
     let mut groups = 0_usize;
     let mut resolutions: Vec<(Vec<String>, String)> = Vec::new();
