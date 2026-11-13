@@ -2365,10 +2365,18 @@ impl Render for Showcase {
         // gpui-component's `WindowState` plugin (gpui-base root.rs,
         // `Root::render`), so the showcase's actions are handled around both
         // by `host::ShowcaseHost`, where an action dispatched from inside an
-        // overlay still finds them.
+        // overlay still finds them. The view's fill touches the window's
+        // corners, so it rounds them as the window does, a client-decorated
+        // one by the theme's `window_radius` (gpui-component 0.9.1
+        // window_border.rs:19-27); the status bar rounds the bottom two.
+        let corners = gpui_component::window_corner_radii(window, cx);
         div()
             .relative()
             .size_full()
+            .rounded_tl(corners.top_left)
+            .rounded_tr(corners.top_right)
+            .rounded_bl(corners.bottom_left)
+            .rounded_br(corners.bottom_right)
             .bg(background)
             .text_color(foreground)
             .track_focus(&self.focus_handle)
@@ -2399,6 +2407,7 @@ impl Render for Showcase {
                         &environment,
                         environment_text,
                         shown,
+                        corners,
                     )),
             )
             // Deferred at the highest priority, so it is the topmost hitbox:

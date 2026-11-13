@@ -97,8 +97,9 @@
 //! # Theme Field Coverage
 //!
 //! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
-//! (all 139 colour fields), `ThemeConfig` (fonts, radii, shadow, highlighter),
-//! the styled `Theme`'s `focus_ring`, `scrollbar_mode` and `highlight_theme`,
+//! (all 139 colour fields), `ThemeConfig` (fonts, radii, the window's corner
+//! radius, shadow, highlighter), the styled `Theme`'s `focus_ring`,
+//! `scrollbar_mode` and `highlight_theme`,
 //! and gpui-base's scrollbar and resize-handle styles.
 //!
 //! | Category | Mapped | Notes |
@@ -108,7 +109,7 @@
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces, the semantic colours each variant read in gpui-component 0.5.1, not upstream's tinted house style; flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:958-966`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
-//! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
+//! | `window` | 6 of 6 | background_color, title_bar_background, border colour and corner radius (`window_radius`, the corners of a client-decorated window); title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
 //! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and where it is translucent its gutter's, the fill over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme), and its line height via `geometry::editor` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
@@ -347,6 +348,10 @@ pub fn to_theme(
     theme.mono_font_size = px(prefs.scaled(d.mono_font.size));
     theme.radius = px(d.border.corner_radius);
     theme.radius_lg = px(d.border.corner_radius_lg);
+    // The corner radius of a client-decorated window, which gpui-component's
+    // WindowBorder, Root and TitleBar round (gpui-component
+    // src/window_border.rs:28-29): the window's own, `window.border`'s.
+    theme.window_radius = px(resolved.window.border.corner_radius);
     theme.shadow = d.border.shadow_enabled;
 
     // §8.3: the ring is drawn only when the theme gives it a width; its width
@@ -370,10 +375,9 @@ pub fn to_theme(
     } else {
         gpui_component::highlighter::HighlightTheme::default_light()
     };
-    theme.highlight_theme = std::sync::Arc::new(gpui_component::highlighter::HighlightTheme {
-        style: config::highlight_style(resolved, mode),
-        ..(*highlight).clone()
-    });
+    let mut highlight = (*highlight).clone();
+    highlight.style = config::highlight_style(resolved, mode);
+    theme.highlight_theme = std::sync::Arc::new(highlight);
 
     // Store config for gpui-component's theme switching
     let config: Rc<_> = Rc::new(config::to_theme_config(resolved, name, mode, prefs));
@@ -1063,7 +1067,8 @@ impl<'a> Native<'a> {
 ///    requires `gpui_component::init` before any component use; calling it
 ///    here only when the global is missing means it runs at most once);
 /// 3. writes the styled theme, keeping the application's own `notification`,
-///    `list`, `sheet` and `motion` settings of the installed one, as upstream's
+///    `list`, `sheet`, `motion` and `cursor_blink` settings of the installed
+///    one, as upstream's
 ///    `Theme::change` does; then installs a `ThemeConfig` for the *other*
 ///    stored variant (if any) under the same display name, so upstream's
 ///    `Theme::change` / `sync_system_appearance` reproduces native colours in
@@ -1290,6 +1295,7 @@ fn apply_inner(
     theme.list = installed.list.clone();
     theme.sheet = installed.sheet.clone();
     theme.motion = installed.motion.clone();
+    theme.cursor_blink = installed.cursor_blink;
     *installed = theme;
 
     // D34: the other mode's config from its stored variant, so Theme::change
@@ -1355,10 +1361,8 @@ fn base_overrides_for(
         geometry.thumb = styled.scrollbar_thumb;
         geometry.thumb_hover = styled.scrollbar_thumb_hover;
         geometry.thumb_active = styled.scrollbar_thumb_hover;
-        resizable = gpui_base::ResizableTheme {
-            handle: Some(styled.border),
-            active_handle: Some(styled.drag_border),
-        };
+        resizable.handle = Some(styled.border);
+        resizable.active_handle = Some(styled.drag_border);
     }
     Some((geometry, resizable))
 }
@@ -1495,12 +1499,15 @@ fn install_observer_once(cx: &mut App) {
 mod tests {
     use super::*;
 
-    /// Compile-time tripwire: `gpui_component::Theme` has exactly these 20
-    /// fields in 0.7.0. Upstream carried three `tile_*` fields through 0.6.0
-    /// and 0.6.1 that this connector never set, and nothing noticed until
-    /// 0.6.2 removed them again; a field *added* in a patch release would be
-    /// left at upstream's default just as silently. Naming every field here
-    /// turns either change into a compile error.
+    /// Tripwire: `gpui_component::Theme` has exactly these 22 fields in
+    /// 0.9.1. Upstream carried three `tile_*` fields through 0.6.0 and 0.6.1
+    /// that this connector never set, and nothing noticed until 0.6.2 removed
+    /// them again; a field *added* in a release would be left at upstream's
+    /// default just as silently. The struct is `#[non_exhaustive]` since
+    /// 0.9.0, so a pattern naming every field no longer compiles without `..`;
+    /// the names are read from its derived `Debug` instead, which prints every
+    /// field, `#[serde(skip)]` ones included, so either change fails here by
+    /// name.
     #[test]
     fn every_theme_field_is_named() {
         let theme = to_theme(
@@ -1509,38 +1516,54 @@ mod tests {
             true,
             &AccessibilityPreferences::default(),
         );
-        let GpuiTheme {
+        let named = [
             // Set by `to_theme` from the resolved native theme.
-            mode: _,
-            font_family: _,
-            font_size: _,
-            mono_font_family: _,
-            mono_font_size: _,
-            radius: _,
-            radius_lg: _,
-            shadow: _,
-            focus_ring: _,
-            scrollbar_mode: _,
-            highlight_theme: _,
+            "mode",
+            "font_family",
+            "font_size",
+            "mono_font_family",
+            "mono_font_size",
+            "radius",
+            "radius_lg",
+            "window_radius",
+            "shadow",
+            "focus_ring",
+            "scrollbar_mode",
+            "highlight_theme",
             // `to_theme` fills the slot for `mode` only; the other keeps
             // `Theme::from(&ThemeColor)`'s empty `ThemeConfig::default()` until
             // a later `apply` stores the other variant (D34).
-            light_theme: _,
-            dark_theme: _,
+            "light_theme",
+            "dark_theme",
             // Written by `Theme::from(&ThemeColor)`: the 139-field colour map,
             // the tokens upstream derives from it, and `transparent` (Issue 53).
-            colors: _,
-            tokens: _,
-            transparent: _,
+            "colors",
+            "tokens",
+            "transparent",
             // Left to the application: native-theme models no notification
-            // placement, list highlight default, sheet margin or motion tokens
-            // (`ResolvedTheme` has no such field), so `to_theme` leaves
-            // upstream's default and `apply` keeps the installed theme's.
-            notification: _,
-            list: _,
-            sheet: _,
-            motion: _,
-        } = theme;
+            // placement, list highlight default, sheet margin, motion tokens
+            // or caret blink (`ResolvedTheme` has no such field), so
+            // `to_theme` leaves upstream's default and `apply` keeps the
+            // installed theme's.
+            "notification",
+            "list",
+            "sheet",
+            "motion",
+            "cursor_blink",
+        ];
+        // `{:#?}` puts each top-level field on a line of its own, indented
+        // by four spaces; nested fields are indented further.
+        let debug = format!("{theme:#?}");
+        let mut fields: Vec<&str> = debug
+            .lines()
+            .filter_map(|line| line.strip_prefix("    "))
+            .filter(|rest| !rest.starts_with(' '))
+            .filter_map(|rest| rest.split_once(": ").map(|(name, _)| name))
+            .collect();
+        let mut expected = named.to_vec();
+        fields.sort_unstable();
+        expected.sort_unstable();
+        assert_eq!(fields, expected, "gpui_component::Theme's fields changed");
     }
 
     /// Issue 1: fixed to use into_variant(true) for catppuccin-mocha (dark theme).
@@ -1676,6 +1699,10 @@ mod tests {
         assert_eq!(
             theme.radius_lg,
             px(resolved.defaults.border.corner_radius_lg.max(0.0))
+        );
+        assert_eq!(
+            theme.window_radius,
+            px(resolved.window.border.corner_radius)
         );
         assert_eq!(theme.shadow, resolved.defaults.border.shadow_enabled);
     }
@@ -2874,8 +2901,8 @@ mod apply_tests {
         });
     }
 
-    /// M6-01: `notification`, `list`, `sheet` and `motion` are the
-    /// application's settings, not theme data, so `apply` and
+    /// M6-01: `notification`, `list`, `sheet`, `motion` and `cursor_blink`
+    /// are the application's settings, not theme data, so `apply` and
     /// `apply_accessibility` keep the values the application set, as
     /// upstream's own `Theme::change` does.
     #[gpui::test]
@@ -2886,12 +2913,15 @@ mod apply_tests {
         assert_ne!(theme.notification.max_items, 3, "precondition");
         assert!(theme.list.active_highlight, "precondition");
         assert_ne!(theme.motion.duration_normal, Duration::ZERO, "precondition");
+        let steady = gpui_base::input::CursorBlink::steady();
+        assert_ne!(theme.cursor_blink, steady, "precondition");
         let assert_kept = |cx: &App| {
             let styled = GpuiTheme::global(cx);
             assert_eq!(styled.sheet.margin_top, px(40.));
             assert_eq!(styled.notification.max_items, 3);
             assert!(!styled.list.active_highlight);
             assert_eq!(styled.motion.duration_normal, Duration::ZERO);
+            assert_eq!(styled.cursor_blink, steady);
         };
         cx.update(|cx| {
             gpui_component::init(cx);
@@ -2900,6 +2930,7 @@ mod apply_tests {
             styled.notification.max_items = 3;
             styled.list.active_highlight = false;
             styled.motion.duration_normal = Duration::ZERO;
+            styled.cursor_blink = steady;
             apply(theme, &resolved, &prefs, cx);
             assert_kept(cx);
             let mut scaled = AccessibilityPreferences::default();

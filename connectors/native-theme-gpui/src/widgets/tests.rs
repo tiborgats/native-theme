@@ -2054,13 +2054,16 @@ fn loading_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, ProgressB
 }
 
 /// The fill's bounds after `ms` milliseconds more, on a frame drawn then.
-/// Each draw that lays the running animation out asks for its next frame
-/// (`Window::request_animation_frame`, which queues a notify of its view),
-/// and `simulate_next_frame` delivers that notify, which tests have no
-/// frame loop to deliver: a call delivers the request the draw before it
-/// queued, the first call `window_with`'s.
+/// The animation reads the executor's clock (gpui-pre 0.3.12
+/// `src/elements/animation.rs:271`, gpui-fast 0.1.14 the same line), which a
+/// test steps rather than waits out. Each draw that lays the running
+/// animation out asks for its next frame (`Window::request_animation_frame`,
+/// which queues a notify of its view), and `simulate_next_frame` delivers
+/// that notify, which tests have no frame loop to deliver: a call delivers
+/// the request the draw before it queued, the first call `window_with`'s.
 fn fill_after(cx: &mut VisualTestContext, ms: u64) -> Bounds<Pixels> {
-    std::thread::sleep(std::time::Duration::from_millis(ms));
+    cx.executor()
+        .advance_clock(std::time::Duration::from_millis(ms));
     cx.update(|window, cx| window.simulate_next_frame(cx));
     redraw(cx);
     bounds(cx, "native-progress-fill")
@@ -2079,18 +2082,10 @@ fn a_loading_progress_bar_sweeps_its_fill_in_the_theme(cx: &mut TestAppContext) 
     assert_eq!(painted_fill(cx, bar), Some(look.track), "the theme's track");
     let first = fill_after(cx, 0);
     assert_eq!(first.size.height, bar.size.height, "the track's height");
-    // Frames a little apart until one lays the fill out elsewhere: the sweep
-    // takes a second (progress/progress.rs:152), so 2 s of frames cover two
-    // turns however slowly the runner draws.
-    let start = std::time::Instant::now();
-    let moved = loop {
-        if fill_after(cx, 20) != first {
-            break true;
-        }
-        if start.elapsed() > std::time::Duration::from_secs(2) {
-            break false;
-        }
-    };
+    // Frames 20 ms apart on the test clock until one lays the fill out
+    // elsewhere: the sweep takes a second (progress/progress.rs:152), so 100
+    // frames, 2 s, cover two turns.
+    let moved = (0..100).any(|_| fill_after(cx, 20) != first);
     assert!(moved, "the fill moves");
 }
 

@@ -54,29 +54,30 @@ watch = ["native-theme/watch", "dep:futures"]  # enables `on_theme_change`
 
 [dependencies]
 # GPUI under the package name gpui-component uses, so both edges unify.
-# gpui-component 0.8.1 depends on `gpui-pre = "=0.3.10"` (an exact pin), so
-# 0.3.10 is the only version that resolves with it. gpui-component does not
+# gpui-component 0.9.1 depends on `gpui-pre = "=0.3.12"` (an exact pin), so
+# 0.3.12 is the only version that resolves with it. gpui-component does not
 # re-export gpui. The crate roots name GPUI through gpui-kit (below); this
 # dependency stays for the doctests, each a crate of its own that names
 # `gpui`. Caret: an exact pin in a library would conflict with any consumer
 # whose other dependencies want a later snapshot.
-gpui = { package = "gpui-pre", version = "0.3.10" }
-# A hard floor: the claims, citations and tests are of 0.8.1, which a fresh
-# resolve of `^0.8.0` takes anyway (docs/archive/todo_v0.7.0_gpui-kit-0.8.1-rationale.md, P1).
-gpui-component = "0.8.1"
+gpui = { package = "gpui-pre", version = "0.3.12" }
+# A hard floor: the claims, citations and tests are of 0.9.1, which a fresh
+# resolve of `^0.9.0` takes anyway (as for 0.8.1:
+# docs/archive/todo_v0.7.0_gpui-kit-0.8.1-rationale.md, P1).
+gpui-component = "0.9.1"
 # For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
 # apply_system_reduce_motion (not re-exported), and the headless primitives
 # the `widgets` feature builds on (Tabs, the slider and progress parts).
-gpui-base = "0.8.1"
+gpui-base = "0.9.1"
 # The crate roots name GPUI through gpui-kit (`extern crate gpui_kit as gpui;`),
 # which re-exports whichever core it is built on, so the connector follows an
 # application that turns on `gpui-kit/gpui-fast`. No default features: the
 # library needs neither gpui-kit's component layer nor its assets.
-gpui-kit = { version = "0.8.1", default-features = false }
+gpui-kit = { version = "0.9.1", default-features = false }
 # `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
 # gpui already decoded instead of as bytes gpui decodes again in the
 # background. Pinned to the version both GPUI backends resolve (gpui-pre
-# 0.3.10 and gpui-fast 0.1.12 each ask for `image` 0.25.1 and up, which resolves
+# 0.3.12 and gpui-fast 0.1.14 each ask for `image` 0.25.1 and up, which resolves
 # to 0.25.10), because the connector's `image` and GPUI's have to be the same
 # for the `Frame` type to match; no default features, since the connector
 # encodes and decodes nothing itself.
@@ -101,7 +102,7 @@ native-theme-showcase-support = { path = "../../tools/showcase-support" }
 # open_window(), and the Lucide assets under gpui_kit::assets.
 # tree-sitter-rust: the grammar for the showcase's code editor section.
 # test-support: `#[gpui::test]` and TestAppContext through the alias.
-gpui-kit = { version = "0.8.1", features = ["tree-sitter-rust", "test-support"] }
+gpui-kit = { version = "0.9.1", features = ["tree-sitter-rust", "test-support"] }
 # The OS readers and the watcher, so the showcase, tests/seams.rs and every
 # test build read the OS theme without the `native` feature named.
 native-theme = { workspace = true, features = ["native", "watch"] }

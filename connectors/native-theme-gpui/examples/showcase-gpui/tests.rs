@@ -1216,7 +1216,12 @@ fn the_theme_tabs_window_section_names_the_mode() {
             .is_some_and(|v| v.starts_with(crate::inspector::window_frame(std::env::consts::OS))),
         "the server-side rows do not name this platform's frame: {server:?}"
     );
-    for client_only in ["frame fill", "frame colour", "frame shadow"] {
+    for client_only in [
+        "frame fill",
+        "frame colour",
+        "frame corners",
+        "frame shadow",
+    ] {
         assert_eq!(
             value(&server, client_only),
             None,
@@ -1233,7 +1238,12 @@ fn the_theme_tabs_window_section_names_the_mode() {
         value(&client, "frame").is_some_and(|v| v.starts_with("the client frame")),
         "the client-side rows do not say the client frame is drawn: {client:?}"
     );
-    for client_only in ["frame fill", "frame colour", "frame shadow"] {
+    for client_only in [
+        "frame fill",
+        "frame colour",
+        "frame corners",
+        "frame shadow",
+    ] {
         assert!(
             value(&client, client_only).is_some(),
             "the client-side rows do not state {client_only}"
@@ -13577,10 +13587,9 @@ fn a_widget_info_titles_itself_by_kind_and_variant() {
 
 #[test]
 fn to_text_prints_the_four_sections_in_order() {
-    let t = Theme::from(&gpui_component::theme::ThemeColor {
-        danger: gpui::hsla(0.0, 1.0, 0.5, 1.0),
-        ..Default::default()
-    });
+    let mut colors = gpui_component::theme::ThemeColor::default();
+    colors.danger = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+    let t = Theme::from(&colors);
     let info = WidgetInfo::new("Tag")
         .variant("Danger")
         .color(claim("bg", "danger", t.danger, "gpui-component/tag.rs:31"))

@@ -471,10 +471,11 @@ pub(crate) fn window_rows(
     paddings: gpui::Edges<gpui::Pixels>,
 ) -> Vec<(&'static str, String)> {
     // gpui-component's `WindowState` root plugin wraps everything the window
-    // holds in `window_border()` (root.rs:728-736, `WindowState::decorate`).
-    // Its client-side arm alone sets the client inset (window_border.rs:169),
-    // lays hit zones and draws a frame; under server-side decorations it
-    // hands back the content itself (window_border.rs:148-153).
+    // holds in `window_border()` (gpui-component 0.9.1 root.rs:734-742,
+    // `WindowState::decorate`). Its client-side arm alone sets the client
+    // inset (window_border.rs:195), lays hit zones and draws a frame; under
+    // server-side decorations it hands back the content in a plain backdrop
+    // that draws nothing (window_border.rs:169-179).
     let inset = match inset {
         Some(inset) => format!("{}px, set by the WindowBorder", inset.as_f32()),
         None => "none: nothing has called set_client_inset".to_string(),
@@ -527,7 +528,12 @@ pub(crate) fn window_rows(
             ),
             (
                 "frame colour",
-                "a literal grey, l=0.2 dark / l=0.8 light, that no theme field reaches (window_border.rs, WindowBorder)"
+                "the theme's window_border, from window.border.color (window_border.rs, WindowBorder)"
+                    .to_string(),
+            ),
+            (
+                "frame corners",
+                "the theme's window_radius, from window.border.corner_radius, on each corner not next to a tiled edge, and on the root surface and the TitleBar under them (window_border.rs, window_corner_radii)"
                     .to_string(),
             ),
             (

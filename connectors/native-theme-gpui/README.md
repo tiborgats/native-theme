@@ -26,7 +26,7 @@ Turns a `ResolvedTheme` into a fully configured
   The splitter colours reach the handles gpui-base draws itself — groups built
   with `gpui_base::h_resizable` / `v_resizable` (`gpui_kit::base::…`), as
   colours at gpui-base's 1 px width, the hover colour only while dragged — not
-  gpui-component 0.8.1's own `h_resizable` / `v_resizable`, `Settings`' divider
+  gpui-component 0.9.1's own `h_resizable` / `v_resizable`, `Settings`' divider
   or the dock's edges, which draw a `border` hairline and a `muted_foreground`
   pill of their own.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
@@ -49,7 +49,7 @@ Turns a `ResolvedTheme` into a fully configured
   for the two a set lacks. gpui-component's `IconName` cannot be enumerated
   in code, so the tables are audited by hand against the list gpui-kit-assets
   generates the enum from (`default-icons.txt`) on every gpui-component bump;
-  0.8.1's is 0.7.1's, 106 variants. The tables end in a wildcard: an
+  0.9.1's is 0.7.1's, 106 variants. The tables end in a wildcard: an
   `IconName` newer than this crate maps to no icon instead of stopping the
   build, and the test module's exhaustive list is what reports it.
 
@@ -67,10 +67,10 @@ sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.8.1 |
-| `gpui-base` | 0.8.1 |
-| `gpui-pre` (GPUI, named `gpui` in the manifest) | 0.3.10 |
-| `gpui-kit` (GPUI as the code names it; the showcase) | 0.8.1 |
+| `gpui-component` | 0.9.1 |
+| `gpui-base` | 0.9.1 |
+| `gpui-pre` (GPUI, named `gpui` in the manifest) | 0.3.12 |
+| `gpui-kit` (GPUI as the code names it; the showcase) | 0.9.1 |
 | `rust-version` | 1.95.0 |
 
 Each is a floor and nothing more. It is not an open-ended `0.8.x`, because a
@@ -100,7 +100,7 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 ```toml
 [dependencies]
 native-theme-gpui = { version = "0.7", features = ["native"] }
-gpui-kit = "0.8.1"        # or gpui-component + gpui-base + gpui-pre directly
+gpui-kit = "0.9.1"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 Without `native`, `from_system()` is the platform preset on Linux and an
@@ -139,7 +139,7 @@ The examples name GPUI and gpui-component through gpui-kit, as gpui-kit's own
 documentation does: GPUI at its root (`gpui_kit::Window`, `gpui_kit::div`)
 and gpui-component as `gpui_kit::component`. An application that depends on
 gpui-component and GPUI directly instead, with GPUI under the name
-gpui-component gives it (`gpui = { package = "gpui-pre", version = "0.3.10" }`),
+gpui-component gives it (`gpui = { package = "gpui-pre", version = "0.3.12" }`),
 names the same items `gpui::…` and `gpui_component::…`.
 
 `gpui_kit::open_window` wraps the view in gpui-base's `Root`, which carries
@@ -362,7 +362,7 @@ test over every preset and mode says so.
 | `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
 | `title_bar` | `window.title_bar_font`, `defaults.line_height` | `TitleBar` |
 | `title_bar_inactive` | `window.inactive_title_bar_background`, `window.inactive_title_bar_text_color` | a `TitleBar` while its window is not the active one, after `title_bar`: `.when(!window.is_window_active(), \|bar\| bar.refine_style(&geometry::title_bar_inactive(n)))`. gpui redraws the window when its activation changes. The fill is upstream's gradient drawn from the inactive colour, so a theme whose inactive pair is the active one draws the same bar in both states |
-| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.border.line_width` and `.border.color` (the bottom edge), `.background_color`, `toolbar.font`, `defaults.line_height` | a toolbar row the application draws with its own elements, or gpui-component 0.8.1's `Toolbar`: the height is the content's (at least `bar_height`), and the `Toolbar`'s own Small minimum height (`min_h_8`) is replaced by `bar_height` where stated and reset to `auto` where not. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. The edge is a bottom rule, `toolbar.border.color` at `.line_width`, inside the bar, none at a width of 0 |
+| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.border.line_width` and `.border.color` (the bottom edge), `.background_color`, `toolbar.font`, `defaults.line_height` | a toolbar row the application draws with its own elements, or gpui-component 0.9.1's `Toolbar`: the height is the content's (at least `bar_height`), and the `Toolbar`'s own Small minimum height (`min_h_8`) is replaced by `bar_height` where stated and reset to `auto` where not. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. The edge is a bottom rule, `toolbar.border.color` at `.line_width`, inside the bar, none at a width of 0 |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
 | `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
@@ -829,10 +829,10 @@ before letting go of it. `examples/showcase-gpui/support.rs` does it in
 
 ## Backends
 
-GPUI Kit 0.8.1 builds on one of two GPUI cores: **gpui-pre**, its default,
+GPUI Kit 0.9.1 builds on one of two GPUI cores: **gpui-pre**, its default,
 and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
 rendering and layout), which its `gpui-fast` feature selects; it builds GPUI
-Fast 0.1.12 or later (gpui-kit 0.8.1's `gpui-fast = "0.1.12"`). The two cores'
+Fast 0.1.14 or later (gpui-kit 0.9.1's `gpui-fast = "0.1.14"`). The two cores'
 types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies features
 across the build graph: once a crate's `gpui-fast` feature is on, it is on for
 every user of that crate. gpui-kit, gpui-component and gpui-base each have
@@ -844,7 +844,7 @@ alias gpui-kit documents), so it is built on the core gpui-kit is built on:
 
 - An application on **gpui-pre** needs nothing: it is the default.
 - An application on **GPUI Fast** through gpui-kit
-  (`gpui-kit = { version = "0.8.1", features = ["gpui-fast"] }`, with gpui-kit's
+  (`gpui-kit = { version = "0.9.1", features = ["gpui-fast"] }`, with gpui-kit's
   default `component` feature) needs nothing more either: this crate follows
   gpui-kit.
 - Any other application on **GPUI Fast** (one that depends on gpui-component

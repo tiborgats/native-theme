@@ -1,8 +1,8 @@
 //! The window's chrome: title bar or menu-bar row, menus, toolbar, side panel, page tabs, status bar and overlays.
 
 use gpui::{
-    Action, AnyElement, App, Decorations, InteractiveElement as _, IntoElement, Menu, MenuItem,
-    Pixels, SharedString, StyledText, Window, px,
+    Action, AnyElement, App, Corners, Decorations, InteractiveElement as _, IntoElement, Menu,
+    MenuItem, Pixels, SharedString, Styled as _, StyledText, Window, px,
 };
 use gpui_component::{ActiveTheme as _, IconName, WindowExt as _};
 use native_theme_gpui::{ActiveNativeTheme as _, geometry};
@@ -322,12 +322,18 @@ pub(crate) fn page_tabs(app: &Showcase, cx: &App) -> impl IntoElement {
 /// `environment`, the text of `status_environment`; at its right end
 /// `shown`, the title of what the inspector shows. The toggle sits at the
 /// edge of the panel it controls, and is selected while that panel is shown.
+/// The bar fills the window's bottom corners, so it rounds them by
+/// `corners`, the window's (`gpui_component::window_corner_radii`): GPUI
+/// clips a child to a rectangle, and the bar's fill would square the corners
+/// a client-decorated window rounds (gpui-component 0.9.1
+/// window_border.rs:19-27).
 pub(crate) fn status_bar(
     app: &Showcase,
     cx: &App,
     environment: &str,
     environment_text: StyledText,
     shown: Option<SharedString>,
+    corners: Corners<Pixels>,
 ) -> impl IntoElement {
     let ui = &app.info_ui;
     let set = app.icon_set_label();
@@ -361,6 +367,8 @@ pub(crate) fn status_bar(
         shown,
         geometry::widget_gap(&app.layout),
     )
+    .rounded_bl(corners.bottom_left)
+    .rounded_br(corners.bottom_right)
     .debug_selector(|| CHROME_STATUS_BAR.into())
 }
 
