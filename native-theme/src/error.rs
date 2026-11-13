@@ -403,10 +403,10 @@ pub enum ProblemKind {
     /// ADD-A131).
     SeveralCurves,
     /// A stated zero with no delay that overrides nothing: no other
-    /// transition of one of its groups (the focus indicator's, for a
-    /// `FocusIndicator.transition`), earlier in its list, in the base or in
-    /// an earlier rule of its part, can apply where its rule does (S2.7,
-    /// S12; ADD-A126).
+    /// transition of one of its groups, earlier in its list, in the base or
+    /// in an earlier rule of its part, can apply where its rule does (S2.7,
+    /// S12; ADD-A126). The focus indicator's own transition, which this
+    /// reads too, is staged with the motion unit (S6.1).
     OverridesNothing,
     /// A recency set with fewer than two flags (S10, S12).
     RecencyTooSmall,
@@ -451,8 +451,9 @@ pub enum ProblemKind {
     /// part or block the transition times (S2.7, S12; ADD-A134).
     KeyframeNamesPart,
     /// A `Keyframes` transition's keyframe patch stating a field its
-    /// transition's groups do not time; in a `FocusIndicator.transition`,
-    /// any field but `focus`'s (S2.7, S12; ADD-A134).
+    /// transition's groups do not time (S2.7, S12; ADD-A134); in the focus
+    /// indicator's own transition, staged with the motion unit (S6.1), any
+    /// field but `focus`'s.
     KeyframeOutsideGroups,
     /// A `KirigamiSmoothstep` shadow layer's `spread` that can be other
     /// than zero, or its `inset` true: Kirigami's shadow has no spread and

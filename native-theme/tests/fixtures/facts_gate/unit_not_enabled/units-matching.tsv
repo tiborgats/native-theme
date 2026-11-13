@@ -1,0 +1,15 @@
+fact	probe	docs/facts/gnome/button.toml:3	enabled
+fact	probe	docs/facts/gnome/button.toml:13	enabled
+fact	probe	docs/facts/gnome/button.toml:24	enabled
+fact	probe	docs/facts/gnome/button.toml:34	enabled
+fact	probe	docs/facts/gnome/button.toml:45	enabled
+fact	probe	docs/facts/gnome/button.toml:55	enabled
+fact	probe	docs/facts/gnome/button.toml:61	enabled
+fact	probe	docs/facts/gnome/button.toml:72	enabled
+fact	probe	docs/facts/gnome/button.toml:82	enabled
+fact	probe	docs/facts/gnome/roles.toml:3	enabled
+fact	probe	docs/facts/gnome/roles.toml:13	enabled
+fact	probe	docs/facts/gnome/tokens.toml:3	enabled
+fact	probe	docs/facts/gnome/tokens.toml:15	fields
+unit	probe	(enabled)	12	1
+unit	probe	fields	1	0

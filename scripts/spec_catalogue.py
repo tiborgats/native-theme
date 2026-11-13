@@ -646,6 +646,37 @@ def depth_names(entry) -> dict | None:
     return out
 
 
+DEPTH_NOT = re.compile(r"\bon `([^`]+)` not ((?:`[^`]+`(?:,? and |, )?)+)")
+
+
+def depth_exclusions(entry) -> list:
+    """(preset pattern, "variants" or "states", [names], the item's line) of each "on `<preset>` not `<name>` and
+    `<name>`" clause of an entry's **Depth** item (ADD-A147, ADD-A148: on `ios-*` not `hover` and `focus_visible`),
+    read in the first sentence's clause that starts with that word, parentheses included: the names its Depth line
+    holds on every preset but those the pattern (`ios-*`, a shell pattern) matches, where a later unit's group naming
+    those presets holds them."""
+    item = entry.item(DEPTH_ITEM)
+    if item is None:
+        return []
+    text = item.text
+    colon = depth0_find(text, lambda t, i: t[i] == ":")
+    text = text[colon + 1:] if colon >= 0 else text
+    end = depth0_find(text, lambda t, i: t[i] == "." and (i + 1 == len(t) or t[i + 1] == " "))
+    sentence = text if end < 0 else text[:end]
+    out, start = [], 0
+    while start <= len(sentence):
+        stop = depth0_find(sentence, lambda t, i: t[i] == ";", start)
+        clause = sentence[start:] if stop < 0 else sentence[start:stop]
+        word = clause.strip().split(" ", 1)[0]
+        if word in DEPTH_CLAUSES:
+            out += [(m.group(1), DEPTH_CLAUSES[word], re.findall(r"`([^`]+)`", m.group(2)), item.line)
+                    for m in DEPTH_NOT.finditer(" ".join(clause.split()))]
+        if stop < 0:
+            break
+        start = stop + 1
+    return out
+
+
 def recency_sets(entry) -> list:
     """(name, [flags in the stated order], line) of every recency set the entry's **Exclusive groups** item names: each
     backticked `<name> = [<flag>, …]` after the words `Recency sets` (S10's `recency`; ADD-A124)."""

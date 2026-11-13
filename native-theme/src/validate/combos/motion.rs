@@ -1,6 +1,7 @@
-//! S12's checks of transitions and presentation steps over combinations
-//! (S2.7): what each one's merged value can be under the worlds it is in
-//! effect in, its timing followed through references.
+//! S12's checks of transitions over combinations (S2.7): what each one's
+//! merged value can be under the worlds it is in effect in, its timing
+//! followed through references. The presentations' steps are staged with
+//! the motion unit (S6.1).
 
 use super::super::checks::{Read, takes};
 use super::super::stack::{
@@ -10,18 +11,14 @@ use super::{Bound, Checks, Found, Got, Seed, World, all_parts, cx_of, got_of, va
 use crate::blocks::motion::PropertyGroup;
 use crate::error::ProblemKind;
 
-/// A place a transition or a presentation step is stated at, as the
-/// checks read it.
+/// A place a transition is stated at, as the checks read it.
 struct Motion<'s> {
     target: Target,
-    /// Its place: a list's item (`transitions[3:0]`), or a presentation's
-    /// step (`presentations[2:0].steps[1]`).
+    /// Its place: a list's item (`transitions[3:0]`).
     place: String,
     /// The keyed item holding it: its source's number, the source and the
     /// item's place.
     item: (usize, &'s Source, String),
-    /// A presentation step's.
-    step: bool,
 }
 
 impl Motion<'_> {
@@ -102,42 +99,19 @@ fn stated_at<'s>(number: usize, source: &'s Source, place: &str) -> Option<Found
     })
 }
 
-/// Every transition and presentation step the stack states: each keyed
-/// list's transitions and each presentation's steps. The focus indicator's
-/// own transition is staged with the motion unit (S6.1).
+/// Every transition the stack states: each keyed list's transitions. The
+/// focus indicator's own transition and the presentations are staged with
+/// the motion unit (S6.1).
 fn motions<'s>(stack: &'s Stack<'_>) -> Vec<Motion<'s>> {
     let mut out = Vec::new();
     for (number, source) in stack.sources.iter().enumerate() {
         for item in &source.items {
-            let held = (number, source, item.place.clone());
             if item.place.starts_with("transitions[") {
                 out.push(Motion {
                     target: source.target,
                     place: item.place.clone(),
-                    item: held,
-                    step: false,
+                    item: (number, source, item.place.clone()),
                 });
-            } else if item.place.starts_with("presentations[") {
-                let steps = format!("{}.steps[", item.place);
-                let mut places: Vec<String> = Vec::new();
-                for op in &source.ops {
-                    if let Some((index, _)) = op
-                        .path
-                        .strip_prefix(&steps)
-                        .and_then(|rest| rest.split_once(']'))
-                    {
-                        let place = format!("{steps}{index}]");
-                        if !places.contains(&place) {
-                            places.push(place);
-                        }
-                    }
-                }
-                out.extend(places.into_iter().map(|place| Motion {
-                    target: source.target,
-                    place,
-                    item: held.clone(),
-                    step: true,
-                }));
             }
         }
     }
@@ -190,7 +164,7 @@ fn computes(engine: &str, facts: &[(String, Fact)]) -> bool {
 }
 
 impl Stack<'_> {
-    /// The value of the field `field` of the transition or step at `place`
+    /// The value of the field `field` of the transition at `place`
     /// of `target` under `world`: a field `Absent` above the place states
     /// none of it.
     fn motion_field(
@@ -259,14 +233,12 @@ impl Stack<'_> {
 }
 
 impl Checks<'_, '_> {
-    /// Every transition's and presentation step's zero durations, absences
-    /// and timings, under each world it is in effect in, the merged value
-    /// read (S2.7, S12; ADD-A125, ADD-A126): a timing `Absent` where the
-    /// duration is not a stated zero, but a transition's under
-    /// `WinUiAnimatedIcon`; a stated zero's timing stated; a duration
-    /// `Absent` where the timing, followed through references, is no
-    /// spring, but under `WinUiAnimatedIcon`; an `Instant` step's duration
-    /// not a stated zero, and another kind's a stated zero; and a
+    /// Every transition's zero durations, absences and timings, under each
+    /// world it is in effect in, the merged value read (S2.7, S12;
+    /// ADD-A125, ADD-A126): a timing `Absent` where the duration is not a
+    /// stated zero, but under `WinUiAnimatedIcon`; a stated zero's timing
+    /// stated; a duration `Absent` where the timing, followed through
+    /// references, is no spring, but under `WinUiAnimatedIcon`; and a
     /// transition's stated timing, followed through references, that its
     /// engine does not compute; a list's item's delay written as an
     /// expression that resolves to another than zero where its engine takes
@@ -285,7 +257,7 @@ impl Checks<'_, '_> {
         }
     }
 
-    /// [`Checks::motions`]' checks of one transition or step under `world`.
+    /// [`Checks::motions`]' checks of one transition under `world`.
     fn motion(&mut self, world: &World, motion: &Motion<'_>) {
         let stack = self.stack;
         let at = |field: &str| stack.motion_field(world, motion.target, &motion.place, field);
@@ -295,19 +267,17 @@ impl Checks<'_, '_> {
         let kinds: Vec<&'static str> = at("kind").iter().filter_map(variant).collect();
         // A list's item's delay written as an expression, where it
         // resolves (a literal is the structural check's, S12).
-        if !motion.step {
-            for found in at("delay") {
-                if matches!(found.got, Got::Expr(_)) && stack.delayed(world, found) {
-                    for engine in &engines {
-                        if let Some(takes) = takes(engine, Read::Delay) {
-                            let kind = ProblemKind::EngineMismatch { engine, takes };
-                            self.problem(found.layer, found.at, kind);
-                        }
+        for found in at("delay") {
+            if matches!(found.got, Got::Expr(_)) && stack.delayed(world, found) {
+                for engine in &engines {
+                    if let Some(takes) = takes(engine, Read::Delay) {
+                        let kind = ProblemKind::EngineMismatch { engine, takes };
+                        self.problem(found.layer, found.at, kind);
                     }
                 }
             }
         }
-        if kinds.is_empty() || (!motion.step && engines.is_empty()) {
+        if kinds.is_empty() || engines.is_empty() {
             return;
         }
         let zero = durations.iter().any(stated_zero);
@@ -336,19 +306,6 @@ impl Checks<'_, '_> {
             for found in durations.iter().filter(|f| matches!(f.got, Got::Absent)) {
                 self.problem(found.layer, found.at, ProblemKind::DurationAbsent);
             }
-        }
-        if motion.step {
-            if kinds.contains(&"instant") {
-                for found in durations.iter().filter(|found| !stated_zero(found)) {
-                    self.problem(found.layer, found.at, ProblemKind::InstantNotZero);
-                }
-            }
-            if kinds.iter().any(|kind| *kind != "instant") {
-                for found in durations.iter().filter(|found| stated_zero(found)) {
-                    self.problem(found.layer, found.at, ProblemKind::ZeroNotInstant);
-                }
-            }
-            return;
         }
         // A stated zero states no timing, so the lists read a stated one
         // only (S12).

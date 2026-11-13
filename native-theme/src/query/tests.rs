@@ -4,8 +4,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::float_cmp)]
 
 use super::{DataNeeds, Element, FontMetrics, RootInputs, Scope, Sibling, Styled, Unavailable};
+use crate::blocks::motion::{ResolvedKeyframe, ResolvedTransitionKind};
 use crate::blocks::outline::ResolvedRadius;
-use crate::blocks::part_style::{ResolvedPartStyle, RoleRef};
+use crate::blocks::part_style::{ResolvedPartStyle, ResolvedPartStylePatch, RoleRef};
 use crate::blocks::text::ResolvedFont;
 use crate::color::Color;
 use crate::declare::DataName;
@@ -19,7 +20,7 @@ use crate::selector::{
     StateFlags, VariantRef, WidgetOrPart,
 };
 use crate::toml::layer::read_preset;
-use crate::units::{Fraction, Length, Px, Sides, Size};
+use crate::units::{Deg, Fraction, Length, Px, Sides, Size};
 use crate::widgets::{ButtonPart, ButtonValues, TypedPart, Variant};
 
 /// Synthetic measurement: each metric the font's size.
@@ -1188,9 +1189,10 @@ fn part_shown_resolves_option() {
 /// `ResolvedPartStyle.breeze_tests` (S2.7, S6.1, S8; ADD-A126): the Breeze
 /// tests of every rule that can apply to the element, whatever its flags,
 /// in rank order: as they first appear in the part's base transitions
-/// (each step's list, then its focus indicator's transition), then a test
-/// only a rule names, in the rules' order; a test stated twice once, a
-/// stated zero's none, a rule the element's variants exclude left out.
+/// (each step's list, then its focus indicator's transition, which is
+/// staged with the motion unit too, S6.1), then a test only a rule names,
+/// in the rules' order; a test stated twice once, a stated zero's none, a
+/// rule the element's variants exclude left out.
 #[test]
 #[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn breeze_tests_in_rank_order() {
@@ -1265,7 +1267,7 @@ fn breeze_tests_in_rank_order() {
 #[test]
 #[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyframes_transition_resolves_and_mirrors() {
-    use crate::blocks::motion::{ResolvedEngine, ResolvedTransitionKind};
+    use crate::blocks::motion::ResolvedEngine;
     let theme = fixture(&[
         "[widgets.button.body]\ntransitions = [{ properties = [\"geometry\", \"opacity\"], kind = \
          { keyframes = { keyframes = [{ at = 0, timing = \"absent\", patch = { padding.left_px = \
@@ -1296,4 +1298,159 @@ fn keyframes_transition_resolves_and_mirrors() {
         (padding.left, padding.right),
         (Some(Px(2.0)), Some(Px(10.0)))
     );
+}
+
+/// The button whose body lists one `Keyframes` transition of `keyframes`
+/// (synthetic: a duration of no platform's), over the fixture's body, its
+/// stroke stated with its outset absent, and `layers`.
+fn body_keyframes_theme(keyframes: &str, layers: &[&str]) -> ResolvedTheme {
+    let body = format!(
+        "[widgets.button.body]\nstroke = {{ replace = {{ width_px = 1, paint = \"#000000\", \
+         dash = \"solid\", snap = \"to_device_pixel\", position = \"inside\", outset_px = \
+         \"absent\", fill_clip = \"box\" }} }}\ntransitions = [{{ properties = [\"fill\", \
+         \"stroke\", \"opacity\", \"transform\", \"geometry\", \"state_layer\"], kind = {{ \
+         keyframes = {{ keyframes = [{keyframes}] }} }}, duration_ms = 100, delay_ms = 0, \
+         timing = \"linear\", engine = \"css_animation\" }}]"
+    );
+    let mut stacked = vec![body.as_str()];
+    stacked.extend(layers);
+    fixture(&stacked)
+}
+
+/// The keyframes of the body's `Keyframes` transition, as the query
+/// answers them.
+fn body_keyframes(theme: &ResolvedTheme) -> Vec<ResolvedKeyframe> {
+    let scope = root(theme, Direction::Ltr);
+    let kind = drawn(theme, &Element::new(BODY, &scope, &Metrics))
+        .0
+        .transitions
+        .into_iter()
+        .next()
+        .map(|transition| transition.kind);
+    match kind {
+        Some(ResolvedTransitionKind::Keyframes { keyframes }) => keyframes,
+        _ => Vec::new(),
+    }
+}
+
+/// The one keyframe's patch on the body.
+fn on_body(patch: &str) -> Option<ResolvedPartStylePatch> {
+    let theme = body_keyframes_theme(
+        &format!("{{ at = 0, timing = \"absent\", patch = {{ {patch} }} }}"),
+        &[],
+    );
+    body_keyframes(&theme)
+        .into_iter()
+        .next()
+        .map(|keyframe| keyframe.patch)
+}
+
+/// S2.7: a keyframe's `Fields` patch of a block resolves over the part's
+/// resolved block, its `Some` that block with the keyframe's fields
+/// applied, at any depth.
+#[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
+fn keyframe_fields_resolve_over_the_resolved_block() {
+    let patch = on_body("transform.rotate_deg = 90, stroke.top.width_px = 3").unwrap_or_default();
+    let transform = patch.transform.flatten();
+    assert_eq!(transform.as_ref().and_then(|t| t.rotate), Some(Deg(90.0)));
+    assert_eq!(transform.as_ref().and_then(|t| t.scale_x), Some(1.0));
+    assert_eq!(
+        transform.as_ref().and_then(|t| t.translate_x),
+        Some(Px(5.0))
+    );
+    let stroke = patch.stroke.flatten();
+    assert_eq!(stroke.as_ref().and_then(|s| s.top.width), Some(Px(3.0)));
+    assert_eq!(stroke.as_ref().and_then(|s| s.right.width), Some(Px(1.0)));
+    assert_eq!(patch.opacity, None, "a field the keyframe does not set");
+}
+
+/// S2.7: `base` in a keyframe is the field's own resolved value on the part
+/// before the keyframe applies.
+#[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
+fn keyframe_base_is_the_parts_resolved_value() {
+    let patch = on_body("min_width_px = \"= add(base, 2px)\", opacity = \"= mul(base, 0.5)\"")
+        .unwrap_or_default();
+    assert_eq!(patch.min_width, Some(Some(Length::Px(42.0))));
+    assert_eq!(patch.opacity, Some(Some(Fraction(0.5))));
+}
+
+/// S2.7: a keyframe's `Append` appends over the part's resolved paint.
+#[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
+fn keyframe_append_over_the_parts_paint() {
+    let patch = on_body("fill = { append = [\"#ff0000\"] }").unwrap_or_default();
+    let layers = patch.fill.flatten().map(|fill| fill.layers.len());
+    assert_eq!(layers, Some(2), "the body's own layer, then the keyframe's");
+}
+
+/// S2.7: any keyframe patch of a field that resolves `Absent` on the part,
+/// at any depth, is `None`, the field staying absent: a `Set`, a `Fields`
+/// patch and an `Append` alike, and a field within a block the keyframe
+/// sets.
+#[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
+fn keyframe_over_an_absent_field_is_none() {
+    let patch = on_body(
+        "focus = \"= token.focus\", interaction.state_layer.alpha = 0.5, stroke.outset_px = 2, \
+         stroke.top.width_px = 3",
+    )
+    .unwrap_or_default();
+    assert_eq!(patch.focus, None, "a Set over an absent focus indicator");
+    assert_eq!(patch.interaction, None, "a Fields patch over absent");
+    let stroke = patch.stroke.flatten();
+    assert_eq!(
+        stroke.as_ref().map(|s| s.outset),
+        Some(None),
+        "absent within the stroke"
+    );
+    assert_eq!(stroke.as_ref().and_then(|s| s.top.width), Some(Px(3.0)));
+    let theme = body_keyframes_theme(
+        "{ at = 0, timing = \"absent\", patch = { fill = { append = [\"#ff0000\"] } } }",
+        &["[widgets.button.body]\nfill = \"absent\""],
+    );
+    let patch = body_keyframes(&theme)
+        .into_iter()
+        .next()
+        .map(|keyframe| keyframe.patch);
+    assert_eq!(
+        patch.map(|patch| patch.fill),
+        Some(None),
+        "an Append over absent"
+    );
+}
+
+/// S2.7: a keyframe over a part field set by a reference applies after
+/// every rule that patches the referenced value: its step sorts after
+/// every step of the theme where the reference's steps are composed with
+/// the patches after it (R2.4).
+#[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
+fn keyframe_over_a_referenced_field_follows_every_rule() {
+    let tokens = "[tokens.focus]\nkind = \"ring\"\nwidth_px = 2\npaint = \"#3584e4\"\ndash = \
+                  \"solid\"\noffset = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }\n\
+                  corners = { top_left = \"follow_part\", top_right = \"follow_part\", \
+                  bottom_right = \"follow_part\", bottom_left = \"follow_part\", curve = \
+                  \"circular\" }\nshadow = \"absent\"\ntransition = \"absent\"\n\
+                  [widgets.button.body]\nfocus = \"= token.focus\"\n[[rules]]\ntarget = \
+                  \"button.body\"\nset = { focus.width_px = 3 }";
+    let theme = body_keyframes_theme(
+        "{ at = 0, timing = \"absent\", patch = { focus.width_px = \"= add(base, 1px)\" } }",
+        &[tokens],
+    );
+    let scope = root(&theme, Direction::Ltr);
+    let focus = drawn(&theme, &Element::new(BODY, &scope, &Metrics)).0.focus;
+    assert_eq!(
+        focus.and_then(|focus| focus.width),
+        Some(Px(3.0)),
+        "the rule's"
+    );
+    let width = body_keyframes(&theme)
+        .into_iter()
+        .next()
+        .and_then(|keyframe| keyframe.patch.focus)
+        .flatten()
+        .and_then(|focus| focus.width);
+    assert_eq!(width, Some(Px(4.0)), "over the rule's 3 px");
 }

@@ -1524,7 +1524,10 @@ through `spec_catalogue.py` only, never touches the module's hand-written
 unit (the button's `Placement` values, until M3's placement unit). The units
 file lists the enabled units, the deferrals with their units, and the
 hand-written units, enabled or not; a deferral to an enabled unit is an
-input error. `--check` writes nothing and exits 1 when a generated file
+input error, and so is a deferral or staging naming anything but a later
+unit, a hand-written unit, a unit `[unit_names]` lists (M3a's widget units)
+or a catalogue entry (`check_facts_trace.py` refuses it alike, naming the
+key and the value). `--check` writes nothing and exits 1 when a generated file
 differs or is stale (in `check_release.sh`); a construct the generator does
 not handle exits 2 naming it. `--self-test` runs the reading rules and the
 refusals on a synthetic catalogue. Deleted once the catalogue is archived,
@@ -1556,7 +1559,13 @@ widget waits until that widget is enabled. Prints one line per finding
 (platform, row, target, what), per platform how many of the checked lines
 and rows the facts already carry, and a summary; exits 0, 1, or 2 on an
 input it cannot read or an unknown unit. `--self-test` runs each rule on
-fixture gap maps, traces, facts and units files. `--enabled` enters
+fixture gap maps, traces, facts and units files. `--facts` prints per
+preset and facts directory the facts of the enabled units, each later
+unit's and the unplaced ones, and one line per fact and preset it holds
+for, `fact<TAB><preset><TAB><file>:<line><TAB><place>` (the place
+`enabled`, `unplaced` or the unit it waits for), sorted by preset, file and
+line, which the facts gate's units cross-check compares with its own
+placement fact by fact. `--enabled` enters
 `check_release.sh` at M1a; the script is deleted at M6.
 
 Requires Python 3.11.
@@ -1628,9 +1637,11 @@ pending default size of a state model is listed in `[pending]` by its
 declaration's path, never written in `[declare]`. `--write` points each
 stale citation of the hand-written blocks (a `[declare]` entry's, a `read`
 value's, the generation's source) at the fact naming its subject and lists
-one it cannot find; `--check` fails on either. Exits 1 on a round-trip
-mismatch (a mention of a name beyond depth included), such a citation or
-such a `[declare]` entry, 2 on an input it cannot read. `--self-test`
+one it cannot find; `--check` fails on either, and on a model field the
+preset leaves unstated or a reference no base states. Exits 1 on a
+round-trip mismatch (a mention of a name beyond depth included, and a
+default size in force not among its sizes), such a citation or such a
+`[declare]` entry, 2 on an input it cannot read. `--self-test`
 compares a fixture's draft with the expected one and runs each rule.
 Offline; not in `check_release.sh`; about four minutes for an iOS preset.
 

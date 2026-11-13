@@ -438,6 +438,9 @@ struct Checker<'a> {
     /// part needs none, so neither its list nor any block below it is a
     /// completeness check (S6.3).
     latent: bool,
+    /// The typed widget of the fade's nested element walked, which its
+    /// `variant`, walked next, is checked against (S2.8).
+    fade_widget: Option<WidgetKind>,
 }
 
 impl<'a> Checker<'a> {
@@ -453,6 +456,7 @@ impl<'a> Checker<'a> {
             widget_decls: Vec::new(),
             exempt: Vec::new(),
             latent: false,
+            fade_widget: None,
         }
     }
 
@@ -732,15 +736,23 @@ impl<'a> Checker<'a> {
         });
         // A size of a unit not enabled (S10's *Later names*; ADD-A147): no
         // default in force of the widget's, its variant entries' or its
-        // context entries'.
+        // context entries'; while the flavours unit is not enabled, the
+        // default flavour's alone, and no entry of a `later` variant, as no
+        // element holds one.
         let default =
             |held: Option<&DefaultSize>| matches!(held, Some(DefaultSize::Size(d)) if *d == size);
-        let in_force = decls.iter().any(|decl| {
+        let in_force_decls = if crate::widgets::FLAVOURS_UNIT {
+            &decls[..]
+        } else {
+            decls.get(..1).unwrap_or_default()
+        };
+        let in_force = in_force_decls.iter().any(|decl| {
             default(decl.default_size.as_ref())
                 || decl
                     .sizes_by_variant
                     .iter()
                     .flatten()
+                    .filter(|entry| !decl.is_later(&entry.variant))
                     .any(|entry| default(entry.default_size.as_ref()))
                 || decl
                     .sizes_by_context
@@ -841,8 +853,12 @@ impl<'a> Checker<'a> {
     /// index (`rules[2].when.not_states[0]`, S11), or at its field and index
     /// in a layer built in Rust (`rules[2].selector.states.none_of[0]`).
     fn selector(&mut self, selector: &Selector, widget: Option<WidgetKind>, at: &str) {
-        for (condition, item) in items(&selector.conditions, at, "conditions", self.toml) {
-            self.condition(condition, &item);
+        let positive = selector.conditions.all_of.len();
+        for (index, (condition, item)) in items(&selector.conditions, at, "conditions", self.toml)
+            .into_iter()
+            .enumerate()
+        {
+            self.condition(condition, &item, index >= positive);
         }
         if let Some(widget) = widget {
             self.element(widget, &selector.variants, &selector.states, at);
@@ -955,7 +971,9 @@ impl<'a> Checker<'a> {
         self.element(widget, &sibling.variants, &sibling.states, at);
     }
 
-    fn condition(&mut self, condition: &Condition, at: &str) {
+    /// A condition, declared (S10); `negative` where a selector's
+    /// `not_conditions` names it.
+    fn condition(&mut self, condition: &Condition, at: &str, negative: bool) {
         let decl = self.decl();
         let (name, declaration, declared) = match condition {
             Condition::SystemSetting(key) => (
@@ -967,9 +985,18 @@ impl<'a> Checker<'a> {
             Condition::Flavor(key) => {
                 // A flavour of a unit not enabled (S10's *Later names*,
                 // S12; ADD-A147): every declared flavour but the default.
+                // Named positively, the rule applies under it alone; the
+                // default named negatively, under the other flavours alone,
+                // each of that unit.
+                let default = decl.flavors.first() == Some(key);
+                let others = decl.flavors.len() > 1;
                 if !crate::widgets::FLAVOURS_UNIT
                     && decl.flavors.contains(key)
-                    && decl.flavors.first() != Some(key)
+                    && if negative {
+                        default && others
+                    } else {
+                        !default
+                    }
                 {
                     self.later(at, key.as_str(), "flavors");
                     return;
@@ -2027,7 +2054,24 @@ impl Visit for Checker<'_> {
             }
             Node::Scalar(scalar) => self.scalar_unit(path, scalar),
             Node::Key(key) => self.declared_leaf(path, key),
-            Node::Condition(condition) => self.condition(condition, &at),
+            Node::Condition(condition) => self.condition(condition, &at, false),
+            // A fade's nested element (S2.8): its variant, walked after its
+            // widget, one the widget declares, of an enabled unit (S10, S12).
+            Node::Widget(widget) => {
+                self.fade_widget = match widget {
+                    WidgetRef::Typed(kind) if path.slot() == Some(("FadeUnder", "widget")) => {
+                        Some(*kind)
+                    }
+                    WidgetRef::Typed(_) | WidgetRef::Component(_) => None,
+                };
+            }
+            Node::Variant(variant) => {
+                if path.slot() == Some(("FadeUnder", "variant"))
+                    && let Some(widget) = self.fade_widget.take()
+                {
+                    self.variant(widget, variant, &at);
+                }
+            }
             Node::SurfaceSet(set) => self.surface_set(set, &at),
             Node::IndicationBox(indication) => self.indication_box(Some(&indication.part), path),
             Node::IndicationBoxPatch(patch) => self.indication_box(patch.part.as_ref(), path),
@@ -3043,11 +3087,17 @@ pub(super) fn unused(
     });
     // A flavour of a unit not enabled is exempt, with its sections: it cannot
     // be asked for and no rule may name it (S12, S16; ADD-A147). The
-    // default flavour's sections are checked.
+    // default flavour's sections are checked, and so is the section of a
+    // flavour `flavors` does not declare, no flavour of any unit.
+    let later = |flavor: &Key| {
+        !crate::widgets::FLAVOURS_UNIT
+            && decl.flavors.contains(flavor)
+            && decl.flavors.first() != Some(flavor)
+    };
     let flavors = decl
         .flavor
         .iter()
-        .filter(|(flavor, _)| crate::widgets::FLAVOURS_UNIT || decl.flavors.first() == Some(flavor))
+        .filter(|(flavor, _)| !later(flavor))
         .flat_map(|(flavor, section)| {
             section.widgets.iter().map(move |(widget, section)| {
                 let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));
@@ -4014,7 +4064,8 @@ mod tests {
     }
 
     /// A `WinUiAnimatedIcon` engine's `visual` under a widget's values
-    /// names a `token.icons.animated_visuals` entry, no key the value holds:
+    /// names an entry of WinUI's animated visuals (a token staged with the
+    /// motion unit), no key the value holds:
     /// it is not checked against the widget's `keys` (S2.7, S10, S12).
     #[test]
     fn a_visual_is_no_widget_values_key() {

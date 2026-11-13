@@ -567,17 +567,7 @@ fn focus_timed(duration: &str, timing: &str, rule: &str) -> Layer {
     ))
 }
 
-/// A widget's `appear` presentation of one step, its `kind`,
-/// `duration_ms` and `timing` as written.
-fn presented(kind: &str, duration: &str, timing: &str) -> Layer {
-    toml(&format!(
-        "[widgets.button.values]\npresentations = [{{ event = \"appear\", steps = [{{ kind = \
-         {kind}, duration_ms = {duration}, delay_ms = 0, timing = {timing}, stagger_ms = 0 }}] \
-         }}]"
-    ))
-}
-
-/// A transition's or a presentation step's timing is `Absent` exactly
+/// A transition's timing is `Absent` exactly
 /// where its duration is a stated zero, the literal zero in the field
 /// (S2.7, S6.3, S12; ADD-A125): a reference resolving to zero is none, and
 /// a rule's patch of the duration is read merged with the base's timing.
@@ -621,16 +611,10 @@ fn refusal_timing_absent() {
         )),
         NONE
     );
-    assert_eq!(
-        bare(&presented("\"fade\"", "100", "\"absent\"")),
-        [format!(
-            "widgets.button.values.presentations[0].steps[0].timing: {refusal}"
-        )]
-    );
 }
 
 /// A stated zero duration runs no curve: its timing is `Absent` (S2.7,
-/// S12; ADD-A125), a step's alike; a reference resolving to zero keeps its
+/// S12; ADD-A125); a reference resolving to zero keeps its
 /// timing. A rule's zero is read merged with the base's timing.
 #[test]
 #[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
@@ -671,18 +655,11 @@ fn refusal_timing_on_zero() {
         )),
         NONE
     );
-    assert_eq!(
-        bare(&presented("\"instant\"", "0", "\"linear\"")),
-        [format!(
-            "widgets.button.values.presentations[0].steps[0].timing: {refusal}"
-        )]
-    );
-    assert_eq!(bare(&presented("\"instant\"", "0", "\"absent\"")), NONE);
 }
 
 /// A duration is `Absent` only where its timing, followed through
-/// references, is a spring, whose time is its own (S2.7, S6.3, S12), a
-/// step's alike; a transition's under `WinUiAnimatedIcon` too, which the
+/// references, is a spring, whose time is its own (S2.7, S6.3, S12); a
+/// transition's under `WinUiAnimatedIcon` too, which the
 /// visual times.
 #[test]
 #[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
@@ -713,43 +690,6 @@ fn refusal_duration_absent() {
             "widgets.button.body.transitions[0].duration_ms: {refusal}"
         )]
     );
-    assert_eq!(
-        bare(&presented("\"fade\"", "\"absent\"", "\"linear\"")),
-        [format!(
-            "widgets.button.values.presentations[0].steps[0].duration_ms: {refusal}"
-        )]
-    );
-    assert_eq!(bare(&presented("\"fade\"", "\"absent\"", spring)), NONE);
-}
-
-/// An `Instant` step states a zero duration and an `Absent` timing, its
-/// one form (S2.7, S12; ADD-A125).
-#[test]
-#[ignore = "motion unit: no widget lists `presentations` until it is enabled (D6 outcome 3)"]
-fn refusal_instant_not_zero() {
-    assert_eq!(
-        bare(&presented("\"instant\"", "100", "\"linear\"")),
-        [
-            "widgets.button.values.presentations[0].steps[0].duration_ms: an `instant` step whose \
-          duration is not a stated zero"
-        ]
-    );
-    assert_eq!(bare(&presented("\"instant\"", "0", "\"absent\"")), NONE);
-}
-
-/// A step of another kind than `Instant` states no zero duration: an
-/// instant step is `Instant`, its one spelling (S2.7, S12; ADD-A125).
-#[test]
-#[ignore = "motion unit: no widget lists `presentations` until it is enabled (D6 outcome 3)"]
-fn refusal_zero_not_instant() {
-    assert_eq!(
-        bare(&presented("\"fade\"", "0", "\"absent\"")),
-        [
-            "widgets.button.values.presentations[0].steps[0].duration_ms: a stated zero duration \
-          on a step that is not `instant`"
-        ]
-    );
-    assert_eq!(bare(&presented("\"fade\"", "100", "\"linear\"")), NONE);
 }
 
 /// A transition's stated timing, followed through references, is one its
@@ -4393,9 +4333,52 @@ fn refusal_later_names() {
     );
 }
 
+/// A rule setting a label's elision to fade under a nested element.
+fn faded_under(variant: &str) -> String {
+    format!(
+        "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.label\"\n\
+         set = {{ text.elision = {{ fade = {{ end = {{ px = 8 }}, under = {{ element = {{ \
+         widget = \"button\", variant = \"{variant}\" }} }} }} }} }}"
+    )
+}
+
+/// A fade's nested element's variant is one its widget declares (S2.8,
+/// S10, S12; the staging review's minor 7): an undeclared one is refused
+/// as `Undeclared`, a declared one at depth accepted.
+#[test]
+fn refusal_fade_element_variant_undeclared() {
+    let head = "[declare.widget.button]\nvariants = [\"primary\", \"@solo\"]\n";
+    assert_eq!(
+        preset(&format!("{head}{}", faded_under("@duo"))),
+        [
+            "rules[0].set.text.elision.fade.under.element.variant: `@duo` is not declared in \
+             `widget.button.variants`"
+        ]
+    );
+    assert_eq!(preset(&format!("{head}{}", faded_under("@solo"))), NONE);
+}
+
+/// A fade's nested element's variant that `later` lists is refused with
+/// `Later`, as a rule's is (S10's *Later names*, S12; the staging review's
+/// minor 7).
+#[test]
+fn refusal_fade_element_variant_later() {
+    let head = "[declare.widget.button]\nvariants = [\"primary\", \"@solo\"]\n\
+                later = { variants = [\"@solo\"] }\n";
+    assert_eq!(
+        preset(&format!("{head}{}", faded_under("@solo"))),
+        [
+            "rules[0].set.text.elision.fade.under.element.variant: `@solo` is declared in \
+             `widget.button.later`, and a later unit states it"
+        ]
+    );
+    assert_eq!(preset(&format!("{head}{}", faded_under("primary"))), NONE);
+}
+
 /// The default flavour's sections are checked for unused names as the
-/// widget's own are; another flavour's, of a unit not enabled, are exempt
-/// (S12; ADD-A147).
+/// widget's own are; another declared flavour's, of a unit not enabled, are
+/// exempt (S12; ADD-A147); the section of a flavour `flavors` does not
+/// declare (a typo) is no such flavour's and is checked.
 #[test]
 fn refusal_unused_in_the_default_flavours_section() {
     let flavors = |default: &str, other: &str| {
@@ -4404,11 +4387,10 @@ fn refusal_unused_in_the_default_flavours_section() {
              [declare.flavor.kirigami.widget.button]\nflags = [\"@spin\"]"
         ))
     };
-    assert_eq!(
-        flavors("kirigami", "widgets"),
-        ["declare.flavor.kirigami.widget.button.flags: `@spin` is declared but unused"]
-    );
+    let unused = "declare.flavor.kirigami.widget.button.flags: `@spin` is declared but unused";
+    assert_eq!(flavors("kirigami", "widgets"), [unused]);
     assert_eq!(flavors("widgets", "kirigami"), NONE);
+    assert_eq!(flavors("widgets", "kirigam"), [unused]);
 }
 
 /// Each declared keyed name nothing uses, by kind (S12): a system setting
@@ -5318,8 +5300,20 @@ fn layer_error_every_variant_triggers() {
     }
     // A presentation step's kinds: no enabled widget's values list
     // `presentations` (the button's are the motion unit's, D6 outcome 3,
-    // S6.1), and no stack holds a step, so no fixture can reach them.
-    let unreachable = [V::InstantNotZero as usize, V::ZeroNotInstant as usize];
+    // S6.1), and no stack holds a step, so no fixture can reach them. They
+    // are exempt only while a layer listing one does not read, the
+    // condition the motion unit's ignored tests name: once presentations
+    // return, this fails until a fixture triggers each again.
+    let staged = Layer::from_toml(
+        "[widgets.button.values]\npresentations = [{ event = \"appear\", steps = [{ kind = \
+         \"instant\", duration_ms = 0, delay_ms = 0, timing = \"absent\", stagger_ms = 0 }] }]",
+    )
+    .is_err();
+    let unreachable: &[usize] = if staged {
+        &[V::InstantNotZero as usize, V::ZeroNotInstant as usize]
+    } else {
+        &[]
+    };
     let missing: Vec<usize> = (0..V::COUNT)
         .filter(|i| !covered.get(*i).copied().unwrap_or(false) && !unreachable.contains(i))
         .collect();

@@ -26,7 +26,8 @@ keyed maps stated empty, the facts gaps (a field no fact gives where the reader 
 preset leaves unstated (below), the hand-written `[declare]` entries a name outside the enabled units' leaves
 declared (`declaration: …`, declare_findings(): the hand-written part's edit), and the round trip's result. Exit 0, 1
 when the round trip finds a mismatch (a generator bug, a mention of a name beyond depth included), `--check` finds
-the bundled preset differs (a stale hand-written citation included) or `--write` or `--check` finds a hand-written
+the bundled preset differs (a stale hand-written citation included), `--check` finds a model field unstated or a
+reference no base states (unstated_references()), or `--write` or `--check` finds a hand-written
 citation whose fact it cannot find (below) or such a `[declare]` entry, 2 on an input it cannot read, a hand-written
 part `--write` would lose (below) or a wrong command line.
 
@@ -217,9 +218,9 @@ preset (one naming `preset:<id>` replaces the shared one; a `flavor:` entry is `
 the S10 declarations it states at depth (S10 *Later names*, ADD-A147; declared()): `available` (alone where false),
 `variants` (the state model's whole, but a typed variant the model does not hold, which has no spelling: the typed
 variants the model holds are each enabled entry's that no later unit not enabled holds for it, model_variants()),
-`later = { variants = […] }` on the widget's own entry (the declared variants a later unit not enabled holds for the
-entry on the preset, and the typed ones at depth its state model in force draws in no combination at depth,
-later_variants()), `sizes`, `default_size`, `densities` (whole), `flags` (the flags at depth a rule of the preset
+`later = { variants = […] }` (the declared variants a later unit not enabled holds for the entry on the preset, and
+the typed ones at depth its state model in force, a flavour's own for a flavour's section, draws in no combination at
+depth, later_variants()), `sizes`, `default_size`, `densities` (whole), `flags` (the flags at depth a rule of the preset
 names), `exclusive` (each group trimmed to its flags at depth, one left with fewer than two not declared),
 `exclusive_variants`, `recency` (each set trimmed to its flags at depth, one left with fewer than two, or that no
 rule's `latest` names, not declared), `requires_variants`, `sizes_by_variant`,
@@ -233,7 +234,9 @@ pending = "U<n>" }`, the widget's or an entry's, S10's *A pending default*) is s
 declaration's path, `declare.widget.<w>.default_size`, `….sizes_by_variant.<variant>.default_size`,
 `….sizes_by_context.<n>.default_size`, a flavour's under `declare.flavor.<f>.` (S17, ADD-A131;
 pending_defaults()); `axes`, `variant_sets`, `variant_products` and `not_drawn` are the gate's,
-not declarations. A key the trimming empties is left out, one the state model states empty stays. `[declare]
+not declarations. A key the trimming empties is left out, one the state model states empty stays; a flavour's
+section, which inherits each key it does not state from the widget's own (S10), states empty each such key the
+widget's own states non-empty, so that it stays true as it is (whole_section()). `[declare]
 conditions` lists the `system_setting:` keys a rule of the preset names (positive or negative), as `@<key>`. The other
 keyed namespaces S10 declares (`color_roles`, `durations`, `timings`, `params` with their units, `text_styles`,
 `inputs`, `accent_inputs`, `surface_sets`, …) are left for hand-writing: no fact states their units or defaults;
@@ -428,10 +431,11 @@ def entry_widgets(e) -> set:
     return out
 
 
-def is_entry_key(key: str) -> bool:
-    """Whether a fact's key is a catalogue entry's (a widget's or a component's), not a colour role's, an input's or a
-    token's."""
-    return key.split(".")[0] not in ("role", "token", "input")
+def entry_key(key: str) -> str | None:
+    """The catalogue entry a fact's key is of (a widget's, or a component's `component.<key>`,
+    check_facts_trace.entry_of()); None for a colour role's, an input's or a token's."""
+    entry = check_facts_trace.entry_of(key)
+    return None if entry in ("role", "token", "input") else entry
 
 
 def depth_sizes(depth, platform: str, widget: str, preset: str):
@@ -463,8 +467,9 @@ def at_depth_when(depth, platform: str, preset: str, key: str, when: dict) -> di
     depth. A `sizes` list is all of its sizes (S7's `SetMatch`; an element has one control size, S12), so one naming
     two sizes, or a size beyond depth, holds in no combination at depth and never reaches here, as no positive name
     beyond depth does (Depth.of_enabled()): its trimming leaves a list that does reach here as it is. A list emptied
-    so goes."""
-    widget = key.split(".")[0] if is_entry_key(key) else None
+    so goes. A `latest` entry whose recency set keeps fewer than two flags at depth (so declared() declares no such
+    set) goes, its flag, which it implies (S7.2), added to `states`; a `latest` emptied so goes."""
+    widget = entry_key(key)
     sizes = depth_sizes(depth, platform, widget, preset) if widget else None
     out = {}
     for k, v in when.items():
@@ -486,6 +491,20 @@ def at_depth_when(depth, platform: str, preset: str, key: str, when: dict) -> di
             v = [e for e in v if context_at_depth(depth, platform, preset, widget, e)]
         if v:
             out[k] = v
+    if widget and isinstance(out.get("latest"), dict):
+        latest = out["latest"] = dict(out["latest"])
+        sets = check_facts.recency_of(depth.model(platform, widget, preset) or {})
+        alone = [(name, flag) for name, flag in latest.items() if name in sets and len(
+            [x for x in sets[name] if not depth.off(widget, preset, "states", x)]) < 2]
+        states = out.get("states", [])
+        for name, flag in alone:
+            del latest[name]
+            if flag not in states:
+                states = states + [flag]
+        if alone:
+            out["states"] = states
+        if not latest:
+            del out["latest"]
     return out
 
 
@@ -774,6 +793,8 @@ class Draft:
     read_tables: list = field(default_factory=list)  # (section, scheme or None, header): a `read` fact's base table
     read_rules: list = field(default_factory=list)   # `read` facts whose `when` is no base (read_tables())
     items: list = field(default_factory=list)        # every item check_facts.load() reads (the citations', Citations)
+    size_reports: list = field(default_factory=list)  # ("note" or "mismatch", text): the default sizes in force's
+                                                      # (sizes_in_force())
 
 
 def accent_run(d) -> bool:
@@ -807,7 +828,10 @@ def analyse(ctx, items, preset: str, depth, staged: int) -> Draft:
         f = Fact(it, key, check_facts.canonical_key(key), at_depth_when(depth, platform, preset, key, when)
                  if enabled else when, info[3], info[2], info[4], info[1])
         if not enabled:
-            f.unit = depth.unit(platform, key, written, preset) or check_facts_trace.UNPLACED
+            f.unit = depth.unit(platform, key, written, preset)
+            if f.unit is None:
+                raise InputError(f"{it.file}:{it.line}: {key}: Depth.of_enabled() leaves the fact out and Depth.unit() "
+                                 f"places it among the enabled units; the two must agree")
             f.status, f.reason = LEFT_OUT, f"{LATER} ({f.unit})"
         facts.append(f)
     # the facts of the enabled units, the preset's: a later unit's fact states nothing in it and shadows none of them
@@ -888,7 +912,9 @@ def analyse(ctx, items, preset: str, depth, staged: int) -> Draft:
             f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
         bases = [b for b in bases if b[5] not in split]
         rules = group_rules([f for f in facts if f.status == "rule" or f.hand])
-    declare, conditions, models, left_models, waiting = declarations(ctx, items, platform, preset, depth, facts, rules)
+    reports = []
+    declare, conditions, models, left_models, waiting = declarations(ctx, items, platform, preset, depth, facts, rules,
+                                                                     reports)
     covering, gaps = covering_bases(facts, models, tree)
     bases += covering
     # a covering base can state a set-whole block's leaf alone: split again, the base dropped (its rules stay)
@@ -905,7 +931,7 @@ def analyse(ctx, items, preset: str, depth, staged: int) -> Draft:
     defined = definitions(preset, tree, lambda path: depth.held(model_key(path), preset))
     defined += empty_maps(tree, listed, tables)
     return Draft(preset, platform, every, rules, bases, declare, conditions, models, left_models, staged, depth,
-                 listed, gaps, defined, tables, read_rules, items)
+                 listed, gaps, defined, tables, read_rules, items, reports)
 
 
 def read_tables(facts) -> tuple:
@@ -1157,14 +1183,20 @@ def beyond_depth(draft: Draft) -> list:
     """Each mention of a name not at depth the draft makes (S17: "a bundled preset mentions no name outside the
     enabled units'", ADD-A147), as a mismatch: in a rule's `when` (a variant or state flag a later unit holds for the
     widget, a typed variant at depth no combination at depth draws, a condition one holds for the key, a size or density of the sizes unit, a direction, a context entry no
-    combination at depth holds) and in a widget's own declaration (a flag, exclusive group or recency set naming a
-    flag not at depth; a variant not at depth missing from its `later`)."""
+    combination at depth holds, a `latest` recency set the widget's declaration does not declare) and in a widget's
+    own declaration (a flag, exclusive group or recency set naming a flag not at depth; a variant not at depth missing
+    from its `later`)."""
     depth, platform, preset = draft.depth, draft.platform, draft.preset
     out = []
+    declared_sets = {("component." if header[-2] == "component" else "") + header[-1]:
+                     set(dict(kvs).get("recency") or {}) for header, kvs, _, _ in draft.declare if header[0] != "flavor"}
     for f in draft.facts:
         if f.status != "rule" and not f.hand:
             continue
-        when, widget = f.rule_when or {}, f.key.split(".")[0] if is_entry_key(f.key) else None
+        when, widget = f.rule_when or {}, entry_key(f.key)
+        if widget and isinstance(when.get("latest"), dict):
+            out += [f"{f.where}: {f.key}: its rule's `latest` names the recency set `{s}`, which the declaration "
+                    f"does not declare" for s in when["latest"] if s not in declared_sets.get(widget, set())]
         names = [c for k in ("conditions", "not_conditions") for c in when.get(k, []) if depth.condition_off(c, f.key)]
         if widget:
             sizes = depth_sizes(depth, platform, widget, preset)
@@ -1712,11 +1744,12 @@ def group_rules(facts: list) -> list:
     return rules
 
 
-def declarations(ctx, items, platform, preset, depth, facts, rules):
+def declarations(ctx, items, platform, preset, depth, facts, rules, reports):
     """([declare] tables, `[declare] conditions`, the state models in force, the entries left out, the pending default
     sizes' listed paths) from the platform's state models (S10, S17 *State models*) at depth (S10 *Later names*,
     ADD-A147): each declaration as declared(), and the `models` dict the generator's readers take (covering_bases(),
-    pending_table(), round_trip()), each widget's default flavour's entry in force on the preset alone (in_force()),
+    pending_table(), round_trip()), each widget's default flavour's entry in force on the preset alone (in_force(),
+    its reports of the default sizes in force appended to `reports`),
     the flavours unit's flavours left out while it is not enabled. `[declare] conditions` lists the system settings
     (`system_setting:<key>`, as `@<key>`) that a rule of the preset (`rules`) names, positive or negative."""
     entries = {}
@@ -1740,21 +1773,26 @@ def declarations(ctx, items, platform, preset, depth, facts, rules):
         plain = [e for e in es if e[2] is None]
         chosen = [e for e in plain if e[1]] or plain
         picks = chosen[-1:] + [e for e in es if e[2] is not None]
+        own = []
         for it, _, flavor in picks:
             d = it.data
             kind, name = ("component", widget[10:]) if widget.startswith("component.") else ("widget", widget)
             header = (("flavor", flavor) if flavor else ()) + (kind, name)
             kvs = [("available", False)] if d.get("available") is False else declared(
-                d, widget, platform, preset, depth, typed, names, flavor is None)
+                d, widget, platform, preset, depth, typed, names, flavor)
             kvs = held_contexts(kvs, depth)
             kvs, waiting = pending_defaults(header, kvs, it)
             listed += waiting
+            if flavor is None:
+                own = kvs
+            else:
+                kvs = whole_section(kvs, own)
             data, read_by = element_data(widget, facts) if flavor is None else ({}, [])
             if data:
                 kvs.append(("data", data))
             declare.append((header, kvs, it, read_by))
             if flavor is None:
-                models[(widget, None)] = in_force(d, widget, preset, depth)
+                models[(widget, None)] = in_force(d, widget, preset, depth, reports)
     settings = [c for r in rules for k in ("conditions", "not_conditions") for c in (r.when or {}).get(k, [])
                 if isinstance(c, str)]
     conditions = list(dict.fromkeys("@" + c[len("system_setting:"):] for c in settings
@@ -1800,15 +1838,17 @@ def flag_groups(groups, at) -> list:
     return [g for g in out if len(g) >= 2]
 
 
-def declared(model: dict, widget: str, platform: str, preset: str, depth, typed: set, names: dict, own: bool) -> list:
+def declared(model: dict, widget: str, platform: str, preset: str, depth, typed: set, names: dict,
+             flavor: str | None = None) -> list:
     """A state model entry's S10 declarations at depth (DECLARE_KEYS' order; S10 *Later names*, S17, ADD-A147): whole,
     but a typed variant the model does not hold (`typed`, model_variants()) left out everywhere it is named (it has no
     spelling: `variants`, each `exclusive_variants` group, a `sizes_by_variant` entry, `requires_variants`); its
     exclusive groups to the flags at depth (a group left with fewer than two not declared); its recency sets to the
     flags at depth, a set left with fewer than two, or that no rule of the preset names (`latest`), not declared;
     `flags` to the flags at depth a rule of the preset names (`names`, rule_names()); and, after `variants`, `later =
-    { variants = [...] }` (later_variants()) on the widget's own entry (`own`) where it lists any. A key the trimming
-    empties is left out; one the state model states empty stays."""
+    { variants = [...] }` (later_variants(), over the state model of the flavour `flavor` names, the default's where
+    it is None) where it lists any. A key the trimming empties is left out; one the state model states empty stays
+    (a flavour's section is then made whole, whole_section())."""
     held = {v for v in model.get("variants", []) if isinstance(v, str) and (v.startswith("@") or v in typed)}
 
     def spelt(v):
@@ -1841,39 +1881,65 @@ def declared(model: dict, widget: str, platform: str, preset: str, depth, typed:
         if model[k] and not v:
             continue
         out.append((k, v))
-        if k == "variants" and own:
-            later = later_variants(v, widget, platform, preset, depth)
+        if k == "variants":
+            later = later_variants(v, widget, platform, preset, depth, flavor and f"flavor:{flavor}")
             if later:
                 out.append(("later", {"variants": later}))
     return out
 
 
-def later_variants(variants: list, widget: str, platform: str, preset: str, depth) -> list:
+# a key a flavour's section states empty where it would inherit the widget's section's value (whole_section())
+EMPTY_DECLARATIONS = {"recency": {}, "later": {"variants": []}}
+
+
+def whole_section(kvs: list, own: list) -> list:
+    """A flavour's `[declare.flavor.<f>.…]` section (its declarations `kvs`, declared()) made true as it is (S10: a
+    flavour's section stays whole; it inherits each key it does not state from the widget's own section, `own`, its
+    `default_size` going with `sizes`): every key of DECLARE_KEYS and `later` the flavour's state model leaves
+    unstated (it lacks it, or the trimming at depth empties it, so the flavour has none) that `own` states non-empty
+    is stated empty (`[]`, a `recency` `{}`, `later = { variants = [] }`), in DECLARE_KEYS' order, `later` after
+    `variants`; `available` and `default_size` (stated with `sizes`, or by none) excepted, and `data`, the element
+    data, which is no state model's and is inherited. A section declaring the widget unavailable is left as it is."""
+    stated, inherited = dict(kvs), dict(own)
+    if stated.get("available") is False:
+        return kvs
+    order = list(DECLARE_KEYS)
+    order.insert(order.index("variants") + 1, "later")
+    restate = {k for k in order if k not in ("available", "default_size") and k not in stated and inherited.get(k)}
+    if not restate:
+        return kvs
+    out = [(k, stated[k] if k in stated else EMPTY_DECLARATIONS.get(k, [])) for k in order
+           if k in stated or k in restate]
+    return out + [(k, v) for k, v in kvs if k not in order]
+
+
+def later_variants(variants: list, widget: str, platform: str, preset: str, depth, flavor=None) -> list:
     """The declared variants a unit not enabled states (S10 *Later names*, S17, ADD-A147), in their declared order:
     each a later unit not enabled holds for the entry on the preset (a keyed variant beyond depth, a typed variant
     the model holds through another entry's Depth line), and each typed variant at depth that the preset's state model
-    in force draws in no combination at depth (drawn_variants())."""
-    drawn = drawn_variants(depth, platform, widget, preset)
+    in force draws in no combination at depth (drawn_variants(); under `flavor`, that flavour's own state model)."""
+    drawn = drawn_variants(depth, platform, widget, preset, flavor)
     return [v for v in variants if depth.off(widget, preset, "variants", v)
             or not v.startswith("@") and v not in drawn]
 
 
-def drawn_variants(depth, platform: str, widget: str, preset: str) -> set:
+def drawn_variants(depth, platform: str, widget: str, preset: str, flavor=None) -> set:
     """The variants some combination at depth of the widget's state model in force on the preset holds
-    (Depth.combos()); a typed variant at depth outside them is drawn nowhere, the preset's `later` (S10)."""
+    (Depth.combos(); with `flavor`, a `flavor:<f>` condition, of that flavour's own state model); a typed variant at
+    depth outside them is drawn nowhere, the preset's `later` (S10)."""
     out = set()
-    for c in depth.combos(platform, widget, preset)[0]:
+    for c in depth.combos(platform, widget, preset, flavor)[0]:
         out |= c.variants
     return out
 
 
-def in_force(model: dict, widget: str, preset: str, depth) -> dict:
+def in_force(model: dict, widget: str, preset: str, depth, reports: list) -> dict:
     """The state model in force of an entry's default flavour on the preset (S10 *Later names*, S17, ADD-A147; the
     gate's in_force_at_depth): its variants, `exclusive_variants` groups and `sizes_by_variant` entries those at depth
     (no element holds another: a typed one has no member, a `later` one is refused); its flags, exclusive groups,
     recency sets and axis states those at depth (a group or set left with fewer than two dropped); while the sizes unit
-    is not enabled, an element takes its default size in force alone (the widget's `sizes` its stated default where it
-    takes it; each `sizes_by_variant` entry's its own default, else the widget's, where it takes it) and no density;
+    is not enabled, an element takes its default size in force alone, as the facts' predicate takes it
+    (sizes_in_force(), which reports a pending default and one not among its sizes in `reports`), and no density;
     its `sizes_by_context` entries those naming only enabled widgets (held_contexts())."""
     out = dict(model)
 
@@ -1895,19 +1961,44 @@ def in_force(model: dict, widget: str, preset: str, depth) -> dict:
         out["axes"] = {**axes, "states": [x for x in axes.get("states", []) if isinstance(x, str) and flag(x)]}
     entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict) and at(e.get("variant"))]
     if depth.sizes_off() is not None:
-        sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
-        default = model.get("default_size")
-        if isinstance(default, str) and default in sizes:
-            out["sizes"] = [default]
-        for i, e in enumerate(entries):
-            own = e.get("default_size", default)
-            if isinstance(e.get("sizes"), list) and isinstance(own, str) and own in e["sizes"]:
-                entries[i] = {**e, "sizes": [own]}
+        sizes, entries = sizes_in_force(model, widget, entries, depth, reports)
+        if "sizes" in model:
+            out["sizes"] = sizes
         out["densities"] = []
     out["sizes_by_variant"] = entries
     out["sizes_by_context"] = dict(held_contexts([("sizes_by_context", model.get("sizes_by_context", []))],
                                                  depth))["sizes_by_context"]
     return out
+
+
+def sizes_in_force(model: dict, widget: str, entries: list, depth, reports: list) -> tuple:
+    """(the widget's `sizes`, its `sizes_by_variant` entries) as in force while the sizes unit is not enabled: each
+    the default in force alone, as the facts' predicate takes it (Depth.default_size(): an entry's own default, else the
+    widget's), none where that default is pending (the query answers `Later` for every size then); a list the element
+    takes no size from kept. A pending default is reported (`reports`, ("note", text)), and so is a default not among
+    the sizes it is the default of (("mismatch", text)), each by its declaration's name."""
+    sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
+
+    def one(variants, listed, name):
+        default = depth.default_size(model, variants)
+        if default is None:
+            return listed
+        if default == check_facts_trace.PENDING_SIZE:
+            reports.append(("note", f"[declare.widget.{widget}] {name}: its default size is pending, so no size is "
+                                    f"in force (S10's *A pending default*)"))
+            return []
+        if default not in listed:
+            reports.append(("mismatch", f"[declare.widget.{widget}] {name}: its default size in force `{default}` is "
+                                        f"not among its sizes {listed} (S10)"))
+        return [default]
+
+    out = []
+    for e in entries:
+        listed = e.get("sizes")
+        if isinstance(listed, list) and listed:
+            e = {**e, "sizes": one(frozenset([e.get("variant")]), listed, f"sizes_by_variant `{e.get('variant')}`")}
+        out.append(e)
+    return (one(frozenset(), sizes, "sizes") if sizes else sizes), out
 
 
 def element_data(widget: str, facts) -> tuple:
@@ -3296,10 +3387,11 @@ def field_groups(facts, paths) -> list:
     return out
 
 
-def field_lines(model: Model, draft: Draft, text: str) -> list:
-    """The report's lines of the model fields the preset leaves unstated, grouped (field_groups())."""
+def field_lines(model: Model, draft: Draft, text: str) -> tuple:
+    """(the report's lines of the model fields the preset leaves unstated, grouped (field_groups()), how many fields
+    they list)."""
     if "Tokens" not in model.structs:
-        return [f"# unstated model fields: no model sources in {model.folder}"]
+        return [f"# unstated model fields: no model sources in {model.folder}"], 0
     groups = field_groups(draft.facts, unstated_fields(model, text))
     counts = {g: sum(1 for x in groups if x[0] == g) for g in FIELD_GROUPS}
     out = [f"# unstated model fields: {len(groups)} ("
@@ -3313,7 +3405,7 @@ def field_lines(model: Model, draft: Draft, text: str) -> list:
                 at_rest = (" (at rest: " + ", ".join(f"{k} {n}" for k, n in statuses.items()) + ")") if statuses \
                     else ""
                 out.append(f"#   {dotted_key(path)}  facts={facts} pending={pending}{at_rest}")
-    return out
+    return out, len(groups)
 
 
 def staged_count(root: Path, preset: str) -> int:
@@ -3338,6 +3430,7 @@ def generate(ctx, preset: str):
     text = render(draft)
     trip = round_trip(draft, text)
     trip.mismatches += beyond_depth(draft)
+    trip.mismatches += [text for kind, text in draft.size_reports if kind == "mismatch"]
     return draft, text, trip, units
 
 
@@ -3802,10 +3895,15 @@ DEPTH_UNITS = '''slice = ["button", "switch"]
 [prefixes]
 slice = ["role", "token.focus"]
 [[later]]
+name = "flavours"
+kind = "depth"
+enabled = false
+conditions = ["flavor:alt"]
+[[later]]
 name = "styles"
 kind = "depth"
 enabled = false
-button = [{ variants = ["primary", "@pill"] }]
+button = [{ variants = ["primary", "@pill", "@glossy"] }]
 switch = [{ variants = ["flat"] }]
 [[later]]
 name = "states"
@@ -3827,6 +3925,11 @@ name = "behaviour"
 kind = "parking"
 enabled = false
 conditions = ["system_setting:single_click"]
+[[later]]
+name = "right_to_left"
+kind = "depth"
+enabled = false
+directions = ["rtl"]
 '''
 _DEPTH_MODEL_CITE = '''
 [[model.cite]]
@@ -3863,11 +3966,30 @@ axes = { states = [], conditions = ["scheme:light", "scheme:dark"], contexts = [
 exclusive = []
 not_drawn = []
 rows = []
+''' + _DEPTH_MODEL_CITE + '''
+# a second flavour: its own later variants, no flag, its exclusive group and recency set trimmed away at depth, an
+# exclusive_variants group the default lacks
+[[model]]
+widget = "button"
+when = { conditions = ["flavor:alt"] }
+available = true
+variants = ["flat", "@pill", "@lifted", "@glossy"]
+sizes = ["regular"]
+default_size = "regular"
+densities = []
+axes = { states = ["hover", "pressed", "open"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = [["open", "pressed"]]
+exclusive_variants = [["flat", "@pill"]]
+recency = { drop = ["open", "pressed"] }
+not_drawn = []
+rows = []
 ''' + _DEPTH_MODEL_CITE,
     "docs/facts/gnome/button.toml": "".join([
         _fact("button.body.min_width", '"16px"'),
         _fact("button.body.fill", '"#111111"'),
         _fact("button.body.fill", '"#222222"', '{ states = ["@busy"] }'),
+        # the recency set `drop` keeps `checked` alone at depth, so it is not declared: the rule's `latest` goes
+        _fact("button.body.fill", '"#999999"', '{ latest = { drop = "checked" } }'),
         _fact("button.body.fill", '"#333333"', '{ states = ["checked"], latest = { glow = "hover" } }'),
         # every negative entry names a name beyond depth: the rule goes, its value a base
         _fact("button.values.icon_text_gap", '"4px"', '{ not_variants = ["@pill"], not_states = ["open"], '
@@ -3893,6 +4015,19 @@ densities = []
 flags = ["@busy"]
 exclusive = [["disabled", "pressed", "hover"]]
 recency = { glow = ["checked", "hover"] }
+
+# docs/facts/gnome/state-models.toml:39
+[declare.flavor.alt.widget.button]
+available = true
+variants = ["flat", "@pill", "@lifted", "@glossy"]
+later = { variants = ["@pill", "@glossy"] }
+sizes = ["regular"]
+default_size = "regular"
+densities = []
+flags = []
+exclusive = []
+exclusive_variants = [["flat", "@pill"]]
+recency = {}
 
 # docs/facts/gnome/state-models.toml:21
 [declare.widget.switch]
@@ -3982,7 +4117,7 @@ def depth_cases(root: Path) -> list:
         failures.append(f"depth: the negative entries beyond depth not left out of the rule: "
                         f"{data.get('widgets', {}).get('button', {}).get('values')}")
     rules = [(r["when"], r["set"]) for r in data.get("rules", [])]
-    want = [({"states": ["@busy"]}, {"fill": "#222222"}),
+    want = [({"states": ["@busy"]}, {"fill": "#222222"}), ({"states": ["checked"]}, {"fill": "#999999"}),
             ({"states": ["checked"], "latest": {"glow": "hover"}}, {"fill": "#333333"})]
     if rules != want:
         failures.append(f"depth: rules {rules}, expected {want}")
@@ -4001,11 +4136,76 @@ def depth_cases(root: Path) -> list:
             "not_conditions": ["scheme:dark"], "states": ["hover"]}
     if got != want:
         failures.append(f"depth: at_depth_when {got}, expected {want}")
-    # beyond_depth() finds a name beyond depth written into a rule or a declaration
-    draft.facts[[f.item.data.get("value") for f in draft.facts].index("#222222")].rule_when = {"states": ["open"]}
-    draft.declare[0][1].append(("flags", ["@loading"]))
-    if len(beyond_depth(draft)) != 2:
-        failures.append(f"depth: beyond_depth {beyond_depth(draft)}, expected the rule's `open` and the flag")
+    # the sizes in force are the facts' predicate's (Depth.default_size()): a pending widget default leaves no size in
+    # force, reported; a variant's entry stating no default takes the widget's, reported where its sizes lack it
+    fab = {"variant": "@fab", "sizes": ["small", "large"]}
+    for label, model, want in (
+            ("a pending default", {"sizes": ["small", "regular"], "default_size": {"pending": "U1"}},
+             ([], [], [("note", "[declare.widget.button] sizes: its default size is pending")])),
+            ("an entry's default not among its sizes", {"variants": ["@fab"], "sizes": ["small", "regular"],
+                                                        "default_size": "regular", "sizes_by_variant": [fab]},
+             (["regular"], [{**fab, "sizes": ["regular"]}],
+              [("mismatch", "[declare.widget.button] sizes_by_variant `@fab`: its default size in force `regular` "
+                            "is not among its sizes ['small', 'large']")])),
+            ("an entry's own default", {"variants": ["@fab"], "sizes": ["small", "regular"], "default_size": "small",
+                                        "sizes_by_variant": [{**fab, "default_size": "large"}]},
+             (["small"], [{**fab, "default_size": "large", "sizes": ["large"]}], []))):
+        reports = []
+        got = in_force(model, "button", "adwaita", draft.depth, reports)
+        got = (got.get("sizes"), got.get("sizes_by_variant"), reports)
+        if got[:2] != want[:2] or len(reports) != len(want[2]) or not all(
+                k == wk and w in t for (k, t), (wk, w) in zip(reports, want[2])):
+            failures.append(f"depth: the sizes in force, {label}: got {got}, expected {want}")
+    # a flavour's section with no later variant over a widget's section listing one states an empty `later`; one
+    # declaring the widget unavailable is left as it is
+    own = [("available", True), ("variants", ["flat", "@pill"]), ("later", {"variants": ["@pill"]}),
+           ("sizes", ["regular"]), ("default_size", "regular"), ("data", [("body", ["x"])])]
+    for kvs, want in (([("available", True), ("variants", ["flat"]), ("sizes", [])],
+                       [("available", True), ("variants", ["flat"]), ("later", {"variants": []}), ("sizes", [])]),
+                      ([("available", False)], [("available", False)])):
+        if whole_section(kvs, own) != want:
+            failures.append(f"whole_section({kvs}): {whole_section(kvs, own)}, expected {want}")
+    # a key's entry: a component's is `component.<key>`; a colour role, a token and an input have none
+    got = [entry_key(k) for k in ("component.led.lamp.fill", "button.body.fill", "role.window.background",
+                                  "token.focus.width", "input.accent")]
+    if got != ["component.led", "button", None, None, None]:
+        failures.append(f"entry_key: got {got}")
+    # at_depth_when() drops a `latest` entry whose set keeps one flag at depth, the flag kept in `states`
+    for when, want in (({"latest": {"drop": "checked"}}, {"states": ["checked"]}),
+                       ({"states": ["hover"], "latest": {"drop": "checked", "glow": "hover"}},
+                        {"states": ["hover", "checked"], "latest": {"glow": "hover"}})):
+        got = at_depth_when(draft.depth, "gnome", "adwaita", "button.body.fill", when)
+        if got != want or "drop" not in when["latest"]:
+            failures.append(f"depth: at_depth_when {when}: {got}, expected {want}, the fact's `when` unchanged")
+    # beyond_depth() finds each name beyond depth written into a rule or a declaration, of every kind, and no other
+    fact = draft.facts[[f.item.data.get("value") for f in draft.facts].index("#222222")]
+    fact.rule_when = {"states": ["open"], "variants": ["primary"], "not_variants": ["toggle"],
+                      "conditions": ["window_inactive"], "sizes": ["small"], "densities": ["compact"],
+                      "direction": "rtl", "context": [{"scope": "any", "widget": "toolbar"}],
+                      "latest": {"drop": "checked"}}
+    draft.declare[0][1].extend([("flags", ["@loading"]), ("exclusive", [["open", "pressed"]]),
+                                ("recency", {"glow": ["checked", "hover"], "rise": ["open", "hover"]}),
+                                ("variants", ["primary"])])
+    rule = f"{fact.where}: button.body.fill: its rule names "
+    decl = f"{draft.declare[0][2].file}:{draft.declare[0][2].line}: [declare.widget.button] names "
+    want = sorted([f"{rule}`{n}`, beyond depth" for n in ("open", "primary", "toggle", "window_inactive", "small",
+                                                           "compact", "rtl", '{ scope = "any", widget = "toolbar" }')]
+                  + [f"{fact.where}: button.body.fill: its rule's `latest` names the recency set `drop`, which the "
+                     f"declaration does not declare"]
+                  + [f"{decl}`{n}`, beyond depth" for n in ("@loading", "open", "open", "primary")])
+    if sorted(beyond_depth(draft)) != want:
+        failures.append(f"depth: beyond_depth {sorted(beyond_depth(draft))}, expected {want}")
+    # a fact the predicate leaves out that the attribution places among the enabled units is an input error
+    real = check_facts_trace.Depth.unit
+    check_facts_trace.Depth.unit = lambda self, *args: None
+    try:
+        generate(fixture_context(root, catalogue), "adwaita")
+        failures.append("depth: of_enabled() and unit() disagreeing: not refused")
+    except InputError as err:
+        if "the two must agree" not in str(err):
+            failures.append(f"depth: of_enabled() and unit() disagreeing: {err}")
+    finally:
+        check_facts_trace.Depth.unit = real
     got = declare_findings(FINDINGS_PRESET)
     if got != FINDINGS_WANT:
         failures.append(f"declare_findings: {got}, expected {FINDINGS_WANT}")
@@ -4548,6 +4748,20 @@ def citation_cases(root: Path) -> list:
         code = run(fixture_context(root), "adwaita", "--check", None)
     if code != 0 or "citation" in err.getvalue():
         failures.append(f"--check over true citations: exit {code}, said {err.getvalue()!r}")
+    # --check fails on a model field unstated and on a reference no base states, as it prints them
+    for name, stub, want in (("field_lines", lambda model, draft, text: (["# unstated model fields: 1"], 1),
+                              "1 model fields unstated, 0 references"),
+                             ("unstated_references", lambda text: [("role.@x", 1)],
+                              "0 model fields unstated, 1 references")):
+        real = globals()[name]
+        globals()[name] = stub
+        try:
+            with contextlib.redirect_stderr(io.StringIO()) as err:
+                code = run(fixture_context(root), "adwaita", "--check", None)
+        finally:
+            globals()[name] = real
+        if code != 1 or want not in err.getvalue():
+            failures.append(f"--check with {name} finding one: exit {code}, said {err.getvalue()!r}")
     unnamed = fresh.replace(" (libadwaita@1.10.0, its release)", "")
     path.write_text(unnamed, encoding="utf-8")
     with contextlib.redirect_stderr(io.StringIO()) as err:
@@ -5061,8 +5275,8 @@ def self_test() -> int:
             got = unstated_fields(model, text) if text != FIELDS_PRESET else f"no line {line!r}"
             if got != want:
                 failures.append(f"unstated_fields without {line!r}: {got}, expected {want}")
-        if field_lines(Model({}, {}, set(), Path("src")), None, "") != [
-                "# unstated model fields: no model sources in src"]:
+        if field_lines(Model({}, {}, set(), Path("src")), None, "") != (
+                ["# unstated model fields: no model sources in src"], 0):
             failures.append("field_lines without a model: not said")
     # each unstated path grouped by the facts there: none (the accent run's counting none), conditional ones, one at
     # rest that gives no base
@@ -5381,7 +5595,7 @@ def run(ctx, preset: str, mode, out) -> int:
             except InputError as err:
                 written, unread = text, err
         model = read_model(ctx.root)
-        fields = field_lines(model, draft, written)
+        fields, unstated = field_lines(model, draft, written)
         declared = declare_findings(written)
         dangling = unstated_references(written)
     except (OSError, UnicodeDecodeError, InputError, check_facts.InputError, check_facts_trace.InputError) as err:
@@ -5406,6 +5620,9 @@ def run(ctx, preset: str, mode, out) -> int:
         return 1
     for line in share_lines(draft, trip):
         print(line, file=sys.stderr)
+    for kind, line in draft.size_reports:
+        if kind == "note":
+            print(f"# {line}", file=sys.stderr)
     if unread is not None:
         print(f"# the bundled preset's hand-written parts not read for the fields below: {unread}", file=sys.stderr)
     for line in fields:
@@ -5423,6 +5640,10 @@ def run(ctx, preset: str, mode, out) -> int:
         print(f"citation: {line}", file=sys.stderr)
     for line in declared:
         print(f"declaration: {preset}: {line}", file=sys.stderr)
+    if mode == "--check" and (unstated or dangling):
+        print(f"{check_facts.PRESET_DIR / preset}.toml: {unstated} model fields unstated, {len(dangling)} references "
+              f"no base states", file=sys.stderr)
+        return 1
     return 1 if trip.mismatches or (cites is not None and (cites.findings or declared)) else 0
 
 

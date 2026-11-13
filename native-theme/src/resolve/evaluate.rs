@@ -15,13 +15,12 @@
 //! than S2.2 allows, is refused at evaluation as S12 refuses it, the value
 //! then not drawn (validation keeps both from a stack, S12).
 
-use std::any::{Any, TypeId};
+use std::any::Any;
 use std::cell::Cell;
 
 use super::compose::{self, Fold, Found, Locate, Target};
 use super::{ContentSizeCategory, KdeLists, Pos, ResolvedTheme};
 use crate::IconSet;
-use crate::blocks::motion::Loop;
 use crate::blocks::outline::{DashPattern, Radius, ShapeKind, full};
 use crate::blocks::paint::{
     BlendMode, Paint, PaintLayer, PaintPatch, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer,
@@ -610,9 +609,6 @@ pub(crate) struct Cx<'t> {
     /// and how many places are being followed where a step read decides it
     /// itself.
     origin: Option<(Target, Vec<String>, usize)>,
-    /// Inside a keyframe's patch: a loop resolves to none, as a keyframe
-    /// animates its part's style, not the loop it is a frame of (S2.7).
-    keyframe: bool,
 }
 
 /// What the facts gate evaluates in place of the theme's own (S17): a step
@@ -999,7 +995,6 @@ impl<'t> Cx<'t> {
             refusals: Vec::new(),
             reached: Vec::new(),
             origin: None,
-            keyframe: false,
         }
     }
 
@@ -2623,9 +2618,6 @@ impl<'t> Cx<'t> {
         B: Resolve + FieldsBlock + Locate,
         B::Patch: Locate,
     {
-        if self.keyframe && TypeId::of::<B>() == TypeId::of::<Loop>() {
-            return None;
-        }
         let steps: Vec<(usize, Step<'f, B>)> = items
             .iter()
             .enumerate()
@@ -3216,11 +3208,9 @@ impl<'t> Cx<'t> {
             pos: KEYFRAME,
             ..fold
         };
-        let keyframe = std::mem::replace(&mut self.keyframe, true);
         let resolved = self.follow(Target::Part(part), Vec::new(), false, |cx, beneath| {
             Some(B::resolve_patch(patch, fold, beneath, cx))
         });
-        self.keyframe = keyframe;
         Some(resolved.unwrap_or_default())
     }
 
