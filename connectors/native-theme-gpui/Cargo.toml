@@ -10,7 +10,6 @@ license.workspace = true
 # gpui-fast 0.1.12 calls at the same line.
 rust-version = "1.95.0"
 repository.workspace = true
-homepage.workspace = true
 keywords = ["theme", "gpui", "gui", "native", "colors"]
 categories = ["gui", "config"]
 readme = "README.md"
@@ -61,9 +60,10 @@ watch = ["native-theme/watch", "dep:futures"]  # enables `on_theme_change`
 # `gpui`. Caret: an exact pin in a library would conflict with any consumer
 # whose other dependencies want a later snapshot.
 gpui = { package = "gpui-pre", version = "0.3.12" }
-# A hard floor: the claims, citations and tests are of 0.9.1, which a fresh
-# resolve of `^0.9.0` takes anyway (as for 0.8.1:
-# docs/archive/todo_v0.7.0_gpui-kit-0.8.1-rationale.md, P1).
+# A hard floor: the code and tests are of 0.9.1, which a fresh resolve of
+# `^0.9.0` takes anyway (as for 0.8.1:
+# docs/archive/todo_v0.7.0_gpui-kit-0.8.1-rationale.md, P1). A citation of
+# upstream lines names the version it was read at.
 gpui-component = "0.9.1"
 # For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
 # apply_system_reduce_motion (not re-exported), and the headless primitives

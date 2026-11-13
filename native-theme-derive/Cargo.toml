@@ -5,7 +5,6 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-homepage.workspace = true
 description = "Internal derive macros of native-theme: widget theme struct pairs, merge, validation and inheritance. Depend on native-theme instead"
 readme = "README.md"
 keywords = ["theme", "derive", "proc-macro", "gui", "widget"]

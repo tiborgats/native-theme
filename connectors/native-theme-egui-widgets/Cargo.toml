@@ -7,7 +7,6 @@ license.workspace = true
 # (`egui/Cargo.toml:14`), exactly as the connector does.
 rust-version = "1.95"
 repository.workspace = true
-homepage.workspace = true
 keywords = ["theme", "egui", "gui", "native", "widgets"]
 categories = ["gui"]
 readme = "README.md"
