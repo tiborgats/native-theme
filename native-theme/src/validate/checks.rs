@@ -732,15 +732,23 @@ impl<'a> Checker<'a> {
         });
         // A size of a unit not enabled (S10's *Later names*; ADD-A147): no
         // default in force of the widget's, its variant entries' or its
-        // context entries'.
+        // context entries'; while the flavours unit is not enabled, the
+        // default flavour's alone, and no entry of a `later` variant, as no
+        // element holds one.
         let default =
             |held: Option<&DefaultSize>| matches!(held, Some(DefaultSize::Size(d)) if *d == size);
-        let in_force = decls.iter().any(|decl| {
+        let in_force_decls = if crate::widgets::FLAVOURS_UNIT {
+            &decls[..]
+        } else {
+            decls.get(..1).unwrap_or_default()
+        };
+        let in_force = in_force_decls.iter().any(|decl| {
             default(decl.default_size.as_ref())
                 || decl
                     .sizes_by_variant
                     .iter()
                     .flatten()
+                    .filter(|entry| !decl.is_later(&entry.variant))
                     .any(|entry| default(entry.default_size.as_ref()))
                 || decl
                     .sizes_by_context

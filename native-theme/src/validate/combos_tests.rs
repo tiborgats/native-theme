@@ -1019,6 +1019,48 @@ fn combination_element_size_in_layout() {
     );
 }
 
+/// A size a rule selects is a later unit's where no default in force takes
+/// it (S10's *Later names*, S12; ADD-A147): while the flavours unit is not
+/// enabled, the default flavour's defaults alone are in force, so a size
+/// the default only of a second flavour is refused; and a `sizes_by_variant`
+/// entry of a `later` variant puts no default in force, as no element holds
+/// that variant.
+#[test]
+fn combination_size_in_force_under_the_default_flavour() {
+    let rule = |size: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ sizes = [\"{size}\"] }}\ntarget = \"button.body\"\n\
+             set = {{ opacity = 0.5 }}"
+        )
+    };
+    let refused = "rules[0].when.sizes[0]: `small` is declared in `widget.button.sizes`, and a \
+                   later unit states it";
+    let flavoured = declare(
+        "flavors = [\"base\", \"expressive\"]\n[declare.widget.button]\n\
+         sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n\
+         [declare.flavor.expressive.widget.button]\nsizes = [\"small\", \"regular\"]\n\
+         default_size = \"small\"",
+    );
+    assert_eq!(alone(&rule("small"), &flavoured), [refused]);
+    assert_eq!(alone(&rule("regular"), &flavoured), NONE);
+    let by_variant = |later: &str| {
+        declare(&format!(
+            "[declare.widget.button]\nvariants = [\"@fab\"]\n{later}\
+             sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n\
+             sizes_by_variant = [{{ variant = \"@fab\", sizes = [\"small\", \"regular\"], \
+             default_size = \"small\" }}]"
+        ))
+    };
+    assert_eq!(
+        alone(
+            &rule("small"),
+            &by_variant("later = { variants = [\"@fab\"] }\n")
+        ),
+        [refused]
+    );
+    assert_eq!(alone(&rule("small"), &by_variant("")), NONE);
+}
+
 /// Under each flavour the declarations in force are the widget's own with
 /// that flavour's keys replacing them (S10): a rule is checked against the
 /// declarations of each flavour it can apply under, a base against every
