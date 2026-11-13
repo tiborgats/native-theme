@@ -41,6 +41,12 @@ ignore = [
     "RUSTSEC-2026-0370",
     "RUSTSEC-2026-0371",
     "RUSTSEC-2026-0372",
+    # pin-utils 0.1.0, unmaintained (archived 2026-10-01), no patched release;
+    # reached only through wasmtimer 0.4.3 (the latest), which iced_futures
+    # 0.14.0 (native-theme-iced's iced) depends on only under
+    # `cfg(target_arch = "wasm32")`, so no target the workspace builds
+    # compiles it.
+    "RUSTSEC-2026-0441",
 ]
 
 [output]
