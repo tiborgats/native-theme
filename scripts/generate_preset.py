@@ -26,7 +26,8 @@ keyed maps stated empty, the facts gaps (a field no fact gives where the reader 
 preset leaves unstated (below), the hand-written `[declare]` entries a name outside the enabled units' leaves
 declared (`declaration: …`, declare_findings(): the hand-written part's edit), and the round trip's result. Exit 0, 1
 when the round trip finds a mismatch (a generator bug, a mention of a name beyond depth included), `--check` finds
-the bundled preset differs (a stale hand-written citation included) or `--write` or `--check` finds a hand-written
+the bundled preset differs (a stale hand-written citation included), `--check` finds a model field unstated or a
+reference no base states (unstated_references()), or `--write` or `--check` finds a hand-written
 citation whose fact it cannot find (below) or such a `[declare]` entry, 2 on an input it cannot read, a hand-written
 part `--write` would lose (below) or a wrong command line.
 
@@ -3351,10 +3352,11 @@ def field_groups(facts, paths) -> list:
     return out
 
 
-def field_lines(model: Model, draft: Draft, text: str) -> list:
-    """The report's lines of the model fields the preset leaves unstated, grouped (field_groups())."""
+def field_lines(model: Model, draft: Draft, text: str) -> tuple:
+    """(the report's lines of the model fields the preset leaves unstated, grouped (field_groups()), how many fields
+    they list)."""
     if "Tokens" not in model.structs:
-        return [f"# unstated model fields: no model sources in {model.folder}"]
+        return [f"# unstated model fields: no model sources in {model.folder}"], 0
     groups = field_groups(draft.facts, unstated_fields(model, text))
     counts = {g: sum(1 for x in groups if x[0] == g) for g in FIELD_GROUPS}
     out = [f"# unstated model fields: {len(groups)} ("
@@ -3368,7 +3370,7 @@ def field_lines(model: Model, draft: Draft, text: str) -> list:
                 at_rest = (" (at rest: " + ", ".join(f"{k} {n}" for k, n in statuses.items()) + ")") if statuses \
                     else ""
                 out.append(f"#   {dotted_key(path)}  facts={facts} pending={pending}{at_rest}")
-    return out
+    return out, len(groups)
 
 
 def staged_count(root: Path, preset: str) -> int:
@@ -4667,6 +4669,20 @@ def citation_cases(root: Path) -> list:
         code = run(fixture_context(root), "adwaita", "--check", None)
     if code != 0 or "citation" in err.getvalue():
         failures.append(f"--check over true citations: exit {code}, said {err.getvalue()!r}")
+    # --check fails on a model field unstated and on a reference no base states, as it prints them
+    for name, stub, want in (("field_lines", lambda model, draft, text: (["# unstated model fields: 1"], 1),
+                              "1 model fields unstated, 0 references"),
+                             ("unstated_references", lambda text: [("role.@x", 1)],
+                              "0 model fields unstated, 1 references")):
+        real = globals()[name]
+        globals()[name] = stub
+        try:
+            with contextlib.redirect_stderr(io.StringIO()) as err:
+                code = run(fixture_context(root), "adwaita", "--check", None)
+        finally:
+            globals()[name] = real
+        if code != 1 or want not in err.getvalue():
+            failures.append(f"--check with {name} finding one: exit {code}, said {err.getvalue()!r}")
     unnamed = fresh.replace(" (libadwaita@1.10.0, its release)", "")
     path.write_text(unnamed, encoding="utf-8")
     with contextlib.redirect_stderr(io.StringIO()) as err:
@@ -5180,8 +5196,8 @@ def self_test() -> int:
             got = unstated_fields(model, text) if text != FIELDS_PRESET else f"no line {line!r}"
             if got != want:
                 failures.append(f"unstated_fields without {line!r}: {got}, expected {want}")
-        if field_lines(Model({}, {}, set(), Path("src")), None, "") != [
-                "# unstated model fields: no model sources in src"]:
+        if field_lines(Model({}, {}, set(), Path("src")), None, "") != (
+                ["# unstated model fields: no model sources in src"], 0):
             failures.append("field_lines without a model: not said")
     # each unstated path grouped by the facts there: none (the accent run's counting none), conditional ones, one at
     # rest that gives no base
@@ -5500,7 +5516,7 @@ def run(ctx, preset: str, mode, out) -> int:
             except InputError as err:
                 written, unread = text, err
         model = read_model(ctx.root)
-        fields = field_lines(model, draft, written)
+        fields, unstated = field_lines(model, draft, written)
         declared = declare_findings(written)
         dangling = unstated_references(written)
     except (OSError, UnicodeDecodeError, InputError, check_facts.InputError, check_facts_trace.InputError) as err:
@@ -5545,6 +5561,10 @@ def run(ctx, preset: str, mode, out) -> int:
         print(f"citation: {line}", file=sys.stderr)
     for line in declared:
         print(f"declaration: {preset}: {line}", file=sys.stderr)
+    if mode == "--check" and (unstated or dangling):
+        print(f"{check_facts.PRESET_DIR / preset}.toml: {unstated} model fields unstated, {len(dangling)} references "
+              f"no base states", file=sys.stderr)
+        return 1
     return 1 if trip.mismatches or (cites is not None and (cites.findings or declared)) else 0
 
 

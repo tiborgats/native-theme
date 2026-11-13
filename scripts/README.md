@@ -1631,9 +1631,11 @@ pending default size of a state model is listed in `[pending]` by its
 declaration's path, never written in `[declare]`. `--write` points each
 stale citation of the hand-written blocks (a `[declare]` entry's, a `read`
 value's, the generation's source) at the fact naming its subject and lists
-one it cannot find; `--check` fails on either. Exits 1 on a round-trip
-mismatch (a mention of a name beyond depth included), such a citation or
-such a `[declare]` entry, 2 on an input it cannot read. `--self-test`
+one it cannot find; `--check` fails on either, and on a model field the
+preset leaves unstated or a reference no base states. Exits 1 on a
+round-trip mismatch (a mention of a name beyond depth included, and a
+default size in force not among its sizes), such a citation or such a
+`[declare]` entry, 2 on an input it cannot read. `--self-test`
 compares a fixture's draft with the expected one and runs each rule.
 Offline; not in `check_release.sh`; about four minutes for an iOS preset.
 
