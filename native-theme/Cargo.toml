@@ -9,7 +9,6 @@ edition.workspace = true
 license = "(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0 AND MIT"
 rust-version.workspace = true
 repository.workspace = true
-homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
 readme = "README.md"

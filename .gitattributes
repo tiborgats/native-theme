@@ -4,3 +4,7 @@ docs/assets/*.svg binary
 # Tests edit these fixtures as text with "\n" patterns, so every checkout,
 # Windows' included, keeps them LF.
 native-theme/tests/fixtures/** text eol=lf
+
+# The bundled presets are embedded as text (`include_str!`) and tests edit
+# them with "\n" patterns, so every checkout, Windows' included, keeps them LF.
+native-theme/src/presets/*.toml text eol=lf

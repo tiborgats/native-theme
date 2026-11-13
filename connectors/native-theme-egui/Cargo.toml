@@ -7,7 +7,6 @@ license.workspace = true
 # 1.88.0 workspace floor. See §12.4.
 rust-version = "1.95"
 repository.workspace = true
-homepage.workspace = true
 keywords = ["theme", "egui", "gui", "native", "colors"]
 categories = ["gui", "config"]
 readme = "README.md"
