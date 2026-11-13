@@ -789,7 +789,7 @@ fn prepare_placed<'f>(
         let Some((written, _)) = facts::for_preset(fact.when.as_ref(), preset) else {
             continue;
         };
-        if !count_place(&depth, fact, written.as_ref(), preset, &mut counts, report) {
+        if !count_place(depth, fact, written.as_ref(), preset, &mut counts, report) {
             continue;
         }
         // S17's predicate places the fact as of the enabled units, so the
