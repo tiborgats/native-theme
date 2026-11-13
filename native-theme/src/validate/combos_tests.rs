@@ -1091,11 +1091,22 @@ fn combination_per_flavour_declarations() {
         ),
         [later]
     );
+    // Naming the default flavour negatively, it applies under the other
+    // flavours alone, each of that unit: refused as naming one positively
+    // is; naming another flavour negatively, it applies under the default
+    // too.
     assert_eq!(
         alone(
             &rule("{ not_conditions = [\"flavor:widgets\"], variants = [\"@pill\"] }"),
             &decl
         ),
+        [
+            "rules[0].when.not_conditions[0]: `widgets` is declared in `flavors`, and a later \
+             unit states it"
+        ]
+    );
+    assert_eq!(
+        alone(&rule("{ not_conditions = [\"flavor:kirigami\"] }"), &decl),
         NONE
     );
     // A base reads element data under every flavour.
