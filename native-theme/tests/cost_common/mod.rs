@@ -96,8 +96,9 @@ pub enum Change {
     Contrast,
     /// `set_accent` of a synthetic accent stating every accent input.
     Accent,
-    /// `set_flavor` to the preset's second declared flavour.
-    Flavor,
+    // `set_flavor` has no case: at depth it refuses every flavour but the
+    // preset's default (`ProblemKind::Later`); the flavours unit brings back
+    // `4.<preset>.<route>.set_flavor` on a preset that declares two.
     /// `set_preset` to the preset itself, which a second live theme holds.
     SetPreset,
 }
@@ -108,7 +109,6 @@ impl Change {
             Change::Pick => "pick",
             Change::Contrast => "set_contrast",
             Change::Accent => "set_accent",
-            Change::Flavor => "set_flavor",
             Change::SetPreset => "set_preset",
         }
     }
@@ -227,9 +227,6 @@ pub fn cases() -> Res<Vec<Case>> {
         }
         measures.push(Measure::Kept(route));
         let mut changes = vec![Change::Pick, Change::Contrast, Change::Accent];
-        if file.declared("flavors")?.len() >= 2 {
-            changes.push(Change::Flavor);
-        }
         if route == Route::Plain {
             changes.push(Change::SetPreset);
         }
@@ -348,6 +345,10 @@ impl PresetFile {
     }
 
     /// The names `[declare] <name>` lists, none where it lists none.
+    #[allow(
+        dead_code,
+        reason = "the timings binary's alone (line 4's set_accent); the cost_bytes binary shares this module"
+    )]
     pub fn declared(&self, name: &str) -> Res<Vec<String>> {
         let key = self.id.key();
         match self

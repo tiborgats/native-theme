@@ -230,6 +230,83 @@ fn macos_tahoe_refused_plain_and_loaded_synthetic() {
     assert_eq!(theme.preset(), PresetId::MacosTahoe);
 }
 
+/// `full_keyboard_access` at depth on `macos-tahoe` (the catalogue's
+/// `button` Depth line; ADD-A148, veto list item 62): a button's
+/// `focus_visible_when` is a rule `@ cond full_keyboard_access` over a
+/// `never` base, and the condition selects it in the preset's resolution.
+/// The preset's values wait for U331 (its `[pending]` table lists the
+/// button's value and the token), so the rule and the base here are an
+/// application layer's, synthetic: the test shows the condition reaching
+/// the button's value through the stand-in's state on this preset, not the
+/// platform's values.
+#[test]
+fn macos_tahoe_focus_visible_under_full_keyboard_access() -> Result<(), String> {
+    use crate::ResolvedFocusVisibleWhen;
+    use crate::resolve::ReaderState;
+
+    let file = read_preset(PresetId::MacosTahoe.source()).map_err(|error| error.to_string())?;
+    for listed in [
+        "widgets.button.values.focus_visible_when",
+        "tokens.behavior.focus_visible_when",
+    ] {
+        assert!(
+            file.pending
+                .iter()
+                .any(|(path, ids)| path == listed && ids.iter().any(|id| id == "U331")),
+            "{listed}"
+        );
+    }
+    let layers = synthetic_layers(&file.pending, &file.layer)?;
+    let mut theme =
+        super::Theme::from_preset_synthetic(PresetId::MacosTahoe, Scheme::Light, layers)
+            .map_err(|error| error.to_string())?;
+    // Synthetic fixture values: the shape the catalogue gives the value.
+    let rule = Layer::from_toml(
+        "[widgets.button.values]\nfocus_visible_when = \"never\"\n\n[[rules]]\nwhen = { \
+         conditions = [\"full_keyboard_access\"] }\ntarget = \"button.values\"\n\n[rules.set]\n\
+         focus_visible_when = { keyboard = {} }\n",
+    )
+    .map_err(|error| error.to_string())?;
+    theme.add_layer(rule).map_err(|error| error.to_string())?;
+    let focus_visible_when = |theme: &super::Theme| {
+        let resolved = theme
+            .resolve(
+                &mut WindowState::default(),
+                &WindowConditions::new(InputKind::Mouse),
+            )
+            .theme;
+        let scope = resolved.root_scope(&root());
+        let body = PartRef::Typed(TypedPart::Button(ButtonPart::Body));
+        match resolved
+            .values::<crate::widgets::ButtonValues>(&Element::new(body, &scope, &NoMetrics))
+        {
+            Styled::Style(values) => values.focus_visible_when,
+            Styled::NotDrawn | Styled::DrawnAs { .. } | Styled::NotAvailable(_) => None,
+        }
+    };
+    assert_eq!(
+        focus_visible_when(&theme),
+        Some(ResolvedFocusVisibleWhen::Never)
+    );
+    let mut state = ReaderState::new(Scheme::Light, 1.0);
+    state.full_keyboard_access = true;
+    theme
+        .set_reader_stand_in(state, Layer::default())
+        .map_err(|error| error.to_string())?;
+    assert!(matches!(
+        focus_visible_when(&theme),
+        Some(ResolvedFocusVisibleWhen::Keyboard { .. })
+    ));
+    theme
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), Layer::default())
+        .map_err(|error| error.to_string())?;
+    assert_eq!(
+        focus_visible_when(&theme),
+        Some(ResolvedFocusVisibleWhen::Never)
+    );
+    Ok(())
+}
+
 /// `macos-monterey` while its `[pending]` table lists paths (S16, S17,
 /// ADD-A128, ADD-A133): `Theme::from_preset` refuses it, each listed path
 /// a field no layer states among the problems (a listed default size and

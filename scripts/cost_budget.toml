@@ -46,7 +46,10 @@ tolerance_floor = 0.05
 # font size), per reader over its own preset (`system`). Line 4's case of a bundled palette
 # applied or removed is "first measured by" M2's fourth task, which bundles the palettes and
 # decides which presets each serves; no case can be keyed by its preset before that, so its cases
-# enter with that task. Lines 1 to 3 are `read` on every preset (the read alone, a lower bound);
+# enter with that task. Line 4's `set_flavor` has no case: at depth `Theme::set_flavor` refuses
+# every flavour but the preset's default (`ProblemKind::Later`), so the probe cannot measure it on
+# kde-breeze or material-3; the flavours unit brings back `4.<preset>.<route>.set_flavor` on both
+# routes of each preset that declares two flavours. Lines 1 to 3 are `read` on every preset (the read alone, a lower bound);
 # the synthetic route's cases and the `read` of a preset leave the file as the plan says once its
 # table is empty and load task 1 has merged.
 [cases]
@@ -124,7 +127,6 @@ tolerance_floor = 0.05
 "4.material-3.synthetic.pick" = { first_measured_by = "the trigger step" }
 "4.material-3.synthetic.set_accent" = { first_measured_by = "the trigger step" }
 "4.material-3.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
-"4.material-3.synthetic.set_flavor" = { first_measured_by = "the trigger step" }
 "5.material-3.synthetic" = { first_measured_by = "the trigger step" }
 "6.material-3.synthetic" = { first_measured_by = "the trigger step" }
 "7.material-3.synthetic.hover" = { first_measured_by = "the trigger step" }
@@ -191,7 +193,6 @@ tolerance_floor = 0.05
 "4.kde-breeze.synthetic.pick" = { first_measured_by = "the trigger step" }
 "4.kde-breeze.synthetic.set_accent" = { first_measured_by = "the trigger step" }
 "4.kde-breeze.synthetic.set_contrast" = { first_measured_by = "the trigger step" }
-"4.kde-breeze.synthetic.set_flavor" = { first_measured_by = "the trigger step" }
 "5.kde-breeze.synthetic" = { first_measured_by = "the trigger step" }
 "6.kde-breeze.synthetic" = { first_measured_by = "the trigger step" }
 "7.kde-breeze.synthetic.hover" = { first_measured_by = "the trigger step" }
@@ -256,7 +257,6 @@ tolerance_floor = 0.05
 "4.kde-breeze.plain.pick" = { first_measured_by = "M2's task 0" }
 "4.kde-breeze.plain.set_accent" = { first_measured_by = "M2's task 0" }
 "4.kde-breeze.plain.set_contrast" = { first_measured_by = "M2's task 0" }
-"4.kde-breeze.plain.set_flavor" = { first_measured_by = "M2's task 0" }
 "4.kde-breeze.plain.set_preset" = { first_measured_by = "M2's task 0" }
 "5.kde-breeze.plain" = { first_measured_by = "M2's task 0" }
 "6.kde-breeze.plain" = { first_measured_by = "M2's task 0" }
@@ -278,7 +278,6 @@ tolerance_floor = 0.05
 "4.material-3.plain.pick" = { first_measured_by = "M2's task 0" }
 "4.material-3.plain.set_accent" = { first_measured_by = "M2's task 0" }
 "4.material-3.plain.set_contrast" = { first_measured_by = "M2's task 0" }
-"4.material-3.plain.set_flavor" = { first_measured_by = "M2's task 0" }
 "4.material-3.plain.set_preset" = { first_measured_by = "M2's task 0" }
 "5.material-3.plain" = { first_measured_by = "M2's task 0" }
 "6.material-3.plain" = { first_measured_by = "M2's task 0" }

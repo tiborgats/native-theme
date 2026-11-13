@@ -551,7 +551,8 @@ class Depth:
     unit not enabled holds there (the units file's `[[later]]`): every name lies in exactly one place, the entry's
     Depth line or one later unit, which scripts/check_facts.py checks, so the complement is the Depth line. A
     condition is at depth for a key unless a unit not enabled holds it and `[at_depth]` names it for none of the
-    key's prefixes; the scheme, `contrast_high` and the preset's default flavour no unit holds.
+    key's prefixes; the scheme, `contrast_high`, `full_keyboard_access` (ADD-A148) and the preset's default flavour no
+    unit holds.
 
     The state model in force (S10's *Later names*): the default flavour's entry for the preset (its own over the
     platform's shared one) while the flavours unit is not enabled, each flavour's beside it under `flavor:<f>` once
