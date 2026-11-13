@@ -463,7 +463,8 @@ def at_depth_when(depth, platform: str, preset: str, key: str, when: dict) -> di
     depth. A `sizes` list is all of its sizes (S7's `SetMatch`; an element has one control size, S12), so one naming
     two sizes, or a size beyond depth, holds in no combination at depth and never reaches here, as no positive name
     beyond depth does (Depth.of_enabled()): its trimming leaves a list that does reach here as it is. A list emptied
-    so goes."""
+    so goes. A `latest` entry whose recency set keeps fewer than two flags at depth (so declared() declares no such
+    set) goes, its flag, which it implies (S7.2), added to `states`; a `latest` emptied so goes."""
     widget = key.split(".")[0] if is_entry_key(key) else None
     sizes = depth_sizes(depth, platform, widget, preset) if widget else None
     out = {}
@@ -486,6 +487,20 @@ def at_depth_when(depth, platform: str, preset: str, key: str, when: dict) -> di
             v = [e for e in v if context_at_depth(depth, platform, preset, widget, e)]
         if v:
             out[k] = v
+    if widget and isinstance(out.get("latest"), dict):
+        latest = out["latest"] = dict(out["latest"])
+        sets = check_facts.recency_of(depth.model(platform, widget, preset) or {})
+        alone = [(name, flag) for name, flag in latest.items() if name in sets and len(
+            [x for x in sets[name] if not depth.off(widget, preset, "states", x)]) < 2]
+        states = out.get("states", [])
+        for name, flag in alone:
+            del latest[name]
+            if flag not in states:
+                states = states + [flag]
+        if alone:
+            out["states"] = states
+        if not latest:
+            del out["latest"]
     return out
 
 
@@ -1161,14 +1176,20 @@ def beyond_depth(draft: Draft) -> list:
     """Each mention of a name not at depth the draft makes (S17: "a bundled preset mentions no name outside the
     enabled units'", ADD-A147), as a mismatch: in a rule's `when` (a variant or state flag a later unit holds for the
     widget, a typed variant at depth no combination at depth draws, a condition one holds for the key, a size or density of the sizes unit, a direction, a context entry no
-    combination at depth holds) and in a widget's own declaration (a flag, exclusive group or recency set naming a
-    flag not at depth; a variant not at depth missing from its `later`)."""
+    combination at depth holds, a `latest` recency set the widget's declaration does not declare) and in a widget's
+    own declaration (a flag, exclusive group or recency set naming a flag not at depth; a variant not at depth missing
+    from its `later`)."""
     depth, platform, preset = draft.depth, draft.platform, draft.preset
     out = []
+    declared_sets = {("component." if header[-2] == "component" else "") + header[-1]:
+                     set(dict(kvs).get("recency") or {}) for header, kvs, _, _ in draft.declare if header[0] != "flavor"}
     for f in draft.facts:
         if f.status != "rule" and not f.hand:
             continue
         when, widget = f.rule_when or {}, f.key.split(".")[0] if is_entry_key(f.key) else None
+        if widget and isinstance(when.get("latest"), dict):
+            out += [f"{f.where}: {f.key}: its rule's `latest` names the recency set `{s}`, which the declaration "
+                    f"does not declare" for s in when["latest"] if s not in declared_sets.get(widget, set())]
         names = [c for k in ("conditions", "not_conditions") for c in when.get(k, []) if depth.condition_off(c, f.key)]
         if widget:
             sizes = depth_sizes(depth, platform, widget, preset)
@@ -3858,6 +3879,11 @@ name = "behaviour"
 kind = "parking"
 enabled = false
 conditions = ["system_setting:single_click"]
+[[later]]
+name = "right_to_left"
+kind = "depth"
+enabled = false
+directions = ["rtl"]
 '''
 _DEPTH_MODEL_CITE = '''
 [[model.cite]]
@@ -3899,6 +3925,8 @@ rows = []
         _fact("button.body.min_width", '"16px"'),
         _fact("button.body.fill", '"#111111"'),
         _fact("button.body.fill", '"#222222"', '{ states = ["@busy"] }'),
+        # the recency set `drop` keeps `checked` alone at depth, so it is not declared: the rule's `latest` goes
+        _fact("button.body.fill", '"#999999"', '{ latest = { drop = "checked" } }'),
         _fact("button.body.fill", '"#333333"', '{ states = ["checked"], latest = { glow = "hover" } }'),
         # every negative entry names a name beyond depth: the rule goes, its value a base
         _fact("button.values.icon_text_gap", '"4px"', '{ not_variants = ["@pill"], not_states = ["open"], '
@@ -4013,7 +4041,7 @@ def depth_cases(root: Path) -> list:
         failures.append(f"depth: the negative entries beyond depth not left out of the rule: "
                         f"{data.get('widgets', {}).get('button', {}).get('values')}")
     rules = [(r["when"], r["set"]) for r in data.get("rules", [])]
-    want = [({"states": ["@busy"]}, {"fill": "#222222"}),
+    want = [({"states": ["@busy"]}, {"fill": "#222222"}), ({"states": ["checked"]}, {"fill": "#999999"}),
             ({"states": ["checked"], "latest": {"glow": "hover"}}, {"fill": "#333333"})]
     if rules != want:
         failures.append(f"depth: rules {rules}, expected {want}")
@@ -4052,11 +4080,31 @@ def depth_cases(root: Path) -> list:
         if got[:2] != want[:2] or len(reports) != len(want[2]) or not all(
                 k == wk and w in t for (k, t), (wk, w) in zip(reports, want[2])):
             failures.append(f"depth: the sizes in force, {label}: got {got}, expected {want}")
-    # beyond_depth() finds a name beyond depth written into a rule or a declaration
-    draft.facts[[f.item.data.get("value") for f in draft.facts].index("#222222")].rule_when = {"states": ["open"]}
-    draft.declare[0][1].append(("flags", ["@loading"]))
-    if len(beyond_depth(draft)) != 2:
-        failures.append(f"depth: beyond_depth {beyond_depth(draft)}, expected the rule's `open` and the flag")
+    # at_depth_when() drops a `latest` entry whose set keeps one flag at depth, the flag kept in `states`
+    for when, want in (({"latest": {"drop": "checked"}}, {"states": ["checked"]}),
+                       ({"states": ["hover"], "latest": {"drop": "checked", "glow": "hover"}},
+                        {"states": ["hover", "checked"], "latest": {"glow": "hover"}})):
+        got = at_depth_when(draft.depth, "gnome", "adwaita", "button.body.fill", when)
+        if got != want or "drop" not in when["latest"]:
+            failures.append(f"depth: at_depth_when {when}: {got}, expected {want}, the fact's `when` unchanged")
+    # beyond_depth() finds each name beyond depth written into a rule or a declaration, of every kind, and no other
+    fact = draft.facts[[f.item.data.get("value") for f in draft.facts].index("#222222")]
+    fact.rule_when = {"states": ["open"], "variants": ["primary"], "not_variants": ["toggle"],
+                      "conditions": ["window_inactive"], "sizes": ["small"], "densities": ["compact"],
+                      "direction": "rtl", "context": [{"scope": "any", "widget": "toolbar"}],
+                      "latest": {"drop": "checked"}}
+    draft.declare[0][1].extend([("flags", ["@loading"]), ("exclusive", [["open", "pressed"]]),
+                                ("recency", {"glow": ["checked", "hover"], "rise": ["open", "hover"]}),
+                                ("variants", ["primary"])])
+    rule = f"{fact.where}: button.body.fill: its rule names "
+    decl = f"{draft.declare[0][2].file}:{draft.declare[0][2].line}: [declare.widget.button] names "
+    want = sorted([f"{rule}`{n}`, beyond depth" for n in ("open", "primary", "toggle", "window_inactive", "small",
+                                                           "compact", "rtl", '{ scope = "any", widget = "toolbar" }')]
+                  + [f"{fact.where}: button.body.fill: its rule's `latest` names the recency set `drop`, which the "
+                     f"declaration does not declare"]
+                  + [f"{decl}`{n}`, beyond depth" for n in ("@loading", "open", "open", "primary")])
+    if sorted(beyond_depth(draft)) != want:
+        failures.append(f"depth: beyond_depth {sorted(beyond_depth(draft))}, expected {want}")
     got = declare_findings(FINDINGS_PRESET)
     if got != FINDINGS_WANT:
         failures.append(f"declare_findings: {got}, expected {FINDINGS_WANT}")
