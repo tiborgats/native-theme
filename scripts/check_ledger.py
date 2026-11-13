@@ -579,16 +579,20 @@ def outside_ids(pending: list, units: list | None, input_parts: frozenset | set 
 
 def pending_whens(texts: dict[str, str]) -> dict:
     """{(file, line): (platform, `when`)} of every pending fact pending_facts() gives, its platform the facts
-    directory its file lies in."""
+    directory its file lies in; InputError where a file's `pending =` lines are not one per pending fact, so no
+    fact's line is known."""
     out = {}
     for name, text in texts.items():
         data = tomllib.loads(text)
         facts = [f for f in data.get("fact", []) if isinstance(f, dict) and "pending" in f]
         lines = [n for n, line in enumerate(text.splitlines(), 1) if PENDING.match(line)]
+        if len(lines) != len(facts):
+            raise InputError(f"{name}: {len(lines)} `pending =` lines for {len(facts)} pending facts: no pending "
+                             f"fact's line, and so its `when`, is known")
         platform = Path(name).parent.name
-        for k, fact in enumerate(facts):
+        for line, fact in zip(lines, facts):
             when = fact.get("when") if isinstance(fact.get("when"), dict) else {}
-            out[(name, lines[k] if len(lines) == len(facts) else 1)] = (platform, when)
+            out[(name, line)] = (platform, when)
     return out
 
 
@@ -1002,6 +1006,13 @@ default_size = "regular"
     if pending_whens({"docs/facts/kde/b.toml": '[[fact]]\nkey = "button.body.fill"\nwhen = { states = ["hover"] }\n'
                       'pending = "U1"\nrows = []\n'}) != {("docs/facts/kde/b.toml", 4): ("kde", {"states": ["hover"]})}:
         failures.append("pending_whens: a pending fact's platform and when read wrong")
+    try:
+        pending_whens({"docs/facts/kde/b.toml": '[[fact]]\nkey = "button.body.fill"\npending = "U1"\n'
+                                                '[note]\npending = "a key of another table"\n'})
+        failures.append("pending_whens: `pending =` lines not one per pending fact, not refused")
+    except InputError as err:
+        if "2 `pending =` lines for 1 pending facts" not in str(err):
+            failures.append(f"pending_whens: refused with {err}")
     if unmeasured_problems("L", ledger, True, {"U2"}) or unmeasured_problems("L", ledger, True, {"U1"}) != [
             ("L", 7, "unmeasured '`menu.body.shadow`' has no decision")]:
         failures.append("unmeasured, --final: a row of a unit not enabled failed, or one of the enabled units passed")

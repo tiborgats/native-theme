@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 ec3ec7f26dcbbb4783dc8a9b9b4a6f31c682e6772173b820737f5c8aecc46c58
+# generated lines: sha256 5f6927b3821870bfa8441d9480ab7e59d07332e37b21ad33486894de56cd5463
 
 [preset]
 id = "kde-breeze"
@@ -342,9 +342,11 @@ exclusive_variants = [["@inline_small", "@inline_large"]]
 [declare.flavor.kirigami.widget.button]
 available = true
 variants = ["toggle", "tool", "with_icon", "@highlighted", "@inline_large", "@ka_floating", "@key_sequence", "@ka_download"]
+later = { variants = ["@highlighted", "@inline_large", "@ka_floating", "@key_sequence", "@ka_download"] }
 sizes = []
 densities = []
 exclusive = []
+exclusive_variants = []
 
 [pending]
 # docs/facts/kde/button.toml:553

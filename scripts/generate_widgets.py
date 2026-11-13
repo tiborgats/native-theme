@@ -42,7 +42,9 @@ The units
 
 The depth (S6.1, ADD-A147): `[deferred.<widget>]` may name a part's field, `"<part>.<field>"`, which the part's
 `fields(…)` then leaves out; `[[later]]` tables name the later units (scripts/check_facts_trace.py reads them in full),
-of which this reads each unit's name, `enabled`, `conditions`, `sizes` and the variants it holds per entry. An enabled
+of which this reads each unit's name, `enabled`, `conditions`, `sizes` and the variants it holds per entry on every
+preset (a group naming `presets` holds its names there alone, the entry's Depth item holding them elsewhere, so they
+stay in `Variant`), refusing a group or list of another shape. An enabled
 entry's **Depth** item (spec_catalogue.depth_names) lists its variants at depth: `Variant`, `WidgetInfo.variants` and
 `content_variants` hold those and the variants of the enabled later units, each other typed variant named in a
 generated comment with the later unit holding it (one neither lists nor holds, or one both do, is an input error);
@@ -51,9 +53,10 @@ holding the `flavor:` conditions; an enum of the entry no value at depth uses is
 also reads each Depth item against the *Today's fields* selectors naming a target in the entry (todays_names(),
 depth_check()): a variant or state flag a selector names that the item does not list is a difference.
 
-A deferral names a value of the widget's entry (its Rust name, or as the catalogue writes it), and a unit that is
-hand-written, a unit list or a later unit, and not enabled: a deferral to an enabled unit, to an unknown unit, of an unknown value
-or for a widget no enabled unit holds is an input error. A unit's entry that is no typed widget of the catalogue (a
+A deferral names a value of the widget's entry (its Rust name, or as the catalogue writes it), and a unit that is not
+enabled; a deferral and a staging name a later unit, a hand-written unit, a unit `[unit_names]` lists (M3a's widget
+units) or a catalogue entry: a deferral to an enabled unit, a deferral or staging to any other name, a deferral of an
+unknown value or for a widget no enabled unit holds is an input error. A unit's entry that is no typed widget of the catalogue (a
 component, a target prefix) is an input error too: the generator emits typed widgets only.
 
 What it reads from an entry
@@ -153,7 +156,8 @@ class Later:
     enabled: bool
     conditions: list           # the conditions it holds model-wide
     sizes: bool                # it holds the sizes beyond the default in force and the densities
-    names: dict                # entry -> {"variants": set, "states": set}, every preset's groups together
+    names: dict                # entry -> {"variants": set, "states": set} of its groups naming no presets (held on
+                               # every preset; a group naming presets leaves the names to the Depth line elsewhere)
 
 
 @dataclass
@@ -170,11 +174,10 @@ class Units:
         return (unit in self.enabled or self.hand_written.get(unit, False)
                 or any(u.name == unit and u.enabled for u in self.later))
 
-    def known(self, unit: str) -> bool:
-        return unit in self.enabled or unit in self.hand_written or any(u.name == unit for u in self.later)
-
     def holder(self, entry: str, kind: str, name: str):
-        """The later unit holding the entry's variant or state flag (on some preset), or None."""
+        """The later unit holding the entry's variant or state flag on every preset (a group naming no presets), or
+        None: a name a group holds on some presets alone is the entry's Depth line's on the others, so the model's
+        `Variant` holds it."""
         return next((u for u in self.later if name in u.names.get(entry, {}).get(kind, ())), None)
 
     def flag_of(self, what: str) -> bool:
@@ -187,7 +190,9 @@ class Units:
         return found[0].enabled
 
 
-def parse_units(text: str) -> Units:
+def parse_units(text: str, entries=frozenset()) -> Units:
+    """The units `text` states; `entries` the catalogue's entry names, which a `[staged]` or `[deferred]` value may
+    name beside a later, hand-written or `[unit_names]` unit (scripts/check_facts_trace.py's check_waiting)."""
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as err:
@@ -202,27 +207,45 @@ def parse_units(text: str) -> Units:
     for table in ("prefixes", "staged"):
         if not isinstance(data.get(table, {}), dict):
             raise InputError(f"{UNITS}: `{table}` is not a table of unit names")
+    staged = data.get("staged", {})
+    if not all(isinstance(ps, dict) and all(isinstance(u, str) for u in ps.values()) for ps in staged.values()):
+        raise InputError(f"{UNITS}: `staged` is not a table of unit names to tables of paths to units")
+    named = data.get("unit_names", {})
+    if not isinstance(named, dict) or not all(
+            isinstance(us, list) and all(isinstance(u, str) and u for u in us) for us in named.values()):
+        raise InputError(f"{UNITS}: `unit_names` is not a table of lists of unit names")
     enabled = {}
-    for name, entries in data.items():
-        if name in ("deferred", "hand_written", "prefixes", "staged", "kept", "at_depth", "later"):
+    for name, held in data.items():
+        if name in ("deferred", "hand_written", "prefixes", "staged", "kept", "at_depth", "later", "unit_names"):
             continue
-        if not isinstance(entries, list) or not all(isinstance(e, str) and e for e in entries):
+        if not isinstance(held, list) or not all(isinstance(e, str) and e for e in held):
             raise InputError(f"{UNITS}: unit `{name}` is not a list of catalogue entries")
         if name in hand:
             raise InputError(f"{UNITS}: unit `{name}` is both generated and hand-written")
-        enabled[name] = entries
+        enabled[name] = held
     later = []
     for t in data.get("later", []) if isinstance(data.get("later", []), list) else [None]:
         if not isinstance(t, dict) or not isinstance(t.get("name"), str) or not isinstance(t.get("enabled"), bool):
             raise InputError(f"{UNITS}: a [[later]] table has no `name` or no boolean `enabled`")
+        def names_list(value) -> bool:
+            return isinstance(value, list) and all(isinstance(x, str) and x for x in value)
+
+        for k in ("conditions", "directions"):
+            if not names_list(t.get(k, [])):
+                raise InputError(f"{UNITS}: later unit `{t['name']}`: `{k}` is not a list of names")
         names = {}
         for entry, groups in t.items():
             if entry in ("name", "kind", "enabled", "conditions", "directions", "sizes"):
                 continue
-            if not isinstance(groups, list) or not all(isinstance(g, dict) for g in groups):
-                raise InputError(f"{UNITS}: later unit `{t['name']}`: `{entry}` is not a list of groups")
+            if not isinstance(groups, list) or not all(
+                    isinstance(g, dict) and g and set(g) <= {"presets", "variants", "states"}
+                    and all(names_list(v) for v in g.values()) for g in groups):
+                raise InputError(f"{UNITS}: later unit `{t['name']}`: `{entry}` is not a list of groups holding "
+                                 f"`presets`, `variants` and `states`, each a list of names")
             held = names.setdefault(entry, {"variants": set(), "states": set()})
             for g in groups:
+                if "presets" in g:
+                    continue   # held on those presets alone: the entry's Depth line holds the names on the others
                 for k in held:
                     held[k] |= set(g.get(k, []))
         if t["name"] in enabled or t["name"] in hand or any(u.name == t["name"] for u in later):
@@ -234,12 +257,19 @@ def parse_units(text: str) -> Units:
         if w in seen:
             raise InputError(f"{UNITS}: `{w}` is in two units")
         seen.add(w)
+    waits = set(hand) | {u.name for u in later} | {u for us in named.values() for u in us} | set(entries)
+    for unit_name, paths in staged.items():
+        for path, unit in paths.items():
+            if unit not in waits:
+                raise InputError(f'{UNITS}: `staged.{unit_name}."{path}"` = {unit!r} names no later unit, no '
+                                 f"hand-written unit, no unit `unit_names` lists and no catalogue entry")
     for widget, values in deferred.items():
         if widget not in seen:
             raise InputError(f"{UNITS}: `deferred.{widget}`: no enabled unit holds `{widget}`")
         for value, unit in values.items():
-            if not units.known(unit):
-                raise InputError(f"{UNITS}: `deferred.{widget}.{value}` names no unit, `{unit}`")
+            if unit not in waits:
+                raise InputError(f"{UNITS}: `deferred.{widget}.{value}` = {unit!r} names no later unit, no "
+                                 f"hand-written unit, no unit `unit_names` lists and no catalogue entry")
             if units.is_enabled(unit):
                 raise InputError(f"{UNITS}: `deferred.{widget}.{value}` defers to `{unit}`, which is enabled: "
                                  "its commit ends the deferral")
@@ -1099,8 +1129,9 @@ def content_variant(part, variant: str) -> str:
 def generate(root: Path) -> dict:
     """{file name: content} the units and the catalogue give."""
     try:
-        units = parse_units((root / UNITS).read_text(encoding="utf-8"))
         text = (root / spec_catalogue.CATALOGUE).read_text(encoding="utf-8")
+        units = parse_units((root / UNITS).read_text(encoding="utf-8"),
+                            {e.name for e in spec_catalogue.entries(text)})
     except OSError as err:
         raise InputError(str(err)) from err
     typed = [e for e in spec_catalogue.entries(text) if e.kind == "typed"]
@@ -1147,11 +1178,14 @@ def depth_content(entry, units: Units, pairs: list) -> list:
 def depth_findings(root: Path) -> list:
     """depth_check() of each enabled unit's entry."""
     try:
-        units = parse_units((root / UNITS).read_text(encoding="utf-8"))
         text = (root / spec_catalogue.CATALOGUE).read_text(encoding="utf-8")
     except OSError as err:
         raise InputError(str(err)) from err
     entries = [e for e in spec_catalogue.entries(text)]
+    try:
+        units = parse_units((root / UNITS).read_text(encoding="utf-8"), {e.name for e in entries})
+    except OSError as err:
+        raise InputError(str(err)) from err
     return [x for e in entries if e.name in units.widgets() for x in depth_check(e, entries)]
 
 
@@ -1327,6 +1361,25 @@ def self_test() -> int:
     w3 = read_widget(spec_catalogue.entries(shallow)[0], parse_units(SELF_TEST_LATER),
                      spec_catalogue.shared_types(shallow), {})
     expect("depth: variants", (w3.variants, w3.later_variants), (["flat", "round"], [("sharp", "styles")]))
+    # a group naming presets holds its names there alone: the Depth item's `sharp` stays in `Variant`
+    scoped = SELF_TEST_LATER.replace('knob = [{ variants = ["sharp"] }]',
+                                     'knob = [{ presets = ["adwaita"], variants = ["sharp"] }]')
+    try:
+        w5 = read_widget(spec_catalogue.entries(SELF_TEST_CATALOGUE)[0], parse_units(scoped),
+                         spec_catalogue.shared_types(SELF_TEST_CATALOGUE), {})
+        expect("depth: a preset-scoped typed variant", (w5.variants, w5.later_variants),
+               (["flat", "round", "sharp"], []))
+    except InputError as err:
+        failures.append(f"depth: a preset-scoped typed variant: refused with {err}")
+    for label, text in (("a string of variants", 'knob = [{ variants = "sharp" }]'),
+                        ("a group key no group has", 'knob = [{ variant = ["sharp"] }]'),
+                        ("a string of conditions", 'conditions = "x"')):
+        try:
+            parse_units(SELF_TEST_LATER.replace('knob = [{ variants = ["sharp"] }]', text))
+            failures.append(f"later unit with {label}: not refused")
+        except InputError as err:
+            if "is not a list" not in str(err):
+                failures.append(f"later unit with {label}: refused with {err}")
     expect("depth: the units' flags", (parse_units(SELF_TEST_LATER).flag_of("sizes"),
                                        parse_units(SELF_TEST_LATER).flag_of("flavours")), (True, False))
     entries = spec_catalogue.entries(SELF_TEST_CATALOGUE)
@@ -1340,9 +1393,15 @@ def self_test() -> int:
             ("a typed variant in no place", SELF_TEST_UNITS, shallow, "neither on the Depth item nor in a later unit"),
             ("a typed variant in two places", SELF_TEST_LATER, SELF_TEST_CATALOGUE, "on the Depth item and in the"),
             ("no Depth item", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.split("- **Depth**")[0], "no **Depth** item"),
-            ("a part field no part lists", SELF_TEST_UNITS + '[deferred.x]\n', SELF_TEST_CATALOGUE, "")):
-        if not needle:
-            continue
+            ("a field the part does not list", SELF_TEST_UNITS.replace('spot = "placement"', 'spot = "placement"\n'
+                                                                       '"body.text" = "placement"'),
+             SELF_TEST_CATALOGUE, '`deferred.knob."body.text"` is no field of a part of `knob`'),
+            ("a part the widget lacks", SELF_TEST_UNITS.replace('spot = "placement"', 'spot = "placement"\n'
+                                                                '"lid.fill" = "placement"'),
+             SELF_TEST_CATALOGUE, '`deferred.knob."lid.fill"` is no field of a part of `knob`'),
+            ("a part field naming no field", SELF_TEST_UNITS.replace('spot = "placement"', 'spot = "placement"\n'
+                                                                     '"body." = "placement"'),
+             SELF_TEST_CATALOGUE, '`deferred.knob."body."` is no field of a part of `knob`')):
         try:
             read_widget(spec_catalogue.entries(catalogue)[0], parse_units(unit_text),
                         spec_catalogue.shared_types(catalogue), {})
@@ -1430,8 +1489,15 @@ def self_test() -> int:
         ("deferral to an enabled unit", 'slice = ["knob"]\n[deferred.knob]\nspot = "placement"\n'
                                         '[hand_written]\nplacement = true\n', "which is enabled"),
         ("deferral to a unit list", 'slice = ["knob"]\nmore = ["x"]\n[deferred.knob]\nspot = "more"\n',
-         "which is enabled"),
-        ("deferral to no unit", 'slice = ["knob"]\n[deferred.knob]\nspot = "nowhere"\n', "names no unit"),
+         "`deferred.knob.spot` = 'more' names no later unit"),
+        ("deferral to no unit", 'slice = ["knob"]\n[deferred.knob]\nspot = "nowhere"\n',
+         "`deferred.knob.spot` = 'nowhere' names no later unit"),
+        ("staging to no unit", 'slice = ["knob"]\n[staged.slice]\n"token.motion.durations" = "motoin"\n'
+                               '[[later]]\nname = "motion"\nenabled = false\n',
+         '`staged.slice."token.motion.durations"` = \'motoin\' names no later unit'),
+        ("staging to a catalogue entry not given", 'slice = ["knob"]\n[staged.slice]\n"token.x" = "dial"\n',
+         "= 'dial' names no later unit"),
+        ("unit names no table of lists", 'slice = ["knob"]\n[unit_names]\nm3a = "fields"\n', "`unit_names` is not"),
         ("deferral of no widget", 'slice = ["knob"]\n[deferred.dial]\nspot = "x"\n[hand_written]\nx = false\n',
          "no enabled unit holds"),
         ("old deferral form", 'slice = ["knob"]\ndeferred = { knob = ["spot"] }\n', "tables of value names"),
@@ -1444,6 +1510,12 @@ def self_test() -> int:
         except InputError as err:
             if needle not in str(err):
                 failures.append(f"{label}: refused with {err}, want {needle!r}")
+    try:
+        named = parse_units('slice = ["knob"]\n[staged.slice]\n"token.x" = "dial"\n"token.y" = "fields"\n'
+                            '[unit_names]\nm3a = ["fields"]\n', entries={"knob", "dial"})
+        expect("a staging to a catalogue entry and to a listed unit", sorted(named.enabled), ["slice"])
+    except InputError as err:
+        failures.append(f"a staging to a catalogue entry and to a listed unit: refused with {err}")
     refused("deferral of no value", 'slice = ["knob"]\n[deferred.knob]\nnope = "placement"\n'
                                     '[hand_written]\nplacement = false\n', SELF_TEST_CATALOGUE, "no value of `knob`")
     refused("undeferred record absent", 'slice = ["knob"]\n', SELF_TEST_CATALOGUE, "a record: its members")

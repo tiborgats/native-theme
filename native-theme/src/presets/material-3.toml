@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 ff6c2ae2ca31b3f249057577cd53725ff26f7fd364caab0626c913b8eca8031f
+# generated lines: sha256 26e9dcdbb30f8b1ec64d4cdf0ad000fb721ef2e4477de480c7d1dc8d486bceda
 
 [preset]
 id = "material-3"
@@ -90,6 +90,7 @@ sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "extra_larg
 [declare.flavor.expressive.widget.button]
 available = true
 variants = ["primary", "tinted", "toggle", "with_icon", "@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@square", "@narrow", "@wide", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"]
+later = { variants = ["@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@square", "@narrow", "@wide", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"] }
 sizes = ["extra_small", "small", "regular", "large", "extra_large"]
 default_size = "small"
 densities = []
