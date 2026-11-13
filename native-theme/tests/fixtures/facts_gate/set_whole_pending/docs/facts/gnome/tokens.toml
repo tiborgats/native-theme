@@ -1,5 +1,4 @@
-# Synthetic token facts (S17): the key repeat's interval pending, so the field is pending and its delay's
-# fact reported unchecked beside it (ADD-A128).
+# Synthetic token facts (S17).
 
 [[fact]]
 key = "token.focus.width"
@@ -10,18 +9,3 @@ rows = []
 kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
-
-[[fact]]
-key = "token.behavior.key_repeat.delay"
-value = "500ms"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "probe@1 probe.css:1"
-quote = "synthetic"
-
-[[fact]]
-key = "token.behavior.key_repeat.interval"
-pending = "U3"
-rows = []

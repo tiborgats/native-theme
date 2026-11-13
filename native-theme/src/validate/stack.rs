@@ -12,13 +12,11 @@ use super::combos::{Expanded, Query, Reads, Seed, Stating, World};
 use super::walk::{Form, Marks, Node, Number, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::blocks::motion::{
-    BreezeTest, Keyframe, PresentationEvent, PresentationTransition, PropertyGroup, Transition,
-    TransitionEngine, TransitionKind, same_flags, same_test,
+    BreezeTest, Keyframe, PropertyGroup, Transition, same_flags, same_test,
 };
 use crate::blocks::paint::PaintPatch;
 use crate::blocks::part_style::{Binding, RoleRef};
 use crate::expr::Expr;
-use crate::key::Key;
 use crate::layer::{Bases, Layer, Spelled};
 use crate::presets::PresetId;
 use crate::registry::{self, FieldInfo, PartInfo};
@@ -196,14 +194,8 @@ pub(super) struct Source {
     pub(super) surfaces: Vec<SurfaceSet>,
     /// The keyed lists' items it states (S6.1).
     pub(super) items: Vec<Item>,
-    /// The visuals its `WinUiAnimatedIcon` engines name (S2.7).
-    pub(super) visuals: Vec<Visual>,
-    /// The tests its `Breeze` and `BreezeTabBar` engines state, each by
-    /// its engine's place (`focus.transition.engine`), which the stack's
-    /// steps do not hold (S2.7).
-    pub(super) tests: Vec<(String, BreezeTest)>,
-    /// The keyframes it states, each by its place (`icon.animation.
-    /// keyframes[0]`), and the part it names (S2.7).
+    /// The keyframes it states, each by its place, and the part it names
+    /// (S2.7).
     pub(super) keyframes: Vec<(String, Option<PartRef>)>,
     /// The indication boxes it states, each by its place
     /// (`interaction.ripple.indication_box`), which a step there sets, and
@@ -215,25 +207,8 @@ pub(super) struct Source {
 /// hold.
 struct Flat {
     ops: Vec<Op>,
-    visuals: Vec<Visual>,
-    tests: Vec<(String, BreezeTest)>,
     keyframes: Vec<(String, Option<PartRef>)>,
     indication_boxes: Vec<(String, PartRef)>,
-}
-
-/// A `WinUiAnimatedIcon` engine's `visual` a source states (S2.7): a
-/// `token.icons.animated_visuals` entry's key.
-#[derive(Clone, Debug)]
-pub(super) struct Visual {
-    /// Its place (`transitions[3:0].engine.win_ui_animated_icon.visual`).
-    pub(super) place: String,
-    /// Its place as a problem names it, spelled as the layer was written.
-    pub(super) at: String,
-    /// The entry it names.
-    pub(super) key: Key,
-    /// The `Keyed` key of its transition's kind, where the source states
-    /// it, and that key's place as a problem names it.
-    pub(super) state: Option<(Key, String)>,
 }
 
 /// A rule of the stack.
@@ -280,8 +255,6 @@ pub(super) enum ItemKey {
     /// A transition's property group, `from` set and Breeze test: a
     /// transition listing several groups is split per group first.
     Group(PropertyGroup, Option<Vec<StateFlag>>, Option<BreezeTest>),
-    /// A presentation's event.
-    Event(PresentationEvent),
     /// A binding's role.
     Role(RoleRef),
     /// A surface-set binding: a part binds one surface set.
@@ -298,12 +271,9 @@ impl PartialEq for ItemKey {
                     && same_flags(x.as_deref(), y.as_deref())
                     && same_test(s.as_ref(), t.as_ref())
             }
-            (ItemKey::Event(a), ItemKey::Event(b)) => a == b,
             (ItemKey::Role(a), ItemKey::Role(b)) => a == b,
             (ItemKey::Surface, ItemKey::Surface) => true,
-            (ItemKey::Group(..) | ItemKey::Event(_) | ItemKey::Role(_) | ItemKey::Surface, _) => {
-                false
-            }
+            (ItemKey::Group(..) | ItemKey::Role(_) | ItemKey::Surface, _) => false,
         }
     }
 }
@@ -316,13 +286,6 @@ pub(super) struct Item {
     pub(super) place: String,
     /// Its keys; replaced at every one, it is gone.
     pub(super) keys: Vec<ItemKey>,
-}
-
-/// A widget's presentations, keyed by event.
-fn presentation_items(source: usize, held: &[PresentationTransition]) -> Vec<Item> {
-    items("presentations", source, held, |presentation| {
-        vec![ItemKey::Event(presentation.event.clone())]
-    })
 }
 
 /// The items of a keyed list at `list`, stated by the source `source`.
@@ -387,18 +350,11 @@ struct Flatten {
     cleared: Vec<String>,
     /// Places this source appends to.
     appended: Vec<String>,
-    /// The visuals its engines name.
-    visuals: Vec<Visual>,
-    /// The Breeze tests its engines state, by the engine's place.
-    tests: Vec<(String, BreezeTest)>,
     /// The keyframes it states, by their places, and the parts they name.
     keyframes: Vec<(String, Option<PartRef>)>,
     /// The indication boxes it states, by their places, and the parts they
     /// name.
     indication_boxes: Vec<(String, PartRef)>,
-    /// The `Keyed` transition kinds it states: each kind's place, its key
-    /// and the key's place as a problem names it.
-    kinds: Vec<(String, Key, String)>,
 }
 
 impl Flatten {
@@ -471,15 +427,6 @@ impl Flatten {
         self.push(path, place, OpKind::Set(Val::Stated(fact)));
     }
 
-    /// A transition's engine at `path`'s `engine`: its Breeze test, where
-    /// it states one.
-    fn test(&mut self, path: &Path, engine: &TransitionEngine) {
-        if let TransitionEngine::Breeze(test) | TransitionEngine::BreezeTabBar(test) = engine {
-            let place = below(&self.place(path), "engine");
-            self.tests.push((place, test.clone()));
-        }
-    }
-
     /// A loop's keyframes at `path`: each one's place and the part it
     /// names.
     fn keyframes(&mut self, path: &Path, keyframes: &[Keyframe]) {
@@ -491,8 +438,7 @@ impl Flatten {
     }
 
     /// The steps, each `Touch` another step of the source sets below or at
-    /// its place dropped: what remains is a field set to nothing; and the
-    /// visuals and tests named.
+    /// its place dropped: what remains is a field set to nothing.
     fn finish(self) -> Flat {
         let ops = self.ops;
         let kept = ops
@@ -509,8 +455,6 @@ impl Flatten {
             .collect();
         Flat {
             ops: kept,
-            visuals: self.visuals,
-            tests: self.tests,
             keyframes: self.keyframes,
             indication_boxes: self.indication_boxes,
         }
@@ -558,35 +502,6 @@ impl Visit for Flatten {
                 self.indication_boxes
                     .push((place.clone(), indication.part.clone()));
                 self.push(path, place, OpKind::Set(Val::Stated(Fact::Unknown)));
-            }
-            Node::Transition(transition) => self.test(path, &transition.engine),
-            Node::TransitionPatch(patch) => {
-                if let Some(engine) = &patch.engine {
-                    self.test(path, engine);
-                }
-            }
-            Node::TransitionKind(TransitionKind::Keyed { key, .. }) => {
-                let place = self.place(path);
-                self.kinds
-                    .push((place, key.clone(), path.join("keyed.key")));
-            }
-            Node::Key(key) if path.slot() == Some(("TransitionEngine", "visual")) => {
-                let place = self.place(path);
-                let kind = place
-                    .strip_suffix(".engine.win_ui_animated_icon.visual")
-                    .map(|transition| below(transition, "kind"));
-                let state = self
-                    .kinds
-                    .iter()
-                    .rev()
-                    .find(|(held, ..)| Some(held) == kind.as_ref())
-                    .map(|(_, key, at)| (key.clone(), at.clone()));
-                self.visuals.push(Visual {
-                    place,
-                    at: path.to_string(),
-                    key: key.clone(),
-                    state,
-                });
             }
             _ => {}
         }
@@ -671,8 +586,7 @@ impl Visit for Flatten {
 }
 
 /// `value`'s steps, walked from `root` (spelled by TOML's keys where
-/// `toml`), as the style of a part whose catalogue entry is `part`, and
-/// the visuals and tests it names.
+/// `toml`), as the style of a part whose catalogue entry is `part`.
 fn flatten<T: Walk + ?Sized>(
     value: &T,
     root: &str,
@@ -686,11 +600,8 @@ fn flatten<T: Walk + ?Sized>(
         ops: Vec::new(),
         cleared: Vec::new(),
         appended: Vec::new(),
-        visuals: Vec::new(),
-        tests: Vec::new(),
         keyframes: Vec::new(),
         indication_boxes: Vec::new(),
-        kinds: Vec::new(),
     };
     {
         let mut walker = Walker::new(root, toml, &mut flat);
@@ -802,12 +713,6 @@ impl<'a> Stack<'a> {
                 for binding in &mut source.bindings {
                     binding.at = shorthands.written(&binding.at, &stacked.layer.rules);
                 }
-                for visual in &mut source.visuals {
-                    visual.at = shorthands.written(&visual.at, &stacked.layer.rules);
-                    if let Some((_, at)) = &mut visual.state {
-                        *at = shorthands.written(at, &stacked.layer.rules);
-                    }
-                }
             }
         }
         stack
@@ -821,8 +726,6 @@ impl<'a> Stack<'a> {
         rule: Option<usize>,
         Flat {
             ops,
-            visuals,
-            tests,
             keyframes,
             indication_boxes,
         }: Flat,
@@ -837,8 +740,6 @@ impl<'a> Stack<'a> {
             bindings: Vec::new(),
             surfaces: Vec::new(),
             items: Vec::new(),
-            visuals,
-            tests,
             keyframes,
             indication_boxes,
         });
@@ -868,7 +769,6 @@ impl<'a> Stack<'a> {
                 let number = self.sources.len();
                 let ops = flatten(&values, &join(&root, "values"), toml, number, None);
                 self.push(Target::Values(WidgetKind::Button), pos, layer, None, ops);
-                self.presentations(number, values.presentations.as_deref());
             }
         }
     }
@@ -992,8 +892,6 @@ impl<'a> Stack<'a> {
             bindings,
             surfaces,
             items: held,
-            visuals: flat.visuals,
-            tests: flat.tests,
             keyframes: flat.keyframes,
             indication_boxes: flat.indication_boxes,
         });
@@ -1048,15 +946,7 @@ impl<'a> Stack<'a> {
                     Some(index),
                     ops,
                 );
-                self.presentations(number, values.presentations.as_deref());
             }
-        }
-    }
-
-    /// The presentations the source `number`, a widget's values, states.
-    fn presentations(&mut self, number: usize, held: Option<&[PresentationTransition]>) {
-        if let (Some(source), Some(held)) = (self.sources.get_mut(number), held) {
-            source.items = presentation_items(number, held);
         }
     }
 

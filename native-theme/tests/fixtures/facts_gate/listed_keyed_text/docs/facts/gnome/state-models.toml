@@ -2,7 +2,7 @@
 [[model]]
 widget = "button"
 available = true
-variants = ["flat"]
+variants = ["tool"]
 sizes = []
 densities = []
 axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }

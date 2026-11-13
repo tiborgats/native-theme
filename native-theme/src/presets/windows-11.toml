@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 2b782f2c7d5aebfb33a10e65c89f0535750e332d12d7ca8d7972e9f1474de00e
+# generated lines: sha256 51ce66fcbb3ce63e9445309392bfb37934086bd63173fe7850dd2d602c048260
 
 [preset]
 id = "windows-11"
@@ -20,10 +20,8 @@ surface_sets = [
 color_roles = [
     "text_fill_primary",  # docs/facts/windows/roles.toml:17
     "text_fill_secondary",  # docs/facts/windows/roles.toml:60
-    "text_fill_tertiary",  # docs/facts/windows/roles.toml:103
     "text_fill_disabled",  # docs/facts/windows/roles.toml:146
     "text_fill_inverse",  # docs/facts/windows/roles.toml:189
-    "accent_text_fill_disabled",  # docs/facts/windows/roles.toml:232
     "text_on_accent_fill_selected_text",  # docs/facts/windows/roles.toml:275
     "text_on_accent_fill_primary",  # docs/facts/windows/roles.toml:318
     "text_on_accent_fill_secondary",  # docs/facts/windows/roles.toml:361
@@ -31,69 +29,25 @@ color_roles = [
     "control_fill_default",  # docs/facts/windows/roles.toml:447
     "control_fill_secondary",  # docs/facts/windows/roles.toml:490
     "control_fill_tertiary",  # docs/facts/windows/roles.toml:533
-    "control_fill_quarternary",  # docs/facts/windows/roles.toml:576
     "control_fill_disabled",  # docs/facts/windows/roles.toml:619
     "control_fill_transparent",  # docs/facts/windows/roles.toml:662
-    "control_fill_input_active",  # docs/facts/windows/roles.toml:705
-    "control_strong_fill_default",  # docs/facts/windows/roles.toml:748
-    "control_strong_fill_disabled",  # docs/facts/windows/roles.toml:791
-    "control_solid_fill_default",  # docs/facts/windows/roles.toml:834
     "subtle_fill_transparent",  # docs/facts/windows/roles.toml:877
     "subtle_fill_secondary",  # docs/facts/windows/roles.toml:920
     "subtle_fill_tertiary",  # docs/facts/windows/roles.toml:963
     "subtle_fill_disabled",  # docs/facts/windows/roles.toml:1006
-    "control_alt_fill_transparent",  # docs/facts/windows/roles.toml:1049
-    "control_alt_fill_secondary",  # docs/facts/windows/roles.toml:1092
-    "control_alt_fill_tertiary",  # docs/facts/windows/roles.toml:1135
-    "control_alt_fill_quarternary",  # docs/facts/windows/roles.toml:1178
-    "control_alt_fill_disabled",  # docs/facts/windows/roles.toml:1221
-    "control_on_image_fill_default",  # docs/facts/windows/roles.toml:1264
-    "control_on_image_fill_secondary",  # docs/facts/windows/roles.toml:1307
-    "control_on_image_fill_tertiary",  # docs/facts/windows/roles.toml:1350
-    "control_on_image_fill_disabled",  # docs/facts/windows/roles.toml:1393
     "accent_fill_disabled",  # docs/facts/windows/roles.toml:1436
     "control_stroke_default",  # docs/facts/windows/roles.toml:1479
     "control_stroke_secondary",  # docs/facts/windows/roles.toml:1522
     "control_stroke_on_accent_default",  # docs/facts/windows/roles.toml:1565
     "control_stroke_on_accent_secondary",  # docs/facts/windows/roles.toml:1608
-    "control_stroke_on_accent_tertiary",  # docs/facts/windows/roles.toml:1651
-    "control_stroke_on_accent_disabled",  # docs/facts/windows/roles.toml:1694
-    "control_stroke_for_strong_fill_when_on_image",  # docs/facts/windows/roles.toml:1737
-    "card_stroke_default",  # docs/facts/windows/roles.toml:1780
-    "card_stroke_default_solid",  # docs/facts/windows/roles.toml:1823
-    "control_strong_stroke_default",  # docs/facts/windows/roles.toml:1866
-    "control_strong_stroke_disabled",  # docs/facts/windows/roles.toml:1909
-    "surface_stroke_default",  # docs/facts/windows/roles.toml:1952
-    "surface_stroke_flyout",  # docs/facts/windows/roles.toml:1995
-    "surface_stroke_inverse",  # docs/facts/windows/roles.toml:2038
-    "divider_stroke_default",  # docs/facts/windows/roles.toml:2081
     "focus_stroke_outer",  # docs/facts/windows/roles.toml:2124
     "focus_stroke_inner",  # docs/facts/windows/roles.toml:2167
-    "card_background_fill_default",  # docs/facts/windows/roles.toml:2210
-    "card_background_fill_secondary",  # docs/facts/windows/roles.toml:2253
-    "card_background_fill_tertiary",  # docs/facts/windows/roles.toml:2296
     "smoke_fill_default",  # docs/facts/windows/roles.toml:2339
-    "layer_fill_default",  # docs/facts/windows/roles.toml:2382
-    "layer_fill_alt",  # docs/facts/windows/roles.toml:2425
-    "layer_on_acrylic_fill_default",  # docs/facts/windows/roles.toml:2468
-    "layer_on_accent_acrylic_fill_default",  # docs/facts/windows/roles.toml:2511
-    "layer_on_mica_base_alt_fill_default",  # docs/facts/windows/roles.toml:2554
-    "layer_on_mica_base_alt_fill_secondary",  # docs/facts/windows/roles.toml:2597
-    "layer_on_mica_base_alt_fill_tertiary",  # docs/facts/windows/roles.toml:2640
-    "layer_on_mica_base_alt_fill_transparent",  # docs/facts/windows/roles.toml:2683
     "solid_background_fill_base",  # docs/facts/windows/roles.toml:2726
-    "solid_background_fill_secondary",  # docs/facts/windows/roles.toml:2769
-    "solid_background_fill_tertiary",  # docs/facts/windows/roles.toml:2812
-    "solid_background_fill_quarternary",  # docs/facts/windows/roles.toml:2855
-    "solid_background_fill_quinary",  # docs/facts/windows/roles.toml:2898
-    "solid_background_fill_senary",  # docs/facts/windows/roles.toml:2941
-    "solid_background_fill_transparent",  # docs/facts/windows/roles.toml:2984
-    "solid_background_fill_base_alt",  # docs/facts/windows/roles.toml:3017
     "system_fill_success",  # docs/facts/windows/roles.toml:3060
     "system_fill_caution",  # docs/facts/windows/roles.toml:3103
     "system_fill_critical",  # docs/facts/windows/roles.toml:3146
     "system_fill_neutral",  # docs/facts/windows/roles.toml:3189
-    "system_fill_solid_neutral",  # docs/facts/windows/roles.toml:3232
     "system_fill_attention_background",  # docs/facts/windows/roles.toml:3275
     "system_fill_success_background",  # docs/facts/windows/roles.toml:3318
     "system_fill_caution_background",  # docs/facts/windows/roles.toml:3361
@@ -102,8 +56,6 @@ color_roles = [
     "system_fill_solid_attention_background",  # docs/facts/windows/roles.toml:3490
     "system_fill_solid_neutral_background",  # docs/facts/windows/roles.toml:3533
     "accent_text_fill_primary",  # docs/facts/windows/roles.toml:3576
-    "accent_text_fill_secondary",  # docs/facts/windows/roles.toml:3609
-    "accent_text_fill_tertiary",  # docs/facts/windows/roles.toml:3642
     "accent_fill_selected_text_background",  # docs/facts/windows/roles.toml:3675
     "accent_fill_default",  # docs/facts/windows/roles.toml:3708
     "accent_fill_secondary",  # docs/facts/windows/roles.toml:3741
@@ -119,7 +71,6 @@ color_roles = [
     "system_gray_text",  # docs/facts/windows/roles.toml:3998
     "system_base_low",  # docs/facts/windows/roles.toml:4028
     "system_base_medium_low",  # docs/facts/windows/roles.toml:4061
-    "system_base_medium_high",  # docs/facts/windows/roles.toml:4094
     "system_base_high",  # docs/facts/windows/roles.toml:4127
     "system_chrome_white",  # docs/facts/windows/roles.toml:4160
     "system_list_low",  # docs/facts/windows/roles.toml:4193
@@ -134,7 +85,6 @@ color_roles = [
     "system_control_foreground_transparent",  # docs/facts/windows/roles.toml:4492
     "system_control_highlight_accent",  # docs/facts/windows/roles.toml:4525
     "system_control_highlight_alt_accent",  # docs/facts/windows/roles.toml:4558
-    "system_control_foreground_base_medium_high",  # docs/facts/windows/roles.toml:4591
     "system_control_highlight_alt_base_high",  # docs/facts/windows/roles.toml:4624
     "system_control_highlight_alt_chrome_white",  # docs/facts/windows/roles.toml:4657
     "system_control_highlight_alt_transparent",  # docs/facts/windows/roles.toml:4690
@@ -149,27 +99,10 @@ color_roles = [
 text_styles = [
     "caption",  # docs/facts/windows/tokens.toml:606
     "body",  # docs/facts/windows/tokens.toml:792
-    "body_strong",  # docs/facts/windows/tokens.toml:978
-    "body_large",  # docs/facts/windows/tokens.toml:1169
-    "body_large_strong",  # docs/facts/windows/tokens.toml:1355
     "subtitle",  # docs/facts/windows/tokens.toml:1546
     "title",  # docs/facts/windows/tokens.toml:1737
     "title_large",  # docs/facts/windows/tokens.toml:1928
     "display",  # docs/facts/windows/tokens.toml:2119
-]
-timings = [
-    "control_fast_out_slow_in",  # docs/facts/windows/tokens.toml:64
-    "fast_out_slow_in",  # docs/facts/windows/tokens.toml:74
-    "slow_out_fast_in",  # docs/facts/windows/tokens.toml:84
-    "connected_service",  # docs/facts/windows/tokens.toml:111
-]
-durations = [
-    "control_normal",  # docs/facts/windows/tokens.toml:9
-    "control_fast",  # docs/facts/windows/tokens.toml:24
-    "control_fast_after",  # docs/facts/windows/tokens.toml:39
-    "control_faster",  # docs/facts/windows/tokens.toml:49
-    "connected_service",  # docs/facts/windows/tokens.toml:96
-    "scroll_into_view",  # docs/facts/windows/tokens.toml:130
 ]
 accent_ramp = [
     "dark1",  # docs/facts/windows/roles.toml:4985
@@ -179,8 +112,6 @@ accent_ramp = [
     "light2",  # docs/facts/windows/roles.toml:5065
     "light3",  # docs/facts/windows/roles.toml:5085
 ]
-# docs/facts/windows/button.toml:16591, :16608, :16630 (WinUI AnimatedIcon states, no parameters)
-transition_kinds = { normal = {}, pointer_over = {}, pressed = {} }
 inputs = [
     "accent",  # docs/facts/windows/roles.toml:7479
     "accent_ramp.dark1",  # docs/facts/windows/roles.toml:7489
@@ -198,26 +129,18 @@ accent_inputs = ["accent", "accent_ramp.dark1", "accent_ramp.dark2", "accent_ram
 unit = "px"
 keys = [
     "control_corner_radius",  # docs/facts/windows/tokens.toml:245
-    "overlay_corner_radius",  # docs/facts/windows/tokens.toml:265
-]
-
-[declare.params.pointer_repeat]
-# S4.6: one unit per group, the pointer repeat's delay and interval in ms
-unit = "ms"
-keys = [
-    "delay",  # docs/facts/windows/tokens.toml:2944
-    "interval",  # docs/facts/windows/tokens.toml:2954
 ]
 # hand-written: end declare
 
 # docs/facts/windows/state-models.toml:18
 [declare.widget.button]
 available = true
-variants = ["primary", "flat", "toggle", "menu", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]
+variants = ["primary", "toggle", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]
+later = { variants = ["@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"] }
 sizes = []
 densities = []
-exclusive = [["disabled", "pressed", "hover"], ["indeterminate", "checked"]]
-exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"], ["primary", "flat", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]]
+exclusive = [["disabled", "pressed", "hover"]]
+exclusive_variants = [["primary", "toggle", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"], ["primary", "tool", "@repeat", "@query", "@accept", "@dismiss", "@first", "@last", "@page_number", "@zoom_out"]]
 # docs/facts/windows/button.toml:855
 data = { body = ["widget.label.line_height"] }
 
@@ -252,10 +175,6 @@ data = { body = ["widget.label.line_height"] }
 "widgets.button.icon.icon.symbol_variants" = "U517"
 # docs/facts/windows/button.toml:19109
 "widgets.button.icon.icon.symbolic_colors" = "U517"
-# docs/facts/windows/button.toml:19114
-"widgets.button.icon.icon.animation" = "U517"
-# docs/facts/windows/button.toml:19119
-"widgets.button.icon.transitions" = "U517"
 # docs/facts/windows/button.toml:19124
 "widgets.button.values.icon_placement" = "U517"
 # docs/facts/windows/button.toml:19129
@@ -264,30 +183,6 @@ data = { body = ["widget.label.line_height"] }
 "widgets.button.values.label_position" = "U517"
 # docs/facts/windows/button.toml:19140
 "widgets.button.body.interaction" = "U517"
-# docs/facts/windows/button.toml:19152
-"widgets.button.menu_indicator.glyph.source" = "U519"
-# docs/facts/windows/button.toml:19158
-"widgets.button.menu_indicator.glyph.stroke" = "U519"
-# docs/facts/windows/button.toml:19164
-"widgets.button.menu_indicator.glyph.draw_extent" = "U519"
-# docs/facts/windows/button.toml:19170
-"widgets.button.menu_indicator.glyph.draw_start" = "U519"
-# docs/facts/windows/button.toml:19176
-"widgets.button.menu_indicator.glyph.axes" = "U519"
-# docs/facts/windows/button.toml:19182
-"widgets.button.menu_indicator.glyph.mirroring" = "U519"
-# docs/facts/windows/button.toml:19232
-"widgets.button.menu_indicator.min_height_px" = "U519"
-# docs/facts/windows/button.toml:19238
-"widgets.button.menu_indicator.transform" = "U519"
-# docs/facts/windows/button.toml:19274
-"widgets.button.menu_indicator.margin" = "U519"
-# docs/facts/windows/button.toml:19286
-"widgets.button.menu_indicator.min_width_px" = "U519"
-# docs/facts/windows/button.toml:19292
-"widgets.button.values.menu_indicator_anchor" = "U519"
-# docs/facts/windows/button.toml:19298
-"widgets.button.values.menu_indicator_gap_px" = "U519"
 # docs/facts/windows/roles.toml:7471
 "colors.light.global.drop_highlight" = "U513"
 # docs/facts/windows/roles.toml:7471
@@ -296,8 +191,6 @@ data = { body = ["widget.label.line_height"] }
 "tokens.icons.theme" = "U516"
 # docs/facts/windows/tokens.toml:2610
 "tokens.icons.theme_fallback" = "U516"
-# docs/facts/windows/tokens.toml:2615
-"tokens.icons.mirroring" = "U516"
 # docs/facts/windows/tokens.toml:2620
 "tokens.icons.sizes.small" = "U516"
 # docs/facts/windows/tokens.toml:2625
@@ -306,8 +199,6 @@ data = { body = ["widget.label.line_height"] }
 "tokens.icons.sizes.dialog" = "U516"
 # docs/facts/windows/tokens.toml:2635
 "tokens.icons.sizes.panel" = "U516"
-# docs/facts/windows/tokens.toml:2643
-"tokens.icons.sizes.keyed" = "U681"
 # docs/facts/windows/tokens.toml:2648
 "tokens.icons.sizes.toolbar.fill" = "U516"
 # docs/facts/windows/tokens.toml:2653
@@ -324,60 +215,16 @@ data = { body = ["widget.label.line_height"] }
 "tokens.icons.sizes.toolbar.symbol_variants" = "U516"
 # docs/facts/windows/tokens.toml:2683
 "tokens.icons.sizes.toolbar.symbolic_colors" = "U516"
-# docs/facts/windows/tokens.toml:2688
-"tokens.icons.sizes.toolbar.animation" = "U516"
-# docs/facts/windows/tokens.toml:2739
-"tokens.caret.blink_timeout_ms" = "U505"
-# docs/facts/windows/tokens.toml:2744
-"tokens.caret.solid_while_typing" = "U505"
-# docs/facts/windows/tokens.toml:2751
-"tokens.caret.color" = "U506"
-# docs/facts/windows/tokens.toml:2839
-"tokens.behavior.drag_time_ms" = "U501"
-# docs/facts/windows/tokens.toml:2844
-"tokens.behavior.long_press_ms" = "U501"
-# docs/facts/windows/tokens.toml:2849
-"tokens.behavior.touch.slop_px" = "U501"
-# docs/facts/windows/tokens.toml:2854
-"tokens.behavior.touch.paging_slop_px" = "U501"
-# docs/facts/windows/tokens.toml:2859
-"tokens.behavior.touch.double_tap_time_ms" = "U501"
-# docs/facts/windows/tokens.toml:2864
-"tokens.behavior.touch.double_tap_slop_px" = "U501"
-# docs/facts/windows/tokens.toml:2869
-"tokens.behavior.touch.delay_ms" = "U501"
-# docs/facts/windows/tokens.toml:2886
-"tokens.behavior.hide_pointer_delay_ms" = "U502"
-# docs/facts/windows/tokens.toml:2891
-"tokens.behavior.hide_pointer_fade_ms" = "U502"
-# docs/facts/windows/tokens.toml:2898
-"tokens.behavior.key_repeat" = "U503"
 # docs/facts/windows/tokens.toml:2910
 "tokens.behavior.mnemonics" = "U504"
 # docs/facts/windows/tokens.toml:2915
 "tokens.behavior.mnemonic_when_disabled" = "U504"
-# docs/facts/windows/tokens.toml:2922
-"tokens.behavior.single_click_activates" = "U504"
 # docs/facts/windows/tokens.toml:2967
 "tokens.motion.speed_factor" = "U515"
-# docs/facts/windows/tokens.toml:2975
-"tokens.elevation" = "U511"
 # docs/facts/windows/tokens.toml:2982
 "tokens.size_classes" = "U512"
-# docs/facts/windows/tokens.toml:3029
-"tokens.text.rendering.hinting" = "U508"
-# docs/facts/windows/tokens.toml:3034
-"tokens.text.rendering.subpixel_order" = "U508"
-# docs/facts/windows/tokens.toml:3039
-"tokens.text.rendering.engine" = "U508"
-# docs/facts/windows/tokens.toml:3044
-"tokens.text.rendering.lcd_filter" = "U508"
 # docs/facts/windows/tokens.toml:3071
 "tokens.text.roles.monospace" = "U509"
-# docs/facts/windows/tokens.toml:3080
-"tokens.text.fallbacks.families" = "U520"
-# docs/facts/windows/tokens.toml:3085
-"tokens.text.fallbacks.emoji_family" = "U520"
 # docs/facts/windows/tokens.toml:3131
 "tokens.text.keyed.caption.font.width" = "U518"
 # docs/facts/windows/tokens.toml:3136
@@ -390,24 +237,6 @@ data = { body = ["widget.label.line_height"] }
 "tokens.text.keyed.body.font.features" = "U518"
 # docs/facts/windows/tokens.toml:3178
 "tokens.text.keyed.body.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3205
-"tokens.text.keyed.body_strong.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3210
-"tokens.text.keyed.body_strong.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3215
-"tokens.text.keyed.body_strong.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3242
-"tokens.text.keyed.body_large.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3247
-"tokens.text.keyed.body_large.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3252
-"tokens.text.keyed.body_large.scaling_role" = "U518"
-# docs/facts/windows/tokens.toml:3279
-"tokens.text.keyed.body_large_strong.font.width" = "U518"
-# docs/facts/windows/tokens.toml:3284
-"tokens.text.keyed.body_large_strong.font.features" = "U518"
-# docs/facts/windows/tokens.toml:3289
-"tokens.text.keyed.body_large_strong.scaling_role" = "U518"
 # docs/facts/windows/tokens.toml:3316
 "tokens.text.keyed.subtitle.font.width" = "U518"
 # docs/facts/windows/tokens.toml:3321
@@ -480,14 +309,10 @@ dark = "#99ebff"
 text_fill_primary = "#000000e4"
 # docs/facts/windows/roles.toml:76
 text_fill_secondary = "#0000009e"
-# docs/facts/windows/roles.toml:119
-text_fill_tertiary = "#00000072"
 # docs/facts/windows/roles.toml:162
 text_fill_disabled = "#0000005c"
 # docs/facts/windows/roles.toml:205
 text_fill_inverse = "#ffffff"
-# docs/facts/windows/roles.toml:248
-accent_text_fill_disabled = "#0000005c"
 # docs/facts/windows/roles.toml:291
 text_on_accent_fill_selected_text = "#ffffff"
 # docs/facts/windows/roles.toml:334
@@ -502,20 +327,10 @@ control_fill_default = "#ffffffb3"
 control_fill_secondary = "#f9f9f980"
 # docs/facts/windows/roles.toml:549
 control_fill_tertiary = "#f9f9f94d"
-# docs/facts/windows/roles.toml:592
-control_fill_quarternary = "#f3f3f3c2"
 # docs/facts/windows/roles.toml:635
 control_fill_disabled = "#f9f9f94d"
 # docs/facts/windows/roles.toml:678
 control_fill_transparent = "#ffffff00"
-# docs/facts/windows/roles.toml:721
-control_fill_input_active = "#ffffff"
-# docs/facts/windows/roles.toml:764
-control_strong_fill_default = "#00000072"
-# docs/facts/windows/roles.toml:807
-control_strong_fill_disabled = "#00000051"
-# docs/facts/windows/roles.toml:850
-control_solid_fill_default = "#ffffff"
 # docs/facts/windows/roles.toml:893
 subtle_fill_transparent = "#ffffff00"
 # docs/facts/windows/roles.toml:936
@@ -524,24 +339,6 @@ subtle_fill_secondary = "#00000009"
 subtle_fill_tertiary = "#00000006"
 # docs/facts/windows/roles.toml:1022
 subtle_fill_disabled = "#ffffff00"
-# docs/facts/windows/roles.toml:1065
-control_alt_fill_transparent = "#ffffff00"
-# docs/facts/windows/roles.toml:1108
-control_alt_fill_secondary = "#00000006"
-# docs/facts/windows/roles.toml:1151
-control_alt_fill_tertiary = "#0000000f"
-# docs/facts/windows/roles.toml:1194
-control_alt_fill_quarternary = "#00000018"
-# docs/facts/windows/roles.toml:1237
-control_alt_fill_disabled = "#ffffff00"
-# docs/facts/windows/roles.toml:1280
-control_on_image_fill_default = "#ffffffc9"
-# docs/facts/windows/roles.toml:1323
-control_on_image_fill_secondary = "#f3f3f3"
-# docs/facts/windows/roles.toml:1366
-control_on_image_fill_tertiary = "#ebebeb"
-# docs/facts/windows/roles.toml:1409
-control_on_image_fill_disabled = "#ffffff00"
 # docs/facts/windows/roles.toml:1452
 accent_fill_disabled = "#00000037"
 # docs/facts/windows/roles.toml:1495
@@ -552,72 +349,14 @@ control_stroke_secondary = "#00000029"
 control_stroke_on_accent_default = "#ffffff14"
 # docs/facts/windows/roles.toml:1624
 control_stroke_on_accent_secondary = "#00000066"
-# docs/facts/windows/roles.toml:1667
-control_stroke_on_accent_tertiary = "#00000037"
-# docs/facts/windows/roles.toml:1710
-control_stroke_on_accent_disabled = "#0000000f"
-# docs/facts/windows/roles.toml:1753
-control_stroke_for_strong_fill_when_on_image = "#ffffff59"
-# docs/facts/windows/roles.toml:1796
-card_stroke_default = "#0000000f"
-# docs/facts/windows/roles.toml:1839
-card_stroke_default_solid = "#ebebeb"
-# docs/facts/windows/roles.toml:1882
-control_strong_stroke_default = "#00000072"
-# docs/facts/windows/roles.toml:1925
-control_strong_stroke_disabled = "#00000037"
-# docs/facts/windows/roles.toml:1968
-surface_stroke_default = "#75757566"
-# docs/facts/windows/roles.toml:2011
-surface_stroke_flyout = "#0000000f"
-# docs/facts/windows/roles.toml:2054
-surface_stroke_inverse = "#ffffff15"
-# docs/facts/windows/roles.toml:2097
-divider_stroke_default = "#0000000f"
 # docs/facts/windows/roles.toml:2140
 focus_stroke_outer = "#000000e4"
 # docs/facts/windows/roles.toml:2183
 focus_stroke_inner = "#ffffffb3"
-# docs/facts/windows/roles.toml:2226
-card_background_fill_default = "#ffffffb3"
-# docs/facts/windows/roles.toml:2269
-card_background_fill_secondary = "#f6f6f680"
-# docs/facts/windows/roles.toml:2312
-card_background_fill_tertiary = "#ffffff"
 # docs/facts/windows/roles.toml:2355
 smoke_fill_default = "#0000004d"
-# docs/facts/windows/roles.toml:2398
-layer_fill_default = "#ffffff80"
-# docs/facts/windows/roles.toml:2441
-layer_fill_alt = "#ffffff"
-# docs/facts/windows/roles.toml:2484
-layer_on_acrylic_fill_default = "#ffffff40"
-# docs/facts/windows/roles.toml:2527
-layer_on_accent_acrylic_fill_default = "#ffffff40"
-# docs/facts/windows/roles.toml:2570
-layer_on_mica_base_alt_fill_default = "#ffffffb3"
-# docs/facts/windows/roles.toml:2613
-layer_on_mica_base_alt_fill_secondary = "#0000000a"
-# docs/facts/windows/roles.toml:2656
-layer_on_mica_base_alt_fill_tertiary = "#f9f9f9"
-# docs/facts/windows/roles.toml:2699
-layer_on_mica_base_alt_fill_transparent = "#00000000"
 # docs/facts/windows/roles.toml:2742
 solid_background_fill_base = "#f3f3f3"
-# docs/facts/windows/roles.toml:2785
-solid_background_fill_secondary = "#eeeeee"
-# docs/facts/windows/roles.toml:2828
-solid_background_fill_tertiary = "#f9f9f9"
-# docs/facts/windows/roles.toml:2871
-solid_background_fill_quarternary = "#ffffff"
-# docs/facts/windows/roles.toml:2914
-solid_background_fill_quinary = "#fdfdfd"
-# docs/facts/windows/roles.toml:2957
-solid_background_fill_senary = "#ffffff"
-# docs/facts/windows/roles.toml:2995
-solid_background_fill_transparent = "#f3f3f300"
-# docs/facts/windows/roles.toml:3033
-solid_background_fill_base_alt = "#dadada"
 # docs/facts/windows/roles.toml:3076
 system_fill_success = "#0f7b0f"
 # docs/facts/windows/roles.toml:3119
@@ -626,8 +365,6 @@ system_fill_caution = "#9d5d00"
 system_fill_critical = "#c42b1c"
 # docs/facts/windows/roles.toml:3205
 system_fill_neutral = "#00000072"
-# docs/facts/windows/roles.toml:3248
-system_fill_solid_neutral = "#8a8a8a"
 # docs/facts/windows/roles.toml:3291
 system_fill_attention_background = "#f6f6f680"
 # docs/facts/windows/roles.toml:3334
@@ -644,10 +381,6 @@ system_fill_solid_attention_background = "#f7f7f7"
 system_fill_solid_neutral_background = "#f3f3f3"
 # docs/facts/windows/roles.toml:3587
 accent_text_fill_primary = "= role.global.accent_ramp.dark2"
-# docs/facts/windows/roles.toml:3620
-accent_text_fill_secondary = "= role.global.accent_ramp.dark3"
-# docs/facts/windows/roles.toml:3653
-accent_text_fill_tertiary = "= role.global.accent_ramp.dark1"
 # docs/facts/windows/roles.toml:3686
 accent_fill_selected_text_background = "= role.global.accent"
 # docs/facts/windows/roles.toml:3719
@@ -678,8 +411,6 @@ system_gray_text = "#ff00ff"
 system_base_low = "#00000033"
 # docs/facts/windows/roles.toml:4072
 system_base_medium_low = "#00000066"
-# docs/facts/windows/roles.toml:4105
-system_base_medium_high = "#000000cc"
 # docs/facts/windows/roles.toml:4138
 system_base_high = "#000000"
 # docs/facts/windows/roles.toml:4171
@@ -708,8 +439,6 @@ system_control_foreground_transparent = "#ffffff00"
 system_control_highlight_accent = "= role.global.accent"
 # docs/facts/windows/roles.toml:4569
 system_control_highlight_alt_accent = "= role.global.accent"
-# docs/facts/windows/roles.toml:4602
-system_control_foreground_base_medium_high = "= role.@system_base_medium_high"
 # docs/facts/windows/roles.toml:4635
 system_control_highlight_alt_base_high = "= role.@system_base_high"
 # docs/facts/windows/roles.toml:4668
@@ -1004,14 +733,10 @@ disabled.background_positive = "absent"
 text_fill_primary = "#ffffff"
 # docs/facts/windows/roles.toml:60
 text_fill_secondary = "#ffffffc5"
-# docs/facts/windows/roles.toml:103
-text_fill_tertiary = "#ffffff87"
 # docs/facts/windows/roles.toml:146
 text_fill_disabled = "#ffffff5d"
 # docs/facts/windows/roles.toml:189
 text_fill_inverse = "#000000e4"
-# docs/facts/windows/roles.toml:232
-accent_text_fill_disabled = "#ffffff5d"
 # docs/facts/windows/roles.toml:275
 text_on_accent_fill_selected_text = "#ffffff"
 # docs/facts/windows/roles.toml:318
@@ -1026,20 +751,10 @@ control_fill_default = "#ffffff0f"
 control_fill_secondary = "#ffffff15"
 # docs/facts/windows/roles.toml:533
 control_fill_tertiary = "#ffffff08"
-# docs/facts/windows/roles.toml:576
-control_fill_quarternary = "#ffffff0f"
 # docs/facts/windows/roles.toml:619
 control_fill_disabled = "#ffffff0b"
 # docs/facts/windows/roles.toml:662
 control_fill_transparent = "#ffffff00"
-# docs/facts/windows/roles.toml:705
-control_fill_input_active = "#1e1e1eb3"
-# docs/facts/windows/roles.toml:748
-control_strong_fill_default = "#ffffff8b"
-# docs/facts/windows/roles.toml:791
-control_strong_fill_disabled = "#ffffff3f"
-# docs/facts/windows/roles.toml:834
-control_solid_fill_default = "#454545"
 # docs/facts/windows/roles.toml:877
 subtle_fill_transparent = "#ffffff00"
 # docs/facts/windows/roles.toml:920
@@ -1048,24 +763,6 @@ subtle_fill_secondary = "#ffffff0f"
 subtle_fill_tertiary = "#ffffff0a"
 # docs/facts/windows/roles.toml:1006
 subtle_fill_disabled = "#ffffff00"
-# docs/facts/windows/roles.toml:1049
-control_alt_fill_transparent = "#ffffff00"
-# docs/facts/windows/roles.toml:1092
-control_alt_fill_secondary = "#00000019"
-# docs/facts/windows/roles.toml:1135
-control_alt_fill_tertiary = "#ffffff0b"
-# docs/facts/windows/roles.toml:1178
-control_alt_fill_quarternary = "#ffffff12"
-# docs/facts/windows/roles.toml:1221
-control_alt_fill_disabled = "#ffffff00"
-# docs/facts/windows/roles.toml:1264
-control_on_image_fill_default = "#1c1c1cb3"
-# docs/facts/windows/roles.toml:1307
-control_on_image_fill_secondary = "#1a1a1a"
-# docs/facts/windows/roles.toml:1350
-control_on_image_fill_tertiary = "#131313"
-# docs/facts/windows/roles.toml:1393
-control_on_image_fill_disabled = "#1e1e1e"
 # docs/facts/windows/roles.toml:1436
 accent_fill_disabled = "#ffffff28"
 # docs/facts/windows/roles.toml:1479
@@ -1076,72 +773,14 @@ control_stroke_secondary = "#ffffff18"
 control_stroke_on_accent_default = "#ffffff14"
 # docs/facts/windows/roles.toml:1608
 control_stroke_on_accent_secondary = "#00000023"
-# docs/facts/windows/roles.toml:1651
-control_stroke_on_accent_tertiary = "#00000037"
-# docs/facts/windows/roles.toml:1694
-control_stroke_on_accent_disabled = "#00000033"
-# docs/facts/windows/roles.toml:1737
-control_stroke_for_strong_fill_when_on_image = "#0000006b"
-# docs/facts/windows/roles.toml:1780
-card_stroke_default = "#00000019"
-# docs/facts/windows/roles.toml:1823
-card_stroke_default_solid = "#1c1c1c"
-# docs/facts/windows/roles.toml:1866
-control_strong_stroke_default = "#ffffff8b"
-# docs/facts/windows/roles.toml:1909
-control_strong_stroke_disabled = "#ffffff28"
-# docs/facts/windows/roles.toml:1952
-surface_stroke_default = "#75757566"
-# docs/facts/windows/roles.toml:1995
-surface_stroke_flyout = "#00000033"
-# docs/facts/windows/roles.toml:2038
-surface_stroke_inverse = "#0000000f"
-# docs/facts/windows/roles.toml:2081
-divider_stroke_default = "#ffffff15"
 # docs/facts/windows/roles.toml:2124
 focus_stroke_outer = "#ffffff"
 # docs/facts/windows/roles.toml:2167
 focus_stroke_inner = "#000000b3"
-# docs/facts/windows/roles.toml:2210
-card_background_fill_default = "#ffffff0d"
-# docs/facts/windows/roles.toml:2253
-card_background_fill_secondary = "#ffffff08"
-# docs/facts/windows/roles.toml:2296
-card_background_fill_tertiary = "#ffffff12"
 # docs/facts/windows/roles.toml:2339
 smoke_fill_default = "#0000004d"
-# docs/facts/windows/roles.toml:2382
-layer_fill_default = "#3a3a3a4c"
-# docs/facts/windows/roles.toml:2425
-layer_fill_alt = "#ffffff0d"
-# docs/facts/windows/roles.toml:2468
-layer_on_acrylic_fill_default = "#ffffff09"
-# docs/facts/windows/roles.toml:2511
-layer_on_accent_acrylic_fill_default = "#ffffff09"
-# docs/facts/windows/roles.toml:2554
-layer_on_mica_base_alt_fill_default = "#3a3a3a73"
-# docs/facts/windows/roles.toml:2597
-layer_on_mica_base_alt_fill_secondary = "#ffffff0f"
-# docs/facts/windows/roles.toml:2640
-layer_on_mica_base_alt_fill_tertiary = "#2c2c2c"
-# docs/facts/windows/roles.toml:2683
-layer_on_mica_base_alt_fill_transparent = "#ffffff00"
 # docs/facts/windows/roles.toml:2726
 solid_background_fill_base = "#202020"
-# docs/facts/windows/roles.toml:2769
-solid_background_fill_secondary = "#1c1c1c"
-# docs/facts/windows/roles.toml:2812
-solid_background_fill_tertiary = "#282828"
-# docs/facts/windows/roles.toml:2855
-solid_background_fill_quarternary = "#2c2c2c"
-# docs/facts/windows/roles.toml:2898
-solid_background_fill_quinary = "#333333"
-# docs/facts/windows/roles.toml:2941
-solid_background_fill_senary = "#373737"
-# docs/facts/windows/roles.toml:2984
-solid_background_fill_transparent = "#20202000"
-# docs/facts/windows/roles.toml:3017
-solid_background_fill_base_alt = "#0a0a0a"
 # docs/facts/windows/roles.toml:3060
 system_fill_success = "#6ccb5f"
 # docs/facts/windows/roles.toml:3103
@@ -1150,8 +789,6 @@ system_fill_caution = "#fce100"
 system_fill_critical = "#ff99a4"
 # docs/facts/windows/roles.toml:3189
 system_fill_neutral = "#ffffff8b"
-# docs/facts/windows/roles.toml:3232
-system_fill_solid_neutral = "#9d9d9d"
 # docs/facts/windows/roles.toml:3275
 system_fill_attention_background = "#ffffff08"
 # docs/facts/windows/roles.toml:3318
@@ -1168,10 +805,6 @@ system_fill_solid_attention_background = "#2e2e2e"
 system_fill_solid_neutral_background = "#2e2e2e"
 # docs/facts/windows/roles.toml:3576
 accent_text_fill_primary = "= role.global.accent_ramp.light3"
-# docs/facts/windows/roles.toml:3609
-accent_text_fill_secondary = "= role.global.accent_ramp.light3"
-# docs/facts/windows/roles.toml:3642
-accent_text_fill_tertiary = "= role.global.accent_ramp.light2"
 # docs/facts/windows/roles.toml:3675
 accent_fill_selected_text_background = "= role.global.accent"
 # docs/facts/windows/roles.toml:3708
@@ -1202,8 +835,6 @@ system_gray_text = "#ff00ff"
 system_base_low = "#ffffff33"
 # docs/facts/windows/roles.toml:4061
 system_base_medium_low = "#ffffff66"
-# docs/facts/windows/roles.toml:4094
-system_base_medium_high = "#ffffffcc"
 # docs/facts/windows/roles.toml:4127
 system_base_high = "#ffffff"
 # docs/facts/windows/roles.toml:4160
@@ -1232,8 +863,6 @@ system_control_foreground_transparent = "#ffffff00"
 system_control_highlight_accent = "= role.global.accent"
 # docs/facts/windows/roles.toml:4558
 system_control_highlight_alt_accent = "= role.global.accent"
-# docs/facts/windows/roles.toml:4591
-system_control_foreground_base_medium_high = "= role.@system_base_medium_high"
 # docs/facts/windows/roles.toml:4624
 system_control_highlight_alt_base_high = "= role.@system_base_high"
 # docs/facts/windows/roles.toml:4657
@@ -1523,59 +1152,13 @@ disabled.background_neutral = "absent"
 # docs/facts/windows/roles.toml:7397
 disabled.background_positive = "absent"
 
-[tokens.motion]
-# docs/facts/windows/tokens.toml:9
-durations.control_normal_ms = 250
-# docs/facts/windows/tokens.toml:24
-durations.control_fast_ms = 167
-# docs/facts/windows/tokens.toml:39
-durations.control_fast_after_ms = 168
-# docs/facts/windows/tokens.toml:49
-durations.control_faster_ms = 83
-# docs/facts/windows/tokens.toml:64
-timings.control_fast_out_slow_in = { cubic_bezier = [0, 0, 0, 1] }
-# docs/facts/windows/tokens.toml:74
-timings.fast_out_slow_in = { cubic_bezier = [0, 0, 0, 1] }
-# docs/facts/windows/tokens.toml:84
-timings.slow_out_fast_in = { cubic_bezier = [1, 0, 1, 1] }
-# docs/facts/windows/tokens.toml:96
-durations.connected_service_ms = 300
-# docs/facts/windows/tokens.toml:111
-timings.connected_service = { cubic_bezier = [0.8, 0, 0.2, 1] }
-# docs/facts/windows/tokens.toml:130
-durations.scroll_into_view_ms = 0
-# docs/facts/windows/tokens.toml:158
-color_space = "straight_srgb8"
-
 [tokens.behavior]
-# docs/facts/windows/tokens.toml:171
-double_click_time_ms = 500
-# docs/facts/windows/tokens.toml:183
-hover_time_ms = 400
 # docs/facts/windows/tokens.toml:213
 focus_visible_when = { keyboard = {} }
-# docs/facts/windows/tokens.toml:2795
-double_click_distance_px = 4
-# docs/facts/windows/tokens.toml:2805
-double_click_height_px = 4
-# docs/facts/windows/tokens.toml:2815
-drag_threshold_px = 4
-# docs/facts/windows/tokens.toml:2826
-drag_min_delay_ms = 0
-# docs/facts/windows/tokens.toml:2875
-hide_pointer_while_typing = false
-# docs/facts/windows/tokens.toml:2928
-spring_loading_ms = 1000
 
 [tokens.params]
 # docs/facts/windows/tokens.toml:245
 shape.control_corner_radius = 4
-# docs/facts/windows/tokens.toml:265
-shape.overlay_corner_radius = 8
-# docs/facts/windows/tokens.toml:2944
-pointer_repeat.delay = 500
-# docs/facts/windows/tokens.toml:2954
-pointer_repeat.interval = 33
 
 [tokens.focus]
 # docs/facts/windows/tokens.toml:288
@@ -1606,8 +1189,6 @@ corners.bottom_left = "follow_part"
 corners.curve = "circular"
 # docs/facts/windows/tokens.toml:545
 shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.@focus_stroke_inner", inset = true, falloff = "gaussian" }] }
-# docs/facts/windows/tokens.toml:583
-transition = "absent"
 
 [tokens.text]
 # docs/facts/windows/tokens.toml:606
@@ -1662,84 +1243,6 @@ keyed.body.mnemonic_decoration = "absent"
 keyed.body.fill = "absent"
 # docs/facts/windows/tokens.toml:968
 keyed.body.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:978
-keyed.body_strong.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1003
-keyed.body_strong.font.size_px = 14
-# docs/facts/windows/tokens.toml:1023
-keyed.body_strong.font.weight = 600
-# docs/facts/windows/tokens.toml:1043
-keyed.body_strong.font.style = "normal"
-# docs/facts/windows/tokens.toml:1053
-keyed.body_strong.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:1063
-keyed.body_strong.line_height = "auto"
-# docs/facts/windows/tokens.toml:1078
-keyed.body_strong.decoration = "absent"
-# docs/facts/windows/tokens.toml:1088
-keyed.body_strong.elision = "end"
-# docs/facts/windows/tokens.toml:1098
-keyed.body_strong.wrap = "word"
-# docs/facts/windows/tokens.toml:1108
-keyed.body_strong.max_lines = "absent"
-# docs/facts/windows/tokens.toml:1125
-keyed.body_strong.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:1142
-keyed.body_strong.fill = "absent"
-# docs/facts/windows/tokens.toml:1159
-keyed.body_strong.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:1169
-keyed.body_large.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1194
-keyed.body_large.font.size_px = 18
-# docs/facts/windows/tokens.toml:1214
-keyed.body_large.font.weight = 400
-# docs/facts/windows/tokens.toml:1229
-keyed.body_large.font.style = "normal"
-# docs/facts/windows/tokens.toml:1239
-keyed.body_large.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:1249
-keyed.body_large.line_height = "auto"
-# docs/facts/windows/tokens.toml:1264
-keyed.body_large.decoration = "absent"
-# docs/facts/windows/tokens.toml:1274
-keyed.body_large.elision = "end"
-# docs/facts/windows/tokens.toml:1284
-keyed.body_large.wrap = "word"
-# docs/facts/windows/tokens.toml:1294
-keyed.body_large.max_lines = "absent"
-# docs/facts/windows/tokens.toml:1311
-keyed.body_large.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:1328
-keyed.body_large.fill = "absent"
-# docs/facts/windows/tokens.toml:1345
-keyed.body_large.font.axes = { opsz = "follows_size" }
-# docs/facts/windows/tokens.toml:1355
-keyed.body_large_strong.font.family = "Segoe UI Variable"
-# docs/facts/windows/tokens.toml:1380
-keyed.body_large_strong.font.size_px = 18
-# docs/facts/windows/tokens.toml:1400
-keyed.body_large_strong.font.weight = 600
-# docs/facts/windows/tokens.toml:1420
-keyed.body_large_strong.font.style = "normal"
-# docs/facts/windows/tokens.toml:1430
-keyed.body_large_strong.letter_spacing_px = 0
-# docs/facts/windows/tokens.toml:1440
-keyed.body_large_strong.line_height = "auto"
-# docs/facts/windows/tokens.toml:1455
-keyed.body_large_strong.decoration = "absent"
-# docs/facts/windows/tokens.toml:1465
-keyed.body_large_strong.elision = "end"
-# docs/facts/windows/tokens.toml:1475
-keyed.body_large_strong.wrap = "word"
-# docs/facts/windows/tokens.toml:1485
-keyed.body_large_strong.max_lines = "absent"
-# docs/facts/windows/tokens.toml:1502
-keyed.body_large_strong.mnemonic_decoration = "absent"
-# docs/facts/windows/tokens.toml:1519
-keyed.body_large_strong.fill = "absent"
-# docs/facts/windows/tokens.toml:1536
-keyed.body_large_strong.font.axes = { opsz = "follows_size" }
 # docs/facts/windows/tokens.toml:1546
 keyed.subtitle.font.family = "Segoe UI Variable"
 # docs/facts/windows/tokens.toml:1571
@@ -1856,44 +1359,16 @@ roles.title2 = "= token.text.keyed.subtitle"
 roles.title3 = "= token.text.roles.title2"
 # docs/facts/windows/tokens.toml:2363
 roles.headline = "= token.text.roles.title2"
-# docs/facts/windows/tokens.toml:2373
-roles.subheadline = "= token.text.roles.body"
 # docs/facts/windows/tokens.toml:2383
 roles.large_title = "= token.text.keyed.title_large"
 # docs/facts/windows/tokens.toml:2393
 roles.display_large = "= token.text.keyed.display"
-# docs/facts/windows/tokens.toml:2403
-roles.display_medium = "= token.text.roles.display_large"
 # docs/facts/windows/tokens.toml:2413
 roles.display_small = "= token.text.roles.display_large"
-# docs/facts/windows/tokens.toml:2423
-roles.body_emphasized = "= token.text.keyed.body_strong"
-# docs/facts/windows/tokens.toml:2433
-roles.callout = "= token.text.keyed.body_large"
-# docs/facts/windows/tokens.toml:2443
-roles.footnote = "= token.text.roles.caption"
-# docs/facts/windows/tokens.toml:2453
-roles.caption_emphasized = "= token.text.roles.caption"
-# docs/facts/windows/tokens.toml:2463
-roles.caption2 = "= token.text.roles.caption"
-# docs/facts/windows/tokens.toml:2473
-roles.label = "= token.text.roles.body"
-# docs/facts/windows/tokens.toml:2483
-roles.numeric = "= token.text.roles.body"
 # docs/facts/windows/tokens.toml:2495
 font_dpi = 96
-# docs/facts/windows/tokens.toml:2555
-fallbacks.per_family."Segoe Fluent Icons" = ["Segoe MDL2 Assets"]
 # docs/facts/windows/tokens.toml:3004
 scaling = "win_ui"
-# docs/facts/windows/tokens.toml:3019
-rendering.antialiasing = "grayscale"
-# docs/facts/windows/tokens.toml:3049
-rendering.gamma = 1.8
-# docs/facts/windows/tokens.toml:3059
-rendering.contrast = 1.0
-# docs/facts/windows/tokens.toml:3095
-fallbacks.per_language = { en-US = ["Segoe UI"], el-GR = ["Segoe UI"], ru-RU = ["Segoe UI"], ar-SA = ["Segoe UI"], fa-IR = ["Segoe UI"], he-IL = ["Segoe UI"], hi-IN = ["Nirmala UI"], bn-IN = ["Nirmala UI"], ta-IN = ["Nirmala UI"], th-TH = ["Leelawadee UI"], lo-LA = ["Leelawadee UI"], km-KH = ["Leelawadee UI"], my-MM = ["Myanmar Text"], si-LK = ["Nirmala UI"], hy-AM = ["Segoe UI"], ka-GE = ["Segoe UI"], am-ET = ["Ebrima"], ja-JP = ["Yu Gothic UI"], zh-CN = ["Microsoft YaHei UI"], zh-TW = ["Microsoft JhengHei UI"], zh-HK = ["Microsoft JhengHei UI"], ko-KR = ["Malgun Gothic"] }
 # docs/facts/windows/tokens.toml:3109
 keyed.caption.case = "mixed"
 # docs/facts/windows/tokens.toml:3120
@@ -1902,18 +1377,6 @@ keyed.caption.word_spacing_px = 0
 keyed.body.case = "mixed"
 # docs/facts/windows/tokens.toml:3157
 keyed.body.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3183
-keyed.body_strong.case = "mixed"
-# docs/facts/windows/tokens.toml:3194
-keyed.body_strong.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3220
-keyed.body_large.case = "mixed"
-# docs/facts/windows/tokens.toml:3231
-keyed.body_large.word_spacing_px = 0
-# docs/facts/windows/tokens.toml:3257
-keyed.body_large_strong.case = "mixed"
-# docs/facts/windows/tokens.toml:3268
-keyed.body_large_strong.word_spacing_px = 0
 # docs/facts/windows/tokens.toml:3294
 keyed.subtitle.case = "mixed"
 # docs/facts/windows/tokens.toml:3305
@@ -1934,32 +1397,18 @@ keyed.display.word_spacing_px = 0
 [tokens.icons]
 # docs/facts/windows/tokens.toml:2517
 sizes.toolbar.size_px = 16
-# docs/facts/windows/tokens.toml:2536
-animated_visuals.chevron_down_small = { duration_ms = 483.3333, markers = { NormalToPointerOver_Start = 0.0, NormalToPointerOver_End = 0.0, NormalToPressed_Start = 0.0, NormalToPressed_End = 0.312068965517241, PointerOverToNormal_Start = 0.0, PointerOverToNormal_End = 0.0, PointerOverToPressed_Start = 0.0, PointerOverToPressed_End = 0.312068965517241, PressedToNormal_Start = 0.346551724137931, PressedToNormal_End = 0.967241379310345, PressedToPointerOver_Start = 0.346551724137931, PressedToPointerOver_End = 0.967241379310345 } }
-# docs/facts/windows/tokens.toml:2575
-animated_visuals.accept = { duration_ms = 2666.6666, markers = { NormalOnToNormalOff_Start = 0.0, NormalOnToNormalOff_End = 0.0253125, NormalOnToPointerOverOn_Start = 0.0315625, NormalOnToPointerOverOn_End = 0.0565625, NormalOnToPressedOn_Start = 0.0628125, NormalOnToPressedOn_End = 0.0878125, NormalOffToNormalOn_Start = 0.0940625, NormalOffToNormalOn_End = 0.2128125, NormalOffToPointerOverOff_Start = 0.2190625, NormalOffToPointerOverOff_End = 0.2440625, NormalOffToPressedOff_Start = 0.2503125, NormalOffToPressedOff_End = 0.2753125, PointerOverOnToPointerOverOff_Start = 0.2815625, PointerOverOnToPointerOverOff_End = 0.3065625, PointerOverOnToNormalOn_Start = 0.3128125, PointerOverOnToNormalOn_End = 0.3378125, PointerOverOnToPressedOn_Start = 0.3440625, PointerOverOnToPressedOn_End = 0.3690625, PointerOverOffToPointerOverOn_Start = 0.3753125, PointerOverOffToPointerOverOn_End = 0.4940625, PointerOverOffToNormalOff_Start = 0.5003125, PointerOverOffToNormalOff_End = 0.5253125, PointerOverOffToPressedOff_Start = 0.5315625, PointerOverOffToPressedOff_End = 0.5565625, PressedOnToPressedOff_Start = 0.5628125, PressedOnToPressedOff_End = 0.5878125, PressedOnToPointerOverOff_Start = 0.5940625, PressedOnToPointerOverOff_End = 0.6190625, PressedOnToNormalOff_Start = 0.6253125, PressedOnToNormalOff_End = 0.6503125, PressedOffToPressedOn_Start = 0.6565625, PressedOffToPressedOn_End = 0.7128125, PressedOffToPointerOverOn_Start = 0.7190625, PressedOffToPointerOverOn_End = 0.8378125, PressedOffToNormalOn_Start = 0.8440625, PressedOffToNormalOn_End = 0.9628125, NormalIndeterminate = 0.9690625, PointerOverIndeterminate = 0.9815625, PressedIndeterminate = 0.9940625 } }
 # docs/facts/windows/tokens.toml:2592
 set = "segoe_fluent"
-
-[tokens.caret]
-# docs/facts/windows/tokens.toml:2696
-blink_style = "hard"
-# docs/facts/windows/tokens.toml:2719
-blink_on_ms = 530
-# docs/facts/windows/tokens.toml:2729
-blink_off_ms = 530
-# docs/facts/windows/tokens.toml:2759
-width_px = 1
-# docs/facts/windows/tokens.toml:2769
-secondary = "absent"
-# docs/facts/windows/tokens.toml:2780
-shown_in_read_only = false
+# S10
+sizes.keyed = {}
 
 [tokens]
 # docs/facts/windows/tokens.toml:3447
 kde = "absent"
 # docs/facts/windows/tokens.toml:3464
 material = "absent"
+# S10
+elevation = {}
 
 [widgets.button.body]
 # docs/facts/windows/button.toml:23
@@ -2010,8 +1459,6 @@ corners.bottom_right_px = "= token.params.shape.control_corner_radius"
 corners.bottom_left_px = "= token.params.shape.control_corner_radius"
 # docs/facts/windows/button.toml:1776
 corners.curve = "circular"
-# docs/facts/windows/button.toml:1798
-transitions = [{ properties = ["fill"], kind = "interpolate", duration_ms = 83, delay_ms = 0, timing = "linear", engine = "win_ui" }]
 # docs/facts/windows/button.toml:1919
 margin.top_px = 0
 # docs/facts/windows/button.toml:1929
@@ -2100,42 +1547,26 @@ icon.fill = "= role.@text_fill_primary"
 glyph = "absent"
 
 [widgets.button.menu_indicator]
-# docs/facts/windows/button.toml:10241
-glyph.fill = "= role.@text_fill_secondary"
-# docs/facts/windows/button.toml:16532
-glyph.size_px = 12
-# docs/facts/windows/button.toml:16580
-transitions = []
+# docs/facts/windows/button.toml:17362
+absent = true
 
 [widgets.button.subtitle]
 # docs/facts/windows/button.toml:17375
 absent = true
 
 [widgets.button.values]
-# docs/facts/windows/button.toml:17501
-subtitle_gap_px = "absent"
-# docs/facts/windows/button.toml:17512
-menu_trigger = "absent"
-# docs/facts/windows/button.toml:17523
-shows_icon = "absent"
-# docs/facts/windows/button.toml:17534
-back_display_mode = "absent"
-# docs/facts/windows/button.toml:17545
-display_mode = "absent"
-# docs/facts/windows/button.toml:17567
-hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
-# docs/facts/windows/button.toml:17578
-back_title_fallback = false
-# docs/facts/windows/button.toml:17589
-help_tooltip_on_click = false
-# docs/facts/windows/button.toml:17600
-presentations = []
-# docs/facts/windows/button.toml:17611
-focus_visible_when = "= token.behavior.focus_visible_when"
 # docs/facts/windows/button.toml:17395
 repeat_delay_ms = "absent"
 # docs/facts/windows/button.toml:17437
 repeat_interval_ms = "absent"
+# docs/facts/windows/button.toml:17501
+subtitle_gap_px = "absent"
+# docs/facts/windows/button.toml:17523
+shows_icon = "absent"
+# docs/facts/windows/button.toml:17567
+hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+# docs/facts/windows/button.toml:17611
+focus_visible_when = "= token.behavior.focus_visible_when"
 
 [[rules]]
 when = { variants = ["primary"], not_states = ["default"] }
@@ -2578,134 +2009,6 @@ target = "button.icon"
 icon.fill = "= role.@text_on_accent_fill_disabled"
 
 [[rules]]
-when = { variants = ["flat"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:4909
-fill = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5176
-stroke.top.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5202
-stroke.right.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5228
-stroke.bottom.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5254
-stroke.left.paint = "= role.@subtle_fill_transparent"
-
-[[rules]]
-when = { variants = ["flat"], states = ["hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:4935
-fill = "= role.@subtle_fill_secondary"
-# docs/facts/windows/button.toml:5280
-stroke.top.paint = "= role.@subtle_fill_secondary"
-# docs/facts/windows/button.toml:5301
-stroke.right.paint = "= role.@subtle_fill_secondary"
-# docs/facts/windows/button.toml:5322
-stroke.bottom.paint = "= role.@subtle_fill_secondary"
-# docs/facts/windows/button.toml:5343
-stroke.left.paint = "= role.@subtle_fill_secondary"
-
-[[rules]]
-when = { variants = ["flat"], states = ["pressed"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:4956
-fill = "= role.@subtle_fill_tertiary"
-# docs/facts/windows/button.toml:5364
-stroke.top.paint = "= role.@subtle_fill_tertiary"
-# docs/facts/windows/button.toml:5385
-stroke.right.paint = "= role.@subtle_fill_tertiary"
-# docs/facts/windows/button.toml:5406
-stroke.bottom.paint = "= role.@subtle_fill_tertiary"
-# docs/facts/windows/button.toml:5427
-stroke.left.paint = "= role.@subtle_fill_tertiary"
-
-[[rules]]
-when = { variants = ["flat"], states = ["disabled"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:4977
-fill = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5448
-stroke.top.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5469
-stroke.right.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5490
-stroke.bottom.paint = "= role.@subtle_fill_transparent"
-# docs/facts/windows/button.toml:5511
-stroke.left.paint = "= role.@subtle_fill_transparent"
-
-[[rules]]
-when = { variants = ["flat"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:4998
-text.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["flat"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:5024
-icon.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["flat"], states = ["hover"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:5050
-text.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["flat"], states = ["hover"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:5071
-icon.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["flat"], states = ["pressed"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:5092
-text.fill = "= role.@text_fill_secondary"
-
-[[rules]]
-when = { variants = ["flat"], states = ["pressed"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:5113
-icon.fill = "= role.@text_fill_secondary"
-
-[[rules]]
-when = { variants = ["flat"], states = ["disabled"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:5134
-text.fill = "= role.@text_fill_disabled"
-
-[[rules]]
-when = { variants = ["flat"], states = ["disabled"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:5155
-icon.fill = "= role.@text_fill_disabled"
-
-[[rules]]
 when = { variants = ["toggle"], not_variants = ["tool"] }
 target = "button.body"
 
@@ -2768,38 +2071,6 @@ target = "button.body"
 [rules.set]
 # docs/facts/windows/button.toml:5684
 fill = "= role.@accent_fill_disabled"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate"], not_variants = ["tool"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:5705
-fill = "= role.@control_fill_default"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "hover"], not_variants = ["tool"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:5726
-fill = "= role.@control_fill_secondary"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "pressed"], not_variants = ["tool"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:5747
-fill = "= role.@control_fill_tertiary"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "disabled"], not_variants = ["tool"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:5768
-fill = "= role.@control_fill_disabled"
 
 [[rules]]
 when = { variants = ["toggle"] }
@@ -2928,70 +2199,6 @@ target = "button.icon"
 [rules.set]
 # docs/facts/windows/button.toml:6114
 icon.fill = "= role.@text_on_accent_fill_disabled"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:6135
-text.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:6156
-icon.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "hover"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:6177
-text.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "hover"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:6198
-icon.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "pressed"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:6219
-text.fill = "= role.@text_fill_secondary"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "pressed"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:6240
-icon.fill = "= role.@text_fill_secondary"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "disabled"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:6261
-text.fill = "= role.@text_fill_disabled"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "disabled"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:6282
-icon.fill = "= role.@text_fill_disabled"
 
 [[rules]]
 when = { conditions = ["scheme:dark"], variants = ["toggle"] }
@@ -3132,270 +2339,6 @@ stroke.right.paint = "= role.@control_fill_transparent"
 stroke.bottom.paint = "= role.@control_fill_transparent"
 # docs/facts/windows/button.toml:7202
 stroke.left.paint = "= role.@control_fill_transparent"
-
-[[rules]]
-when = { conditions = ["scheme:dark"], variants = ["toggle"], states = ["indeterminate"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7223
-stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7244
-stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7265
-stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7286
-stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-
-[[rules]]
-when = { conditions = ["scheme:light"], variants = ["toggle"], states = ["indeterminate"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7307
-stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7328
-stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7349
-stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7370
-stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-
-[[rules]]
-when = { conditions = ["scheme:dark"], variants = ["toggle"], states = ["indeterminate", "hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7391
-stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7412
-stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7433
-stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7454
-stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-
-[[rules]]
-when = { conditions = ["scheme:light"], variants = ["toggle"], states = ["indeterminate", "hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7475
-stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7496
-stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7517
-stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:7538
-stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "pressed"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7559
-stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7580
-stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7601
-stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7622
-stroke.left.paint = "= role.@control_stroke_default"
-
-[[rules]]
-when = { variants = ["toggle"], states = ["indeterminate", "disabled"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7643
-stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7664
-stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7685
-stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:7706
-stroke.left.paint = "= role.@control_stroke_default"
-
-[[rules]]
-when = { variants = ["@repeat"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7727
-fill = "= role.@control_fill_default"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7753
-fill = "= role.@control_fill_secondary"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["pressed"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7774
-fill = "= role.@control_fill_tertiary"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["disabled"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7795
-fill = "= role.@control_fill_disabled"
-
-[[rules]]
-when = { variants = ["@repeat"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:7816
-text.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["@repeat"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:7842
-icon.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["hover"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:7868
-text.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["hover"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:7889
-icon.fill = "= role.@text_fill_primary"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["pressed"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:7910
-text.fill = "= role.@text_fill_secondary"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["pressed"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:7931
-icon.fill = "= role.@text_fill_secondary"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["disabled"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:7952
-text.fill = "= role.@text_fill_disabled"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["disabled"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:7973
-icon.fill = "= role.@text_fill_disabled"
-
-[[rules]]
-when = { conditions = ["scheme:dark"], variants = ["@repeat"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:7994
-stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8015
-stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8036
-stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8057
-stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-
-[[rules]]
-when = { conditions = ["scheme:light"], variants = ["@repeat"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:8078
-stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8099
-stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8120
-stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8141
-stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-
-[[rules]]
-when = { conditions = ["scheme:dark"], variants = ["@repeat"], states = ["hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:8162
-stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8183
-stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8204
-stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8225
-stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 180, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-
-[[rules]]
-when = { conditions = ["scheme:light"], variants = ["@repeat"], states = ["hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:8246
-stroke.top.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8267
-stroke.right.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8288
-stroke.bottom.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-# docs/facts/windows/button.toml:8309
-stroke.left.paint = { layers = [{ kind = { linear = { angle_deg = 0, stops = [{ position = 0.33, color = "= role.@control_stroke_secondary" }, { position = 1.0, color = "= role.@control_stroke_default" }], repeat = false, extent_px = 3 } }, blend = "normal" }] }
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["pressed"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:8330
-stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8351
-stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8372
-stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8393
-stroke.left.paint = "= role.@control_stroke_default"
-
-[[rules]]
-when = { variants = ["@repeat"], states = ["disabled"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:8414
-stroke.top.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8435
-stroke.right.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8456
-stroke.bottom.paint = "= role.@control_stroke_default"
-# docs/facts/windows/button.toml:8477
-stroke.left.paint = "= role.@control_stroke_default"
 
 [[rules]]
 when = { variants = ["tool"] }
@@ -3806,78 +2749,6 @@ stroke.bottom.paint = "= role.@control_fill_transparent"
 stroke.left.paint = "= role.@control_fill_transparent"
 
 [[rules]]
-when = { variants = ["menu"], states = ["hover"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:10261
-glyph.fill = "= role.@text_fill_tertiary"
-
-[[rules]]
-when = { variants = ["menu"], states = ["pressed"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:10282
-glyph.fill = "= role.@text_fill_tertiary"
-
-[[rules]]
-when = { variants = ["menu"], states = ["disabled"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:10303
-glyph.fill = "= role.@text_fill_disabled"
-
-[[rules]]
-when = { variants = ["menu", "tool"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:10325
-glyph.fill = "= role.@text_fill_secondary"
-# docs/facts/windows/button.toml:16684
-glyph.size_px = 8
-# docs/facts/windows/button.toml:16710
-glyph.mirroring = "always"
-# docs/facts/windows/button.toml:17233
-transform.scale_x = 1
-# docs/facts/windows/button.toml:17260
-transform.scale_y = 1
-# docs/facts/windows/button.toml:17287
-transform.rotate_deg = 0
-# docs/facts/windows/button.toml:17304
-transform.translate_x_px = 0
-# docs/facts/windows/button.toml:17321
-transform.translate_y_px = 0
-# docs/facts/windows/button.toml:17338
-transform.origin = [0, 0]
-
-[[rules]]
-when = { variants = ["menu", "tool"], states = ["hover"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:10351
-glyph.fill = "= role.@text_fill_secondary"
-
-[[rules]]
-when = { variants = ["menu", "tool"], states = ["pressed"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:10377
-glyph.fill = "= role.@text_fill_tertiary"
-
-[[rules]]
-when = { variants = ["menu", "tool"], states = ["disabled"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:10403
-glyph.fill = "= role.@text_fill_disabled"
-
-[[rules]]
 when = { conditions = ["contrast_high"], not_variants = ["tool"] }
 target = "button.body"
 
@@ -4158,134 +3029,6 @@ target = "button.icon"
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:12498
-fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:12710
-stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:12726
-stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:12742
-stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:12758
-stroke.left.paint = "= role.@system_control_foreground_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:12514
-fill = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12774
-stroke.top.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:12795
-stroke.right.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:12816
-stroke.bottom.paint = "= role.@system_highlight"
-# docs/facts/windows/button.toml:12837
-stroke.left.paint = "= role.@system_highlight"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:12535
-fill = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12858
-stroke.top.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12879
-stroke.right.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12900
-stroke.bottom.paint = "= role.@system_highlight_text"
-# docs/facts/windows/button.toml:12921
-stroke.left.paint = "= role.@system_highlight_text"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["disabled"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:12556
-fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:12942
-stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12958
-stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12974
-stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:12990
-stroke.left.paint = "= role.@system_control_disabled_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:12572
-text.fill = "= role.@system_button_text"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:12593
-icon.fill = "= role.@system_button_text"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:12614
-text.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:12630
-icon.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:12646
-text.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:12662
-icon.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["disabled"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:12678
-text.fill = "= role.@system_control_disabled_base_medium_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["flat"], states = ["disabled"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:12694
-icon.fill = "= role.@system_control_disabled_base_medium_low"
-
-[[rules]]
 when = { conditions = ["contrast_high"], variants = ["toggle"], not_variants = ["tool"] }
 target = "button.body"
 
@@ -4347,38 +3090,6 @@ target = "button.body"
 
 [rules.set]
 # docs/facts/windows/button.toml:13138
-fill = "= role.@system_control_background_base_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate"], not_variants = ["tool"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:13154
-fill = "= role.@system_control_background_base_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "hover"], not_variants = ["tool"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:13170
-fill = "= role.@system_control_background_base_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "pressed"], not_variants = ["tool"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:13186
-fill = "= role.@system_control_background_base_medium_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "disabled"], not_variants = ["tool"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:13202
 fill = "= role.@system_control_background_base_low"
 
 [[rules]]
@@ -4510,70 +3221,6 @@ target = "button.icon"
 icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:13494
-text.fill = "= role.@system_control_foreground_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:13510
-icon.fill = "= role.@system_control_foreground_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "hover"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:13526
-text.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "hover"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:13542
-icon.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "pressed"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:13558
-text.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "pressed"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:13574
-icon.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "disabled"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:13590
-text.fill = "= role.@system_control_disabled_base_medium_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "disabled"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:13606
-icon.fill = "= role.@system_control_disabled_base_medium_low"
-
-[[rules]]
 when = { conditions = ["contrast_high"], variants = ["toggle"] }
 target = "button.body"
 
@@ -4684,190 +3331,6 @@ stroke.right.paint = "= role.@system_control_disabled_transparent"
 stroke.bottom.paint = "= role.@system_control_disabled_transparent"
 # docs/facts/windows/button.toml:14178
 stroke.left.paint = "= role.@system_control_disabled_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:14194
-stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14210
-stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14226
-stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14242
-stroke.left.paint = "= role.@system_control_foreground_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:14258
-stroke.top.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14274
-stroke.right.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14290
-stroke.bottom.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14306
-stroke.left.paint = "= role.@system_control_highlight_base_medium_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "pressed"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:14322
-stroke.top.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14338
-stroke.right.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14354
-stroke.bottom.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14370
-stroke.left.paint = "= role.@system_control_highlight_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["toggle"], states = ["indeterminate", "disabled"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:14386
-stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14402
-stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14418
-stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14434
-stroke.left.paint = "= role.@system_control_disabled_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:14450
-fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:14642
-stroke.top.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14658
-stroke.right.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14674
-stroke.bottom.paint = "= role.@system_control_foreground_transparent"
-# docs/facts/windows/button.toml:14690
-stroke.left.paint = "= role.@system_control_foreground_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["hover"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:14466
-fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:14706
-stroke.top.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14722
-stroke.right.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14738
-stroke.bottom.paint = "= role.@system_control_highlight_base_medium_low"
-# docs/facts/windows/button.toml:14754
-stroke.left.paint = "= role.@system_control_highlight_base_medium_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["pressed"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:14482
-fill = "= role.@system_control_background_base_medium_low"
-# docs/facts/windows/button.toml:14770
-stroke.top.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14786
-stroke.right.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14802
-stroke.bottom.paint = "= role.@system_control_highlight_transparent"
-# docs/facts/windows/button.toml:14818
-stroke.left.paint = "= role.@system_control_highlight_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["disabled"] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/windows/button.toml:14498
-fill = "= role.@system_control_background_base_low"
-# docs/facts/windows/button.toml:14834
-stroke.top.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14850
-stroke.right.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14866
-stroke.bottom.paint = "= role.@system_control_disabled_transparent"
-# docs/facts/windows/button.toml:14882
-stroke.left.paint = "= role.@system_control_disabled_transparent"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:14514
-text.fill = "= role.@system_control_foreground_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:14530
-icon.fill = "= role.@system_control_foreground_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["hover"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:14546
-text.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["hover"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:14562
-icon.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["pressed"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:14578
-text.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["pressed"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:14594
-icon.fill = "= role.@system_control_highlight_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["disabled"] }
-target = "button.label"
-
-[rules.set]
-# docs/facts/windows/button.toml:14610
-text.fill = "= role.@system_control_disabled_base_medium_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["@repeat"], states = ["disabled"] }
-target = "button.icon"
-
-[rules.set]
-# docs/facts/windows/button.toml:14626
-icon.fill = "= role.@system_control_disabled_base_medium_low"
 
 [[rules]]
 when = { conditions = ["contrast_high"], variants = ["tool"] }
@@ -5262,142 +3725,6 @@ stroke.bottom.paint = "= role.@system_gray_text"
 stroke.left.paint = "= role.@system_gray_text"
 
 [[rules]]
-when = { conditions = ["contrast_high"], variants = ["menu"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16354
-glyph.fill = "= role.@system_button_text"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["menu"], states = ["hover"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16375
-glyph.fill = "= role.@system_highlight"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["menu"], states = ["pressed"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16396
-glyph.fill = "= role.@system_highlight"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["menu"], states = ["disabled"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16417
-glyph.fill = "= role.@system_control_disabled_base_medium_low"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["menu", "tool"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16433
-glyph.fill = "= role.@system_control_foreground_base_medium_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = ["hover"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16454
-glyph.fill = "= role.@system_control_highlight_alt_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = ["pressed"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16475
-glyph.fill = "= role.@system_control_highlight_alt_base_high"
-
-[[rules]]
-when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = ["disabled"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16496
-glyph.fill = "= role.@system_control_disabled_base_medium_low"
-
-[[rules]]
-when = { variants = ["menu"], not_variants = ["tool"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16521
-min_width_px = 12
-# docs/facts/windows/button.toml:16591
-transitions = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
-
-[[rules]]
-when = { variants = ["menu"], not_variants = ["tool"] }
-target = "button.values"
-
-[rules.set]
-# docs/facts/windows/button.toml:16544
-menu_indicator_gap_px = 0
-# docs/facts/windows/button.toml:16556
-menu_indicator_anchor = "inline"
-
-[[rules]]
-when = { variants = ["menu"], not_variants = ["tool"], states = ["hover"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16608
-transitions = [{ properties = ["glyph"], kind = { keyed = { key = "pointer_over", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
-
-[[rules]]
-when = { variants = ["menu"], not_variants = ["tool"], states = ["pressed"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16630
-transitions = [{ properties = ["glyph"], kind = { keyed = { key = "pressed", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
-
-[[rules]]
-when = { variants = ["menu"], not_variants = ["tool"], states = ["disabled"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:16652
-transitions = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
-
-[[rules]]
-when = { not_variants = ["menu"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:17362
-absent = true
-
-[[rules]]
-when = { not_variants = ["@repeat"] }
-target = "button.values"
-
-[rules.set]
-# docs/facts/windows/button.toml:17395
-repeat_delay_ms = "absent"
-# docs/facts/windows/button.toml:17437
-repeat_interval_ms = "absent"
-
-[[rules]]
-when = { variants = ["@repeat"] }
-target = "button.values"
-
-[rules.set]
-# docs/facts/windows/button.toml:17479
-repeat_delay_ms = 500
-# docs/facts/windows/button.toml:17490
-repeat_interval_ms = 33
-
-[[rules]]
 when = { variants = ["tool", "toggle"] }
 target = "button.body"
 
@@ -5526,30 +3853,6 @@ target = "button.body"
 fill = "= role.@system_gray_text"
 
 [[rules]]
-when = { variants = ["menu"], not_variants = ["tool"] }
-target = "button.menu_indicator"
-
-[rules.set]
-# docs/facts/windows/button.toml:19188
-margin.top_px = 0
-# docs/facts/windows/button.toml:19199
-margin.right_px = 0
-# docs/facts/windows/button.toml:19210
-margin.bottom_px = 0
-# docs/facts/windows/button.toml:19221
-margin.left_px = 8
-
-[[rules]]
-when = { not_variants = ["menu"] }
-target = "button.values"
-
-[rules.set]
-# docs/facts/windows/button.toml:19306
-menu_indicator_anchor = "inline"
-# docs/facts/windows/button.toml:19322
-menu_indicator_gap_px = 0
-
-[[rules]]
 when = { conditions = ["contrast_high"] }
 target = "colors"
 
@@ -5558,14 +3861,10 @@ target = "colors"
 keyed.text_fill_primary = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:92
 keyed.text_fill_secondary = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:135
-keyed.text_fill_tertiary = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:178
 keyed.text_fill_disabled = "= role.@system_gray_text"
 # docs/facts/windows/roles.toml:221
 keyed.text_fill_inverse = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:264
-keyed.accent_text_fill_disabled = "= role.@system_gray_text"
 # docs/facts/windows/roles.toml:307
 keyed.text_on_accent_fill_selected_text = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:350
@@ -5580,20 +3879,10 @@ keyed.control_fill_default = "= role.@system_button_face"
 keyed.control_fill_secondary = "= role.@system_button_face"
 # docs/facts/windows/roles.toml:565
 keyed.control_fill_tertiary = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:608
-keyed.control_fill_quarternary = "= role.@system_button_face"
 # docs/facts/windows/roles.toml:651
 keyed.control_fill_disabled = "= role.@system_button_face"
 # docs/facts/windows/roles.toml:694
 keyed.control_fill_transparent = "#ffffff00"
-# docs/facts/windows/roles.toml:737
-keyed.control_fill_input_active = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:780
-keyed.control_strong_fill_default = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:823
-keyed.control_strong_fill_disabled = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:866
-keyed.control_solid_fill_default = "= role.@system_button_face"
 # docs/facts/windows/roles.toml:909
 keyed.subtle_fill_transparent = "#ffffff00"
 # docs/facts/windows/roles.toml:952
@@ -5602,24 +3891,6 @@ keyed.subtle_fill_secondary = "= role.@system_button_face"
 keyed.subtle_fill_tertiary = "= role.@system_button_face"
 # docs/facts/windows/roles.toml:1038
 keyed.subtle_fill_disabled = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:1081
-keyed.control_alt_fill_transparent = "#ffffff00"
-# docs/facts/windows/roles.toml:1124
-keyed.control_alt_fill_secondary = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:1167
-keyed.control_alt_fill_tertiary = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:1210
-keyed.control_alt_fill_quarternary = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:1253
-keyed.control_alt_fill_disabled = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:1296
-keyed.control_on_image_fill_default = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:1339
-keyed.control_on_image_fill_secondary = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:1382
-keyed.control_on_image_fill_tertiary = "= role.@system_button_face"
-# docs/facts/windows/roles.toml:1425
-keyed.control_on_image_fill_disabled = "= role.@system_button_face"
 # docs/facts/windows/roles.toml:1468
 keyed.accent_fill_disabled = "= role.@system_window"
 # docs/facts/windows/roles.toml:1511
@@ -5630,72 +3901,14 @@ keyed.control_stroke_secondary = "= role.@system_button_text"
 keyed.control_stroke_on_accent_default = "= role.@system_button_text"
 # docs/facts/windows/roles.toml:1640
 keyed.control_stroke_on_accent_secondary = "= role.@system_button_text"
-# docs/facts/windows/roles.toml:1683
-keyed.control_stroke_on_accent_tertiary = "= role.@system_button_text"
-# docs/facts/windows/roles.toml:1726
-keyed.control_stroke_on_accent_disabled = "= role.@system_gray_text"
-# docs/facts/windows/roles.toml:1769
-keyed.control_stroke_for_strong_fill_when_on_image = "= role.@system_button_text"
-# docs/facts/windows/roles.toml:1812
-keyed.card_stroke_default = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:1855
-keyed.card_stroke_default_solid = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:1898
-keyed.control_strong_stroke_default = "= role.@system_button_text"
-# docs/facts/windows/roles.toml:1941
-keyed.control_strong_stroke_disabled = "= role.@system_button_text"
-# docs/facts/windows/roles.toml:1984
-keyed.surface_stroke_default = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:2027
-keyed.surface_stroke_flyout = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:2070
-keyed.surface_stroke_inverse = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:2113
-keyed.divider_stroke_default = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:2156
 keyed.focus_stroke_outer = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:2199
 keyed.focus_stroke_inner = "= role.@system_window"
-# docs/facts/windows/roles.toml:2242
-keyed.card_background_fill_default = "= role.@system_window"
-# docs/facts/windows/roles.toml:2285
-keyed.card_background_fill_secondary = "= role.@system_window"
-# docs/facts/windows/roles.toml:2328
-keyed.card_background_fill_tertiary = "= role.@system_window"
 # docs/facts/windows/roles.toml:2371
 keyed.smoke_fill_default = "= role.@system_window"
-# docs/facts/windows/roles.toml:2414
-keyed.layer_fill_default = "= role.@system_window"
-# docs/facts/windows/roles.toml:2457
-keyed.layer_fill_alt = "= role.@system_window"
-# docs/facts/windows/roles.toml:2500
-keyed.layer_on_acrylic_fill_default = "= role.@system_window"
-# docs/facts/windows/roles.toml:2543
-keyed.layer_on_accent_acrylic_fill_default = "= role.@system_window"
-# docs/facts/windows/roles.toml:2586
-keyed.layer_on_mica_base_alt_fill_default = "= role.@system_window"
-# docs/facts/windows/roles.toml:2629
-keyed.layer_on_mica_base_alt_fill_secondary = "= role.@system_window"
-# docs/facts/windows/roles.toml:2672
-keyed.layer_on_mica_base_alt_fill_tertiary = "= role.@system_window"
-# docs/facts/windows/roles.toml:2715
-keyed.layer_on_mica_base_alt_fill_transparent = "= role.@system_window"
 # docs/facts/windows/roles.toml:2758
 keyed.solid_background_fill_base = "= role.@system_window"
-# docs/facts/windows/roles.toml:2801
-keyed.solid_background_fill_secondary = "= role.@system_window"
-# docs/facts/windows/roles.toml:2844
-keyed.solid_background_fill_tertiary = "= role.@system_window"
-# docs/facts/windows/roles.toml:2887
-keyed.solid_background_fill_quarternary = "= role.@system_window"
-# docs/facts/windows/roles.toml:2930
-keyed.solid_background_fill_quinary = "= role.@system_window"
-# docs/facts/windows/roles.toml:2973
-keyed.solid_background_fill_senary = "= role.@system_window"
-# docs/facts/windows/roles.toml:3006
-keyed.solid_background_fill_transparent = "#ff0000"
-# docs/facts/windows/roles.toml:3049
-keyed.solid_background_fill_base_alt = "= role.@system_window"
 # docs/facts/windows/roles.toml:3092
 keyed.system_fill_success = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:3135
@@ -5704,8 +3917,6 @@ keyed.system_fill_caution = "= role.@system_window_text"
 keyed.system_fill_critical = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:3221
 keyed.system_fill_neutral = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:3264
-keyed.system_fill_solid_neutral = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:3307
 keyed.system_fill_attention_background = "= role.@system_window"
 # docs/facts/windows/roles.toml:3350
@@ -5722,10 +3933,6 @@ keyed.system_fill_solid_attention_background = "= role.@system_window"
 keyed.system_fill_solid_neutral_background = "= role.@system_window"
 # docs/facts/windows/roles.toml:3598
 keyed.accent_text_fill_primary = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:3631
-keyed.accent_text_fill_secondary = "= role.@system_window_text"
-# docs/facts/windows/roles.toml:3664
-keyed.accent_text_fill_tertiary = "= role.@system_window_text"
 # docs/facts/windows/roles.toml:3697
 keyed.accent_fill_selected_text_background = "= role.@system_window"
 # docs/facts/windows/roles.toml:3730
@@ -5740,8 +3947,6 @@ keyed.system_fill_attention = "= role.@system_window_text"
 keyed.system_base_low = "#ffffff33"
 # docs/facts/windows/roles.toml:4083
 keyed.system_base_medium_low = "#ffffff66"
-# docs/facts/windows/roles.toml:4116
-keyed.system_base_medium_high = "#ffffffcc"
 # docs/facts/windows/roles.toml:4149
 keyed.system_base_high = "#ffffff"
 # docs/facts/windows/roles.toml:4182
@@ -5770,8 +3975,6 @@ keyed.system_control_foreground_transparent = "= role.@system_button_text"
 keyed.system_control_highlight_accent = "= role.@system_highlight"
 # docs/facts/windows/roles.toml:4580
 keyed.system_control_highlight_alt_accent = "= role.@system_highlight_text"
-# docs/facts/windows/roles.toml:4613
-keyed.system_control_foreground_base_medium_high = "= role.@system_button_text"
 # docs/facts/windows/roles.toml:4646
 keyed.system_control_highlight_alt_base_high = "= role.@system_highlight_text"
 # docs/facts/windows/roles.toml:4679

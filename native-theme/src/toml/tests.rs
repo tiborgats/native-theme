@@ -5,6 +5,7 @@
 //! and a preset's whole blocks.
 
 use super::layer::read_preset;
+use super::read::{FromToml, Spelling, read_as, read_map_as};
 use crate::blocks::BlockPatch;
 use crate::blocks::focus::FocusVisibleWhen;
 use crate::blocks::motion::Timing;
@@ -75,6 +76,11 @@ fn body_of(lines: &str) -> PartStylePatch {
     body(&layer(&format!("[widgets.button.body]\n{lines}")))
 }
 
+/// The problems `value` has read as a `T` at `at` ([`read_as`]).
+fn read_problems<T: FromToml>(value: &str, spelling: Spelling, at: &str) -> Vec<String> {
+    read_as::<T>(value, spelling, at).err().unwrap_or_default()
+}
+
 fn color(hex: &str) -> Color {
     Color::parse(hex).unwrap()
 }
@@ -118,9 +124,14 @@ fn spelling_stated_value() {
         panic!("a table under an application layer's bases is a `Fields` patch");
     };
     assert!(text.case.is_some() && text.wrap.is_some() && text.font.is_none());
-    let values = layer("[widgets.button.values]\nback_title_fallback = true");
-    let values = values.bases.widgets.button.unwrap().values.unwrap();
-    assert_eq!(values.back_title_fallback, Some(Value::Stated(true)));
+    let values = layer("[widgets.button.values]\nshows_icon = true");
+    let shows_icon = values
+        .bases
+        .widgets
+        .button
+        .and_then(|button| button.values)
+        .and_then(|values| values.shows_icon);
+    assert_eq!(shows_icon, Some(Value::Stated(true)));
 }
 
 #[test]
@@ -406,8 +417,15 @@ fn refusal_second_presence() {
 
 #[test]
 fn spelling_none() {
-    let layer = layer("[tokens.caret]\nblink_timeout_ms = \"none\"");
-    assert_eq!(layer.bases.tokens.caret.unwrap().blink_timeout, Some(None));
+    let behavior =
+        layer("[tokens.behavior]\nfocus_visible_when = { keyboard = { timeout_ms = \"none\" } }")
+            .bases
+            .tokens
+            .behavior;
+    assert_eq!(
+        behavior.and_then(|behavior| behavior.focus_visible_when),
+        Some(Value::Stated(FocusVisibleWhen::Keyboard { timeout: None }))
+    );
     let label = super::layer::read_layer("[widgets.button.label.text]\nmax_lines = \"none\"")
         .unwrap()
         .bases
@@ -480,26 +498,29 @@ fn decoration_line_underline_low_reads() {
 }
 
 /// `straight_srgb` is S2.7's straight unrounded colour space and
-/// `straight_srgb8` Qt's truncating one, two members (ADD-A141).
+/// `straight_srgb8` Qt's truncating one, two members (ADD-A141), read by
+/// the type's own reader: `token.motion.color_space` is staged with the
+/// motion unit (S6.1).
 #[test]
-fn the_straight_colour_spaces_are_two() {
+fn the_straight_colour_spaces_are_two() -> Result<(), Vec<String>> {
     use crate::tokens::ColorInterpolation;
 
     let space = |name: &str| {
-        layer(&format!("[tokens.motion]\ncolor_space = \"{name}\""))
-            .bases
-            .tokens
-            .motion
-            .and_then(|motion| motion.color_space)
+        read_as::<Value<ColorInterpolation>>(
+            &format!("\"{name}\""),
+            Spelling::Bare,
+            "tokens.motion.color_space",
+        )
     };
     assert_eq!(
-        space("straight_srgb"),
-        Some(Value::Stated(ColorInterpolation::StraightSrgb))
+        space("straight_srgb")?,
+        Value::Stated(ColorInterpolation::StraightSrgb)
     );
     assert_eq!(
-        space("straight_srgb8"),
-        Some(Value::Stated(ColorInterpolation::StraightSrgb8))
+        space("straight_srgb8")?,
+        Value::Stated(ColorInterpolation::StraightSrgb8)
     );
+    Ok(())
 }
 
 /// `win_ui` is S9.4's `WinUi` scaling (ADD-A141).
@@ -546,16 +567,18 @@ fn spelling_enum_variant() {
         style.shadow,
         Some(Value::Stated(Shadow::Elevation(key!("2"))))
     );
-    let layer = layer(
-        "[tokens.motion.timings]\nstandard = { spring = { mass = 1, stiffness = 200, \
-         damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = false, \
-         time_scale = \"= token.motion.speed_factor\" } }",
+    // A timing read by its own reader: the keyed timings are staged with
+    // the motion unit (S6.1).
+    let timing = read_as::<Timing>(
+        "{ spring = { mass = 1, stiffness = 200, damping_ratio = 1, initial_velocity = 0, \
+         rest_epsilon = 0.001, clamp = false, time_scale = \"= token.motion.speed_factor\" } }",
+        Spelling::Bare,
+        "tokens.motion.timings.standard",
     );
-    let timings = layer.bases.tokens.motion.unwrap().timings.unwrap();
-    assert!(matches!(
-        timings.as_slice(),
-        [(name, Timing::Spring { mass, clamp: false, .. })] if *name == key!("standard") && *mass == 1.0
-    ));
+    assert!(
+        matches!(timing, Ok(Timing::Spring { mass, clamp: false, .. }) if mass == 1.0),
+        "{timing:?}"
+    );
     // A keyed variant is `@<key>`, as a keyed name is.
     let style = body_of("focus.kind = \"@reveal\"");
     let Some(BlockPatch::Fields(focus)) = style.focus else {
@@ -569,9 +592,18 @@ fn spelling_enum_variant() {
 
 #[test]
 fn spelling_list() {
-    let style = body_of("bindings = []\ntransitions = []");
+    let style = body_of("bindings = []");
     assert_eq!(style.bindings, Some(Vec::new()));
-    assert_eq!(style.transitions, Some(Vec::new()));
+    // A part's `transitions` read by the list's own reader: no part lists
+    // them until the motion unit (D6 outcome 3).
+    assert_eq!(
+        read_as::<Vec<crate::blocks::motion::Transition>>(
+            "[]",
+            Spelling::Bare,
+            "widgets.button.body.transitions"
+        ),
+        Ok(Vec::new())
+    );
     let style = body_of("bindings = [{ surface = \"button\" }]");
     assert_eq!(style.bindings.map(|b| b.len()), Some(1));
     assert_eq!(
@@ -636,19 +668,22 @@ fn shadow_falloff_spellings() {
 
 #[test]
 fn spelling_tuple() {
-    let style = body_of(
-        "transform = { origin = [0.5, 0.25] }\ntransitions = [{ properties = [\"fill\"], kind = \
-         \"interpolate\", duration_ms = 100, delay_ms = 0, timing = { cubic_bezier = [0.2, 0, 0, \
-         1] }, engine = \"gtk_css\" }]",
-    );
+    let style = body_of("transform = { origin = [0.5, 0.25] }");
     let Some(BlockPatch::Fields(transform)) = style.transform else {
         panic!("fields");
     };
     assert_eq!(transform.origin, Some((0.5, 0.25)));
-    let transitions = style.transitions.unwrap();
+    // A transition read by its own reader: no part lists `transitions`
+    // until the motion unit (D6 outcome 3).
+    let transitions = read_as::<Vec<crate::blocks::motion::Transition>>(
+        "[{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, \
+         timing = { cubic_bezier = [0.2, 0, 0, 1] }, engine = \"gtk_css\" }]",
+        Spelling::Bare,
+        "widgets.button.body.transitions",
+    );
     assert_eq!(
-        transitions[0].timing,
-        Value::Stated(Timing::CubicBezier(0.2, 0.0, 0.0, 1.0))
+        transitions.map(|held| held.first().map(|transition| transition.timing.clone())),
+        Ok(Some(Value::Stated(Timing::CubicBezier(0.2, 0.0, 0.0, 1.0))))
     );
     assert_eq!(
         problems("[widgets.button.body.transform]\norigin = [0.5]"),
@@ -694,11 +729,11 @@ fn spelling_drawn_as() {
         layer.bases.widgets.button.unwrap().menu_indicator.unwrap()
     };
     assert_eq!(
-        read("{ widget = \"button\", part = \"icon\", variants = [\"flat\", \"@raised\"] }"),
+        read("{ widget = \"button\", part = \"icon\", variants = [\"tool\", \"@raised\"] }"),
         PartPatch::of_presence(PartPresence::DrawnAs {
             target: WidgetOrPart::Part(button(ButtonPart::Icon)),
             variants: vec![
-                VariantRef::Typed(Variant::Flat),
+                VariantRef::Typed(Variant::Tool),
                 VariantRef::Keyed(key!("raised"))
             ],
         })
@@ -789,7 +824,7 @@ fn spelling_rule_target() {
         RuleBody::Colors(_)
     ));
     assert!(matches!(
-        layer_rule("target = \"tokens\"\nset = { caret.width_px = 1 }"),
+        layer_rule("target = \"tokens\"\nset = { focus.width_px = 1 }"),
         RuleBody::Tokens(_)
     ));
     assert!(matches!(
@@ -907,7 +942,7 @@ fn unknown_key_reports_toml_path() {
     assert_eq!(
         problems(
             "[widgets.button.body]\nshine = 1\n[widgets.button.body.stroke.top]\nglow = 2\n\
-             [tokens.caret]\ncolour = \"#000000\"\n[colors.light.surfaces.window]\nbackgroud = \
+             [tokens.focus]\ncolour = \"#000000\"\n[colors.light.surfaces.window]\nbackgroud = \
              \"#ffffff\"\n[[rules]]\ntarget = \"button.label\"\nset = { text = { font = { \
              wieght = 400 } } }\nwhen = { states = [\"hover\"], colour = 1 }\n[widgets.button]\n\
              knob = {}\n[nonsense]"
@@ -916,7 +951,7 @@ fn unknown_key_reports_toml_path() {
             "widgets.button.body.shine: unknown key",
             "widgets.button.body.stroke.top.glow: unknown key",
             "widgets.button.knob: unknown key",
-            "tokens.caret.colour: unknown key",
+            "tokens.focus.colour: unknown key",
             "colors.light.surfaces.window.backgroud: unknown key",
             "rules[0].when.colour: unknown key",
             "rules[0].set.text.font.wieght: unknown key",
@@ -1109,7 +1144,7 @@ fn when_reads_every_selector_part() {
          not_context = [{ widget = \"button\" }]\n\
          position = { among = \"any\", first = true, parity = \"odd\", previous = { widget = \
          \"button\", not_states = [\"checked\"] } }\n\
-         variants = [\"flat\", \"@pill_keyed\"]\nnot_variants = [\"primary\"]\n\
+         variants = [\"tool\", \"@pill_keyed\"]\nnot_variants = [\"primary\"]\n\
          sizes = [\"regular\"]\nnot_sizes = [\"mini\"]\ndensities = [\"compact\", \"@dense\"]\n\
          not_densities = [\"default\"]\nsize_class = { horizontal = [\"compact\"], not_vertical = \
          [\"regular\"] }\ndirection = \"rtl\"\nstates = [\"focus_visible\", \"empty\", \
@@ -1144,7 +1179,7 @@ fn when_reads_every_selector_part() {
     assert_eq!(
         selector.variants.all_of,
         [
-            VariantRef::Typed(Variant::Flat),
+            VariantRef::Typed(Variant::Tool),
             VariantRef::Keyed(key!("pill_keyed"))
         ]
     );
@@ -1242,10 +1277,10 @@ fn declarations_read_s10s_keys() {
          [\"accent\", \"accent_ramp.light1\"]\naccent_inputs = [\"accent\"]\ntransition_kinds = \
          {{ bounce = {{ height = \"px\" }} }}\ncontainer_sizes = {{ button = [\"small\", \
          \"large\"] }}\nmaterial_params = {{ shimmer = \"fraction\" }}\nschemes = [\"light\", \
-         \"dark\"]\n[declare.widget.button]\nvariants = [\"primary\", \"flat\", \"@pill\"]\n\
+         \"dark\"]\n[declare.widget.button]\nvariants = [\"primary\", \"tool\", \"@pill\"]\n\
          sizes = [\"small\", \"regular\"]\ndensities = [\"compact\"]\nflags = \
          [\"@keyboard_focus_change\"]\nexclusive = [[\"disabled\", \"pressed\", \"hover\"]]\n\
-         exclusive_variants = [[\"primary\", \"flat\"]]\nsizes_by_variant = [{{ variant = \
+         exclusive_variants = [[\"primary\", \"tool\"]]\nsizes_by_variant = [{{ variant = \
          \"@pill\", sizes = [\"small\"], default_size = \"small\" }}]\ndefault_size = \"regular\"\n\
          sizes_by_context = [{{ context = {{ scope = \"any\", widget = \"button\", part = \
          \"body\" }}, sizes = [\"small\"], default_size = \"small\" }}]\navailable = \
@@ -1282,7 +1317,7 @@ fn declarations_read_s10s_keys() {
         Some(
             &[
                 VariantRef::Typed(Variant::Primary),
-                VariantRef::Typed(Variant::Flat),
+                VariantRef::Typed(Variant::Tool),
                 VariantRef::Keyed(key!("pill")),
             ][..]
         )
@@ -1357,7 +1392,7 @@ fn declarations_refuse_what_s10_does_not_spell() {
          params = {{ layout = {{ unit = \"em\", keys = [] }} }}\n[declare.widget.button]\n\
          sizes = [\"huge\"]\ndata = {{ knob = [\"width\"], body = [\"heat\"] }}\n\
          default_size_by_variant = []\nsizes_by_context = [{{ context = \"toolbar\", sizes = [] }}]\n\
-         sizes_by_variant = [{{ variant = \"flat\", sizes = [], size = \"small\" }}]\n\
+         sizes_by_variant = [{{ variant = \"tool\", sizes = [], size = \"small\" }}]\n\
          breakpoints = [{{ measured = \"window\", width = {{ at_most = 1 }}, height = {{ \
          at_most = 2 }}, variant = \"@x\" }}]\n[declare.widget.slider]\nsizes = []\n\
          [declare.component.rule_editor]\navailable = true"
@@ -1392,10 +1427,8 @@ fn declarations_refuse_what_s10_does_not_spell() {
 /// in the unit its declaration names (S11, ADD-A123).
 #[test]
 fn map_entry_keys_take_their_units_suffix_and_scalars_none() {
-    let read = layer(
-        "[tokens.params.layout]\ngrid_unit = 18\n[tokens.params.opacity]\ndisabled = 0.5\n\
-         [tokens.motion.durations]\nbutton_ms = 150\nlong_ms = \"= token.motion.durations.button\"",
-    );
+    let read =
+        layer("[tokens.params.layout]\ngrid_unit = 18\n[tokens.params.opacity]\ndisabled = 0.5\n");
     let tokens = read.bases.tokens;
     assert_eq!(
         tokens.params,
@@ -1410,18 +1443,29 @@ fn map_entry_keys_take_their_units_suffix_and_scalars_none() {
             ),
         ])
     );
-    let durations = tokens.motion.unwrap().durations.unwrap();
+    // A map of durations, read by its own reader: the keyed durations are
+    // staged with the motion unit (S6.1), and no map at depth holds a value
+    // with a unit.
+    let at = "tokens.motion.durations";
+    let read = |value: &str| read_map_as::<crate::key::Key, Value<crate::units::Ms>>(value, at);
+    let durations = read("{ button_ms = 150, long_ms = \"= token.motion.durations.button\" }");
     assert_eq!(
-        durations.first(),
-        Some(&(key!("button"), Value::Stated(crate::units::Ms(150.0))))
+        durations
+            .as_ref()
+            .map(|held| (held.first().cloned(), held.len())),
+        Ok((
+            Some((key!("button"), Value::Stated(crate::units::Ms(150.0)))),
+            2
+        ))
     );
-    assert_eq!(durations.len(), 2);
     // Every value of a duration takes the suffixed key: a number, an
     // expression, `"absent"`.
     for value in ["150", "\"= token.motion.durations.long\"", "\"absent\""] {
         for key in ["button", "button_px"] {
             assert_eq!(
-                problems(&format!("[tokens.motion.durations]\n{key} = {value}")),
+                read(&format!("{{ {key} = {value} }}"))
+                    .err()
+                    .unwrap_or_default(),
                 [format!("tokens.motion.durations.{key}: unknown key")],
                 "{key} = {value}"
             );
@@ -1463,22 +1507,29 @@ fn auto_none_and_absent_are_exact() {
         problems("[widgets.button.body]\nmax_width_px = \"Auto\""),
         ["widgets.button.body.max_width_px: expected a number"]
     );
+    let keyboard = |text: &str| {
+        format!(
+            "[tokens.behavior]\nfocus_visible_when = {{ keyboard = {{ timeout_ms = {text} }} }}"
+        )
+    };
     assert_eq!(
-        problems("[tokens.caret]\nblink_on_ms = \"auto\""),
-        ["tokens.caret.blink_on_ms: expected a number"]
+        problems(&keyboard("\"auto\"")),
+        ["tokens.behavior.focus_visible_when.keyboard.timeout_ms: expected a number"]
     );
     let timeout = |text: &str| {
-        let layer = layer(&format!("[tokens.caret]\nblink_timeout_ms = {text}"));
-        layer
+        layer(&keyboard(text))
             .bases
             .tokens
-            .caret
-            .and_then(|caret| caret.blink_timeout)
+            .behavior
+            .and_then(|behavior| behavior.focus_visible_when)
     };
-    assert_eq!(timeout("\"none\""), Some(None));
     assert_eq!(
-        problems("[tokens.caret]\nblink_timeout_ms = \"None\""),
-        ["tokens.caret.blink_timeout_ms: expected a number"]
+        timeout("\"none\""),
+        Some(Value::Stated(FocusVisibleWhen::Keyboard { timeout: None }))
+    );
+    assert_eq!(
+        problems(&keyboard("\"None\"")),
+        ["tokens.behavior.focus_visible_when.keyboard.timeout_ms: expected a number"]
     );
 }
 
@@ -1490,27 +1541,28 @@ fn auto_none_and_absent_are_exact() {
 fn partial_option_block_mistyped() {
     let expected = "expected a field of a block an `Option` holds: the block is \"none\" or a \
                     table holding every field";
+    let ripple = "[widgets.button.body.interaction.ripple]\nindication_box";
     assert_eq!(
-        problems("[tokens.behavior]\nkey_repeat = { delay_ms = 500 }"),
+        problems(&format!("{ripple} = {{ outset_px = 2 }}")),
         [format!(
-            "tokens.behavior.key_repeat.interval_ms: {expected}"
+            "widgets.button.body.interaction.ripple.indication_box.part: {expected}"
         )]
     );
     assert_eq!(
         problems(
-            "[[rules]]\nwhen = { conditions = [\"scheme:dark\"] }\ntarget = \"tokens\"\n\
-             set = { behavior.key_repeat = { interval_ms = 40 } }"
+            "[[rules]]\nwhen = { conditions = [\"scheme:dark\"] }\ntarget = \"button.body\"\n\
+             set = { interaction.ripple.indication_box = { part = \"icon\" } }"
         ),
         [format!(
-            "rules[0].set.behavior.key_repeat.delay_ms: {expected}"
+            "rules[0].set.interaction.ripple.indication_box.outset_px: {expected}"
         )]
     );
     assert_eq!(
-        problems("[tokens.behavior]\nkey_repeat = { delay_ms = 500, interval_ms = 40 }"),
+        problems(&format!("{ripple} = {{ part = \"icon\", outset_px = 2 }}")),
         Vec::<String>::new()
     );
     assert_eq!(
-        problems("[tokens.behavior]\nkey_repeat = \"none\""),
+        problems(&format!("{ripple} = \"none\"")),
         Vec::<String>::new()
     );
     let found = match read_preset("[widgets.button.label.text]\nmax_lines = 1") {
@@ -1596,19 +1648,15 @@ fn a_breakpoints_part_is_the_widgets_own() {
 /// they are equal as TOML keys, case-sensitively (S4.4, S11, ADD-A123).
 #[test]
 fn a_map_keyed_by_text_is_a_table_of_its_texts() {
-    let read = layer(
-        "[tokens.text.fallbacks.per_family]\n\"Segoe Fluent Icons\" = [\"Segoe MDL2 Assets\"]\n\
-         \"segoe fluent icons\" = []",
-    );
-    let fallbacks = read
-        .bases
-        .tokens
-        .text
-        .and_then(|text| text.fallbacks)
-        .and_then(|fallbacks| fallbacks.per_family);
+    // The font fallbacks' map, read by its own reader: the fallbacks are
+    // staged with the text rendering parking unit (S6.1), and no map at
+    // depth is keyed by text.
+    let at = "tokens.text.fallbacks.per_family";
+    let read = |value: &str| read_map_as::<String, Vec<String>>(value, at);
+    let problems = |value: &str| read(value).err().unwrap_or_default();
     assert_eq!(
-        fallbacks,
-        Some(vec![
+        read("{ \"Segoe Fluent Icons\" = [\"Segoe MDL2 Assets\"], \"segoe fluent icons\" = [] }"),
+        Ok(vec![
             (
                 "Segoe Fluent Icons".to_owned(),
                 vec!["Segoe MDL2 Assets".to_owned()]
@@ -1618,12 +1666,12 @@ fn a_map_keyed_by_text_is_a_table_of_its_texts() {
     );
     // A problem names the key as written, quoted.
     assert_eq!(
-        problems("[tokens.text.fallbacks.per_family]\n\"Segoe Fluent Icons\" = 4"),
+        problems("{ \"Segoe Fluent Icons\" = 4 }"),
         ["tokens.text.fallbacks.per_family.\"Segoe Fluent Icons\": expected an array"]
     );
     // Equal as TOML keys: one key, which TOML itself refuses twice.
     assert_eq!(
-        problems("[tokens.text.fallbacks.per_family]\n\"Segoe UI\" = []\n\"Segoe UI\" = []").len(),
+        problems("{ \"Segoe UI\" = [], \"Segoe UI\" = [] }").len(),
         1
     );
 }
@@ -1633,22 +1681,24 @@ fn a_map_keyed_by_text_is_a_table_of_its_texts() {
 /// widget's table is read is mistyped (S11, ADD-A123).
 #[test]
 fn a_part_ref_value_names_its_widget_outside_a_widgets_table() {
+    // An icon context's animation, read by the loop's own reader:
+    // `IconStyle.animation` is staged with the motion unit (S6.1).
+    use crate::blocks::motion::Loop;
     let keyframe = |part: &str| {
         format!(
-            "[tokens.icons.sizes.toolbar]\nsize_px = 16\nanimation = {{ period_ms = 100, timing = \
-             \"linear\", keyframes = [{{ at = 0, part = \"{part}\", timing = \"absent\", patch \
-             = {{}} }}] }}"
+            "{{ period_ms = 100, timing = \"linear\", keyframes = [{{ at = 0, part = \"{part}\", \
+             timing = \"absent\", patch = {{}} }}] }}"
         )
     };
+    let at = "tokens.icons.sizes.toolbar.animation";
     assert_eq!(
-        problems(&keyframe("icon")),
+        read_problems::<Loop>(&keyframe("icon"), Spelling::Bare, at),
         [
             "tokens.icons.sizes.toolbar.animation.keyframes[0].part: expected `<widget>.<part>`: \
              no widget's table is read here"
         ]
     );
-    let named = layer(&keyframe("button.icon"));
-    assert!(named.bases.tokens.icons.is_some());
+    assert!(read_as::<Loop>(&keyframe("button.icon"), Spelling::Bare, at).is_ok());
 }
 
 /// A key that is no bare TOML key is a TOML basic string, escaped as TOML
@@ -1667,19 +1717,25 @@ fn toml_key_escapes_as_toml_does() {
 
 /// A transition's `engine` is spelt as an enum block's variant, every list
 /// of a Breeze test stated (S11, ADD-A126): one case per S11 form; a
-/// transition stating none misses it.
+/// transition stating none misses it. The transitions are read by the
+/// list's own reader: no part lists them until the motion unit (D6
+/// outcome 3).
 #[test]
 fn transition_engine_spellings() {
-    use crate::blocks::motion::{BreezeTest, TransitionEngine};
+    use crate::blocks::motion::{BreezeTest, Transition, TransitionEngine};
     use crate::selector::{Condition, StateFlag};
     let item = |engine: &str| {
         format!(
-            "transitions = [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \
-             100, delay_ms = 0, timing = \"linear\"{engine} }}]"
+            "[{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = \
+             0, timing = \"linear\"{engine} }}]"
         )
     };
+    let read = |list: &str| {
+        read_as::<Vec<Transition>>(list, Spelling::Bare, "widgets.button.body.transitions")
+    };
+    let problems = |list: &str| read(list).err().unwrap_or_default();
     let engine = |engine: &str| {
-        let transitions = body_of(&item(&format!(", engine = {engine}"))).transitions;
+        let transitions = read(&item(&format!(", engine = {engine}"))).ok();
         transitions.and_then(|list| list.first().map(|t| t.engine.clone()))
     };
     let test = |any: Vec<StateFlag>, none: Vec<StateFlag>, conditions: Vec<Condition>| BreezeTest {
@@ -1739,45 +1795,35 @@ fn transition_engine_spellings() {
         assert_eq!(engine(text), Some(expected), "{text}");
     }
     let at = "widgets.button.body.transitions[0]";
+    assert_eq!(problems(&item("")), [format!("{at}.engine: missing")]);
     assert_eq!(
-        problems(&format!("[widgets.button.body]\n{}", item(""))),
-        [format!("{at}.engine: missing")]
-    );
-    assert_eq!(
-        problems(&format!(
-            "[widgets.button.body]\n{}",
-            item(", engine = { breeze = { any = [\"hover\"], none = [] } }")
+        problems(&item(
+            ", engine = { breeze = { any = [\"hover\"], none = [] } }"
         )),
         [format!("{at}.engine.breeze.conditions: missing")]
     );
     assert_eq!(
-        problems(&format!(
-            "[widgets.button.body]\n{}",
-            item(", engine = \"breeze_style\"")
-        )),
+        problems(&item(", engine = \"breeze_style\"")),
         [format!("{at}.engine: unknown name \"breeze_style\"")]
     );
 }
 
 /// A `Keyframes` transition's kind (S2.7, S11; ADD-A134): `{ keyframes = {
-/// keyframes = [ … ] } }`, each keyframe as a loop's, its `part` left out.
+/// keyframes = [ … ] } }`, each keyframe as a loop's, its `part` left out;
+/// read by the kind's own reader, as no part lists `transitions` until the
+/// motion unit and the focus indicator's transition is staged with it (D6
+/// outcome 3, S6.1).
 #[test]
-fn spelling_keyframes_kind() {
+fn spelling_keyframes_kind() -> Result<(), Vec<String>> {
     use crate::blocks::motion::{Keyframe, TransitionKind};
-    let style = body_of(
-        "focus.transition = { properties = [], kind = { keyframes = { keyframes = [{ at = 0, \
-         timing = \"absent\", patch = { focus.width_px = 0 } }, { at = 0.25, timing = \
-         \"linear\", patch = { focus.width_px = 8 } }] } }, duration_ms = 600, delay_ms = 0, \
-         timing = \"linear\", engine = \"css_animation\", from = \"none\" }",
-    );
-    let Some(BlockPatch::Fields(focus)) = style.focus else {
-        panic!("fields");
-    };
-    let Some(BlockPatch::Fields(transition)) = focus.transition else {
-        panic!("fields: {:?}", focus.transition);
-    };
-    let Some(TransitionKind::Keyframes { keyframes }) = transition.kind else {
-        panic!("{:?}", transition.kind);
+    let kind = read_as::<TransitionKind>(
+        "{ keyframes = { keyframes = [{ at = 0, timing = \"absent\", patch = { focus.width_px = \
+         0 } }, { at = 0.25, timing = \"linear\", patch = { focus.width_px = 8 } }] } }",
+        Spelling::Bare,
+        "widgets.button.body.transitions[0].kind",
+    )?;
+    let TransitionKind::Keyframes { keyframes } = kind else {
+        return Err(vec![format!("not keyframes: {kind:?}")]);
     };
     let width = |px: f32| PartStylePatch {
         focus: Some(BlockPatch::Fields(
@@ -1805,49 +1851,49 @@ fn spelling_keyframes_kind() {
             },
         ]
     );
+    Ok(())
 }
 
 /// A transition's `from` is a list of flags; left out of a `transitions`
-/// item it is `None`, and in a single `Value<Transition>` `"none"` is any
-/// state (S11, ADD-A124).
+/// item it is `None`, and in a transition's patch (the focus indicator's
+/// transition, staged with the motion unit, S6.1) `"none"` is any state
+/// (S11, ADD-A124). Read by the blocks' own readers: no part lists
+/// `transitions` until the motion unit (D6 outcome 3).
 #[test]
-fn spelling_transition_from() {
+fn spelling_transition_from() -> Result<(), Vec<String>> {
+    use crate::blocks::motion::{Transition, TransitionPatch};
+    let at = "widgets.button.body.transitions";
     let item = |from: &str| {
         format!(
-            "transitions = [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \
-             100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\"{from} }}]"
+            "[{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = \
+             0, timing = \"linear\", engine = \"gtk_css\"{from} }}]"
         )
     };
-    let style = body_of(&item(", from = [\"hover\", \"focus_visible\", \"@spin\"]"));
-    let transitions = style.transitions.unwrap();
+    let from = |from: &str| -> Result<_, Vec<String>> {
+        let transitions = read_as::<Vec<Transition>>(&item(from), Spelling::Bare, at)?;
+        Ok(transitions
+            .first()
+            .map(|transition| transition.from.clone()))
+    };
     assert_eq!(
-        transitions[0].from,
-        Some(vec![
+        from(", from = [\"hover\", \"focus_visible\", \"@spin\"]")?,
+        Some(Some(vec![
             crate::selector::StateFlag::Hover,
             crate::selector::StateFlag::FocusVisible,
             crate::selector::StateFlag::Widget(key!("spin")),
-        ])
+        ]))
     );
-    assert_eq!(body_of(&item("")).transitions.unwrap()[0].from, None);
-    let focus = body_of(
-        "focus.transition = { properties = [], kind = \"interpolate\", duration_ms = 100, \
-         delay_ms = 0, timing = \"linear\", engine = \"gtk_css\", from = \"none\" }",
-    );
-    let Some(BlockPatch::Fields(focus)) = focus.focus else {
-        panic!("fields");
-    };
-    assert!(matches!(
-        focus.transition,
-        Some(BlockPatch::Fields(crate::blocks::motion::TransitionPatch {
-            from: Some(None),
-            ..
-        }))
-    ));
+    assert_eq!(from("")?, Some(None));
+    let patch = read_as::<TransitionPatch>(
+        "{ properties = [], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \
+         \"linear\", engine = \"gtk_css\", from = \"none\" }",
+        Spelling::Bare,
+        "widgets.button.body.focus.transition",
+    )?;
+    assert_eq!(patch.from, Some(None));
     assert_eq!(
-        problems(&format!(
-            "[widgets.button.body]\n{}",
-            item(", from = [\"shiny\"]")
-        )),
+        read_problems::<Vec<Transition>>(&item(", from = [\"shiny\"]"), Spelling::Bare, at),
         ["widgets.button.body.transitions[0].from[0]: unknown name \"shiny\""]
     );
+    Ok(())
 }

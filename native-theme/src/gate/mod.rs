@@ -354,24 +354,8 @@ impl Preset {
     /// rules can tell an element apart by (S17).
     #[must_use]
     pub fn mentions(&self, widget: &str) -> (Vec<String>, Vec<String>) {
-        let Ok(kind) = widget_kind(widget) else {
-            return (Vec::new(), Vec::new());
-        };
         let (mut states, mut variants) = (Vec::new(), Vec::new());
-        for rule in &self.stack.preset_layer().rules {
-            let on_widget = match &rule.body {
-                RuleBody::Part(PartRef::Typed(part), _) => part.widget() == kind,
-                RuleBody::Values(ValuesPatch::Typed(values)) => match values {
-                    WidgetValuesPatch::Button(_) => kind == WidgetKind::Button,
-                },
-                RuleBody::Part(PartRef::Component { .. }, _)
-                | RuleBody::Colors(_)
-                | RuleBody::Tokens(_) => false,
-            };
-            if !on_widget {
-                continue;
-            }
-            let selector = &rule.selector;
+        for selector in self.selectors_on(widget) {
             let flags = selector
                 .states
                 .all_of
@@ -387,6 +371,39 @@ impl Preset {
             variants.extend(named.map(variant_name));
         }
         (states, variants)
+    }
+
+    /// The recency sets the `latest` of the preset's rules on the widget
+    /// `widget` names (S7.2, S10).
+    #[must_use]
+    pub fn latest_sets(&self, widget: &str) -> Vec<String> {
+        self.selectors_on(widget)
+            .into_iter()
+            .flat_map(|selector| selector.latest.iter().map(|(set, _)| set.to_string()))
+            .collect()
+    }
+
+    /// The selectors of the preset's rules on the widget `widget`: its
+    /// parts' and its values'.
+    fn selectors_on(&self, widget: &str) -> Vec<&Selector> {
+        let Ok(kind) = widget_kind(widget) else {
+            return Vec::new();
+        };
+        self.stack
+            .preset_layer()
+            .rules
+            .iter()
+            .filter(|rule| match &rule.body {
+                RuleBody::Part(PartRef::Typed(part), _) => part.widget() == kind,
+                RuleBody::Values(ValuesPatch::Typed(values)) => match values {
+                    WidgetValuesPatch::Button(_) => kind == WidgetKind::Button,
+                },
+                RuleBody::Part(PartRef::Component { .. }, _)
+                | RuleBody::Colors(_)
+                | RuleBody::Tokens(_) => false,
+            })
+            .map(|rule| &rule.selector)
+            .collect()
     }
 
     /// The preset resolved with a stand-in stating `stand_in` in
@@ -473,8 +490,8 @@ impl Preset {
 }
 
 /// The fact key a listed path names (S11's `[pending]` key as S17's key
-/// spells it: `tokens.behavior.touch.delay_ms` is
-/// `token.behavior.touch.delay`, `widgets.button.icon.icon.size_px` is
+/// spells it: `tokens.focus.width_px` is `token.focus.width`,
+/// `widgets.button.icon.icon.size_px` is
 /// `button.icon.icon.size`, `colors.light.global.status` and
 /// `colors.dark.global.status` are `role.global.status`,
 /// `colors.light.surfaces.window.background` is `role.window.background`,
@@ -687,8 +704,7 @@ fn unit_suffix(info: &registry::FieldInfo) -> &'static str {
 
 /// The synthetic value of a listed path (S17, ADD-A128), its last key
 /// spelled with the unit suffix of the value: `absent` where the field may
-/// be absent, an empty list at a focus indicator's transition's
-/// `properties`, else [`synthetic_of`] its type, or its map's value type
+/// be absent, else [`synthetic_of`] its type, or its map's value type
 /// where the path names an entry; an input's, `#010203` at its listed
 /// scheme alone (`inputs.<name>.<scheme>`, ADD-A132), which the synthetic
 /// route folds into the preset's own input base.
@@ -708,8 +724,6 @@ fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
     let (suffix, item) = if levels == 0 && info.may_be_absent && absent_synthetic(owner, info.path)
     {
         (unit_suffix(info), Item::String("absent".to_owned()))
-    } else if focus_properties(path) {
-        ("", Item::Array(Vec::new()))
     } else {
         synthetic_of(ty, info)
             .ok_or_else(|| format!("the gate has no synthetic value of `{ty}`"))?
@@ -720,15 +734,6 @@ fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
         *last = format!("{}{suffix}", super::toml::read::listed_path(last));
     }
     Ok((keys, item))
-}
-
-/// Whether a listed path is a `FocusIndicator.transition`'s `properties`,
-/// empty as the transition times the whole indicator (S2.10, S12): the
-/// indicator is every `focus` field's.
-fn focus_properties(path: &str) -> bool {
-    super::toml::read::key_segments(path).is_some_and(|keys| {
-        keys.ends_with(&["focus", "transition", "properties"].map(String::from))
-    })
 }
 
 /// A map's value type, as the model writes it: `Vec<(K,V)>`'s and
@@ -937,6 +942,8 @@ pub struct Declared {
     pub recency: Vec<(String, Vec<String>)>,
     /// `requires_variants`.
     pub requires_variants: Vec<String>,
+    /// `later.variants` (S10's *Later names*, ADD-A147).
+    pub later: Vec<String>,
     /// `sizes_by_variant`: each variant, its sizes and its default size,
     /// in written order.
     pub sizes_by_variant: Vec<(String, Vec<String>, Option<String>)>,
@@ -1141,6 +1148,7 @@ impl Declared {
                 .map(|(set, members)| (set.as_str().to_owned(), flags(members)))
                 .collect(),
             requires_variants: variants(decl.requires_variants.as_deref().unwrap_or_default()),
+            later: variants(decl.later.as_deref().unwrap_or_default()),
             sizes_by_variant: decl
                 .sizes_by_variant
                 .iter()
@@ -1698,13 +1706,14 @@ fn rule_at(target: &str, path: &[String], value: &Item) -> Result<RuleBody, Unre
 }
 
 /// A leaf of a block S6.1 sets whole, an `Option<B>` struct block
-/// (`token.behavior.key_repeat.delay`): its facts are stated per leaf
+/// (`button.body.interaction.ripple.indication_box.outset`): its facts are
+/// stated per leaf
 /// (S17), and the gate composes the leaves' applying facts into one value
 /// of the block per combination.
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct SetWhole {
-    /// The block's key (`token.behavior.key_repeat`).
+    /// The block's key (`button.body.interaction.ripple.indication_box`).
     pub block: String,
     /// The block's leaves: each one's key and its field's name and unit
     /// suffix (S11).
@@ -1784,6 +1793,13 @@ pub fn set_whole(key: &str) -> Option<SetWhole> {
 }
 
 impl SetWhole {
+    /// The block's key, where a value composed from its leaves is read and
+    /// compared: the block's place, not a leaf's.
+    #[must_use]
+    pub fn key(&self) -> &FactKey {
+        &self.key
+    }
+
     /// The block's value composed from each leaf's value as its fact
     /// states it (S17: `"500ms"`, an expression), in the leaves' order.
     pub fn compose(&self, values: &[&Item]) -> Result<FactValue, Unread> {
@@ -3514,7 +3530,6 @@ mod tests {
         let mut part = Table::new();
         part.insert("icon".to_owned(), Item::Table(icon));
         part.insert("glyph".to_owned(), Item::Table(glyph));
-        part.insert("transitions".to_owned(), Item::Array(Vec::new()));
         let mut stroke = block("widgets.button.body.stroke");
         for edge in ["top", "right", "bottom", "left"] {
             if let Some(Item::Table(edge)) = stroke.get_mut(edge) {
@@ -3748,52 +3763,52 @@ mod tests {
         );
     }
 
-    /// The synthetic layers of a set-whole block (`Option<KeyRepeat>`), a
-    /// keyed icon size's leaf and a colour role state the listed path, its
-    /// key spelled with the unit its value takes (S11, S17, ADD-A128).
+    /// The synthetic layers of a set-whole block (`Option<IndicationBox>`),
+    /// a font size's leaf and a colour role state the listed path, its key
+    /// spelled with the unit its value takes (S11, S17, ADD-A128).
     #[test]
-    fn synthetic_layers_spell_their_values() {
-        let layer = |path: &str| {
+    fn synthetic_layers_spell_their_values() -> Result<(), String> {
+        let layer = |path: &str| -> Result<Layer, String> {
             let mut layers = synthetic_layers(
                 &[(path.to_owned(), vec!["U1".to_owned()])],
                 &Layer::default(),
-            )
-            .unwrap();
-            layers.pop().unwrap()
+            )?;
+            layers.pop().ok_or_else(|| format!("{path}: no layer"))
         };
-        let repeat = layer("tokens.behavior.key_repeat");
+        let toml = |text: &str| Layer::from_toml(text).map_err(|error| error.to_string());
+        let indication = layer("widgets.button.body.interaction.ripple.indication_box")?;
         assert_eq!(
-            repeat.bases.tokens,
-            Layer::from_toml("[tokens.behavior.key_repeat]\ndelay_ms = 1\ninterval_ms = 1\n")
-                .unwrap()
-                .bases
-                .tokens
-        );
-        let status = layer("colors.light.global.status");
-        assert!(status.bases.colors.light.is_some());
-        assert!(status.bases.colors.dark.is_none());
-        let font = layer("widgets.button.label.text.font.size");
-        assert_eq!(
-            font.bases.widgets,
-            Layer::from_toml("[widgets.button.label.text.font]\nsize_pt = 1\n")
-                .unwrap()
+            indication.bases.widgets,
+            toml("[widgets.button.body.interaction.ripple]\nindication_box = \"none\"\n")?
                 .bases
                 .widgets
         );
+        let status = layer("colors.light.global.status")?;
+        assert!(status.bases.colors.light.is_some());
+        assert!(status.bases.colors.dark.is_none());
+        let font = layer("widgets.button.label.text.font.size")?;
+        assert_eq!(
+            font.bases.widgets,
+            toml("[widgets.button.label.text.font]\nsize_pt = 1\n")?
+                .bases
+                .widgets
+        );
+        Ok(())
     }
 
     /// A value no spelling reads is reported by the spelling whose key the
     /// reader knows: a one-unit field's suffixed key for an expression
     /// (S11), not the bare key's "unknown key".
     #[test]
-    fn a_refused_leaf_reports_its_known_spelling() {
-        let key = parse_key("token.behavior.double_click_time").unwrap();
-        let Err(Unread::Refused(why)) = parse_value(&key, &Item::String("= div(1ms,".to_owned()))
+    fn a_refused_leaf_reports_its_known_spelling() -> Result<(), String> {
+        let key = parse_key("token.focus.width").map_err(|error| format!("{error:?}"))?;
+        let Err(Unread::Refused(why)) = parse_value(&key, &Item::String("= div(1px,".to_owned()))
         else {
-            panic!("an expression that does not parse is refused");
+            return Err("an expression that does not parse is refused".to_owned());
         };
-        assert!(why.contains("double_click_time_ms"), "{why}");
+        assert!(why.contains("width_px"), "{why}");
         assert!(!why.contains("unknown key"), "{why}");
+        Ok(())
     }
 
     /// A side the gate cannot read is refused, so two such sides never
@@ -3822,27 +3837,21 @@ mod tests {
         );
     }
 
-    /// A leaf of `Option<KeyRepeat>`, which S6.1 sets whole, names its
+    /// A leaf of `Option<IndicationBox>`, which S6.1 sets whole, names its
     /// block and every leaf with its unit suffix (S17).
     #[test]
-    fn a_set_whole_leaf_names_its_block() {
-        let block = set_whole("token.behavior.key_repeat.delay").unwrap();
-        assert_eq!(block.block, "token.behavior.key_repeat");
+    fn a_set_whole_leaf_names_its_block() -> Result<(), String> {
+        let block = "button.body.interaction.ripple.indication_box";
+        let whole = set_whole(&format!("{block}.outset")).ok_or("no set-whole block")?;
+        assert_eq!(whole.block, block);
         assert_eq!(
-            block.leaves,
+            whole.leaves,
             [
-                (
-                    "token.behavior.key_repeat.delay".to_owned(),
-                    "delay".to_owned(),
-                    "_ms"
-                ),
-                (
-                    "token.behavior.key_repeat.interval".to_owned(),
-                    "interval".to_owned(),
-                    "_ms"
-                ),
+                (format!("{block}.part"), "part".to_owned(), ""),
+                (format!("{block}.outset"), "outset".to_owned(), "_px"),
             ]
         );
-        assert!(set_whole("token.behavior.double_click_time").is_none());
+        assert!(set_whole("token.focus.width").is_none());
+        Ok(())
     }
 }

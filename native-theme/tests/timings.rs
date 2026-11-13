@@ -19,8 +19,8 @@ use std::time::{Duration, Instant};
 use cost_common::{Body, Case, Change, Measure, PresetFile, REFERENCE_LAYERS, Res, Route, SCHEME};
 use native_theme::{
     Accent, ButtonPart, Color, Contrast, Direction, Element, FontMetrics, InputKind, InputName,
-    InputValue, Key, Layer, PartRef, PresetId, Px, ResolvedFont, RootInputs, Scheme, SchemeMap,
-    Scope, Size, StateFlag, StateFlags, Theme, TypedPart, Value, WindowConditions, WindowState,
+    InputValue, Layer, PartRef, PresetId, Px, ResolvedFont, RootInputs, Scheme, SchemeMap, Scope,
+    Size, StateFlag, StateFlags, Theme, TypedPart, Value, WindowConditions, WindowState,
 };
 
 // Every icon probe loads icons, `system-icons` enabling `material-icons`.
@@ -359,14 +359,6 @@ fn synthetic_accent(file: &PresetFile) -> Res<Accent> {
     Ok(accent)
 }
 
-/// The first two flavours the preset `file` states declares.
-fn two_flavors(file: &PresetFile) -> Res<(Key, Key)> {
-    match file.declared("flavors")?.as_slice() {
-        [first, second, ..] => Ok((Key::new(first)?, Key::new(second)?)),
-        _ => Err("fewer than two flavours declared".into()),
-    }
-}
-
 /// The button's body in `scope`, at rest or hovered.
 fn element(body: Body, scope: &Scope) -> Element<'_> {
     let part = PartRef::Typed(TypedPart::Button(ButtonPart::Body));
@@ -422,14 +414,6 @@ impl Subject {
                     theme,
                     |theme| Ok(theme.set_accent(Some(accent.clone()))?),
                     |theme| Ok(theme.set_accent(None)?),
-                )
-            }
-            Measure::Change(_, Change::Flavor) => {
-                let (first, second) = two_flavors(&self.file)?;
-                timed_change(
-                    theme,
-                    |theme| Ok(theme.set_flavor(second.clone())?),
-                    |theme| Ok(theme.set_flavor(first.clone())?),
                 )
             }
             Measure::Change(_, Change::SetPreset) => {
@@ -594,7 +578,7 @@ fn sweep(names: &str) -> Res<()> {
 /// (`cost-case <case> line=… kind=time`). Line 1 runs each pass in a
 /// process of its own (`NT_COST_CHILD`).
 ///
-/// `NT_COST_CASES=1.adwaita.read,5.adwaita.synthetic <the timings binary>
+/// `NT_COST_CASES=1.adwaita.read,5.windows-11.synthetic <the timings binary>
 /// --ignored --nocapture --test-threads=1 --exact bundled_preset_costs`
 #[test]
 #[ignore = "the load budget's probe; the budget step runs it"]

@@ -936,8 +936,10 @@ impl Stack {
     }
 
     /// The switch of [`Stack::set_preset`], unvalidated: the flavour set is
-    /// kept where the new preset declares it, else the new preset's default
-    /// is in force (S16); the synthetic route's layers are removed (S17).
+    /// kept where the new preset declares it, one [`Stack::flavors`]
+    /// accepts there (its default alone while the flavours unit is not
+    /// enabled, S6.1), else the new preset's default is in force (S16); the
+    /// synthetic route's layers are removed (S17).
     fn switch(
         &mut self,
         preset: Option<PresetId>,
@@ -945,13 +947,6 @@ impl Stack {
         layer: Layer,
         pending: Vec<Listed>,
     ) {
-        if self
-            .flavor
-            .as_ref()
-            .is_some_and(|flavor| !declarations.flavors.contains(flavor))
-        {
-            self.flavor = None;
-        }
         if let Some(synthetic) = self.synthetic.take() {
             self.layers.retain(|(id, _)| !synthetic.layers.contains(id));
         }
@@ -959,6 +954,13 @@ impl Stack {
         self.declarations = declarations;
         self.preset_layer = Arc::new(layer);
         self.pending = pending;
+        if self
+            .flavor
+            .as_ref()
+            .is_some_and(|flavor| !self.flavors().contains(flavor))
+        {
+            self.flavor = None;
+        }
     }
 
     /// Adds an application layer, last, and returns its id.
@@ -1096,7 +1098,8 @@ impl Stack {
     }
 
     /// Sets the flavour; refused where the preset does not declare it
-    /// (S10, S16).
+    /// (S10, S16), and, while the flavours unit is not enabled, where it is
+    /// a declared flavour but the default (S6.1; ADD-A147).
     pub(crate) fn set_flavor(&mut self, flavor: Key) -> Result<(), LayerError> {
         if !self.declarations.flavors.contains(&flavor) {
             return Err(LayerError::Invalid(vec![Problem::new(
@@ -1107,7 +1110,28 @@ impl Stack {
                 },
             )]));
         }
+        if !self.flavors().contains(&flavor) {
+            return Err(LayerError::Invalid(vec![Problem::new(
+                "",
+                ProblemKind::Later {
+                    name: flavor.to_string(),
+                    declaration: "flavors".to_owned(),
+                },
+            )]));
+        }
         self.change(|stack| stack.flavor = Some(flavor))
+    }
+
+    /// The flavours `set_flavor` accepts: the preset's declared ones, its
+    /// default first, the default alone while the flavours unit is not
+    /// enabled (S6.1, S16; ADD-A147); none where it declares none.
+    pub(crate) fn flavors(&self) -> Vec<Key> {
+        let declared = &self.declarations.flavors;
+        if crate::widgets::FLAVOURS_UNIT {
+            declared.clone()
+        } else {
+            declared.iter().take(1).cloned().collect()
+        }
     }
 
     /// The accent layer the accent gives (S9.2): its bases state the

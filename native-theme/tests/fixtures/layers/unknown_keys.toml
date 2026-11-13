@@ -4,7 +4,7 @@
 # problem: preset: unknown key
 # problem: rules[0].when.colour: unknown key
 # problem: rules[0].set.halo: unknown key
-# problem: tokens.caret.colour: unknown key
+# problem: tokens.focus.colour: unknown key
 # problem: widgets.button.body.shine: unknown key
 # problem: widgets.button.body.stroke.top.glow: unknown key
 # problem: widgets.button.values.icon_gap_px: unknown key
@@ -19,7 +19,7 @@ id = "mine"
 light = "#000000"
 medium = "#000000"
 
-[tokens.caret]
+[tokens.focus]
 colour = "#000000"
 
 [widgets.button.body]

@@ -1,0 +1,14 @@
+# preset.toml's twin leaving `@raised`, the styles unit's, out of its `later` (S10 *Later names*).
+[declare.widget.button]
+variants = ["tool", "@x", "@raised", "@both", "@unheld", "with_icon"]
+exclusive_variants = [["tool", "@x", "@raised"]]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

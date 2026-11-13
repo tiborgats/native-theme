@@ -6,8 +6,8 @@
 //! A path names its place as the layer was written (S1's `Problem.path`): in
 //! the model's Rust names for a layer built in Rust, an enum's variant a step
 //! of its own (`top_left.concentric.minimum`); by the TOML keys as S11 spells
-//! them for a layer read from TOML (`min_width_px`, `top_left_px`,
-//! `durations.button_ms`). Where the model has no path (a rule's selector
+//! them for a layer read from TOML (`min_width_px`, `top_left_px`). Where
+//! the model has no path (a rule's selector
 //! and patch, read from TOML), the TOML key; a shorthand's places are named
 //! at its key ([`Shorthands`](crate::layer::Shorthands)).
 
@@ -147,6 +147,10 @@ pub(crate) enum Node<'a> {
     StateFlag(&'a StateFlag),
     /// A condition: a value.
     Condition(&'a Condition),
+    /// A widget: a value (a fade's nested element).
+    Widget(&'a WidgetRef),
+    /// A variant: a value (a fade's nested element's).
+    Variant(&'a VariantRef),
     /// A ripple's indication box.
     IndicationBox(&'a IndicationBox),
     /// A ripple's indication box's patch.
@@ -924,7 +928,27 @@ leaves!(ExprForm::Calls => u16: Some(Ty::Number), u32: Some(Ty::Number));
 leaves!(ExprForm::NoCalls => bool: Some(Ty::Bool), String: Some(Ty::Text));
 leaves!(ExprForm::NoCalls => IconSet: Some(Ty::Enum(&ICON_SET)));
 leaves!(ExprForm::NoCalls => LanguageTag: None, IconRole: None, SurfaceRole: None);
-leaves!(ExprForm::NoCalls => PartRef: None, VariantRef: None, WidgetRef: None);
+leaves!(ExprForm::NoCalls => PartRef: None);
+
+/// A widget named as a value (a fade's nested element, S2.8): the visit
+/// reads it with the variant named beside it.
+impl Walk for WidgetRef {
+    const EXPR: ExprForm = ExprForm::NoCalls;
+
+    fn walk(&self, w: &mut Walker<'_>) {
+        w.check(Node::Widget(self));
+    }
+}
+
+/// A variant named as a value (a fade's nested element's, S2.8): one its
+/// widget declares, of an enabled unit (S10, S12).
+impl Walk for VariantRef {
+    const EXPR: ExprForm = ExprForm::NoCalls;
+
+    fn walk(&self, w: &mut Walker<'_>) {
+        w.check(Node::Variant(self));
+    }
+}
 
 /// The declaration a key's type names until its place names the one it is
 /// a key of (S10): a field's, or a widget value's `keys` entry.

@@ -12,7 +12,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 

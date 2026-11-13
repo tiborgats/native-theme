@@ -12,7 +12,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 
@@ -81,6 +81,39 @@ quote = "synthetic"
 [[fact]]
 key = "button.menu_indicator"
 value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# The ripple's indication box (`Option<IndicationBox>`, set whole, S6.1): its outset differs under high contrast,
+# its part does not, so the composed value differs between the two classes of combinations (ADD-A128).
+[[fact]]
+key = "button.body.interaction.ripple.indication_box.outset"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.interaction.ripple.indication_box.outset"
+when = { conditions = ["contrast_high"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.interaction.ripple.indication_box.part"
+value = "icon"
 rows = []
 
 [[fact.cite]]

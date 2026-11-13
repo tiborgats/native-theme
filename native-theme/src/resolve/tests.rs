@@ -200,7 +200,14 @@ fn change_classification() {
     stack.set_contrast(Some(Contrast::High)).unwrap();
     assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
     stack.declarations.flavors = vec![key!("first"), key!("other")];
-    stack.set_flavor(key!("other")).unwrap();
+    // The declared default comes in force: a condition change (S8).
+    assert_eq!(change(&stack, &mut state, &plain), Change::ConditionChange);
+    // `set_flavor` refuses a flavour but the default while the flavours
+    // unit is not enabled (S6.1, S16; ADD-A147), which changes nothing; a
+    // flavour switch, set here directly, is a condition change (S8).
+    assert!(stack.set_flavor(key!("other")).is_err());
+    assert_eq!(change(&stack, &mut state, &plain), Change::Unchanged);
+    stack.flavor = Some(key!("other"));
     assert_eq!(change(&stack, &mut state, &plain), Change::ConditionChange);
     // Both at once: the theme change wins.
     stack.layers.clear();

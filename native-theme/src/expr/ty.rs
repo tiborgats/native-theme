@@ -1211,7 +1211,7 @@ mod tests {
                 "token.family" => Ty::Text,
                 "token.focus_visible" => Ty::Bool,
                 "token.kde_group" => Ty::Enum(&KDE_GROUP),
-                "token.engine" => Ty::Key(Cow::Borrowed("rendering_engines")),
+                "token.scale" => Ty::Key(Cow::Borrowed("symbol_scales")),
                 "token.focus" => Ty::Block("FocusIndicator"),
                 "token.text" => Ty::Block("TextStyle"),
                 "widget.frame.shadow" => Ty::Shadow,
@@ -1224,7 +1224,7 @@ mod tests {
         fn declares(&self, set: &str, key: &Key) -> bool {
             matches!(
                 (set, key.as_str()),
-                ("color_roles", "primary") | ("text_styles", "body") | ("rendering_engines", "qt")
+                ("color_roles", "primary") | ("text_styles", "body") | ("symbol_scales", "large")
             )
         }
     }
@@ -1292,9 +1292,9 @@ mod tests {
             typed("token.kde_group", Ty::Enum(&KDE_GROUP)),
             Ty::Enum(&KDE_GROUP)
         );
-        let engines = Ty::Key(Cow::Borrowed("rendering_engines"));
-        assert_eq!(typed("@qt", engines.clone()), engines);
-        assert_eq!(typed("token.engine", engines.clone()), engines);
+        let scales = Ty::Key(Cow::Borrowed("symbol_scales"));
+        assert_eq!(typed("@large", scales.clone()), scales);
+        assert_eq!(typed("token.scale", scales.clone()), scales);
         assert_eq!(typed("token.family", Ty::Text), Ty::Text);
         let focus = Ty::Block("FocusIndicator");
         assert_eq!(typed("token.focus", focus.clone()), focus);
@@ -1451,7 +1451,7 @@ mod tests {
             Ty::Bool,
             Ty::Text,
             Ty::Enum(&KDE_GROUP),
-            Ty::Key(Cow::Borrowed("rendering_engines")),
+            Ty::Key(Cow::Borrowed("symbol_scales")),
         ] {
             assert_eq!(
                 refused("pick(1, #ff0000)", ty.clone()),

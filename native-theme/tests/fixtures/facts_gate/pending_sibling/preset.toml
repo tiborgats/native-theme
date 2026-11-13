@@ -1,12 +1,12 @@
 # A synthetic preset (S17, ADD-A128): a part's field listed, and no rule on the part that holds
 # everywhere, so the synthetic layer's step is the last kept one wherever the button is neither
-# pressed nor flat; the part's opacity, a sibling field, other than its fact.
+# pressed nor tool; the part's opacity, a sibling field, other than its fact.
 # base without: min_width_px = 40
 [pending]
 "widgets.button.body.min_width_px" = "U8"
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -14,6 +14,6 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

@@ -1,0 +1,13 @@
+# The speed factor left at 1 under `reduced_motion`, where its fact states 0.5: the key is still asked there.
+[declare.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

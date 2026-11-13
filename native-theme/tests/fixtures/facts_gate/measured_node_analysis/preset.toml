@@ -1,7 +1,7 @@
-# The flat button's fill out of the gamut (S2.1: a derivation's result may leave it), its measured colour
+# The tool button's fill out of the gamut (S2.1: a derivation's result may leave it), its measured colour
 # converted by an analysis from a render-node file (`.node`), its OKLab coordinates unrounded, not read from drawn pixels: compared unclamped, as read, on every platform (S17).
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -9,6 +9,6 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "srgb(-0.17, 0.5, 0.5, 0.5)" }

@@ -13,12 +13,12 @@
 //! `input.accent` in the common bases, which any preset takes, the other
 //! four under `for_preset.<own>` with the roles, which are macOS's own
 //! (S9.5). The roles that reference an input or another role
-//! (`role.global.accent`, `role.selection.background`,
-//! `role.@selected_control`, …) are left to the preset, which states them as
-//! those references; the reader reads the role referenced. Of the keyed
-//! roles the slice's port reads `role.@system_red`, `@system_orange`,
-//! `@system_green`, `@system_blue` and `@selected_control_secondary`
-//! (ADD-A138); the others are the readers unit's.
+//! (`role.global.accent`, `role.selection.background`, …) are left to the
+//! preset, which states them as those references; the reader reads the role
+//! referenced. Of the keyed roles the slice's port reads `role.@system_red`,
+//! `@system_orange`, `@system_green`, `@system_blue` and
+//! `@selected_control_secondary` (ADD-A138); the others are the readers
+//! unit's.
 //!
 //! While Increase Contrast is on, AppKit resolves both appearances to their
 //! increased-contrast colours (the os-probe's `increase-contrast-on` passes

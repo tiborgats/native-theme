@@ -3,23 +3,13 @@
 
 [[fact]]
 key = "token.focus.width"
-value = "2px"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "probe@1 probe.css:1"
-quote = "synthetic"
-
-[[fact]]
-key = "token.caret.blink_on"
 pending = "U5"
 rows = []
 
-# Reads the listed blink time through max: skipped, as its evaluation reaches the synthetic value.
+# Reads the listed width through max: skipped, as its evaluation reaches the synthetic value.
 [[fact]]
-key = "token.behavior.long_press"
-value = "= max(token.caret.blink_on, 100ms)"
+key = "token.focus.offset.top"
+value = "= max(token.focus.width, 1px)"
 rows = []
 
 [[fact.cite]]
@@ -27,10 +17,10 @@ kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
 
-# Reads the listed blink time through min: skipped.
+# Reads the listed width through min: skipped.
 [[fact]]
-key = "token.behavior.hover_time"
-value = "= min(token.caret.blink_on, 0ms)"
+key = "token.focus.offset.bottom"
+value = "= min(token.focus.width, 0px)"
 rows = []
 
 [[fact.cite]]
@@ -42,41 +32,3 @@ quote = "synthetic"
 key = "token.motion.speed_factor"
 pending = "U6"
 rows = []
-
-# Reads the listed factor through floor: skipped.
-[[fact]]
-key = "token.text.rendering.gamma"
-value = "= floor(token.motion.speed_factor)"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "probe@1 probe.css:1"
-quote = "synthetic"
-
-# Reads the listed factor through round: skipped.
-[[fact]]
-key = "token.text.rendering.contrast"
-value = "= round(token.motion.speed_factor)"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "probe@1 probe.css:1"
-quote = "synthetic"
-
-[[fact]]
-key = "token.caret.color"
-pending = "U8"
-rows = []
-
-# An input reading the listed caret colour: skipped, as its evaluation reaches the synthetic value.
-[[fact]]
-key = "input.accent"
-value = "= token.caret.color"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "probe@1 probe.css:1"
-quote = "synthetic"

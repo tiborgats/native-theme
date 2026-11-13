@@ -231,7 +231,7 @@ pub struct Problem {
     ///
     /// A path starts at the layer. A base's place starts at its field of
     /// [`Bases`](crate::Bases) (`widgets.button.body.fill`,
-    /// `tokens.motion.durations`), a preset's own bases' at
+    /// `tokens.motion.speed_factor`), a preset's own bases' at
     /// `for_preset.<id>`, a rule's at `rules[<index>]`. Below that, a layer
     /// built in Rust names each place by the model's fields
     /// (`rules[2].selector.states.none_of[0]`, `rules[2].body.fill`,
@@ -339,19 +339,9 @@ pub enum ProblemKind {
     /// A `Transition` with an empty `properties` list: it would animate
     /// nothing (S2.7, S12).
     NoProperties,
-    /// A `FocusIndicator.transition` whose `properties` list is not empty:
-    /// it times the whole indicator, so it names no group (S2.10, S12).
-    FocusTransitionProperties,
     /// A `Transition.from` that is an empty list: it would apply from no
     /// state (S2.7, S12).
     FromNoState,
-    /// A `WinUiAnimatedIcon` transition naming a `visual` that
-    /// `token.icons.animated_visuals` does not hold, under some combination
-    /// (S2.7, S4.5, S12).
-    UnknownVisual {
-        /// The visual as written.
-        visual: String,
-    },
     /// A transition's or presentation step's `timing` that can be `Absent`
     /// where its `duration` is not a stated zero, but a transition's under
     /// `WinUiAnimatedIcon`, under some combination (S2.7, S12).
@@ -406,15 +396,6 @@ pub enum ProblemKind {
     /// per element part and the move crosses two (S2.7, S2.10, S12;
     /// ADD-A126).
     FocusMoveNotRun,
-    /// A `WinUiAnimatedIcon` transition's `Keyed` key whose state name, its
-    /// UpperCamelCase form, no marker of its visual holds, under some
-    /// combination (S2.7, S12).
-    UnknownState {
-        /// The key as written.
-        state: String,
-        /// The visual.
-        visual: String,
-    },
     /// A `GtkCss` part's transitions in effect together under some
     /// combination naming several curves, followed through references,
     /// while one of them lists a group other than `Shadow` and `Corners`,
@@ -422,10 +403,10 @@ pub enum ProblemKind {
     /// ADD-A131).
     SeveralCurves,
     /// A stated zero with no delay that overrides nothing: no other
-    /// transition of one of its groups (the focus indicator's, for a
-    /// `FocusIndicator.transition`), earlier in its list, in the base or in
-    /// an earlier rule of its part, can apply where its rule does (S2.7,
-    /// S12; ADD-A126).
+    /// transition of one of its groups, earlier in its list, in the base or
+    /// in an earlier rule of its part, can apply where its rule does (S2.7,
+    /// S12; ADD-A126). The focus indicator's own transition, which this
+    /// reads too, is staged with the motion unit (S6.1).
     OverridesNothing,
     /// A recency set with fewer than two flags (S10, S12).
     RecencyTooSmall,
@@ -470,13 +451,10 @@ pub enum ProblemKind {
     /// part or block the transition times (S2.7, S12; ADD-A134).
     KeyframeNamesPart,
     /// A `Keyframes` transition's keyframe patch stating a field its
-    /// transition's groups do not time; in a `FocusIndicator.transition`,
-    /// any field but `focus`'s (S2.7, S12; ADD-A134).
+    /// transition's groups do not time (S2.7, S12; ADD-A134); in the focus
+    /// indicator's own transition, staged with the motion unit (S6.1), any
+    /// field but `focus`'s.
     KeyframeOutsideGroups,
-    /// A keyframe's patch stating `icon.animation`, which has no effect: a
-    /// keyframe resolves its part's icon without the icon's own animation
-    /// (S2.7, S12).
-    KeyframeAnimation,
     /// A `KirigamiSmoothstep` shadow layer's `spread` that can be other
     /// than zero, or its `inset` true: Kirigami's shadow has no spread and
     /// is never inset (S2.5, S12; ADD-A134).
@@ -538,6 +516,15 @@ pub enum ProblemKind {
         name: String,
         /// The declaration that does not list it (`color_roles`,
         /// `widget.button.variants`).
+        declaration: String,
+    },
+    /// A name the preset declares that a unit not yet enabled states: a
+    /// variant its `later` lists, or a size, a density or a flavour of a
+    /// unit not enabled (S10's *Later names*, S12, S16; ADD-A147).
+    Later {
+        /// The name as written.
+        name: String,
+        /// The declaration that lists it (`widget.button.later`, `flavors`).
         declaration: String,
     },
     /// A `Colors` or `Tokens` rule with selector parts that are not
@@ -737,16 +724,7 @@ impl fmt::Display for ProblemKind {
             ProblemKind::MaskAtBottom => f.write_str("its bottom layer is a mask"),
             ProblemKind::TooFewStops => f.write_str("a gradient has at least two stops"),
             ProblemKind::NoProperties => f.write_str("a transition of no property group"),
-            ProblemKind::FocusTransitionProperties => {
-                f.write_str("a focus indicator's transition names no property group")
-            }
             ProblemKind::FromNoState => f.write_str("a transition applying from no state"),
-            ProblemKind::UnknownVisual { visual } => {
-                write!(
-                    f,
-                    "`{visual}` can name no visual `token.icons.animated_visuals` holds"
-                )
-            }
             ProblemKind::TimingAbsent => {
                 f.write_str("a timing absent where the duration is not a stated zero")
             }
@@ -772,10 +750,6 @@ impl fmt::Display for ProblemKind {
             ProblemKind::FocusMoveNotRun => {
                 f.write_str("a `focus_move` transition, which no engine runs yet")
             }
-            ProblemKind::UnknownState { state, visual } => write!(
-                f,
-                "`{state}` names a state no marker of the visual `{visual}` holds"
-            ),
             ProblemKind::SeveralCurves => f.write_str(
                 "a `gtk_css` style's transitions name several curves on a group other than \
                  `shadow` and `corners`",
@@ -813,9 +787,6 @@ impl fmt::Display for ProblemKind {
             ProblemKind::KeyframeOutsideGroups => {
                 f.write_str("a field the keyframes' transition does not time")
             }
-            ProblemKind::KeyframeAnimation => {
-                f.write_str("a keyframe's `icon.animation`, which has no effect")
-            }
             ProblemKind::SmoothstepSpreadOrInset => {
                 f.write_str("a `kirigami_smoothstep` shadow layer's spread or inset")
             }
@@ -852,6 +823,10 @@ impl fmt::Display for ProblemKind {
             ProblemKind::Undeclared { name, declaration } => {
                 write!(f, "`{name}` is not declared in `{declaration}`")
             }
+            ProblemKind::Later { name, declaration } => write!(
+                f,
+                "`{name}` is declared in `{declaration}`, and a later unit states it"
+            ),
             ProblemKind::NotConditions => {
                 f.write_str("a colours or tokens rule selects on conditions only")
             }

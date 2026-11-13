@@ -11,12 +11,13 @@ use std::time::{Duration, Instant};
 
 use native_theme::gate::{
     Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Query, Resolved,
-    SetWhole, Tolerance, Unread, When, content_variants, context_held, is_listed_default,
-    listed_key, names_read, parse_key, parse_value, parse_when, parts, set_whole, widgets,
+    SetWhole, Tolerance, Unread, When, context_held, is_listed_default, listed_key, names_read,
+    parse_key, parse_value, parse_when, parts, set_whole, widgets,
 };
 use native_theme::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
 
+use super::depth::{Depth, Place};
 use super::facts::{self, Fact, Stated};
 use super::model::{self, Block, Mentioned, Model, Point, Space, strings};
 use super::timing::{Step, timed};
@@ -131,6 +132,20 @@ pub struct Report {
     /// Facts a unit they belong to, their key's or a widget's their `when`
     /// names, is not enabled for (S17 *While 0.8.0 is built*), by key.
     pub units_not_enabled: BTreeMap<String, usize>,
+    /// Facts a preset's run skips by S17's predicate (ADD-A147) that a unit
+    /// they wait for places (`depth::Place::Later`), by `<preset>\t<the
+    /// unit>`.
+    pub later_units: BTreeMap<String, usize>,
+    /// Facts a preset's run skips by S17's predicate that no unit's names
+    /// place (`depth::Place::Unplaced`), by preset.
+    pub unplaced: BTreeMap<String, usize>,
+    /// Per preset, the facts of the enabled units its run prepares and how
+    /// many of them are pending (S17's predicate, ADD-A147).
+    pub at_depth: BTreeMap<String, (usize, usize)>,
+    /// Where S17's predicate places each fact a preset's run reads, by its
+    /// preset and its [`Fact::line_place`]: `enabled`, `unplaced` or the
+    /// unit it waits for (ADD-A147).
+    pub places: BTreeMap<(String, String), String>,
     /// Facts whose `when` names what the model does not hold yet, by what
     /// it names.
     pub whens_not_held: BTreeMap<String, usize>,
@@ -194,7 +209,7 @@ pub struct Group {
 
 impl Report {
     /// A failure of no comparison, its own group.
-    fn fail(&mut self, failure: String) {
+    pub fn fail(&mut self, failure: String) {
         let group = (String::new(), String::new(), failure.clone());
         self.fail_in(group, failure);
     }
@@ -268,6 +283,18 @@ impl Report {
         for (key, count) in other.units_not_enabled {
             *self.units_not_enabled.entry(key).or_default() += count;
         }
+        for (key, count) in other.later_units {
+            *self.later_units.entry(key).or_default() += count;
+        }
+        for (preset, count) in other.unplaced {
+            *self.unplaced.entry(preset).or_default() += count;
+        }
+        for (preset, counts) in other.at_depth {
+            self.at_depth.entry(preset).or_insert(counts);
+        }
+        for (fact, place) in other.places {
+            self.places.entry(fact).or_insert(place);
+        }
         for (why, count) in other.whens_not_held {
             *self.whens_not_held.entry(why).or_default() += count;
         }
@@ -305,7 +332,8 @@ impl Report {
         format!(
             "failures {failures:?}\ngroups {groups:?}\npending {:?}\nsynthetic {:?}\n\
              listed {:?}\nunchecked {:?}\nunread {unread:?}\nkeys not held {:?}\n\
-             units not enabled {:?}\nwhens not held {:?}\nother presets {}\n\
+             units not enabled {:?}\nlater units {:?}\nunplaced {:?}\nat depth {:?}\nplaces {:?}\n\
+             whens not held {:?}\nother presets {}\n\
              variants not held {:?}\naccent run {}\nfields not drawn {}\n\
              whens not drawn {}\ncombinations skipped {}\ncombinations {:?}\nqueried {}\n\
              compared {}",
@@ -315,6 +343,10 @@ impl Report {
             self.unchecked,
             self.keys_not_held,
             self.units_not_enabled,
+            self.later_units,
+            self.unplaced,
+            self.at_depth,
+            self.places,
             self.whens_not_held,
             self.other_presets,
             self.variants_not_held,
@@ -335,6 +367,9 @@ pub struct Platform {
     pub facts: Vec<Fact>,
     pub keys: Vec<(String, Result<FactKey, Unread>)>,
     pub models: Vec<Model>,
+    /// The units it was read with, whose names at depth each preset's run
+    /// reads (S17, ADD-A147).
+    pub units: Units,
 }
 
 impl Platform {
@@ -360,9 +395,6 @@ impl Platform {
                 Ok(read) => facts.extend(read),
                 Err(error) => report.fail(error),
             }
-        }
-        for fact in &mut facts {
-            fact.enabled = units_enabled(units, fact);
         }
         let mut keys: Vec<(String, Result<FactKey, Unread>)> = Vec::new();
         let mut files: BTreeMap<&str, &str> = BTreeMap::new();
@@ -401,6 +433,7 @@ impl Platform {
             facts,
             keys,
             models,
+            units: units.clone(),
         }
     }
 
@@ -412,18 +445,56 @@ impl Platform {
     }
 }
 
-/// Whether every unit `fact` belongs to is enabled (S17 *While 0.8.0 is
-/// built*): its key's, and each widget's its `when`'s positive lists name
-/// ([`when_widgets`]), as check_facts_trace.py's `in_unit` places them. An
-/// S9 input's key (`input.…`) belongs to no unit: the inputs are the
-/// model's core (the plan's M1a: S9.1, S9.2, S9.4), whatever unit is
-/// enabled.
-fn units_enabled(units: &Units, fact: &Fact) -> bool {
-    (fact.key.starts_with("input.") || units.hold(&fact.key))
-        && fact
-            .when
-            .as_ref()
-            .is_none_or(|when| when_widgets(when).iter().all(|widget| units.hold(widget)))
+/// The entry's state model in force on `preset` (S10's *Later names*, S17,
+/// ADD-A147): its variants, flags and axis conditions at depth (`units`),
+/// each exclusive group and recency set trimmed to the flags at depth (one
+/// left with fewer than two dropped), a set holding a variant beyond depth
+/// no element's ([`Model::without`]); and, while the sizes unit is not
+/// enabled, the default size in force alone (its context entry's, its
+/// variant entry's or the widget's, [`model::size_options`]; none where it
+/// is pending) and no density. Its declarations stay whole in the preset.
+pub fn in_force_at_depth(entry: &Model, units: &Units, preset: &str) -> Model {
+    let widget = entry.widget.as_str();
+    let mut off: Vec<String> = entry.skipped_variants.clone();
+    off.extend(
+        entry
+            .variants
+            .iter()
+            .filter(|variant| !units.at_depth(widget, preset, variant, true))
+            .cloned(),
+    );
+    let mut out = entry.without(&off);
+    let flag = |flag: &String| units.at_depth(widget, preset, flag, false);
+    out.states.retain(flag);
+    out.flags.retain(flag);
+    out.exclusive = out
+        .exclusive
+        .iter()
+        .map(|group| {
+            group
+                .iter()
+                .filter(|held| flag(held))
+                .cloned()
+                .collect::<Vec<_>>()
+        })
+        .filter(|group| group.len() >= 2)
+        .collect();
+    out.recency = out
+        .recency
+        .iter()
+        .map(|(name, set)| {
+            let set: Vec<String> = set.iter().filter(|held| flag(held)).cloned().collect();
+            (name.clone(), set)
+        })
+        .filter(|(_, set)| set.len() >= 2)
+        .collect();
+    out.axis_conditions
+        .retain(|condition| units.condition_at_depth(condition, widget));
+    if !units.sizes_enabled() {
+        out.defaults_only = true;
+        out.densities.clear();
+    }
+    out
 }
 
 /// One fact prepared for a preset: its `when` read with the preset's
@@ -497,17 +568,25 @@ fn read_when(when: Option<&Value>) -> Result<When, Unread> {
 /// `when`", its conditions).
 const GLOBAL_WHEN: [&str; 2] = ["conditions", "not_conditions"];
 
-/// Every fact of `platform` read as the model reads it, whatever preset it
-/// is for (its `preset:` conditions left out): a key, a `when` or a value
-/// the model holds but refuses is a failure; what it does not hold yet is
-/// counted (S17: skipped while 0.8.0 is built).
-pub fn read_all(platform: &Platform, report: &mut Report) {
+/// Every fact of `platform` that S17's predicate places as of the enabled
+/// units on one of the platform's presets (`depths`, each preset's
+/// predicate) read as the model reads it,
+/// whatever preset it is for (its `preset:` conditions left out): a key, a
+/// `when` or a value the model holds but refuses is a failure; what it does
+/// not hold yet is counted, and so is a fact of no preset's enabled units
+/// (S17: skipped while 0.8.0 is built).
+pub fn read_all(platform: &Platform, depths: &[(&str, Depth<'_>)], report: &mut Report) {
     for fact in &platform.facts {
         // The accent run reads its own facts ([`accent_run`]).
         if fact.accent_run {
             continue;
         }
-        if !fact.enabled {
+        let enabled = depths.iter().any(|(preset, depth)| {
+            facts::for_preset(fact.when.as_ref(), preset).is_some_and(|(written, _)| {
+                depth.unit(&fact.key, written.as_ref()) == Place::Enabled
+            })
+        });
+        if !enabled {
             *report
                 .units_not_enabled
                 .entry(fact.key.clone())
@@ -581,27 +660,171 @@ pub fn read_all(platform: &Platform, report: &mut Report) {
     }
 }
 
+/// Counts where a fact of `preset` (its `when` as written for it) stands
+/// ([`Depth::unit`], S17, ADD-A147): under the unit that places it, apart
+/// where none does, and, of the enabled units, in `counts` (its facts, its
+/// pending facts); whether it is of the enabled units.
+fn count_place(
+    depth: &Depth,
+    fact: &Fact,
+    written: Option<&Value>,
+    preset: &str,
+    counts: &mut (usize, usize),
+    report: &mut Report,
+) -> bool {
+    let (place, enabled) = match depth.unit(&fact.key, written) {
+        Place::Enabled => {
+            counts.0 = counts.0.saturating_add(1);
+            if matches!(fact.stated, Stated::Pending(_)) {
+                counts.1 = counts.1.saturating_add(1);
+            }
+            ("enabled".to_owned(), true)
+        }
+        Place::Later(unit) => {
+            *report
+                .later_units
+                .entry(format!("{preset}\t{unit}"))
+                .or_default() += 1;
+            (unit, false)
+        }
+        Place::Unplaced => {
+            *report.unplaced.entry(preset.to_owned()).or_default() += 1;
+            ("unplaced".to_owned(), false)
+        }
+    };
+    report
+        .places
+        .insert((preset.to_owned(), fact.line_place()), place);
+    enabled
+}
+
+/// The default flavour of the bundled preset `id` (`None`: it declares no
+/// flavour), or why it does not load; each preset loaded once per process.
+pub fn bundled_default_flavour(id: &str) -> Result<Option<String>, String> {
+    type Flavours = Mutex<BTreeMap<String, Result<Option<String>, String>>>;
+    static LOADED: std::sync::OnceLock<Flavours> = std::sync::OnceLock::new();
+    let loaded = LOADED.get_or_init(|| Mutex::new(BTreeMap::new()));
+    let mut loaded = loaded.lock().unwrap_or_else(PoisonError::into_inner);
+    loaded
+        .entry(id.to_owned())
+        .or_insert_with(|| {
+            let preset = native_theme::PresetId::all()
+                .iter()
+                .find(|held| held.key() == id)
+                .ok_or_else(|| format!("no bundled preset is `{id}`"))?;
+            Ok(Preset::bundled(*preset)?.flavors().into_iter().next())
+        })
+        .clone()
+}
+
+/// `flavor`, where it names a flavour of `preset` other than its default:
+/// the flavour whose own state model a section of its declarations is true
+/// to (S10).
+fn own_flavour<'f>(preset: &Preset, flavor: Option<&'f str>) -> Option<&'f str> {
+    flavor.filter(|flavor| preset.flavors().first().map(String::as_str) != Some(*flavor))
+}
+
+/// S17's predicate over `platform`'s facts for `preset`, under its default
+/// flavour.
+fn depth_of<'p>(platform: &'p Platform, preset: &Preset) -> Depth<'p> {
+    let default_flavour = preset.flavors().into_iter().next();
+    Depth::new(platform, preset.id(), default_flavour.as_deref())
+}
+
+/// Where every fact of `platform` that can apply to `preset`, whose default
+/// flavour is `default_flavour`, stands, counted in the report as
+/// [`prepare`] counts it, with no preset checked (`facts_units`).
+pub fn place_facts(
+    platform: &Platform,
+    preset: &str,
+    default_flavour: Option<&str>,
+    report: &mut Report,
+) {
+    let depth = Depth::new(platform, preset, default_flavour);
+    let mut counts = (0_usize, 0_usize);
+    for fact in &platform.facts {
+        if fact.accent_run {
+            continue;
+        }
+        if let Some((written, _)) = facts::for_preset(fact.when.as_ref(), preset) {
+            count_place(&depth, fact, written.as_ref(), preset, &mut counts, report);
+        }
+    }
+    report.at_depth.insert(preset.to_owned(), counts);
+}
+
 /// The facts of `platform` that can apply to `preset`, by key, each read;
 /// what [`read_all`] counted or failed left out.
 pub fn prepare<'f>(
     platform: &'f Platform,
-    preset: &str,
+    preset: &Preset,
+    evidence: &facts::Evidence,
+    report: &mut Report,
+) -> Vec<KeyFacts<'f>> {
+    prepare_placed(
+        platform,
+        preset,
+        &depth_of(platform, preset),
+        evidence,
+        report,
+    )
+}
+
+/// [`prepare`] with the preset's predicate `depth` given, its placements
+/// shared with [`read_all`]'s.
+fn prepare_placed<'f>(
+    platform: &'f Platform,
+    preset: &Preset,
+    depth: &Depth<'_>,
     evidence: &facts::Evidence,
     report: &mut Report,
 ) -> Vec<KeyFacts<'f>> {
     let mut out: Vec<KeyFacts<'f>> = Vec::new();
+    let preset = preset.id();
+    let mut counts = (0_usize, 0_usize);
     for fact in &platform.facts {
-        if fact.accent_run || !fact.enabled {
+        if fact.accent_run {
             continue;
         }
-        let Some(Ok(key)) = platform.key(&fact.key) else {
-            continue;
-        };
         let Some((written, _)) = facts::for_preset(fact.when.as_ref(), preset) else {
             continue;
         };
-        let Ok(when) = read_when(written.as_ref()) else {
+        if !count_place(depth, fact, written.as_ref(), preset, &mut counts, report) {
             continue;
+        }
+        // S17's predicate places the fact as of the enabled units, so the
+        // model reads its key and its `when`: one it cannot is a failure,
+        // never a fact dropped while counted.
+        let key = match platform.key(&fact.key) {
+            Some(Ok(key)) => key,
+            Some(Err(Unread::NotHeld(why) | Unread::Refused(why))) => {
+                report.fail(format!(
+                    "{}: `{}` is of the enabled units on {preset}, and its key does not read: {why}",
+                    fact.place(),
+                    fact.key
+                ));
+                continue;
+            }
+            None => {
+                report.fail(format!(
+                    "{}: `{}` is of the enabled units on {preset}, and its key was not read",
+                    fact.place(),
+                    fact.key
+                ));
+                continue;
+            }
+        };
+        let when = match read_when(written.as_ref()) {
+            Ok(when) => when,
+            Err(Unread::NotHeld(why) | Unread::Refused(why)) => {
+                report.fail(format!(
+                    "{}: `{}` is of the enabled units on {preset}, and its `when` does not read: \
+                     {why}",
+                    fact.place(),
+                    fact.key
+                ));
+                continue;
+            }
         };
         let block = set_whole(&fact.key);
         let leaf = match (&fact.stated, &block) {
@@ -659,6 +882,7 @@ pub fn prepare<'f>(
             }),
         }
     }
+    report.at_depth.insert(preset.to_owned(), counts);
     // A part's own key is compared under every combination, drawn where no
     // part fact applies (S17, ADD-A130), so a part with no fact has its key
     // too.
@@ -942,141 +1166,26 @@ fn record(
     }
 }
 
-/// The widgets a `when`'s positive lists name as an ancestor or a sibling
-/// (S11), the units a fact belongs to beside its key's (S17, ADD-A128):
-/// its contexts' (`scope.nearest`'s too) and its position's. A negative
-/// list never adds a unit: where its widget's unit is not enabled no such
-/// widget exists, so the negation holds ([`read_when`]).
-fn when_widgets(when: &Value) -> Vec<String> {
-    let mut out = Vec::new();
-    let widget = |entry: &Value| {
-        entry
-            .get("widget")
-            .and_then(Value::as_str)
-            .map(str::to_owned)
-    };
-    for entry in when
-        .get("context")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        out.extend(widget(entry));
-        out.extend(strings(
-            entry.get("scope").and_then(|scope| scope.get("nearest")),
-        ));
-    }
-    if let Some(position) = when.get("position") {
-        out.extend(strings(position.get("among")));
-        for side in ["previous", "next"] {
-            out.extend(position.get(side).and_then(widget));
-        }
-    }
-    out
-}
-
-/// The variants of `widget` a fact's `when` names: its own lists, for a
-/// fact of the widget's keys, and those of a context or a position's
-/// sibling naming the widget.
-fn when_variants(when: &Value, widget: &str, own: bool) -> Vec<String> {
-    let lists = |entry: &Value| {
-        let mut out = strings(entry.get("variants"));
-        out.extend(strings(entry.get("not_variants")));
-        out
-    };
-    let mut out = if own { lists(when) } else { Vec::new() };
-    let names = |entry: &Value| entry.get("widget").and_then(Value::as_str) == Some(widget);
-    for list in ["context", "not_context"] {
-        for entry in when
-            .get(list)
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            if names(entry) {
-                out.extend(lists(entry));
-            }
-        }
-    }
-    if let Some(position) = when.get("position") {
-        for side in ["previous", "next"] {
-            if let Some(entry) = position.get(side).filter(|entry| names(entry)) {
-                out.extend(lists(entry));
-            }
-        }
-    }
-    out
-}
-
-/// The variants of `entry` the gate leaves out for `preset` (each preset's
-/// facts where none is given), ADD-A128: those facts name, every one of
-/// which the gate skips, as a unit it belongs to, its key's or a widget's
-/// its `when` names, is not enabled (S6.1: a unit enters the model in the
-/// commit whose presets state it). A variant no fact names is checked like
-/// any other; a variant S12 exempts from being selected on stays (a content
-/// variant, one `requires_variants` or `sizes_by_variant` names). Each
+/// The variants of `entry` the model does not hold: its typed variants with
+/// no member of `Variant`, which a later unit of depth holds (S6.1, S10
+/// *Later names*, ADD-A147). They have no spelling, so the declarations
+/// leave them out and no combination holds one; every other variant stays
+/// in the declarations whole, the state model in force at depth
+/// ([`in_force_at_depth`]) deciding which the combinations draw. Each
 /// recorded in the report.
-fn skipped_variants(
-    platform: &Platform,
-    entry: &Model,
-    preset: Option<&str>,
-    report: &mut Report,
-) -> Vec<String> {
-    let held = widgets();
-    let (mut named_in, mut named_off) = (BTreeSet::new(), BTreeSet::new());
-    for fact in platform.facts.iter().filter(|fact| !fact.accent_run) {
-        let when = match preset {
-            Some(preset) => match facts::for_preset(fact.when.as_ref(), preset) {
-                Some((when, _)) => when,
-                None => continue,
-            },
-            None => fact.when.clone(),
-        };
-        let Some(when) = when else {
-            continue;
-        };
-        let key_widget = match platform.key(&fact.key) {
-            Some(Ok(key)) => key.widget(),
-            _ => fact.key.split('.').next().map(str::to_owned),
-        };
-        let own = key_widget.as_deref() == Some(entry.widget.as_str());
-        let names = when_variants(&when, &entry.widget, own);
-        if names.is_empty() {
-            continue;
-        }
-        // A refused key fails `read_all`; only one the model does not hold
-        // makes the fact skipped.
-        let key_held = !matches!(
-            platform.key(&fact.key),
-            Some(Err(Unread::NotHeld(_))) | None
+fn unspelled_variants(entry: &Model, report: &mut Report) -> Vec<String> {
+    let unspelled = |variant: &String| {
+        let mut probe = toml::Table::new();
+        probe.insert(
+            "variants".to_owned(),
+            Value::Array(vec![Value::String(variant.clone())]),
         );
-        let skipped = !key_held
-            || !fact.enabled
-            || when_widgets(&when)
-                .iter()
-                .any(|widget| !held.contains(widget));
-        if skipped {
-            named_off.extend(names);
-        } else {
-            named_in.extend(names);
-        }
-    }
-    let mut exempt: BTreeSet<String> = content_variants(&entry.widget).into_iter().collect();
-    exempt.extend(entry.requires_variants.iter().cloned());
-    exempt.extend(
-        entry
-            .sizes_by_variant
-            .iter()
-            .map(|(variant, _, _)| variant.clone()),
-    );
+        matches!(parse_when(&Value::Table(probe)), Err(Unread::NotHeld(_)))
+    };
     let out: Vec<String> = entry
         .variants
         .iter()
-        .filter(|variant| {
-            named_off.contains(*variant)
-                && !named_in.contains(*variant)
-                && !exempt.contains(*variant)
-        })
+        .filter(|variant| unspelled(variant))
         .cloned()
         .collect();
     for variant in &out {
@@ -1088,20 +1197,119 @@ fn skipped_variants(
 }
 
 /// The entries in force for `preset` and `flavor`, each without the
-/// variants the gate leaves out for the preset (ADD-A128).
+/// variants the model does not hold ([`unspelled_variants`]) and the typed
+/// variants at depth no combination at depth draws (the preset's `later`,
+/// S10 *Later names*: no element holds one), and each its state model in
+/// force at depth ([`in_force_at_depth`]): the combinations the gate draws
+/// hold only names at depth (S17, ADD-A147).
 fn projected(
     platform: &Platform,
     preset: &Preset,
     flavor: Option<&str>,
     report: &mut Report,
 ) -> Vec<Model> {
+    let depth = depth_of(platform, preset);
     model::in_force(&platform.models, preset.id(), flavor)
         .into_iter()
         .map(|entry| {
-            let skipped = skipped_variants(platform, entry, Some(preset.id()), report);
-            entry.without(&skipped)
+            let mut off = unspelled_variants(entry, report);
+            let drawn = depth.drawn_variants(&entry.widget, own_flavour(preset, flavor));
+            let nowhere: Vec<String> = entry
+                .variants
+                .iter()
+                .filter(|variant| {
+                    !variant.starts_with('@') && !drawn.contains(*variant) && !off.contains(variant)
+                })
+                .cloned()
+                .collect();
+            off.extend(nowhere);
+            in_force_at_depth(&entry.without(&off), &platform.units, preset.id())
         })
         .collect()
+}
+
+/// The entries in force for `preset` and `flavor` as its declarations state
+/// them (S10 *Later names*, S17, ADD-A147), as scripts/generate_preset.py's
+/// `declared()` writes them: whole, but for the typed variants the model
+/// does not hold ([`unspelled_variants`]: they have no spelling); their
+/// exclusive groups trimmed to the flags at depth (a group left with fewer
+/// than two dropped); their recency sets trimmed to the flags at depth, a
+/// set left with fewer than two, or that no rule's `latest` on the widget
+/// names, dropped; and `flags` to the flags at depth a rule of the preset
+/// on the widget names ([`Preset::mentions`]).
+fn declared_entries(
+    platform: &Platform,
+    preset: &Preset,
+    flavor: Option<&str>,
+    report: &mut Report,
+) -> Vec<Model> {
+    let units = &platform.units;
+    model::in_force(&platform.models, preset.id(), flavor)
+        .into_iter()
+        .map(|entry| {
+            let unspelled = unspelled_variants(entry, report);
+            let mut out = entry.without(&unspelled);
+            // A variant with no spelling is no required one the preset can
+            // declare (scripts/generate_preset.py's `declared()`); the
+            // combinations keep it, as no set holding it is drawn.
+            out.requires_variants
+                .retain(|variant| !unspelled.contains(variant));
+            let widget = out.widget.clone();
+            let (named, _) = preset.mentions(&widget);
+            let latest = preset.latest_sets(&widget);
+            let flag = |flag: &String| units.at_depth(&widget, preset.id(), flag, false);
+            out.flags.retain(|held| flag(held) && named.contains(held));
+            out.exclusive = out
+                .exclusive
+                .iter()
+                .map(|group| {
+                    group
+                        .iter()
+                        .filter(|held| flag(held))
+                        .cloned()
+                        .collect::<Vec<_>>()
+                })
+                .filter(|group| group.len() >= 2)
+                .collect();
+            out.recency = out
+                .recency
+                .iter()
+                .map(|(name, set)| {
+                    let set: Vec<String> = set.iter().filter(|held| flag(held)).cloned().collect();
+                    (name.clone(), set)
+                })
+                .filter(|(name, set)| set.len() >= 2 && latest.contains(name))
+                .collect();
+            out
+        })
+        .collect()
+}
+
+/// The variants a preset's declarations list under `later` for an entry
+/// whose typed variants the model holds (S10 *Later names*, ADD-A147), as
+/// scripts/generate_preset.py's `later_variants()` gives them: each a later
+/// unit not enabled holds for the entry on the preset (a keyed variant
+/// beyond depth, a typed variant the model holds through another entry's
+/// Depth line), and each typed variant at depth that no combination at
+/// depth draws (`drawn`, [`Depth::drawn_variants`]), sorted.
+fn later_variants(
+    entry: &Model,
+    units: &Units,
+    preset: &str,
+    drawn: &BTreeSet<String>,
+) -> Vec<String> {
+    let mut out: Vec<String> = entry
+        .variants
+        .iter()
+        .filter(|variant| {
+            !units.at_depth(&entry.widget, preset, variant, true)
+                || (!variant.starts_with('@') && !drawn.contains(*variant))
+        })
+        .cloned()
+        .collect();
+    out.sort();
+    out.dedup();
+    out
 }
 
 /// The perturbed run's stand-in layer (S17): under each scheme, a fixed
@@ -1576,7 +1784,35 @@ pub fn run_shard(
         }
         let shared = shard.shared(&mut report, &mut elsewhere);
         let platform = Platform::read(&directory, &units, shared);
-        read_all(&platform, shared);
+        // The facts are placed for the presets the run checks of this
+        // directory, else for its bundled presets (`DIRECTORIES`).
+        let mut ids: Vec<(&str, Option<String>)> = presets
+            .iter()
+            .filter(|(directory_of, _)| *directory_of == platform.name)
+            .map(|(_, preset)| (preset.id(), preset.flavors().into_iter().next()))
+            .collect();
+        if ids.is_empty() {
+            for (id, _) in crate::DIRECTORIES
+                .iter()
+                .filter(|(_, directory_of)| *directory_of == platform.name)
+            {
+                match bundled_default_flavour(id) {
+                    Ok(flavour) => ids.push((id, flavour)),
+                    Err(why) => {
+                        shared.fail(format!("{id}: the bundled preset does not load: {why}"))
+                    }
+                }
+            }
+        }
+        // Each preset's predicate, its placements shared by `read_all` and
+        // the preset's run; `read_all` records into the first shard alone.
+        let depths: Vec<(&str, Depth)> = ids
+            .iter()
+            .map(|(id, flavour)| (*id, Depth::new(&platform, id, flavour.as_deref())))
+            .collect();
+        if shard.index == 0 {
+            read_all(&platform, &depths, shared);
+        }
         // Every pending fact is listed, with the combinations it applied
         // in, none where it applied in none (S17).
         for fact in &platform.facts {
@@ -1603,8 +1839,8 @@ pub fn run_shard(
             if !entry.available {
                 continue;
             }
-            let skipped = skipped_variants(&platform, entry, None, shared);
-            let entry = &entry.without(&skipped);
+            let unspelled = unspelled_variants(entry, shared);
+            let entry = &entry.without(&unspelled);
             let vectors = model::condition_vectors(
                 &entry.axis_conditions,
                 &["light".to_owned(), "dark".to_owned()],
@@ -1625,16 +1861,30 @@ pub fn run_shard(
             } else {
                 flavors.iter().map(|flavor| Some(flavor.as_str())).collect()
             };
+            // While the flavours unit is not enabled the default flavour's
+            // state models alone are in force (S10, ADD-A147): every
+            // flavour's section is still checked whole against its own state
+            // model at depth, the combinations only the default flavour's.
+            let in_force = if platform.units.flavours_enabled() {
+                flavors.len()
+            } else {
+                1
+            };
             let shared = shard.shared(&mut report, &mut elsewhere);
-            let keys = prepare(&platform, preset.id(), &evidence, shared);
+            let keys = match depths.iter().find(|(id, _)| *id == preset.id()) {
+                Some((_, depth)) => prepare_placed(&platform, preset, depth, &evidence, shared),
+                None => prepare(&platform, preset, &evidence, shared),
+            };
             let not_drawn = not_drawn_map(&platform, preset.id(), shared);
-            for flavor in flavors {
+            for flavor in &flavors {
                 declarations_run(
                     &platform,
                     preset,
-                    flavor,
+                    *flavor,
                     shard.shared(&mut report, &mut elsewhere),
                 );
+            }
+            for flavor in flavors.into_iter().take(in_force) {
                 check(
                     &platform,
                     preset,
@@ -1647,13 +1897,7 @@ pub fn run_shard(
                 let shared = shard.shared(&mut report, &mut elsewhere);
                 let entries = projected(&platform, preset, flavor, shared);
                 derivations(
-                    &platform.name,
-                    preset,
-                    flavor,
-                    &keys,
-                    &entries,
-                    &not_drawn,
-                    shared,
+                    &platform, preset, flavor, &keys, &entries, &not_drawn, shared,
                 );
             }
             if shard.index == 0 {
@@ -1786,6 +2030,7 @@ struct Pair<'f> {
 /// scheme. What the model does not hold yet is counted, as [`read_all`]
 /// counts it.
 fn pairs<'f>(run: &AccentRun<'_, 'f>, report: &mut Report) -> Vec<Pair<'f>> {
+    let depth = depth_of(run.platform, run.preset);
     let preset = run.preset.id();
     let mut out: Vec<Pair<'f>> = Vec::new();
     for fact in run.platform.facts.iter().filter(|fact| fact.accent_run) {
@@ -1824,7 +2069,7 @@ fn pairs<'f>(run: &AccentRun<'_, 'f>, report: &mut Report) -> Vec<Pair<'f>> {
             ));
             continue;
         };
-        if !fact.enabled {
+        if depth.unit(&fact.key, written.as_ref()) != Place::Enabled {
             *report
                 .units_not_enabled
                 .entry(fact.key.clone())
@@ -2390,7 +2635,8 @@ pub fn declarations_run(
     flavor: Option<&str>,
     report: &mut Report,
 ) {
-    let entries = projected(platform, preset, flavor, report);
+    let entries = declared_entries(platform, preset, flavor, report);
+    let depth = depth_of(platform, preset);
     for widget in widgets() {
         let available = preset
             .declared(&widget, flavor)
@@ -2507,6 +2753,19 @@ pub fn declarations_run(
             "requires_variants",
             format!("{:?}", set(&declared.requires_variants)),
             format!("{:?}", set(&entry.requires_variants)),
+        );
+        differ(
+            "later.variants",
+            format!("{:?}", set(&declared.later)),
+            format!(
+                "{:?}",
+                set(&later_variants(
+                    entry,
+                    &platform.units,
+                    preset.id(),
+                    &depth.drawn_variants(&entry.widget, own_flavour(preset, flavor))
+                ))
+            ),
         );
         differ(
             "sizes_by_variant",
@@ -2855,7 +3114,7 @@ fn check(
                     };
                     if global_vectors.contains(vector) {
                         check_globals(
-                            preset.id(),
+                            (preset.id(), &platform.units),
                             resolved,
                             keys,
                             vector,
@@ -2864,9 +3123,14 @@ fn check(
                             &mut report,
                         );
                         if pass == Pass::Normal {
-                            definitions(preset.id(), resolved, &root, &mut report, &|| {
-                                format!("{vector:?}")
-                            });
+                            definitions(
+                                preset.id(),
+                                &platform.units,
+                                resolved,
+                                (vector, &root),
+                                &mut report,
+                                &|| format!("{vector:?}"),
+                            );
                         }
                     }
                     let holding = holding(&widgets, resolved);
@@ -3002,12 +3266,15 @@ pub fn drawing(platform: &str, flavor: Option<&str>) -> Drawing {
 /// The values the specification itself defines, which no fact states
 /// (S17, ADD-A125, ADD-A131): `token.text.font_dpi` 72 on the Apple presets
 /// (S9.4), `token.icons.animated_visuals` `{}` on every preset but
-/// `windows-11` (S4.5); each compared with the resolved token as a fact
-/// would be.
+/// `windows-11` (S4.5); each where an enabled unit holds its path on the
+/// preset (`units`: S4.5's is staged with the motion unit, S6.1, ADD-A147,
+/// as scripts/generate_preset.py's `definitions()` leaves it out),
+/// compared with the resolved token as a fact would be.
 pub fn definitions(
     preset: &str,
+    units: &Units,
     resolved: &Resolved,
-    root: &RootInputs,
+    (vector, root): (&[String], &RootInputs),
     report: &mut Report,
     combination: &dyn Fn() -> String,
 ) {
@@ -3022,7 +3289,14 @@ pub fn definitions(
         ),
     ];
     for (applies, name, value, section) in defined {
-        if !applies {
+        // Under a condition vector `vector` each of whose conditions is at
+        // depth for the token (S17, as [`check_globals`] asks a key).
+        if !applies
+            || !units.hold_on(name, Some(preset))
+            || !vector
+                .iter()
+                .all(|condition| units.condition_at_depth(condition, name))
+        {
             continue;
         }
         let place = format!("the definition of {section}");
@@ -3127,9 +3401,10 @@ impl<'a, 'f> Run<'a, 'f> {
     }
 }
 
-/// Every token, colour-role and input key under one condition vector.
+/// Every token, colour-role and input key under one condition vector whose
+/// every condition is at depth for it.
 fn check_globals(
-    preset: &str,
+    (preset, units): (&str, &Units),
     resolved: &Resolved,
     keys: &[KeyFacts<'_>],
     vector: &[String],
@@ -3138,9 +3413,17 @@ fn check_globals(
     report: &mut Report,
 ) {
     let combination = || format!("{vector:?}");
+    // A key of no widget is judged under the condition sets the catalogue's
+    // *today's fields* names for it (S17): each condition of the vector at
+    // depth for the key (`[at_depth]`), not the union other keys bring.
     let globals: Vec<&KeyFacts<'_>> = keys
         .iter()
         .filter(|key| key.key.widget().is_none())
+        .filter(|key| {
+            vector
+                .iter()
+                .all(|condition| units.condition_at_depth(condition, &key.name))
+        })
         .collect();
     let facts: Vec<Option<&Prepared<'_>>> = globals
         .iter()
@@ -4324,8 +4607,41 @@ fn compare_widget(
                 let own = fact
                     .and_then(|fact| fact.value.as_ref())
                     .is_some_and(|own| std::ptr::eq(own, value));
+                // A value composed from a set-whole block's leaves is the
+                // block's, read at the block's place (a step's place is the
+                // key the fact names, S17), and compared at the key's leaf
+                // alone: the other leaves are the theme's, grafted in.
+                let (read_at, except) = match key.set_whole.as_ref().filter(|_| !own) {
+                    Some(block) => {
+                        // A key lies below its set-whole block (`set_whole`
+                        // finds the block above it): one that does not
+                        // compares nothing, so it fails.
+                        let Some(leaf) = key.key.below(block.key()) else {
+                            report.fail(format!(
+                                "{place}: `{}` lies below no place of its set-whole block, so no \
+                                 leaf of it is compared, under {}",
+                                key.name,
+                                describe()
+                            ));
+                            continue;
+                        };
+                        let mut grafted: Vec<Vec<String>> = except
+                            .iter()
+                            .map(|below| leaf.iter().chain(below).cloned().collect())
+                            .collect();
+                        grafted.extend(
+                            block
+                                .leaves
+                                .iter()
+                                .map(|(_, name, _)| vec![name.clone()])
+                                .filter(|other| *other != leaf),
+                        );
+                        (block.key(), grafted)
+                    }
+                    None => (&key.key, except),
+                };
                 let at = std::ptr::from_ref(value).addr();
-                let synthetic = || session.synthetic(&key.key, Some(value), &except);
+                let synthetic = || session.synthetic(read_at, Some(value), &except);
                 let synthetic = if own {
                     asked.answer(|| Asked::Synthetic(index, at, except.clone()), synthetic)
                 } else {
@@ -4336,7 +4652,7 @@ fn compare_widget(
                     Ok(false) => {
                         let tolerance = tolerance.drawn_by(run.drawing);
                         let compare =
-                            || session.compare_except(&key.key, value, &tolerance, &except);
+                            || session.compare_except(read_at, value, &tolerance, &except);
                         let outcome = if own {
                             asked.answer(|| Asked::Compared(index, at, except.clone()), compare)
                         } else {
@@ -4622,7 +4938,7 @@ type Undrawn = (usize, usize, String, String, String, Unread);
 /// vector and a stand-in is resolved once, the pairs in parallel, as many
 /// passes vary an input to the same values under the same conditions.
 fn derivations(
-    platform: &str,
+    platform: &Platform,
     preset: &Preset,
     flavor: Option<&str>,
     keys: &[KeyFacts<'_>],
@@ -4633,7 +4949,8 @@ fn derivations(
     let root = root_inputs();
     let metrics = StubMetrics;
     let schemes = preset.schemes();
-    let drawing = drawing(platform, flavor);
+    let units = &platform.units;
+    let drawing = drawing(&platform.name, flavor);
     let mut checks: Vec<PassCheck<'_>> = Vec::new();
     let mut groups = 0_usize;
     let mut resolutions: Vec<(Vec<String>, String)> = Vec::new();
@@ -4695,6 +5012,16 @@ fn derivations(
                             .chain(pass.conditions.iter().cloned())
                             .collect()
                     };
+                    // A key of no widget is judged only under conditions at
+                    // depth for it (S17; [`check_globals`]).
+                    if widget.is_none()
+                        && !vector
+                            .iter()
+                            .all(|condition| units.condition_at_depth(condition, &key.name))
+                    {
+                        report.combinations_skipped += 1;
+                        continue;
+                    }
                     let pair = (vector.clone(), text.clone());
                     let resolution = match resolutions.iter().position(|held| *held == pair) {
                         Some(at) => at,

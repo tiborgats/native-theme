@@ -1,6 +1,7 @@
-# Synthetic facts (S17): the projection's rules, one variant each (ADD-A128). `@raised` only skipped facts name
-# (a toolbar context), in a three-member exclusive group; `@both` a skipped and a kept fact; `@unheld` a fact of a
-# key the model does not hold; `with_icon`, a content variant S12 exempts, only a skipped fact.
+# Synthetic facts (S17): the state model in force at depth, one variant each (S10 *Later names*, ADD-A147).
+# `@raised`, the styles unit's, named by a later unit's fact (a toolbar context), in a three-member exclusive group;
+# `@both`, at depth, by a later unit's fact and a fact of the enabled units; `@unheld`, at depth, only by a fact of a
+# key the model does not hold; `with_icon`, a content variant at depth, only by a later unit's fact.
 
 [[fact]]
 key = "button.body.fill"
@@ -14,7 +15,7 @@ quote = "synthetic"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 value = "#00000000"
 rows = []
 

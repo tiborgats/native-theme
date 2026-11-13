@@ -179,10 +179,6 @@ enum Decl {
     TextStyles,
     /// `elevation`: the elevation levels.
     Elevation,
-    /// `durations`: the keyed durations.
-    Durations,
-    /// `timings`: the keyed timings.
-    Timings,
     /// `drag_cursors`: the drag cursors.
     DragCursors,
     /// `symbolic_colors`: an icon's symbolic colours, by mark name.
@@ -197,10 +193,6 @@ enum Decl {
     IconStateEffects,
     /// `symbol_variants`: the symbol variants.
     SymbolVariants,
-    /// `rendering_engines`: the text rendering engines.
-    RenderingEngines,
-    /// `lcd_filters`: the LCD filters.
-    LcdFilters,
     /// `spec_versions`: the material scheme's spec versions.
     SpecVersions,
     /// `materials`: the materials.
@@ -219,13 +211,11 @@ enum Decl {
 
 impl Decl {
     /// Every declaration.
-    const ALL: [Decl; 22] = [
+    const ALL: [Decl; 18] = [
         Decl::ColorRoles,
         Decl::AccentRamp,
         Decl::TextStyles,
         Decl::Elevation,
-        Decl::Durations,
-        Decl::Timings,
         Decl::DragCursors,
         Decl::SymbolicColors,
         Decl::IconContexts,
@@ -233,8 +223,6 @@ impl Decl {
         Decl::SymbolScales,
         Decl::IconStateEffects,
         Decl::SymbolVariants,
-        Decl::RenderingEngines,
-        Decl::LcdFilters,
         Decl::SpecVersions,
         Decl::Materials,
         Decl::BlendModes,
@@ -251,8 +239,6 @@ impl Decl {
             Decl::AccentRamp => "accent_ramp",
             Decl::TextStyles => "text_styles",
             Decl::Elevation => "elevation",
-            Decl::Durations => "durations",
-            Decl::Timings => "timings",
             Decl::DragCursors => "drag_cursors",
             Decl::SymbolicColors => "symbolic_colors",
             Decl::IconContexts => "icon_contexts",
@@ -260,8 +246,6 @@ impl Decl {
             Decl::SymbolScales => "symbol_scales",
             Decl::IconStateEffects => "icon_state_effects",
             Decl::SymbolVariants => "symbol_variants",
-            Decl::RenderingEngines => "rendering_engines",
-            Decl::LcdFilters => "lcd_filters",
             Decl::SpecVersions => "spec_versions",
             Decl::Materials => "materials",
             Decl::BlendModes => "blend_modes",
@@ -285,16 +269,12 @@ impl Decl {
             Decl::AccentRamp => &decl.accent_ramp,
             Decl::TextStyles => &decl.text_styles,
             Decl::Elevation => &decl.elevation,
-            Decl::Durations => &decl.durations,
-            Decl::Timings => &decl.timings,
             Decl::DragCursors => &decl.drag_cursors,
             Decl::SymbolicColors => &decl.symbolic_colors,
             Decl::IconContexts => &decl.icon_contexts,
             Decl::SymbolScales => &decl.symbol_scales,
             Decl::IconStateEffects => &decl.icon_state_effects,
             Decl::SymbolVariants => &decl.symbol_variants,
-            Decl::RenderingEngines => &decl.rendering_engines,
-            Decl::LcdFilters => &decl.lcd_filters,
             Decl::SpecVersions => &decl.spec_versions,
             Decl::Materials => &decl.materials,
             Decl::BlendModes => &decl.blend_modes,
@@ -349,13 +329,11 @@ const fn row(
 
 /// The keyed names' declarations by the slot holding them (S10). One table
 /// for the checks, for what a preset uses and for a key field's type.
-const DECLARATIONS: [Declaration; 24] = [
+const DECLARATIONS: [Declaration; 20] = [
     row("ColorRoles", "keyed", Decl::ColorRoles, false, true),
     row("GlobalRoles", "accent_ramp", Decl::AccentRamp, false, true),
     row("TextTokens", "keyed", Decl::TextStyles, false, true),
     row("Tokens", "elevation", Decl::Elevation, false, true),
-    row("MotionTokens", "durations", Decl::Durations, false, true),
-    row("MotionTokens", "timings", Decl::Timings, false, true),
     row(
         "IconStyle",
         "symbolic_colors",
@@ -377,20 +355,6 @@ const DECLARATIONS: [Declaration; 24] = [
         "IconStyle",
         "symbol_variants",
         Decl::SymbolVariants,
-        false,
-        false,
-    ),
-    row(
-        "TextRendering",
-        "engine",
-        Decl::RenderingEngines,
-        false,
-        false,
-    ),
-    row(
-        "TextRendering",
-        "lcd_filter",
-        Decl::LcdFilters,
         false,
         false,
     ),
@@ -474,6 +438,9 @@ struct Checker<'a> {
     /// part needs none, so neither its list nor any block below it is a
     /// completeness check (S6.3).
     latent: bool,
+    /// The typed widget of the fade's nested element walked, which its
+    /// `variant`, walked next, is checked against (S2.8).
+    fade_widget: Option<WidgetKind>,
 }
 
 impl<'a> Checker<'a> {
@@ -489,6 +456,7 @@ impl<'a> Checker<'a> {
             widget_decls: Vec::new(),
             exempt: Vec::new(),
             latent: false,
+            fade_widget: None,
         }
     }
 
@@ -714,14 +682,29 @@ impl<'a> Checker<'a> {
     }
 
     fn variant(&mut self, widget: WidgetKind, variant: &VariantRef, at: &str) {
-        let declared = self
-            .widget_decls(widget)
+        let decls = self.widget_decls(widget);
+        let declared = decls
             .iter()
             .any(|decl| decl.variants.as_ref().is_some_and(|v| v.contains(variant)));
         if !declared {
             let declaration = self.declaration(widget, "variants");
             self.undeclared(at, &variant_name(variant), &declaration);
+        } else if decls.iter().any(|decl| decl.is_later(variant)) {
+            let declaration = self.declaration(widget, "later");
+            self.later(at, &variant_name(variant), &declaration);
         }
+    }
+
+    /// A name the preset declares that a unit not yet enabled states (S10's
+    /// *Later names*, S12; ADD-A147).
+    fn later(&mut self, at: &str, name: &str, declaration: &str) {
+        self.problem(
+            at,
+            ProblemKind::Later {
+                name: name.to_owned(),
+                declaration: declaration.to_owned(),
+            },
+        );
     }
 
     fn flag(&mut self, widget: WidgetKind, flag: &StateFlag, at: &str) {
@@ -742,7 +725,8 @@ impl<'a> Checker<'a> {
     /// variant entry's take it: a context entry only leaves sizes out, so a
     /// size it alone names is taken by no element (S10, ADD-A131).
     fn size(&mut self, widget: WidgetKind, size: ControlSize, at: &str) {
-        let declared = self.widget_decls(widget).iter().any(|decl| {
+        let decls = self.widget_decls(widget);
+        let declared = decls.iter().any(|decl| {
             decl.sizes.as_ref().is_some_and(|s| s.contains(&size))
                 || decl
                     .sizes_by_variant
@@ -750,9 +734,38 @@ impl<'a> Checker<'a> {
                     .flatten()
                     .any(|entry| entry.sizes.contains(&size))
         });
+        // A size of a unit not enabled (S10's *Later names*; ADD-A147): no
+        // default in force of the widget's, its variant entries' or its
+        // context entries'; while the flavours unit is not enabled, the
+        // default flavour's alone, and no entry of a `later` variant, as no
+        // element holds one.
+        let default =
+            |held: Option<&DefaultSize>| matches!(held, Some(DefaultSize::Size(d)) if *d == size);
+        let in_force_decls = if crate::widgets::FLAVOURS_UNIT {
+            &decls[..]
+        } else {
+            decls.get(..1).unwrap_or_default()
+        };
+        let in_force = in_force_decls.iter().any(|decl| {
+            default(decl.default_size.as_ref())
+                || decl
+                    .sizes_by_variant
+                    .iter()
+                    .flatten()
+                    .filter(|entry| !decl.is_later(&entry.variant))
+                    .any(|entry| default(entry.default_size.as_ref()))
+                || decl
+                    .sizes_by_context
+                    .iter()
+                    .flatten()
+                    .any(|entry| default(entry.default_size.as_ref()))
+        });
         if !declared {
             let declaration = self.declaration(widget, "sizes");
             self.undeclared(at, size.name(), &declaration);
+        } else if !crate::widgets::SIZES_UNIT && !in_force {
+            let declaration = self.declaration(widget, "sizes");
+            self.later(at, size.name(), &declaration);
         }
     }
 
@@ -761,14 +774,18 @@ impl<'a> Checker<'a> {
             .widget_decls(widget)
             .iter()
             .any(|decl| decl.densities.as_ref().is_some_and(|d| d.contains(density)));
+        let name = match density {
+            Density::Default => "default".to_owned(),
+            Density::Compact => "compact".to_owned(),
+            Density::Keyed(key) => format!("@{key}"),
+        };
+        let declaration = self.declaration(widget, "densities");
         if !declared {
-            let name = match density {
-                Density::Default => "default".to_owned(),
-                Density::Compact => "compact".to_owned(),
-                Density::Keyed(key) => format!("@{key}"),
-            };
-            let declaration = self.declaration(widget, "densities");
             self.undeclared(at, &name, &declaration);
+        } else if !crate::widgets::SIZES_UNIT {
+            // A density of a unit not enabled: the densities are the sizes
+            // unit's (S10's *Later names*; ADD-A147).
+            self.later(at, &name, &declaration);
         }
     }
 
@@ -836,8 +853,12 @@ impl<'a> Checker<'a> {
     /// index (`rules[2].when.not_states[0]`, S11), or at its field and index
     /// in a layer built in Rust (`rules[2].selector.states.none_of[0]`).
     fn selector(&mut self, selector: &Selector, widget: Option<WidgetKind>, at: &str) {
-        for (condition, item) in items(&selector.conditions, at, "conditions", self.toml) {
-            self.condition(condition, &item);
+        let positive = selector.conditions.all_of.len();
+        for (index, (condition, item)) in items(&selector.conditions, at, "conditions", self.toml)
+            .into_iter()
+            .enumerate()
+        {
+            self.condition(condition, &item, index >= positive);
         }
         if let Some(widget) = widget {
             self.element(widget, &selector.variants, &selector.states, at);
@@ -950,7 +971,9 @@ impl<'a> Checker<'a> {
         self.element(widget, &sibling.variants, &sibling.states, at);
     }
 
-    fn condition(&mut self, condition: &Condition, at: &str) {
+    /// A condition, declared (S10); `negative` where a selector's
+    /// `not_conditions` names it.
+    fn condition(&mut self, condition: &Condition, at: &str, negative: bool) {
         let decl = self.decl();
         let (name, declaration, declared) = match condition {
             Condition::SystemSetting(key) => (
@@ -959,7 +982,27 @@ impl<'a> Checker<'a> {
                 decl.conditions.iter().any(|setting| setting.key == *key),
             ),
             Condition::DeviceModel(key) => (key, "device_models", decl.device_models.contains(key)),
-            Condition::Flavor(key) => (key, "flavors", decl.flavors.contains(key)),
+            Condition::Flavor(key) => {
+                // A flavour of a unit not enabled (S10's *Later names*,
+                // S12; ADD-A147): every declared flavour but the default.
+                // Named positively, the rule applies under it alone; the
+                // default named negatively, under the other flavours alone,
+                // each of that unit.
+                let default = decl.flavors.first() == Some(key);
+                let others = decl.flavors.len() > 1;
+                if !crate::widgets::FLAVOURS_UNIT
+                    && decl.flavors.contains(key)
+                    && if negative {
+                        default && others
+                    } else {
+                        !default
+                    }
+                {
+                    self.later(at, key.as_str(), "flavors");
+                    return;
+                }
+                (key, "flavors", decl.flavors.contains(key))
+            }
             Condition::ContainerSize { container, size } => (
                 size,
                 "container_sizes",
@@ -1345,12 +1388,6 @@ impl<'a> Checker<'a> {
                         (Some("text"), Some("keyed")) => {
                             Some((&decl.text_styles, "text_styles", path.get(2)))
                         }
-                        (Some("motion"), Some("timings")) => {
-                            Some((&decl.timings, "timings", path.get(2)))
-                        }
-                        (Some("motion"), Some("durations")) => {
-                            Some((&decl.durations, "durations", path.get(2)))
-                        }
                         (Some("elevation"), _) => Some((&decl.elevation, "elevation", path.get(1))),
                         (Some("params"), _) => {
                             let group = path
@@ -1504,9 +1541,10 @@ impl<'a> Checker<'a> {
     /// A `Key` leaf, declared where its field or variant names a declaration
     /// (S10); a widget value's key, listed by the widget's `keys` entry for
     /// the value, every key refused where the widget lists none. A
-    /// `WinUiAnimatedIcon` engine's `visual` names a
-    /// `token.icons.animated_visuals` entry, no key a value holds: the
-    /// combinations check it against the map (S2.7, S12).
+    /// `WinUiAnimatedIcon` engine's `visual` names an entry of WinUI's
+    /// animated visuals, no key a value holds, a token staged with the
+    /// motion unit, which brings the check against the map (S2.7, S6.1,
+    /// S12).
     fn declared_leaf(&mut self, path: &Path, key: &Key) {
         if path.slot() == Some(("TransitionEngine", "visual")) {
             return;
@@ -1540,22 +1578,10 @@ impl<'a> Checker<'a> {
     }
 
     /// A transition's `properties` (S2.7, S12): a list naming no group
-    /// animates nothing, but in a `FocusIndicator.transition`, which times the
-    /// whole indicator, it is empty and a non-empty one is refused (S2.10).
+    /// animates nothing.
     fn properties(&mut self, properties: Option<&[PropertyGroup]>, path: &Path) {
-        let Some(properties) = properties else {
-            return;
-        };
-        let focus = path.last_field() == Some(("FocusIndicator", "transition"));
-        match (focus, properties.is_empty()) {
-            (false, true) => self.problem(&path.join("properties"), ProblemKind::NoProperties),
-            (true, false) => {
-                self.problem(
-                    &path.join("properties"),
-                    ProblemKind::FocusTransitionProperties,
-                );
-            }
-            (false, false) | (true, true) => {}
+        if properties.is_some_and(<[PropertyGroup]>::is_empty) {
+            self.problem(&path.join("properties"), ProblemKind::NoProperties);
         }
     }
 
@@ -1627,36 +1653,17 @@ impl<'a> Checker<'a> {
                 | (None, Region::Roles | Region::Tokens | Region::Values(_)) => None,
             };
             let patch_at = format!("{at}[{index}].patch");
-            self.keyframe_animation(&keyframe.patch, &patch_at);
             if let Some((widget, info)) = part {
                 self.part_fields(&keyframe.patch, widget, info, &patch_at);
             }
         }
     }
 
-    /// A keyframe's patch at `at` states no `icon.animation` (S2.7, S12;
-    /// ledger queue #163): a keyframe resolves its part's icon without the
-    /// icon's own animation, so one stated there has no effect. A whole
-    /// icon states its animation, so there only an animation other than
-    /// `Absent` is one.
-    fn keyframe_animation(&mut self, patch: &PartStylePatch, at: &str) {
-        let stated = match &patch.icon {
-            Some(BlockPatch::Fields(icon)) => icon.animation.is_some(),
-            Some(BlockPatch::Set(Value::Stated(icon))) => icon.animation != Value::Absent,
-            Some(BlockPatch::Set(_)) | None => false,
-        };
-        if stated {
-            let at = join(at, "icon.animation");
-            self.problem(&at, ProblemKind::KeyframeAnimation);
-        }
-    }
-
     /// A `Keyframes` transition's keyframes (S2.7, S12; ADD-A134): at least
     /// one, their `at` increasing, none naming a part, as each styles the
-    /// part or block the transition times, and each patch setting only
-    /// fields its part has; in a focus indicator's transition, which times
-    /// the indicator, a patch states `focus`'s fields alone. What a part's
-    /// transition's keyframes may state is [`Checker::keyframe_groups`]'.
+    /// part the transition times, and each patch setting only fields its
+    /// part has. What a part's transition's keyframes may state is
+    /// [`Checker::keyframe_groups`]'.
     fn transition_keyframes(&mut self, keyframes: &[Keyframe], path: &Path) {
         let at = path.join("keyframes.keyframes");
         if keyframes.is_empty() {
@@ -1665,32 +1672,21 @@ impl<'a> Checker<'a> {
         if !increasing(keyframes) {
             self.problem(&at, ProblemKind::KeyframesNotIncreasing);
         }
-        let focus = path.fields().rev().nth(1) == Some(("FocusIndicator", "transition"));
         for (index, keyframe) in keyframes.iter().enumerate() {
             let keyframe_at = format!("{at}[{index}]");
             if keyframe.part.is_some() {
                 let at = format!("{keyframe_at}.part");
                 self.problem(&at, ProblemKind::KeyframeNamesPart);
             }
-            let patch_at = format!("{keyframe_at}.patch");
-            self.keyframe_animation(&keyframe.patch, &patch_at);
-            if focus {
-                for field in keyframe.patch.set_fields() {
-                    if field != "focus" {
-                        let at = join(&patch_at, field);
-                        self.problem(&at, ProblemKind::KeyframeOutsideGroups);
-                    }
-                }
-            }
             if let Region::Part(widget, _, info, _) = self.region {
+                let patch_at = format!("{keyframe_at}.patch");
                 self.part_fields(&keyframe.patch, widget, info, &patch_at);
             }
         }
     }
 
     /// A part's `Keyframes` transition's keyframes state only fields its
-    /// groups time (S2.7, S12; ADD-A134; [`times`]); a focus indicator's
-    /// transition, which lists no group, is [`Checker::transition_keyframes`]'.
+    /// groups time (S2.7, S12; ADD-A134; [`times`]).
     fn keyframe_groups(
         &mut self,
         properties: &[PropertyGroup],
@@ -1700,9 +1696,6 @@ impl<'a> Checker<'a> {
         let TransitionKind::Keyframes { keyframes } = kind else {
             return;
         };
-        if path.last_field() == Some(("FocusIndicator", "transition")) {
-            return;
-        }
         let at = path.join("kind.keyframes.keyframes");
         for (index, keyframe) in keyframes.iter().enumerate() {
             for place in stated_places(&keyframe.patch) {
@@ -1790,11 +1783,9 @@ impl<'a> Checker<'a> {
     /// S12's checks of a transition's engine against the transition (S2.7;
     /// ADD-A126; [`takes`], [`test_holds`]), on a whole transition of a
     /// keyed list; and its Breeze test's own ([`Checker::breeze_test`]),
-    /// wherever an engine is stated. A focus indicator's transition is a
-    /// field a rule patches field by field, so the checks over combinations
-    /// read its merged value; a delay written as an expression they read
-    /// where it resolves, a delay being refused by its value. A `FocusMove`
-    /// kind is refused on its own.
+    /// wherever an engine is stated. A delay written as an expression the
+    /// checks over combinations read where it resolves, a delay being
+    /// refused by its value. A `FocusMove` kind is refused on its own.
     fn engine(&mut self, engine: &TransitionEngine, whole: Option<&Transition>, path: &Path) {
         let toml = self.toml;
         let field = |key: &str, suffix: &str| path.join(&spelled_key(key, suffix, toml));
@@ -1819,9 +1810,6 @@ impl<'a> Checker<'a> {
         let Some(transition) = whole else {
             return;
         };
-        if path.last_field() == Some(("FocusIndicator", "transition")) {
-            return;
-        }
         let part = match self.region {
             Region::Part(_, part, ..) => Some(part),
             Region::Roles | Region::Tokens | Region::Values(_) => None,
@@ -1858,7 +1846,7 @@ impl<'a> Checker<'a> {
         }
         if let Some(test) = test {
             let zero = transition.duration == Value::Stated(Ms(0.0));
-            for (list, expected) in test_holds(test, zero, false) {
+            for (list, expected) in test_holds(test, zero) {
                 let at = list.map_or_else(|| at.clone(), |list| format!("{at}.{list}"));
                 self.problem(&at, ProblemKind::BreezeTestInvalid { expected });
             }
@@ -2066,7 +2054,24 @@ impl Visit for Checker<'_> {
             }
             Node::Scalar(scalar) => self.scalar_unit(path, scalar),
             Node::Key(key) => self.declared_leaf(path, key),
-            Node::Condition(condition) => self.condition(condition, &at),
+            Node::Condition(condition) => self.condition(condition, &at, false),
+            // A fade's nested element (S2.8): its variant, walked after its
+            // widget, one the widget declares, of an enabled unit (S10, S12).
+            Node::Widget(widget) => {
+                self.fade_widget = match widget {
+                    WidgetRef::Typed(kind) if path.slot() == Some(("FadeUnder", "widget")) => {
+                        Some(*kind)
+                    }
+                    WidgetRef::Typed(_) | WidgetRef::Component(_) => None,
+                };
+            }
+            Node::Variant(variant) => {
+                if path.slot() == Some(("FadeUnder", "variant"))
+                    && let Some(widget) = self.fade_widget.take()
+                {
+                    self.variant(widget, variant, &at);
+                }
+            }
             Node::SurfaceSet(set) => self.surface_set(set, &at),
             Node::IndicationBox(indication) => self.indication_box(Some(&indication.part), path),
             Node::IndicationBoxPatch(patch) => self.indication_box(patch.part.as_ref(), path),
@@ -2517,6 +2522,31 @@ pub(super) fn declarations(decl: &Declarations, synthetic: bool) -> Vec<Problem>
                         },
                     ));
                 }
+            }
+        }
+        // `later.variants` lists declared variants (S10's *Later names*,
+        // S12; ADD-A147): each one the variants in force declare, once.
+        for (index, variant) in section.later.iter().flatten().enumerate() {
+            let place = format!("{at}.later.variants[{index}]");
+            let name = variant_name(variant);
+            let twice = section
+                .later
+                .iter()
+                .flatten()
+                .take(index)
+                .any(|held| held == variant);
+            if twice {
+                problems.push(Problem::new(&place, ProblemKind::ListedTwice { name }));
+            } else if !view.variants.iter().flatten().any(|held| held == variant) {
+                let declaration = if section.variants.is_some() {
+                    format!("{at}.variants")
+                } else {
+                    format!("{own_at}.variants")
+                };
+                problems.push(Problem::new(
+                    &place,
+                    ProblemKind::Undeclared { name, declaration },
+                ));
             }
         }
         problems.extend(recency(&at, section, &in_force));
@@ -3055,12 +3085,25 @@ pub(super) fn unused(
             section,
         )
     });
-    let flavors = decl.flavor.iter().flat_map(|(flavor, section)| {
-        section.widgets.iter().map(move |(widget, section)| {
-            let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));
-            (at, *widget, section)
-        })
-    });
+    // A flavour of a unit not enabled is exempt, with its sections: it cannot
+    // be asked for and no rule may name it (S12, S16; ADD-A147). The
+    // default flavour's sections are checked, and so is the section of a
+    // flavour `flavors` does not declare, no flavour of any unit.
+    let later = |flavor: &Key| {
+        !crate::widgets::FLAVOURS_UNIT
+            && decl.flavors.contains(flavor)
+            && decl.flavors.first() != Some(flavor)
+    };
+    let flavors = decl
+        .flavor
+        .iter()
+        .filter(|(flavor, _)| !later(flavor))
+        .flat_map(|(flavor, section)| {
+            section.widgets.iter().map(move |(widget, section)| {
+                let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));
+                (at, *widget, section)
+            })
+        });
     let sections: Vec<_> = own.chain(flavors).collect();
     for (at, widget, section) in &sections {
         for flag in section.flags.iter().flatten() {
@@ -3092,7 +3135,12 @@ pub(super) fn unused(
             unused.push(("declare.conditions".to_owned(), format!("@{}", setting.key)));
         }
     }
-    for flavor in decl.flavors.iter().skip(1) {
+    for flavor in decl
+        .flavors
+        .iter()
+        .skip(1)
+        .filter(|_| crate::widgets::FLAVOURS_UNIT)
+    {
         if !uses.conditions.contains(&Condition::Flavor(flavor.clone())) {
             unused.push(("declare.flavors".to_owned(), flavor.to_string()));
         }
@@ -3238,14 +3286,10 @@ pub(super) fn takes(engine: &str, read: Read) -> Option<&'static str> {
 /// What a Breeze test must be against its transition (S2.7, S12;
 /// ADD-A126), each refusal by the list it names (`None`: the test): one
 /// of `any` or `conditions` named on a transition that is not a stated
-/// zero (`zero`), all three lists empty on a stated zero, which reads
-/// none; and a focus indicator's (`focus`) `focus_visible` in `any` where
-/// it is no stated zero's.
-pub(super) fn test_holds(
-    test: &BreezeTest,
-    zero: bool,
-    focus: bool,
-) -> Vec<(Option<&'static str>, &'static str)> {
+/// zero (`zero`), and all three lists empty on a stated zero, which reads
+/// none. A focus indicator's own transition, staged with the motion unit
+/// (S6.1), brings its rule of `focus_visible` in `any` back with it.
+fn test_holds(test: &BreezeTest, zero: bool) -> Vec<(Option<&'static str>, &'static str)> {
     let mut out = Vec::new();
     if !zero && test.any.is_empty() && test.conditions.is_empty() {
         out.push((
@@ -3263,12 +3307,6 @@ pub(super) fn test_holds(
                 out.push((Some(list), "of a stated zero is empty: a zero reads none"));
             }
         }
-    }
-    if focus && !zero && !test.any.contains(&StateFlag::FocusVisible) {
-        out.push((
-            Some("any"),
-            "of a focus indicator names `focus_visible` in `any`",
-        ));
     }
     out
 }
@@ -3647,8 +3685,10 @@ fn ref_depth(reference: &Ref) -> usize {
 
 /// The checks no layer can reach through the enabled widgets yet, run
 /// directly: a widget's loop value's keyframe (no enabled widget's values
-/// hold a loop) and an *(element)* part's reference to its host (`button`
-/// has no *(element)* part).
+/// hold a loop), an *(element)* part's reference to its host (`button`
+/// has no *(element)* part), and a block's own checks where no enabled
+/// part lists the field that holds it (a part's `transitions`, an icon's
+/// loop: the motion unit's, D6 outcome 3, S6.1).
 #[cfg(test)]
 pub(super) mod triggers {
     use super::tests::{PARTS, looped};
@@ -3658,6 +3698,39 @@ pub(super) mod triggers {
 
     fn checker_over<'a>(cx: &'a Context<'a>) -> Checker<'a> {
         Checker::new(cx, false)
+    }
+
+    /// The problems S12's structural checks find in `block` walked from
+    /// `at` (its places spelled by TOML's keys where `toml`), as a field of
+    /// the part `part` of the catalogue's entry, or of the tokens where
+    /// `None`, over `decl`: the block's own checks, no widget in between.
+    pub(in crate::validate) fn walked_block<T: Walk + ?Sized>(
+        block: &T,
+        at: &str,
+        part: Option<TypedPart>,
+        toml: bool,
+        decl: &Declarations,
+    ) -> Vec<Problem> {
+        let cx = Context {
+            declarations: decl,
+            preset: None,
+            kind: LayerKind::Application,
+            reader_accent_left_out: false,
+            below: &[],
+        };
+        let mut checker = Checker::new(&cx, toml);
+        let region = part
+            .and_then(|part| {
+                let widget = widget_of(part);
+                let parts = registry::widgets()
+                    .iter()
+                    .find(|w| w.kind == widget)
+                    .map_or(&[] as &[PartInfo], |w| w.parts);
+                part_info(part).map(|info| Region::Part(widget, part, info, parts))
+            })
+            .unwrap_or(Region::Tokens);
+        checker.walk(at, region, block);
+        checker.problems
     }
 
     /// A keyframe of a loop stated as a widget's value with no part.
@@ -3867,7 +3940,7 @@ mod tests {
     /// `adwaita` does not declare, named under `preset:adwaita`, is refused
     /// on `adwaita` alone.
     #[test]
-    fn a_rule_naming_another_preset_is_not_validated() {
+    fn a_rule_naming_another_preset_is_not_validated() -> Result<(), crate::error::LayerError> {
         let rule = Rule::new(Selector::default(), RuleBody::Tokens(Box::default()));
         assert!(!excluded(&rule, None));
         assert!(!excluded(&rule, Some(PresetId::Adwaita)));
@@ -3889,9 +3962,8 @@ mod tests {
         assert!(excluded(&unless, Some(PresetId::Adwaita)));
         let layer = Layer::from_toml(
             "[[rules]]\nwhen = { conditions = [\"preset:adwaita\"] }\ntarget = \"tokens\"\n\
-             set = { motion.timings.probe = \"linear\" }",
-        )
-        .unwrap();
+             set = { elevation.probe = [] }",
+        )?;
         let problems = |preset: Option<PresetId>| {
             let decl = Declarations::default();
             let cx = Context {
@@ -3909,8 +3981,9 @@ mod tests {
         assert_eq!(problems(None), Vec::<String>::new());
         assert_eq!(
             problems(Some(PresetId::Adwaita)),
-            ["rules[0].set.motion.timings.probe: `probe` is not declared in `timings`"]
+            ["rules[0].set.elevation.probe: `probe` is not declared in `elevation`"]
         );
+        Ok(())
     }
 
     /// A widget value's key is listed by the widget's `keys` entry for the
@@ -3991,7 +4064,8 @@ mod tests {
     }
 
     /// A `WinUiAnimatedIcon` engine's `visual` under a widget's values
-    /// names a `token.icons.animated_visuals` entry, no key the value holds:
+    /// names an entry of WinUI's animated visuals (a token staged with the
+    /// motion unit), no key the value holds:
     /// it is not checked against the widget's `keys` (S2.7, S10, S12).
     #[test]
     fn a_visual_is_no_widget_values_key() {
@@ -4075,6 +4149,17 @@ mod table_tests {
             }
             visit("WidgetValues", widget.values, &mut out, &mut seen);
         }
+        // The motion blocks, whose types stay while no part lists
+        // `transitions` and no widget `presentations` (the motion unit's,
+        // D6 outcome 3, S6.1).
+        use crate::blocks::motion::{PresentationTransition, Transition};
+        visit("Transition", Transition::FIELDS, &mut out, &mut seen);
+        visit(
+            "PresentationTransition",
+            PresentationTransition::FIELDS,
+            &mut out,
+            &mut seen,
+        );
         out
     }
 
@@ -4212,6 +4297,9 @@ mod table_tests {
         };
         assert_eq!(block("icon"), Some("IconStyle"));
         assert_eq!(block("shadow"), Some("Shadow"));
-        assert_eq!(block("icon.animation.keyframes.patch"), Some("PartStyle"));
+        assert_eq!(
+            block("transitions.kind.keyframes.keyframes.patch"),
+            Some("PartStyle")
+        );
     }
 }

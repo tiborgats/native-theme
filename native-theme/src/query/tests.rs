@@ -4,7 +4,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::float_cmp)]
 
 use super::{DataNeeds, Element, FontMetrics, RootInputs, Scope, Sibling, Styled, Unavailable};
-use crate::blocks::motion::ResolvedKeyframe;
+use crate::blocks::motion::{ResolvedKeyframe, ResolvedTransitionKind};
 use crate::blocks::outline::ResolvedRadius;
 use crate::blocks::part_style::{ResolvedPartStyle, ResolvedPartStylePatch, RoleRef};
 use crate::blocks::text::ResolvedFont;
@@ -67,14 +67,14 @@ const DECLARE: &str = r#"
 [declare]
 surface_sets = ["window", "button"]
 [declare.widget.button]
-variants = ["primary", "flat", "destructive", "@solo"]
+variants = ["primary", "tool", "tinted", "@solo"]
 sizes = ["small", "regular"]
 densities = ["compact"]
 flags = ["@armed"]
 exclusive = [["disabled", "pressed"]]
-exclusive_variants = [["primary", "flat"]]
+exclusive_variants = [["primary", "tool"]]
 recency = { lift = ["pressed", "focus_visible", "hover"] }
-sizes_by_variant = [{ variant = "destructive", sizes = ["large"], default_size = "large" }]
+sizes_by_variant = [{ variant = "tinted", sizes = ["large"], default_size = "large" }]
 default_size = "regular"
 data = { label = ["char_width"] }
 "#;
@@ -111,7 +111,6 @@ transform = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 5, tran
 focus = "absent"
 cursor = "pointer"
 touch_target_px = "absent"
-transitions = []
 interaction = "absent"
 [widgets.button.label]
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
@@ -127,19 +126,11 @@ icon_text_gap_px = 4
 icon_placement = "leading"
 label_position = "absent"
 subtitle_gap_px = "absent"
-menu_indicator_gap_px = 2
-menu_indicator_anchor = "inline"
-menu_trigger = "absent"
 shows_icon = true
 focus_visible_when = "any_focus"
 repeat_delay_ms = "absent"
 repeat_interval_ms = "absent"
-back_title_fallback = false
-back_display_mode = "absent"
-help_tooltip_on_click = false
 hit_extension = { top_px = 1, right_px = 2, bottom_px = 3, left_px = 4 }
-display_mode = "absent"
-presentations = []
 "##;
 
 fn layer(text: &str) -> Layer {
@@ -264,65 +255,81 @@ fn rtl_mirrors_sides_not_corners() {
     );
 }
 
-/// `rtl_mirrors_indicator_anchor_corner` (S2.4, ADD-A146): a variant whose
-/// name holds `End` is swapped for its counterpart, so a menu indicator
-/// anchored at the bottom end lies at the bottom start, the physical left,
-/// under right-to-left.
+/// `later_names_answer_later` (S8, S10's *Later names*; ADD-A147): an
+/// element holding a variant its widget lists under `later` is answered
+/// `NotAvailable(Later)`, and, while the sizes unit is not enabled, one
+/// asking a size it takes other than its default in force, or a declared
+/// density; its default size, and a size it does not take, as before.
 #[test]
-fn rtl_mirrors_indicator_anchor_corner() -> Result<(), String> {
-    let theme = fixture(&["[widgets.button.values]\nmenu_indicator_anchor = \"bottom_end\""]);
-    let anchor = |direction| match theme.values::<ButtonValues>(&Element::new(
-        BODY,
-        &root(&theme, direction),
-        &Metrics,
-    )) {
-        Styled::Style(values) => Ok(values.menu_indicator_anchor),
-        other => Err(format!("the values do not resolve: {other:?}")),
-    };
+#[expect(
+    clippy::assertions_on_constants,
+    reason = "the sizes unit's flag is a generated constant the answers depend on"
+)]
+fn later_names_answer_later() {
+    assert!(!crate::widgets::SIZES_UNIT, "the sizes unit is not enabled");
+    let declare = format!("{DECLARE}later = {{ variants = [\"@solo\"] }}\n");
+    let theme = theme_with(&declare, &[]);
+    let scope = root(&theme, Direction::Ltr);
+    let element = || Element::new(BODY, &scope, &Metrics);
+    let solo = [VariantRef::Keyed(key("solo"))];
     assert_eq!(
-        anchor(Direction::Ltr)?,
-        Some(crate::widgets::IndicatorAnchor::BottomEnd)
+        theme.style(&element().with_variants(&solo)),
+        Styled::NotAvailable(Unavailable::Later)
     );
     assert_eq!(
-        anchor(Direction::Rtl)?,
-        Some(crate::widgets::IndicatorAnchor::BottomStart)
+        theme.style(&element().with_size(ControlSize::Small)),
+        Styled::NotAvailable(Unavailable::Later)
     );
-    Ok(())
-}
-
-/// `rtl_mirrors_indicator_anchor_start` (S2.4, ADD-A146): the start
-/// corners read from TOML, `top_start` and `bottom_start`, are swapped for
-/// their end counterparts under right-to-left and kept under left-to-right.
-#[test]
-fn rtl_mirrors_indicator_anchor_start() -> Result<(), String> {
-    use crate::widgets::IndicatorAnchor;
-    for (stated, ltr, rtl) in [
-        (
-            "top_start",
-            IndicatorAnchor::TopStart,
-            IndicatorAnchor::TopEnd,
+    assert!(matches!(
+        theme.style(&element().with_size(ControlSize::Regular)),
+        Styled::Style(_)
+    ));
+    assert_eq!(
+        theme.style(&element().with_size(ControlSize::Large)),
+        Styled::NotAvailable(Unavailable::Size)
+    );
+    let tinted = [VariantRef::Typed(Variant::Tinted)];
+    assert!(matches!(
+        theme.style(
+            &element()
+                .with_variants(&tinted)
+                .with_size(ControlSize::Large)
         ),
-        (
-            "bottom_start",
-            IndicatorAnchor::BottomStart,
-            IndicatorAnchor::BottomEnd,
-        ),
-    ] {
-        let theme = fixture(&[&format!(
-            "[widgets.button.values]\nmenu_indicator_anchor = \"{stated}\""
-        )]);
-        let anchor = |direction| match theme.values::<ButtonValues>(&Element::new(
-            BODY,
-            &root(&theme, direction),
-            &Metrics,
-        )) {
-            Styled::Style(values) => Ok(values.menu_indicator_anchor),
-            other => Err(format!("`{stated}`: the values do not resolve: {other:?}")),
-        };
-        assert_eq!(anchor(Direction::Ltr)?, Some(ltr), "`{stated}`");
-        assert_eq!(anchor(Direction::Rtl)?, Some(rtl), "`{stated}`");
-    }
-    Ok(())
+        Styled::Style(_)
+    ));
+    assert_eq!(
+        theme.style(&element().with_density(Density::Compact)),
+        Styled::NotAvailable(Unavailable::Later)
+    );
+    // A content variant the connector sets is refused too, where `later`
+    // lists it, and kept where only `variants` does.
+    let content = [VariantRef::Typed(Variant::WithIcon)];
+    let declared = DECLARE.replace(
+        "variants = [\"primary\", \"tool\", \"tinted\", \"@solo\"]",
+        "variants = [\"primary\", \"tool\", \"tinted\", \"@solo\", \"with_icon\"]",
+    );
+    let kept = theme_with(&declared, &[]);
+    let scope = root(&kept, Direction::Ltr);
+    assert!(matches!(
+        kept.style(&Element::new(BODY, &scope, &Metrics).with_variants(&content)),
+        Styled::Style(_)
+    ));
+    let listed = theme_with(
+        &format!("{declared}later = {{ variants = [\"with_icon\"] }}\n"),
+        &[],
+    );
+    let scope = root(&listed, Direction::Ltr);
+    assert_eq!(
+        listed.style(&Element::new(BODY, &scope, &Metrics).with_variants(&content)),
+        Styled::NotAvailable(Unavailable::Later)
+    );
+    // An unavailable widget's answer comes first.
+    let unavailable = theme_with(&format!("{declare}available = false\n"), &[]);
+    let scope = root(&unavailable, Direction::Ltr);
+    assert_eq!(
+        unavailable.style(&Element::new(BODY, &scope, &Metrics).with_variants(&solo)),
+        Styled::NotAvailable(Unavailable::Widget)
+    );
 }
 
 /// `undeclared_variant_not_available` (S8): a variant the application asks
@@ -339,14 +346,13 @@ fn undeclared_variant_not_available() {
         Styled::NotAvailable(Unavailable::Variant)
     );
     // `vertical`-like: a name another widget has is asked for here.
-    let other = [VariantRef::Typed(Variant::Pill)];
+    let other = [VariantRef::Typed(Variant::Toggle)];
     assert_eq!(
         theme.style(&Element::new(BODY, &scope, &Metrics).with_variants(&other)),
         Styled::NotAvailable(Unavailable::Variant)
     );
     let content = [
-        VariantRef::Typed(Variant::IconOnly),
-        VariantRef::Keyed(key("with_arrow")),
+        VariantRef::Typed(Variant::WithIcon),
         VariantRef::Typed(Variant::Primary),
     ];
     let (_, scope_out) = drawn(
@@ -365,7 +371,7 @@ fn absent_part_not_drawn() {
     let rules = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.label\"\n\
                  set = { absent = true }\n\
                  [[rules]]\nwhen = { states = [\"focus_visible\"] }\ntarget = \"button.icon\"\n\
-                 set = { drawn_as = { widget = \"button\", part = \"body\", variants = [\"flat\"] } }";
+                 set = { drawn_as = { widget = \"button\", part = \"body\", variants = [\"tool\"] } }";
     let theme = fixture(&[rules]);
     let scope = root(&theme, Direction::Ltr);
     assert_eq!(
@@ -383,7 +389,7 @@ fn absent_part_not_drawn() {
         theme.style(&focused),
         Styled::DrawnAs {
             target: WidgetOrPart::Part(BODY),
-            variants: vec![VariantRef::Typed(Variant::Flat)],
+            variants: vec![VariantRef::Typed(Variant::Tool)],
         }
     );
     assert_eq!(
@@ -513,8 +519,8 @@ fn fields_patch_over_absent_leaves_absent() {
     // leaf patched over the glyph a layer states absent.
     let icon = "[widgets.button.icon]\nabsent = false\nicon = { replace = { size_px = 16, fill = \
                 \"#000000\", rendering_mode = \"from_icon\", weight = 400, symbolic_colors = {}, axes = \
-                {}, symbol_variants = [], scale = \"absent\", state_effect = \"absent\", animation = \
-                \"absent\" } }\nglyph = \"absent\"\ntransitions = []";
+                {}, symbol_variants = [], scale = \"absent\", state_effect = \"absent\" } }\n\
+                glyph = \"absent\"";
     let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\n\
                 set = { glyph.size_px = 4 }";
     let theme = validated(&[icon, rule]);
@@ -623,7 +629,7 @@ fn not_available_size() {
     let scope = root(&theme, Direction::Ltr);
     let large = Element::new(BODY, &scope, &Metrics).with_size(ControlSize::Large);
     assert_eq!(theme.style(&large), Styled::NotAvailable(Unavailable::Size));
-    let destructive = [VariantRef::Typed(Variant::Destructive)];
+    let destructive = [VariantRef::Typed(Variant::Tinted)];
     let small = Element::new(BODY, &scope, &Metrics)
         .with_variants(&destructive)
         .with_size(ControlSize::Small);
@@ -639,16 +645,16 @@ fn not_available_size() {
 /// size it is given is not available.
 #[test]
 fn sizes_by_variant_then_context() {
-    let declare = "[declare.widget.button]\nvariants = [\"primary\", \"flat\"]\n\
+    let declare = "[declare.widget.button]\nvariants = [\"primary\", \"tool\"]\n\
                    sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n\
                    sizes_by_variant = [{ variant = \"primary\", sizes = [\"regular\", \"large\"], \
-                   default_size = \"large\" }, { variant = \"flat\", sizes = [] }]\n\
+                   default_size = \"large\" }, { variant = \"tool\", sizes = [] }]\n\
                    sizes_by_context = [{ context = { widget = \"button\", part = \"body\" }, \
                    sizes = [\"regular\", \"large\"], default_size = \"regular\" }]";
     let theme = theme_with(declare, &[]);
     let root = root(&theme, Direction::Ltr);
     let primary = [VariantRef::Typed(Variant::Primary)];
-    let flat = [VariantRef::Typed(Variant::Flat)];
+    let flat = [VariantRef::Typed(Variant::Tool)];
     let size_of = |element: &Element<'_>| match theme.style(element) {
         Styled::Style((_, scope)) => Ok(scope.entries.last().and_then(|entry| entry.size)),
         Styled::NotAvailable(why) => Err(why),
@@ -689,20 +695,24 @@ fn sizes_by_variant_then_context() {
         size_of(&body(&outer).with_variants(&primary)),
         Ok(Some(ControlSize::Regular))
     );
+    // A size the element takes that is not its default in force: `Later`
+    // while the sizes unit is not enabled (S8, S10; ADD-A147).
     assert_eq!(
         size_of(
             &body(&outer)
                 .with_variants(&primary)
                 .with_size(ControlSize::Large)
         ),
-        Ok(Some(ControlSize::Large))
+        Err(Unavailable::Later)
     );
 }
 
 /// A pending default size (S10's *A pending default*): the lookup stops at
 /// it, so an element that states no size and whose default is pending is
 /// not available, as the synthetic theme answers it (S8, S17); one stating
-/// a size it takes is drawn, and another variant's default stands.
+/// a size it takes is no default in force, so `Later` while the sizes
+/// unit is not enabled (S8, S10; ADD-A147); and another variant's default
+/// stands.
 #[test]
 fn pending_default_size_not_available() {
     let declare = "[declare.widget.button]\nvariants = [\"primary\"]\n\
@@ -721,7 +731,10 @@ fn pending_default_size_not_available() {
     let large = Element::new(BODY, &scope, &Metrics)
         .with_variants(&primary)
         .with_size(ControlSize::Large);
-    assert!(matches!(theme.style(&large), Styled::Style(_)));
+    assert_eq!(
+        theme.style(&large),
+        Styled::NotAvailable(Unavailable::Later)
+    );
     assert!(matches!(
         theme.style(&Element::new(BODY, &scope, &Metrics)),
         Styled::Style(_)
@@ -747,7 +760,7 @@ fn not_available_variant() {
     let theme = fixture(&[]);
     let both = [
         VariantRef::Typed(Variant::Primary),
-        VariantRef::Typed(Variant::Flat),
+        VariantRef::Typed(Variant::Tool),
     ];
     assert_eq!(
         theme.style(&Element::new(BODY, &scope, &Metrics).with_variants(&both)),
@@ -762,7 +775,7 @@ fn context_skips_the_elements_own_parts() {
     let rules = "[[rules]]\nwhen = { context = [{ widget = \"button\" }] }\ntarget = \"button.body\"\n\
                  set = { min_width_px = 99 }\n\
                  [[rules]]\nwhen = { context = [{ scope = { nearest = [\"button\"] }, widget = \"button\", \
-                 variants = [\"flat\"] }] }\ntarget = \"button.label\"\n\
+                 variants = [\"tool\"] }] }\ntarget = \"button.label\"\n\
                  set = { padding.top_px = 9 }";
     let theme = fixture(&[rules]);
     let scope = root(&theme, Direction::Ltr);
@@ -777,7 +790,7 @@ fn context_skips_the_elements_own_parts() {
     );
     // The label's own button is flat; it is skipped, and the enclosing one
     // is not.
-    let flat = [VariantRef::Typed(Variant::Flat)];
+    let flat = [VariantRef::Typed(Variant::Tool)];
     let (_, own) = drawn(
         &theme,
         &Element::new(BODY, &scope, &Metrics).with_variants(&flat),
@@ -909,7 +922,7 @@ fn size_density_and_direction_match() {
                  [[rules]]\nwhen = { direction = \"rtl\" }\ntarget = \"button.label\"\n\
                  set = { padding.bottom_px = 3 }";
     let theme = fixture(&[rules]);
-    let destructive = [VariantRef::Typed(Variant::Destructive)];
+    let destructive = [VariantRef::Typed(Variant::Tinted)];
     let scope = root(&theme, Direction::Ltr);
     let (_, large) = drawn(
         &theme,
@@ -926,8 +939,13 @@ fn size_density_and_direction_match() {
     let mut inputs = RootInputs::new(size(800.0, 600.0), size(1920.0, 1080.0), Direction::Ltr);
     inputs.density = Some(Density::Compact);
     let compact = theme.root_scope(&inputs);
-    let label = drawn(&theme, &Element::new(LABEL, &compact, &Metrics)).0;
-    assert_eq!(label.padding.top, Some(Px(2.0)));
+    // A declared density in force from the scope, while the sizes unit is
+    // not enabled, is the sizes unit's (S8, S10; ADD-A147); an undeclared one
+    // is ignored.
+    assert_eq!(
+        theme.style(&Element::new(LABEL, &compact, &Metrics)),
+        Styled::NotAvailable(Unavailable::Later)
+    );
     inputs.density = Some(Density::Keyed(key("dense")));
     let dense = theme.root_scope(&inputs);
     let label = drawn(&theme, &Element::new(LABEL, &dense, &Metrics)).0;
@@ -1036,28 +1054,31 @@ fn element_caret_height_evaluates() {
 }
 
 /// The returned scope (S8): the entry of the part with its kept variants,
-/// flags and size, its bindings, and the element's own density, direction
-/// and language passed on; a context matches the entry's widget.
+/// flags and size, its bindings, and the element's own direction and
+/// language passed on; a context matches the entry's widget. A declared
+/// density is the sizes unit's: while it is not enabled the query answers
+/// `Later` for an element holding one (S8, S10; ADD-A147).
 #[test]
 fn returned_scope_records_the_entry() {
     let bound = "[widgets.button.body]\nbindings = [{ surface = \"button\" }]";
     let theme = fixture(&[bound]);
     let scope = root(&theme, Direction::Ltr);
-    let element = Element::new(BODY, &scope, &Metrics)
-        .with_states(
-            StateFlags::new()
-                .with(StateFlag::Disabled)
-                .with(StateFlag::Pressed),
-            &[],
-        )
-        .with_density(Density::Compact);
+    let element = Element::new(BODY, &scope, &Metrics).with_states(
+        StateFlags::new()
+            .with(StateFlag::Disabled)
+            .with(StateFlag::Pressed),
+        &[],
+    );
+    assert_eq!(
+        theme.style(&element.clone().with_density(Density::Compact)),
+        Styled::NotAvailable(Unavailable::Later)
+    );
     let (body, inside) = drawn(&theme, &element);
     let entry = inside.entries.last().unwrap();
     assert_eq!(entry.part, BODY);
     assert_eq!(entry.states, StateFlags::new().with(StateFlag::Disabled));
     assert_eq!(entry.size, Some(ControlSize::Regular));
     assert_eq!(entry.surface, Some(SurfaceSet::Button));
-    assert_eq!(inside.density, Some(Density::Compact));
     assert_eq!(
         body.fill.unwrap().layers.len(),
         1,
@@ -1147,36 +1168,33 @@ fn part_shown_resolves_option() {
         let element = Element::new(BODY, &scope, &Metrics);
         assert_eq!(drawn(&theme, &element).0.shown, Some(flag));
     }
-    let read = layer(
-        "[widgets.button.icon.icon.animation]\nperiod_ms = 100\ntiming = \"linear\"\n\
-         keyframes = [{ at = 0, timing = \"absent\", patch = { shown = false } }]",
-    );
-    let shown = read
-        .bases
-        .widgets
-        .button
-        .and_then(|button| button.icon)
-        .and_then(|icon| icon.style.icon)
-        .and_then(|icon| match icon {
-            crate::blocks::BlockPatch::Fields(icon) => icon.animation,
-            crate::blocks::BlockPatch::Set(_) => None,
-        })
-        .and_then(|animation| match animation {
-            crate::blocks::BlockPatch::Fields(animation) => animation.keyframes,
-            crate::blocks::BlockPatch::Set(_) => None,
-        })
-        .and_then(|keyframes| keyframes.into_iter().next())
-        .map(|keyframe| keyframe.patch.shown);
-    assert_eq!(shown, Some(Some(Some(Value::Stated(false)))));
+    // A keyframe's patch states `shown` too, read by a loop's own reader:
+    // `IconStyle.animation` is staged with the motion unit (S6.1).
+    let shown = crate::toml::read::read_as::<crate::blocks::motion::Loop>(
+        "{ period_ms = 100, timing = \"linear\", keyframes = [{ at = 0, timing = \"absent\", \
+         patch = { shown = false } }] }",
+        crate::toml::read::Spelling::Bare,
+        "widgets.button.icon.icon.animation",
+    )
+    .map(|looped| {
+        looped
+            .keyframes
+            .into_iter()
+            .next()
+            .map(|keyframe| keyframe.patch.shown)
+    });
+    assert_eq!(shown, Ok(Some(Some(Some(Value::Stated(false))))));
 }
 
 /// `ResolvedPartStyle.breeze_tests` (S2.7, S6.1, S8; ADD-A126): the Breeze
 /// tests of every rule that can apply to the element, whatever its flags,
 /// in rank order: as they first appear in the part's base transitions
-/// (each step's list, then its focus indicator's transition), then a test
-/// only a rule names, in the rules' order; a test stated twice once, a
-/// stated zero's none, a rule the element's variants exclude left out.
+/// (each step's list, then its focus indicator's transition, which is
+/// staged with the motion unit too, S6.1), then a test only a rule names,
+/// in the rules' order; a test stated twice once, a stated zero's none, a
+/// rule the element's variants exclude left out.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn breeze_tests_in_rank_order() {
     use crate::blocks::motion::BreezeTest;
     let breeze = |group: &str, duration: u32, any: &str, none: &str| {
@@ -1205,7 +1223,7 @@ fn breeze_tests_in_rank_order() {
         breeze("stroke", 100, "\"focus_visible\"", "\"disabled\""),
         breeze("opacity", 100, "\"hover\"", ""),
         rule(
-            "variants = [\"flat\"]",
+            "variants = [\"tool\"]",
             breeze("fill", 100, "\"checked\"", "")
         ),
         rule(
@@ -1233,7 +1251,7 @@ fn breeze_tests_in_rank_order() {
     ];
     let element = Element::new(BODY, &scope, &Metrics);
     assert_eq!(drawn(&theme, &element).0.breeze_tests, ranked);
-    let flat = [VariantRef::Typed(Variant::Flat)];
+    let flat = [VariantRef::Typed(Variant::Tool)];
     let element = Element::new(BODY, &scope, &Metrics).with_variants(&flat);
     let mut with_flat = ranked.to_vec();
     with_flat.insert(3, test(StateFlag::Checked, &[]));
@@ -1242,78 +1260,14 @@ fn breeze_tests_in_rank_order() {
     assert_eq!(drawn(&theme, &element).0.breeze_tests, []);
 }
 
-/// S2.7: a focus indicator a step reads from the tokens, whole or its
-/// transition alone, runs the tests of the token's steps (its bases, then
-/// the `Tokens` rules in force, a rule whose conditions do not hold left
-/// out), each in its place among the part's.
-#[test]
-fn breeze_tests_through_a_token_reference() {
-    use crate::blocks::motion::BreezeTest;
-    let breeze = |properties: &str, any: &str| {
-        format!(
-            "{{ properties = [{properties}], kind = \"interpolate\", duration_ms = 100, \
-             delay_ms = 0, timing = \"linear\", engine = {{ breeze = {{ any = [\"{any}\"], \
-             none = [], conditions = [] }} }}, from = \"none\" }}"
-        )
-    };
-    let tokens = format!(
-        "[tokens.focus]\ntransition = {}\n[[rules]]\ntarget = \"tokens\"\nset = {{ \
-         focus.transition = {} }}\n[[rules]]\nwhen = {{ conditions = [\"scheme:dark\"] }}\n\
-         target = \"tokens\"\nset = {{ focus.transition = {} }}\n",
-        breeze("", "focused"),
-        breeze("", "pressed"),
-        breeze("", "checked"),
-    );
-    let whole = format!(
-        "{tokens}[widgets.button.body]\ntransitions = [{}]\nfocus = \"= token.focus\"\n\
-         [[rules]]\nwhen = {{ states = [\"disabled\"] }}\ntarget = \"button.body\"\nset = {{ \
-         transitions = [{}] }}\n",
-        breeze("\"fill\"", "hover"),
-        breeze("\"fill\"", "focus_visible"),
-    );
-    let test = |any: StateFlag| BreezeTest {
-        any: vec![any],
-        none: Vec::new(),
-        conditions: Vec::new(),
-    };
-    let theme = fixture(&[&whole]);
-    let scope = root(&theme, Direction::Ltr);
-    let element = Element::new(BODY, &scope, &Metrics);
-    assert_eq!(
-        drawn(&theme, &element).0.breeze_tests,
-        [
-            test(StateFlag::Hover),
-            test(StateFlag::Focused),
-            test(StateFlag::Pressed),
-            test(StateFlag::FocusVisible),
-        ]
-    );
-    let transition = format!(
-        "{tokens}[widgets.button.body]\ntransitions = [{}]\n[[rules]]\nwhen = {{ states = \
-         [\"disabled\"] }}\ntarget = \"button.body\"\nset = {{ focus.transition = \"= \
-         token.focus.transition\" }}\n",
-        breeze("\"fill\"", "hover"),
-    );
-    let theme = fixture(&[&transition]);
-    let scope = root(&theme, Direction::Ltr);
-    let element = Element::new(BODY, &scope, &Metrics);
-    assert_eq!(
-        drawn(&theme, &element).0.breeze_tests,
-        [
-            test(StateFlag::Hover),
-            test(StateFlag::Focused),
-            test(StateFlag::Pressed),
-        ]
-    );
-}
-
 /// A `Keyframes` transition's keyframes resolve over the part as a loop's
 /// do, each field it states `Some`, and mirror with the layout (S2.4, S2.7;
 /// ADD-A134): the body's padding at the keyframe its start one in
 /// right-to-left.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyframes_transition_resolves_and_mirrors() {
-    use crate::blocks::motion::{ResolvedEngine, ResolvedTransitionKind};
+    use crate::blocks::motion::ResolvedEngine;
     let theme = fixture(&[
         "[widgets.button.body]\ntransitions = [{ properties = [\"geometry\", \"opacity\"], kind = \
          { keyframes = { keyframes = [{ at = 0, timing = \"absent\", patch = { padding.left_px = \
@@ -1346,45 +1300,46 @@ fn keyframes_transition_resolves_and_mirrors() {
     );
 }
 
-/// The button whose icon part draws a loop of `keyframes` (synthetic: a
-/// period and an icon size of no platform's), over the fixture's body, its
+/// The button whose body lists one `Keyframes` transition of `keyframes`
+/// (synthetic: a duration of no platform's), over the fixture's body, its
 /// stroke stated with its outset absent, and `layers`.
-fn looping(keyframes: &str, layers: &[&str]) -> ResolvedTheme {
-    let icon = format!(
+fn body_keyframes_theme(keyframes: &str, layers: &[&str]) -> ResolvedTheme {
+    let body = format!(
         "[widgets.button.body]\nstroke = {{ replace = {{ width_px = 1, paint = \"#000000\", \
          dash = \"solid\", snap = \"to_device_pixel\", position = \"inside\", outset_px = \
-         \"absent\", fill_clip = \"box\" }} }}\n[widgets.button.icon]\nabsent = false\n\
-         transitions = []\nglyph = \"absent\"\n[widgets.button.icon.icon]\nsize_px = 16\n\
-         fill = \"absent\"\nrendering_mode = \"original\"\nweight = \"absent\"\nscale = \
-         \"absent\"\naxes = {{}}\nstate_effect = \"absent\"\nsymbol_variants = []\n\
-         symbolic_colors = {{}}\n[widgets.button.icon.icon.animation]\nperiod_ms = 1000\ntiming = \
-         \"linear\"\nkeyframes = [{keyframes}]"
+         \"absent\", fill_clip = \"box\" }} }}\ntransitions = [{{ properties = [\"fill\", \
+         \"stroke\", \"opacity\", \"transform\", \"geometry\", \"state_layer\"], kind = {{ \
+         keyframes = {{ keyframes = [{keyframes}] }} }}, duration_ms = 100, delay_ms = 0, \
+         timing = \"linear\", engine = \"css_animation\" }}]"
     );
-    let mut stacked = vec![icon.as_str()];
+    let mut stacked = vec![body.as_str()];
     stacked.extend(layers);
     fixture(&stacked)
 }
 
-/// The keyframes of the icon part's loop, as the query answers them.
-fn keyframes(theme: &ResolvedTheme) -> Vec<ResolvedKeyframe> {
+/// The keyframes of the body's `Keyframes` transition, as the query
+/// answers them.
+fn body_keyframes(theme: &ResolvedTheme) -> Vec<ResolvedKeyframe> {
     let scope = root(theme, Direction::Ltr);
-    match theme.style(&Element::new(ICON, &scope, &Metrics)) {
-        Styled::Style((style, _)) => style
-            .icon
-            .and_then(|icon| icon.animation)
-            .map(|animation| animation.keyframes)
-            .unwrap_or_default(),
-        Styled::NotDrawn | Styled::DrawnAs { .. } | Styled::NotAvailable(_) => Vec::new(),
+    let kind = drawn(theme, &Element::new(BODY, &scope, &Metrics))
+        .0
+        .transitions
+        .into_iter()
+        .next()
+        .map(|transition| transition.kind);
+    match kind {
+        Some(ResolvedTransitionKind::Keyframes { keyframes }) => keyframes,
+        _ => Vec::new(),
     }
 }
 
 /// The one keyframe's patch on the body.
 fn on_body(patch: &str) -> Option<ResolvedPartStylePatch> {
-    let theme = looping(
-        &format!("{{ at = 0, part = \"body\", timing = \"absent\", patch = {{ {patch} }} }}"),
+    let theme = body_keyframes_theme(
+        &format!("{{ at = 0, timing = \"absent\", patch = {{ {patch} }} }}"),
         &[],
     );
-    keyframes(&theme)
+    body_keyframes(&theme)
         .into_iter()
         .next()
         .map(|keyframe| keyframe.patch)
@@ -1394,6 +1349,7 @@ fn on_body(patch: &str) -> Option<ResolvedPartStylePatch> {
 /// resolved block, its `Some` that block with the keyframe's fields
 /// applied, at any depth.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyframe_fields_resolve_over_the_resolved_block() {
     let patch = on_body("transform.rotate_deg = 90, stroke.top.width_px = 3").unwrap_or_default();
     let transform = patch.transform.flatten();
@@ -1412,6 +1368,7 @@ fn keyframe_fields_resolve_over_the_resolved_block() {
 /// S2.7: `base` in a keyframe is the field's own resolved value on the part
 /// before the keyframe applies.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyframe_base_is_the_parts_resolved_value() {
     let patch = on_body("min_width_px = \"= add(base, 2px)\", opacity = \"= mul(base, 0.5)\"")
         .unwrap_or_default();
@@ -1421,6 +1378,7 @@ fn keyframe_base_is_the_parts_resolved_value() {
 
 /// S2.7: a keyframe's `Append` appends over the part's resolved paint.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyframe_append_over_the_parts_paint() {
     let patch = on_body("fill = { append = [\"#ff0000\"] }").unwrap_or_default();
     let layers = patch.fill.flatten().map(|fill| fill.layers.len());
@@ -1432,9 +1390,11 @@ fn keyframe_append_over_the_parts_paint() {
 /// patch and an `Append` alike, and a field within a block the keyframe
 /// sets.
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyframe_over_an_absent_field_is_none() {
     let patch = on_body(
-        "focus = \"= token.focus\", interaction.state_layer.alpha = 0.5, stroke.outset_px = 2, stroke.top.width_px = 3",
+        "focus = \"= token.focus\", interaction.state_layer.alpha = 0.5, stroke.outset_px = 2, \
+         stroke.top.width_px = 3",
     )
     .unwrap_or_default();
     assert_eq!(patch.focus, None, "a Set over an absent focus indicator");
@@ -1446,11 +1406,11 @@ fn keyframe_over_an_absent_field_is_none() {
         "absent within the stroke"
     );
     assert_eq!(stroke.as_ref().and_then(|s| s.top.width), Some(Px(3.0)));
-    let theme = looping(
-        "{ at = 0, part = \"body\", timing = \"absent\", patch = { fill = { append = [\"#ff0000\"] } } }",
+    let theme = body_keyframes_theme(
+        "{ at = 0, timing = \"absent\", patch = { fill = { append = [\"#ff0000\"] } } }",
         &["[widgets.button.body]\nfill = \"absent\""],
     );
-    let patch = keyframes(&theme)
+    let patch = body_keyframes(&theme)
         .into_iter()
         .next()
         .map(|keyframe| keyframe.patch);
@@ -1461,57 +1421,12 @@ fn keyframe_over_an_absent_field_is_none() {
     );
 }
 
-/// S2.7: a keyframe of the icon part's loop patching that part's `icon`
-/// resolves it over the part's resolved icon without its `animation`: the
-/// keyframe animates the part's style, not the loop it is a frame of, so
-/// resolving it does not reach its own loop again (no cycle).
-#[test]
-fn keyframe_icon_resolves_without_its_loop() {
-    let theme = looping(
-        "{ at = 0, timing = \"absent\", patch = { icon.size_px = 20 } }",
-        &[],
-    );
-    let scope = root(&theme, Direction::Ltr);
-    let element = Element::new(ICON, &scope, &Metrics);
-    let evaluated = theme.evaluate_part(TypedPart::Button(ButtonPart::Icon), &element, &|_| true);
-    assert_eq!(evaluated.refusals, []);
-    let icon = keyframes(&theme)
-        .into_iter()
-        .next()
-        .and_then(|keyframe| keyframe.patch.icon)
-        .flatten();
-    assert_eq!(icon.as_ref().and_then(|icon| icon.size), Some(Px(20.0)));
-    assert_eq!(
-        icon.as_ref().map(|icon| icon.rendering_mode.is_some()),
-        Some(true),
-        "the part's icon beneath"
-    );
-    assert_eq!(icon.and_then(|icon| icon.animation), None);
-}
-
-/// S2.7: a keyframe naming no part resolves over the part the loop is on:
-/// the icon part's loop's `base` is the icon part's own icon size (the
-/// body, which the fixture's other keyframes name, lists no icon).
-#[test]
-fn keyframe_without_part_resolves_over_the_loops_part() {
-    let theme = looping(
-        "{ at = 0, timing = \"absent\", patch = { icon.size_px = \"= add(base, 4px)\" } }",
-        &[],
-    );
-    let size = keyframes(&theme)
-        .into_iter()
-        .next()
-        .and_then(|keyframe| keyframe.patch.icon)
-        .flatten()
-        .and_then(|icon| icon.size);
-    assert_eq!(size, Some(Px(20.0)), "the icon part's 16 px");
-}
-
 /// S2.7: a keyframe over a part field set by a reference applies after
 /// every rule that patches the referenced value: its step sorts after
 /// every step of the theme where the reference's steps are composed with
 /// the patches after it (R2.4).
 #[test]
+#[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn keyframe_over_a_referenced_field_follows_every_rule() {
     let tokens = "[tokens.focus]\nkind = \"ring\"\nwidth_px = 2\npaint = \"#3584e4\"\ndash = \
                   \"solid\"\noffset = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }\n\
@@ -1520,9 +1435,8 @@ fn keyframe_over_a_referenced_field_follows_every_rule() {
                   \"circular\" }\nshadow = \"absent\"\ntransition = \"absent\"\n\
                   [widgets.button.body]\nfocus = \"= token.focus\"\n[[rules]]\ntarget = \
                   \"button.body\"\nset = { focus.width_px = 3 }";
-    let theme = looping(
-        "{ at = 0, part = \"body\", timing = \"absent\", patch = { focus.width_px = \"= \
-         add(base, 1px)\" } }",
+    let theme = body_keyframes_theme(
+        "{ at = 0, timing = \"absent\", patch = { focus.width_px = \"= add(base, 1px)\" } }",
         &[tokens],
     );
     let scope = root(&theme, Direction::Ltr);
@@ -1532,48 +1446,11 @@ fn keyframe_over_a_referenced_field_follows_every_rule() {
         Some(Px(3.0)),
         "the rule's"
     );
-    let width = keyframes(&theme)
+    let width = body_keyframes(&theme)
         .into_iter()
         .next()
         .and_then(|keyframe| keyframe.patch.focus)
         .flatten()
         .and_then(|focus| focus.width);
     assert_eq!(width, Some(Px(4.0)), "over the rule's 3 px");
-}
-
-/// S2.7: a keyframe whose part resolves `NotDrawn` or `DrawnAs` resolves to
-/// a patch with every field `None`, its `at` and `timing` kept.
-#[test]
-fn keyframe_on_a_part_not_drawn_sets_nothing() {
-    let frames = "{ at = 0, part = \"subtitle\", timing = \"absent\", patch = { opacity = 0.5 } }, \
-                  { at = 0.5, part = \"menu_indicator\", timing = \"linear\", patch = { opacity = 0.5 } }, \
-                  { at = 0.75, part = \"body\", timing = \"absent\", patch = { opacity = 0.5 } }";
-    let drawn_as = "[widgets.button.menu_indicator]\nabsent = false\n\
-                    [[rules]]\ntarget = \"button.menu_indicator\"\nset = { drawn_as = { widget = \
-                    \"button\", variants = [] } }";
-    let found = keyframes(&looping(frames, &[drawn_as]));
-    let at: Vec<Fraction> = found.iter().map(|keyframe| keyframe.at).collect();
-    assert_eq!(at, [Fraction(0.0), Fraction(0.5), Fraction(0.75)]);
-    let patches: Vec<&ResolvedPartStylePatch> =
-        found.iter().map(|keyframe| &keyframe.patch).collect();
-    assert_eq!(
-        patches.first(),
-        Some(&&ResolvedPartStylePatch::default()),
-        "not drawn"
-    );
-    assert_eq!(
-        patches.get(1),
-        Some(&&ResolvedPartStylePatch::default()),
-        "drawn as another"
-    );
-    assert_eq!(
-        found.get(1).map(|keyframe| keyframe.timing.is_some()),
-        Some(true),
-        "its timing kept"
-    );
-    assert_eq!(
-        patches.get(2).and_then(|patch| patch.opacity),
-        Some(Some(Fraction(0.5))),
-        "a drawn part's"
-    );
 }

@@ -1,9 +1,17 @@
 # A synthetic preset (S17, ADD-A144): a second keyed text style, its fill listed, beside the body
-# style the preset states whole.
+# style the preset states whole, under `adwaita`'s id: a keyed text style is staged to the text styles unit, `body`
+# and `caption` kept at depth on `adwaita` (scripts/widget_units.toml's `[kept.slice]`).
+# base without: [preset]
+# base without: id = "probe"
+# base without: generation = "probe-1"
 # base without: [declare]
 # base without: text_styles = ["body"]
 # base without: inputs = ["accent"]
 # base without: surface_sets = ["window"]
+[preset]
+id = "adwaita"
+generation = "probe-1"
+
 [pending]
 "tokens.text.keyed.caption.fill" = "U20"
 
@@ -13,7 +21,7 @@ inputs = ["accent"]
 surface_sets = ["window"]
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [tokens.text.keyed.caption]
 font = { family = "Probe Sans", size_px = 10, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }
@@ -29,7 +37,7 @@ wrap = "word"
 max_lines = "none"
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }
 

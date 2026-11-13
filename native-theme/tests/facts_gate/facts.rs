@@ -21,6 +21,8 @@ pub struct Fact {
     /// Its file and its place among the file's facts, for the report.
     pub file: String,
     pub index: usize,
+    /// The line of its `[[fact]]` header in its file, from 1.
+    pub line: usize,
     pub key: String,
     pub when: Option<Value>,
     pub stated: Stated,
@@ -32,15 +34,18 @@ pub struct Fact {
     pub scheme_file: Option<String>,
     /// The accent it was measured with, a colour literal.
     pub accent: Option<String>,
-    /// Every unit it belongs to is enabled (S17 *While 0.8.0 is built*);
-    /// set as its platform is read.
-    pub enabled: bool,
 }
 
 impl Fact {
     /// Where the fact is written, for the report.
     pub fn place(&self) -> String {
         format!("{} fact {}", self.file, self.index + 1)
+    }
+
+    /// Its file relative to the repository root and the line of its
+    /// `[[fact]]` header, as `check_facts_trace.py --facts` names a fact.
+    pub fn line_place(&self) -> String {
+        format!("docs/facts/{}:{}", self.file, self.line)
     }
 
     /// Whether its value is a derivation: an expression, as the value or in
@@ -71,7 +76,9 @@ pub fn files(directory: &Path) -> Vec<PathBuf> {
     out
 }
 
-/// The facts of one file, in file order.
+/// The facts of one file, in file order, each with the line of its
+/// `[[fact]]` header; a file whose facts are not each one such line is
+/// refused, as no fact's place could be named.
 pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
     let table: Table = toml::from_str(text).map_err(|error| format!("{file}: {error}"))?;
     let entries = table
@@ -79,8 +86,21 @@ pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
+    let lines: Vec<usize> = text
+        .lines()
+        .zip(1_usize..)
+        .filter(|(line, _)| line.trim_end() == "[[fact]]")
+        .map(|(_, number)| number)
+        .collect();
+    if lines.len() != entries.len() {
+        return Err(format!(
+            "{file}: {} facts and {} `[[fact]]` lines: each fact is one `[[fact]]` table",
+            entries.len(),
+            lines.len()
+        ));
+    }
     let mut out = Vec::new();
-    for (index, entry) in entries.iter().enumerate() {
+    for ((index, entry), line) in entries.iter().enumerate().zip(lines) {
         let Some(entry) = entry.as_table() else {
             return Err(format!("{file}: fact {} is not a table", index + 1));
         };
@@ -116,6 +136,7 @@ pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
         out.push(Fact {
             file: file.to_owned(),
             index,
+            line,
             key,
             when: entry.get("when").cloned(),
             stated,
@@ -123,7 +144,6 @@ pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
             accent_run: scheme_file.is_some() || accent.is_some(),
             scheme_file,
             accent,
-            enabled: true,
         });
     }
     Ok(out)

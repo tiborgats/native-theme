@@ -16,7 +16,7 @@ inputs = ["accent"]
 surface_sets = ["window", "view"]
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [colors.light.surfaces.view]
 foreground = "#101010"
@@ -67,7 +67,7 @@ background_positive = "absent"
 disabled = { background = "absent", background_alternate = "absent", foreground = "absent", foreground_inactive = "absent", foreground_active = "absent", link = "absent", link_visited = "absent", negative = "absent", neutral = "absent", positive = "absent", decoration_focus = "absent", decoration_hover = "absent", shade = "absent", shade_darker = "absent", border = "absent", background_active = "absent", background_link = "absent", background_visited = "absent", background_negative = "absent", background_neutral = "absent", background_positive = "absent" }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }
 

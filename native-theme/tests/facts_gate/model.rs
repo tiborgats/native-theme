@@ -198,6 +198,9 @@ pub struct Model {
     /// The variants the gate leaves out of this entry for a preset, as only
     /// facts it skips name them (ADD-A128): no combination holds one.
     pub skipped_variants: Vec<String>,
+    /// An element takes its default size in force alone (S10, while the
+    /// sizes unit is not enabled; [`size_options`]).
+    pub defaults_only: bool,
 }
 
 impl Model {
@@ -316,16 +319,20 @@ impl Model {
                 .map(|items| items.iter().filter_map(Value::as_table).cloned().collect())
                 .unwrap_or_default(),
             skipped_variants: Vec::new(),
+            defaults_only: false,
         }
     }
 
     /// The entry without the variants `skipped` (ADD-A128): out of
-    /// `variants` and each `exclusive_variants` group (a group left with
-    /// fewer than two goes, as it excludes nothing), and out of every
-    /// combination, a set holding one dropped whole.
+    /// `variants`, each `exclusive_variants` group (a group left with
+    /// fewer than two goes, as it excludes nothing) and `sizes_by_variant`
+    /// (an entry naming one goes), and out of every combination, a set
+    /// holding one dropped whole.
     pub fn without(&self, skipped: &[String]) -> Model {
         let mut out = self.clone();
         out.variants.retain(|variant| !skipped.contains(variant));
+        out.sizes_by_variant
+            .retain(|(variant, _, _)| !skipped.contains(variant));
         out.exclusive_variants = self
             .exclusive_variants
             .iter()
@@ -618,28 +625,41 @@ pub fn variant_options(model: &Model) -> Vec<Vec<String>> {
 /// first `sizes_by_variant` entry's whose variant it holds, else the
 /// entry's `sizes`, less those the first `sizes_by_context` entry whose
 /// selector the context's ancestors match leaves out; one `None` where it
-/// takes none.
+/// takes none. Where the model takes defaults alone
+/// ([`Model::defaults_only`]), the default in force among them: the
+/// context entry's where it states one, else the variant entry's where it
+/// states one, else the entry's; `None` where that is no size taken (a
+/// pending default leaves none in force, as the query answers).
 pub fn size_options(
     model: &Model,
     variants: &[String],
     context: Option<&Value>,
 ) -> Vec<Option<String>> {
-    let sizes = model
+    let by_variant = model
         .sizes_by_variant
         .iter()
-        .find(|(variant, _, _)| variants.contains(variant))
-        .map_or(&model.sizes, |(_, sizes, _)| sizes);
-    let kept = model
+        .find(|(variant, _, _)| variants.contains(variant));
+    let sizes = by_variant.map_or(&model.sizes, |(_, sizes, _)| sizes);
+    let by_context = model
         .sizes_by_context
         .iter()
-        .find(|(selector, _, _)| selector_matches(selector, context))
-        .map(|(_, sizes, _)| sizes);
+        .find(|(selector, _, _)| selector_matches(selector, context));
+    let kept = by_context.map(|(_, sizes, _)| sizes);
     let taken: Vec<Option<String>> = sizes
         .iter()
         .filter(|size| kept.is_none_or(|kept| kept.contains(size)))
         .cloned()
         .map(Some)
         .collect();
+    if model.defaults_only {
+        let default = by_context
+            .and_then(|(_, _, default)| default.as_ref())
+            .or_else(|| by_variant.and_then(|(_, _, default)| default.as_ref()))
+            .or(model.default_size.as_ref())
+            .cloned()
+            .filter(|default| taken.contains(&Some(default.clone())));
+        return vec![default];
+    }
     if taken.is_empty() { vec![None] } else { taken }
 }
 

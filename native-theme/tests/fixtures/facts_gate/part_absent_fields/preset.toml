@@ -1,5 +1,5 @@
 [declare.widget.button]
-variants = ["flat", "@with_arrow"]
+variants = ["tool", "@probe_arrow"]
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -7,16 +7,16 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }
 
 [[rules]]
-when = { not_variants = ["flat"] }
+when = { not_variants = ["tool"] }
 target = "button.subtitle"
 set = { absent = true }
 
 [[rules]]
-when = { variants = ["flat"], not_variants = ["@with_arrow"] }
+when = { variants = ["tool"], not_variants = ["@probe_arrow"] }
 target = "button.subtitle"
 set = { absent = true }

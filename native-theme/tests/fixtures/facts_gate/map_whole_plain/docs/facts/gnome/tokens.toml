@@ -11,7 +11,7 @@ source = "probe@1 probe.css:1"
 quote = "synthetic"
 
 [[fact]]
-key = "token.icons.mirroring"
+key = "token.size_classes"
 value = {}
 rows = []
 

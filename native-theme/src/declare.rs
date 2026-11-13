@@ -39,8 +39,6 @@ pub(crate) struct Declarations {
     pub(crate) accent_inputs: Vec<InputName>,
     /// The keyed blend modes.
     pub(crate) blend_modes: Vec<Key>,
-    /// The motion timing tokens' keys.
-    pub(crate) timings: Vec<Key>,
     /// The keyed transition kinds, with their parameters' units.
     pub(crate) transition_kinds: Vec<(Key, Vec<(Key, ScalarUnit)>)>,
     /// The keyed presentation kinds, with their parameters' units.
@@ -63,8 +61,6 @@ pub(crate) struct Declarations {
     pub(crate) device_models: Vec<Key>,
     /// Material parameters beyond the named ones, with their units.
     pub(crate) material_params: Vec<(Key, ScalarUnit)>,
-    /// The motion durations' keys.
-    pub(crate) durations: Vec<Key>,
     /// The icon contexts.
     pub(crate) icon_contexts: Vec<Key>,
     /// The icon symbolic colours' keys: the platform's mark names.
@@ -74,10 +70,6 @@ pub(crate) struct Declarations {
     pub(crate) drag_cursors: Vec<Key>,
     /// The accent ramp's entries.
     pub(crate) accent_ramp: Vec<Key>,
-    /// The text rendering engines.
-    pub(crate) rendering_engines: Vec<Key>,
-    /// The LCD filters.
-    pub(crate) lcd_filters: Vec<Key>,
     /// A palette's schemes (S14).
     pub(crate) schemes: Vec<Scheme>,
     /// What each typed widget has on the preset.
@@ -169,6 +161,10 @@ pub(crate) struct WidgetDecl {
     pub(crate) keys: Option<Vec<(&'static str, Vec<Key>)>>,
     /// The breakpoints.
     pub(crate) breakpoints: Option<Vec<Breakpoint>>,
+    /// `later.variants`: declared variants the platform has that a unit not
+    /// yet enabled states, each refused in every layer and answered
+    /// `NotAvailable(Later)` by the query (S10's *Later names*, ADD-A147).
+    pub(crate) later: Option<Vec<VariantRef>>,
 }
 
 impl WidgetDecl {
@@ -193,6 +189,7 @@ impl WidgetDecl {
             data,
             keys,
             breakpoints,
+            later,
         } = over;
         fn pick<T: Clone>(over: &Option<T>, own: &Option<T>) -> Option<T> {
             over.as_ref().or(own.as_ref()).cloned()
@@ -217,7 +214,13 @@ impl WidgetDecl {
             data: pick(data, &self.data),
             keys: pick(keys, &self.keys),
             breakpoints: pick(breakpoints, &self.breakpoints),
+            later: pick(later, &self.later),
         }
+    }
+
+    /// Whether `variant` is one its `later` lists (S10's *Later names*).
+    pub(crate) fn is_later(&self, variant: &VariantRef) -> bool {
+        self.later.iter().flatten().any(|held| held == variant)
     }
 }
 

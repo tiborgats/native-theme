@@ -1,13 +1,13 @@
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 # Set where both ancestors of the chain hold.
 [[rules]]
-when = { context = [{ widget = "button", states = ["hover"] }, { widget = "button", variants = ["flat"] }] }
+when = { context = [{ widget = "button", states = ["hover"] }, { widget = "button", variants = ["tool"] }] }
 target = "button.body"
 set = { min_width_px = 60 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

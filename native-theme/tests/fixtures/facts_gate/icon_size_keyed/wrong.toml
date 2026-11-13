@@ -1,4 +1,7 @@
 # preset.toml's twin whose context's icon is 96px: the size's fact fails it, the weight's passes.
+# base without: [preset]
+# base without: id = "probe"
+# base without: generation = "probe-1"
 # base without: [declare]
 # base without: text_styles = ["body"]
 # base without: inputs = ["accent"]
@@ -12,14 +15,18 @@
 # base without: dialog = "absent"
 # base without: panel = "absent"
 # base without: keyed = {}
+[preset]
+id = "kde-breeze"
+generation = "probe-1"
+
 [declare]
 text_styles = ["body"]
 inputs = ["accent"]
 surface_sets = ["window"]
-icon_contexts = ["status_page"]
+icon_contexts = ["main_toolbar"]
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [colors.light.keyed]
 
@@ -31,7 +38,7 @@ small = "absent"
 large = "absent"
 dialog = "absent"
 panel = "absent"
-keyed.status_page = { size_px = 96, fill = "#000000", rendering_mode = "from_icon", weight = 300, symbolic_colors = {}, axes = {}, symbol_variants = [], scale = "absent", state_effect = "absent", animation = "absent" }
+keyed.main_toolbar = { size_px = 96, fill = "#000000", rendering_mode = "from_icon", weight = 300, symbolic_colors = {}, axes = {}, symbol_variants = [], scale = "absent", state_effect = "absent" }
 
 [[rules]]
 when = { states = ["pressed"] }
@@ -39,6 +46,6 @@ target = "button.body"
 set = { min_width_px = 44 }
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }

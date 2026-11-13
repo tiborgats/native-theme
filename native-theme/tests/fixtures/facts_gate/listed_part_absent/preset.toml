@@ -34,10 +34,10 @@ wrap = "word"
 max_lines = "none"
 
 [declare.widget.button]
-variants = ["flat"]
+variants = ["tool"]
 
 [[rules]]
-when = { variants = ["flat"] }
+when = { variants = ["tool"] }
 target = "button.body"
 set = { fill = "#00000000" }
 
