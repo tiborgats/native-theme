@@ -1,0 +1,310 @@
+WINDOWS	W1-001	4.1	[window]	C06,C12,C20	R,M,V	Active vs inactive DWM window border colour, incl. accent-on-title-bars setting
+WINDOWS	W1-002	4.1	[window]	C12,C20,C25	R	Visible DWM border thickness distinct from system metric
+WINDOWS	W1-003	4.1	[window]	C01,C02,C06,C20	P,M	Window shadow layers, active vs inactive, elevation 128
+WINDOWS	W1-004	4.1	[window]	C11,C20	P,M	Window corner radius by state (maximized/snapped zero) and small-radius variant
+WINDOWS	W1-005	4.1	[window]	C03,C06	R,P,M,V	Mica/Mica Alt backdrop recipe and inactive-window solid fallback
+WINDOWS	W1-006	4.1	[window]	C10,C20	R,P	Title bar height variants standard/tall and TitleBar control heights
+WINDOWS	W1-007	4.1	[window]	C13,C20,C25	R,M,V	Caption button part: size, glyphs, glyph size
+WINDOWS	W1-008	4.1	[window]	C06,C07,C20	R,M,V	Caption button colours per state incl. red close and inactive
+WINDOWS	W1-009	4.1	[window]	C14,C20	M	Caption button hover fade duration and easing
+WINDOWS	W1-010	4.1	[window]	C13,C20,C26	R,P	Title bar app icon size, margins, title margin and alignment
+WINDOWS	W1-011	4.1	[window]	C07,C13,C20	P	TitleBar subtitle, back and pane-toggle button parts and colours
+WINDOWS	W1-012	4.1	[window]	C06,C20	P	Deactivated opacity of title-bar content
+WINDOWS	W1-013	4.1	[window]	C05,C06,C20	R,M	Accent title bar mode when user setting ColorPrevalence is on
+WINDOWS	W1-014	4.1	[window]	C01,C03,C11,C14,C20,C21	R,M,V	Snap layouts flyout surface, tiles, hover delay, animation
+WINDOWS	W1-015	4.1	[window]	C13,C20	R,M,V	Shell-drawn system menu styled differently from MenuFlyout
+WINDOWS	W1-016	4.1	[window]	C20,C25,C26	R	Invisible resize border hit area and frame extents
+WINDOWS	W1-017	4.1	[window]	C14,C20,C23	R,M	Window open/close/minimize/maximize DWM animations and animation-off effect
+WINDOWS	W1-018	4.1	[button]	C04,C12,C27	P	Gradient elevation border on buttons versus single solid colour
+WINDOWS	W1-019	4.1	[button]	C07,C12	P	Button border colour per pointer-over, pressed, disabled state
+WINDOWS	W1-020	4.1	[button]	C07,C09,C12,C27	P	Accent button hover/pressed/disabled fills, text, gradient border
+WINDOWS	W1-021	4.1	[button]	C07,C09	P	Subtle button variant: transparent rest, fills per state
+WINDOWS	W1-022	4.1	[button]	C07	P	Toggle button checked and indeterminate state matrix
+WINDOWS	W1-023	4.1	[button]	C14	P	Button background brush transition duration
+WINDOWS	W1-024	4.1	[button]	C13,C14,C19	P,M	AnimatedIcon state changes inside buttons
+WINDOWS	W1-025	4.1	[button]	C15	P	Per-control focus visual margin versus single global offset
+WINDOWS	W1-026	4.1	[input]	C07,C12,C15,C27	P	Text box gradient border with accent bottom edge when focused
+WINDOWS	W1-027	4.1	[input]	C07,C12	P	Per-side border width by state, thicker focused bottom edge
+WINDOWS	W1-028	4.1	[input]	C07	P	Text box hover and focused fills, text and placeholder colours
+WINDOWS	W1-029	4.1	[input]	C07	P	Text box disabled border colour
+WINDOWS	W1-030	4.1	[input]	C07,C13	P	Text box clear button part: glyph, colours per state, visibility rule
+WINDOWS	W1-031	4.1	[input]	C13,C18	P,V	Text box header label and description text styling
+WINDOWS	W1-032	4.1	[input]	C17	P,V	Unfocused selection colour and selected-text colour in text box
+WINDOWS	W1-033	4.1	[input]	C07	P,M,V	Text box read-only and invalid/error state appearance
+WINDOWS	W1-034	4.1	[input]	C13,C16,C25	R,M	Caret width and blink, touch selection grippers
+WINDOWS	W1-036	4.1	[text_area]	C13,C26	P	Text area inherits text-box gaps plus inner scrollbar and inset
+WINDOWS	W1-037	4.1	[checkbox]	C07	P	Checkbox state matrix: three check states by four interaction states
+WINDOWS	W1-038	4.1	[checkbox]	C07,C13	P	Checkbox indeterminate dash glyph, size, fill, stroke
+WINDOWS	W1-039	4.1	[checkbox]	C13,C14,C19	P,M,V	Check-mark font glyph, size and Lottie check animation
+WINDOWS	W1-040	4.1	[checkbox]	C10,C26	P	Checkbox control height and minimum width
+WINDOWS	W1-041	4.1	[checkbox]	C07,C13,C14	P	Radio dot size per state and scale animation
+WINDOWS	W1-042	4.1	[checkbox]	C07,C12	P	Radio outer ellipse and dot stroke/fill per check and interaction state
+WINDOWS	W1-043	4.1	[checkbox]	C13	P	Separate radio colours from checkbox colours
+WINDOWS	W1-044	4.1	[menu]	C07	P	Menu item pressed fill, text and disabled fill
+WINDOWS	W1-045	4.1	[menu]	C11,C26	P,V	Menu item inset margin and rounded hover backplate radius
+WINDOWS	W1-046	4.1	[menu]	C12,C26	P	Menu presenter padding, min/max height, border thickness
+WINDOWS	W1-047	4.1	[menu]	C10,C26	P	Menu item padding by input mode, mouse vs touch
+WINDOWS	W1-048	4.1	[menu]	C07,C13,C18	P	Keyboard accelerator text part: font, colours per state, alignment
+WINDOWS	W1-049	4.1	[menu]	C07,C13	P	Submenu chevron glyph and colours, submenu-opened state
+WINDOWS	W1-050	4.1	[menu]	C07,C13	P	Menu check glyph and radio bullet parts per state
+WINDOWS	W1-051	4.1	[menu]	C13	P	Split menu item primary/chevron split and divider
+WINDOWS	W1-052	4.1	[menu]	C26	P	Menu separator height and inset padding
+WINDOWS	W1-053	4.1	[menu]	C01,C03	P	Menu acrylic material and depth-32 shadow
+WINDOWS	W1-054	4.1	[menu]	C14,C21,C25	R,P,M,V	Menu open/close animation and submenu show delay
+WINDOWS	W1-055	4.1	[menu]	C04,C05	P	Menu light-dismiss overlay colour
+WINDOWS	W1-056	4.1	[tooltip]	C03	P	Tooltip in-app acrylic material, only fallback colour carried
+WINDOWS	W1-057	4.1	[tooltip]	C01,C02	P	Tooltip shadow at elevation 16
+WINDOWS	W1-058	4.1	[tooltip]	C14	R,P,M	Tooltip fade-in and fade-out animation
+WINDOWS	W1-059	4.1	[tooltip]	C21,C26	R,P,V	Tooltip reshow, keyboard/touch delays, auto-hide, placement offset
+WINDOWS	W1-060	4.1	[scrollbar]	C09,C10,C13	P	Scrollbar collapsed panning indicator vs expanded bar, thicknesses
+WINDOWS	W1-061	4.1	[scrollbar]	C07,C13,C14	P	Scrollbar arrow buttons: glyph, colours per state, pressed scale
+WINDOWS	W1-062	4.1	[scrollbar]	C03,C07,C12	P	Scrollbar expanded track acrylic fill and stroke per state
+WINDOWS	W1-063	4.1	[scrollbar]	C07,C11	P	Scrollbar thumb corner radius and disabled colour
+WINDOWS	W1-064	4.1	[scrollbar]	C14,C21	P	Scrollbar expand/contract durations and contract delay
+WINDOWS	W1-065	4.1	[scrollbar]	C13,C14,C26	P	Scrollbar corner separator fill, timing and margin
+WINDOWS	W1-066	4.1	[scrollbar]	C10,C25	R	Scrollbar size values readable via UISettings, not probed
+WINDOWS	W1-067	4.1	[slider]	C07,C13	P	Slider inner accent dot colour per state and size
+WINDOWS	W1-068	4.1	[slider]	C07,C14	P	Slider inner dot scale per state and animation
+WINDOWS	W1-069	4.1	[slider]	C11,C12	P	Slider thumb border and thumb and track corner radii
+WINDOWS	W1-070	4.1	[slider]	C07	P	Slider track value-fill colours on hover and pressed
+WINDOWS	W1-071	4.1	[slider]	C13	P	Slider tick marks colours, disabled colour, placement
+WINDOWS	W1-072	4.1	[slider]	C13,C18,C26	P	Slider header styling, control height, content margins
+WINDOWS	W1-073	4.1	[slider]	C13	P,V	Value tooltip shown while dragging slider
+WINDOWS	W1-074	4.1	[slider]	C07	P	Slider container background per state
+WINDOWS	W1-075	4.1	[progress_bar]	C13,C14	P	Progress bar indeterminate indicators, widths, durations, easing
+WINDOWS	W1-076	4.1	[progress_bar]	C07	P	Progress bar paused and error states and colours
+WINDOWS	W1-077	4.1	[progress_bar]	C11,C13	P	Progress indicator vs track geometry and track radius
+WINDOWS	W1-078	4.1	[progress_bar]	C14	P,M,V	Progress bar determinate value-change animation
+WINDOWS	W1-079	4.1	[progress_bar]	C12,C23	P	Progress bar 1px high-contrast border
+WINDOWS	W1-080	4.1	[tab]	C07	P	Tab pressed and disabled fills, text, selected text colour
+WINDOWS	W1-081	4.1	[tab]	C07,C13	P	Tab icon part size, margin, colours per state
+WINDOWS	W1-082	4.1	[tab]	C07,C13	P	Tab close button part: sizes, colours per state and context
+WINDOWS	W1-083	4.1	[tab]	C07,C13	P	Tab strip add button and scroll buttons
+WINDOWS	W1-084	4.1	[tab]	C13	P	Separator between unselected tabs, colour and margin
+WINDOWS	W1-085	4.1	[tab]	C10,C18,C26	P	Tab max width, width mode, header font size, strip padding
+WINDOWS	W1-086	4.1	[tab]	C12,C27	P	Selected tab gradient border, per-side width exists
+WINDOWS	W1-087	4.1	[tab]	C07,C14	P	Tab drag state fill and reorder/add/remove animations
+WINDOWS	W1-088	4.1	[tab]	C03,C04,C26	P	Content area under tab strip: layer fill over Mica Alt
+WINDOWS	W1-089	4.1	[sidebar]	C07,C11,C13	P	Nav selection indicator pill: colours per state, size, radius, position
+WINDOWS	W1-090	4.1	[sidebar]	C14	P	Nav selection pill slide/stretch animation between items
+WINDOWS	W1-091	4.1	[sidebar]	C07,C12	P	Nav item pressed, selected+hover/pressed, disabled, checked fills and borders
+WINDOWS	W1-092	4.1	[sidebar]	C10,C11,C13,C26	P	Nav row height, margin, corner radius, icon box, icon-text gap
+WINDOWS	W1-093	4.1	[sidebar]	C13,C14,C18	P	Nav section header, separator, expand chevron with rotation
+WINDOWS	W1-094	4.1	[sidebar]	C10,C26	P	Nav pane open and compact widths and display modes
+WINDOWS	W1-095	4.1	[sidebar]	C13,C26	P	Nav hamburger, back buttons, settings item, footer items, search area
+WINDOWS	W1-096	4.1	[sidebar]	C01,C03,C11	P	Nav overlay pane acrylic fill, shadow, corner radius
+WINDOWS	W1-097	4.1	[sidebar]	C11,C12,C26	P	Nav content area fill, border, rounded corner at pane join
+WINDOWS	W1-098	4.1	[sidebar]	C14	P	Nav pane open/close animation
+WINDOWS	W1-099	4.1	[toolbar]	C07,C10,C11,C13,C26	P	AppBarButton part: sizes, label position, label font, colours, radius
+WINDOWS	W1-100	4.1	[toolbar]	C07,C13	P	AppBarToggleButton checked states and overflow check glyph
+WINDOWS	W1-101	4.1	[toolbar]	C13,C26	P	Command bar separator width, colour, margin, radius
+WINDOWS	W1-102	4.1	[toolbar]	C01,C03,C13,C26	P	Overflow more button and overflow menu presenter
+WINDOWS	W1-103	4.1	[toolbar]	C07,C10,C12	P	CommandBar open state styling and closed display modes with heights
+WINDOWS	W1-104	4.1	[toolbar]	C14	P	CommandBar open/close animation
+WINDOWS	W1-105	4.1	[status_bar]	C13,C25	R,V	Win32 status bar size grip and part separators
+WINDOWS	W1-106	4.1	[list]	C07	P	List item pressed, selected+hover/pressed/disabled fills and texts
+WINDOWS	W1-107	4.1	[list]	C07,C11,C13,C14	P,M	List selection indicator pill colours, radius, size, animation
+WINDOWS	W1-108	4.1	[list]	C11,C26	P	List item corner radius and inset margin
+WINDOWS	W1-109	4.1	[list]	C07,C11,C13	P	List multi-select checkbox part
+WINDOWS	W1-110	4.1	[list]	C07,C13,C14	P	List drag, reorder, drop-target visuals and multi-drag badge
+WINDOWS	W1-111	4.1	[list]	C07,C15	P	List focus border primary and secondary colours
+WINDOWS	W1-112	4.1	[list]	C07	P	Per-item disabled opacity within lists
+WINDOWS	W1-113	4.1	[list]	C14	P	List item add/remove/reorder transitions
+WINDOWS	W1-114	4.1	[popover]	C03	P	Flyout acrylic tint, luminosity, blur, noise recipe
+WINDOWS	W1-115	4.1	[popover]	C01,C02	P,M	Flyout elevation-32 shadow layers
+WINDOWS	W1-116	4.1	[popover]	C05,C14,C26	P,M	Flyout open/close animation, placement gap, light-dismiss overlay
+WINDOWS	W1-117	4.1	[popover]	C10,C26	P,V	Flyout presenter min/max width and max height
+WINDOWS	W1-119	4.1	[separator]	C26	P	Orientation-specific separator insets differing per container
+WINDOWS	W1-120	4.1	[switch]	C07,C11,C14	P	Switch pressed track/knob fills and stretched pressed knob
+WINDOWS	W1-121	4.1	[switch]	C07	P	Switch knob hover colours on and off
+WINDOWS	W1-122	4.1	[switch]	C07,C10	P	Switch hover thumb diameter, no hover size in model
+WINDOWS	W1-123	4.1	[switch]	C14	P,M	Switch knob size animation and on/off slide
+WINDOWS	W1-124	4.1	[switch]	C13,C18,C26	P	Switch on/off labels, header, min width, margins
+WINDOWS	W1-125	4.1	[dialog]	C04,C05	P	Dialog smoke scrim layer behind dialog
+WINDOWS	W1-126	4.1	[dialog]	C05,C12	P	Dialog two-zone fills for content and command area, separator
+WINDOWS	W1-127	4.1	[dialog]	C10,C26	P	Dialog title-body gap, button sizes, equal-width stretching
+WINDOWS	W1-128	4.1	[dialog]	C14	P	Dialog exit animation and entrance numeric parameters
+WINDOWS	W1-129	4.1	[dialog]	C01,C02	P	Dialog elevation-128 shadow
+WINDOWS	W1-130	4.1	[spinner]	C07,C13,C14	P,M,V	Spinner determinate mode, track ring, indeterminate animation
+WINDOWS	W1-131	4.1	[combo_box]	C07,C12,C27	P	Combo pressed/focused fills, foregrounds, placeholders, border per state
+WINDOWS	W1-132	4.1	[combo_box]	C07,C13,C14	P	Combo chevron colours per state and chevron animation
+WINDOWS	W1-133	4.1	[combo_box]	C01,C03,C11,C12,C26	P	Combo drop-down list acrylic surface, border, padding, radius, shadow
+WINDOWS	W1-134	4.1	[combo_box]	C07,C10,C11,C26	P	Combo item state matrix, padding by input mode, radius
+WINDOWS	W1-135	4.1	[combo_box]	C13,C14	P	Combo selection pill geometry and scale animation
+WINDOWS	W1-136	4.1	[combo_box]	C14,C26	P	Combo open/close animation aligned over selected item
+WINDOWS	W1-137	4.1	[combo_box]	C09,C13	P	Editable combo variant and header text
+WINDOWS	W1-138	4.1	[segmented_control]	C07,C12,C14	R,P	Segmented pressed/selected-hover fills, selected border, selection motion
+WINDOWS	W1-139	4.1	[card]	C01,C02,C05,C07	P,M	Card secondary/tertiary fills, clickable states, elevation 8 shadow
+WINDOWS	W1-140	4.1	[expander]	C07,C13	P	Expander header pressed/hover/disabled colours and chevron button states
+WINDOWS	W1-141	4.1	[expander]	C05,C11,C12,C26	P	Expander content area fill, border, bottom radii, expand direction
+WINDOWS	W1-142	4.1	[expander]	C13,C14	P	Expander expand/collapse motion and chevron rotation
+WINDOWS	W1-143	4.1	[link]	C07	P	Link underline per state
+WINDOWS	W1-144	4.1	[link]	C07,C12	P	Hyperlink button pressed background, per-state borders, disabled fill
+WINDOWS	W1-145	4.1	[link]	C15	M	Focus rectangle of inline hyperlink text run
+WINDOWS	W1-146	4.1	[layout]	C26	P	Fluent gaps between buttons, headers, labels, content areas
+WINDOWS	W1-147	4.1	[text_scale]	C18	P	Nine-style Fluent type ramp versus four model roles
+WINDOWS	W2-01	4.2	stepper/spin box	C01,C07,C13,C24	P	Spin buttons inline or popup, invalid revert, header
+WINDOWS	W2-02	4.2	calendar	C07,C13,C18,C24	P	Day/month/year items with today, blackout, out-of-scope states
+WINDOWS	W2-03	4.2	date picker	C07,C13,C24	P	Calendar button glyph, placeholder colours, flyout with shadow
+WINDOWS	W2-04	4.2	time picker	C07,C13,C24,C26	P	Segmented button, spacers, looping selectors, highlight band
+WINDOWS	W2-05	4.2	colour picker	C11,C13,C24	P	Spectrum, hue/alpha sliders, preview swatch, inputs
+WINDOWS	W2-06	4.2	rating	C07,C13,C14,C24	P	Star glyphs, selected/unselected/hover colours, caption
+WINDOWS	W2-07	4.2	banner/inline message	C05,C13,C18,C24	P	Severity backgrounds, icon backplate, title, close and action buttons
+WINDOWS	W2-08	4.2	badge	C05,C11,C13,C24	P	Dot, value and icon forms with severity styles
+WINDOWS	W2-09	4.2	teaching tip	C01,C11,C13,C14,C24	P,V	Tail geometry, highlight band, hero, close button, shadow
+WINDOWS	W2-10	4.2	breadcrumb/path control	C07,C13,C18,C24	P	Items, chevron separator, current item colour, ellipsis dropdown
+WINDOWS	W2-11	4.2	navigation/app bar	C07,C13,C24,C26	P	Top-mode pane, bottom selection indicator, overflow button
+WINDOWS	W2-12	4.2	tree view	C07,C13,C14,C24,C26	P	Item states, indent, expand glyph, selection indicator
+WINDOWS	W2-13	4.2	grid view	C07,C12,C13,C24	P	GridView tile selected border, corner checkbox, drag visuals
+WINDOWS	W2-14	4.2	items view	C07,C13,C24	P	ItemsView selection visual, inner border, checkbox placement
+WINDOWS	W2-15	4.2	search field	C01,C07,C13,C24	P	Query and clear buttons, suggestion popup, item states
+WINDOWS	W2-16	4.2	password field	C07,C13,C24	P	Reveal eye button, peek-while-pressed, mask character
+WINDOWS	W2-17	4.2	split button	C07,C13,C24	P	Primary and chevron parts, divider, states incl. checked toggle
+WINDOWS	W2-18	4.2	menu button	C07,C13,C14,C24	P	Chevron glyph, gap, foreground states, press animation
+WINDOWS	W2-19	4.2	repeat button	C07,C21,C24	R,P,V	RepeatButton visuals plus repeat delay and interval
+WINDOWS	W2-20	4.2	page control/pager	C07,C10,C13,C24	P	Pips sizes, colours, hover navigation buttons, max pips
+WINDOWS	W2-21	4.2	page control/pager	C07,C13,C24	P	Number-panel buttons, selection indicator, nav buttons, display modes
+WINDOWS	W2-22	4.2	menu bar	C07,C24,C26	P	Bar fill, height, top-level item states incl. menu-open
+WINDOWS	W2-23	4.2	toolbar flyout	C01,C07,C11,C13,C14,C24	P	Primary commands row, secondary menu, joined corners, animations, shadow
+WINDOWS	W2-24	4.2	avatar	C11,C13,C18,C24	P	Ellipse fill, initials, default glyph, badge, sizes
+WINDOWS	W2-25	4.2	radio group	C13,C18,C24,C26	P	Radio group header and row/column spacing
+WINDOWS	W2-26	4.2	pull-to-refresh	C13,C14,C21,C24	P,M	Refresh indicator circle, arrow, pull threshold, spin animation
+WINDOWS	W2-27	4.2	view switcher	C07,C13,C14,C24	P	Items, selection pill, per-state colours, pill slide animation
+WINDOWS	W2-28	4.2	scrollbar annotation	C07,C11,C13,C24	P	Rail with labels, thumb, hover tooltip, scroll buttons
+WINDOWS	W2-29	4.2	swipe actions	C07,C14,C24	P	Swipe item backgrounds per state and threshold, reveal motion
+WINDOWS	W2-30	4.2	navigation drawer/pane	C05,C11,C12,C14,C24,C26	P	Pane lengths, border, light-dismiss overlay, radius, animation
+WINDOWS	W2-31	4.2	carousel	C07,C13,C24	P	Hover-shown next/previous buttons, states, glyph size, item background
+WINDOWS	W2-32	4.2	view switcher	C07,C14,C18,C24	P	Pivot header items fonts and states, nav buttons, slide animation
+WINDOWS	W2-33	4.2	list box	C07,C12,C24,C26	P	Legacy ListBox item padding, state colours, box border
+WINDOWS	W2-34	4.2	zoom button	C07,C13,C14,C24	P	Zoom-out button states and zoom transition
+WINDOWS	W2-35	4.2	media transport controls	C13,C21,C24	P	Transport bar, seek slider, volume flyout, fade-out timing
+WINDOWS	W2-36	4.2	ink toolbar	C13,C24	P	Ink tool buttons, pen palette flyout, stroke-width selector, ruler
+WINDOWS	W2-37	4.2	access key badge	C13,C18,C24,C26	P	Alt-key badges: fill, foreground, border, font, placement
+WINDOWS	W3-01	4.3	shadows	C01,C02,C06,C25	P,M	Shadow layers per elevation, light vs dark intensity
+WINDOWS	W3-02	4.3	shadows	C02,C07	P	Elevation per control state (rest 2, pressed 1)
+WINDOWS	W3-03	4.3	shadows	C02	P	Which element sits at which elevation
+WINDOWS	W3-04	4.3	shadows	C02,C12,C27	P	Gradient elevation stroke lighter on one edge
+WINDOWS	W3-05	4.3	shadows	C01,C03,C23	M	Shadows and material in high contrast or transparency off
+WINDOWS	W3-06	4.3	materials	C03,C06	P	Acrylic recipe: tint, luminosity, blur, noise, exclusion, per theme
+WINDOWS	W3-07	4.3	materials	C03,C14,C23	P	Acrylic fallback rules and cross-fade, tint transition
+WINDOWS	W3-08	4.3	materials	C03,C05	P	Accent-tinted acrylic variants
+WINDOWS	W3-09	4.3	materials	C03,C04,C05	P	Layer fills over materials, two-layer system
+WINDOWS	W3-10	4.3	materials	C03,C06,C14	M	Mica active-to-inactive transition to solid fallback
+WINDOWS	W3-11	4.3	materials	C04,C05	P	Smoke scrim colour for modal overlays
+WINDOWS	W3-12	4.3	colour roles	C05	R,P	Accent ramp Dark1-3 and Light1-3 shades and derived fills
+WINDOWS	W3-13	4.3	colour roles	C05	P	Tertiary text colour
+WINDOWS	W3-14	4.3	colour roles	C05	P	Text-on-accent secondary, disabled, selected-text tiers
+WINDOWS	W3-15	4.3	colour roles	C05	P	Stroke tier colours: control, card, surface, divider
+WINDOWS	W3-16	4.3	colour roles	C04,C05	P	Fill tiers, subtle fills, solid background ladder
+WINDOWS	W3-17	4.3	colour roles	C05	P	Status background fills for attention, success, caution, critical
+WINDOWS	W3-18	4.3	colour roles	C05	P	Neutral status fill colours
+WINDOWS	W3-19	4.3	focus	C15	P,V	Secondary inner focus ring colour and width
+WINDOWS	W3-20	4.3	focus	C11,C15	P,M,V	Per-control focus margin, ring radius, focus kinds
+WINDOWS	W3-21	4.3	focus	C15	R,P,V	Keyboard-only focus ring visibility rule
+WINDOWS	W3-22	4.3	typography	C18	R,V	Text anti-aliasing mode and font smoothing contrast
+WINDOWS	W3-23	4.3	typography	C18	P	Optical size axis, line height per role, character spacing
+WINDOWS	W3-24	4.3	caret	C16,C23,C25	R,V	Caret width, blink interval and timeout, text cursor indicator
+WINDOWS	W3-25	4.3	selection	C17	P,M,V	Unfocused selection colour, selected-text foreground, touch grippers
+WINDOWS	W3-26	4.3	typography	C13,C18	P,V	Font and colour of accelerator hint text
+WINDOWS	W3-27	4.3	icons	C13,C19	P	Glyph sizes per control beyond the few in the model
+WINDOWS	W3-28	4.3	icons	C14,C19	P,V	AnimatedIcon per-state frames and durations
+WINDOWS	W3-29	4.3	pointer	C22	R,P,V	Cursor per element and cursor size setting
+WINDOWS	W3-30	4.3	motion	C14	P	Normal, fast, faster control duration tokens
+WINDOWS	W3-31	4.3	motion	C14	P	Entering and exiting easing curves, control key spline
+WINDOWS	W3-32	4.3	motion	C14	P,M,V	Built-in theme transitions and animations catalogue
+WINDOWS	W3-33	4.3	motion	C14	P,M,V	Connected animation default duration and curve, parallax
+WINDOWS	W3-34	4.3	motion	C14	P	Per-control motion inventory
+WINDOWS	W3-35	4.3	accessibility	C06,C23	R,P,V	High-contrast mapping to eight system colours per contrast theme
+WINDOWS	W3-36	4.3	accessibility	C10,C18,C23	R,M	What text scale factor changes besides font size
+WINDOWS	W3-37	4.3	accessibility	C14,C23	R,P,M,V	Per-animation behaviour when animation effects are off
+WINDOWS	W3-38	4.3	accessibility	C03,C23	R	Each material's fallback when transparency effects are off
+WINDOWS	W3-39	4.3	size variants	C10	P	Compact density dictionary overriding heights and paddings
+WINDOWS	W3-40	4.3	size variants	C10	P	Touch vs mouse sizes for menu and combo items
+WINDOWS	W3-41	4.3	timings	C21,C25	R	Double-click, hover, menu delay, drag threshold, repeat, durations
+WINDOWS	W3-43	4.3	window chrome	C09,C12,C25	R,M,V	Win32 uxtheme look beside the WinUI look
+WINDOWS	W3-44	4.3	window chrome	C06,C20	R,M	Dark-mode Win32 title bar and border
+WINDOWS	W1-148†	4.1	[window]	C07,C10,C13,C20,C25	R,P,M,V	Caption button set per window kind: dialog, fixed size, help button, tool window
+WINDOWS	W1-149†	4.1	[window]	C07,C20,C21,C25	R,P,M	Window attention flash: caption colours, rate and count
+WINDOWS	W1-150†	4.1	[input]	C13,C18	P,V	Text box description text below the field
+WINDOWS	W1-151†	4.1	[input]	C13,C17	P,M,V	Spell-check underline and IME composition underlines
+WINDOWS	W1-152†	4.1	[scrollbar]	C21,C23,C25	R,P,M	Auto-hide scroll bar setting not read into overlay_mode
+WINDOWS	W1-153†	4.1	[slider]	C07,C09,C13	P	Two-thumb range slider (Toolkit RangeSelector)
+WINDOWS	W1-154†	4.1	[segmented_control]	C07,C09,C13	P	Segmented style variants: default, pivot, button; item layouts
+WINDOWS	W1-155†	4.1	[dialog]	C09,C26	P	ContentDialog full-size variant
+WINDOWS	W1-156†	4.1	[dialog]	C13,C18,C25	R,M,V	Win32 message box and task dialog icon, instruction text, footer
+WINDOWS	W1-157†	4.1	[splitter]	C07,C11,C13	P	Toolkit splitter gripper, fills per state, thumb size and radius
+WINDOWS	W1-158†	4.1	[status_bar]	C25,C26	R	Win32 status bar border widths and part gap via SB_GETBORDERS
+WINDOWS	W1-159†	4.1	[list]	C04,C13,C17	P,M,V	Win32 list view marquee selection rectangle
+WINDOWS	W2-40†	4.2	preference rows/boxed list	C07,C13,C19,C24,C26	P	Settings card and expander: states, paddings, layouts, icon dimming
+WINDOWS	W2-41†	4.2	level indicator/gauge	C13,C24	P,V	Toolkit radial gauge: arcs, needle, ticks, value text, disabled
+WINDOWS	W2-42†	4.2	colour button	C07,C11,C13,C24	P	Toolkit colour picker button: swatch, checkerboard, chevron states
+WINDOWS	W2-43†	4.2	chip	C07,C11,C13,C24	P	Toolkit tokens: fills per state, remove button, spacing
+WINDOWS	W3-45†	4.3	colour roles	C04	P	Alpha fills replacing a rest fill stored flattened over one background
+WINDOWS	W3-46†	4.3	colour roles	C05	P	Inverse text colour role used on status icon backplates
+WINDOWS	W3-47†	4.3	typography	C18,C25	R,V	Monospace font has no WinUI source; console font readable
+WINDOWS	W3-48†	4.3	accessibility	C13,C23,C25	R,M	Access-key underline visibility setting
+WINDOWS	W3-49†	4.3	drag and drop	C13,C14,C17	P,M	System drag image, caption and glyph, drop description
+WINDOWS	W3-50†	4.3	pointer	C22,C23,C25	R,M,V	Pointer colour, shadow, locator, trails, touch visualisation
+WINDOWS	W3-51†	4.3	icons	C07,C19	P,M,V	Disabled bitmap icons dimmed by opacity, glyphs recoloured
+WINDOWS	W3-52†	4.3	motion	C14,C21	R,P,M,V	Wheel scroll animation, inertia, overpan, snap settle
+WINDOWS	W3-53†	4.3	motion	C01,C07,C14,C25	R,M	Win32 visual effect switches: fades, slides, hot tracking, shadows
+WINDOWS	W3-54†	4.3	size variants	C19,C26	P,M,V	Right-to-left mirroring of templates and glyphs
+WINDOWS	W3-55†	4.3	size variants	C25,C26	R,M,V	Menu drop alignment by handedness
+WINDOWS	W3-56†	4.3	accessibility	C23,C25	R,V	Colour filter flag and kind
+WINDOWS	W-SF01†	4.2	rich text view	C18,C26,C24	P	MarkdownTextBlock, headings H1–H6
+WINDOWS	W-SF02†	4.2	rich text view	C11,C12,C18,C24	P	Inline code
+WINDOWS	W-SF03†	4.2	rich text view	C11,C12,C18,C24	P	Code block
+WINDOWS	W-SF04†	4.2	rich text view	C12,C13,C26,C24	P	Block quote
+WINDOWS	W-SF05†	4.2	rich text view	C13,C26,C24	P	List markers and indentation
+WINDOWS	W-SF06†	4.2	rich text view	C12,C24	P	Tables
+WINDOWS	W-SF07†	4.2	rich text view	C18,C26,C24	P	Horizontal rule, paragraphs, links
+WINDOWS	W-SF08†	4.2	rich text view	C26,C24	P	The control's own frame
+WINDOWS	W-SF09†	4.1	[tab]	C17,C07,C14	P,M,V	TabView: a torn-out tab over another TabView
+WINDOWS	W-SF10†	4.1	[dialog]	C26	P	ContentDialog: position
+WINDOWS	W-SF11†	4.1	[dialog]	C26,C20	M,V	ContentDialog: the area it centres in
+WINDOWS	W-SF12†	4.1	[dialog]	C26	P,M	ContentDialog with the on-screen keyboard
+WINDOWS	W-SF13†	4.1	[dialog]	C26	P,M	Win32 task dialog and message box: position
+WINDOWS	W-RL01†	4.1	[list]	C07,C13	P,M	List and tree (Win32 list view, tree view): in-place label edit
+WINDOWS	W-RL02†	4.1	[button]	C07,C09,C13,C14,C18	R,P,M	Command link button (Win32 BS_COMMANDLINK, BS_DEFCOMMANDLINK)
+WINDOWS	W-RL03†	4.2	wizard	C06,C13,C18,C20,C26,C24	R,P,M	Aero wizard (Win32 property sheet PSH_WIZARD + PSH_AEROWIZARD)
+WINDOWS	W-FM01†	4.3	typography	C18,C25	P,R,M	Emoji font
+WINDOWS	W-FM02†	4.3	typography	C18,C25	P,R,M	Fallback chain per language
+WINDOWS	W-P3-1†	4.1	[window]	C20,C14,C26,C04	P,M	Snapping: the overlay, the Snap bar, snapped geometry
+WINDOWS	W-P3-2†	4.1	[window]	C20,C14,C10	P,M	Full-screen and compact-overlay presenters
+WINDOWS	W-P3-3†	4.1	[window]	C20,C06,C04	P,M	Not-responding (ghost) window
+WINDOWS	W-P3-4†	4.1	[tooltip]	C13,C26,C21	P,M,V	Win32 label tip over a truncated label
+WINDOWS	W-P3-5†	4.1	[segmented_control]	C26,C09	P	Segment width rule and item spacing
+WINDOWS	W-P3-6†	4.1	[dialog]	C26	P	Win32 dialog box: position
+WINDOWS	W-P3-7†	4.1	[dialog]	C13	P,M,V	Win32 context-help pop-up
+WINDOWS	W-P3-8†	4.2	rich text view	C13,C24	P	MarkdownTextBlock task-list box
+WINDOWS	W-P3-9†	4.3	caret	C16,C17	M,V	The caret while text is selected; the drop caret
+WINDOWS	W-P3-10†	4.3	pointer	C22,C21,C25	R,P,M	Pointer hidden while typing; the Working in Background cursor
+WINDOWS	W-P3-11†	4.3	accessibility	C23,C20,C21,C25	R,P,M	Sounds shown visually (SoundSentry)
+WINDOWS	W-P3-12†	4.3	timings	C21,C25	R,V(review2026-10-28:thetwometricsareprobedalready,notnew)	Double-click rectangle
+WINDOWS	W-P3-13†	4.3	size variants	C10,C12,C25	R,P,M	Display scale per monitor and pixel snapping
+WINDOWS	W-P3-14†	4.3	size variants	C25	P	Versions inside Windows 11
+WINDOWS	W-P3-15†	4.3	size variants	C09,C25	P,M	Other stacks that draw on Windows 11
+WINDOWS	W-P3-16†	4.3	motion	C14	M	Light / dark and accent change
+WINDOWS	W-P3-17†	4.2	autocomplete	C13,C05,C24	P	CTK RichSuggestBox (suggestions inside rich text)
+WINDOWS	W-RV-1†	4.2	image cropper	C13,C07,C04,C24	P	CTK ImageCropper
+WINDOWS	W-RV-2†	4.1	[list]	C07,C13	P,M	ListViewItem: data placeholder
+WINDOWS	W-RV-3†	4.2	toolbar	C05,C07,C14,C24	P	CTK TabbedCommandBar (ribbon-style tabbed command bar)
+WINDOWS	W-P4-1†	4.1	[window]	C20,C14,C26	P,M,V	Launch splash screen (packaged apps)
+WINDOWS	W-P4-2†	4.3	window chrome	C06,C20,C14	P,M,V	Screen dimmed behind the UAC elevation prompt
+WINDOWS	W-P4-3†	4.3	placement	C26,C14	P,M	Focused field kept above the touch keyboard
+WINDOWS	W-P4-4†	4.2	text input system UI	C13,C26,C24	P,M	IME status, composition and candidates windows
+WINDOWS	W-P4-5†	4.3	pointer	C22,C07	P,M,V	Default drag cursors per drop effect (OLE)
+WINDOWS	W-P4-6†	4.3	accessibility	C23,C25	P,V	Night light
+WINDOWS	W-P4-7†	4.2	font chooser	C26,C13,C24	P,M	Win32 Font dialog (ChooseFont)
+WINDOWS	W-P4-8†	4.2	file chooser	C26,C24	P,M	Common Item Dialog (Open / Save)
+WINDOWS	W-P4-9†	4.1	[layout]	C26	P,V	Wrap panel spacing
+WINDOWS	W-P4-10†	4.2	toolbar customization	C26,C24	P,M,V	Win32 toolbar: Customize Toolbar dialog
+WINDOWS	W-P4-11†	4.2	tree view	C21,C24	P	TreeView: spring-loaded folders
+WINDOWS	W-P4-12†	4.3	icons	C19,C26	P	Mirrored glyphs of Segoe Fluent Icons
+WINDOWS	W-P4-13†	4.1	[dialog]	C26,C10	P,M	Win32 message box and task dialog: width and wrapping
+WINDOWS	W-P4-14†	4.2	about dialog	C13,C18,C24	P,M	Win32 ShellAbout dialog
+WINDOWS	W-P4-15†	4.2	print / open-with dialogs	C26,C24	P,M,V	Win32 Print and Page Setup; Open With
+WINDOWS	W-P4-16†	4.1	[scrollbar]	C21	P,M	Click in the trough and held repeat
+WINDOWS	W-P4-17†	4.1	[menu]	C21,C25	R,P	Sloppy submenu close
+WINDOWS	W-P4-18†	4.2	media output picker	C13,C07,C24	P,R,M,V	Cast button and the casting device picker
+WINDOWS	W-P4-19†	4.1	[sidebar]	C26,C10	P,V	Pane layout by window width

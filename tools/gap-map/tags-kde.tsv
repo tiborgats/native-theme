@@ -1,0 +1,586 @@
+KDE	K1.1	4.1	[window]	C20,C26	P	Title bar height rule from font and button size plus margins
+KDE	K1.2	4.1	[window]	C20,C26	P	Title bar side padding and caption insets
+KDE	K1.3	4.1	[window]	C20,C26,C25	R,P	Title alignment (four modes with fallback) and caption elision
+KDE	K1.4	4.1	[window]	C20,C10,C13,C26	R,P	Decoration button part: size enum, spacing, spacer width
+KDE	K1.5	4.1	[window]	C20,C26,C25	R	Which caption buttons, which side, in which order
+KDE	K1.6	4.1	[window]	C20,C13,C19	P	Caption button glyph set and window-menu icon recolouring
+KDE	K1.7	4.1	[window]	C20,C07,C04,C13	R,P	Per-state caption button paint, close hover/pressed, checked toggles
+KDE	K1.8	4.1	[window]	C20,C14	P	Caption button hover fade, including explicit instant (duration 0)
+KDE	K1.9	4.1	[window]	C20,C12,C06,C25	R,P	Window outline: on/off, inactive colour, drawn outside the frame
+KDE	K1.10	4.1	[window]	C20,C11	R,P	Per-corner window radius with maximized/tiled rules
+KDE	K1.11	4.1	[window]	C20,C12,C25	R,P	Frame border width size enum and per-window exceptions
+KDE	K1.12	4.1	[window]	C20,C06	P	Frame fill colour, active and inactive
+KDE	K1.13	4.1	[window]	C20,C25,C06	R,P	Reader reads [WM] instead of [Colors:Header] for title bar colours
+KDE	K1.14	4.1	[window]	C20,C09,C04,C27	R,P	Optional title bar gradient on the active window
+KDE	K1.15	4.1	[window]	C20,C25	R	HideTitleBar and DrawBorderOnMaximizedWindows options
+KDE	K1.16	4.1	[window]	C20,C07	P	Maximized, tiled and shaded states change corners, borders, shadow
+KDE	K1.17	4.1	[window]	C20,C14,C01	P	Active/inactive shadow transition duration and easing
+KDE	K1.18	4.1	[window]	C20,C01,C06	P	Inactive window shadow is the active one at half strength
+KDE	K1.20	4.1	[button]	C07,C12	P	Border colour per state: hover, focus, pressed, checked, default
+KDE	K1.21	4.1	[button]	C07,C15	P	Keyboard-only focus state distinct from pointer focus
+KDE	K1.22	4.1	[button]	C07,C06,C04,C12	P	Default dialog button fill and pen, only in active window
+KDE	K1.23	4.1	[button]	C01,C06	P	Button drop-shadow stroke on active-window rest buttons
+KDE	K1.24	4.1	[button]	C09,C07,C04	P	Flat button: transparent rest, alpha fills per state
+KDE	K1.25	4.1	[button]	C09,C07,C04	P	Neutral-highlight button variant: fill mix and pen
+KDE	K1.26	4.1	[button]	C09,C11	P	Round button variant, radius half the larger side
+KDE	K1.27	4.1	[button]	C13	P	Menu-button down arrow indicator box, arrow colour, label shortening
+KDE	K1.28	4.1	[button]	C10,C19,C25	R,P	Button icon size and whether push buttons show icons
+KDE	K1.29	4.1	[button]	C07	P	Checked+hover, checked+pressed, default+hover state combinations
+KDE	K1.30	4.1	[button]	C14	P	Button fill and pen cross-fades via widget-state engine
+KDE	K1.40	4.1	[input]	C07,C12	P	Neutral/warning input outline colour, lighter on hover/focus
+KDE	K1.41	4.1	[input]	C09	P	Frameless line edit variant with only the Base fill
+KDE	K1.42	4.1	[input]	C12,C09	P	Per-side input borders, outline drawn inside
+KDE	K1.44	4.1	[input]	C14,C07	P	Outline cross-fade from hover to focus
+KDE	K1.45	4.1	[input]	C17,C06	P	Inactive-window selected text uses the Inactive palette
+KDE	K1.50	4.1	[checkbox]	C07,C13	P	Partially checked state: three dots in Text colour
+KDE	K1.51	4.1	[checkbox]	C07	P	Pressed (sunken) checkbox fill darkened Button colour
+KDE	K1.52	4.1	[checkbox]	C13,C07,C14	P	Hover ring inside the checkbox box, fading in
+KDE	K1.53	4.1	[checkbox]	C26,C11	P	Drawn box inset inside the size cell; radius rule
+KDE	K1.54	4.1	[checkbox]	C07	P	Checked+hover, checked+pressed, partial+hover, disabled+checked combinations
+KDE	K1.55	4.1	[checkbox]	C14,C13	P	Check-mark draw-on, partial dots and radio dot grow animations
+KDE	K1.56	4.1	[checkbox]	C09,C07	P	Neutral-highlight checkbox pen and tint
+KDE	K1.57	4.1	[checkbox]	C15	P	Keyboard focus frame around the indicator, square or circular
+KDE	K1.60	4.1	[menu]	C07,C04,C12	P	Hovered menu item: alpha fill plus mixed 1 px outline
+KDE	K1.61	4.1	[menu]	C07,C13	P	Pressed menu item: solid focus fill, selected text and icon mode
+KDE	K1.62	4.1	[menu]	C09,C15,C25	R,P	Weak-focus menu item variant: focus line instead of fill
+KDE	K1.63	4.1	[menu]	C26	P	Menu highlight inset from the popup edge
+KDE	K1.64	4.1	[menu]	C11,C03	P	Popup corner radius with compositing; seamless edges to the menu bar
+KDE	K1.65	4.1	[menu]	C03,C04,C25	R,P	Menu opacity percentage, translucent outline and separators, blur
+KDE	K1.66	4.1	[menu]	C13,C18,C04	P	Menu section item: bold font, 0.7 alpha text, trailing line
+KDE	K1.67	4.1	[menu]	C13,C04,C26	P	Accelerator column: right-aligned, 0.7 opacity, gap
+KDE	K1.68	4.1	[menu]	C13	P	Submenu arrow size, indicator box and colour
+KDE	K1.69	4.1	[menu]	C13,C26	P	Checkable menu items draw checkbox/radio in a leading column
+KDE	K1.70	4.1	[menu]	C19,C26,C25	R,P	Menu icon column width, spacing and show-icons setting
+KDE	K1.71	4.1	[menu]	C26	P	Menu separator inset and item height
+KDE	K1.72	4.1	[menu]	C13	P,M	Scrollable-menu scroll arrows
+KDE	K1.73	4.1	[menu]	C21	P	Submenu open delay
+KDE	K1.81	4.1	[tooltip]	C01,C14	P	Tooltip window shadow and KWin fade
+KDE	K1.82	4.1	[tooltip]	C11	P	Square tooltip frame without compositing
+KDE	K1.90	4.1	[scrollbar]	C12,C04,C11	P	Scrollbar thumb outline, fill overlay, pill radius
+KDE	K1.91	4.1	[scrollbar]	C07,C04	P	Thumb alpha rises while pointer is over the scrollbar
+KDE	K1.92	4.1	[scrollbar]	C07,C06	P	Thumb turns focus colour while scrolled view has focus
+KDE	K1.93	4.1	[scrollbar]	C13,C04	P	1 px separator line on the content side of the scrollbar
+KDE	K1.94	4.1	[scrollbar]	C13,C25,C09	R,P	Optional scrollbar arrow buttons (none/single/double) and colours
+KDE	K1.95	4.1	[scrollbar]	C14	P	Scrollbar hover/focus and groove-opacity fades
+KDE	K1.96	4.1	[scrollbar]	C13	P	Corner square between two scrollbars
+KDE	K1.100	4.1	[slider]	C07,C12	P	Slider handle outline per state
+KDE	K1.101	4.1	[slider]	C01,C07	P	Slider handle shadow, removed while pressed
+KDE	K1.102	4.1	[slider]	C07	P	Slider pressed handle state
+KDE	K1.103	4.1	[slider]	C13,C25	R,P	Slider tick colours, margin and on/off option
+KDE	K1.104	4.1	[slider]	C11	P	Slider groove corner radius
+KDE	K1.105	4.1	[slider]	C09,C07	P	Neutral-highlight slider value fill and ticks
+KDE	K1.106	4.1	[slider]	C15,C14	P	Circular focus frame around the handle, hover/focus fades
+KDE	K1.110	4.1	[progress_bar]	C13,C14,C25	R,P	Indeterminate progress stripes, step animation timing, on/off
+KDE	K1.111	4.1	[progress_bar]	C12,C04	P	Progress value fill outline over alpha fill
+KDE	K1.112	4.1	[progress_bar]	C07,C13	P	Progress fill colour inside a selected item
+KDE	K1.113	4.1	[progress_bar]	C13	P	Progress percentage text label colour, spacing, alignment
+KDE	K1.114	4.1	[progress_bar]	C26	P	Minimum visible fill for non-zero progress values
+KDE	K1.120	4.1	[tab]	C13,C09	P	Vertical (west/east) tab bars with edge indicator strip
+KDE	K1.121	4.1	[tab]	C11,C07	P	Unselected tabs filled with rounded corners on the bar side
+KDE	K1.122	4.1	[tab]	C09,C05	P	Selected tab fill differs: pane-attached vs document mode
+KDE	K1.123	4.1	[tab]	C09,C10,C04,C07	P	Static tab bar variant: min height, hover/selected alpha fills
+KDE	K1.124	4.1	[tab]	C13,C07,C04	P	Tab close button glyph colours per state, size
+KDE	K1.125	4.1	[tab]	C13	P	Overflow scroll buttons on a filled panel
+KDE	K1.126	4.1	[tab]	C13,C04	P	Drag tear indicator line
+KDE	K1.127	4.1	[tab]	C13	P	Tab-bar base line under the tab row
+KDE	K1.128	4.1	[tab]	C11,C12,C26	P	Tab-widget pane frame, corners cut where bar touches, margin
+KDE	K1.129	4.1	[tab]	C15,C14	P	Keyboard focus line under the selected tab label, faded in
+KDE	K1.130	4.1	[tab]	C19,C10,C26	P	Tab icon size and icon-text gap
+KDE	K1.131	4.1	[tab]	C26,C25	R,P	Centered tabs option
+KDE	K1.132	4.1	[tab]	C07,C14	P	Disabled tab text; hover fade
+KDE	K1.140	4.1	[sidebar]	C12,C07,C25	R,P	Side-panel inner-edge frame, focus colour switch, full-frame option
+KDE	K1.141	4.1	[sidebar]	C26	P,V	Side-panel item margin
+KDE	K1.150	4.1	[toolbar]	C06,C25	R,P	Tools area fill from inactive Header group
+KDE	K1.151	4.1	[toolbar]	C13,C12	P	Tools-area bottom separator line only; dialog top line
+KDE	K1.152	4.1	[toolbar]	C09,C07,C04	P	Auto-raise tool button states: alpha fills, pens
+KDE	K1.153	4.1	[toolbar]	C13,C25	R	Tool button style (icon/text beside/under/only), main vs other toolbars
+KDE	K1.154	4.1	[toolbar]	C26,C10	P	Tool button margin and icon-text spacing
+KDE	K1.155	4.1	[toolbar]	C13,C09,C07	P	Tool button menu indicator styles: split, small and large inline arrows
+KDE	K1.156	4.1	[toolbar]	C13,C25	R,P	Toolbar separator and drag handle geometry and option
+KDE	K1.157	4.1	[toolbar]	C13,C19	P	Toolbar overflow (extension) button icon
+KDE	K1.158	4.1	[toolbar]	C19,C10,C25	R	Main vs other toolbar icon sizes from icon theme
+KDE	K1.160	4.1	[status_bar]	C13,C12	P	Status bar top separator line, QMainWindow only
+KDE	K1.170	4.1	[list]	C11,C26	P	List selection corner radius and insets, first/last cell rounding
+KDE	K1.171	4.1	[list]	C12,C04	P	Selection and hover outline at alpha 1.0 and 0.8
+KDE	K1.172	4.1	[list]	C07	P	Selected+hover colour is a lightened Highlight
+KDE	K1.173	4.1	[list]	C17,C06	P	Selection in an inactive window
+KDE	K1.174	4.1	[list]	C17,C07	P	Selection in a disabled view
+KDE	K1.175	4.1	[list]	C15,C25	R,P	Focus rectangle on current unselected item, on/off option
+KDE	K1.176	4.1	[list]	C13,C26,C25	R,P,V	Tree expander arrows, branch lines, indentation
+KDE	K1.177	4.1	[list]	C07,C04,C14	P	Header section hover, pressed/sorted mixes, hover fade
+KDE	K1.178	4.1	[list]	C13,C12	P	Header section separators, bottom line, corner button
+KDE	K1.179	4.1	[list]	C13,C25,C26	R,P	Sort arrow size, inverted option, header margins
+KDE	K1.180	4.1	[list]	C09,C10,C26	P,M	Icon-mode list view: icon above text, icon size
+KDE	K1.181	4.1	[list]	C19,C10	M	Item icon size in lists and trees
+KDE	K1.182	4.1	[list]	C13,C07	P,M,V	Drag-and-drop drop indicator
+KDE	K1.183	4.1	[list]	C05,C25	R,V	shadeSortColumn colour-scheme flag
+KDE	K1.190	4.1	[popover]	C01	P	Popups get Breeze's two-layer shadow
+KDE	K1.191	4.1	[popover]	C11	P	Square popup frame without compositing
+KDE	K1.200	4.1	[splitter]	C13,C04	P	Dock-widget resize handles drawn as separator-colour fills
+KDE	K1.201	4.1	[separator]	C13	P	KMultiTabBar side separators and generic separator geometry
+KDE	K1.210	4.1	[layout]	C26	P	Form layout conventions: label alignment, field growth, no wrapping
+KDE	K1.211	4.1	[layout]	C26,C13	P	Group box title margin and title space
+KDE	K1.220	4.1	[dialog]	C26,C25	P,V	Full KdeLayout dialog button role order
+KDE	K1.221	4.1	[dialog]	C13,C19,C25	R,P	Dialog buttons show icons setting
+KDE	K1.222	4.1	[dialog]	C13,C12,C06	P	Dialog header line: Header-filled tools area or top separator
+KDE	K1.223	4.1	[dialog]	C14	P	Dialog entrance via KWin scale/fade not describable by entrance
+KDE	K1.230	4.1	[spinner]	C14,C19	P	Busy indicator icon rotation period
+KDE	K1.240	4.1	[combo_box]	C09,C07,C14	P	Editable combo: line-edit frame, arrow colour per state, animation
+KDE	K1.241	4.1	[combo_box]	C09	P	Frameless combo variant
+KDE	K1.242	4.1	[combo_box]	C07,C04	P	Combo pressed/open state fill
+KDE	K1.243	4.1	[combo_box]	C07,C12	P	Combo border pen per state
+KDE	K1.244	4.1	[combo_box]	C01,C07	P	Combo draws button shadow; facts say none
+KDE	K1.245	4.1	[combo_box]	C13,C26	P	Combo popup list: container, rows, shadow, seamless edge
+KDE	K1.246	4.1	[combo_box]	C07,C13	P	Combo arrow colour per state
+KDE	K1.247	4.1	[combo_box]	C09,C07	P	Neutral-highlight combo variant
+KDE	K1.250	4.1	[expander]	C07,C13	P	Expander arrow turns hover colour
+KDE	K1.251	4.1	[expander]	C14	P	Expander height animation, 500 ms default curve
+KDE	K1.270	4.1	[text_scale]	C18	P	KTitleWidget levels 1-4 and Kirigami Heading levels 1-5 scale factors
+KDE	K1.271	4.1	[text_scale]	C18	R	smallestReadableFont is a full font, not a size
+KDE	K1.272	4.1	[text_scale]	C18	P	Derived Breeze fonts: flat group title, command link, menu section
+KDE	Q1.1	4.1	[defaults]	C19,C10	P	Six named icon steps and label-sized step; model has five contexts
+KDE	Q1.2	4.1	[defaults]	C18,C05	P	Smallest readable font as its own family and size
+KDE	Q1.3	4.1	[text_scale]	C18	P	Five Heading levels as factors of the default font size
+KDE	Q1.4	4.1	[text_scale]	C18	P	Heading Primary/Secondary types: DemiBold weight, 0.75 opacity
+KDE	Q1.5	4.1	[text_scale]	C18,C26	P	Which heading level each Kirigami surface uses
+KDE	Q1.6	4.1	[window]	C26	P	Default window size in grid units
+KDE	Q1.7	4.1	[window]	C26	P	Wide-screen breakpoint width changing drawer and column layout
+KDE	Q1.8	4.1	[button]	C07,C09,C25	P	QML Button state mapping: flat, checked, focus, default, menu flag
+KDE	Q1.9	4.1	[button]	C09,C07,C13	P	ToolButton colour-set switch by flat/raised, focus rule, text styles
+KDE	Q1.10	4.1	[button]	C13,C07	P	Mnemonic underline shown only while Alt is held
+KDE	Q1.11	4.1	[input]	C09	P	Quick text field frame painted by Breeze edit element
+KDE	Q1.12	4.1	[input]	C10,C26	P	Default implicit text field width and text area height
+KDE	Q1.13	4.1	[input]	C05,C17	P	Spell-check misspelling underline colour from negative text
+KDE	Q1.14	4.1	[input]	C16,C17,C13	P	Tablet-mode text cursor bar and round selection handles
+KDE	Q1.15	4.1	[input]	C13,C19,C26	P	Search field leading icon, clear button, insets
+KDE	Q1.16	4.1	[input]	C13,C01,C12,C11,C26	P	Search suggestion popup: border, shadow, margins, row padding
+KDE	Q1.17	4.1	[input]	C13,C21	P	Search icon colour; search-trigger delay on typing
+KDE	Q1.18	4.1	[input]	C13,C14,C19	P	Inline action buttons in field, padding animation, shortcut tooltip
+KDE	Q1.19	4.1	[input]	C13,C19	P	Password reveal toggle icons
+KDE	Q1.20	4.1	[checkbox]	C07,C13,C26	P	QML checkbox/radio indicator via Breeze, label spacing, partial state
+KDE	Q1.21	4.1	[checkbox]	C15,C26	P	Keyboard focus rect around the label text, not the box
+KDE	Q1.22	4.1	[checkbox]	C07,C04	P	Disabled label opacity 0.6 on text only
+KDE	Q1.23	4.1	[menu]	C01	P	Menu panel single-layer shadow
+KDE	Q1.24	4.1	[menu]	C14	P	Menu open/close opacity fade timing and curve
+KDE	Q1.25	4.1	[menu]	C26,C10	P	Menu paddings from pixel metrics and minimum width
+KDE	Q1.26	4.1	[menu]	C07,C04,C12,C11	P	Highlighted menu item alpha fill, border, own radius
+KDE	Q1.27	4.1	[menu]	C07,C19	P	Pressed menu item solid fill, highlighted text, selected icon mode
+KDE	Q1.28	4.1	[menu]	C26,C10	P	Menu item padding, larger with touch input
+KDE	Q1.29	4.1	[menu]	C10,C13,C26	P	Menu icon size by input mode; reserved check and icon columns
+KDE	Q1.30	4.1	[menu]	C13,C26	P	Menu shortcut text and submenu arrow icon
+KDE	Q1.31	4.1	[menu]	C13,C07	P	Checkable menu items draw checkbox or radio indicator
+KDE	Q1.32	4.1	[menu]	C13,C26	P	Menu separator padding and width
+KDE	Q1.33	4.1	[tooltip]	C01	P	Tooltip shadow offset, size and alpha
+KDE	Q1.34	4.1	[tooltip]	C14	P	Tooltip fade in/out duration and curve
+KDE	Q1.35	4.1	[tooltip]	C26	P	Tooltip placement above parent, margins and padding
+KDE	Q1.36	4.1	[tooltip]	C21	P	Tooltip never times out while hovered; touch show-on-hold
+KDE	Q1.37	4.1	[tooltip]	C05,C06	P	Tooltip colour set switches to Complementary
+KDE	Q1.38	4.1	[tooltip]	C12,C04	P	Tooltip border derived from mix of background and text
+KDE	Q1.39	4.1	[scrollbar]	C13,C25	P	Scrollbar groove insets and page-click behaviour from style hint
+KDE	Q1.40	4.1	[scrollbar]	C14,C07	P	Scrollbar hover cross-fade timing
+KDE	Q1.41	4.1	[scrollbar]	C09,C04,C14,C21	P	Touch overlay scrollbar thumb: alpha, thickness, hide delay
+KDE	Q1.42	4.1	[scrollbar]	C21	P	Scrollbar arrow/page auto-repeat interval
+KDE	Q1.43	4.1	[scrollbar]	C09,C25	P	Framed scroll view background only when style hint set
+KDE	Q1.44	4.1	[slider]	C13,C25	P	Quick slider handle size from Breeze; tick marks only with step hint
+KDE	Q1.45	4.1	[slider]	C09,C11,C13,C04	P	RangeSlider is QML-drawn: circle handles, track, fill, padding
+KDE	Q1.46	4.1	[slider]	C12,C07	P	RangeSlider handle border and focus colour
+KDE	Q1.47	4.1	[slider]	C01	P	RangeSlider handle hard drop shadow
+KDE	Q1.48	4.1	[progress_bar]	C13,C14	P	Quick progress bar via Breeze; indeterminate busy animation
+KDE	Q1.49	4.1	[progress_bar]	C26	P	Progress bar vertical insets
+KDE	Q1.50	4.1	[tab]	C13,C26	P	Quick tab via Breeze: tab position, selected position, overlap
+KDE	Q1.51	4.1	[tab]	C15,C07	P	Tab focus frame only for keyboard focus reasons
+KDE	Q1.52	4.1	[tab]	C05,C10,C26	P	Tab bar colour set and minimum bar and tab sizes
+KDE	Q1.53	4.1	[sidebar]	C05,C07	P	Drawer colour set follows modality
+KDE	Q1.54	4.1	[sidebar]	C12,C05,C07	P	Inline drawer inner-edge separator in Header set; none when modal
+KDE	Q1.55	4.1	[sidebar]	C12,C26,C14	P	Segmented drawer separator with gaps and animated margins
+KDE	Q1.56	4.1	[sidebar]	C01,C14,C04,C27	P	Modal drawer edge shadow gradient strip and fade
+KDE	Q1.57	4.1	[sidebar]	C04,C14	P	Modal drawer dim colour alpha
+KDE	Q1.58	4.1	[sidebar]	C14	P	Drawer open/close/snap-back durations and curves
+KDE	Q1.59	4.1	[sidebar]	C14,C10,C26	P	Drawer collapse width and label-fade animations
+KDE	Q1.60	4.1	[sidebar]	C26,C10	P	Drawer size bounds, padding and resize grip
+KDE	Q1.61	4.1	[sidebar]	C13,C14,C26	P	Floating drawer handle button geometry and slide animation
+KDE	Q1.62	4.1	[sidebar]	C13,C18,C04,C07	P	Global drawer item icon, font factor, opacity, selected colour
+KDE	Q1.63	4.1	[sidebar]	C13,C18	P	Global drawer header title level and section header levels
+KDE	Q1.64	4.1	[sidebar]	C14	P	Drawer submenu push/pop slide and fade timing
+KDE	Q1.65	4.1	[sidebar]	C21,C13	P	Collapsed drawer tooltip with delay
+KDE	Q1.66	4.1	[sidebar]	C26,C18,C04	P	Context drawer width, header toolbar height, padding, opacity
+KDE	Q1.67	4.1	[sidebar]	C12,C14,C26	P	Qt Quick Drawer separator, padding and SmoothedAnimation velocity
+KDE	Q1.68	4.1	[toolbar]	C05,C12	P	Toolbar colour set by position; header or footer separator
+KDE	Q1.69	4.1	[toolbar]	C26,C10	P	Toolbar padding and implicit height
+KDE	Q1.70	4.1	[toolbar]	C13,C26	P	Vertical tool separator geometry
+KDE	Q1.71	4.1	[toolbar]	C05,C12,C06	P	Page header Header colour set, non-inheriting; separator rule
+KDE	Q1.72	4.1	[toolbar]	C18,C26,C10	P	Global toolbar title level, paddings, preferred height
+KDE	Q1.73	4.1	[toolbar]	C13,C19,C12	P	Leading separator and icon-only back/forward buttons
+KDE	Q1.74	4.1	[toolbar]	C14,C26	P	Header height and separator fade animations
+KDE	Q1.75	4.1	[toolbar]	C13,C19,C26	P	Overflow button icon and menu placement
+KDE	Q1.76	4.1	[toolbar]	C09,C13	P	ActionToolBar flat default, text beside icon, shortcut tooltip
+KDE	Q1.77	4.1	[list]	C13,C07	P	List row background via Breeze itemrow and item elements
+KDE	Q1.78	4.1	[list]	C07	P	Keyboard focus shows hover look; pressed shows selected look
+KDE	Q1.79	4.1	[list]	C26,C11	P	List row padding, spacing and bubble inset
+KDE	Q1.80	4.1	[list]	C19,C10	P	List row icon size by text style
+KDE	Q1.81	4.1	[list]	C07,C05	P	List text colour for highlighted, down and disabled rows
+KDE	Q1.82	4.1	[list]	C21,C13	P	Elided row full-text tooltip with delay and touch rule
+KDE	Q1.83	4.1	[list]	C13,C07	P	Check/Radio/Switch delegate indicator and pressed text colour
+KDE	Q1.84	4.1	[list]	C14	P	Swipe delegate transition velocity and curve
+KDE	Q1.85	4.1	[list]	C13,C26	P	Tree branch indicator via Breeze, indentation metric
+KDE	Q1.86	4.1	[list]	C13,C07	P	Header section via Breeze with sort arrow, trailing filler
+KDE	Q1.87	4.1	[list]	C04,C18,C19,C26	P	Subtitle colour mix, small font, icon size, gap
+KDE	Q1.88	4.1	[list]	C13,C14,C19	P	Swipe item action buttons fade on hover, drag handle icon
+KDE	Q1.89	4.1	[list]	C04,C01,C14	P	Swipe action area darker fill, edge shadow, snap animation
+KDE	Q1.90	4.1	[popover]	C01,C26	P	Popup shadow and padding
+KDE	Q1.91	4.1	[popover]	C14	P	Popup fade timing and curve
+KDE	Q1.92	4.1	[splitter]	C13,C26	P	Splitter handle via Breeze; widened hit area on hover
+KDE	Q1.93	4.1	[splitter]	C12,C05,C26	P	Column separators in Header set; resize grip; minimum column width
+KDE	Q1.94	4.1	[splitter]	C26,C14	P	Default column width and column scroll animation
+KDE	Q1.95	4.1	[separator]	C04,C09	P	Two separator weights as mixes of background and text
+KDE	Q1.96	4.1	[separator]	C05,C12	P	Separator colour depends on the colour set it sits in
+KDE	Q1.97	4.1	[layout]	C26,C10	P	Spacing ladder 4/6/8 and grid unit 18
+KDE	Q1.98	4.1	[layout]	C26	P	Pane and page padding rules
+KDE	Q1.99	4.1	[switch]	C13,C26,C10	P	Switch track inset geometry, full-height handle
+KDE	Q1.100	4.1	[switch]	C04,C13	P	Switch fill overlay alpha from track start to handle edge
+KDE	Q1.101	4.1	[switch]	C12,C07	P	Switch handle and track border colours per state
+KDE	Q1.102	4.1	[switch]	C14	P	Switch handle slide and colour animation timing
+KDE	Q1.103	4.1	[switch]	C26,C04	P	Switch label gap, padding, disabled label opacity
+KDE	Q1.104	4.1	[dialog]	C04,C14	P	Dialog dim colour alpha and opacity animation
+KDE	Q1.105	4.1	[dialog]	C14	P	Dialog enter/exit opacity fade
+KDE	Q1.106	4.1	[dialog]	C01	P	Dialog shadow size, alpha and offset
+KDE	Q1.107	4.1	[dialog]	C09,C11,C12	P	Native-window dialog variant: radius 0, border 0, no header
+KDE	Q1.108	4.1	[dialog]	C26	P	Dialog content padding and margins
+KDE	Q1.109	4.1	[dialog]	C26,C12,C13	P	Dialog button box padding, alignment, height, conditional separator
+KDE	Q1.110	4.1	[dialog]	C13,C19,C25	P	Standard dialog buttons get icons by style hint
+KDE	Q1.111	4.1	[dialog]	C14	P	Kirigami Dialog entrance fade plus rise
+KDE	Q1.112	4.1	[dialog]	C04,C01,C12,C05	P	Dialog dim, shadow, 1 px border, View colour set
+KDE	Q1.113	4.1	[dialog]	C26	P	Dialog maximum size relative to window
+KDE	Q1.114	4.1	[dialog]	C13,C18,C19,C12	P	Dialog header: title level, close icon swap on hover, separator
+KDE	Q1.115	4.1	[dialog]	C26,C09,C12	P	Dialog footer padding, separator when scrolling, flat buttons
+KDE	Q1.116	4.1	[dialog]	C13,C19,C26	P	Prompt dialog type icons and content padding
+KDE	Q1.117	4.1	[dialog]	C26,C10	P	Menu dialog preferred width, row height, padding
+KDE	Q1.118	4.1	[dialog]	C26,C13,C09	P	Search dialog size, frameless field, separator
+KDE	Q1.119	4.1	[spinner]	C13,C19,C14	P	Spinner is a rotated icon, 2000 ms period, unscaled by speed
+KDE	Q1.120	4.1	[spinner]	C10,C14	P	Spinner default size, fade timing, stop condition
+KDE	Q1.121	4.1	[spinner]	C13,C12,C05	P	Pull-to-refresh arc stroke width and colour
+KDE	Q1.122	4.1	[combo_box]	C13	P	Combo box via Breeze combobox element and label
+KDE	Q1.123	4.1	[combo_box]	C05,C09	P	Editable combo uses View set, non-editable Button set
+KDE	Q1.124	4.1	[combo_box]	C26,C10	P	Combo padding, editable trailing padding, minimum content width
+KDE	Q1.125	4.1	[combo_box]	C01,C14,C07	P	Combo popup is a menu: shadow, fade, item highlight
+KDE	Q1.126	4.1	[card]	C04,C07	P	Card hover and pressed background tint of highlight
+KDE	Q1.127	4.1	[card]	C01	P	Card shadow size, alpha and offset
+KDE	Q1.128	4.1	[card]	C01,C04,C07	P	Card second lift layer behind, hidden while pressed
+KDE	Q1.129	4.1	[card]	C12,C11,C05	P	Card 1 px border, radius, View colour set
+KDE	Q1.130	4.1	[card]	C26	P	Card padding and gaps between header, content, footer
+KDE	Q1.131	4.1	[card]	C13,C18,C04,C26	P	Card banner image with title band, title icon, paddings
+KDE	Q1.132	4.1	[card]	C13	P	Card footer action toolbar
+KDE	Q1.133	4.1	[card]	C26	P	Cards layout column counts, widths and spacing
+KDE	Q1.134	4.1	[link]	C07,C05	P	Link pressed darkened colour; disabled uses text colour
+KDE	Q1.135	4.1	[link]	C15,C18	P	Link keyboard focus shown by bold text
+KDE	Q1.136	4.1	[link]	C13,C19,C26	P	URL link external-link icon after text, gap, tooltip delay
+KDE	K2.1	4.2	menu bar	C24,C07,C04,C05,C06,C26	P	Menu bar items: hover and pressed fills, weak-focus, Header-set background
+KDE	K2.3	4.2	stepper/spin box	C24,C13,C07,C14	P	Spin box arrow column, per-arrow hover colours, flat variant
+KDE	K2.4	4.2	calendar	C24,C13,C07,C05	P,M,V	Calendar navigation, weekday header, today/selected cells, weekends
+KDE	K2.5	4.2	dial/circular slider	C24,C13,C01,C07	P	Dial groove ring, value arc, shadowed handle, hover
+KDE	K2.6	4.2	level indicator/gauge	C24,C09,C05	P,M,V	LCD number: segment digits and Outline/Filled/Flat styles
+KDE	K2.7	4.2	command link button	C24,C13,C18,C26	P	Command link button: frame, icon, bold title, wrapped description
+KDE	K2.8	4.2	group box/frame	C24,C13,C12,C18,C09,C15,C07	P	Group box frame, flat variant, checkable title, focus line
+KDE	K2.9	4.2	tool box	C24,C13,C12,C07,C14	P	Tool box tab rows, selected outline path, hover fade
+KDE	K2.10	4.2	dock/panel title bar	C24,C13,C12,C19,C25	R,P	Dock widget title, optional frame, float/close glyph buttons
+KDE	K2.11	4.2	dock/panel title bar	C24,C20,C13,C06,C11	P	MDI sub-window title bar, glyph buttons, inactive outline, shadow
+KDE	K2.12	4.2	rubber band	C24,C04,C12,C11	P	Rubber band alpha fill, outline, radius, outline-only mask
+KDE	K2.13	4.2	banner/inline message	C24,C05,C04,C12,C11,C19	P	KMessageWidget four types, hard-coded colours, alpha fill, inline mode
+KDE	K2.14	4.2	navigation/app bar	C24,C13,C26,C19	P	Page view: icon side list, title header, separator, margins
+KDE	K2.15	4.2	title widget	C24,C18,C05,C19	P	Title widget: levelled title, message-type comment colour, icon
+KDE	K2.16	4.2	side tab bar	C24,C13,C12,C07	P,V	KMultiTabBar vertical tab buttons and side separator
+KDE	K2.17	4.2	splitter collapser	C24,C13,C14	P,V	Splitter collapser overlay arrow button with opacity fade
+KDE	K2.18	4.2	level indicator/gauge	C24,C05,C09,C01	P,M,V	LED indicator: on/off colours, round/rect, raised/sunken looks
+KDE	K2.19	4.2	rating	C24,C13,C19,C07	P,M,V	Rating widget: star icons, hover preview, half steps
+KDE	K2.20	4.2	colour button	C24,C13,C05	P,M,V	Colour button: swatch inside a push button frame
+KDE	K2.21	4.2	image frame	C24,C04,C12,C09,C07,C05	P	Framed panel/scroll area: Base fill, outline per state, shade-role shapes
+KDE	K2.22	4.2	wizard	C24,C13,C26	P,M,V	Wizard: title/subtitle area, banner, button row
+KDE	Q2.1	4.2	stepper/spin box	C24,C13,C07,C05,C26	P	Quick spin box via Breeze: arrow rects, View set, per-button hover
+KDE	Q2.2	4.2	dial/circular slider	C24,C10	P	Quick dial via Breeze, implicit 128x128
+KDE	Q2.3	4.2	button group/toggle group	C24,C04,C14,C07	P	Delay button: progress-clipped tinted copy, delay-driven transition
+KDE	Q2.4	4.2	FAB	C24,C09,C11,C26,C19	P	Round button: QML-drawn circular button, padding, icon size, radius
+KDE	Q2.5	4.2	FAB	C24,C07,C04,C12,C09	P	Round button colours per state, border, flat variants
+KDE	Q2.6	4.2	FAB	C24,C09,C04,C27	P	Round button gloss gradient overlay
+KDE	Q2.7	4.2	FAB	C24,C01,C07	P	Round button hard drop shadow, pressed content shift
+KDE	Q2.8	4.2	FAB	C24,C05,C07	P	Round button switches to Selection colour set on focus
+KDE	Q2.9	4.2	menu bar	C24,C05,C26,C10	P	Quick menu bar: Header set, item padding, height, minimum width
+KDE	Q2.10	4.2	menu bar	C24,C07,C04,C14	P	Menu bar item highlight alpha, fade, hovered text colour
+KDE	Q2.11	4.2	page control/pager	C24,C13,C04,C07,C14	P	Page indicator dots: size, opacity per state, fade
+KDE	Q2.12	4.2	group box/frame	C24,C12,C04,C11,C26	P	Quick Frame: transparent box, mixed border, radius, padding
+KDE	Q2.13	4.2	group box/frame	C24,C12,C13,C26	P	Quick GroupBox: border, no radius, title label, padding
+KDE	Q2.14	4.2	navigation/app bar	C24,C14	P	StackView page transitions: slide and fade timing
+KDE	Q2.15	4.2	navigation/app bar	C24,C14	P	PageRow layer push/pop/replace opacity and translate timing
+KDE	Q2.16	4.2	banner/inline message	C24,C05,C12	P	Inline message type border colours from status roles
+KDE	Q2.17	4.2	banner/inline message	C24,C04,C11	P	Inline message type-colour overlay at alpha 0.2, inner radius factor
+KDE	Q2.18	4.2	banner/inline message	C24,C09,C12,C11	P	Inline message position variants: inline, header, footer
+KDE	Q2.19	4.2	banner/inline message	C24,C13,C19,C26	P	Inline message padding, icon size, default icons, text margin
+KDE	Q2.20	4.2	banner/inline message	C24,C13,C09,C26	P	Inline message actions toolbar, wrap rule, close button
+KDE	Q2.21	4.2	banner/inline message	C24,C14	P	Inline message reveal height and opacity timings
+KDE	Q2.22	4.2	chip	C24,C04,C07,C05	P	Chip background default, checked and pressed highlight alpha
+KDE	Q2.23	4.2	chip	C24,C12,C07,C11	P	Chip 1 px border per state, radius
+KDE	Q2.24	4.2	chip	C24,C13,C19,C26	P	Chip icon, spacing, remove button, interactive and closable variants
+KDE	Q2.25	4.2	badge	C24,C05,C04	P	Badge types with status border colours and tinted background
+KDE	Q2.26	4.2	badge	C24,C04,C12	P	Badge text colour mix, black/white swap, custom colour border
+KDE	Q2.27	4.2	badge	C24,C18,C11,C26,C19	P	Badge small bold font, pill radius, padding, icon size
+KDE	Q2.28	4.2	avatar	C24,C10,C05	P	Avatar default size and hashed 12-colour palette
+KDE	Q2.29	4.2	avatar	C24,C04,C12,C11,C13,C19	P	Avatar circle tint, border, initials, fallback icon, clipping
+KDE	Q2.30	4.2	status page/placeholder	C24,C13,C19,C18,C26	P	Placeholder icon size, heading, explanation, action spacing
+KDE	Q2.31	4.2	status page/placeholder	C24,C04	P	Informational placeholder dims content to opacity 0.75
+KDE	Q2.32	4.2	status page/placeholder	C24,C13,C26	P	Loading placeholder with indeterminate bar and max width
+KDE	Q2.33	4.2	bottom tab bar	C24,C05,C26,C10	P	Navigation tab bar: toolbar background, max width, equal buttons
+KDE	Q2.34	4.2	bottom tab bar	C24,C05,C13,C10,C18,C26	P	Navigation tab button: colour set, icon sizes, label font, geometry
+KDE	Q2.35	4.2	bottom tab bar	C24,C07,C04,C12,C11,C14	P	Navigation tab button states: alpha fills, border, radius, colour fade
+KDE	Q2.36	4.2	bottom tab bar	C24,C15,C04	P	Navigation tab button focus ring outside, alpha, radius
+KDE	Q2.37	4.2	sheet/bottom sheet	C24,C05	P	Overlay sheet using card background
+KDE	Q2.38	4.2	sheet/bottom sheet	C24,C04,C14,C13,C18,C26	P	Sheet dim alpha, header level, separators, footer padding
+KDE	Q2.39	4.2	sheet/bottom sheet	C24,C13,C04,C11	P	Mobile sheet drag-handle bar size, alpha, rounding
+KDE	Q2.40	4.2	sheet/bottom sheet	C24,C14,C26,C21	P	Sheet enter/exit motion, top inset, swipe-to-close threshold
+KDE	Q2.41	4.2	preference rows/boxed list	C24,C18,C04,C13,C26	P	List section header: bold heading, 0.75 opacity, icon, trailing line
+KDE	Q2.42	4.2	preference rows/boxed list	C24,C04,C13,C18,C26	P	Inline view header: tinted bar, separator, padding, actions
+KDE	Q2.43	4.2	drag handle	C24,C13,C19,C04,C14,C21	P	List item drag handle icon, opacity, drop animation, autoscroll
+KDE	Q2.44	4.2	breadcrumb/path control	C24,C13,C04,C11,C19	P	Breadcrumb crumbs: hover highlight, arrows, heading opacity
+KDE	Q2.45	4.2	preference rows/boxed list	C24,C26	P	Form layout spacing, narrow width cap, wide/narrow switch
+KDE	Q2.46	4.2	preference rows/boxed list	C24,C26	P	Form label alignment in wide and narrow modes
+KDE	Q2.47	4.2	preference rows/boxed list	C24,C18,C26	P	Form section titles and field label levels, spacing
+KDE	Q2.48	4.2	help button	C24,C13,C19,C21,C22	P	Contextual help button: icon, tooltip toggle, WhatsThis cursor
+KDE	Q2.49	4.2	toast/snackbar	C24,C05,C04,C11,C01	P	Passive notification: Complementary set, opacity 0.9, radius, shadow
+KDE	Q2.50	4.2	toast/snackbar	C24,C26,C10	P	Passive notification padding, spacing, width and stack limits
+KDE	Q2.51	4.2	toast/snackbar	C24,C21	P	Passive notification timeouts short, default, long
+KDE	Q2.52	4.2	toast/snackbar	C24,C14	P	Passive notification add, remove, displace motion
+KDE	K3.1	4.3	shadows	C01,C25,C20	R,P	Window shadow: two layers per size step, strength, colour, overlap
+KDE	K3.2	4.3	shadows	C01,C25	R,P	Popup shadow two-layer table per size step, window kinds
+KDE	K3.3	4.3	shadows	C01	P	MDI window shadow around sub-windows
+KDE	K3.4	4.3	shadows	C01,C07	P	Control micro-shadows on buttons, combos, slider and dial handles
+KDE	K3.11	4.3	materials	C03,C25	R,P	KWin blur strength, noise, saturation of backdrop
+KDE	K3.12	4.3	materials	C03,C04,C25	R	Dim-inactive effect strength and affected windows
+KDE	K3.13	4.3	materials	C03,C04,C25	R,V	KWin translucency effect for inactive, moving and menu windows
+KDE	K3.14	4.3	motion	C14,C25	R,P,V	Which KWin effects run (blur, scale, fading, squash, sliding)
+KDE	K3.30	4.3	motion	C14,C23,C25	R,P	Continuous global animation speed factor, 0 = off
+KDE	K3.31	4.3	motion	C14,C25,C08	R,P	Breeze state animation duration, step quantisation, engines, on/off
+KDE	K3.33	4.3	motion	C14,C20,C25	R,P	KWin window open/close scale and opacity, durations, curves
+KDE	K3.34	4.3	motion	C14,C25	P	Popup fade-in and fade-out durations and curves
+KDE	K3.35	4.3	motion	C14,C25	R,P	Squash, maximize and sliding-popup effect durations and curves
+KDE	K3.37	4.3	motion	C14	P	Message widget and collapsible group 500 ms timeline
+KDE	K3.20	4.3	focus	C15,C09,C07	P	Keyboard-only focus frame: 2 px ring, widget list
+KDE	K3.21	4.3	focus	C15,C09	P	1 px focus line under tab labels, group titles, weak-focus menus
+KDE	K3.22	4.3	focus	C15	P	Fallback focus rect: underline or rounded item-view rect
+KDE	K3.23	4.3	focus	C15,C07,C05	P	Focus colour applied to frames, arrows and thumbs
+KDE	K3.24	4.3	focus	C15,C14	P	Focus outline and line fade with state engines
+KDE	K3.40	4.3	selection	C17,C06,C04,C25	R,P	Inactive-window selection tinted from Window, text from Window text
+KDE	K3.41	4.3	caret	C16,C25	R	Caret blink period, 0 = no blink, clamped
+KDE	K3.42	4.3	caret	C16,C25	P,V	Text cursor width metric
+KDE	K3.43	4.3	caret	C16,C17	P,V	Whether caret blinks while text is selected
+KDE	K3.44	4.3	accessibility	C13,C25,C09	R,P	Mnemonic underlines: never, on Alt, always
+KDE	K3.45	4.3	typography	C18,C25	R,V	Font antialiasing, hinting style, sub-pixel order
+KDE	K3.46	4.3	typography	C18,C25	R	QFont string extras: capitalization, spacing, stretch, features, axes
+KDE	K3.47	4.3	typography	C18,C25	R	Extra font roles such as taskbarFont
+KDE	K3.50	4.3	colour roles	C05,C07,C04,C25	R	Disabled colour effects applied by KColorScheme, unread and underived
+KDE	K3.51	4.3	colour roles	C06,C05,C25	R	Inactive-window palette from effects and per-set Inactive subgroups
+KDE	K3.52	4.3	colour roles	C05,C04	R,P	Status background roles tinted from foreground per colour set
+KDE	K3.53	4.3	colour roles	C05,C25	R,P	Shade roles Light, Midlight, Mid, Dark, Shadow from contrast
+KDE	K3.54	4.3	colour roles	C05,C25	R	Per-set roles the model flattens: Complementary, extra foregrounds
+KDE	K3.60	4.3	icons	C19	P	Icon state effects: disabled gray/transparent, active gamma
+KDE	K3.61	4.3	icons	C19,C05	P	Symbolic icon recolouring from palette roles per icon mode
+KDE	K3.62	4.3	icons	C19,C17	P	Selected/pressed icon mode with highlighted-text recolour
+KDE	K3.63	4.3	icons	C19,C10,C25	R	Icon size groups for toolbars, lists, tabs, buttons
+KDE	K3.64	4.3	pointer	C22,C25	R	Cursor theme and size
+KDE	K3.70	4.3	timings	C21,C25	R	Double-click interval
+KDE	K3.71	4.3	timings	C21,C25	R	Drag distance and drag time thresholds
+KDE	K3.72	4.3	timings	C21,C25	R	Wheel scroll lines per step
+KDE	K3.73	4.3	timings	C21,C25	R	Single-click activation of item views
+KDE	K3.83	4.3	size variants	C10,C25	R,V	Tablet/mobile mode size changes read from KWin D-Bus
+KDE	K3.90	4.3	accessibility	C23,C14,C25	R	Reduced motion is a degree, not a boolean
+KDE	K3.91	4.3	accessibility	C23,C06,C25	R	No increased-contrast toggle; contrast from scheme, contrast key unread
+KDE	K3.92	4.3	accessibility	C23,C03,C25	R	No reduced-transparency toggle; menu opacity and blur act as it
+KDE	K3.93	4.3	accessibility	C23,C25	R,V	KWin colour-blindness, invert and zoom filters
+KDE	Q3.1	4.3	colour roles	C05,C25	P	Seven Kirigami colour sets, each a full role palette
+KDE	Q3.2	4.3	colour roles	C05	P	Colour-set assignment per control type
+KDE	Q3.3	4.3	colour roles	C06	P	Whole palette switches to Inactive group when window inactive
+KDE	Q3.4	4.3	colour roles	C07,C05	P	Disabled item takes Disabled colour group of its set
+KDE	Q3.5	4.3	colour roles	C05	P	Active text colour role used as Information colour
+KDE	Q3.10	4.3	colour roles	C05	P	Status foregrounds per colour set
+KDE	Q3.11	4.3	colour roles	C05,C12	P	Hover decoration colour per set, used as border
+KDE	Q3.12	4.3	colour roles	C05,C15	P	Focus decoration colour per set, used as highlight fill
+KDE	Q3.13	4.3	colour roles	C05,C07	P	Alternate background per set; alternating rows opt-in
+KDE	Q3.14	4.3	colour roles	C12,C04,C25	P	Frame contrast factor stored by reader only partly; light variant
+KDE	Q3.15	4.3	colour roles	C04,C12	P	Derived frame colour as mix of set background and text
+KDE	Q3.16	4.3	colour roles	C04,C08,C07	P	Derived hover/pressed/checked tints at fixed alphas
+KDE	Q3.17	4.3	icons	C19,C05	P	Symbolic icons tinted with text or highlighted-text colour
+KDE	Q3.18	4.3	icons	C19	P	Active icon gamma lift, disabled icon desaturated at 0.5
+KDE	Q3.19	4.3	icons	C19,C14	P	Cross-fade between old and new icon
+KDE	Q3.20	4.3	shadows	C01,C11,C12	P	Shadow API: one layer, blur, offset, colour, no spread
+KDE	Q3.21	4.3	shadows	C01,C27	P	Shadow values per surface for each Kirigami and qqc2 surface
+KDE	Q3.22	4.3	materials	C04,C14	P	Modal dim colour and alpha per surface, fade
+KDE	Q3.23	4.3	timings	C14	P	Four animation durations with 50/100/200/400 ms base
+KDE	Q3.24	4.3	timings	C14,C25	R	Plasma duration derivation from plasmarc and speed factor
+KDE	Q3.25	4.3	motion	C14,C23	P	Animation-off behaviour: 1 ms durations, self-disabling behaviours
+KDE	Q3.26	4.3	motion	C14	P	Easing curves in use across surfaces
+KDE	Q3.27	4.3	timings	C21,C14	P	humanMoment 2000 ms threshold, unscaled by animation speed
+KDE	Q3.28	4.3	timings	C21	P	Tooltip delay 700 ms; tablet mode uses press-and-hold interval
+KDE	Q3.29	4.3	size variants	C10,C26	P	Grid unit 18 as base size multiplier
+KDE	Q3.30	4.3	focus	C15,C07	P	No single focus ring; per-widget Breeze focus rules
+KDE	Q3.31	4.3	size variants	C10,C23,C16,C21	P	Tablet and touch variants: bigger rows, overlay scrollbars, handles
+KDE	Q3.32	4.3	typography	C18	P	Text rendering mode by device pixel ratio
+KDE	Q3.33	4.3	colour roles	C04,C07	P	Three different disabled opacities across controls
+KDE	K1.19†	4.1	[window]	C20,C14,C03,C25	R,P,V	Quick-tile outline: Plasma theme SVG frame, animated to the tile
+KDE	K1.46†	4.1	[input]	C13,C19,C14,C26	P,V	Clear-button icon size, box, icon modes and 160 ms fade
+KDE	K1.47†	4.1	[input]	C16,C09	P	Block caret with input mask; wide caret in overwrite mode
+KDE	K1.48†	4.1	[input]	C13,C19,C21	P	Password mask character and delay; reveal action visibility
+KDE	K1.49†	4.1	[input]	C17,C05,C13	P	Misspelling underline: wave style, hard-coded red
+KDE	K1.58†	4.1	[checkbox]	C13,C26,C12	P	Check mark path insets and stroke inside the box; dot spacing
+KDE	K1.83†	4.1	[tooltip]	C21,C26	P	Qt tooltip wake-up, fall-asleep, display time, hide delay, wrapping
+KDE	K1.84†	4.1	[tooltip]	C09,C13,C26,C21	P	Rich tooltip widget: any content, placement, 500 ms hide delay
+KDE	K1.115†	4.1	[progress_bar]	C09,C10,C13,C26	P	Capacity bar: fixed bar height, text below or inline
+KDE	K1.133†	4.1	[tab]	C14,C21,C07	P	Movable-tab slide timing and drag-hover tab switch delay
+KDE	K1.142†	4.1	[sidebar]	C13,C04,C05,C07,C11,C14,C19	P,V	Places panel: section headers, capacity bars, eject icon, hidden items
+KDE	K1.184†	4.1	[list]	C13,C05,C07	P	Column view child arrows in shade roles
+KDE	K1.185†	4.1	[list]	C14	P,V	Tree view expand/collapse animation tied to style duration
+KDE	K1.224†	4.1	[dialog]	C13,C19,C10	P	Message box standard icon and its size
+KDE	K1.260†	4.1	[link]	C07,C05,C22	P	URL label hover colour BrightText, float underline, hand cursor
+KDE	K2.23†	4.2	date picker	C24,C13,C05,C07,C18,C23	P	Date combo with menu popup; date grid colours incl. hard-coded red
+KDE	K2.24†	4.2	time picker	C24,C13	P,V	Editable time combo, time spin box, date-time pair
+KDE	K2.25†	4.2	colour picker	C24,C13,C12	P,V	Qt colour dialog: hue field, value strip, colour wells, cross-hair
+KDE	K2.26†	4.2	file chooser	C24,C13,C26	P,V	File dialog: places, navigator, views, preview, icon-size slider
+KDE	K2.27†	4.2	breadcrumb/path control	C24,C13,C04,C07,C27,C18	P,V	URL navigator crumbs: alpha text, bold current, arrows, fade gradient
+KDE	K2.28†	4.2	font chooser	C24,C13,C12	P	Font requester sample label and font chooser lists and preview
+KDE	K2.29†	4.2	autocomplete	C24,C13,C12,C26	P	Completion popup: plain 1 px frame, field width, 15 rows; inline mode
+KDE	K2.30†	4.2	find bar	C24,C17,C05,C07	P	Search bar match/no-match field backgrounds; find and replace highlights
+KDE	K2.31†	4.2	teaching tip	C24,C05,C12,C01,C26	P,V	What's This popup: tooltip colours, double frame, margins, shadow rule
+KDE	K2.32†	4.2	text ruler	C24,C13,C18	P,V	Ruler: thickness, mark lengths, label size, pointer
+KDE	Q2.53†	4.2	edit menu	C24,C13,C19,C26,C10	P	Touch Cut/Copy/Paste bar placement and icons
+KDE	Q2.54†	4.2	pull-to-refresh	C24,C13,C14,C21,C26	P	Pull-down strip, progress arc, refresh delay, content shift
+KDE	Q2.55†	4.2	preference rows/boxed list	C24,C13,C04,C07,C11,C14,C18,C26	P	Forms cards group and entry: title, card, padding, hover fills, corners
+KDE	Q2.56†	4.2	preference rows/boxed list	C24,C13,C09,C14,C18,C26	P	Forms separators, action entries, flat style, collapse rule
+KDE	Q2.57†	4.2	about dialog	C24,C13,C18,C19,C26	P	About page: app icon, name heading, sections, author avatars
+KDE	Q2.58†	4.2	full-screen dialog	C24,C10,C13,C26	P	Dialog layer: inset dialog, full-window layer or window by width
+KDE	K3.15†	4.3	window chrome	C06,C04,C14,C20,C25	R,P	Modal dialog's parent window desaturated and darkened
+KDE	K3.16†	4.3	window chrome	C06,C04,C14,C20,C25	R,P	Not-responding window desaturated and brightened
+KDE	K3.38†	4.3	motion	C14,C25	P	Dock and toolbar re-layout timed by the style animation duration
+KDE	K3.39†	4.3	motion	C14,C20	P	Fullscreen enter/leave morph and cross-fade
+KDE	K3.48†	4.3	selection	C17,C16	P,M,V	Input-method pre-edit text formats and caret
+KDE	K3.65†	4.3	pointer	C22,C21	P,V	Cursor shape per element; pointer auto-hide while typing
+KDE	K3.66†	4.3	pointer	C22,C14,C21,C25	R,P	Application launch feedback: bouncing or blinking icon, busy cursor
+KDE	K3.76†	4.3	timings	C21	P	Spin-box auto-repeat delays and press-and-hold interval
+KDE	K3.84†	4.3	size variants	C10,C25	R	Per-output fractional display scale on Wayland
+KDE	K3.95†	4.3	accessibility	C23,C21,C25	R,P	Visual bell: flash colour or invert, duration, throttle
+KDE	K3.96†	4.3	accessibility	C23,C22,C14,C25	R,P	Shake cursor magnification and its animation
+KDE	K-SF01†	4.2	code editor	C05,C25,C24	R,P	Which theme draws
+KDE	K-SF02†	4.2	code editor	C05,C17,C24	P	Editor fill and selection
+KDE	K-SF03†	4.2	code editor	C04,C17,C24	P	Current line
+KDE	K-SF04†	4.2	code editor	C05,C13,C24	P	Gutter (icon border, line numbers)
+KDE	K-SF05†	4.2	code editor	C04,C13,C24	P	Modified / saved line markers
+KDE	K-SF06†	4.2	code editor	C13,C24	P	Invisibles and indentation guides
+KDE	K-SF07†	4.2	code editor	C14,C17,C24	P	Bracket matching
+KDE	K-SF08†	4.2	code editor	C17,C24	P	Search and replace highlights
+KDE	K-SF09†	4.2	code editor	C13,C24	P	Right margin (static word-wrap marker)
+KDE	K-SF10†	4.2	code editor	C05,C18,C24	P	Syntax roles
+KDE	K-SF11†	4.2	code editor	C05,C17,C24	P	Spell-check and template placeholders
+KDE	K-SF12†	4.2	rich text view	C18,C24	P	Headings H1–H6
+KDE	K-SF13†	4.2	rich text view	C18,C24	P	Inline code and code blocks
+KDE	K-SF14†	4.2	rich text view	C26,C24	P	Block quote
+KDE	K-SF15†	4.2	rich text view	C13,C24	P	List markers and task boxes
+KDE	K-SF16†	4.2	rich text view	C12,C24	P	Tables
+KDE	K-SF17†	4.2	rich text view	C04,C26,C24	P	Horizontal rule, paragraphs
+KDE	K-SF18†	4.3	drop target	C17,C07,C12,C04	P,M	QMainWindow dock drop zone (gap indicator)
+KDE	K-SF19†	4.1	[dialog]	C26	P,V	Qt Widgets dialog: Qt's placement
+KDE	K-SF20†	4.1	[dialog]	C26,C25	R,P	Qt Widgets dialog: KWin's placement
+KDE	K-SF21†	4.1	[dialog]	C26	P	Kirigami Dialog (and PromptDialog, MenuDialog, SearchDialog): position
+KDE	K-SF22†	4.1	[dialog]	C26	P	qqc2-desktop-style Dialog: position
+KDE	K-SF23†	4.2	sheet/bottom sheet	C26,C24	P,V	OverlaySheet: position
+KDE	K-RL01†	4.2	command bar	C01,C05,C11,C26,C24	P	Command bar and its shortcut keycaps (KCommandBar)
+KDE	K-RL02†	4.2	shortcuts dialog	C07,C13,C19,C24	P,M	Shortcuts dialog (KShortcutsDialog / KShortcutsEditor)
+KDE	K-RL03†	4.2	emoji chooser	C18,C26,C24	P	Emoji selector (plasma-emojier)
+KDE	K-RL04†	4.2	character selector	C26,C24	P	Character selector (KCharSelect)
+KDE	K-RL05†	4.1	[list]	C12,C13,C26	P	In-place item editor
+KDE	K-RL06†	4.1	[list]	C07,C26	P,M,V	Drag image of item views
+KDE	K-RL07†	4.1	[button]	C21	P	Auto-repeat while held
+KDE	K-FM01†	4.3	typography	C18,C25	P,R,M	Emoji font
+KDE	K-FM02†	4.3	typography	C18,C25	P,R,M	Fallback chain per language
+KDE	K-FM03†	4.3	mirroring	C26,C19,C25	R,P,M	Right-to-left layout (outside the brief: no such row exists)
+KDE	K-P3-1†	4.1	[window]	C20,C22,C26	P,V	Resize-only borders
+KDE	K-P3-2†	4.1	[window]	C20,C13,C07	P	Caption buttons per window
+KDE	K-P3-3†	4.1	[window]	C20,C26,C04,C14,C25	R,P	Custom tiling
+KDE	K-P3-4†	4.1	[tab]	C26,C13	P	Overflow and label length
+KDE	K-P3-5†	4.1	[menu], [combo_box]	C26	P	Where a popup opens against its owner
+KDE	K-P3-6†	4.1	[tooltip]	C26	P,V	Qt Widgets tooltip placement
+KDE	K-P3-7†	4.1	[dialog]	C26,C10	P(review2026-10-28:the85%capistheitemlist's,notthedetails')	Message box size
+KDE	K-P3-8†	4.2	about dialog	C18,C26,C04,C19,C24	P	KAboutApplicationDialog (Help ▸ About in every KXmlGui application)
+KDE	K-P3-9†	4.2	composite dialogs	C04,C01,C24	P,V	Print, page setup, Open With
+KDE	K-P3-10†	4.2	chart	C05,C13,C18,C24	P	KQuickCharts' ready-made charts (LineChartControl, PieChartControl, Legend)
+KDE	K-P3-11†	4.2	code editor	C16,C04,C24	P(review2026-10-28:"blinksathalfofQt'sflashtime"readastwiceasfast;Qt'swidgetsalsotoggleathalftheflashtime)	Caret and secondary carets
+KDE	K-P3-12†	4.2	code editor	C04,C13,C24	P,V	Scroll-bar minimap and marks
+KDE	K-P3-13†	4.2	code editor	C12,C26,C13,C24	P,V	Completion popup
+KDE	K-P3-14†	4.2	code editor	C07,C12,C24	P	Annotation border (blame and similar)
+KDE	K-P3-15†	4.3	motion	C14,C25	P,V	Theme-change cross-fade
+KDE	K-P3-16†	4.3	timings	C21,C25	R,P,V	Key repeat and click distances
+KDE	K-P3-17†	4.3	timings	C21	P	Scroll-bar and slider repeat (Qt Widgets)
+KDE	K-P3-18†	4.3	motion	C14,C21,C25	R,P,V	Wheel, touchpad and touch scrolling (Qt Quick)
+KDE	K-P3-19†	4.3	pointer	C22,C23,C14,C25	R,P	KWin's pointer effects
+KDE	K-P3-20†	4.3	borders	C12,C26	P	Hairlines under fractional scaling
+KDE	K-P3-21†	4.3	placement	C26,C25	R,P	A window and the on-screen keyboard
+KDE	K-P3-22†	4.3	colour filters	C23,C06,C25	R,P,V	Night Light
+KDE	K-P3-23†	4.3	window chrome	C06,C20,C14	P	Screen dimmed behind an authentication prompt
+KDE	K-P3-24†	4.3	motion	C14,C25	R,V	Qt's own UI effects
+KDE	K-RV1†	4.1	[scrollbar]	C21,C25	R,P	Click in the scroll-bar trough
+KDE	K-RV2†	4.1	[menu]	C21	P	Sloppy submenu close
+KDE	K-P4-1†	4.1	[window]	C20,C13,C26,C25	R,P	Window menu (title-bar right click, Alt+F3, the decoration's window-menu button)
+KDE	K-P4-2†	4.1	[window]	C20,C26,C25	R,P,V	Picture-in-picture window (xx-pip-v1)
+KDE	K-P4-3†	4.1	[window]	C20,C07,C13,C22	P,V	Tile editor: resize handles between tiles
+KDE	K-P4-4†	4.1	[window]	C20,C13,C19	P,V	Not-responding window: caption and terminate prompt
+KDE	K-P4-5†	4.3	window chrome	C20,C07,C25	P,V	Window asking for attention
+KDE	K-P4-6†	4.2	text input system UI	C13,C26,C14,C24	P,V	Input-method candidate window (Plasma's Input Method Panel)
+KDE	K-P4-7†	4.3	pointer	C22,C07	P,V	Pointer during a drag, per drop operation
+KDE	K-P4-8†	4.3	size variants	C09,C25	R,P	Which style draws a KDE application
+KDE	K-P4-9†	4.1	[text_area]	C26	P,M,V	Text inset of a multi-line text view: two parts
+KDE	K-P4-10†	4.2	toolbar customization	C13,C26,C19,C24	P	Configure Toolbars (KEditToolBar) and the toolbar context menu
+KDE	K-P4-11†	4.3	drag and drop	C21,C07	P	Spring loading outside tab bars
+KDE	K-P4-12†	4.3	icons	C19,C26	P,M	Icons per writing direction
+KDE	K-P4-13†	4.1	[scrollbar]	C10,C14	P,M,V	Quick scroll-bar thumb past the content's ends
+KDE	K-P4-14†	4.2	rich text view	C18,C26,C24	P	HTML rich text (QLabel, tooltips, QTextBrowser, Qt's HTML parser)
+KDE	K-KA-1†	4.2	preference rows/boxed list	C24,C01,C04,C05,C11,C12,C26	P	FormCard surface: View set, light/dark border rule, text-alpha shadow, width-dependent corners
+KDE	K-KA-2†	4.2	preference rows/boxed list	C24,C07,C08,C04,C11,C14,C15	P	Form row hover/focus/pressed fills as text-colour opacity, outer-corner rounding
+KDE	K-KA-3†	4.2	preference rows/boxed list	C24,C26,C18,C13,C05	P	Form row padding, icon gap, two-line titles, description in disabled colour
+KDE	K-KA-4†	4.2	preference rows/boxed list	C24,C04,C07,C14,C26	P	Form separator opacity 0.5, inset, hides and shrinks beside an active row
+KDE	K-KA-5†	4.2	preference rows/boxed list	C24,C18,C26,C13	P	Form group title DemiBold label and section text: padding, width, colour
+KDE	K-KA-6†	4.2	preference rows/boxed list	C24,C04,C05,C26	P	Form page background as a mix of Window and View backgrounds
+KDE	K-KA-7†	4.2	preference rows/boxed list	C24,C13,C19,C14,C26	P	Form row trailing arrow 12 px, link icon, collapsible group expand motion
+KDE	K-KA-8†	4.2	preference rows/boxed list	C24,C26,C07,C13	P	Form check, radio, switch rows: indicator placement, disabled label colour
+KDE	K-KA-9†	4.2	preference rows/boxed list	C24,C13,C18,C05,C07,C10,C26	P	Form field rows: label above field, character counter, mobile collapsed row
+KDE	K-KA-10†	4.2	banner/inline message	C24,C04,C05,C11,C13,C19,C26	P	Form status message: borderless tinted fill, recoloured type icon
+KDE	K-KA-11†	4.2	password field	C24,C13,C05,C11,C26	P	Password strength meter: four segments in status background/text roles
+KDE	K-KA-12†	4.1	[combo_box]	C09,C10,C13,C26,C05	P	Form combo row modes: inline combo, mobile list dialog, dialog layer
+KDE	K-KA-13†	4.2	file chooser	C24,C13,C19,C26	P	File and folder rows: path field, folder button, completion popup
+KDE	K-KA-14†	4.2	colour button	C24,C13,C19,C12	P	Colour row swatch circle and icon row small icons
+KDE	K-KA-15†	4.2	preference rows/boxed list	C24,C26,C18,C04,C07,C14	P	Form grid container and info cards: grid, heading level 4, alpha fills
+KDE	K-KA-16†	4.2	status page/placeholder	C24,C04,C18,C19,C26	P	Placeholder inside a form card: icon 0.5, heading 0.65 opacity
+KDE	K-KA-17†	4.1	[dialog]	C10,C26,C13,C19,C07	P	FormCardDialog: width rule, header with close button, footer paddings
+KDE	K-KA-18†	4.1	[dialog]	C01,C11,C12,C04,C05	P	Addons dialog/popup surface: larger radius, gridUnit shadow, black 0.2
+KDE	K-KA-19†	4.1	[dialog]	C13,C19,C26,C10,C14,C04	P	MessageDialog: type icons at huge, narrow layout, button icons, fade, dim
+KDE	K-KA-20†	4.2	date picker	C24,C13,C19,C26,C14,C04	P	Date popup frame: segmented view switcher, navigation buttons, footer, dim
+KDE	K-KA-21†	4.2	date picker	C24,C07,C04,C13,C26	P	Date popup grids: today and selected alike, other-month days 0.6, month/year views
+KDE	K-KA-22†	4.2	date picker	C24,C13,C19,C07,C26	P	Date and time form row: two halves, icons, Today text, hover-hidden divider
+KDE	K-KA-23†	4.2	time picker	C24,C13,C18,C04,C07,C12,C15,C11	P,M,V	Time popup: tumblers, item opacity fall-off, current-item border, reset button
+KDE	K-KA-24†	4.1	[segmented_control]	C07,C11,C12,C01,C14,C04,C05	P	SegmentedButton: overlap, outer radius, checked fill and focus border, hard shadow
+KDE	K-KA-25†	4.1	[segmented_control]	C07,C04,C01,C14,C18,C11,C12,C09	P	RadioSelector: sliding selection pill with shadow, bold checked label
+KDE	K-KA-26†	4.2	FAB	C24,C01,C04,C07,C11,C12,C14,C10	P	Floating action button: state fills and borders from hover colour, shadow, motion
+KDE	K-KA-27†	4.2	FAB	C24,C11,C07,C14,C01	P	Double floating button: joined halves, outer corners, slower state motion
+KDE	K-KA-28†	4.1	[toolbar]	C09,C01,C11,C12,C04	P	Floating toolbar: radius, shadow, tinted border
+KDE	K-KA-29†	4.2	banner/inline message	C24,C05,C04,C13,C19,C18,C26,C09	P	Banner: type background fill, hue-from-status separator, icon, title, close
+KDE	K-KA-30†	4.2	sheet/bottom sheet	C24,C01,C11,C13,C04,C05,C26	P	Bottom drawer: top radius, black 0.5 shadow, handle bar, colour sets
+KDE	K-KA-31†	4.1	[menu]	C09,C10,C13,C26,C19	P	Convergent context menu: menu, bottom sheet of form rows, or dialog
+KDE	K-KA-32†	4.2	search field	C24,C14,C01,C11,C26	P	Search field that grows into a popup: fade and grow motion
+KDE	K-KA-33†	4.2	avatar	C24,C12,C18,C19,C07,C22,C04	P	Addons avatar: 1.25 px ring, initials size, black/white fallback icon; avatar button
+KDE	K-KA-34†	4.2	image viewer	C24,C13,C19,C04,C05,C14,C26	P	Album viewer: dim 0.5, header and caption bars, actions, floating prev/next
+KDE	K-KA-35†	4.2	media transport controls	C24,C13,C19,C04,C01,C11,C21	P	Video controls: translucent bar with shadow, volume popup, hide timers
+KDE	K-KA-36†	4.1	[list]	C07,C13,C19,C14,C04,C26,C22	P	Table header drawn by addons: hover alpha, separators, rotating sort arrow, drag
+KDE	K-KA-37†	4.1	[list]	C07,C04,C17,C12	P	Table rows: solid highlight selection, hover alpha, current-cell frame
+KDE	K-KA-38†	4.1	[list]	C04,C07,C11,C12,C26,C10,C15,C17	P	Rounded item delegates: insets, radius, tint fills, focus border
+KDE	K-KA-39†	4.1	[list]	C13,C04,C18,C26,C05	P	Subtitle opacity and unread indicator bar delegates
+KDE	K-KA-40†	4.1	[list]	C13,C19,C07,C14,C04,C09	P	Tree rows: Breeze branch indicator on desktop, QML lines and expander elsewhere
+KDE	K-KA-41†	4.2	settings window	C24,C26,C10,C13,C05	P	Settings window: size, sidebar with search, mobile form-card variant
+KDE	K-KA-42†	4.2	command bar	C24,C13,C05,C18	P	Quick command bar: search dialog rows, shortcut as plain text
+KDE	K-KA-43†	4.2	shortcuts dialog	C24,C13,C07,C19,C10,C26	P	Quick shortcuts editor: key-sequence recorder buttons, conflict dialog
+KDE	K-KA-44†	4.2	about dialog	C24,C13,C19,C18,C26,C10	P	Addons About page: header, release history, link grid, people rows, licences
+KDE	K-KA-45†	4.2	teaching tip	C24,C03,C12,C14,C13,C26,C05	P	Onboarding tour: moving highlight frame, blur, tooltip-set tip
+KDE	K-KA-46†	4.1	[list]	C13,C19	P	Sound picker list with check icon on the current sound
+KDE	K-KA-47†	4.1	[defaults]	C19	P	KirigamiApp defaults: Breeze fallback icon theme, desktop style choice

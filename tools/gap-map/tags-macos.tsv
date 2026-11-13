@@ -1,0 +1,317 @@
+MACOS	MAC-W01	4.1	[window]	C20	R	Title bar height per generation and toolbar style
+MACOS	MAC-W02	4.1	[window]	C20,C07,C06	R,M	Traffic-light geometry, fills and states, hover glyphs, inactive grey
+MACOS	MAC-W03	4.1	[window]	C20,C18,C13	R,P,M	Title alignment, subtitle font and colour, proxy icon, truncation
+MACOS	MAC-W04	4.1	[window]	C20,C12,C01	P,M	Title-bar separator line colour, width, shadow variant, style choice
+MACOS	MAC-W05	4.1	[window]	C11,C20	R,M,V	Window corner radius per window kind; corner curve
+MACOS	MAC-W06	4.1	[window]	C20,C12,C06	M	Outer edge line plus inner light rim, key versus non-key
+MACOS	MAC-W07	4.1	[window]	C01,C20,C06	M	Window shadow layers for key, non-key, panels, HUD, 26
+MACOS	MAC-W08	4.1	[window]	C03,C23	M	Window background material; reduce-transparency-off and tinting-off values
+MACOS	MAC-W09	4.1	[window]	C20,C13,C07	M	Native window tab bar: fills, tabs, separators, close and plus buttons
+MACOS	MAC-W10	4.1	[window]	C03,C20	P,M	Toolbar-area fill per toolbar style and its titlebar material
+MACOS	MAC-B01	4.1	[button]	C09	P,M	Bezel styles: push, toolbar, circular, glass, borderless and more
+MACOS	MAC-B02	4.1	[button]	C07,C06	M	Default button: key-window accent only, plus pressed, disabled, hover
+MACOS	MAC-B03	4.1	[button]	C07	M	Primary hover, active and disabled backgrounds
+MACOS	MAC-B04	4.1	[button]	C01	M	12-15 soft button shadow layers
+MACOS	MAC-B05	4.1	[button]	C12,C04,C27	M	12-15 bezel top highlight, bevel and vertical gradient
+MACOS	MAC-B06	4.1	[button]	C09	P,M	Destructive-action button appearance
+MACOS	MAC-B07	4.1	[button]	C09,C05	P,M	Tinted buttons: bezelColor, contentTintColor, tintProminence
+MACOS	MAC-B08	4.1	[button]	C11,C09,C10	P,M,V	26 border shapes: capsule, rounded rectangle, circle per size
+MACOS	MAC-B09	4.1	[button]	C13,C19,C07	M	Button image size, per-state tint, position, image-only padding
+MACOS	MAC-B10	4.1	[button]	C07	M	Checked toggle button pressed, disabled, non-key
+MACOS	MAC-I01	4.1	[input]	C09	P,M	Field bezel styles: square, rounded, bordered, borderless, cell editor
+MACOS	MAC-I02	4.1	[input]	C07	M	Read-only field state
+MACOS	MAC-I03	4.1	[input]	C13	M,V	Secure field bullet glyph and caps-lock indicator
+MACOS	MAC-I04	4.1	[input]	C12	M	Field bezel edge shading, inner shadow, 26 outer ring
+MACOS	MAC-I05	4.1	[input]	C17	R	Inactive text selection background and text colours
+MACOS	MAC-I06	4.1	[input]	C13	P,M,V	Completions list and inline prediction ghost text colour
+MACOS	MAC-I07	4.1	[text_area]	C18,C25	R	Text area default userFont and fixed-pitch font not read
+MACOS	MAC-I08	4.1	[text_area]	C09,C12	P,M	Scroll-view frame border types and colour
+MACOS	MAC-C01	4.1	[checkbox]	C07,C13	P,M	Mixed state dash glyph, size, colour, box fill
+MACOS	MAC-C02	4.1	[checkbox]	C07	M	Pressed checkbox and radio states
+MACOS	MAC-C03	4.1	[checkbox]	C07	M	Checked and disabled box and check-mark colours
+MACOS	MAC-C04	4.1	[checkbox]	C07	M	Checked plus hover state
+MACOS	MAC-C05	4.1	[checkbox]	C12,C04,C27	M	Box gradient fill and edge/bevel layers on 12-15
+MACOS	MAC-C06	4.1	[checkbox]	C13	M	Check-mark glyph extent, inset and path
+MACOS	MAC-C07	4.1	[checkbox]	C07,C13	M	Radio pressed, disabled dot colour, non-key look
+MACOS	MAC-MN01	4.1	[menu]	C13,C11,C26	M	Item highlight radius and horizontal inset apart from container
+MACOS	MAC-MN02	4.1	[menu]	C26	M	Menu content inset above first and below last item
+MACOS	MAC-MN03	4.1	[menu]	C13,C26	M	Separator row height, inset and line width
+MACOS	MAC-MN04	4.1	[menu]	C13,C18,C07	M	Key-equivalent column font, colour per state, spacing
+MACOS	MAC-MN05	4.1	[menu]	C13,C07,C26	P,M	State column check, dash, off images and width
+MACOS	MAC-MN06	4.1	[menu]	C13,C07	M	Submenu arrow glyph, size, colour; parent look when open
+MACOS	MAC-MN07	4.1	[menu]	C13,C18	P,M	Section header font, colour, height
+MACOS	MAC-MN08	4.1	[menu]	C13	P,M	Menu item badge font, colour, fill
+MACOS	MAC-MN09	4.1	[menu]	C13,C18	P,M	Menu item subtitle font and colour
+MACOS	MAC-MN10	4.1	[menu]	C19,C07	M	Item icon tint per state; 27 hides images
+MACOS	MAC-MN11	4.1	[menu]	C26	M	Indentation level step width
+MACOS	MAC-MN12	4.1	[menu]	C13	M	Menu scroll arrows
+MACOS	MAC-MN13	4.1	[menu]	C09,C13	P,M,V	Palette menu presentation: swatches and selection ring
+MACOS	MAC-MN14	4.1	[menu]	C12,C01,C03	M	Menu edge rim, shadow layers and material
+MACOS	MAC-MN15	4.1	[menu]	C26,C18	M	Pop-up menu offset over button; font follows control size
+MACOS	MAC-MN16	4.1	[menu]	C26	R,M,V	Menu minimum width
+MACOS	MAC-T01	4.1	[tooltip]	C01	M	Tooltip shadow layers
+MACOS	MAC-T02	4.1	[tooltip]	C03	P,M	Tooltip material
+MACOS	MAC-T03	4.1	[tooltip]	C26	M	Tooltip offset from pointer
+MACOS	MAC-T04	4.1	[tooltip]	C21,C14	M	Tooltip re-show delay, auto-hide, fade
+MACOS	MAC-T05	4.1	[tooltip]	C21,C25	R,M	Tooltip delay source: NSInitialToolTipDelay not read
+MACOS	MAC-S01	4.1	[scrollbar]	C07	M	Overlay knob idle versus hover width
+MACOS	MAC-S02	4.1	[scrollbar]	C07,C13	M	Track shown under expanded overlay knob
+MACOS	MAC-S03	4.1	[scrollbar]	C09,C12	P,M	Knob style default, dark, light: contrasting border
+MACOS	MAC-S04	4.1	[scrollbar]	C11,C26	M	Knob corner radius and inset
+MACOS	MAC-S05	4.1	[scrollbar]	C13,C12	M	Legacy track edge line
+MACOS	MAC-S06	4.1	[scrollbar]	C13	M	Scroll corner where legacy scrollers meet
+MACOS	MAC-S07	4.1	[scrollbar]	C10	R	Scroller width per control size
+MACOS	MAC-S08	4.1	[scrollbar]	C07	M	Pressed knob value unverified
+MACOS	MAC-SL01	4.1	[slider]	C11,C13	R	26 capsule knob width and height
+MACOS	MAC-SL02	4.1	[slider]	C01,C12	M	12-15 knob shadow layers and rim
+MACOS	MAC-SL03	4.1	[slider]	C11	M	Track and fill-end corner radii
+MACOS	MAC-SL04	4.1	[slider]	C13,C26	R,M	Tick colour, width, shape, position, gap
+MACOS	MAC-SL05	4.1	[slider]	C07,C11	M	Knob shape change with tick marks on 12-15
+MACOS	MAC-SL06	4.1	[slider]	C07	P	26 fill tint depends on tick marks; neutral value origin
+MACOS	MAC-SL07	4.1	[slider]	C07	M	Pressed or dragged knob state
+MACOS	MAC-P01	4.1	[progress_bar]	C13,C14,C09	M	Indeterminate bar look, period and curve
+MACOS	MAC-P02	4.1	[progress_bar]	C11	M	Track radius versus fill end radius
+MACOS	MAC-P03	4.1	[progress_bar]	C06,C07	M	Fill turns grey in non-key window
+MACOS	MAC-P04	4.1	[progress_bar]	C14	M	Fill animation on value change
+MACOS	MAC-TB01	4.1	[tab]	C13,C12,C26	R,M	Tab view content box fill, border, radius, padding
+MACOS	MAC-TB02	4.1	[tab]	C26	M	Tab strip overlap offset over box top edge
+MACOS	MAC-TB03	4.1	[tab]	C09,C26	P,M	Tab position, border type and view type variants
+MACOS	MAC-TB04	4.1	[tab]	C07,C06	M	Pressed tab and selected tab in non-key window
+MACOS	MAC-TB05	4.1	[tab]	C10,C18	M	Tab metrics and font per control size
+MACOS	MAC-SB01	4.1	[sidebar]	C10,C19,C18	R,P,V	Row height, icon size, font per sidebar size
+MACOS	MAC-SB02	4.1	[sidebar]	C19,C07	M	Sidebar icon tint at rest, selected, unemphasized
+MACOS	MAC-SB03	4.1	[sidebar]	C13,C18	M	Section header font, colour, height, hover control
+MACOS	MAC-SB04	4.1	[sidebar]	C11,C26	M	Selected row radius, inset, merged selection
+MACOS	MAC-SB05	4.1	[sidebar]	C17,C06	R,M	Unemphasized sidebar selection fill and text colour
+MACOS	MAC-SB06	4.1	[sidebar]	C03,C11,C26,C01	R,P,M	26 floating glass sidebar margins, radius, material, shadow
+MACOS	MAC-SB07	4.1	[sidebar]	C06,C03	M	Sidebar material change in non-key window
+MACOS	MAC-SB08	4.1	[sidebar]	C13,C26	R	Disclosure triangles and indentation of nested rows
+MACOS	MAC-TL01	4.1	[toolbar]	C10,C26	R	Toolbar height and margins per toolbar style
+MACOS	MAC-TL02	4.1	[toolbar]	C07,C13,C19	M	Toolbar item bezel states, icon colour, label font and gap
+MACOS	MAC-TL03	4.1	[toolbar]	C09,C26,C03	P,M	Item groups and 26 glass capsules: padding, spacing, height
+MACOS	MAC-TL04	4.1	[toolbar]	C09,C05	P,M	26 prominent item style and background tint
+MACOS	MAC-TL05	4.1	[toolbar]	C13	P,M	Toolbar badge shape, fill, font
+MACOS	MAC-TL06	4.1	[toolbar]	C13	M	Overflow chevron button and menu
+MACOS	MAC-TL07	4.1	[toolbar]	C09,C14	M	Search toolbar item collapsed versus expanded and motion
+MACOS	MAC-TL08	4.1	[toolbar]	C13	M	Tracking separator line aligned with split divider
+MACOS	MAC-TL09	4.1	[toolbar]	C03	M	Toolbar background material; 26 transparent over content
+MACOS	MAC-ST01	4.1	[status_bar]	C26,C12,C06	P,M	Window bottom bar height, fill, separator, inactive look
+MACOS	MAC-L01	4.1	[list]	C09,C26,C11	R,M	Table styles: horizontal inset and row radius per style
+MACOS	MAC-L02	4.1	[list]	C11,C26	M	Selected row radius, inset, merged rows
+MACOS	MAC-L03	4.1	[list]	C17,C06	R,M	List inactive selection fill and text colour
+MACOS	MAC-L04	4.1	[list]	C17,C07	M	Secondary text and icons on emphasized selection
+MACOS	MAC-L05	4.1	[list]	C13,C07,C12	M	Header separators, bottom line, sort glyph, pressed state, padding
+MACOS	MAC-L06	4.1	[list]	C09,C12	P,M	Grid style masks and dash pattern
+MACOS	MAC-L07	4.1	[list]	C26	R	Table intercell spacing
+MACOS	MAC-L08	4.1	[list]	C10	R	Row height per row-size style
+MACOS	MAC-L09	4.1	[list]	C13,C03	M	Group row font, material, height
+MACOS	MAC-L10	4.1	[list]	C13,C26	R,M	Outline indentation, disclosure glyph size, colour, pressed look
+MACOS	MAC-L11	4.1	[list]	C07,C12,C11	M	Drop-target row highlight and insertion line
+MACOS	MAC-L12	4.1	[list]	C13,C09	P,M	Swipe row action buttons fills and font
+MACOS	MAC-L13	4.1	[list]	C07,C15	M	Cell editing field editor fill and focus ring
+MACOS	MAC-L14	4.1	[list]	C15	M	Table focus ring presence
+MACOS	MAC-L15	4.1	[list]	C07	M	Dragged column translucent image
+MACOS	MAC-L16	4.1	[list]	C12	P,M	Scroll-view border around table
+MACOS	MAC-PO01	4.1	[popover]	C13	M	Popover arrow size, tip shape, offset, full-size content
+MACOS	MAC-PO02	4.1	[popover]	C03	M	Popover material
+MACOS	MAC-PO03	4.1	[popover]	C01	M	Popover shadow layers
+MACOS	MAC-PO04	4.1	[popover]	C20	M	Detached popover window look
+MACOS	MAC-PO05	4.1	[popover]	C14	M	Popover show and close animation
+MACOS	MAC-SP01	4.1	[splitter]	C09	R	Divider styles thin, thick, paneSplitter: widths and drawing
+MACOS	MAC-SP02	4.1	[splitter]	C13	M	Thick divider grip drawn or not
+MACOS	MAC-SP03	4.1	[splitter]	C07	M	Divider while dragged
+MACOS	MAC-SP04	4.1	[splitter]	C13,C26	M	26 no divider beside floating sidebar
+MACOS	MAC-SW01	4.1	[switch]	C11,C13	M	26 capsule knob width and height
+MACOS	MAC-SW02	4.1	[switch]	C01	M	Switch knob shadow layers
+MACOS	MAC-SW03	4.1	[switch]	C07	M	Pressed knob and track, knob stretch
+MACOS	MAC-SW04	4.1	[switch]	C06	M	Grey on-track in non-key window
+MACOS	MAC-SW05	4.1	[switch]	C10	R	Switch mini, small, regular, large sizes
+MACOS	MAC-SW06	4.1	[switch]	C23,C13	M	On/off glyphs under differentiate without colour
+MACOS	MAC-D01	4.1	[dialog]	C26,C18,C13	R,P,M	Alert layout, button arrangement, width, informative-text font
+MACOS	MAC-D02	4.1	[dialog]	C13,C09	M	Critical alert caution badge over app icon
+MACOS	MAC-D03	4.1	[dialog]	C11,C03,C01	M	Sheet radius, material, shadow, dimming; 26 floating sheet
+MACOS	MAC-D04	4.1	[dialog]	C14	M	Dialog exit and sheet attach/detach motion, duration and curve
+MACOS	MAC-SN01	4.1	[spinner]	C13	M	Fin count, radii, width, per-fin alpha ramp
+MACOS	MAC-SN02	4.1	[spinner]	C14	M	Stepped rotation period
+MACOS	MAC-SN03	4.1	[spinner]	C10	R	Small spinner size has no field
+MACOS	MAC-SN04	4.1	[spinner]	C09	M	Determinate circular pie or ring indicator
+MACOS	MAC-CB01	4.1	[combo_box]	C09,C13	M	Pop-up, pull-down, combo box variants; arrow button look
+MACOS	MAC-CB02	4.1	[combo_box]	C06,C07	M	Pop-up arrow area accent fill in key window
+MACOS	MAC-CB03	4.1	[combo_box]	C07	M	Arrow colour per state
+MACOS	MAC-CB04	4.1	[combo_box]	C07,C13	M	Open/pressed state and combo drop-down list parts
+MACOS	MAC-CB05	4.1	[combo_box]	C09	M	Borderless pop-up variant
+MACOS	MAC-CB06	4.1	[combo_box]	C06	M	26 key versus not-key pop-up rest look
+MACOS	MAC-SG01	4.1	[segmented_control]	C13	M	Separator colour between unselected segments
+MACOS	MAC-SG02	4.1	[segmented_control]	C01	M	12-15 selected segment shadow
+MACOS	MAC-SG03	4.1	[segmented_control]	C18,C07	M	26 selected label heavier weight
+MACOS	MAC-SG04	4.1	[segmented_control]	C09	P,M	Segmented styles and 26 border shape
+MACOS	MAC-SG05	4.1	[segmented_control]	C09,C07	R,M	Tracking modes selectAny, momentary; segment bezel colour
+MACOS	MAC-SG06	4.1	[segmented_control]	C07,C06	M	Pressed, selected-pressed, disabled, non-key segment states
+MACOS	MAC-SG07	4.1	[segmented_control]	C13	M	Segment menu indicator glyph
+MACOS	MAC-SG08	4.1	[segmented_control]	C11	M	Per-corner radii of end segments and indicator
+MACOS	MAC-SG09	4.1	[segmented_control]	C14	M	26 sliding selection indicator motion
+MACOS	MAC-BX01	4.1	[card]	C13,C18	R	Box title font, position, colour, gap
+MACOS	MAC-BX02	4.1	[card]	C09	M	Box types primary, custom, separator, transparent
+MACOS	MAC-EX01	4.1	[expander]	C09,C13	P,M	Triangle disclosure versus push disclosure chevron
+MACOS	MAC-EX02	4.1	[expander]	C13	M	Disclosure glyph shape triangle or chevron
+MACOS	MAC-EX03	4.1	[expander]	C07	M	Pressed glyph colour
+MACOS	MAC-EX04	4.1	[expander]	C14	M	Disclosure rotation motion
+MACOS	MAC-LK01	4.1	[link]	C13	R	Underline style, colour, thickness, offset
+MACOS	MAC-LK02	4.1	[link]	C22	R	Pointing-hand cursor over links
+MACOS	MAC-LK03	4.1	[link]	C15	M	Link focus ring with Full Keyboard Access
+MACOS	MAC-DF01	4.1	[defaults]	C05	R	Tertiary, quaternary, quinary label colours
+MACOS	MAC-DF02	4.1	[defaults]	C05	R	System fill colour ramp
+MACOS	MAC-DF03	4.1	[defaults]	C05	R	System palette beyond red, orange, green, blue
+MACOS	MAC-DF04	4.1	[defaults]	C05	R	Under-page, find highlight, selected control colours
+MACOS	MAC-TS01	4.1	[text_scale]	C18	R,P	Missing text styles and emphasized weights
+MACOS	MAC-TS02	4.1	[defaults]	C18,C25	R	Named fonts label, message, palette, menu bar unread
+MACOS	MAC-LY01	4.1	[layout]	C26,C10	P,M	Label-control and inter-button spacing per size; concentric margins
+MACOS	MAC-IC01	4.1	[defaults]	C19	P,M	Icon size contexts: button, list, tab, toolbar, status item
+MACOS	MAC-IC02	4.1	[defaults]	C19	R,P	SF Symbol weight, scale, rendering mode per context
+MACOS	MAC-IC03	4.1	[defaults]	C19,C25	R,V	26 icon appearance Default, Dark, Clear, Tinted
+MACOS	MAC-N01	4.2	stepper/spin box	C24,C13,C07,C10,C21	R,M	Stepper halves, glyphs, states, sizes, autorepeat timing
+MACOS	MAC-N02	4.2	search field	C24,C11,C13,C15,C14	R,M	Search field bezel, glyphs, recents, placeholder motion, focus
+MACOS	MAC-N03	4.2	token field	C24,C09,C11,C13,C07	P,M	Token fill, border, radius, styles, selected token
+MACOS	MAC-N04	4.2	date picker	C24,C09,C13,C07	P,M	Date picker text and calendar styles, clock, day cells
+MACOS	MAC-N05	4.2	colour button	C24,C09,C13,C28	P,M	Colour well styles, swatch frame, ring, expanded panel button
+MACOS	MAC-N06	4.2	level indicator/gauge	C24,C09,C13,C05	R,P,M	Capacity, relevancy, rating styles; warning and critical colours
+MACOS	MAC-N07	4.2	breadcrumb/path control	C24,C09,C13,C07	P,M	Path control styles, separators, icons, hover highlight
+MACOS	MAC-N08	4.2	column browser	C24,C13,C07	M	Browser columns, resize handles, branch arrows, selection
+MACOS	MAC-N09	4.2	rule editor	C24,C13,C26	M	Rule editor rows, plus/minus buttons, stripes, indent
+MACOS	MAC-N10	4.2	help button	C24,C10,C13,C07	P,M	Help button circle, glyph, sizes, pressed
+MACOS	MAC-N11	4.2	badge	C24,C09	P,M	Badge, circular and inline count buttons
+MACOS	MAC-N12	4.2	image frame	C24,C09,C12	M	Image view frame styles photo, bezel, groove, button
+MACOS	MAC-N13	4.2	collection view	C24,C07,C11,C17	M	Collection item selection highlight shape and emphasis
+MACOS	MAC-N14	4.2	inspector/utility panel	C24,C03,C20,C13	P,M	HUD panel material, title bar, close button
+MACOS	MAC-N15	4.2	dial/circular slider	C24,C13	M	Circular slider dial, knob dot, ticks
+MACOS	MAC-N16	4.2	inspector/utility panel	C24,C20,C10,C18	R,M	Utility panel title bar, small traffic lights, title font
+MACOS	MAC-N17	4.2	text ruler	C24,C13,C18	M	Ruler ticks, labels, markers
+MACOS	MAC-N18	4.2	find bar	C24,C13	M	Incremental find bar field, buttons, Done
+MACOS	MAC-N19	4.2	inspector/utility panel	C24,C03,C13	M	Inspector split item background, divider, 26 floating glass
+MACOS	MAC-N20	4.2	menu bar	C24,C26,C18,C03,C19	R,M	Menu bar height, font, highlight, background, status items
+MACOS	MAC-N21	4.2	preference rows/boxed list	C24,C11,C13,C18	P,M,V	Grouped form section cards, separators, row height, fonts
+MACOS	MAC-N22	4.2	level indicator/gauge	C24	P,M	SwiftUI linear and circular gauges
+MACOS	MAC-N23	4.2	bottom tab bar	C24,C09	P,M	SwiftUI sidebar-adaptable or toolbar tab bar
+MACOS	MAC-N24	4.2	pull-to-refresh	C24,C13	P,M	27 refresh indicator at scroll top
+MACOS	MAC-N25	4.2	system-drawn panels	C24	M	System-drawn notifications, Dock badge, standard panels
+MACOS	MAC-N26	4.2	touch bar	C24	M,V	Touch Bar items and scrubber
+MACOS	MAC-X01	4.3	shadows	C01,C02	P,M	Per-surface shadow layers for windows, menus, controls, glass
+MACOS	MAC-X02	4.3	materials	C03,C06,C23	P,M	Surface materials with blur, saturation, tint, state, opaque fallback
+MACOS	MAC-X03	4.3	materials	C03,C04,C06	R,M	Vibrant foreground blending and vibrant appearance colours
+MACOS	MAC-X04	4.3	materials	C03,C09,C11,C14	P,M,V	Liquid Glass style, tint, lensing, rim, morphing, interactivity
+MACOS	MAC-X05	4.3	materials	C03,C09	P,M	Scroll edge effect soft, hard, automatic
+MACOS	MAC-X06	4.3	materials	C03	P,M	Background extension mirrored under floating sidebar
+MACOS	MAC-X07	4.3	shape	C11	R,P,M	Per-corner and concentric radii; continuous corner curve
+MACOS	MAC-X08	4.3	borders	C12,C27	M	Per-side colour and width; outer and inner rims, bevels
+MACOS	MAC-X09	4.3	gradients	C04,C27	M	12-15 gradient fills
+MACOS	MAC-X10	4.3	colour fidelity	C25,C28	R	P3 and HDR colours beyond 8-bit sRGB
+MACOS	MAC-X11	4.3	motion	C14,C23	R,M,V	Durations, curves, springs, Reduce-Motion variants for all transitions
+MACOS	MAC-X12	4.3	timings	C21,C25,C16	R,M,V	Caret blink, double-click, key-repeat, menu and scroller delays
+MACOS	MAC-X13	4.3	focus	C15,C25	R,M,V	Focus ring shape, opacity, animation, per-control rule, Full Keyboard Access
+MACOS	MAC-X14	4.3	caret	C16,C13,C25	R,P,M	Caret width, shape, blink fade, caps-lock indicator
+MACOS	MAC-X15	4.3	selection	C17	R,M	Unemphasized selection, find highlight, find indicator, emphasized secondary text
+MACOS	MAC-X16	4.3	colour variants	C06,C07	M	Key/non-key and inactive-app greying of accent parts
+MACOS	MAC-X17	4.3	size variants	C10	R	Control sizes mini to extraLarge, compact metrics set
+MACOS	MAC-X18	4.3	typography	C18	R,P,V	Line height, tracking, optical size, width, design, features
+MACOS	MAC-X19	4.3	icons	C19,C07	M	Icon tint per state on selection, sidebar, accent fills
+MACOS	MAC-X20	4.3	pointer	C22	R,V	Cursor per element and accessibility pointer size and colours
+MACOS	MAC-X21	4.3	drag and drop	C07,C13,C17	M	Drag image translucency, count badge, drop highlights
+MACOS	MAC-X22	4.3	accessibility	C23,C06	R,M	Increase-contrast value for every colour; four variants
+MACOS	MAC-X23	4.3	accessibility	C23,C03	M	Opaque versus translucent values under Reduce Transparency
+MACOS	MAC-X24	4.3	accessibility	C23,C25	R	Differentiate-without-colour flag not read; visible changes
+MACOS	MAC-X25	4.3	accessibility	C23,C14	M	Reduced form of each motion lacks data
+MACOS	MAC-X26	4.3	accessibility	C23,C25,C22	R,M	Invert colours, larger text, toolbar button shapes, pointer size
+MACOS	MAC-X27	4.3	colour roles	C06,C05	R,M	Wallpaper tinting, multicolour accent, appearance-level variants
+MACOS	MAC-X28	4.3	selection	C17,C13	P,M,V	Spelling, grammar, IME underlines, inline predictions, Writing Tools glow
+MACOS	MAC-X29	4.3	states	C07,C06	M	State combinations such as checked-hover, default-non-key lack fields
+MACOS	MAC-W11†	4.1	[window]	C20,C13,C07	P,M,V	Document title hover chevron, rename popover, Edited mark
+MACOS	MAC-W12†	4.1	[window]	C20,C03,C14	P,M,V	Full-screen state, title-bar reveal on hover, Split View divider
+MACOS	MAC-W13†	4.1	[window]	C20,C26,C07	P,R,M,V	Zoom-button tiling menu, drag tiling preview, tiled-window margins
+MACOS	MAC-W14†	4.1	[window]	C20,C09	P,M	Transparent title bar, hidden title, with and without toolbar
+MACOS	MAC-W15†	4.1	[window]	C20,C06	M	Inactive title text colour drawn but not stated
+MACOS	MAC-B11†	4.1	[button]	C10,C26	R,M,V	Push button drawn minimum width per control size
+MACOS	MAC-I09†	4.1	[input]	C13,C07	P,M,V	AutoFill button inside the field and AutoFill fill colour
+MACOS	MAC-I10†	4.1	[text_area]	C26,C25	R	Text view container inset and line fragment padding
+MACOS	MAC-MN17†	4.1	[menu]	C09,C07	M,V	Destructive SwiftUI menu item look
+MACOS	MAC-T06†	4.1	[tooltip]	C13,C01,C21	P,M	Expansion tooltip over truncated cells and fields
+MACOS	MAC-P05†	4.1	[progress_bar]	C12	M,V	Progress track edge line colour and width
+MACOS	MAC-TB06†	4.1	[tab]	C12,C13,C07	M	Tab strip edge, separators, selected tab fill and label
+MACOS	MAC-TB07†	4.1	[tab]	C13,C26	M,V	Tab strip overflow and label truncation
+MACOS	MAC-SB09†	4.1	[sidebar]	C10,C26,C25	R	Sidebar default, minimum, maximum width and collapse
+MACOS	MAC-TL10†	4.1	[toolbar]	C26	M	Fixed and flexible space item widths
+MACOS	MAC-TL11†	4.1	[toolbar]	C07,C13,C06	P,M	Selected toolbar item look in Settings-style toolbars
+MACOS	MAC-L17†	4.1	[list]	C07	M,V	Controls in an emphasized selected row; disabled table selection
+MACOS	MAC-L18†	4.1	[list]	C13,C07	P,M,V	Highlighted column header and header corner view
+MACOS	MAC-L19†	4.1	[list]	C07,C12,C11,C17	M	Context-menu target row outline
+MACOS	MAC-SN05†	4.1	[spinner]	C14	M,V	Spinner fade in on start and out on stop
+MACOS	MAC-SG10†	4.1	[segmented_control]	C13,C19,C07	P,M	Segment image size, scaling and tint per state
+MACOS	MAC-EX05†	4.1	[expander]	C13,C26,C10	R,M	Disclosure triangle size, label gap, content indent, header height
+MACOS	MAC-DF05†	4.1	[defaults]	C05,C25	R	AppKit UI element colours no reader or row reads
+MACOS	MAC-TS03†	4.1	[text_scale]	C18	R,P	Tight and loose leading font variants
+MACOS	MAC-LY02†	4.1	[layout]	C26	P,M	Form labels trailing-aligned beside leading controls
+MACOS	MAC-IC04†	4.1	[defaults]	C19,C13	R	Alert app icon size drawn but not stated
+MACOS	MAC-IC05†	4.1	[defaults]	C19,C14	P,M,V	SF Symbol effects, content transitions, per-state variants
+MACOS	MAC-N27†	4.2	text input system UI	C24,C13,C03	M,V	Accent popup, Character Viewer, IME candidates, Look Up popover
+MACOS	MAC-N28†	4.2	split button	C24,C09,C13,C07	P,M,V	NSComboButton split style and SwiftUI primary-action menu
+MACOS	MAC-N29†	4.2	menu button	C24,C09,C13,C07	P,M	NSComboButton unified, menu toolbar item indicator
+MACOS	MAC-N30†	4.2	media transport controls	C24,C03,C13,C21	P,M,V	AVPlayerView inline, floating, minimal controls and auto-hide
+MACOS	MAC-N31†	4.2	rubber band	C24,C04,C12,C11	M,V	Marquee selection rectangle in icon and collection views
+MACOS	MAC-N32†	4.2	about dialog	C24,C13,C18,C26	P,R,M	Standard About panel icon, fonts, credits, layout
+MACOS	MAC-N33†	4.2	menu bar	C24,C13	P,M,V	Help-menu search field, results and found-item pointer
+MACOS	MAC-N34†	4.2	menu bar	C24,C03,C01,C11	P,M,V	MenuBarExtra window style and 27 expanded status-item interface
+MACOS	MAC-N35†	4.2	status page/placeholder	C24,C13,C18,C26	P,M	ContentUnavailableView image, texts, actions, spacing
+MACOS	MAC-N36†	4.2	teaching tip	C24,C13,C11,C18	P,M	TipKit inline and popover tips
+MACOS	MAC-N37†	4.2	chart	C24,C13,C18,C05	P,M	Swift Charts default axes, grid, series colours, legend
+MACOS	MAC-X30†	4.3	states	C07,C08,C25	R	NSColor system effects: rollover, pressed, deep pressed, disabled
+MACOS	MAC-X31†	4.3	accessibility	C23,C15	R,M,V	Full Keyboard Access focus indicator, window title icons setting
+MACOS	MAC-X32†	4.3	motion	C14,C20	M	Motions missing from MAC-X11: tiling, full-screen reveal, momentum
+MACOS	MAC-X33†	4.3	layout	C26,C20,C25	R,V	Screen safe area around the camera housing, menu bar beside it
+MACOS	MAC-X34†	4.3	layout	C26	R,M,V	Right-to-left mirroring per part
+MACOS	MAC-X35†	4.3	size variants	C09,C25	P,R	Design compatibility mode draws the pre-26 look on 26
+MACOS	MAC-X36†	4.3	size variants	C09,C25	P,M,V	AppKit, SwiftUI and Mac Catalyst idioms draw differently
+MACOS	MAC-X37†	4.3	size variants	C25	R	Versions inside a generation differ; one preset per generation
+MACOS	MAC-X38†	4.3	borders	C12	M,V	Hairlines one point or one device pixel
+MACOS	MAC-SF01†	4.1	[text_area]	C13,C17	P,M,V	Invisibles (TextKit 1)
+MACOS	MAC-SF02†	4.2	rich text view	C24	P	SwiftUI Text with Markdown: which roles it draws
+MACOS	MAC-SF03†	4.2	rich text view	C18,C24	P,M	Inline code in Text (InlinePresentationIntent.code, "a code voice presentation")
+MACOS	MAC-SF04†	4.2	rich text view	C07,C24	M,V	Links in Text Markdown
+MACOS	MAC-SF05†	4.1	[text_area]	C18	M,V	NSTextView showing an AttributedString(markdown:)
+MACOS	MAC-SF06†	4.2	rich text view	C18,C24	P,M	HTML imported into an attributed string (NSAttributedString.DocumentType.html)
+MACOS	MAC-SF07†	4.2	window tab bar	C17,C07,C14,C24	M,V	Window tab bar as a drop target
+MACOS	MAC-SF08†	4.1	[dialog]	C26,C25	P,R,M	Sheet: attachment point
+MACOS	MAC-SF09†	4.1	[dialog]	C26	P,M,V	App-modal alert / panel position on screen
+MACOS	MAC-SF10†	4.1	[dialog]	C26	M,V	SwiftUI alert, confirmation dialog and sheet on macOS
+MACOS	MAC-RL01†	4.1	[layout]	C26	P	Flow layout spacing
+MACOS	MAC-RL02†	4.1	[checkbox]	C13,C26,C10	P,M	Radio group
+MACOS	MAC-FM01†	4.3	typography	C18,C25	R,P,M	Emoji font
+MACOS	MAC-FM02†	4.3	typography	C18,C25	R,M	Fallback chain per language
+MACOS	MAC-P3-1†	4.1	[window]	C20,C22,C26	M,V	Resize zone
+MACOS	MAC-P3-2†	4.1	[scrollbar]	C21,C25	P,R,M,V	Track click and its repeat
+MACOS	MAC-P3-3†	4.1	[scrollbar]	C10,C14	M,V	Overlay knob length
+MACOS	MAC-P3-4†	4.1	[progress_bar]	C13,C18,C26	P,M	SwiftUI progress labels
+MACOS	MAC-P3-5†	4.1	[segmented_control]	C26,C10	P,M	Segment width rule
+MACOS	MAC-P3-6†	4.1	[toolbar]	C13,C14,C26	P,M	Customization palette
+MACOS	MAC-P3-7†	4.1	[input]	C13,C26	P,M	Suggestion menus
+MACOS	MAC-P3-8†	4.1	[input]	C13,C19	P,M,V	Writing Tools affordance
+MACOS	MAC-P3-9†	4.2	AirPlay route picker	C13,C07,C24	P,R,M,V	AVRoutePickerView; Picture in Picture
+MACOS	MAC-P3-10†	4.3	motion	C14,C01	P,M,V	Page transitions
+MACOS	MAC-P3-11†	4.3	caret	C16	P,M,V	Caret visibility
+MACOS	MAC-P3-12†	4.3	pointer	C22,C21	P,M,V	Pointer hidden while typing
+MACOS	MAC-P3-13†	4.3	accessibility	C23,C21,C25	P,R,M,V	Screen flash for alert sounds
+MACOS	MAC-P3-14†	4.3	accessibility	C22,C23,C14,C25	P,R,M,V	Shake to locate
+MACOS	MAC-P3-15†	4.3	window chrome	C14,C20,C21,C22	P,M	Attention and busy feedback
+MACOS	MAC-P3-16†	4.3	size variants	C10,C25	R,V	Display scale
+MACOS	MAC-P3-17†	4.3	timings	C21,C25	R,M,V	Scroll distances
+MACOS	MAC-P4-1†	4.1	[window]	C20,C13,C26	P,M,V	Title pop-up menu
+MACOS	MAC-P4-2†	4.3	window chrome	C06,C20,C14	P,M,V	Behind an authentication prompt
+MACOS	MAC-P4-3†	4.3	accessibility	C23,C06,C25	P,M,V	Screen colour filters, display contrast, Night Shift
+MACOS	MAC-P4-4†	4.3	motion	C14,C21,C25	R,M,V	Smooth wheel step
+MACOS	MAC-P4-5†	4.1	[window]	C13,C26,C20	M,V	Window tab bar overflow
+MACOS	MAC-P4-6†	4.3	timings	C21,C25	P,M,V	Double-click distance
+MACOS	MAC-P4-7†	4.3	icons	C19,C26	P,M	Symbols per writing direction and per script
+MACOS	MAC-P4-8†	4.1	[combo_box]`, `[menu]	C26	P,M	Pull-down and combo list placement and width
+MACOS	MAC-P4-9†	4.3	motion	C14	P,M,V	Accent and highlight colour change
+MACOS	MAC-P4-10†	4.1	[menu]	C21,C26	P,M,V	Submenu safe zone
+MACOS	MAC-P4-11†	4.2	context help	C13,C26,C24	P,M,V	Context-sensitive help window (NSHelpManager)
+MACOS	MAC-P4-12†	4.2	image cropper	C13,C04,C07,C24	P,M,V	ImageKit crop (IKPictureTaker, IKImageView)
+MACOS	MAC-P4-13†	4.3	states	C07,C13,C04	P,M	Placeholder (redacted) content

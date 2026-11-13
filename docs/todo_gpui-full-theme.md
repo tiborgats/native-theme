@@ -69,7 +69,7 @@ caller's `StyleRefinement` after its own geometry (`geometry::<widget>` +
 `refine_style`), **S** = the widget honours `Size::Size(px)`, **B** = a
 widget-specific builder takes the value; "upstream" = an inner element the
 caller's style cannot reach, listed with the line that makes it so (spec §14).
-The remaining upstream items are the v0.7.2 PR list in `ROADMAP.md`.
+The remaining upstream items are the upstream-PR list in `ROADMAP.md` (*Upstream receivers for the gpui connector*).
 
 v0.6.1 (gpui-component 0.7.1): the button's label size reaches a Button through
 a child label (`geometry::button_label`), a `Toggle`'s text through
@@ -677,7 +677,7 @@ gpui-component 0.6.4. In v0.7.0 the connector moves to gpui-component,
 gpui-base and gpui-kit 0.7.3 on gpui-pre 0.3.9, and the citations below are
 at 0.7.3.
 
-- **No upstream item above is resolved.** Every item of `ROADMAP.md`'s v0.7.2
+- **No upstream item above is resolved.** Every item of `ROADMAP.md`'s upstream-PR
   list was re-read at 0.7.3: `Tab`'s render still writes its own height,
   radius and text size into the style bag (`tab/tab.rs:801-808`, unchanged),
   `DataTable` is still not `Styled`, and the base-palette fields of
@@ -700,7 +700,7 @@ at 0.7.3.
   `link.underline_enabled = false` (TextView always underlines a link), the
   selection's text colour (the selection paints under the glyphs), and a rule
   colour of its own (the horizontal rule paints `border`, gpui-base
-  `text/node.rs:4033`); the last is on the v0.7.2 list.
+  `text/node.rs:4033`); the last is on the upstream-PR list.
 - **`Diff`** is new in 0.7.3, and the gpui showcase's Typography page shows it.
   The row, in the table's columns:
 
@@ -718,7 +718,7 @@ them, in the table's columns:
 | Widget | native-theme fields | Connector uses | Gap | v0.7.0 |
 |--------|---------------------|----------------|-----|--------|
 | tooltip | **show_delay** (`tooltip.show_delay_ms`) | `apply` installs it as gpui-base's `TooltipDefaults` show delay, keeping the grace period, and the observer installs it again after an upstream rebuild; `tooltip_show_delay` for GPUI's own `.tooltip()` | GPUI's `.tooltip()` waits its own 500 ms unless the element is given the delay (gpui-pre `src/elements/div.rs:53`, `:1708`) | delivered for every tooltip gpui-component's overlay shows (`Button::tooltip` among them) |
-| dialog | **entrance** (`dialog.entrance`) | `geometry::dialog_entrance` for `Dialog::entrance` and `AlertDialog::entrance` | gpui-component has no scaling and no rising entrance (`dialog/entrance.rs:12-25`): `scale_fade` and `fade_rise` are both drawn as `DialogEntrance::Fade` | delivered as an approximation; a scaling entrance is on the v0.7.2 list |
+| dialog | **entrance** (`dialog.entrance`) | `geometry::dialog_entrance` for `Dialog::entrance` and `AlertDialog::entrance` | gpui-component has no scaling and no rising entrance (`dialog/entrance.rs:12-25`): `scale_fade` and `fade_rise` are both drawn as `DialogEntrance::Fade` | delivered as an approximation; a scaling entrance is on the upstream-PR list |
 | list | **header_height** (`list.header_height_px`) | `geometry::list_header_height` for `DataTable::header_row_height` | none | delivered; `None` where the theme states none, and the header keeps the body rows' height |
 
 ## Note: gpui-component 0.8.0
@@ -745,7 +745,7 @@ gpui-pre 0.3.9 or GPUI Fast 0.1.10, and the citations below are at 0.8.0.
   never under reduce motion (`:551`), which the connector forwards from the
   OS; no platform documents a user setting for it, and neither egui nor iced
   has a receiver. The README's *What gets mapped* says so.
-- **One v0.7.2 item is resolved upstream:** gpui-kit 0.8.0's `GPUI_FAST`
+- **One upstream-PR item is resolved upstream:** gpui-kit 0.8.0's `GPUI_FAST`
   (`src/lib.rs:122`) is the gpui-fast marker constant the list asked for, and
   `ROADMAP.md` drops it. The others were re-read at 0.8.0 and re-cited where
   their lines moved (`Tab`'s height, radius and text size at

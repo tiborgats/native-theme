@@ -1,0 +1,249 @@
+GNOME	GN-1.278†	4.1	[window]	C13,C19,C20	P	Back button glyph, tooltip and navigation menu in the header bar
+GNOME	GN-1.282†	4.1	[window]	C20,C22,C26	P	CSD resize zone widths at edges and corners
+GNOME	GN-1.281†	4.1	[input]	C13,C17	P,M	IME pre-edit underline and per-hint pre-edit styling
+GNOME	GN-1.285†	4.1	[menu]	C13,C19	P	Labelled menu items never show their icon; no icon column
+GNOME	GN-1.283†	4.1	[tooltip]	C18,C26	P	Tooltip wraps at 50 characters, not a pixel width
+GNOME	GN-1.279†	4.1	[list]	C04,C07,C12,C13,C17,C21,C26	P	Deprecated tree view: dotted tree/grid lines, indent, expander, drop lines, search popover
+GNOME	GN-1.280†	4.1	[list]	C07,C12,C26	P	Deprecated icon view: item padding and spacing, drop box, HC ring
+GNOME	GN-1.286†	4.1	[popover]	C13,C26	P	Touch selection bubble with linked edit icon buttons
+GNOME	GN-1.284†	4.1	[dialog]	C26	P	Alert response order, reversed when stacked
+GNOME	GN-2.52†	4.2	breadcrumb/path control	C07,C13,C24	P	File chooser path bar: linked folder toggle buttons
+GNOME	GN-2.53†	4.2	colour picker	C13,C15,C22,C24,C27	P,V	Colour editor plane crosshair, hue and alpha scales, eyedropper
+GNOME	GN-2.54†	4.2	media transport controls	C13,C14,C21,C24	P	Video controls bar, seek scale, volume scale button, auto-hide
+GNOME	GN-2.55†	4.2	carousel	C04,C13,C24	P	Carousel dot and line indicator geometry and opacities
+GNOME	GN-2.56†	4.2	autocomplete	C21,C24,C26	P	Entry completion popover width, row count, delay
+GNOME	GN-2.57†	4.2	composite dialogs	C09,C24	P	Print, page setup and app chooser dialog styling
+GNOME	GN-2.58†	4.2	password field	C13,C24	P	Password mask glyph choice
+GNOME	GN-3.71†	4.3	motion	C14,C20,C23	P	Shell window open, close, minimise, maximise animations
+GNOME	GN-3.73†	4.3	caret	C16	P,V	Caret hidden while text is selected; drop-position caret
+GNOME	GN-3.66†	4.3	selection	C07,C12,C17	P	Drop-target highlight rule and per-widget replacements
+GNOME	GN-3.67†	4.3	pointer	C22	P	Pointer shape per element and hidden while typing
+GNOME	GN-3.72†	4.3	window chrome	C06,C14,C20	P,V	Parent window dimmed under an attached modal dialog
+GNOME	GN-3.68†	4.3	timings	C21,C25	R	Key repeat delay and interval
+GNOME	GN-3.69†	4.3	timings	C21	P	Spin button and trough auto-repeat timings
+GNOME	GN-3.70†	4.3	accessibility	C23,C25	R,M	Visual bell setting and its flash
+GNOME	GN-SF01†	4.2	code editor	C05,C24	P	Which scheme draws
+GNOME	GN-SF02†	4.2	code editor	C05,C17,C24	P	Editor text and fill; selection
+GNOME	GN-SF03†	4.2	code editor	C16,C24	P	Caret, secondary caret
+GNOME	GN-SF04†	4.2	code editor	C17,C24	P	Current line
+GNOME	GN-SF05†	4.2	code editor	C13,C18,C24	P	Gutter (line numbers)
+GNOME	GN-SF06†	4.2	code editor	C13,C24	P	Invisibles
+GNOME	GN-SF07†	4.2	code editor	C17,C18,C24	P	Bracket matching
+GNOME	GN-SF08†	4.2	code editor	C04,C17,C24	P	Search match
+GNOME	GN-SF09†	4.2	code editor	C04,C13,C24	P	Right margin
+GNOME	GN-SF10†	4.2	code editor	C05,C18,C24	P	Syntax roles
+GNOME	GN-SF11†	4.2	code editor	C13,C24	P	Background pattern, overview map
+GNOME	GN-SF12†	4.2	code editor	C05,C24	P	Annotations (5.18+)
+GNOME	GN-SF13†	4.2	code editor	C01,C11,C13,C24	P	Completion and informative popups
+GNOME	GN-SF14†	4.2	dock frame (libpanel)	C17,C07,C04,C14,C24	P	Drop zone over a dock frame (paneldropcontrols)
+GNOME	GN-SF15†	4.2	dock frame (libpanel)	C13,C01,C07,C19,C24	P	Drop-position buttons (top, right, bottom, left, centre)
+GNOME	GN-SF16†	4.2	dock frame (libpanel)	C17,C24	P	Frame-switcher drop indicator
+GNOME	GN-SF17†	4.1	[dialog]	C26,C10	P	AdwDialog / AdwAlertDialog: floating or bottom sheet (the breakpoint)
+GNOME	GN-SF18†	4.1	[dialog]	C26	P	AdwDialog floating sheet: position
+GNOME	GN-SF19†	4.1	[dialog]	C26	P	AdwDialog bottom sheet: position
+GNOME	GN-SF20†	4.1	[dialog]	C26	P	AdwDialog shown as its own window
+GNOME	GN-SF21†	4.1	[dialog]	C26,C25	R,P	Dialog windows: mutter's placement
+GNOME	GN-RL01†	4.2	wizard	C09,C26,C24	P	GtkAssistant page frame and navigation buttons (deprecated, still shipped)
+GNOME	GN-FM01†	4.3	typography	C18,C25	P,R,M	Emoji font
+GNOME	GN-FM02†	4.3	typography	C18,C25	P,R,M	Fallback chain per language, and the family list
+GNOME	GN-FM03†	4.3	mirroring	C26,C19,C25	R,P,M	Right-to-left layout (outside the brief: no such row exists)
+IOS	W-10†	4.1	[window]	C20,C01,C11,C13	P,M	Slide Over panel corners, shadow, grabber; Split View divider
+IOS	W-11†	4.1	[window]	C20,C14,C11,C01	P,M	Window states full screen, windowed, tiled, minimized and their motion
+IOS	B-18†	4.1	[button]	C09,C13	P,R,M	Pull-down button indicator and anchored menu
+IOS	I-9†	4.1	[input]	C13,C07,C21	R,M	Secure entry bullets, last-character reveal, strong-password look
+IOS	I-10†	4.1	[input]	C07,C10	M	Disabled and editing field look, intrinsic height per text size
+IOS	CK-2†	4.1	[checkbox]	C13,C07,C14,C11	R,M	Multiselect circle ring, fill, check, disabled, size, transition
+IOS	MN-17†	4.1	[menu]	C11,C26,C13	M	Item highlight shape, menu inner padding, icon-text gap
+IOS	MN-18†	4.1	[menu]	C07	R,M	Disabled menu item title, subtitle and icon colours
+IOS	TT-3†	4.1	[tooltip]	C26,C21	P,M,V	Tooltip placement, gap, re-show between views
+IOS	SB-7†	4.1	[scrollbar]	C10,C14,C22	M	Indicator minimum length, overscroll compression, pointer hover
+IOS	PB-4†	4.1	[progress_bar]	C13,C18,C26	R,M	SwiftUI progress label and current-value label parts
+IOS	T-17†	4.1	[tab]	C07,C13,C14,C17	R,M	iPadOS 18 tab customization: hiding, placement, drop indicator
+IOS	SD-9†	4.1	[sidebar]	C01,C04,C14,C26	R,M	Overlay and displace split behaviours: shadow, dim, slide
+IOS	SD-10†	4.1	[sidebar]	C26,C10,C25	R	Primary column default, minimum, maximum width
+IOS	L-21†	4.1	[list]	C26,C13	R,P,M	Outline row indentation width per level
+IOS	L-22†	4.1	[list]	C13,C26,C10	P,M	SwiftUI Table headers, sort indicator, compact collapse
+IOS	L-23†	4.1	[list]	C13,C26,C09	R,M	Form rows: labeled values, pickers, switches, steppers in rows
+IOS	PO-7†	4.1	[popover]	C26,C10	R,M	Popover default content size and arrow gap
+IOS	DL-13†	4.1	[dialog]	C10,C26	M	Alert width, scrolling height, accessibility-size width
+IOS	SG-8†	4.1	[segmented_control]	C09,C07,C14	R,M	Momentary segmented mode highlight and fade
+IOS	SG-9†	4.1	[segmented_control]	C26,C10,C07	R,M	Segment width rule, height per text size, disabled segment
+IOS	C-36†	4.2	teaching tip	C24,C13,C03,C11,C18	R,P,M	TipKit inline and popover tips
+IOS	C-37†	4.2	menu bar	C24,C03,C13,C14,C21,C20	P,R,M	iPadOS 26 menu bar
+IOS	C-38†	4.2	autocomplete	C24,C13	R,M	Search suggestions menu or list
+IOS	C-39†	4.2	file chooser	C24	R,M	System-drawn picker and Safari view controllers
+IOS	C-40†	4.2	ink toolbar	C24,C01,C03	R,M	PencilKit tool picker and its light/dark style
+IOS	C-41†	4.2	inspector/utility panel	C24,C03,C26,C14	R,M	Inspector column
+IOS	C-42†	4.2	media transport controls	C24,C03,C13,C07,C14	R,M	AVKit playback controls and AirPlay route button
+IOS	C-43†	4.2	navigation/app bar	C24,C09,C26	R,M	Navigation item styles navigator, browser, editor
+IOS	C-44†	4.2	document launch view	C24,C13	R,M	Document-based app launch view
+IOS	C-45†	4.2	chart	C24,C05,C13,C18	R,P,M	Swift Charts default axis, grid, label and series styling
+IOS	C-46†	4.2	activity rings	C24,C27,C13	R,P,M	HealthKitUI activity rings colours, gradients, geometry
+IOS	C-47†	4.2	rubber band	C24,C17,C12	R,M	Pointer band-selection rectangle
+IOS	C-48†	4.2	carousel	C24,C14,C27	R,M	Page view controller page curl and page spacing
+IOS	C-49†	4.2	editing HUD	C24,C03,C14	V,M	Editing-gesture undo/copy/paste HUD
+IOS	X-MO-11†	4.3	motion	C14	M	Light/dark appearance change transition
+IOS	X-FO-3†	4.3	focus	C15,C23,C25	P,V,M	Full Keyboard Access focus indicator and keyboard-only rule
+IOS	X-BT-2†	4.3	timings	C21	M,V	Double-tap interval and touch slop
+IOS	SF-1†	4.1	[text_area]	C13,C17	P,M,V	Invisibles (TextKit 1)
+IOS	SF-2†	4.2	rich text view	C24	P,V	SwiftUI Text with Markdown: which roles it draws
+IOS	SF-3†	4.2	rich text view	C18,C24	P,M	Inline code in Text
+IOS	SF-4†	4.2	rich text view	C07,C24	M,V	Links in Text Markdown
+IOS	SF-5†	4.1	[text_area]	C18	M,V	UILabel/UITextView given an AttributedString(markdown:)
+IOS	SF-6†	4.2	rich text view	C18,C24	P,M	HTML imported into an attributed string
+IOS	SF-7†	4.1	[dialog]	C26,C10,C25	R,P	Sheet placement per size class
+IOS	SF-8†	4.1	[dialog]	C26,C10	P,M	Default sheet style (.automatic)
+IOS	SF-9†	4.1	[dialog]	C26	M,V	Alert: position
+IOS	RL-1†	4.2	shortcuts dialog	C03,C11,C01,C18,C14,C24	P,M,V	Keyboard-shortcut discoverability HUD (iPad with a hardware keyboard)
+IOS	RL-2†	4.2	editable label	C07,C13,C14,C24	P,M	Navigation title inline rename (UINavigationItem.renameDelegate, 16+)
+IOS	RL-3†	4.1	[layout]	C26	P	Flow layout spacing (UICollectionViewFlowLayout)
+IOS	FM-1†	4.3	typography	C18,C25	R,P,M	Emoji font
+IOS	FM-2†	4.3	typography	C18,C25	R,M	Fallback chain per language
+KDE	K1.19†	4.1	[window]	C20,C14,C03,C25	R,P,V	Quick-tile outline: Plasma theme SVG frame, animated to the tile
+KDE	K1.46†	4.1	[input]	C13,C19,C14,C26	P,V	Clear-button icon size, box, icon modes and 160 ms fade
+KDE	K1.47†	4.1	[input]	C16,C09	P	Block caret with input mask; wide caret in overwrite mode
+KDE	K1.48†	4.1	[input]	C13,C19,C21	P	Password mask character and delay; reveal action visibility
+KDE	K1.49†	4.1	[input]	C17,C05,C13	P	Misspelling underline: wave style, hard-coded red
+KDE	K1.58†	4.1	[checkbox]	C13,C26,C12	P	Check mark path insets and stroke inside the box; dot spacing
+KDE	K1.83†	4.1	[tooltip]	C21,C26	P	Qt tooltip wake-up, fall-asleep, display time, hide delay, wrapping
+KDE	K1.84†	4.1	[tooltip]	C09,C13,C26,C21	P	Rich tooltip widget: any content, placement, 500 ms hide delay
+KDE	K1.115†	4.1	[progress_bar]	C09,C10,C13,C26	P	Capacity bar: fixed bar height, text below or inline
+KDE	K1.133†	4.1	[tab]	C14,C21,C07	P	Movable-tab slide timing and drag-hover tab switch delay
+KDE	K1.142†	4.1	[sidebar]	C13,C04,C05,C07,C11,C14,C19	P,V	Places panel: section headers, capacity bars, eject icon, hidden items
+KDE	K1.184†	4.1	[list]	C13,C05,C07	P	Column view child arrows in shade roles
+KDE	K1.185†	4.1	[list]	C14	P,V	Tree view expand/collapse animation tied to style duration
+KDE	K1.224†	4.1	[dialog]	C13,C19,C10	P	Message box standard icon and its size
+KDE	K1.260†	4.1	[link]	C07,C05,C22	P	URL label hover colour BrightText, float underline, hand cursor
+KDE	K2.23†	4.2	date picker	C24,C13,C05,C07,C18,C23	P	Date combo with menu popup; date grid colours incl. hard-coded red
+KDE	K2.24†	4.2	time picker	C24,C13	P,V	Editable time combo, time spin box, date-time pair
+KDE	K2.25†	4.2	colour picker	C24,C13,C12	P,V	Qt colour dialog: hue field, value strip, colour wells, cross-hair
+KDE	K2.26†	4.2	file chooser	C24,C13,C26	P,V	File dialog: places, navigator, views, preview, icon-size slider
+KDE	K2.27†	4.2	breadcrumb/path control	C24,C13,C04,C07,C27,C18	P,V	URL navigator crumbs: alpha text, bold current, arrows, fade gradient
+KDE	K2.28†	4.2	font chooser	C24,C13,C12	P	Font requester sample label and font chooser lists and preview
+KDE	K2.29†	4.2	autocomplete	C24,C13,C12,C26	P	Completion popup: plain 1 px frame, field width, 15 rows; inline mode
+KDE	K2.30†	4.2	find bar	C24,C17,C05,C07	P	Search bar match/no-match field backgrounds; find and replace highlights
+KDE	K2.31†	4.2	teaching tip	C24,C05,C12,C01,C26	P,V	What's This popup: tooltip colours, double frame, margins, shadow rule
+KDE	K2.32†	4.2	text ruler	C24,C13,C18	P,V	Ruler: thickness, mark lengths, label size, pointer
+KDE	Q2.53†	4.2	edit menu	C24,C13,C19,C26,C10	P	Touch Cut/Copy/Paste bar placement and icons
+KDE	Q2.54†	4.2	pull-to-refresh	C24,C13,C14,C21,C26	P	Pull-down strip, progress arc, refresh delay, content shift
+KDE	Q2.55†	4.2	preference rows/boxed list	C24,C13,C04,C07,C11,C14,C18,C26	P	Forms cards group and entry: title, card, padding, hover fills, corners
+KDE	Q2.56†	4.2	preference rows/boxed list	C24,C13,C09,C14,C18,C26	P	Forms separators, action entries, flat style, collapse rule
+KDE	Q2.57†	4.2	about dialog	C24,C13,C18,C19,C26	P	About page: app icon, name heading, sections, author avatars
+KDE	Q2.58†	4.2	full-screen dialog	C24,C10,C13,C26	P	Dialog layer: inset dialog, full-window layer or window by width
+KDE	K3.15†	4.3	window chrome	C06,C04,C14,C20,C25	R,P	Modal dialog's parent window desaturated and darkened
+KDE	K3.16†	4.3	window chrome	C06,C04,C14,C20,C25	R,P	Not-responding window desaturated and brightened
+KDE	K3.38†	4.3	motion	C14,C25	P	Dock and toolbar re-layout timed by the style animation duration
+KDE	K3.39†	4.3	motion	C14,C20	P	Fullscreen enter/leave morph and cross-fade
+KDE	K3.48†	4.3	selection	C17,C16	P,M,V	Input-method pre-edit text formats and caret
+KDE	K3.65†	4.3	pointer	C22,C21	P,V	Cursor shape per element; pointer auto-hide while typing
+KDE	K3.66†	4.3	pointer	C22,C14,C21,C25	R,P	Application launch feedback: bouncing or blinking icon, busy cursor
+KDE	K3.76†	4.3	timings	C21	P	Spin-box auto-repeat delays and press-and-hold interval
+KDE	K3.84†	4.3	size variants	C10,C25	R	Per-output fractional display scale on Wayland
+KDE	K3.95†	4.3	accessibility	C23,C21,C25	R,P	Visual bell: flash colour or invert, duration, throttle
+KDE	K3.96†	4.3	accessibility	C23,C22,C14,C25	R,P	Shake cursor magnification and its animation
+KDE	K-SF01†	4.2	code editor	C05,C25,C24	R,P	Which theme draws
+KDE	K-SF02†	4.2	code editor	C05,C17,C24	P	Editor fill and selection
+KDE	K-SF03†	4.2	code editor	C04,C17,C24	P	Current line
+KDE	K-SF04†	4.2	code editor	C05,C13,C24	P	Gutter (icon border, line numbers)
+KDE	K-SF05†	4.2	code editor	C04,C13,C24	P	Modified / saved line markers
+KDE	K-SF06†	4.2	code editor	C13,C24	P	Invisibles and indentation guides
+KDE	K-SF07†	4.2	code editor	C14,C17,C24	P	Bracket matching
+KDE	K-SF08†	4.2	code editor	C17,C24	P	Search and replace highlights
+KDE	K-SF09†	4.2	code editor	C13,C24	P	Right margin (static word-wrap marker)
+KDE	K-SF10†	4.2	code editor	C05,C18,C24	P	Syntax roles
+KDE	K-SF11†	4.2	code editor	C05,C17,C24	P	Spell-check and template placeholders
+KDE	K-SF12†	4.2	rich text view	C18,C24	P	Headings H1–H6
+KDE	K-SF13†	4.2	rich text view	C18,C24	P	Inline code and code blocks
+KDE	K-SF14†	4.2	rich text view	C26,C24	P	Block quote
+KDE	K-SF15†	4.2	rich text view	C13,C24	P	List markers and task boxes
+KDE	K-SF16†	4.2	rich text view	C12,C24	P	Tables
+KDE	K-SF17†	4.2	rich text view	C04,C26,C24	P	Horizontal rule, paragraphs
+KDE	K-SF18†	4.3	drop target	C17,C07,C12,C04	P,M	QMainWindow dock drop zone (gap indicator)
+KDE	K-SF19†	4.1	[dialog]	C26	P,V	Qt Widgets dialog: Qt's placement
+KDE	K-SF20†	4.1	[dialog]	C26,C25	R,P	Qt Widgets dialog: KWin's placement
+KDE	K-SF21†	4.1	[dialog]	C26	P	Kirigami Dialog (and PromptDialog, MenuDialog, SearchDialog): position
+KDE	K-SF22†	4.1	[dialog]	C26	P	qqc2-desktop-style Dialog: position
+KDE	K-SF23†	4.2	sheet/bottom sheet	C26,C24	P,V	OverlaySheet: position
+KDE	K-RL01†	4.2	command bar	C01,C05,C11,C26,C24	P	Command bar and its shortcut keycaps (KCommandBar)
+KDE	K-RL02†	4.2	shortcuts dialog	C07,C13,C19,C24	P,M	Shortcuts dialog (KShortcutsDialog / KShortcutsEditor)
+KDE	K-RL03†	4.2	emoji chooser	C18,C26,C24	P	Emoji selector (plasma-emojier)
+KDE	K-RL04†	4.2	character selector	C26,C24	P	Character selector (KCharSelect)
+KDE	K-RL05†	4.1	[list]	C12,C13,C26	P	In-place item editor
+KDE	K-RL06†	4.1	[list]	C07,C26	P,M,V	Drag image of item views
+KDE	K-RL07†	4.1	[button]	C21	P	Auto-repeat while held
+KDE	K-FM01†	4.3	typography	C18,C25	P,R,M	Emoji font
+KDE	K-FM02†	4.3	typography	C18,C25	P,R,M	Fallback chain per language
+KDE	K-FM03†	4.3	mirroring	C26,C19,C25	R,P,M	Right-to-left layout (outside the brief: no such row exists)
+MATERIAL	MAT-W4†	4.1	[window]	C20,C01,C07,C13,C25	R,P,M,V	Desktop-windowing caption bar, buttons, focus states, outline, shadow
+MATERIAL	MAT-W5†	4.1	[window]	C20,C11,C25	R,M,V	Display and freeform-window corner radii per corner
+MATERIAL	MAT-I17†	4.1	[input]	C17,C13,C01,C11	P,M,V	Text magnifier size, corner, elevation, zoom, offset
+MATERIAL	MAT-I18†	4.1	[input]	C17,C13	P,M,V	IME composition underline and spell-check underlines
+MATERIAL	MAT-I19†	4.1	[input]	C13,C21,C25	P,R,V	Password field glyph, last-character reveal timing, show-passwords setting
+MATERIAL	MAT-SC3†	4.1	[scrollbar]	C21,C14,C26,C04,C13	P	Compose M3 visual-only scrollbar: fade delay and duration, track insets, max thumb fraction
+MATERIAL	MAT-SC4†	4.1	[scrollbar]	C14,C13,C25	R,M,V	Pre-Android-12 glow overscroll colour, shape, fade
+MATERIAL	MAT-TA8†	4.1	[toolbar]	C13,C26	P,V	App bar overflow indicator and menu
+MATERIAL	MAT-DG10†	4.1	[dialog]	C26	P	Dialog actions end-aligned, wrap to a column with confirm first, row and column gaps
+MATERIAL	MAT-N30†	4.2	edit menu	C24,C13,C01,C11	P,M	Floating text-selection toolbar drawn by the framework
+MATERIAL	MAT-N31†	4.2	picker wheel	C24,C13,C14,C18,C07,C11	P	Scroll field wheel picker: container, value colours, interpolated text style, snap motion
+MATERIAL	MAT-X32†	4.3	timings	C21,C25	R,V	Touch slop, paging slop, double-tap slop, wheel scroll factor
+MATERIAL	MAT-X33†	4.3	pointer	C22,C07,C25	P,R,V	Cursor per component and state; Android pointer size and colour settings
+MATERIAL	MAT-X34†	4.3	focus	C15,C08,C12,C09	P	Keyboard-only focus ring rule; Compose opacity vs inset two-stroke focus styles
+MATERIAL	MAT-X35†	4.3	accessibility	C23,C25,C06	R,M,V	High-contrast text, colour inversion and correction, force dark
+MATERIAL	MAT-X36†	4.3	typography	C18,C25	R,P,V	Platform default sans and monospace typefaces
+MATERIAL	MAT-X37†	4.3	layout	C26,C11	P	Optical centring of content in asymmetric shapes
+MATERIAL	MAT-X38†	4.3	layout	C26	P,V	Scaffold placement of FAB and snackbar
+MATERIAL	MAT-SF01†	4.1	[dialog]	C26	P,M	Dialog: position
+MATERIAL	MAT-SF02†	4.1	[dialog]	C26,C10	P,V	Dialog: when it becomes full-screen (the breakpoint)
+MATERIAL	MAT-SF03†	4.2	sheet/bottom sheet	C26,C24	P	Modal bottom sheet: position on wide windows
+MATERIAL	MAT-SF04†	4.3	placement	C26	P	Levitated pane (adaptive scaffolds)
+MATERIAL	MAT-RL01†	4.2	wrap box	C26,C24	P,V	Chip set (md-chip-set)
+MATERIAL	MAT-FM01†	4.3	typography	C18,C25	P,R,M	Emoji font
+MATERIAL	MAT-FM02†	4.3	typography	C18,C25	P,R,M	Fallback chain per language
+MATERIAL	MAT-FM03†	4.3	mirroring	C26,C11,C25	R,P,M	Right-to-left layout
+MATERIAL	MAT-FM04†	4.3	mirroring	C19,C26	P,M	Icons in right-to-left
+WINDOWS	W1-148†	4.1	[window]	C07,C10,C13,C20,C25	R,P,M,V	Caption button set per window kind: dialog, fixed size, help button, tool window
+WINDOWS	W1-149†	4.1	[window]	C07,C20,C21,C25	R,P,M	Window attention flash: caption colours, rate and count
+WINDOWS	W1-150†	4.1	[input]	C13,C18	P,V	Text box description text below the field
+WINDOWS	W1-151†	4.1	[input]	C13,C17	P,M,V	Spell-check underline and IME composition underlines
+WINDOWS	W1-152†	4.1	[scrollbar]	C21,C23,C25	R,P,M	Auto-hide scroll bar setting not read into overlay_mode
+WINDOWS	W1-153†	4.1	[slider]	C07,C09,C13	P	Two-thumb range slider (Toolkit RangeSelector)
+WINDOWS	W1-154†	4.1	[segmented_control]	C07,C09,C13	P	Segmented style variants: default, pivot, button; item layouts
+WINDOWS	W1-155†	4.1	[dialog]	C09,C26	P	ContentDialog full-size variant
+WINDOWS	W1-156†	4.1	[dialog]	C13,C18,C25	R,M,V	Win32 message box and task dialog icon, instruction text, footer
+WINDOWS	W1-157†	4.1	[splitter]	C07,C11,C13	P	Toolkit splitter gripper, fills per state, thumb size and radius
+WINDOWS	W1-158†	4.1	[status_bar]	C25,C26	R	Win32 status bar border widths and part gap via SB_GETBORDERS
+WINDOWS	W1-159†	4.1	[list]	C04,C13,C17	P,M,V	Win32 list view marquee selection rectangle
+WINDOWS	W2-40†	4.2	preference rows/boxed list	C07,C13,C19,C24,C26	P	Settings card and expander: states, paddings, layouts, icon dimming
+WINDOWS	W2-41†	4.2	level indicator/gauge	C13,C24	P,V	Toolkit radial gauge: arcs, needle, ticks, value text, disabled
+WINDOWS	W2-42†	4.2	colour button	C07,C11,C13,C24	P	Toolkit colour picker button: swatch, checkerboard, chevron states
+WINDOWS	W2-43†	4.2	chip	C07,C11,C13,C24	P	Toolkit tokens: fills per state, remove button, spacing
+WINDOWS	W3-45†	4.3	colour roles	C04	P	Alpha fills replacing a rest fill stored flattened over one background
+WINDOWS	W3-46†	4.3	colour roles	C05	P	Inverse text colour role used on status icon backplates
+WINDOWS	W3-47†	4.3	typography	C18,C25	R,V	Monospace font has no WinUI source; console font readable
+WINDOWS	W3-48†	4.3	accessibility	C13,C23,C25	R,M	Access-key underline visibility setting
+WINDOWS	W3-49†	4.3	drag and drop	C13,C14,C17	P,M	System drag image, caption and glyph, drop description
+WINDOWS	W3-50†	4.3	pointer	C22,C23,C25	R,M,V	Pointer colour, shadow, locator, trails, touch visualisation
+WINDOWS	W3-51†	4.3	icons	C07,C19	P,M,V	Disabled bitmap icons dimmed by opacity, glyphs recoloured
+WINDOWS	W3-52†	4.3	motion	C14,C21	R,P,M,V	Wheel scroll animation, inertia, overpan, snap settle
+WINDOWS	W3-53†	4.3	motion	C01,C07,C14,C25	R,M	Win32 visual effect switches: fades, slides, hot tracking, shadows
+WINDOWS	W3-54†	4.3	size variants	C19,C26	P,M,V	Right-to-left mirroring of templates and glyphs
+WINDOWS	W3-55†	4.3	size variants	C25,C26	R,M,V	Menu drop alignment by handedness
+WINDOWS	W3-56†	4.3	accessibility	C23,C25	R,V	Colour filter flag and kind
+WINDOWS	W-SF01†	4.2	rich text view	C18,C26,C24	P	MarkdownTextBlock, headings H1–H6
+WINDOWS	W-SF02†	4.2	rich text view	C11,C12,C18,C24	P	Inline code
+WINDOWS	W-SF03†	4.2	rich text view	C11,C12,C18,C24	P	Code block
+WINDOWS	W-SF04†	4.2	rich text view	C12,C13,C26,C24	P	Block quote
+WINDOWS	W-SF05†	4.2	rich text view	C13,C26,C24	P	List markers and indentation
+WINDOWS	W-SF06†	4.2	rich text view	C12,C24	P	Tables
+WINDOWS	W-SF07†	4.2	rich text view	C18,C26,C24	P	Horizontal rule, paragraphs, links
+WINDOWS	W-SF08†	4.2	rich text view	C26,C24	P	The control's own frame
+WINDOWS	W-SF09†	4.1	[tab]	C17,C07,C14	P,M,V	TabView: a torn-out tab over another TabView
+WINDOWS	W-SF10†	4.1	[dialog]	C26	P	ContentDialog: position
+WINDOWS	W-SF11†	4.1	[dialog]	C26,C20	M,V	ContentDialog: the area it centres in
+WINDOWS	W-SF12†	4.1	[dialog]	C26	P,M	ContentDialog with the on-screen keyboard
+WINDOWS	W-SF13†	4.1	[dialog]	C26	P,M	Win32 task dialog and message box: position
+WINDOWS	W-RL01†	4.1	[list]	C07,C13	P,M	List and tree (Win32 list view, tree view): in-place label edit
+WINDOWS	W-RL02†	4.1	[button]	C07,C09,C13,C14,C18	R,P,M	Command link button (Win32 BS_COMMANDLINK, BS_DEFCOMMANDLINK)
+WINDOWS	W-RL03†	4.2	wizard	C06,C13,C18,C20,C26,C24	R,P,M	Aero wizard (Win32 property sheet PSH_WIZARD + PSH_AEROWIZARD)
+WINDOWS	W-FM01†	4.3	typography	C18,C25	P,R,M	Emoji font
+WINDOWS	W-FM02†	4.3	typography	C18,C25	P,R,M	Fallback chain per language

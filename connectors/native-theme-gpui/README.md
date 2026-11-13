@@ -427,8 +427,8 @@ takes the text input's border colour; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
 setters fill, `tab/tab.rs:958-966`) is
 listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md)
-and in the [roadmap](../../ROADMAP.md)'s upstream-PR list (*v0.7.2 — Upstream
-receivers for the gpui connector*). The checkbox, radio, switch, slider,
+and in the [roadmap](../../ROADMAP.md)'s upstream-PR list (*Upstream receivers for
+the gpui connector*). The checkbox, radio, switch, slider,
 progress bar, spinner, tab bar and separator among them have theme-drawn
 replacements in the `widgets` module.
 
