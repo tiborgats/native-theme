@@ -73,7 +73,7 @@ sits.
 | `gpui-kit` (GPUI as the code names it; the showcase) | 0.9.1 |
 | `rust-version` | 1.95.0 |
 
-Each is a floor and nothing more. It is not an open-ended `0.8.x`, because a
+Each is a floor and nothing more. It is not an open-ended `0.9.x`, because a
 *patch* release of these crates has broken this connector before: gpui-component
 0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
 stopped compiling on a fresh dependency resolution. gpui-component 0.7.1 did it
