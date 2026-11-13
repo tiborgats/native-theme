@@ -33,6 +33,7 @@ Exit 0 when every target documented cleanly, 1 otherwise.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -131,6 +132,17 @@ def main() -> None:
             f"{crate}: docs.rs documents {', '.join(missing)}, whose nightly standard library is "
             f"not installed (rustup +nightly target add {' '.join(missing)})"
         )
+
+    # The output of an earlier run goes first: rustdoc merges its cross-crate
+    # index (doc/crates.js and the search index) with what the folder holds,
+    # and a nightly that changed the index's format stops on the older
+    # nightly's file ("invalid type: string ..., expected struct
+    # AllCratesEntry", 2026-11-13). The compiled dependencies beside it stay.
+    for folder in [os.path.join(TARGET_DIR, "doc")] + [
+        os.path.join(TARGET_DIR, target, "doc") for target in targets
+    ]:
+        if os.path.isdir(folder):
+            shutil.rmtree(folder)
 
     failed = []
     for target in targets:
