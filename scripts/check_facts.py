@@ -3702,7 +3702,9 @@ def depth_place_problems(ctx: Context, items) -> list:
     `[kept]` entries counted) and else in the unit the longest `[staged]` path above it names, which must not be a later
     unit already enabled. A Depth line's "on `<preset>` not `<name>`…" clause (spec_catalogue.depth_exclusions) needs,
     on each preset its pattern matches, a later unit's group naming that preset and holding each name, which takes the
-    Depth line's place there. Nothing is checked where the root has no units file (a fixture without one)."""
+    Depth line's place there. Each `[at_depth]` prefix is a leading part of some fact's key and each condition it
+    names a later unit's, so a misspelled one is found. Nothing is checked where the root has no units file (a
+    fixture without one)."""
     import check_facts_trace   # the units file's reader, which imports this module
     if not (ctx.root / check_facts_trace.UNITS).is_file():
         return []
@@ -3784,6 +3786,16 @@ def depth_place_problems(ctx: Context, items) -> list:
                 elif unit in by_name and by_name[unit].enabled:
                     report(it, ("token", head), f"the token path `{head}` is staged to `{unit}`, a later unit "
                                                 f"already enabled, whose commit ends the staging (S6.1)")
+    keys = [check_facts_trace.segs(it.data["key"]) for it in items
+            if not it.palette and it.table == "fact" and isinstance(it.data.get("key"), str)]
+    for prefix, conditions in at_depth.items():
+        if not any(check_facts_trace.under(k, check_facts_trace.segs(prefix)) for k in keys):
+            out.append((check_facts_trace.UNITS.as_posix(), 1, f"`at_depth.\"{prefix}\"` is the prefix of no fact's "
+                                                               f"key (S17, ADD-A147)"))
+        for c in conditions:
+            if not any(c in u.conditions for u in later):
+                out.append((check_facts_trace.UNITS.as_posix(), 1, f"`at_depth.\"{prefix}\"` names `{c}`, which no "
+                                                                   f"later unit holds (S17, ADD-A147)"))
     for entry in sorted(entries):
         for pattern, kind, names, line in spec_catalogue.depth_exclusions(ctx.entries[entry]):
             presets = [p for p in ALL_PRESETS if fnmatch.fnmatchcase(p, pattern)]
@@ -5444,6 +5456,19 @@ def self_test() -> int:
                    if "token path" in w or "widget_units" in w or "motoin" in w]
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"places, {label}: got {got}, want {want}")
+        # an `[at_depth]` prefix is some fact's key's, and each condition it names a later unit's
+        for i, (at, want) in enumerate((('"role.header" = ["window_inactive"]', []),
+                                        ('"role.headr" = ["window_inactive"]', ['`at_depth."role.headr"` is the prefix '
+                                                                                "of no fact's key"]),
+                                        ('"role.header" = ["window_inactiv"]', ['`at_depth."role.header"` names '
+                                                                                '`window_inactiv`, which no later unit '
+                                                                                'holds']))):
+            root = base / f"at-depth-{i}"
+            write_fixture(root, {**SELF_TEST_FILES, "scripts/widget_units.toml": f"{units}[at_depth]\n{at}\n"})
+            ctx = fixture_context(root)
+            got = [w for _, _, w in depth_place_problems(ctx, load(ctx)[0]) if w.startswith("`at_depth.")]
+            if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
+                failures.append(f"[at_depth] {at}: got {got}, want {want}")
         # a Depth line's "on `<preset>` not …" clause needs the units file's group naming each preset it matches
         catalogue = SELF_TEST_CATALOGUE.replace(
             "- **may_be_absent:** fields: `selection",

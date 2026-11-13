@@ -82,8 +82,9 @@ by the same rule (`native-theme/tests/facts_gate/units.rs`).
 
 The depth (S6.1, S17; ADD-A147): `[deferred.<widget>]` may name a part's field (`"body.transitions"`); a `[staged]`
 path may hold a `*` segment (any one) or `@*` (any keyed one); `[kept.<unit>]`, `<preset> = [paths]`, names the entries
-of a staged keyed map that lie in the unit on that preset all the same; `[at_depth]`, `<key prefix> = [conditions]`,
-the conditions at depth for those keys that a later unit holds for every other; and `[[later]]` tables the later
+of a staged keyed map that lie in the unit on that preset all the same (the preset one of check_facts.ALL_PRESETS, each
+path under one of the unit's `[staged]` paths: read_units refuses any other); `[at_depth]`, `<key prefix> =
+[conditions]`, the conditions at depth for those keys that a later unit holds for every other; and `[[later]]` tables the later
 units in their order (read_later; Later). A name of an entry is at depth where no later unit not enabled holds it,
 and a fact is of the enabled units by the predicate of the class Depth (its docstring: decided exactly over the
 combinations at depth; any other fact attributed to a unit by the names it lists, or unplaced), which
@@ -221,6 +222,15 @@ def read_units(root: Path) -> dict:
         for name in data.get(table, {}):
             if name not in out:
                 raise InputError(f"{UNITS}: `{table}.{name}` names no enabled unit")
+    for name, presets in kept.items():
+        for preset, paths in presets.items():
+            if preset not in check_facts.ALL_PRESETS:
+                raise InputError(f"{UNITS}: `kept.{name}.{preset}` names no preset "
+                                 f"({', '.join(check_facts.ALL_PRESETS)})")
+            for path in paths:
+                if not any(under(segs(path), segs(s)) for s in staged.get(name, {})):
+                    raise InputError(f"{UNITS}: `kept.{name}.{preset}` keeps `{path}`, which no `[staged.{name}]` "
+                                     f"path covers")
     return out
 
 
@@ -1745,7 +1755,11 @@ def self_test() -> int:
                     'slice = ["button"]\ndeferred = { button = ["menu_placement"] }\n',
                     'slice = ["button"]\nhand_written = ["placement"]\n', "slice = [\n",
                     'slice = ["button"]\nprefixes = ["role"]\n', 'slice = ["button"]\n[prefixes]\nbars = ["role"]\n',
-                    'slice = ["button"]\n[staged]\nslice = ["token.behavior.scroll"]\n', None):
+                    'slice = ["button"]\n[staged]\nslice = ["token.behavior.scroll"]\n',
+                    'slice = ["button"]\n[prefixes]\nslice = ["token"]\n[staged.slice]\n"token.text.keyed" = "button"\n'
+                    '[kept.slice]\n"adwaitta" = ["token.text.keyed.body"]\n',
+                    'slice = ["button"]\n[prefixes]\nslice = ["token"]\n[staged.slice]\n"token.text.keyed" = "button"\n'
+                    '[kept.slice]\n"adwaita" = ["token.text.keyd.body"]\n', None):
             try:
                 if (base / "bad").exists():
                     for f in (base / "bad").rglob("widget_units.toml"):
