@@ -350,13 +350,14 @@ const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
 
 /// A menu row's side padding where `menu.border.padding` states no side,
 /// and its height where neither `menu.row_height` nor a vertical padding
-/// side is stated: upstream's `PopupMenu` row at the default Size
-/// (menu/popup_menu.rs:1236, `INNER_PADDING`; :1242, the item height). The
-/// height takes the connector's control-height rule (geometry.rs,
-/// `with_height_rule`): it is the row's height at a text scale of 1 or less
-/// and its minimum above.
-pub(crate) const MENU_ROW_PADDING_X: Pixels = px(8.);
-pub(crate) const MENU_ROW_HEIGHT: Pixels = px(26.);
+/// side is stated: upstream's `PopupMenu` row at the default Size, in rems
+/// since gpui-component 0.9.0 (gpui-component 0.9.1
+/// menu/popup_menu.rs:1327, `INNER_PADDING`; :1333, the item height), so
+/// both follow the window's rem, the theme's font size. The height takes
+/// the connector's control-height rule (geometry.rs, `with_height_rule`): it
+/// is the row's height at a text scale of 1 or less and its minimum above.
+pub(crate) const MENU_ROW_PADDING_X: Rems = rems(0.5);
+pub(crate) const MENU_ROW_HEIGHT: Rems = rems(1.625);
 
 /// What upstream's `PopupMenu` leaves round and between its rows, and
 /// between a row's label and its shortcut (menu/popup_menu.rs:1516-1518,

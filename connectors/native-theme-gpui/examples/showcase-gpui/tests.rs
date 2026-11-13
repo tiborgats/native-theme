@@ -10801,10 +10801,10 @@ fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
             accessibility: &prefs,
         };
         let p = r.menu.border.padding;
-        let side = |stated: Option<f32>, unstated: Option<Pixels>| {
-            stated.map(px).or(unstated).map(DefiniteLength::from)
+        let side = |stated: Option<f32>, unstated: Option<DefiniteLength>| {
+            stated.map(|v| DefiniteLength::from(px(v))).or(unstated)
         };
-        let x = Some(crate::demo::MENU_ROW_PADDING_X);
+        let x = Some(DefiniteLength::from(crate::demo::MENU_ROW_PADDING_X));
         let expected = (
             side(p.top, None),
             side(p.right, x),
@@ -10830,11 +10830,11 @@ fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
 /// line's, under every bundled preset in both modes.
 #[test]
 fn the_menus_padding_line_names_what_pads_a_rows_unstated_sides() {
-    let sides = format!(
-        "an item's {}px at the sides (MENU_ROW_PADDING_X) and nothing above or below",
-        crate::info::px_text(crate::demo::MENU_ROW_PADDING_X.as_f32())
-    );
     for (name, r, t) in every_bundled_variant() {
+        let sides = format!(
+            "an item's {} at the sides (MENU_ROW_PADDING_X) and nothing above or below",
+            crate::info::rems_text(crate::demo::MENU_ROW_PADDING_X, &t)
+        );
         let info = crate::info::app_menus(&t, crate::info::MenuHost::Row, Some(&r));
         let line = info
             .config
