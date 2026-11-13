@@ -5940,7 +5940,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "arc-swap",
  "ashpd",
@@ -5976,7 +5976,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-build"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "heck 0.5.0",
  "native-theme",
@@ -5986,7 +5986,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-derive"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5995,7 +5995,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-egui"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "eframe",
  "egui",
@@ -6015,7 +6015,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-egui-widgets"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "native-theme-egui",
  "native-theme-test-fixtures",
@@ -6024,7 +6024,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-gpui"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "futures",
  "gpui-base",
@@ -6041,7 +6041,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-iced"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "iced",
  "iced_aw",
