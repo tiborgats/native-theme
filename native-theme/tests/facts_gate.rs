@@ -617,9 +617,10 @@ fn gate_fixture_icon_size_keyed() {
 /// A token key of a unit not enabled (S17 *While 0.8.0 is built*: "the
 /// gate skips it while any of those units is not enabled"): the units are
 /// `scripts/widget_units.toml`'s, as check_facts_trace.py reads them, whose
-/// slice holds `token.params.pointer_repeat`, `.color` and `.opacity` and
-/// no other parameter group, so `token.params.caret`'s fact is skipped and
-/// counted, never compared, though the model holds the keyed map.
+/// slice stages `token.params` to the parameters unit but for the entries
+/// a preset keeps (`[kept]`: `token.params.pointer_repeat.delay` on
+/// `macos-*`, S6.1, ADD-A147), so `token.params.caret`'s fact is skipped
+/// and counted, never compared, though the model holds the keyed map.
 #[test]
 fn gate_fixture_token_of_unit_not_enabled() {
     let report = fixture_report("unit_not_enabled");
@@ -634,7 +635,9 @@ fn gate_fixture_token_of_unit_not_enabled() {
     );
     let units = units::Units::repository().unwrap();
     assert!(units.hold("token.params.pointer_repeat.delay"));
-    assert!(units.hold("token.params"));
+    assert!(units.hold_on("token.params.pointer_repeat.delay", Some("macos-tahoe")));
+    assert!(!units.hold_on("token.params.pointer_repeat.delay", Some("adwaita")));
+    assert!(!units.hold("token.params"));
     assert!(!units.hold("token.params.caret.aspect_ratio"));
     assert!(!units.hold("token.behavior.scroll.lines_per_step"));
     assert!(!units.hold("button.values.menu_placement"));

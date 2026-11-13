@@ -459,9 +459,11 @@ def at_depth_when(depth, platform: str, preset: str, key: str, when: dict) -> di
     ADD-A147; the D6 staging design, 2.3): a negative entry naming one (`not_variants`, `not_states`,
     `not_conditions`, `not_sizes`, `not_densities`, `not_context`) holds wherever the element holds no such name, so
     it is left out of the rule, a typed variant at depth that no combination at depth draws among them (the preset's
-    `later`, which S12 refuses in every layer; drawn_variants()); a one-of `sizes` list is trimmed to its sizes at
-    depth, not dropped (the fact holds at depth, so one stays). A positive name beyond depth leaves the fact no
-    combination at depth (Depth.of_enabled()), so it never reaches here. A list emptied so goes."""
+    `later`, which S12 refuses in every layer; drawn_variants()); a `not_sizes` list is trimmed to its sizes at
+    depth. A `sizes` list is all of its sizes (S7's `SetMatch`; an element has one control size, S12), so one naming
+    two sizes, or a size beyond depth, holds in no combination at depth and never reaches here, as no positive name
+    beyond depth does (Depth.of_enabled()): its trimming leaves a list that does reach here as it is. A list emptied
+    so goes."""
     widget = key.split(".")[0] if is_entry_key(key) else None
     sizes = depth_sizes(depth, platform, widget, preset) if widget else None
     out = {}

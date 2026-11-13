@@ -22,14 +22,13 @@ slice = ["button"]
 # radii) the slice's facts read (ledger queue #161 (3), #162 (1)), and
 # `motion` and `layout`, which KDE's facts read: the decoration's speed
 # factor in `tokens.motion` (ADD-A125) and Kirigami's grid unit in the
-# button's sizes (M1b), and the group `display`, whose four corners the core
-# reads as the root's container radius (S4.6, S8; query/theme.rs).
+# button's sizes (M1b).
 [prefixes]
 slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", "token.icons",
          "token.focus", "token.elevation", "token.size_classes", "token.kde", "token.material",
          "token.params.pointer_repeat", "token.params.color", "token.params.opacity",
          "token.params.shadow", "token.params.shape", "token.params.motion",
-         "token.params.layout", "token.params.display"]
+         "token.params.layout"]
 
 # Paths an enabled unit's entries or prefixes hold that it stages to a later
 # unit, each lying in no unit until that unit is enabled (a `*` segment stands
@@ -39,9 +38,7 @@ slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", 
 # *today's fields* row names, no value at depth reads, the core does not read,
 # no connector reads to draw a value at depth and no built system reader
 # states, each to its parking unit or its unit of depth below, which it waits
-# in until the first unit whose value reads it. S4.6's parameter groups are
-# staged by name, all but `display`, which the core reads (the token rule's
-# clause 3).
+# in until the first unit whose value reads it.
 [staged.slice]
 "token.behavior.scroll" = "scroll_view"
 "token.behavior.double_click_time" = "behaviour"
@@ -86,15 +83,7 @@ slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", 
 "token.text.keyed" = "text_styles"
 "token.icons.sizes.keyed" = "icon_contexts"
 "token.elevation" = "elevation"
-"token.params.layout" = "parameters"
-"token.params.opacity" = "parameters"
-"token.params.shadow" = "parameters"
-"token.params.motion" = "parameters"
-"token.params.color" = "parameters"
-"token.params.icon_effect" = "parameters"
-"token.params.shape" = "parameters"
-"token.params.optics" = "parameters"
-"token.params.pointer_repeat" = "parameters"
+"token.params" = "parameters"
 "role.@*" = "keyed_roles"
 
 # The entries of a keyed map an enabled unit's `[staged]` path covers that lie
