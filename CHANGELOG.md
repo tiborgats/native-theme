@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **native-theme-gpui**: `to_theme` sets gpui-component 0.9's `Theme::window_radius`, and `to_theme_config` its `ThemeConfig::window_radius`, from `window.border.corner_radius`, so a client-decorated window (one a Wayland compositor such as GNOME's Mutter leaves to the application) rounds its corners as the platform's windows do; gpui-component's `WindowBorder`, `Root` and `TitleBar` draw them. `apply` keeps the application's `cursor_blink`, which native-theme does not model, as it keeps `notification`, `list`, `sheet` and `motion`.
+- **Showcases (gpui)**: the window's fill and its status bar follow the rounded corners of a client-decorated window, and the Theme tab's Window section states the frame's colour (`window.border.color`, which gpui-component 0.9's `WindowBorder` draws instead of a literal grey) and its corners.
+
+### Changed
+
+- **native-theme-gpui**: requires gpui-component, gpui-base and gpui-kit 0.9.1 and gpui-pre 0.3.12; on the `gpui-fast` feature, GPUI Fast 0.1.14 (MSRV unchanged, 1.95.0). `clippy.toml`'s list of upstream functions that panic on their input follows: `WindowTextSystem::shape_line_by_hash` and `layout_line_by_hash` are gone upstream, and `PriorityQueueSender::send` and `spin_send`, which panic on `Priority::RealtimeAudio`, are added.
+- **All crates**: the manifests no longer state `homepage`, which was the repository's URL that `repository` already gives (Cargo 1.100 warns on the duplicate).
+
 ## [0.7.0] - 2026-10-27
 
 ### Breaking Changes

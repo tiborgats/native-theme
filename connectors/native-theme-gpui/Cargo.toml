@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 # NOT inherited: the gpui-pre closure declares a higher floor than the
 # workspace. Set to the lowest toolchain that compiles the library; measured
-# 2026-10-26 on the 0.8.1 closure: 1.95.0 builds; 1.94.0 fails on
-# std::hint::cold_path in gpui-pre 0.3.10 (src/profiler.rs:473), which
-# gpui-fast 0.1.12 calls at the same line.
+# 2026-11-13 on the 0.9.1 closure: 1.95.0 builds; 1.94.0 fails on
+# std::hint::cold_path in gpui-pre 0.3.12 (src/profiler.rs:475), which
+# gpui-fast 0.1.14 calls at the same line.
 rust-version = "1.95.0"
 repository.workspace = true
 keywords = ["theme", "gpui", "gui", "native", "colors"]
