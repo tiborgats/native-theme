@@ -1477,6 +1477,78 @@ fn gate_declarations_skip_unheld_context() -> Result<(), String> {
     Ok(())
 }
 
+/// A fact S17's predicate places as of the enabled units is read whole by
+/// the preset's run (the staging review's S1): one whose key the model does
+/// not read (refused, or never read), or whose `when` it does not read,
+/// fails naming the fact, never dropped while counted at depth. Synthetic
+/// facts over the repository's units.
+#[test]
+fn gate_enabled_fact_unread_fails() -> Result<(), String> {
+    let units = units::Units::repository()?;
+    let models = model::Model::read(
+        "gnome/state-models.toml",
+        "[[model]]\nwidget = \"button\"\navailable = true\nvariants = [\"tool\"]\nsizes = []\n\
+         densities = []\nexclusive = []\nrows = []\n\
+         axes = { states = [\"hover\"], conditions = [], contexts = [] }\n",
+    )?;
+    let failures = |key: &str, when: &str, parsed: bool| -> Result<Vec<String>, String> {
+        let text = format!("[[fact]]\nkey = \"{key}\"\n{when}value = 1\nrows = []\n");
+        let facts = facts::read("gnome/button.toml", &text)?;
+        let keys = if parsed {
+            vec![(key.to_owned(), native_theme::gate::parse_key(key))]
+        } else {
+            Vec::new()
+        };
+        let platform = run::Platform {
+            name: "gnome".to_owned(),
+            facts,
+            keys,
+            models: models.clone(),
+            units: units.clone(),
+        };
+        let mut report = run::Report::default();
+        let evidence = facts::Evidence::new(Path::new(env!("CARGO_MANIFEST_DIR")));
+        run::prepare(&platform, "adwaita", &evidence, &mut report);
+        if report.at_depth.get("adwaita") != Some(&(1, 0)) {
+            return Err(format!("{key}: not placed at depth: {report:?}"));
+        }
+        Ok(report.failures)
+    };
+    assert_eq!(
+        failures("button.body.opacity", "", true)?,
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        failures("button.body.no_such_field", "", true)?,
+        [
+            "gnome/button.toml fact 1: `button.body.no_such_field` is of the enabled units on \
+             adwaita, and its key does not read: the model holds no `button.body.no_such_field` \
+             yet"
+        ]
+    );
+    assert_eq!(
+        failures("button.body.opacity", "", false)?,
+        [
+            "gnome/button.toml fact 1: `button.body.opacity` is of the enabled units on adwaita, \
+          and its key was not read"
+        ]
+    );
+    let unread = failures(
+        "button.body.opacity",
+        "when = { no_such_list = [\"tool\"] }\n",
+        true,
+    )?;
+    assert!(
+        unread.len() == 1
+            && unread.iter().all(|failure| failure.starts_with(
+                "gnome/button.toml fact 1: `button.body.opacity` is of the enabled units on \
+                 adwaita, and its `when` does not read: "
+            )),
+        "{unread:?}"
+    );
+    Ok(())
+}
+
 /// A state model's context selector stating an empty list spells as the
 /// one without the key, as the crate's selector holds none (the A131a
 /// review's M1): `states = []` and `variants = []` select as no key does.
@@ -1631,14 +1703,22 @@ fn gate_fixture_flavor_declarations_each_flavour() {
 /// declarations, its three-member exclusive group with it, and under
 /// `later`; a variant at depth stays whatever facts name it, a later unit's
 /// fact beside one of the enabled units (`@both`), only a fact of a key the
-/// model does not hold (`@unheld`), only a later unit's fact (`with_icon`,
-/// a content variant); a typed variant the model does not hold (`flat`)
-/// alone is left out and counted. A preset declaring them so passes, and
-/// one leaving `@raised` out of its `later` fails the declarations.
+/// model does not hold (`@unheld`, the fact itself failing, as S17's
+/// predicate places it as of the enabled units), only a later unit's fact
+/// (`with_icon`, a content variant); a typed variant the model does not
+/// hold (`flat`) alone is left out and counted. A preset declaring them so
+/// passes but for that fact, and one leaving `@raised` out of its `later`
+/// fails the declarations.
 #[test]
 fn gate_fixture_projection_rules() {
     let report = fixture_report("variant_projection");
-    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.failures,
+        [
+            "gnome/button.toml fact 13: `button.body.bogus` is of the enabled units on probe, and \
+             its key does not read: the model holds no `button.body.bogus` yet"
+        ]
+    );
     assert_eq!(
         report.variants_not_held.iter().collect::<Vec<_>>(),
         ["gnome/state-models.toml button flat"]
@@ -3454,32 +3534,68 @@ fn facts_gate_evidence_root() {
 }
 
 /// The variable naming a file of `scripts/check_facts_trace.py --facts`'s
-/// output, against whose `unit` lines the run's report by unit is compared
-/// (S17, ADD-A147: every reader of the units file attributes every fact
-/// alike).
+/// output, against whose `fact` and `unit` lines the run's placement of
+/// each fact and its report by unit are compared (S17, ADD-A147: every
+/// reader of the units file attributes every fact alike).
 const UNITS_VARIABLE: &str = "NT_FACTS_GATE_UNITS";
 
-/// The differences between the run's facts of the enabled units, of each
-/// unit they wait for and unplaced, per preset it ran, and the `unit` lines
-/// of the file at `path` (`unit\t<preset>\t<unit, (enabled) or
-/// (unplaced)>\t<facts>\t<pending>`), each a failure's text; a file that
-/// does not read is one.
+/// The differences between the run and the file at `path`, each a
+/// failure's text, per preset the run ran: each fact's place
+/// ([`run::Report::places`]) against the file's `fact` lines
+/// (`fact\t<preset>\t<file>:<line>\t<enabled, unplaced or the unit>`), a
+/// fact one side places and the other does not included; then, as a
+/// summary, its facts of the enabled units, of each unit they wait for and
+/// unplaced against the `unit` lines (`unit\t<preset>\t<unit, (enabled) or
+/// (unplaced)>\t<facts>\t<pending>`). A file that does not read, or a
+/// `fact` line of another shape, is one.
 fn units_differences(path: &Path, report: &run::Report) -> Vec<String> {
     let text = match std::fs::read_to_string(path) {
         Ok(text) => text,
         Err(error) => return vec![format!("{UNITS_VARIABLE}: {path:?}: {error}")],
     };
+    let mut out = Vec::new();
     let mut theirs: BTreeMap<(String, String), (usize, usize)> = BTreeMap::new();
+    let mut their_places: BTreeMap<(String, String), String> = BTreeMap::new();
     for line in text.lines() {
         let fields: Vec<&str> = line.split('\t').collect();
-        if let ["unit", preset, unit, facts, pending] = fields.as_slice()
-            && report.at_depth.contains_key(*preset)
-        {
-            let count = |text: &str| text.parse::<usize>().unwrap_or(usize::MAX);
-            theirs.insert(
-                ((*preset).to_owned(), (*unit).to_owned()),
-                (count(facts), count(pending)),
-            );
+        match fields.as_slice() {
+            ["unit", preset, unit, facts, pending] if report.at_depth.contains_key(*preset) => {
+                let count = |text: &str| text.parse::<usize>().unwrap_or(usize::MAX);
+                theirs.insert(
+                    ((*preset).to_owned(), (*unit).to_owned()),
+                    (count(facts), count(pending)),
+                );
+            }
+            ["fact", preset, fact, place] => {
+                if report.at_depth.contains_key(*preset) {
+                    their_places.insert(
+                        ((*preset).to_owned(), (*fact).to_owned()),
+                        (*place).to_owned(),
+                    );
+                }
+            }
+            ["fact", ..] => out.push(format!(
+                "{UNITS_VARIABLE}: a `fact` line of {} fields, not 4: {line:?}",
+                fields.len()
+            )),
+            _ => {}
+        }
+    }
+    let facts: BTreeSet<&(String, String)> = their_places
+        .keys()
+        .chain(report.places.keys())
+        .filter(|(preset, _)| report.at_depth.contains_key(preset))
+        .collect();
+    for fact in facts {
+        let (ours, theirs) = (report.places.get(fact), their_places.get(fact));
+        if ours != theirs {
+            out.push(format!(
+                "{UNITS_VARIABLE}: {} {}: the gate places it {}, check_facts_trace.py --facts {}",
+                fact.0,
+                fact.1,
+                ours.map_or("nowhere", String::as_str),
+                theirs.map_or("nowhere", String::as_str)
+            ));
         }
     }
     let mut ours: BTreeMap<(String, String), (usize, usize)> = BTreeMap::new();
@@ -3495,24 +3611,51 @@ fn units_differences(path: &Path, report: &run::Report) -> Vec<String> {
         ours.insert((preset.clone(), "(unplaced)".to_owned()), (*count, 0));
     }
     let keys: BTreeSet<&(String, String)> = theirs.keys().chain(ours.keys()).collect();
-    keys.into_iter()
-        .filter(|key| theirs.get(*key) != ours.get(*key))
-        .map(|(preset, unit)| {
-            format!(
-                "{UNITS_VARIABLE}: {preset} `{unit}`: the gate counts {:?}, check_facts_trace.py --facts \
-                 {:?} (facts, pending)",
-                ours.get(&(preset.clone(), unit.clone())),
-                theirs.get(&(preset.clone(), unit.clone()))
-            )
-        })
-        .collect()
+    out.extend(
+        keys.into_iter()
+            .filter(|key| theirs.get(*key) != ours.get(*key))
+            .map(|(preset, unit)| {
+                format!(
+                    "{UNITS_VARIABLE}: {preset} `{unit}`: the gate counts {:?}, check_facts_trace.py \
+                     --facts {:?} (facts, pending)",
+                    ours.get(&(preset.clone(), unit.clone())),
+                    theirs.get(&(preset.clone(), unit.clone()))
+                )
+            }),
+    );
+    out
+}
+
+/// The units cross-check compares each fact's place (the staging review's
+/// S2): over the `unit_not_enabled` fixture, a file placing every fact as
+/// the gate does passes; one with two facts' places swapped, whose counts
+/// per unit still agree, fails at those two facts and nowhere else.
+#[test]
+fn gate_units_cross_check_per_fact() {
+    let report = fixture_report("unit_not_enabled");
+    let case =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate/unit_not_enabled");
+    assert_eq!(
+        units_differences(&case.join("units-matching.tsv"), &report),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        units_differences(&case.join("units-swapped.tsv"), &report),
+        [
+            "NT_FACTS_GATE_UNITS: probe docs/facts/gnome/tokens.toml:15: the gate places it \
+             fields, check_facts_trace.py --facts enabled",
+            "NT_FACTS_GATE_UNITS: probe docs/facts/gnome/tokens.toml:3: the gate places it \
+             enabled, check_facts_trace.py --facts fields",
+        ]
+    );
 }
 
 /// The units cross-check alone (S17, ADD-A147), with no preset loaded:
 /// each preset `NT_FACTS_GATE_PRESETS` selects (every bundled one where it
 /// is unset) has its facts placed by `depth::Depth` and counted as
-/// `facts_gate` counts them, and the counts are compared with the file
-/// `NT_FACTS_GATE_UNITS` names, which it requires. Ignored: `facts_gate`
+/// `facts_gate` counts them, and each fact's place, then the counts, are
+/// compared with the file `NT_FACTS_GATE_UNITS` names, which it requires
+/// ([`units_differences`]). Ignored: `facts_gate`
 /// makes the same comparison where the presets load; run it with
 /// `-- --ignored --exact facts_units`.
 #[test]

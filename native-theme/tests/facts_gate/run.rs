@@ -142,6 +142,10 @@ pub struct Report {
     /// Per preset, the facts of the enabled units its run prepares and how
     /// many of them are pending (S17's predicate, ADD-A147).
     pub at_depth: BTreeMap<String, (usize, usize)>,
+    /// Where S17's predicate places each fact a preset's run reads, by its
+    /// preset and its [`Fact::line_place`]: `enabled`, `unplaced` or the
+    /// unit it waits for (ADD-A147).
+    pub places: BTreeMap<(String, String), String>,
     /// Facts whose `when` names what the model does not hold yet, by what
     /// it names.
     pub whens_not_held: BTreeMap<String, usize>,
@@ -288,6 +292,9 @@ impl Report {
         for (preset, counts) in other.at_depth {
             self.at_depth.entry(preset).or_insert(counts);
         }
+        for (fact, place) in other.places {
+            self.places.entry(fact).or_insert(place);
+        }
         for (why, count) in other.whens_not_held {
             *self.whens_not_held.entry(why).or_default() += count;
         }
@@ -325,8 +332,8 @@ impl Report {
         format!(
             "failures {failures:?}\ngroups {groups:?}\npending {:?}\nsynthetic {:?}\n\
              listed {:?}\nunchecked {:?}\nunread {unread:?}\nkeys not held {:?}\n\
-             units not enabled {:?}\nlater units {:?}\nunplaced {:?}\nat depth {:?}\nwhens not held {:?}\n\
-             other presets {}\n\
+             units not enabled {:?}\nlater units {:?}\nunplaced {:?}\nat depth {:?}\nplaces {:?}\n\
+             whens not held {:?}\nother presets {}\n\
              variants not held {:?}\naccent run {}\nfields not drawn {}\n\
              whens not drawn {}\ncombinations skipped {}\ncombinations {:?}\nqueried {}\n\
              compared {}",
@@ -339,6 +346,7 @@ impl Report {
             self.later_units,
             self.unplaced,
             self.at_depth,
+            self.places,
             self.whens_not_held,
             self.other_presets,
             self.variants_not_held,
@@ -692,26 +700,30 @@ fn count_place(
     counts: &mut (usize, usize),
     report: &mut Report,
 ) -> bool {
-    match depth.unit(&fact.key, written) {
+    let (place, enabled) = match depth.unit(&fact.key, written) {
         Place::Enabled => {
             counts.0 = counts.0.saturating_add(1);
             if matches!(fact.stated, Stated::Pending(_)) {
                 counts.1 = counts.1.saturating_add(1);
             }
-            true
+            ("enabled".to_owned(), true)
         }
         Place::Later(unit) => {
             *report
                 .later_units
                 .entry(format!("{preset}\t{unit}"))
                 .or_default() += 1;
-            false
+            (unit, false)
         }
         Place::Unplaced => {
             *report.unplaced.entry(preset.to_owned()).or_default() += 1;
-            false
+            ("unplaced".to_owned(), false)
         }
-    }
+    };
+    report
+        .places
+        .insert((preset.to_owned(), fact.line_place()), place);
+    enabled
 }
 
 /// Where every fact of `platform` that can apply to `preset` stands, counted
@@ -752,11 +764,39 @@ pub fn prepare<'f>(
         if !count_place(&depth, fact, written.as_ref(), preset, &mut counts, report) {
             continue;
         }
-        let Some(Ok(key)) = platform.key(&fact.key) else {
-            continue;
+        // S17's predicate places the fact as of the enabled units, so the
+        // model reads its key and its `when`: one it cannot is a failure,
+        // never a fact dropped while counted.
+        let key = match platform.key(&fact.key) {
+            Some(Ok(key)) => key,
+            Some(Err(Unread::NotHeld(why) | Unread::Refused(why))) => {
+                report.fail(format!(
+                    "{}: `{}` is of the enabled units on {preset}, and its key does not read: {why}",
+                    fact.place(),
+                    fact.key
+                ));
+                continue;
+            }
+            None => {
+                report.fail(format!(
+                    "{}: `{}` is of the enabled units on {preset}, and its key was not read",
+                    fact.place(),
+                    fact.key
+                ));
+                continue;
+            }
         };
-        let Ok(when) = read_when(written.as_ref()) else {
-            continue;
+        let when = match read_when(written.as_ref()) {
+            Ok(when) => when,
+            Err(Unread::NotHeld(why) | Unread::Refused(why)) => {
+                report.fail(format!(
+                    "{}: `{}` is of the enabled units on {preset}, and its `when` does not read: \
+                     {why}",
+                    fact.place(),
+                    fact.key
+                ));
+                continue;
+            }
         };
         let block = set_whole(&fact.key);
         let leaf = match (&fact.stated, &block) {
