@@ -218,9 +218,9 @@ preset (one naming `preset:<id>` replaces the shared one; a `flavor:` entry is `
 the S10 declarations it states at depth (S10 *Later names*, ADD-A147; declared()): `available` (alone where false),
 `variants` (the state model's whole, but a typed variant the model does not hold, which has no spelling: the typed
 variants the model holds are each enabled entry's that no later unit not enabled holds for it, model_variants()),
-`later = { variants = […] }` on the widget's own entry (the declared variants a later unit not enabled holds for the
-entry on the preset, and the typed ones at depth its state model in force draws in no combination at depth,
-later_variants()), `sizes`, `default_size`, `densities` (whole), `flags` (the flags at depth a rule of the preset
+`later = { variants = […] }` (the declared variants a later unit not enabled holds for the entry on the preset, and
+the typed ones at depth its state model in force, a flavour's own for a flavour's section, draws in no combination at
+depth, later_variants()), `sizes`, `default_size`, `densities` (whole), `flags` (the flags at depth a rule of the preset
 names), `exclusive` (each group trimmed to its flags at depth, one left with fewer than two not declared),
 `exclusive_variants`, `recency` (each set trimmed to its flags at depth, one left with fewer than two, or that no
 rule's `latest` names, not declared), `requires_variants`, `sizes_by_variant`,
@@ -234,7 +234,9 @@ pending = "U<n>" }`, the widget's or an entry's, S10's *A pending default*) is s
 declaration's path, `declare.widget.<w>.default_size`, `….sizes_by_variant.<variant>.default_size`,
 `….sizes_by_context.<n>.default_size`, a flavour's under `declare.flavor.<f>.` (S17, ADD-A131;
 pending_defaults()); `axes`, `variant_sets`, `variant_products` and `not_drawn` are the gate's,
-not declarations. A key the trimming empties is left out, one the state model states empty stays. `[declare]
+not declarations. A key the trimming empties is left out, one the state model states empty stays; a flavour's
+section, which inherits each key it does not state from the widget's own (S10), states empty each such key the
+widget's own states non-empty, so that it stays true as it is (whole_section()). `[declare]
 conditions` lists the `system_setting:` keys a rule of the preset names (positive or negative), as `@<key>`. The other
 keyed namespaces S10 declares (`color_roles`, `durations`, `timings`, `params` with their units, `text_styles`,
 `inputs`, `accent_inputs`, `surface_sets`, …) are left for hand-writing: no fact states their units or defaults;
@@ -1771,15 +1773,20 @@ def declarations(ctx, items, platform, preset, depth, facts, rules, reports):
         plain = [e for e in es if e[2] is None]
         chosen = [e for e in plain if e[1]] or plain
         picks = chosen[-1:] + [e for e in es if e[2] is not None]
+        own = []
         for it, _, flavor in picks:
             d = it.data
             kind, name = ("component", widget[10:]) if widget.startswith("component.") else ("widget", widget)
             header = (("flavor", flavor) if flavor else ()) + (kind, name)
             kvs = [("available", False)] if d.get("available") is False else declared(
-                d, widget, platform, preset, depth, typed, names, flavor is None)
+                d, widget, platform, preset, depth, typed, names, flavor)
             kvs = held_contexts(kvs, depth)
             kvs, waiting = pending_defaults(header, kvs, it)
             listed += waiting
+            if flavor is None:
+                own = kvs
+            else:
+                kvs = whole_section(kvs, own)
             data, read_by = element_data(widget, facts) if flavor is None else ({}, [])
             if data:
                 kvs.append(("data", data))
@@ -1831,15 +1838,17 @@ def flag_groups(groups, at) -> list:
     return [g for g in out if len(g) >= 2]
 
 
-def declared(model: dict, widget: str, platform: str, preset: str, depth, typed: set, names: dict, own: bool) -> list:
+def declared(model: dict, widget: str, platform: str, preset: str, depth, typed: set, names: dict,
+             flavor: str | None = None) -> list:
     """A state model entry's S10 declarations at depth (DECLARE_KEYS' order; S10 *Later names*, S17, ADD-A147): whole,
     but a typed variant the model does not hold (`typed`, model_variants()) left out everywhere it is named (it has no
     spelling: `variants`, each `exclusive_variants` group, a `sizes_by_variant` entry, `requires_variants`); its
     exclusive groups to the flags at depth (a group left with fewer than two not declared); its recency sets to the
     flags at depth, a set left with fewer than two, or that no rule of the preset names (`latest`), not declared;
     `flags` to the flags at depth a rule of the preset names (`names`, rule_names()); and, after `variants`, `later =
-    { variants = [...] }` (later_variants()) on the widget's own entry (`own`) where it lists any. A key the trimming
-    empties is left out; one the state model states empty stays."""
+    { variants = [...] }` (later_variants(), over the state model of the flavour `flavor` names, the default's where
+    it is None) where it lists any. A key the trimming empties is left out; one the state model states empty stays
+    (a flavour's section is then made whole, whole_section())."""
     held = {v for v in model.get("variants", []) if isinstance(v, str) and (v.startswith("@") or v in typed)}
 
     def spelt(v):
@@ -1872,28 +1881,54 @@ def declared(model: dict, widget: str, platform: str, preset: str, depth, typed:
         if model[k] and not v:
             continue
         out.append((k, v))
-        if k == "variants" and own:
-            later = later_variants(v, widget, platform, preset, depth)
+        if k == "variants":
+            later = later_variants(v, widget, platform, preset, depth, flavor and f"flavor:{flavor}")
             if later:
                 out.append(("later", {"variants": later}))
     return out
 
 
-def later_variants(variants: list, widget: str, platform: str, preset: str, depth) -> list:
+# a key a flavour's section states empty where it would inherit the widget's section's value (whole_section())
+EMPTY_DECLARATIONS = {"recency": {}, "later": {"variants": []}}
+
+
+def whole_section(kvs: list, own: list) -> list:
+    """A flavour's `[declare.flavor.<f>.…]` section (its declarations `kvs`, declared()) made true as it is (S10: a
+    flavour's section stays whole; it inherits each key it does not state from the widget's own section, `own`, its
+    `default_size` going with `sizes`): every key of DECLARE_KEYS and `later` the flavour's state model leaves
+    unstated (it lacks it, or the trimming at depth empties it, so the flavour has none) that `own` states non-empty
+    is stated empty (`[]`, a `recency` `{}`, `later = { variants = [] }`), in DECLARE_KEYS' order, `later` after
+    `variants`; `available` and `default_size` (stated with `sizes`, or by none) excepted, and `data`, the element
+    data, which is no state model's and is inherited. A section declaring the widget unavailable is left as it is."""
+    stated, inherited = dict(kvs), dict(own)
+    if stated.get("available") is False:
+        return kvs
+    order = list(DECLARE_KEYS)
+    order.insert(order.index("variants") + 1, "later")
+    restate = {k for k in order if k not in ("available", "default_size") and k not in stated and inherited.get(k)}
+    if not restate:
+        return kvs
+    out = [(k, stated[k] if k in stated else EMPTY_DECLARATIONS.get(k, [])) for k in order
+           if k in stated or k in restate]
+    return out + [(k, v) for k, v in kvs if k not in order]
+
+
+def later_variants(variants: list, widget: str, platform: str, preset: str, depth, flavor=None) -> list:
     """The declared variants a unit not enabled states (S10 *Later names*, S17, ADD-A147), in their declared order:
     each a later unit not enabled holds for the entry on the preset (a keyed variant beyond depth, a typed variant
     the model holds through another entry's Depth line), and each typed variant at depth that the preset's state model
-    in force draws in no combination at depth (drawn_variants())."""
-    drawn = drawn_variants(depth, platform, widget, preset)
+    in force draws in no combination at depth (drawn_variants(); under `flavor`, that flavour's own state model)."""
+    drawn = drawn_variants(depth, platform, widget, preset, flavor)
     return [v for v in variants if depth.off(widget, preset, "variants", v)
             or not v.startswith("@") and v not in drawn]
 
 
-def drawn_variants(depth, platform: str, widget: str, preset: str) -> set:
+def drawn_variants(depth, platform: str, widget: str, preset: str, flavor=None) -> set:
     """The variants some combination at depth of the widget's state model in force on the preset holds
-    (Depth.combos()); a typed variant at depth outside them is drawn nowhere, the preset's `later` (S10)."""
+    (Depth.combos(); with `flavor`, a `flavor:<f>` condition, of that flavour's own state model); a typed variant at
+    depth outside them is drawn nowhere, the preset's `later` (S10)."""
     out = set()
-    for c in depth.combos(platform, widget, preset)[0]:
+    for c in depth.combos(platform, widget, preset, flavor)[0]:
         out |= c.variants
     return out
 
@@ -3860,10 +3895,15 @@ DEPTH_UNITS = '''slice = ["button", "switch"]
 [prefixes]
 slice = ["role", "token.focus"]
 [[later]]
+name = "flavours"
+kind = "depth"
+enabled = false
+conditions = ["flavor:alt"]
+[[later]]
 name = "styles"
 kind = "depth"
 enabled = false
-button = [{ variants = ["primary", "@pill"] }]
+button = [{ variants = ["primary", "@pill", "@glossy"] }]
 switch = [{ variants = ["flat"] }]
 [[later]]
 name = "states"
@@ -3926,6 +3966,23 @@ axes = { states = [], conditions = ["scheme:light", "scheme:dark"], contexts = [
 exclusive = []
 not_drawn = []
 rows = []
+''' + _DEPTH_MODEL_CITE + '''
+# a second flavour: its own later variants, no flag, its exclusive group and recency set trimmed away at depth, an
+# exclusive_variants group the default lacks
+[[model]]
+widget = "button"
+when = { conditions = ["flavor:alt"] }
+available = true
+variants = ["flat", "@pill", "@lifted", "@glossy"]
+sizes = ["regular"]
+default_size = "regular"
+densities = []
+axes = { states = ["hover", "pressed", "open"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = [["open", "pressed"]]
+exclusive_variants = [["flat", "@pill"]]
+recency = { drop = ["open", "pressed"] }
+not_drawn = []
+rows = []
 ''' + _DEPTH_MODEL_CITE,
     "docs/facts/gnome/button.toml": "".join([
         _fact("button.body.min_width", '"16px"'),
@@ -3958,6 +4015,19 @@ densities = []
 flags = ["@busy"]
 exclusive = [["disabled", "pressed", "hover"]]
 recency = { glow = ["checked", "hover"] }
+
+# docs/facts/gnome/state-models.toml:39
+[declare.flavor.alt.widget.button]
+available = true
+variants = ["flat", "@pill", "@lifted", "@glossy"]
+later = { variants = ["@pill", "@glossy"] }
+sizes = ["regular"]
+default_size = "regular"
+densities = []
+flags = []
+exclusive = []
+exclusive_variants = [["flat", "@pill"]]
+recency = {}
 
 # docs/facts/gnome/state-models.toml:21
 [declare.widget.switch]
@@ -4086,6 +4156,15 @@ def depth_cases(root: Path) -> list:
         if got[:2] != want[:2] or len(reports) != len(want[2]) or not all(
                 k == wk and w in t for (k, t), (wk, w) in zip(reports, want[2])):
             failures.append(f"depth: the sizes in force, {label}: got {got}, expected {want}")
+    # a flavour's section with no later variant over a widget's section listing one states an empty `later`; one
+    # declaring the widget unavailable is left as it is
+    own = [("available", True), ("variants", ["flat", "@pill"]), ("later", {"variants": ["@pill"]}),
+           ("sizes", ["regular"]), ("default_size", "regular"), ("data", [("body", ["x"])])]
+    for kvs, want in (([("available", True), ("variants", ["flat"]), ("sizes", [])],
+                       [("available", True), ("variants", ["flat"]), ("later", {"variants": []}), ("sizes", [])]),
+                      ([("available", False)], [("available", False)])):
+        if whole_section(kvs, own) != want:
+            failures.append(f"whole_section({kvs}): {whole_section(kvs, own)}, expected {want}")
     # a key's entry: a component's is `component.<key>`; a colour role, a token and an input have none
     got = [entry_key(k) for k in ("component.led.lamp.fill", "button.body.fill", "role.window.background",
                                   "token.focus.width", "input.accent")]

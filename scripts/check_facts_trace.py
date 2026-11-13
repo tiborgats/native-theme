@@ -747,15 +747,16 @@ class Depth:
                                      and not any(a <= s and not n & s for a, n in undrawn)])
         return self._sets[k][1]
 
-    def combos(self, platform: str, widget: str, preset: str) -> tuple:
+    def combos(self, platform: str, widget: str, preset: str, flavor: str | None = None) -> tuple:
         """([every combination at depth of the widget's state model in force on the preset], [each one's recency
         sets]): each choice of a variant set, a size, a density, a state combination, a condition vector, a context
-        and a direction of space(), less those a `not_drawn` entry names, enumerated whole once (no cap)."""
-        k = (platform, widget, preset)
+        and a direction of space(), less those a `not_drawn` entry names, enumerated whole once (no cap). With
+        `flavor`, those of that flavour's own entry (space())."""
+        k = (platform, widget, preset, flavor)
         if k not in self._combos:
             cs, rs = [], []
             for rec, sets, states, vectors, sizes_of, densities, nd, contexts, directions in self.space(
-                    platform, widget, preset):
+                    platform, widget, preset, flavor):
                 for s in sorted(sets, key=lambda x: (len(x), sorted(x))):
                     for size in sizes_of[s]:
                         for density in densities:
@@ -770,20 +771,25 @@ class Depth:
             self._combos[k] = (cs, rs)
         return self._combos[k]
 
-    def space(self, platform: str, widget: str, preset: str) -> list:
+    def space(self, platform: str, widget: str, preset: str, only: str | None = None) -> list:
         """Per entry in force (combos()), computed once: (its recency sets, its variant sets of names at depth, its
         state combinations so, its condition vectors, {variant set: its sizes in force}, its densities in force, its
         `not_drawn` entries as Matches, its contexts (ancestors, whether siblings stand there): none, and each
         `axes.contexts` entry whose widgets are enabled, its directions: `ltr`, and `rtl` where the unit holding it is
-        enabled)."""
-        k = (platform, widget, preset)
+        enabled). With `only` (a `flavor:<f>` condition), that flavour's own entry alone, enumerated as though its
+        flavour were in force (its condition in every vector, its other names at depth), whatever the flavours unit's
+        state: what the generator makes a flavour's `[declare]` section true to (S10)."""
+        k = (platform, widget, preset, only)
         if k in self._space:
             return self._space[k]
         out = []
         flavours_on = not any(not u.enabled and any(c.startswith("flavor:") for c in u.conditions)
                               for u in self.later)
         for flavor, model in self.entries(platform, widget, preset):
-            if flavor is not None and (not flavours_on or self.condition_off(flavor, widget)):
+            if only is not None:
+                if flavor != only:
+                    continue
+            elif flavor is not None and (not flavours_on or self.condition_off(flavor, widget)):
                 continue
             rec = check_facts.recency_of(model)
             variants = {v for v in model.get("variants", []) if isinstance(v, str)
