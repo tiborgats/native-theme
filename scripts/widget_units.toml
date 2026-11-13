@@ -199,8 +199,9 @@ placement = false
 # a token) that a later unit below holds for every other key, by key prefix:
 # the catalogue's *today's fields* table (*Colour roles and text ramp*):
 # 0.7.0's `selection_inactive_background`, and the speed factor under
-# 0.7.0's `reduce_motion` (S17, ADD-A147). The scheme, `contrast_high` and the
-# preset's default flavour are at depth for every key: no unit holds them.
+# 0.7.0's `reduce_motion` (S17, ADD-A147). The scheme, `contrast_high`,
+# `full_keyboard_access` (ADD-A148; veto list item 62) and the preset's default
+# flavour are at depth for every key: no unit holds them.
 [at_depth]
 "role.selection" = ["window_inactive"]
 "token.motion.speed_factor" = ["animations_off", "reduced_motion"]
