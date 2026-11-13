@@ -9266,7 +9266,8 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// chosen theme. The widgets are those whose shown configuration draws one
 /// (gpui-component 0.8.1): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
-/// a Combobox's and a ColorSelect's caret, a DatePicker's Calendar, a
+/// a Combobox's and a ColorSelect's caret, a SpeechIndicator's stop glyph
+/// (gpui-component 0.9.1), a DatePicker's Calendar, a
 /// Calendar's month buttons, the command palette's Search, a Dialog's and a
 /// Sheet's close button, a Settings page's search and reset, a Pagination's
 /// arrows, the MessageScroller's jump button, an Alert's and a
@@ -9296,6 +9297,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("Rating", inputs::rating(&t, 3, false)),
         ("Select", inputs::select(&t, None)),
         ("ColorSelect", inputs::color_select(&t, false)),
+        ("SpeechIndicator", inputs::speech_indicator(&t, None, false)),
         ("DatePicker", inputs::date_picker(&t)),
         ("Calendar", inputs::calendar(&t)),
         ("preset Combobox", chrome::preset_combobox(&t, None)),
@@ -15452,6 +15454,59 @@ fn the_synthetic_input_feeds_levels_and_stops_with_the_session(cx: &mut TestAppC
         blocks.get(),
         delivered,
         "the synthetic input kept running after stop"
+    );
+}
+
+/// The Inputs page's SpeechIndicator fills a stop button while the synthetic
+/// input captures, as its doc asks a caller to show it
+/// (speech/indicator.rs:45, :52-54): none at rest; while capturing, a square
+/// of the theme's `button.min_height` whose info is the indicator's, and a
+/// click on it stops the session and takes it away.
+#[gpui::test]
+fn the_speech_indicator_fills_a_stop_button_while_capturing(cx: &mut TestAppContext) {
+    use gpui_component::speech::SpeechStatus;
+
+    const STOP: &str = "inputs-speech-indicator";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Inputs);
+    assert!(
+        cx.debug_bounds(STOP).is_none(),
+        "a stop button is shown while nothing captures"
+    );
+
+    let state = read(&mut cx, &showcase, |this, _| this.speech_state.clone());
+    cx.update(|_window, cx| state.update(cx, |s, cx| s.start(cx)));
+    cx.executor().advance_clock(Duration::from_secs(1));
+    cx.run_until_parked();
+    draw(&mut cx);
+    let stop = bounds_of(&mut cx, STOP);
+    let side = cx.update(|_window, cx| native_value(cx, |n| px(n.resolved.button.min_height)));
+    assert_eq!(
+        Some(stop.size.height),
+        side,
+        "the stop button is not as high as button.min_height"
+    );
+    assert_eq!(
+        stop.size.width, stop.size.height,
+        "the stop button is not square"
+    );
+    let info = settle_on(&mut cx, &showcase, STOP);
+    assert_eq!(
+        info.map(|info| info.kind),
+        Some("SpeechIndicator"),
+        "the inspector does not show the indicator's info on its stop button"
+    );
+
+    click(&mut cx, STOP);
+    assert_eq!(
+        cx.read(|cx| state.read(cx).status()),
+        SpeechStatus::Idle,
+        "a click on the stop button did not stop the session"
+    );
+    assert!(
+        cx.debug_bounds(STOP).is_none(),
+        "the stop button stays after the session stopped"
     );
 }
 

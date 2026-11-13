@@ -83,7 +83,7 @@ use gpui_component::{
     sidebar::{Sidebar, SidebarItem, SidebarMenuItem},
     skeleton::Skeleton,
     slider::{Slider, SliderState},
-    speech::{SpeechState, SpeechWaveform},
+    speech::{SpeechIndicator, SpeechState, SpeechWaveform},
     spinner::Spinner,
     status_bar::StatusBar,
     stepper::{Stepper, StepperItem},
@@ -4552,6 +4552,64 @@ pub(crate) fn speech_waveform(
     state: &Entity<SpeechState>,
 ) -> Stateful<Div> {
     SpeechWaveform::new(state).info(ui, id, info::inputs::speech_waveform(cx.theme()))
+}
+
+/// The stop button for `state` while it captures, as `SpeechIndicator`'s doc
+/// asks a caller to build one (speech/indicator.rs:52-58): a selected Ghost
+/// Button -- built with `variants::ghost_button`, as the toolbar's are, so
+/// it letters in the platform's button text colour, which the indicator
+/// paints its bars in -- whose only child is the indicator, its padding
+/// removed so the indicator fills it. The Button is a square of
+/// `button.min_height`, rounded by `button.border.corner_radius`, where a
+/// native theme is installed, and upstream's icon-Button square otherwise;
+/// the indicator's stop glyph takes `geometry::icon_size_toolbar`, the size
+/// of the icon the Button stands for. `keyboard_focused` is whether `focus`,
+/// the Button's, has keyboard focus: no pointer reveals the stop glyph then,
+/// so the Button shows its name instead -- the chosen icon theme has no stop
+/// icon, and another theme's is never shown. A click stops the session.
+pub(crate) fn speech_indicator(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<SpeechState>,
+    focus: &gpui::FocusHandle,
+    keyboard_focused: bool,
+) -> Stateful<Div> {
+    let native = cx.native();
+    let native_button = native.as_ref().map(|n| &n.resolved.button);
+    let mut indicator_info =
+        info::inputs::speech_indicator(cx.theme(), native_button, keyboard_focused);
+    let square = native_button.map(|b| (px(b.min_height), px(b.border.corner_radius.max(0.))));
+    let glyph = native_value(cx, geometry::icon_size_toolbar);
+    if glyph.is_some() && !keyboard_focused {
+        indicator_info = indicator_info.geometry("icon_size_toolbar");
+    }
+    let button = ButtonKind::Ghost
+        .apply(Button::new(id), cx)
+        .selected(true)
+        .track_focus(focus)
+        .accessibility_label("Stop");
+    // The name keeps upstream's side padding and may widen the square; the
+    // indicator fills it, with none.
+    let button = match (square, keyboard_focused) {
+        (Some((side, radius)), false) => button.p_0().size(side).rounded(radius),
+        (Some((side, radius)), true) => button.h(side).min_w(side).rounded(radius),
+        (None, false) => button.p_0().size_8(),
+        (None, true) => button.min_w_8(),
+    };
+    let button = if keyboard_focused {
+        labelled(ui, cx, button, id, "Stop")
+    } else {
+        let indicator = SpeechIndicator::new(state);
+        button.child(match glyph {
+            Some(size) => indicator.with_size(size),
+            None => indicator,
+        })
+    };
+    let state = state.clone();
+    let button = button.on_click(move |_, _, cx| state.update(cx, |s, cx| s.stop(cx)));
+    // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
+    InfoExt::info(button, ui, id, indicator_info).debug_selector(move || id.into())
 }
 
 /// A `TimeField` over `state` (spec §8.3), upstream's own: the theme states

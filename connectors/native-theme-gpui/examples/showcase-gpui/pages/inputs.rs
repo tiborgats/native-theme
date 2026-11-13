@@ -47,11 +47,10 @@ impl Showcase {
             this.rating_value = *value;
             cx.notify();
         });
-        let speech_label = if self.speech_state.read(cx).status().is_capturing() {
-            "Stop"
-        } else {
-            "Listen"
-        };
+        let speech_capturing = self.speech_state.read(cx).status().is_capturing();
+        let speech_label = if speech_capturing { "Stop" } else { "Listen" };
+        let speech_stop_keyboard =
+            self.speech_stop_focus.is_focused(window) && window.last_input_was_keyboard();
         let speech_state = self.speech_state.clone();
 
         page_root(&self.layout)
@@ -346,7 +345,7 @@ impl Showcase {
                 ui,
                 cx,
                 "inputs-heading-speech-waveform",
-                "SpeechWaveform",
+                "SpeechWaveform & SpeechIndicator",
             ))
             .child(
                 with_gap(h_flex(), widget_gap)
@@ -364,7 +363,17 @@ impl Showcase {
                         cx,
                         "inputs-speech-waveform",
                         &self.speech_state,
-                    )),
+                    ))
+                    .when(speech_capturing, |row| {
+                        row.child(demo::speech_indicator(
+                            ui,
+                            cx,
+                            "inputs-speech-indicator",
+                            &self.speech_state,
+                            &self.speech_stop_focus,
+                            speech_stop_keyboard,
+                        ))
+                    }),
             )
             .child(demo::heading(
                 ui,

@@ -3703,6 +3703,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `src/command/state.rs:953`, `:869`, and `Diff`'s icons are at
       `src/diff/mod.rs:1014`, `:1021`, `:1027-1031`, `:1215-1219` and `:1567` (0.8.0
       `:998`, `:1005`, `:1011-1015`, `:1199-1203`, `:1551`).
+      *GPUI Kit 0.9.1 (2026-11-13):* `SpeechIndicator`, new and shown on the Inputs page,
+      adds its own: the stop glyph's Square, shown under the pointer
+      (`src/speech/indicator.rs:130`).
 - [ ] [1.0] Left open by the v0.5.9 showcase-layout work
       ([archive](archive/todo_v0.5.9_showcase-layout.md)):
       - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps

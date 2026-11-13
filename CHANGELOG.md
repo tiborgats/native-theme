@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **native-theme-gpui**: `to_theme` sets gpui-component 0.9's `Theme::window_radius`, and `to_theme_config` its `ThemeConfig::window_radius`, from `window.border.corner_radius`, so a client-decorated window (one a Wayland compositor such as GNOME's Mutter leaves to the application) rounds its corners as the platform's windows do; gpui-component's `WindowBorder`, `Root` and `TitleBar` draw them. `apply` keeps the application's `cursor_blink`, which native-theme does not model, as it keeps `notification`, `list`, `sheet` and `motion`.
 - **Showcases (gpui)**: the window's fill and its status bar follow the rounded corners of a client-decorated window, and the Theme tab's Window section states the frame's colour (`window.border.color`, which gpui-component 0.9's `WindowBorder` draws instead of a literal grey) and its corners.
+- **Showcases (gpui)**: the Inputs page shows gpui-component 0.9.1's `SpeechIndicator`, beside the `SpeechWaveform` over the same synthetic input: while it captures, the indicator fills a stop button lettered in the platform's button text colour, which its bars take.
 
 ### Changed
 

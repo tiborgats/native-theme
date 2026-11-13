@@ -492,9 +492,13 @@ pub(crate) struct Showcase {
     pub(crate) color_picker_state: Entity<ColorPickerState>,
     /// The Inputs page's ColorSelect, empty until a colour is picked.
     pub(crate) color_select_state: Entity<ColorPickerState>,
-    /// The Inputs page's SpeechWaveform: a synthetic input and a recognizer
-    /// that hears nothing. It runs until Stop, whichever page is shown.
+    /// The Inputs page's SpeechWaveform and SpeechIndicator: a synthetic
+    /// input and a recognizer that hears nothing. It runs until Stop,
+    /// whichever page is shown.
     pub(crate) speech_state: Entity<SpeechState>,
+    /// The focus of the stop button the Inputs page's SpeechIndicator fills,
+    /// which shows the button's name instead while it has keyboard focus.
+    pub(crate) speech_stop_focus: FocusHandle,
     pub(crate) date_picker_state: Entity<gpui_component::date_picker::DatePickerState>,
     /// The Inputs page's TimeField (spec §8.3).
     pub(crate) time_field_state: Entity<TimeFieldState>,
@@ -1433,6 +1437,7 @@ impl Showcase {
                 .input(SyntheticAudio::default())
                 .system_fallback(false)
         });
+        let speech_stop_focus = cx.focus_handle();
 
         // Date picker state
         let date_picker_state =
@@ -1685,6 +1690,7 @@ impl Showcase {
             color_picker_state,
             color_select_state,
             speech_state,
+            speech_stop_focus,
             date_picker_state,
             time_field_state,
             token_input_state,

@@ -91,7 +91,7 @@ gpui-component, gpui-base and gpui-kit 0.9.1 on gpui-pre 0.3.12 (on the
 `to_theme` and `to_theme_config` set from `window.border.corner_radius`; its
 `WindowBorder` now draws the frame in the theme's border colour instead of a
 fixed grey; and `apply` keeps the application's `cursor_blink`, which
-native-theme does not model.
+native-theme does not model. The showcase shows 0.9.1's `SpeechIndicator`.
 
 ## Model completeness: what native-theme does not carry
 
