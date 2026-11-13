@@ -15,30 +15,30 @@
 # Do not edit by hand.
 
 [native-theme-gpui]
-commit = "5046902ec3c8b5cbda9121988f8985258b37dea2"
-generated = "2026-10-27"
-sources = "31e54d1211f1e4599379c6fa14e496a48a79eec6e36093565a57ca3b9353d514"
+commit = "6f85e1d6eb62b89cdf56bc23722480de7259498e"
+generated = "2026-11-13"
+sources = "b8412d855a48ead571a655246a86e5bae8a3577f63c8fc9ba1b0c9a528f1c005"
 
 [native-theme-gpui.verified]
-gpui-base = "0.8.1"
-gpui-component = "0.8.1"
-gpui-fast = "0.1.12"
-gpui-fast-apple = "0.1.12"
-gpui-fast-linux = "0.1.12"
-gpui-fast-macos = "0.1.12"
-gpui-fast-macros = "0.1.12"
-gpui-fast-platform = "0.1.12"
-gpui-fast-web = "0.1.12"
-gpui-fast-wgpu = "0.1.12"
-gpui-fast-windows = "0.1.12"
-gpui-kit = "0.8.1"
-gpui-kit-assets = "0.8.1"
-gpui-pre = "0.3.10"
+gpui-base = "0.9.1"
+gpui-component = "0.9.1"
+gpui-fast = "0.1.15"
+gpui-fast-apple = "0.1.15"
+gpui-fast-linux = "0.1.15"
+gpui-fast-macos = "0.1.15"
+gpui-fast-macros = "0.1.15"
+gpui-fast-platform = "0.1.15"
+gpui-fast-web = "0.1.15"
+gpui-fast-wgpu = "0.1.15"
+gpui-fast-windows = "0.1.15"
+gpui-kit = "0.9.1"
+gpui-kit-assets = "0.9.1"
+gpui-pre = "0.3.12"
 
 [native-theme-iced]
-commit = "5046902ec3c8b5cbda9121988f8985258b37dea2"
-generated = "2026-10-27"
-sources = "9e1a3113b0a3d539d747f9557363df32eaa0a87faca84d4428f00e28668396ce"
+commit = "6f85e1d6eb62b89cdf56bc23722480de7259498e"
+generated = "2026-11-13"
+sources = "8cd805113a8dfce6128ecec44a245fa6ebcd04dfd9a168b2c6cf84c62667d7d4"
 
 [native-theme-iced.verified]
 iced = "0.14.0"
@@ -49,9 +49,9 @@ iced_test = "0.14.0"
 iced_widget = "0.14.2"
 
 [native-theme-egui]
-commit = "5046902ec3c8b5cbda9121988f8985258b37dea2"
-generated = "2026-10-27"
-sources = "c1d5601cee52f020454745452c0ab7346e7580b349bbaed2b5c40bbeaeeef439"
+commit = "6f85e1d6eb62b89cdf56bc23722480de7259498e"
+generated = "2026-11-13"
+sources = "a158b641f1bef7c4ca0da31e5ff2ec6c98d3250781bbcd60ff7ce67bf77499cb"
 
 [native-theme-egui.verified]
 ecolor = "0.36.2"
