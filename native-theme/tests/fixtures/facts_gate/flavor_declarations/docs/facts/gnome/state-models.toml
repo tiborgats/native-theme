@@ -1,0 +1,24 @@
+# Synthetic state models (S17): a button in two flavours. The default flavour's holds `@raised`, a variant the
+# styles unit holds, not enabled (so `later`), in an exclusive group with `tool`; the alternative flavour's holds
+# neither the variant nor the group, so its section states its own `exclusive_variants` and `later`, empty.
+[[model]]
+widget = "button"
+available = true
+variants = ["tool", "@raised"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+exclusive_variants = [["tool", "@raised"]]
+rows = []
+
+[[model]]
+widget = "button"
+when = { conditions = ["flavor:alt"] }
+available = true
+variants = ["tool"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+rows = []

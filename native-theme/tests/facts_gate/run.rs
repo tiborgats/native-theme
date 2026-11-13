@@ -1787,27 +1787,33 @@ pub fn run_shard(
             if *directory_of != platform.name {
                 continue;
             }
-            let mut flavors = preset.flavors();
-            // While the flavours unit is not enabled the default flavour's
-            // state models alone are in force (S10, ADD-A147).
-            if !platform.units.flavours_enabled() {
-                flavors.truncate(1);
-            }
+            let flavors = preset.flavors();
             let flavors: Vec<Option<&str>> = if flavors.is_empty() {
                 vec![None]
             } else {
                 flavors.iter().map(|flavor| Some(flavor.as_str())).collect()
             };
+            // While the flavours unit is not enabled the default flavour's
+            // state models alone are in force (S10, ADD-A147): every
+            // flavour's section is still checked whole against its own state
+            // model at depth, the combinations only the default flavour's.
+            let in_force = if platform.units.flavours_enabled() {
+                flavors.len()
+            } else {
+                1
+            };
             let shared = shard.shared(&mut report, &mut elsewhere);
             let keys = prepare(&platform, preset.id(), &evidence, shared);
             let not_drawn = not_drawn_map(&platform, preset.id(), shared);
-            for flavor in flavors {
+            for flavor in &flavors {
                 declarations_run(
                     &platform,
                     preset,
-                    flavor,
+                    *flavor,
                     shard.shared(&mut report, &mut elsewhere),
                 );
+            }
+            for flavor in flavors.into_iter().take(in_force) {
                 check(
                     &platform,
                     preset,

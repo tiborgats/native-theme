@@ -1591,6 +1591,40 @@ fn gate_fixture_flavor_excluded_fact() {
     assert!(report.compared > 0, "{report:?}");
 }
 
+/// While the flavours unit is not enabled only the default flavour's
+/// combinations are checked, but every flavour's section is compared whole
+/// with that flavour's own state model at depth (S10, S17): a second
+/// flavour's section restating the `exclusive_variants` and `later` its
+/// state model contradicts passes; one stating its variants alone inherits
+/// the default flavour's exclusive group and `later` list and fails there,
+/// under that flavour, and nowhere else.
+#[test]
+fn gate_fixture_flavor_declarations_each_flavour() {
+    let report = fixture_report("flavor_declarations");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+    let inherits = fixture_report_with("flavor_declarations", "inherits.toml");
+    let mut failures: Vec<&str> = inherits
+        .failures
+        .iter()
+        .map(|failure| {
+            failure
+                .split_once(" under flavor:alt")
+                .map_or(failure.as_str(), |(head, _)| head)
+        })
+        .collect();
+    failures.sort_unstable();
+    assert_eq!(
+        failures,
+        [
+            "declarations: `button` exclusive_variants",
+            "declarations: `button` later.variants"
+        ],
+        "{:?}",
+        inherits.failures
+    );
+}
+
 /// Each rule of the state model in force (S10 *Later names*, S17,
 /// ADD-A147; ADD-A128's projection by the facts that name a variant gone),
 /// one variant each: a variant a later unit holds (`@raised`) stays in the

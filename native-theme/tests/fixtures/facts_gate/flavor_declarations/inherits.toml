@@ -1,0 +1,29 @@
+# The alternative flavour's section stating its variants alone: it inherits the default flavour's exclusive group
+# and `later` list, which its state model contradicts (S10), and fails the declarations run under `flavor:alt`.
+# base without: [declare]
+# base without: text_styles = ["body"]
+# base without: inputs = ["accent"]
+# base without: surface_sets = ["window"]
+[declare]
+text_styles = ["body"]
+inputs = ["accent"]
+surface_sets = ["window"]
+flavors = ["main", "alt"]
+
+[declare.widget.button]
+variants = ["tool", "@raised"]
+later = { variants = ["@raised"] }
+exclusive_variants = [["tool", "@raised"]]
+
+[declare.flavor.alt.widget.button]
+variants = ["tool"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }

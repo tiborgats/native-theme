@@ -1,0 +1,32 @@
+# The default flavour's declarations with `@raised` under `later` (S10 *Later names*), and the alternative
+# flavour's section stating what it would otherwise inherit and its state model contradicts: no exclusive group,
+# nothing `later` (S10, S17).
+# base without: [declare]
+# base without: text_styles = ["body"]
+# base without: inputs = ["accent"]
+# base without: surface_sets = ["window"]
+[declare]
+text_styles = ["body"]
+inputs = ["accent"]
+surface_sets = ["window"]
+flavors = ["main", "alt"]
+
+[declare.widget.button]
+variants = ["tool", "@raised"]
+later = { variants = ["@raised"] }
+exclusive_variants = [["tool", "@raised"]]
+
+[declare.flavor.alt.widget.button]
+variants = ["tool"]
+later = { variants = [] }
+exclusive_variants = []
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+set = { fill = "#00000000" }
