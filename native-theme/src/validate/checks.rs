@@ -3066,11 +3066,17 @@ pub(super) fn unused(
     });
     // A flavour of a unit not enabled is exempt, with its sections: it cannot
     // be asked for and no rule may name it (S12, S16; ADD-A147). The
-    // default flavour's sections are checked.
+    // default flavour's sections are checked, and so is the section of a
+    // flavour `flavors` does not declare, no flavour of any unit.
+    let later = |flavor: &Key| {
+        !crate::widgets::FLAVOURS_UNIT
+            && decl.flavors.contains(flavor)
+            && decl.flavors.first() != Some(flavor)
+    };
     let flavors = decl
         .flavor
         .iter()
-        .filter(|(flavor, _)| crate::widgets::FLAVOURS_UNIT || decl.flavors.first() == Some(flavor))
+        .filter(|(flavor, _)| !later(flavor))
         .flat_map(|(flavor, section)| {
             section.widgets.iter().map(move |(widget, section)| {
                 let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));

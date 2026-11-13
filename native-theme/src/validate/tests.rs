@@ -4394,8 +4394,9 @@ fn refusal_later_names() {
 }
 
 /// The default flavour's sections are checked for unused names as the
-/// widget's own are; another flavour's, of a unit not enabled, are exempt
-/// (S12; ADD-A147).
+/// widget's own are; another declared flavour's, of a unit not enabled, are
+/// exempt (S12; ADD-A147); the section of a flavour `flavors` does not
+/// declare (a typo) is no such flavour's and is checked.
 #[test]
 fn refusal_unused_in_the_default_flavours_section() {
     let flavors = |default: &str, other: &str| {
@@ -4404,11 +4405,10 @@ fn refusal_unused_in_the_default_flavours_section() {
              [declare.flavor.kirigami.widget.button]\nflags = [\"@spin\"]"
         ))
     };
-    assert_eq!(
-        flavors("kirigami", "widgets"),
-        ["declare.flavor.kirigami.widget.button.flags: `@spin` is declared but unused"]
-    );
+    let unused = "declare.flavor.kirigami.widget.button.flags: `@spin` is declared but unused";
+    assert_eq!(flavors("kirigami", "widgets"), [unused]);
     assert_eq!(flavors("widgets", "kirigami"), NONE);
+    assert_eq!(flavors("widgets", "kirigam"), [unused]);
 }
 
 /// Each declared keyed name nothing uses, by kind (S12): a system setting
