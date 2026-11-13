@@ -569,17 +569,13 @@ fn read_when(when: Option<&Value>) -> Result<When, Unread> {
 const GLOBAL_WHEN: [&str; 2] = ["conditions", "not_conditions"];
 
 /// Every fact of `platform` that S17's predicate places as of the enabled
-/// units on one of `presets` (the platform's, each with its default
-/// flavour) read as the model reads it,
+/// units on one of the platform's presets (`depths`, each preset's
+/// predicate) read as the model reads it,
 /// whatever preset it is for (its `preset:` conditions left out): a key, a
 /// `when` or a value the model holds but refuses is a failure; what it does
 /// not hold yet is counted, and so is a fact of no preset's enabled units
 /// (S17: skipped while 0.8.0 is built).
-pub fn read_all(platform: &Platform, presets: &[(&str, Option<String>)], report: &mut Report) {
-    let depths: Vec<(&str, Depth)> = presets
-        .iter()
-        .map(|(preset, flavour)| (*preset, Depth::new(platform, preset, flavour.as_deref())))
-        .collect();
+pub fn read_all(platform: &Platform, depths: &[(&str, Depth<'_>)], report: &mut Report) {
     for fact in &platform.facts {
         // The accent run reads its own facts ([`accent_run`]).
         if fact.accent_run {
@@ -703,13 +699,22 @@ fn count_place(
 }
 
 /// The default flavour of the bundled preset `id` (`None`: it declares no
-/// flavour), or why it does not load.
+/// flavour), or why it does not load; each preset loaded once per process.
 pub fn bundled_default_flavour(id: &str) -> Result<Option<String>, String> {
-    let preset = native_theme::PresetId::all()
-        .iter()
-        .find(|held| held.key() == id)
-        .ok_or_else(|| format!("no bundled preset is `{id}`"))?;
-    Ok(Preset::bundled(*preset)?.flavors().into_iter().next())
+    type Flavours = Mutex<BTreeMap<String, Result<Option<String>, String>>>;
+    static LOADED: std::sync::OnceLock<Flavours> = std::sync::OnceLock::new();
+    let loaded = LOADED.get_or_init(|| Mutex::new(BTreeMap::new()));
+    let mut loaded = loaded.lock().unwrap_or_else(PoisonError::into_inner);
+    loaded
+        .entry(id.to_owned())
+        .or_insert_with(|| {
+            let preset = native_theme::PresetId::all()
+                .iter()
+                .find(|held| held.key() == id)
+                .ok_or_else(|| format!("no bundled preset is `{id}`"))?;
+            Ok(Preset::bundled(*preset)?.flavors().into_iter().next())
+        })
+        .clone()
 }
 
 /// S17's predicate over `platform`'s facts for `preset`, under its default
@@ -749,8 +754,25 @@ pub fn prepare<'f>(
     evidence: &facts::Evidence,
     report: &mut Report,
 ) -> Vec<KeyFacts<'f>> {
+    prepare_placed(
+        platform,
+        preset,
+        &depth_of(platform, preset),
+        evidence,
+        report,
+    )
+}
+
+/// [`prepare`] with the preset's predicate `depth` given, its placements
+/// shared with [`read_all`]'s.
+fn prepare_placed<'f>(
+    platform: &'f Platform,
+    preset: &Preset,
+    depth: &Depth<'_>,
+    evidence: &facts::Evidence,
+    report: &mut Report,
+) -> Vec<KeyFacts<'f>> {
     let mut out: Vec<KeyFacts<'f>> = Vec::new();
-    let depth = depth_of(platform, preset);
     let preset = preset.id();
     let mut counts = (0_usize, 0_usize);
     for fact in &platform.facts {
@@ -1775,7 +1797,15 @@ pub fn run_shard(
                 }
             }
         }
-        read_all(&platform, &ids, shared);
+        // Each preset's predicate, its placements shared by `read_all` and
+        // the preset's run; `read_all` records into the first shard alone.
+        let depths: Vec<(&str, Depth)> = ids
+            .iter()
+            .map(|(id, flavour)| (*id, Depth::new(&platform, id, flavour.as_deref())))
+            .collect();
+        if shard.index == 0 {
+            read_all(&platform, &depths, shared);
+        }
         // Every pending fact is listed, with the combinations it applied
         // in, none where it applied in none (S17).
         for fact in &platform.facts {
@@ -1834,7 +1864,10 @@ pub fn run_shard(
                 1
             };
             let shared = shard.shared(&mut report, &mut elsewhere);
-            let keys = prepare(&platform, preset, &evidence, shared);
+            let keys = match depths.iter().find(|(id, _)| *id == preset.id()) {
+                Some((_, depth)) => prepare_placed(&platform, preset, depth, &evidence, shared),
+                None => prepare(&platform, preset, &evidence, shared),
+            };
             let not_drawn = not_drawn_map(&platform, preset.id(), shared);
             for flavor in &flavors {
                 declarations_run(
