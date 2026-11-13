@@ -147,6 +147,10 @@ pub(crate) enum Node<'a> {
     StateFlag(&'a StateFlag),
     /// A condition: a value.
     Condition(&'a Condition),
+    /// A widget: a value (a fade's nested element).
+    Widget(&'a WidgetRef),
+    /// A variant: a value (a fade's nested element's).
+    Variant(&'a VariantRef),
     /// A ripple's indication box.
     IndicationBox(&'a IndicationBox),
     /// A ripple's indication box's patch.
@@ -924,7 +928,27 @@ leaves!(ExprForm::Calls => u16: Some(Ty::Number), u32: Some(Ty::Number));
 leaves!(ExprForm::NoCalls => bool: Some(Ty::Bool), String: Some(Ty::Text));
 leaves!(ExprForm::NoCalls => IconSet: Some(Ty::Enum(&ICON_SET)));
 leaves!(ExprForm::NoCalls => LanguageTag: None, IconRole: None, SurfaceRole: None);
-leaves!(ExprForm::NoCalls => PartRef: None, VariantRef: None, WidgetRef: None);
+leaves!(ExprForm::NoCalls => PartRef: None);
+
+/// A widget named as a value (a fade's nested element, S2.8): the visit
+/// reads it with the variant named beside it.
+impl Walk for WidgetRef {
+    const EXPR: ExprForm = ExprForm::NoCalls;
+
+    fn walk(&self, w: &mut Walker<'_>) {
+        w.check(Node::Widget(self));
+    }
+}
+
+/// A variant named as a value (a fade's nested element's, S2.8): one its
+/// widget declares, of an enabled unit (S10, S12).
+impl Walk for VariantRef {
+    const EXPR: ExprForm = ExprForm::NoCalls;
+
+    fn walk(&self, w: &mut Walker<'_>) {
+        w.check(Node::Variant(self));
+    }
+}
 
 /// The declaration a key's type names until its place names the one it is
 /// a key of (S10): a field's, or a widget value's `keys` entry.

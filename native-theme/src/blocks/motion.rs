@@ -537,7 +537,8 @@ pub enum TransitionEngine {
     WinUi,
     /// WinUI's `AnimatedIcon` player (a `Keyed` icon transition).
     WinUiAnimatedIcon {
-        /// Its source, a `token.icons.animated_visuals` entry.
+        /// Its source, an entry of WinUI's animated visuals, a token staged
+        /// with the motion unit (S6.1).
         visual: Key,
     },
     /// `GtkSwitch`'s own slide of its thumb.
@@ -553,8 +554,10 @@ pub enum TransitionEngine {
 }
 
 /// [`TransitionEngine`] resolved (S6.1): its members, a
-/// `WinUiAnimatedIcon` holding the visual its `visual` names, resolved from
-/// `token.icons.animated_visuals`, so the engine reads no token.
+/// `WinUiAnimatedIcon` holding the visual its `visual` names, so the engine
+/// reads no token. WinUI's animated visuals are a token staged with the
+/// motion unit, and no part lists `transitions` until it is enabled, so no
+/// resolved theme holds an engine yet.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ResolvedEngine {
     /// GTK's CSS transitions.
@@ -631,9 +634,9 @@ pub struct BreezeTest {
 /// which holds no `Value` (S6.1).
 pub(crate) type ResolvedBreezeTest = BreezeTest;
 
-/// A WinUI `AnimatedIcon` source (S2.7, S4.5), a
-/// `token.icons.animated_visuals` entry: its play time and its named points
-/// of progress, as its code states them, the inputs of the
+/// A WinUI `AnimatedIcon` source (S2.7, S4.5), an entry of WinUI's animated
+/// visuals (a token staged with the motion unit, S6.1): its play time and
+/// its named points of progress, as its code states them, the inputs of the
 /// `WinUiAnimatedIcon` engine.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block, own_resolved)]

@@ -34,9 +34,6 @@ pub struct Fact {
     pub scheme_file: Option<String>,
     /// The accent it was measured with, a colour literal.
     pub accent: Option<String>,
-    /// Every unit it belongs to is enabled (S17 *While 0.8.0 is built*);
-    /// set as its platform is read.
-    pub enabled: bool,
 }
 
 impl Fact {
@@ -147,7 +144,6 @@ pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
             accent_run: scheme_file.is_some() || accent.is_some(),
             scheme_file,
             accent,
-            enabled: true,
         });
     }
     Ok(out)

@@ -438,6 +438,9 @@ struct Checker<'a> {
     /// part needs none, so neither its list nor any block below it is a
     /// completeness check (S6.3).
     latent: bool,
+    /// The typed widget of the fade's nested element walked, which its
+    /// `variant`, walked next, is checked against (S2.8).
+    fade_widget: Option<WidgetKind>,
 }
 
 impl<'a> Checker<'a> {
@@ -453,6 +456,7 @@ impl<'a> Checker<'a> {
             widget_decls: Vec::new(),
             exempt: Vec::new(),
             latent: false,
+            fade_widget: None,
         }
     }
 
@@ -2051,6 +2055,23 @@ impl Visit for Checker<'_> {
             Node::Scalar(scalar) => self.scalar_unit(path, scalar),
             Node::Key(key) => self.declared_leaf(path, key),
             Node::Condition(condition) => self.condition(condition, &at, false),
+            // A fade's nested element (S2.8): its variant, walked after its
+            // widget, one the widget declares, of an enabled unit (S10, S12).
+            Node::Widget(widget) => {
+                self.fade_widget = match widget {
+                    WidgetRef::Typed(kind) if path.slot() == Some(("FadeUnder", "widget")) => {
+                        Some(*kind)
+                    }
+                    WidgetRef::Typed(_) | WidgetRef::Component(_) => None,
+                };
+            }
+            Node::Variant(variant) => {
+                if path.slot() == Some(("FadeUnder", "variant"))
+                    && let Some(widget) = self.fade_widget.take()
+                {
+                    self.variant(widget, variant, &at);
+                }
+            }
             Node::SurfaceSet(set) => self.surface_set(set, &at),
             Node::IndicationBox(indication) => self.indication_box(Some(&indication.part), path),
             Node::IndicationBoxPatch(patch) => self.indication_box(patch.part.as_ref(), path),
@@ -4043,7 +4064,8 @@ mod tests {
     }
 
     /// A `WinUiAnimatedIcon` engine's `visual` under a widget's values
-    /// names a `token.icons.animated_visuals` entry, no key the value holds:
+    /// names an entry of WinUI's animated visuals (a token staged with the
+    /// motion unit), no key the value holds:
     /// it is not checked against the widget's `keys` (S2.7, S10, S12).
     #[test]
     fn a_visual_is_no_widget_values_key() {

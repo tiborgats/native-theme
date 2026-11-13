@@ -743,7 +743,7 @@ fn stand_in_inputs(root: &Path, presets: &[(String, Preset)]) -> Vec<String> {
     let platform = run::Platform::read(&root.join("gnome"), &units, &mut report);
     let preset = &presets[0].1;
     let evidence = facts::Evidence::new(fixture_evidence(root));
-    let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
+    let keys = run::prepare(&platform, preset, &evidence, &mut report);
     let conditions = run::conditions(&["scheme:light".to_owned()], None).unwrap();
     let resolved = preset
         .resolve(&conditions, &native_theme::Layer::default())
@@ -790,7 +790,7 @@ fn gate_probes_alike_reads_the_steps() -> Result<(), String> {
     let platform = run::Platform::read(&root.join("gnome"), &units, &mut report);
     let preset = &presets.first().ok_or("the fixture has no preset")?.1;
     let evidence = facts::Evidence::new(fixture_evidence(&root));
-    let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
+    let keys = run::prepare(&platform, preset, &evidence, &mut report);
     let resolve = |scheme: &str, layer: &native_theme::Layer| {
         let conditions = run::conditions(&[format!("scheme:{scheme}")], None).map_err(failed)?;
         preset.resolve(&conditions, layer)
@@ -1485,6 +1485,7 @@ fn gate_declarations_skip_unheld_context() -> Result<(), String> {
 #[test]
 fn gate_enabled_fact_unread_fails() -> Result<(), String> {
     let units = units::Units::repository()?;
+    let adwaita = Preset::bundled(PresetId::Adwaita)?;
     let models = model::Model::read(
         "gnome/state-models.toml",
         "[[model]]\nwidget = \"button\"\navailable = true\nvariants = [\"tool\"]\nsizes = []\n\
@@ -1508,7 +1509,7 @@ fn gate_enabled_fact_unread_fails() -> Result<(), String> {
         };
         let mut report = run::Report::default();
         let evidence = facts::Evidence::new(Path::new(env!("CARGO_MANIFEST_DIR")));
-        run::prepare(&platform, "adwaita", &evidence, &mut report);
+        run::prepare(&platform, &adwaita, &evidence, &mut report);
         if report.at_depth.get("adwaita") != Some(&(1, 0)) {
             return Err(format!("{key}: not placed at depth: {report:?}"));
         }
@@ -1546,6 +1547,97 @@ fn gate_enabled_fact_unread_fails() -> Result<(), String> {
             )),
         "{unread:?}"
     );
+    Ok(())
+}
+
+/// A synthetic platform of one button state model (`extra` its own lines)
+/// and one fact of `button.body.opacity` under `when`, over the
+/// repository's units.
+fn depth_platform(extra: &str, when: &str) -> Result<run::Platform, String> {
+    let models = model::Model::read(
+        "gnome/state-models.toml",
+        &format!(
+            "[[model]]\nwidget = \"button\"\navailable = true\nvariants = [\"tool\"]\n\
+             densities = []\nexclusive = []\nrows = []\n{extra}"
+        ),
+    )?;
+    let key = "button.body.opacity";
+    let facts = facts::read(
+        "gnome/button.toml",
+        &format!("[[fact]]\nkey = \"{key}\"\nwhen = {when}\nvalue = 1\nrows = []\n"),
+    )?;
+    Ok(run::Platform {
+        name: "gnome".to_owned(),
+        facts,
+        keys: vec![(key.to_owned(), native_theme::gate::parse_key(key))],
+        models,
+        units: units::Units::repository()?,
+    })
+}
+
+/// The default flavour's own name holds in every combination of the
+/// default flavour's entries (the staging review's minor 4): a fact naming
+/// it is of the enabled units, where before it was unplaced.
+#[test]
+fn depth_default_flavour_in_every_vector() -> Result<(), String> {
+    let platform = depth_platform(
+        "sizes = []\naxes = { states = [\"hover\"], conditions = [], contexts = [] }\n",
+        "{ conditions = [\"flavor:main\"] }",
+    )?;
+    let fact = platform.facts.first().ok_or("no fact")?;
+    let place = |flavour: Option<&str>| {
+        depth::Depth::new(&platform, "adwaita", flavour).unit(&fact.key, fact.when.as_ref())
+    };
+    assert_eq!(place(Some("main")), depth::Place::Enabled);
+    assert_eq!(place(Some("other")), depth::Place::Unplaced);
+    Ok(())
+}
+
+/// While the sizes unit is not enabled an element takes its default size
+/// in force alone, as the query reads it (the staging review's minor 5): a
+/// `sizes_by_context` entry's default where its selector matches, so a fact
+/// naming it there is of the enabled units; and a pending default leaves
+/// no size in force, so the state model in force takes none.
+#[test]
+fn depth_context_and_pending_defaults() -> Result<(), String> {
+    let axes = "axes = { states = [\"hover\"], conditions = [], contexts = [{ scope = \"any\", \
+                widget = \"button\" }] }\n";
+    let by_context = "sizes_by_context = [{ context = { widget = \"button\" }, sizes = \
+                      [\"small\"], default_size = \"small\" }]\n";
+    let platform = depth_platform(
+        &format!(
+            "sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n{axes}{by_context}"
+        ),
+        "{ sizes = [\"small\"], context = [{ widget = \"button\" }] }",
+    )?;
+    let fact = platform.facts.first().ok_or("no fact")?;
+    let depth = depth::Depth::new(&platform, "adwaita", None);
+    assert_eq!(
+        depth.unit(&fact.key, fact.when.as_ref()),
+        depth::Place::Enabled
+    );
+    let entry = platform.models.first().ok_or("no model")?;
+    let in_force = run::in_force_at_depth(entry, &platform.units, "adwaita");
+    let context: toml::Value =
+        toml::from_str::<toml::Table>("context = [{ scope = \"any\", widget = \"button\" }]")
+            .map_err(failed)?
+            .remove("context")
+            .ok_or("no context")?;
+    assert_eq!(
+        model::size_options(&in_force, &[], None),
+        [Some("regular".to_owned())]
+    );
+    assert_eq!(
+        model::size_options(&in_force, &[], Some(&context)),
+        [Some("small".to_owned())]
+    );
+    let pending = depth_platform(
+        &format!("sizes = [\"small\", \"regular\"]\ndefault_size = {{ pending = \"U1\" }}\n{axes}"),
+        "{ sizes = [\"small\"] }",
+    )?;
+    let entry = pending.models.first().ok_or("no model")?;
+    let in_force = run::in_force_at_depth(entry, &pending.units, "adwaita");
+    assert_eq!(model::size_options(&in_force, &[], None), [None]);
     Ok(())
 }
 
@@ -3194,7 +3286,7 @@ fn accent_fixture_report(name: &str) -> Result<run::Report, String> {
     let mut report = run::Report::default();
     let platform = run::Platform::read(&root.join("kde"), &units, &mut report);
     let evidence = facts::Evidence::new(&case);
-    let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
+    let keys = run::prepare(&platform, &preset, &evidence, &mut report);
     run::accent_run(
         &run::AccentRun {
             root: &root,
@@ -3679,7 +3771,9 @@ fn facts_units() {
             .map(|(_, directory)| *directory)
             .unwrap_or_else(|| panic!("{}: no facts directory", id.key()));
         let platform = run::Platform::read(&root.join(directory), &units, &mut report);
-        run::place_facts(&platform, id.key(), &mut report);
+        let flavour = run::bundled_default_flavour(id.key())
+            .unwrap_or_else(|error| panic!("{}: {error}", id.key()));
+        run::place_facts(&platform, id.key(), flavour.as_deref(), &mut report);
     }
     for (preset, (facts, pending)) in &report.at_depth {
         eprintln!("  at depth: {preset}: {facts} facts of the enabled units, {pending} pending");

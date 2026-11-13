@@ -1189,9 +1189,10 @@ fn part_shown_resolves_option() {
 /// `ResolvedPartStyle.breeze_tests` (S2.7, S6.1, S8; ADD-A126): the Breeze
 /// tests of every rule that can apply to the element, whatever its flags,
 /// in rank order: as they first appear in the part's base transitions
-/// (each step's list, then its focus indicator's transition), then a test
-/// only a rule names, in the rules' order; a test stated twice once, a
-/// stated zero's none, a rule the element's variants exclude left out.
+/// (each step's list, then its focus indicator's transition, which is
+/// staged with the motion unit too, S6.1), then a test only a rule names,
+/// in the rules' order; a test stated twice once, a stated zero's none, a
+/// rule the element's variants exclude left out.
 #[test]
 #[ignore = "motion unit: no part lists `transitions` until it is enabled (D6 outcome 3)"]
 fn breeze_tests_in_rank_order() {
