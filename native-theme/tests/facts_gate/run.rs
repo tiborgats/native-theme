@@ -1220,6 +1220,11 @@ fn declared_entries(
         .map(|entry| {
             let unspelled = unspelled_variants(entry, report);
             let mut out = entry.without(&unspelled);
+            // A variant with no spelling is no required one the preset can
+            // declare (scripts/generate_preset.py's `declared()`); the
+            // combinations keep it, as no set holding it is drawn.
+            out.requires_variants
+                .retain(|variant| !unspelled.contains(variant));
             let widget = out.widget.clone();
             let (named, _) = preset.mentions(&widget);
             let latest = preset.latest_sets(&widget);

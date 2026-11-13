@@ -1477,6 +1477,59 @@ fn gate_declarations_skip_unheld_context() -> Result<(), String> {
     Ok(())
 }
 
+/// A typed variant the model does not hold (`flat`, no `Variant` member)
+/// leaves the declarations everywhere it is named (`Model::without`, and
+/// `requires_variants`, as scripts/generate_preset.py's `declared()` leaves
+/// it): a preset declaring the state model's `variants`, `sizes_by_variant`
+/// and `requires_variants` without it passes; one with no required variant
+/// left declares none (and its other variant, drawn in no combination, under
+/// `later`).
+#[test]
+fn gate_declarations_leave_out_an_unspelled_variant() -> Result<(), String> {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
+    let base = std::fs::read_to_string(fixtures.join("base.toml")).map_err(failed)?;
+    let failures = |required: &str, declared: &str| -> Result<Vec<String>, String> {
+        let preset = Preset::from_toml(&format!(
+            "{base}\n[declare.widget.button]\nvariants = [\"tool\"]\n\
+             sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n\
+             sizes_by_variant = [{{ variant = \"tool\", sizes = [\"small\"], default_size = \
+             \"small\" }}]\n{declared}"
+        ))?;
+        let models = model::Model::read(
+            "gnome/state-models.toml",
+            &format!(
+                "[[model]]\nwidget = \"button\"\navailable = true\nvariants = [\"tool\", \"flat\"]\n\
+                 sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n\
+                 sizes_by_variant = [{{ variant = \"flat\", sizes = [\"regular\"] }}, {{ variant \
+                 = \"tool\", sizes = [\"small\"], default_size = \"small\" }}]\n\
+                 requires_variants = {required}\ndensities = []\nexclusive = []\nrows = []\n\
+                 axes = {{ states = [\"hover\"], conditions = [], contexts = [] }}\n"
+            ),
+        )?;
+        let platform = run::Platform {
+            name: "gnome".to_owned(),
+            facts: Vec::new(),
+            keys: Vec::new(),
+            models,
+            units: units::Units::none(),
+        };
+        let mut report = run::Report::default();
+        run::declarations_run(&platform, &preset, None, &mut report);
+        Ok(report.failures)
+    };
+    assert_eq!(
+        failures("[\"tool\", \"flat\"]", "requires_variants = [\"tool\"]\n")?,
+        Vec::<String>::new()
+    );
+    // `flat` alone required: no element holds `tool` without it, so `tool`
+    // is drawn in no combination and `later` (S10 *Later names*).
+    assert_eq!(
+        failures("[\"flat\"]", "later = { variants = [\"tool\"] }\n")?,
+        Vec::<String>::new()
+    );
+    Ok(())
+}
+
 /// A fact S17's predicate places as of the enabled units is read whole by
 /// the preset's run (the staging review's S1): one whose key the model does
 /// not read (refused, or never read), or whose `when` it does not read,
