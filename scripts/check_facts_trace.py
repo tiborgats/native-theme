@@ -587,6 +587,13 @@ def context_names(when) -> set:
     return out
 
 
+def entry_of(key: str) -> str:
+    """The catalogue entry a key, a target path or a state model's `widget` names: `component.<key>` under
+    `component.`, else its first segment (a widget, or `role`, `token`, `input`)."""
+    seg = key.split(".")
+    return f"{seg[0]}.{seg[1]}" if seg[0] == "component" and len(seg) > 1 else seg[0]
+
+
 HOSTLESS = "identities"   # the unit of a fact drawn only in a context naming no widget (the identities, with hosts)
 UNPLACED = "unplaced"   # a fact not of the enabled units that no unit's names place (S17: reported apart, under no unit)
 
@@ -641,7 +648,8 @@ class Depth:
             d = it.data
             if it.table == "model" and isinstance(d.get("widget"), str):
                 self.models.setdefault((it.platform, d["widget"]), []).append(d)
-            elif it.table == "fact" and isinstance(d.get("key"), str) and len(d["key"].split(".")) == 2:
+            elif it.table == "fact" and isinstance(d.get("key"), str) and (
+                    d["key"].count(".") == entry_of(d["key"]).count(".") + 1):
                 self.presences.setdefault((it.platform, d["key"]), []).append(d)
         self._space, self._combos, self._sets, self._presence, self._drawn = {}, {}, {}, {}, {}
         self._held, self._holds, self._hosts = {}, {}, {}
@@ -845,16 +853,17 @@ class Depth:
 
     @staticmethod
     def part_of(key: str) -> str | None:
-        """`<widget>.<part>` of a part's field's key; None for a widget value, a part's own key or a key of no
-        widget."""
-        seg = key.split(".")
-        return f"{seg[0]}.{seg[1]}" if len(seg) > 2 and seg[1] != "values" else None
+        """`<entry>.<part>` of a part's field's key (entry_of()); None for a widget value, a part's own key or a key of
+        no widget."""
+        entry = entry_of(key)
+        seg = key[len(entry) + 1:].split(".")
+        return f"{entry}.{seg[0]}" if len(seg) > 1 and seg[0] != "values" else None
 
     def holds_at(self, platform: str, key: str, when: dict, preset: str) -> bool:
         """Whether a fact of a widget's key (its `when` for the preset) holds in a combination at depth (combos()) where
         its part is drawn (drawn()): every such combination read, no cap; each distinct `when` decided once per
         (platform, entry or part, preset)."""
-        widget, part = key.split(".")[0], self.part_of(key)
+        widget, part = entry_of(key), self.part_of(key)
         k = (platform, preset, part or widget, json.dumps(when, sort_keys=True))
         if k not in self._holds:
             m = compiled(when)
@@ -865,10 +874,10 @@ class Depth:
 
     def key_unit(self, key: str) -> str:
         """The unit a key no enabled unit holds waits for: the one the longest `[staged]` or `[deferred]` path above it
-        names, else its widget (an entry of a unit not enabled)."""
+        names, else its entry (entry_of(): an entry of a unit not enabled)."""
         p = segs(key)
         found = [(len(segs(path)), unit) for path, unit in self.waiting if under(p, segs(path))]
-        return max(found, key=lambda x: x[0])[1] if found else p[0]
+        return max(found, key=lambda x: x[0])[1] if found else entry_of(key)
 
     def of_enabled(self, platform: str, key: str, when, preset: str) -> bool:
         """Whether a fact of the platform holding for the preset (its `when` as written) is of the enabled units (the
@@ -877,7 +886,7 @@ class Depth:
         when = preset_when(when, preset)
         if not self.held(key, preset) or not all(self.held(w) for w in context_names(when)):
             return False
-        widget = key.split(".")[0]
+        widget = entry_of(key)
         if any(self.condition_off(c, key) for c in listed(when, "conditions")):
             return False
         if widget in ("role", "token", "input"):
@@ -900,7 +909,7 @@ class Depth:
                 return w
         if self.of_enabled(platform, key, when, preset):
             return None
-        widget = key.split(".")[0]
+        widget = entry_of(key)
         entry = widget not in ("role", "token", "input")
         if entry and not (isinstance(when.get("context"), list) and when["context"]):
             host = self.host_unit(platform, key, listed(when, "variants"), preset)
@@ -935,7 +944,7 @@ class Depth:
     def host_unit(self, platform: str, key: str, variants: set, preset: str) -> str | None:
         """The unit of the host inside which alone the key's entry draws one of `variants` (the first in sorted order so
         drawn, variant_host()), else its part (part_host()); None where it draws them outside a host."""
-        widget, part = key.split(".")[0], self.part_of(key)
+        widget, part = entry_of(key), self.part_of(key)
         for v in sorted(variants):
             host = self.variant_host(platform, widget, v, preset)
             if host:
@@ -1141,7 +1150,7 @@ def line_later(line: Line, depth, presets: list) -> list:
     entry's state model on those presets, a density, a direction."""
     paths = target_paths(line.target)
     path = paths[0] if paths else ""
-    entry = path.split(".")[0]
+    entry = entry_of(path)
     defaults = {c.size for p in presets for c in depth.combos(line.platform, entry, p)[0]} if presets else set()
     out = []
     for names in selector_alternatives(line.target):
@@ -1543,6 +1552,33 @@ def depth_cases(base: Path) -> list:
     if line_later(line, depth, ["adwaita"]) != [{"ipad"}, {"styles"}] or line_later(
             line, depth, ["adwaita", "kde-breeze"]) != [set(), {"styles"}]:
         failures.append(f"line_later: got {line_later(line, depth, ['adwaita'])}")
+    # a key under `component.` is of the entry `component.<key>`: its state model, its parts' presence, its later names
+    # and, where no enabled unit holds it, the unit it waits for
+    units = DEPTH_UNITS.replace('slice = ["button"]', 'slice = ["button", "component.led"]', 1).replace(
+        'button = [{ variants = ["flat"] }]', 'button = [{ variants = ["flat"] }]\n"component.led" = [{ variants = '
+                                              '["blink"] }]', 1)
+    (root / UNITS).write_text(units, encoding="utf-8")
+    led = {"widget": "component.led", "available": True, "variants": ["blink"], "sizes": [], "densities": [],
+           "axes": {"states": ["hover"], "conditions": ["scheme:light", "scheme:dark"], "contexts": []},
+           "exclusive": [], "not_drawn": []}
+    items = [SimpleNamespace(table="model", platform="kde", data=led),
+             SimpleNamespace(table="fact", platform="kde", data={"key": "component.led.lamp", "value": "absent"}),
+             SimpleNamespace(table="fact", platform="kde", data={"key": "component.led.lamp", "value": "present",
+                                                                 "when": {"variants": ["blink"]}})]
+    depth = Depth(root, items)
+    for key, when, want in (("component.led.body.fill", {}, None),
+                            ("component.led.body.fill", {"states": ["hover"]}, None),
+                            ("component.led.body.fill", {"variants": ["blink"]}, "styles"),
+                            ("component.led.lamp.fill", {}, "unplaced"),
+                            ("component.led.lamp.fill", {"variants": ["blink"]}, "styles"),
+                            ("component.dock.body.fill", {}, "component.dock")):
+        got = depth.unit("kde", key, when, "kde-breeze")
+        if got != want or depth.of_enabled("kde", key, when, "kde-breeze") != (want is None):
+            failures.append(f"depth: a component's key {key} {when}: got {got!r}, want {want!r}")
+    for key, want in (("component.led.lamp.fill", "component.led.lamp"), ("component.led.values.x", None),
+                      ("button.body.fill", "button.body"), ("component.led.lamp", None)):
+        if Depth.part_of(key) != want:
+            failures.append(f"depth: part_of({key!r}): got {Depth.part_of(key)!r}, want {want!r}")
     for bad in ('[[later]]\nname = "x"\nkind = "other"\nenabled = false\n',
                 '[[later]]\nname = "x"\nkind = "depth"\nenabled = false\nbutton = ["flat"]\n',
                 '[[later]]\nname = "x"\nkind = "depth"\nenabled = false\n[[later]]\nname = "x"\nkind = "depth"\n'

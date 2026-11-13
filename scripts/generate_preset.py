@@ -428,10 +428,11 @@ def entry_widgets(e) -> set:
     return out
 
 
-def is_entry_key(key: str) -> bool:
-    """Whether a fact's key is a catalogue entry's (a widget's or a component's), not a colour role's, an input's or a
-    token's."""
-    return key.split(".")[0] not in ("role", "token", "input")
+def entry_key(key: str) -> str | None:
+    """The catalogue entry a fact's key is of (a widget's, or a component's `component.<key>`,
+    check_facts_trace.entry_of()); None for a colour role's, an input's or a token's."""
+    entry = check_facts_trace.entry_of(key)
+    return None if entry in ("role", "token", "input") else entry
 
 
 def depth_sizes(depth, platform: str, widget: str, preset: str):
@@ -465,7 +466,7 @@ def at_depth_when(depth, platform: str, preset: str, key: str, when: dict) -> di
     beyond depth does (Depth.of_enabled()): its trimming leaves a list that does reach here as it is. A list emptied
     so goes. A `latest` entry whose recency set keeps fewer than two flags at depth (so declared() declares no such
     set) goes, its flag, which it implies (S7.2), added to `states`; a `latest` emptied so goes."""
-    widget = key.split(".")[0] if is_entry_key(key) else None
+    widget = entry_key(key)
     sizes = depth_sizes(depth, platform, widget, preset) if widget else None
     out = {}
     for k, v in when.items():
@@ -1186,7 +1187,7 @@ def beyond_depth(draft: Draft) -> list:
     for f in draft.facts:
         if f.status != "rule" and not f.hand:
             continue
-        when, widget = f.rule_when or {}, f.key.split(".")[0] if is_entry_key(f.key) else None
+        when, widget = f.rule_when or {}, entry_key(f.key)
         if widget and isinstance(when.get("latest"), dict):
             out += [f"{f.where}: {f.key}: its rule's `latest` names the recency set `{s}`, which the declaration "
                     f"does not declare" for s in when["latest"] if s not in declared_sets.get(widget, set())]
@@ -4080,6 +4081,11 @@ def depth_cases(root: Path) -> list:
         if got[:2] != want[:2] or len(reports) != len(want[2]) or not all(
                 k == wk and w in t for (k, t), (wk, w) in zip(reports, want[2])):
             failures.append(f"depth: the sizes in force, {label}: got {got}, expected {want}")
+    # a key's entry: a component's is `component.<key>`; a colour role, a token and an input have none
+    got = [entry_key(k) for k in ("component.led.lamp.fill", "button.body.fill", "role.window.background",
+                                  "token.focus.width", "input.accent")]
+    if got != ["component.led", "button", None, None, None]:
+        failures.append(f"entry_key: got {got}")
     # at_depth_when() drops a `latest` entry whose set keeps one flag at depth, the flag kept in `states`
     for when, want in (({"latest": {"drop": "checked"}}, {"states": ["checked"]}),
                        ({"states": ["hover"], "latest": {"drop": "checked", "glow": "hover"}},
