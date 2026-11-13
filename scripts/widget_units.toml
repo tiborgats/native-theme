@@ -195,6 +195,15 @@ presentations = "motion"
 [hand_written]
 placement = false
 
+# The widget units of M3a, in M3's order (the plan's *The units 0.8.0 enables
+# (M3a)*), listed by name until the *Every unit listed* task lists each with
+# its entries and its `enabled` flag (ledger queue #212). A `[staged]` or
+# `[deferred]` value names a `[[later]]` unit, a `[hand_written]` unit, a unit
+# listed here or a catalogue entry; every reader of this file refuses any
+# other, naming the key and the value.
+[unit_names]
+m3a = ["window_and_chrome", "overlays", "buttons_and_toggles", "fields", "indicators", "containers"]
+
 # The conditions at depth for the keys of no widget (a colour role, an input,
 # a token) that a later unit below holds for every other key, by key prefix:
 # the catalogue's *today's fields* table (*Colour roles and text ramp*):

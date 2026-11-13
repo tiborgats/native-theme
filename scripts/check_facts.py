@@ -5405,10 +5405,29 @@ def self_test() -> int:
         ctx = fixture_context(root)
         got = [w for _, _, w in depth_place_problems(ctx, load(ctx)[0])]
         want = ["`button`'s variant `flat` lies in 2 places", "`button`'s variant `@pill` lies in 0 places",
-                "the condition `window_inactive`"]
-        if len([g for g in got if "token path" not in g]) != len(want) or not all(
-                any(w in g for g in got) for w in want):
+                "the condition `window_inactive`",
+                "the token path `token.text.fallbacks.families` lies in no enabled unit and no `[staged]` path"]
+        if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
             failures.append(f"places: got {got}, want {want}")
+        # the token path staged to a later unit already enabled; a staging to a unit the file does not know (the
+        # misspelled `motoin`) is refused, naming the key and the value
+        for i, (label, old, new, want) in enumerate((
+                ("staged to an enabled unit", '"token.motion.durations" = "motion"\n',
+                 '"token.motion.durations" = "motion"\n"token.text.fallbacks" = "text_rendering"\n'
+                 '[[later]]\nname = "text_rendering"\nkind = "parking"\nenabled = true\n',
+                 ["the token path `token.text.fallbacks.families` is staged to `text_rendering`, a later unit "
+                  "already enabled"]),
+                ("staged to a misspelled unit", '"token.motion.durations" = "motion"\n',
+                 '"token.motion.durations" = "motoin"\n',
+                 ['`staged.slice."token.motion.durations"` = \'motoin\' names no later']))):
+            root = base / f"places-{i}"
+            write_fixture(root, {**SELF_TEST_FILES, "scripts/widget_units.toml": units.replace(old, new, 1)
+                                 .replace('slice = ["token.motion"]', 'slice = ["token.motion", "token.text"]', 1)})
+            ctx = fixture_context(root)
+            got = [w for _, _, w in depth_place_problems(ctx, load(ctx)[0])
+                   if "token path" in w or "widget_units" in w or "motoin" in w]
+            if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
+                failures.append(f"places, {label}: got {got}, want {want}")
         # the vacuous run: no fact file, no bundled palette
         root = base / "empty"
         write_fixture(root, {})

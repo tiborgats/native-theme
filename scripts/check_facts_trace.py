@@ -73,8 +73,11 @@ shadows and S8's query read (the M1a design, decision 9), and S4.6's groups the 
 stages to a later unit, lying in no unit until then (`token.behavior.scroll`, to the `scroll_view` unit; spec
 ADD-A120); `[deferred.<widget>]`, `<value> = "<unit>"`, values a unit defers to a later unit
 (`button.values.menu_placement`, until M3's placement unit; the M1a design's decision 1); and `[hand_written]`,
-`<unit> = <enabled>`, the units written by hand, which hold no entries here. scripts/generate_widgets.py checks the
-deferrals' units; any other shape is an input error, and so is a missing file. The facts gate reads the same file
+`<unit> = <enabled>`, the units written by hand, which hold no entries here; and `[unit_names]`, `<milestone> =
+[...]`, units named before the file lists them (M3a's widget units). A `[staged]` or `[deferred]` value names a
+`[[later]]` unit, a `[hand_written]` one, one `[unit_names]` lists or a catalogue entry (check_waiting(), which
+scripts/generate_widgets.py mirrors): any other value is an input error naming the key and the value, as is any
+other shape, and so is a missing file. The facts gate reads the same file
 by the same rule (`native-theme/tests/facts_gate/units.rs`).
 
 The depth (S6.1, S17; ADD-A147): `[deferred.<widget>]` may name a part's field (`"body.transitions"`); a `[staged]`
@@ -106,11 +109,14 @@ from pathlib import Path
 import check_facts
 import check_spec_names
 import check_spec_trace
+import spec_catalogue
 
 DOCS = Path("docs")
 UNITS = Path("scripts/widget_units.toml")
+# The units file's table of unit names listed before their units are (M3a's widget units).
+NAMED = "unit_names"
 # The units file's tables that are no unit.
-TABLES = ("deferred", "hand_written", "prefixes", "staged", "kept", "at_depth", "later")
+TABLES = ("deferred", "hand_written", "prefixes", "staged", "kept", "at_depth", "later", NAMED)
 # A later unit's kinds (S6.1, S17; ADD-A147): a unit of depth, a parking unit.
 LATER_KINDS = ("depth", "parking")
 # The names a later unit holds per catalogue entry.
@@ -200,6 +206,7 @@ def read_units(root: Path) -> dict:
     if not isinstance(kept, dict) or not all(
             isinstance(ps, dict) and all(str_list(ks) for ks in ps.values()) for ps in kept.values()):
         raise InputError(f"{UNITS}: `kept` is not a table of unit names to tables of presets to lists of paths")
+    check_waiting(root, data)
     dpaths =tuple(deferred_path(w, v) for w, vs in deferred.items() for v in vs)
     out = {}
     for name, entries in data.items():
@@ -215,6 +222,45 @@ def read_units(root: Path) -> dict:
             if name not in out:
                 raise InputError(f"{UNITS}: `{table}.{name}` names no enabled unit")
     return out
+
+
+def waiting_values(data: dict) -> list:
+    """[(the key as the units file spells it, the unit it names)]: each `[staged.<unit>]` path and each
+    `[deferred.<widget>]` value or part's field, in the file's order."""
+    staged = data.get("staged", {}) if isinstance(data.get("staged"), dict) else {}
+    deferred = data.get("deferred", {}) if isinstance(data.get("deferred"), dict) else {}
+    out = [(f'staged.{u}."{p}"', v) for u, paths in staged.items() if isinstance(paths, dict)
+           for p, v in paths.items()]
+    return out + [(f'deferred.{w}.{n}' if "." not in n else f'deferred.{w}."{n}"', v)
+                  for w, vs in deferred.items() if isinstance(vs, dict) for n, v in vs.items()]
+
+
+def check_waiting(root: Path, data: dict) -> None:
+    """InputError, naming the file, the key and the value, for a `[staged]` or `[deferred]` value that names none of
+    the units a path may wait for (S6.1, ADD-A147): a `[[later]]` unit, a `[hand_written]` unit, a unit `[unit_names]`
+    lists (M3a's widget units, until the units file lists them with their entries) or a catalogue entry (the
+    catalogue read only for a value none of the others names); and for a `[unit_names]` that is no table of lists of
+    names."""
+    named = data.get(NAMED, {})
+    if not isinstance(named, dict) or not all(str_list(v) for v in named.values()):
+        raise InputError(f"{UNITS}: `{NAMED}` is not a table of lists of unit names")
+    later = data.get("later", [])
+    known = {t.get("name") for t in later if isinstance(t, dict)} if isinstance(later, list) else set()
+    known |= set(data.get("hand_written", {})) if isinstance(data.get("hand_written"), dict) else set()
+    known |= {u for v in named.values() for u in v}
+    unknown = [(k, v) for k, v in waiting_values(data) if v not in known]
+    if not unknown:
+        return
+    try:
+        entries = {e.name for e in spec_catalogue.read(root / spec_catalogue.CATALOGUE)}
+    except (OSError, UnicodeDecodeError) as err:
+        key, value = unknown[0]
+        raise InputError(f"{UNITS}: `{key}` = {value!r} names no later, hand-written or listed unit, and the catalogue "
+                         f"that may name it an entry cannot be read: {err}") from err
+    for key, value in unknown:
+        if value not in entries:
+            raise InputError(f"{UNITS}: `{key}` = {value!r} names no later unit, no hand-written unit, no unit "
+                             f"`{NAMED}` lists and no catalogue entry")
 
 
 # --------------------------------------------------------------------------------------------- the targets
@@ -374,11 +420,13 @@ def read_later(root: Path) -> tuple:
 
 def waiting_paths(root: Path) -> list:
     """[(path, unit)]: each path `[staged.<unit>]` stages and each `[deferred.<widget>]` defers (deferred_path()), with
-    the later unit it waits for, in the file's order (read_units checks their shape)."""
+    the later unit it waits for, in the file's order (read_units checks their shape; check_waiting() the units they
+    name)."""
     try:
         data = tomllib.loads((root / UNITS).read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as err:
         raise InputError(f"{UNITS}: {err}") from err
+    check_waiting(root, data)
     out = [(path, unit) for table in data.get("staged", {}).values() for path, unit in table.items()]
     return out + [(deferred_path(w, name), unit) for w, vs in data.get("deferred", {}).items()
                   for name, unit in vs.items()]
@@ -1312,19 +1360,22 @@ quote = "x"
 SELF_TEST_PLATFORMS = {"macos": "MAC-1", "windows": "W1-001", "kde": "K1.1", "material": "MAT-1", "ios": "B-1"}
 
 
-# The fixtures' units file: the slice as the repository's file states it.
+# The fixtures' units file: the slice as the repository's file states it, the scroll behaviour staged to the
+# containers unit (the plan's *Every unit listed*) so that no fixture needs the catalogue.
 SELF_TEST_UNITS = '''slice = ["button"]
 [prefixes]
 slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", "token.icons", "token.focus",
          "token.elevation", "token.size_classes",
          "token.params.pointer_repeat", "token.params.color", "token.params.opacity"]
 [staged.slice]
-"token.behavior.scroll" = "scroll_view"
+"token.behavior.scroll" = "containers"
 [deferred.button]
 menu_placement = "placement"
 scaffold_placement = "placement"
 [hand_written]
 placement = false
+[unit_names]
+m3a = ["containers"]
 '''
 
 
@@ -1381,6 +1432,14 @@ name = "right_to_left"
 kind = "depth"
 enabled = false
 directions = ["rtl"]
+[[later]]
+name = "accessibility_text"
+kind = "depth"
+enabled = false
+[[later]]
+name = "motion"
+kind = "depth"
+enabled = false
 '''
 DEPTH_TOOLBAR = {"scope": "any", "widget": "toolbar", "part": "bar"}
 DEPTH_OSD = {"scope": "any", "variants": ["@osd"]}
@@ -1635,7 +1694,8 @@ def self_test() -> int:
         found, _, _ = run(presets=("adwaita",))
         if ("gnome", "GN-1.10") in rows_of(found):
             failures.append(f"context toolbar not enabled: GN-1.10 checked: {found}")
-        units_open = SELF_TEST_UNITS.split("[deferred.button]")[0]
+        units_open = SELF_TEST_UNITS.replace('[deferred.button]\nmenu_placement = "placement"\n'
+                                             'scaffold_placement = "placement"\n', "")
         found, _, _ = run(presets=("adwaita",), units=units_open, unit="slice")
         if ("gnome", "GN-1.4") not in rows_of(found) or ("gnome", "GN-1.10") in rows_of(found):
             failures.append(f"no deferral in the file: GN-1.4's menu_placement not checked: {found}")
@@ -1657,6 +1717,38 @@ def self_test() -> int:
                 failures.append(f"units file {bad!r}: accepted")
             except InputError:
                 pass
+        # a `[staged]` or `[deferred]` value names a later, hand-written or listed unit or a catalogue entry; any other
+        # is refused, by read_units and waiting_paths alike, naming the key and the value
+        catalogue = "## Containers\n\n### scroll_view\n\n- **Parts:**\n  - `body` — the root: `fill`.\n"
+        for label, units, files, want in (
+                ("a misspelled later unit", '[staged.slice]\n"token.motion.durations" = "motoin"\n'
+                                            '[[later]]\nname = "motion"\nkind = "depth"\nenabled = false\n', {},
+                 '`staged.slice."token.motion.durations"` = \'motoin\''),
+                ("a misspelled hand-written unit", '[deferred.button]\nmenu_placement = "placemnet"\n', {},
+                 "`deferred.button.menu_placement` = 'placemnet'"),
+                ("a part's field to a misspelled unit", '[deferred.button]\n"body.transitions" = "motoin"\n', {},
+                 '`deferred.button."body.transitions"` = \'motoin\''),
+                ("no catalogue to name an entry", '[staged.slice]\n"token.behavior.scroll" = "scroll_view"\n', {},
+                 "cannot be read"),
+                ("an entry the catalogue lacks", '[staged.slice]\n"token.behavior.scroll" = "scroll_veiw"\n',
+                 {spec_catalogue.CATALOGUE.as_posix(): catalogue}, "'scroll_veiw' names no later unit"),
+                ("a catalogue entry", '[staged.slice]\n"token.behavior.scroll" = "scroll_view"\n',
+                 {spec_catalogue.CATALOGUE.as_posix(): catalogue}, None),
+                ("a listed unit", '[staged.slice]\n"token.behavior.scroll" = "containers"\n'
+                                  '[unit_names]\nm3a = ["containers"]\n', {}, None),
+                ("unit names no table of lists", '[unit_names]\nm3a = "containers"\n', {}, "`unit_names` is not")):
+            root = base / f"waiting{n[0]}"
+            n[0] += 1
+            write_fixture(root, units='slice = ["button"]\n[prefixes]\nslice = ["token"]\n'
+                                      '[hand_written]\nplacement = false\n' + units, extra=files)
+            for reader in (read_units, waiting_paths):
+                try:
+                    reader(root)
+                    if want is not None:
+                        failures.append(f"{label}: {reader.__name__} accepted it")
+                except InputError as err:
+                    if want is None or want not in str(err) or str(UNITS) not in str(err):
+                        failures.append(f"{label}: {reader.__name__}: {err}, want {want!r}")
         # target_paths and in_unit
         for target, want in (
                 ("button.body.fill @ {hover}", ["button.body.fill"]),

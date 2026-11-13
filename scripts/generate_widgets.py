@@ -51,9 +51,10 @@ holding the `flavor:` conditions; an enum of the entry no value at depth uses is
 also reads each Depth item against the *Today's fields* selectors naming a target in the entry (todays_names(),
 depth_check()): a variant or state flag a selector names that the item does not list is a difference.
 
-A deferral names a value of the widget's entry (its Rust name, or as the catalogue writes it), and a unit that is
-hand-written, a unit list or a later unit, and not enabled: a deferral to an enabled unit, to an unknown unit, of an unknown value
-or for a widget no enabled unit holds is an input error. A unit's entry that is no typed widget of the catalogue (a
+A deferral names a value of the widget's entry (its Rust name, or as the catalogue writes it), and a unit that is not
+enabled; a deferral and a staging name a later unit, a hand-written unit, a unit `[unit_names]` lists (M3a's widget
+units) or a catalogue entry: a deferral to an enabled unit, a deferral or staging to any other name, a deferral of an
+unknown value or for a widget no enabled unit holds is an input error. A unit's entry that is no typed widget of the catalogue (a
 component, a target prefix) is an input error too: the generator emits typed widgets only.
 
 What it reads from an entry
@@ -170,9 +171,6 @@ class Units:
         return (unit in self.enabled or self.hand_written.get(unit, False)
                 or any(u.name == unit and u.enabled for u in self.later))
 
-    def known(self, unit: str) -> bool:
-        return unit in self.enabled or unit in self.hand_written or any(u.name == unit for u in self.later)
-
     def holder(self, entry: str, kind: str, name: str):
         """The later unit holding the entry's variant or state flag (on some preset), or None."""
         return next((u for u in self.later if name in u.names.get(entry, {}).get(kind, ())), None)
@@ -187,7 +185,9 @@ class Units:
         return found[0].enabled
 
 
-def parse_units(text: str) -> Units:
+def parse_units(text: str, entries=frozenset()) -> Units:
+    """The units `text` states; `entries` the catalogue's entry names, which a `[staged]` or `[deferred]` value may
+    name beside a later, hand-written or `[unit_names]` unit (scripts/check_facts_trace.py's check_waiting)."""
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as err:
@@ -202,15 +202,22 @@ def parse_units(text: str) -> Units:
     for table in ("prefixes", "staged"):
         if not isinstance(data.get(table, {}), dict):
             raise InputError(f"{UNITS}: `{table}` is not a table of unit names")
+    staged = data.get("staged", {})
+    if not all(isinstance(ps, dict) and all(isinstance(u, str) for u in ps.values()) for ps in staged.values()):
+        raise InputError(f"{UNITS}: `staged` is not a table of unit names to tables of paths to units")
+    named = data.get("unit_names", {})
+    if not isinstance(named, dict) or not all(
+            isinstance(us, list) and all(isinstance(u, str) and u for u in us) for us in named.values()):
+        raise InputError(f"{UNITS}: `unit_names` is not a table of lists of unit names")
     enabled = {}
-    for name, entries in data.items():
-        if name in ("deferred", "hand_written", "prefixes", "staged", "kept", "at_depth", "later"):
+    for name, held in data.items():
+        if name in ("deferred", "hand_written", "prefixes", "staged", "kept", "at_depth", "later", "unit_names"):
             continue
-        if not isinstance(entries, list) or not all(isinstance(e, str) and e for e in entries):
+        if not isinstance(held, list) or not all(isinstance(e, str) and e for e in held):
             raise InputError(f"{UNITS}: unit `{name}` is not a list of catalogue entries")
         if name in hand:
             raise InputError(f"{UNITS}: unit `{name}` is both generated and hand-written")
-        enabled[name] = entries
+        enabled[name] = held
     later = []
     for t in data.get("later", []) if isinstance(data.get("later", []), list) else [None]:
         if not isinstance(t, dict) or not isinstance(t.get("name"), str) or not isinstance(t.get("enabled"), bool):
@@ -234,12 +241,19 @@ def parse_units(text: str) -> Units:
         if w in seen:
             raise InputError(f"{UNITS}: `{w}` is in two units")
         seen.add(w)
+    waits = set(hand) | {u.name for u in later} | {u for us in named.values() for u in us} | set(entries)
+    for unit_name, paths in staged.items():
+        for path, unit in paths.items():
+            if unit not in waits:
+                raise InputError(f'{UNITS}: `staged.{unit_name}."{path}"` = {unit!r} names no later unit, no '
+                                 f"hand-written unit, no unit `unit_names` lists and no catalogue entry")
     for widget, values in deferred.items():
         if widget not in seen:
             raise InputError(f"{UNITS}: `deferred.{widget}`: no enabled unit holds `{widget}`")
         for value, unit in values.items():
-            if not units.known(unit):
-                raise InputError(f"{UNITS}: `deferred.{widget}.{value}` names no unit, `{unit}`")
+            if unit not in waits:
+                raise InputError(f"{UNITS}: `deferred.{widget}.{value}` = {unit!r} names no later unit, no "
+                                 f"hand-written unit, no unit `unit_names` lists and no catalogue entry")
             if units.is_enabled(unit):
                 raise InputError(f"{UNITS}: `deferred.{widget}.{value}` defers to `{unit}`, which is enabled: "
                                  "its commit ends the deferral")
@@ -1099,8 +1113,9 @@ def content_variant(part, variant: str) -> str:
 def generate(root: Path) -> dict:
     """{file name: content} the units and the catalogue give."""
     try:
-        units = parse_units((root / UNITS).read_text(encoding="utf-8"))
         text = (root / spec_catalogue.CATALOGUE).read_text(encoding="utf-8")
+        units = parse_units((root / UNITS).read_text(encoding="utf-8"),
+                            {e.name for e in spec_catalogue.entries(text)})
     except OSError as err:
         raise InputError(str(err)) from err
     typed = [e for e in spec_catalogue.entries(text) if e.kind == "typed"]
@@ -1147,11 +1162,14 @@ def depth_content(entry, units: Units, pairs: list) -> list:
 def depth_findings(root: Path) -> list:
     """depth_check() of each enabled unit's entry."""
     try:
-        units = parse_units((root / UNITS).read_text(encoding="utf-8"))
         text = (root / spec_catalogue.CATALOGUE).read_text(encoding="utf-8")
     except OSError as err:
         raise InputError(str(err)) from err
     entries = [e for e in spec_catalogue.entries(text)]
+    try:
+        units = parse_units((root / UNITS).read_text(encoding="utf-8"), {e.name for e in entries})
+    except OSError as err:
+        raise InputError(str(err)) from err
     return [x for e in entries if e.name in units.widgets() for x in depth_check(e, entries)]
 
 
@@ -1430,8 +1448,15 @@ def self_test() -> int:
         ("deferral to an enabled unit", 'slice = ["knob"]\n[deferred.knob]\nspot = "placement"\n'
                                         '[hand_written]\nplacement = true\n', "which is enabled"),
         ("deferral to a unit list", 'slice = ["knob"]\nmore = ["x"]\n[deferred.knob]\nspot = "more"\n',
-         "which is enabled"),
-        ("deferral to no unit", 'slice = ["knob"]\n[deferred.knob]\nspot = "nowhere"\n', "names no unit"),
+         "`deferred.knob.spot` = 'more' names no later unit"),
+        ("deferral to no unit", 'slice = ["knob"]\n[deferred.knob]\nspot = "nowhere"\n',
+         "`deferred.knob.spot` = 'nowhere' names no later unit"),
+        ("staging to no unit", 'slice = ["knob"]\n[staged.slice]\n"token.motion.durations" = "motoin"\n'
+                               '[[later]]\nname = "motion"\nenabled = false\n',
+         '`staged.slice."token.motion.durations"` = \'motoin\' names no later unit'),
+        ("staging to a catalogue entry not given", 'slice = ["knob"]\n[staged.slice]\n"token.x" = "dial"\n',
+         "= 'dial' names no later unit"),
+        ("unit names no table of lists", 'slice = ["knob"]\n[unit_names]\nm3a = "fields"\n', "`unit_names` is not"),
         ("deferral of no widget", 'slice = ["knob"]\n[deferred.dial]\nspot = "x"\n[hand_written]\nx = false\n',
          "no enabled unit holds"),
         ("old deferral form", 'slice = ["knob"]\ndeferred = { knob = ["spot"] }\n', "tables of value names"),
@@ -1444,6 +1469,12 @@ def self_test() -> int:
         except InputError as err:
             if needle not in str(err):
                 failures.append(f"{label}: refused with {err}, want {needle!r}")
+    try:
+        named = parse_units('slice = ["knob"]\n[staged.slice]\n"token.x" = "dial"\n"token.y" = "fields"\n'
+                            '[unit_names]\nm3a = ["fields"]\n', entries={"knob", "dial"})
+        expect("a staging to a catalogue entry and to a listed unit", sorted(named.enabled), ["slice"])
+    except InputError as err:
+        failures.append(f"a staging to a catalogue entry and to a listed unit: refused with {err}")
     refused("deferral of no value", 'slice = ["knob"]\n[deferred.knob]\nnope = "placement"\n'
                                     '[hand_written]\nplacement = false\n', SELF_TEST_CATALOGUE, "no value of `knob`")
     refused("undeferred record absent", 'slice = ["knob"]\n', SELF_TEST_CATALOGUE, "a record: its members")

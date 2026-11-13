@@ -1524,7 +1524,10 @@ through `spec_catalogue.py` only, never touches the module's hand-written
 unit (the button's `Placement` values, until M3's placement unit). The units
 file lists the enabled units, the deferrals with their units, and the
 hand-written units, enabled or not; a deferral to an enabled unit is an
-input error. `--check` writes nothing and exits 1 when a generated file
+input error, and so is a deferral or staging naming anything but a later
+unit, a hand-written unit, a unit `[unit_names]` lists (M3a's widget units)
+or a catalogue entry (`check_facts_trace.py` refuses it alike, naming the
+key and the value). `--check` writes nothing and exits 1 when a generated file
 differs or is stale (in `check_release.sh`); a construct the generator does
 not handle exits 2 naming it. `--self-test` runs the reading rules and the
 refusals on a synthetic catalogue. Deleted once the catalogue is archived,
