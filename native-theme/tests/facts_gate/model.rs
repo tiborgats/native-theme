@@ -320,12 +320,15 @@ impl Model {
     }
 
     /// The entry without the variants `skipped` (ADD-A128): out of
-    /// `variants` and each `exclusive_variants` group (a group left with
-    /// fewer than two goes, as it excludes nothing), and out of every
-    /// combination, a set holding one dropped whole.
+    /// `variants`, each `exclusive_variants` group (a group left with
+    /// fewer than two goes, as it excludes nothing) and `sizes_by_variant`
+    /// (an entry naming one goes), and out of every combination, a set
+    /// holding one dropped whole.
     pub fn without(&self, skipped: &[String]) -> Model {
         let mut out = self.clone();
         out.variants.retain(|variant| !skipped.contains(variant));
+        out.sizes_by_variant
+            .retain(|(variant, _, _)| !skipped.contains(variant));
         out.exclusive_variants = self
             .exclusive_variants
             .iter()
