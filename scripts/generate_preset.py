@@ -825,7 +825,10 @@ def analyse(ctx, items, preset: str, depth, staged: int) -> Draft:
         f = Fact(it, key, check_facts.canonical_key(key), at_depth_when(depth, platform, preset, key, when)
                  if enabled else when, info[3], info[2], info[4], info[1])
         if not enabled:
-            f.unit = depth.unit(platform, key, written, preset) or check_facts_trace.UNPLACED
+            f.unit = depth.unit(platform, key, written, preset)
+            if f.unit is None:
+                raise InputError(f"{it.file}:{it.line}: {key}: Depth.of_enabled() leaves the fact out and Depth.unit() "
+                                 f"places it among the enabled units; the two must agree")
             f.status, f.reason = LEFT_OUT, f"{LATER} ({f.unit})"
         facts.append(f)
     # the facts of the enabled units, the preset's: a later unit's fact states nothing in it and shadows none of them

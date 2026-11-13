@@ -911,6 +911,8 @@ class Depth:
             return None
         widget = entry_of(key)
         entry = widget not in ("role", "token", "input")
+        # the host rule runs before the attribution by names, so a fact that also needs a later unit's name is the
+        # host's; whether the attribution over the drawn sets keeps this order is ledger queue #289's task
         if entry and not (isinstance(when.get("context"), list) and when["context"]):
             host = self.host_unit(platform, key, listed(when, "variants"), preset)
             if host:
