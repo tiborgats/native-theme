@@ -1559,7 +1559,13 @@ widget waits until that widget is enabled. Prints one line per finding
 (platform, row, target, what), per platform how many of the checked lines
 and rows the facts already carry, and a summary; exits 0, 1, or 2 on an
 input it cannot read or an unknown unit. `--self-test` runs each rule on
-fixture gap maps, traces, facts and units files. `--enabled` enters
+fixture gap maps, traces, facts and units files. `--facts` prints per
+preset and facts directory the facts of the enabled units, each later
+unit's and the unplaced ones, and one line per fact and preset it holds
+for, `fact<TAB><preset><TAB><file>:<line><TAB><place>` (the place
+`enabled`, `unplaced` or the unit it waits for), sorted by preset, file and
+line, which the facts gate's units cross-check compares with its own
+placement fact by fact. `--enabled` enters
 `check_release.sh` at M1a; the script is deleted at M6.
 
 Requires Python 3.11.

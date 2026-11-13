@@ -17,7 +17,8 @@ Run from the repository root:
     python3 scripts/check_facts_trace.py --enabled --preset kde-breeze   # as if kde-breeze's preset existed
     python3 scripts/check_facts_trace.py --self-test
     python3 scripts/check_facts_trace.py --facts         # per preset and directory, the facts of the enabled units,
-                                                         # each later unit's and the unplaced ones (facts_report)
+                                                         # each later unit's and the unplaced ones, and each fact's
+                                                         # place per preset (facts_report)
 
 `--preset <id>` (repeatable, beside any of the first three) checks a preset of check_facts.PLATFORMS as if it
 existed: its platform's lines are findings as they would be once the preset is bundled, so a facts lane sees them
@@ -1227,12 +1228,14 @@ def facts_report(ctx) -> list:
     enabled units and how many are pending, per later unit the facts it holds (Depth.unit(); a key no enabled unit
     holds by the unit `[staged]`, `[deferred]` or its widget names) and how many are unplaced; per facts directory the
     facts of the enabled units on any of its presets and how many are pending, and the facts unplaced on one of them,
-    each fact once; and every unplaced fact by preset, place, key and `when` for the preset (S17: reported under no
-    unit)."""
+    each fact once; every unplaced fact by preset, place, key and `when` for the preset (S17: reported under no
+    unit); and, for the facts gate's cross-check, one line per fact and preset it holds for (the accent run's left
+    out), sorted by preset, file and line: `fact<TAB><preset><TAB><file>:<line of its first line><TAB><place>`, the
+    file relative to the repository root and the place `enabled`, `unplaced` or the unit Depth.unit() names."""
     items, _, _ = check_facts.load(ctx)
     depth = Depth(ctx.root, items)
     existing = check_facts.existing_presets(ctx.root)
-    out, unplaced = [], []
+    out, unplaced, places = [], [], []
     for platform, presets in check_facts.PLATFORMS.items():
         on_path, lost = {}, set()
         for preset in [p for p in presets if p in existing]:
@@ -1245,6 +1248,8 @@ def facts_report(ctx) -> list:
                 unit = depth.unit(platform, d["key"], d.get("when"), preset)
                 place = (it.file, it.line)
                 on_path[place] = on_path.get(place, False) or unit is None
+                places.append((preset, Path(it.file).as_posix(), it.line,
+                               "enabled" if unit is None else "unplaced" if unit == UNPLACED else unit))
                 if unit is None:
                     enabled += 1
                     pending += "pending" in d
@@ -1268,7 +1273,8 @@ def facts_report(ctx) -> list:
         if on_path:
             out.append(f"docs/facts/{platform}: {sum(on_path.values())} facts of the enabled units ({pending} pending), "
                        f"{len(lost)} unplaced")
-    return out + [f"unplaced: {s}" for s in unplaced] + [f"{len(unplaced)} unplaced facts (per preset)"]
+    return (out + [f"unplaced: {s}" for s in unplaced] + [f"{len(unplaced)} unplaced facts (per preset)"]
+            + [f"fact\t{preset}\t{file}:{line}\t{place}" for preset, file, line, place in sorted(places)])
 
 
 def report(tallies, presets, scope, assumed=()):
@@ -1683,6 +1689,22 @@ def self_test() -> int:
         found, _, _ = run(presets=("adwaita",), extra=extra)
         if found:
             failures.append(f"carried by a fact: got {found}")
+        # --facts' line per fact and preset, sorted by preset, file and line (a line number as a number): a fact of the
+        # enabled units, one a staging names a unit for, one unplaced, one holding for two presets
+        tokens = "\n".join(fact.replace('"button.body.fill"', f'"{k}"') for k in (
+            "token.behavior.scroll.deceleration", "token.motion.durations.button"))
+        root = base / "facts-lines"
+        write_fixture(root, presets=("adwaita", "macos-tahoe", "macos-monterey"),
+                      extra={"docs/facts/gnome/tokens.toml": tokens})
+        got = [x for x in facts_report(fixture_context(root)) if x.startswith("fact\t")]
+        want = ["fact\tadwaita\tdocs/facts/gnome/button.toml:2\tenabled",
+                "fact\tadwaita\tdocs/facts/gnome/roles.toml:2\tenabled",
+                "fact\tadwaita\tdocs/facts/gnome/tokens.toml:2\tcontainers",
+                "fact\tadwaita\tdocs/facts/gnome/tokens.toml:13\tenabled",
+                "fact\tmacos-monterey\tdocs/facts/macos/button.toml:2\tunplaced",
+                "fact\tmacos-tahoe\tdocs/facts/macos/button.toml:2\tunplaced"]
+        if got != want:
+            failures.append(f"--facts' fact lines: got {got}, want {want}")
         # a fact carries only its row's lines its key lies on (the ledger's queue #58): a button fact naming the
         # token rows carries none of their lines, and the state model's button none of GN-1.2's role line
         extra = {"docs/facts/gnome/tokens.toml": fact.replace('"GN-1.1"', '"GN-1.3", "GN-1.5", "GN-1.9†"'),
