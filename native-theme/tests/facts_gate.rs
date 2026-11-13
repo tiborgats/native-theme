@@ -1808,6 +1808,30 @@ fn gate_fixture_flavor_excluded_fact() {
     assert!(report.compared > 0, "{report:?}");
 }
 
+/// A key of no widget is asked only under condition sets whose every
+/// condition is at depth for it (S17: the catalogue's *today's fields*
+/// names them per key; the units file's `[at_depth]`): the speed factor's
+/// fact under `reduced_motion`, at depth for it alone, brings that set,
+/// under which the focus width, whose one fact excludes the condition, is
+/// not asked; the speed factor still is, so a preset leaving it unstated
+/// there fails, at that key alone.
+#[test]
+fn gate_fixture_global_condition_at_depth_per_key() {
+    let report = fixture_report("global_condition_scope");
+    assert_eq!(report.failures, Vec::<String>::new());
+    let unstated = fixture_report_with("global_condition_scope", "unstated.toml");
+    assert!(!unstated.failures.is_empty(), "{unstated:?}");
+    assert!(
+        unstated
+            .failures
+            .iter()
+            .all(|failure| failure.contains("`token.motion.speed_factor`")
+                && failure.contains("reduced_motion")),
+        "{:?}",
+        unstated.failures
+    );
+}
+
 /// While the flavours unit is not enabled only the default flavour's
 /// combinations are checked, but every flavour's section is compared whole
 /// with that flavour's own state model at depth (S10, S17), its `later`
@@ -2576,7 +2600,7 @@ fn gate_definitions_compared() -> Result<(), String> {
     let units = units::Units::repository()?;
     let failures = |id: &str| {
         let mut report = run::Report::default();
-        run::definitions(id, &units, &resolved, &root, &mut report, &|| {
+        run::definitions(id, &units, &resolved, (&[], &root), &mut report, &|| {
             "[]".to_owned()
         });
         (report.failures, report.compared)

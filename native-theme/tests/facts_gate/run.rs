@@ -1898,6 +1898,7 @@ pub fn run_shard(
                 let entries = projected(&platform, preset, flavor, shared);
                 derivations(
                     &platform.name,
+                    &platform.units,
                     preset,
                     flavor,
                     &keys,
@@ -3121,6 +3122,7 @@ fn check(
                     if global_vectors.contains(vector) {
                         check_globals(
                             preset.id(),
+                            &platform.units,
                             resolved,
                             keys,
                             vector,
@@ -3133,7 +3135,7 @@ fn check(
                                 preset.id(),
                                 &platform.units,
                                 resolved,
-                                &root,
+                                (vector, &root),
                                 &mut report,
                                 &|| format!("{vector:?}"),
                             );
@@ -3280,7 +3282,7 @@ pub fn definitions(
     preset: &str,
     units: &Units,
     resolved: &Resolved,
-    root: &RootInputs,
+    (vector, root): (&[String], &RootInputs),
     report: &mut Report,
     combination: &dyn Fn() -> String,
 ) {
@@ -3295,7 +3297,14 @@ pub fn definitions(
         ),
     ];
     for (applies, name, value, section) in defined {
-        if !applies || !units.hold_on(name, Some(preset)) {
+        // Under a condition vector `vector` each of whose conditions is at
+        // depth for the token (S17, as [`check_globals`] asks a key).
+        if !applies
+            || !units.hold_on(name, Some(preset))
+            || !vector
+                .iter()
+                .all(|condition| units.condition_at_depth(condition, name))
+        {
             continue;
         }
         let place = format!("the definition of {section}");
@@ -3400,9 +3409,11 @@ impl<'a, 'f> Run<'a, 'f> {
     }
 }
 
-/// Every token, colour-role and input key under one condition vector.
+/// Every token, colour-role and input key under one condition vector whose
+/// every condition is at depth for it.
 fn check_globals(
     preset: &str,
+    units: &Units,
     resolved: &Resolved,
     keys: &[KeyFacts<'_>],
     vector: &[String],
@@ -3411,9 +3422,17 @@ fn check_globals(
     report: &mut Report,
 ) {
     let combination = || format!("{vector:?}");
+    // A key of no widget is judged under the condition sets the catalogue's
+    // *today's fields* names for it (S17): each condition of the vector at
+    // depth for the key (`[at_depth]`), not the union other keys bring.
     let globals: Vec<&KeyFacts<'_>> = keys
         .iter()
         .filter(|key| key.key.widget().is_none())
+        .filter(|key| {
+            vector
+                .iter()
+                .all(|condition| units.condition_at_depth(condition, &key.name))
+        })
         .collect();
     let facts: Vec<Option<&Prepared<'_>>> = globals
         .iter()
@@ -4929,6 +4948,7 @@ type Undrawn = (usize, usize, String, String, String, Unread);
 /// passes vary an input to the same values under the same conditions.
 fn derivations(
     platform: &str,
+    units: &Units,
     preset: &Preset,
     flavor: Option<&str>,
     keys: &[KeyFacts<'_>],
@@ -5001,6 +5021,16 @@ fn derivations(
                             .chain(pass.conditions.iter().cloned())
                             .collect()
                     };
+                    // A key of no widget is judged only under conditions at
+                    // depth for it (S17; [`check_globals`]).
+                    if widget.is_none()
+                        && !vector
+                            .iter()
+                            .all(|condition| units.condition_at_depth(condition, &key.name))
+                    {
+                        report.combinations_skipped += 1;
+                        continue;
+                    }
                     let pair = (vector.clone(), text.clone());
                     let resolution = match resolutions.iter().position(|held| *held == pair) {
                         Some(at) => at,
