@@ -3700,7 +3700,9 @@ def depth_place_problems(ctx: Context, items) -> list:
     enabled unit holds (a fact of such a widget is that unit's whole; a token path `[staged]` maps to a unit that is no
     later unit). A token path lies at depth where an enabled unit holds it on a preset (check_facts_trace.in_unit, its
     `[kept]` entries counted) and else in the unit the longest `[staged]` path above it names, which must not be a later
-    unit already enabled. Nothing is checked where the root has no units file (a fixture without one)."""
+    unit already enabled. A Depth line's "on `<preset>` not `<name>`…" clause (spec_catalogue.depth_exclusions) needs,
+    on each preset its pattern matches, a later unit's group naming that preset and holding each name, which takes the
+    Depth line's place there. Nothing is checked where the root has no units file (a fixture without one)."""
     import check_facts_trace   # the units file's reader, which imports this module
     if not (ctx.root / check_facts_trace.UNITS).is_file():
         return []
@@ -3782,6 +3784,20 @@ def depth_place_problems(ctx: Context, items) -> list:
                 elif unit in by_name and by_name[unit].enabled:
                     report(it, ("token", head), f"the token path `{head}` is staged to `{unit}`, a later unit "
                                                 f"already enabled, whose commit ends the staging (S6.1)")
+    for entry in sorted(entries):
+        for pattern, kind, names, line in spec_catalogue.depth_exclusions(ctx.entries[entry]):
+            presets = [p for p in ALL_PRESETS if fnmatch.fnmatchcase(p, pattern)]
+            if not presets:
+                out.append((CATALOGUE.as_posix(), line, f"`{entry}`'s Depth line: \"on `{pattern}` not …\" names no "
+                                                        f"preset"))
+            for preset in presets:
+                for name in names:
+                    if not any(ps is not None and preset in ps and name in g.get(kind, ())
+                               for u in later for ps, g in u.names.get(entry, ())):
+                        out.append((CATALOGUE.as_posix(), line,
+                                    f"`{entry}`'s Depth line holds its {kind[:-1]} `{name}` on every preset but "
+                                    f"`{pattern}`, and no later unit's group naming {preset} holds it there (the "
+                                    f"units file's preset-scoped group; S17, ADD-A147)"))
     return out
 
 
@@ -5428,6 +5444,30 @@ def self_test() -> int:
                    if "token path" in w or "widget_units" in w or "motoin" in w]
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"places, {label}: got {got}, want {want}")
+        # a Depth line's "on `<preset>` not …" clause needs the units file's group naming each preset it matches
+        catalogue = SELF_TEST_CATALOGUE.replace(
+            "- **may_be_absent:** fields: `selection",
+            "- **Depth:** variants `primary`; states `hover`, `pressed` (on `macos-*` not `hover` and `pressed`, the\n"
+            "  pads unit's). Prose.\n- **may_be_absent:** fields: `selection", 1)
+        scoped = '[[later]]\nname = "pads"\nkind = "depth"\nenabled = false\n'
+        for i, (label, group, want) in enumerate((
+                ("the group", '{ presets = ["macos-tahoe", "macos-monterey"], states = ["hover", "pressed"] }', []),
+                ("the group deleted", None, [(p, n) for p in ("macos-monterey", "macos-tahoe")
+                                             for n in ("hover", "pressed")]),
+                ("one preset left out", '{ presets = ["macos-tahoe"], states = ["hover", "pressed"] }',
+                 [("macos-monterey", "hover"), ("macos-monterey", "pressed")]),
+                ("the group on every preset", '{ states = ["hover", "pressed"] }',
+                 [(p, n) for p in ("macos-monterey", "macos-tahoe") for n in ("hover", "pressed")]))):
+            root = base / f"scoped-{i}"
+            write_fixture(root, {**SELF_TEST_FILES, "scripts/widget_units.toml": 'slice = ["button"]\n' + scoped + (
+                f"button = [{group}]\n" if group else "")})
+            ctx = Context(root, core_text=SELF_TEST_CORE + check_spec_names.SELF_TEST_GRAMMAR, cat_text=catalogue,
+                          sources_text=SELF_TEST_SOURCES, rows=SELF_TEST_ROWS, evidence=root)
+            got = [w for _, _, w in depth_place_problems(ctx, load(ctx)[0]) if "Depth line holds" in w]
+            expected = [f"`button`'s Depth line holds its state `{n}` on every preset but `macos-*`, and no later "
+                        f"unit's group naming {p} holds it there" for p, n in want]
+            if len(got) != len(expected) or not all(any(w in g for g in got) for w in expected):
+                failures.append(f"Depth line's preset clause, {label}: got {got}, want {expected}")
         # the vacuous run: no fact file, no bundled palette
         root = base / "empty"
         write_fixture(root, {})
