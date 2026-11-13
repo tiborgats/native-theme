@@ -11,12 +11,12 @@ surface_sets = ["window"]
 flavors = ["main", "alt"]
 
 [declare.widget.button]
-variants = ["tool", "@raised"]
-later = { variants = ["@raised"] }
+variants = ["tool", "toggle", "@raised"]
+later = { variants = ["@raised", "toggle"] }
 exclusive_variants = [["tool", "@raised"]]
 
 [declare.flavor.alt.widget.button]
-variants = ["tool"]
+variants = ["tool", "toggle"]
 
 [[rules]]
 when = { states = ["pressed"] }

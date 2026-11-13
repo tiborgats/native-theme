@@ -1810,7 +1810,9 @@ fn gate_fixture_flavor_excluded_fact() {
 
 /// While the flavours unit is not enabled only the default flavour's
 /// combinations are checked, but every flavour's section is compared whole
-/// with that flavour's own state model at depth (S10, S17): a second
+/// with that flavour's own state model at depth (S10, S17), its `later`
+/// the typed variants that model draws in no combination (`toggle`, drawn
+/// under the second flavour though not under the default): a second
 /// flavour's section restating the `exclusive_variants` and `later` its
 /// state model contradicts passes; one stating its variants alone inherits
 /// the default flavour's exclusive group and `later` list and fails there,

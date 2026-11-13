@@ -1,6 +1,6 @@
-# The default flavour's declarations with `@raised` under `later` (S10 *Later names*), and the alternative
-# flavour's section stating what it would otherwise inherit and its state model contradicts: no exclusive group,
-# nothing `later` (S10, S17).
+# The default flavour's declarations with `@raised` and `toggle` under `later` (S10 *Later names*), and the
+# alternative flavour's section stating what it would otherwise inherit and its own state model contradicts: no
+# exclusive group, nothing `later` (`toggle` drawn there) (S10, S17).
 # base without: [declare]
 # base without: text_styles = ["body"]
 # base without: inputs = ["accent"]
@@ -12,12 +12,12 @@ surface_sets = ["window"]
 flavors = ["main", "alt"]
 
 [declare.widget.button]
-variants = ["tool", "@raised"]
-later = { variants = ["@raised"] }
+variants = ["tool", "toggle", "@raised"]
+later = { variants = ["@raised", "toggle"] }
 exclusive_variants = [["tool", "@raised"]]
 
 [declare.flavor.alt.widget.button]
-variants = ["tool"]
+variants = ["tool", "toggle"]
 later = { variants = [] }
 exclusive_variants = []
 

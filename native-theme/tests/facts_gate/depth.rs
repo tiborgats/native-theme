@@ -422,8 +422,8 @@ pub struct Depth<'p> {
     /// declares flavours: it holds in every combination of the default
     /// flavour's entries.
     default_flavour: Option<String>,
-    spaces: RefCell<HashMap<String, Rc<Vec<Space>>>>,
-    combos: RefCell<HashMap<String, Combos>>,
+    spaces: RefCell<HashMap<Flavoured<()>, Rc<Vec<Space>>>>,
+    combos: RefCell<HashMap<Flavoured<()>, Combos>>,
     drawn: RefCell<HashMap<String, Rc<Vec<usize>>>>,
     holds: RefCell<HashMap<(String, String), bool>>,
     hosts: RefCell<HashMap<(String, String), Option<String>>>,
@@ -508,7 +508,18 @@ impl<'p> Depth<'p> {
     /// Per entry in force, its dimensions at depth (check_facts_trace.py's
     /// `space`), computed once per widget.
     fn space(&self, widget: &str) -> Rc<Vec<Space>> {
-        if let Some(found) = self.spaces.borrow().get(widget) {
+        self.space_of(widget, None)
+    }
+
+    /// [`Depth::space`], or with `only` (a `flavor:<f>` condition) that
+    /// flavour's own entry alone, enumerated as though its flavour were in
+    /// force (its condition in every vector, its other names at depth),
+    /// whatever the flavours unit's state: what a flavour's `[declare]`
+    /// section is true to (S10; check_facts_trace.py's `space` with
+    /// `only`). Computed once per widget and flavour.
+    fn space_of(&self, widget: &str, only: Option<&str>) -> Rc<Vec<Space>> {
+        let memo = (widget.to_owned(), only.map(str::to_owned), ());
+        if let Some(found) = self.spaces.borrow().get(&memo) {
             return Rc::clone(found);
         }
         let units = &self.platform.units;
@@ -517,10 +528,13 @@ impl<'p> Depth<'p> {
         let flavours = units.flavours_enabled();
         let mut out = Vec::new();
         for (flavor, entry) in self.entries(widget) {
-            if flavor
-                .as_ref()
-                .is_some_and(|flavor| !flavours || units.condition_holder(flavor, widget).is_some())
-            {
+            let skipped = match only {
+                Some(only) => flavor.as_deref() != Some(only),
+                None => flavor.as_ref().is_some_and(|flavor| {
+                    !flavours || units.condition_holder(flavor, widget).is_some()
+                }),
+            };
+            if skipped {
                 continue;
             }
             let off: Vec<String> = entry
@@ -658,9 +672,7 @@ impl<'p> Depth<'p> {
             });
         }
         let out = Rc::new(out);
-        self.spaces
-            .borrow_mut()
-            .insert(widget.to_owned(), Rc::clone(&out));
+        self.spaces.borrow_mut().insert(memo, Rc::clone(&out));
         out
     }
 
@@ -681,11 +693,17 @@ impl<'p> Depth<'p> {
     /// and a direction, less those a `not_drawn` entry names; enumerated
     /// whole once per widget, with no cap.
     fn combos(&self, widget: &str) -> Combos {
-        if let Some(found) = self.combos.borrow().get(widget) {
+        self.combos_of(widget, None)
+    }
+
+    /// [`Depth::combos`] over [`Depth::space_of`]'s entries.
+    fn combos_of(&self, widget: &str, only: Option<&str>) -> Combos {
+        let memo = (widget.to_owned(), only.map(str::to_owned), ());
+        if let Some(found) = self.combos.borrow().get(&memo) {
             return Rc::clone(found);
         }
         let mut out = Vec::new();
-        for (at, space) in self.space(widget).iter().enumerate() {
+        for (at, space) in self.space_of(widget, only).iter().enumerate() {
             for (variants, sizes) in &space.sets {
                 for ((ancestors, siblings), sizes) in space.contexts.iter().zip(sizes) {
                     for size in sizes {
@@ -719,17 +737,18 @@ impl<'p> Depth<'p> {
             }
         }
         let out = Rc::new(out);
-        self.combos
-            .borrow_mut()
-            .insert(widget.to_owned(), Rc::clone(&out));
+        self.combos.borrow_mut().insert(memo, Rc::clone(&out));
         out
     }
 
     /// The variants some combination at depth of the widget holds
     /// ([`Depth::combos`]; check_facts_trace.py's `combos`, which
-    /// scripts/generate_preset.py's `later_variants()` reads).
-    pub fn drawn_variants(&self, widget: &str) -> Names {
-        self.combos(widget)
+    /// scripts/generate_preset.py's `later_variants()` reads); with
+    /// `flavour` (a flavour's name, not the default's), those of that
+    /// flavour's own entry ([`Depth::space_of`]).
+    pub fn drawn_variants(&self, widget: &str, flavour: Option<&str>) -> Names {
+        let only = flavour.map(|flavour| format!("flavor:{flavour}"));
+        self.combos_of(widget, only.as_deref())
             .iter()
             .flat_map(|(_, combo)| combo.variants.iter().cloned())
             .collect()

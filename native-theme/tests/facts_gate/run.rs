@@ -717,6 +717,13 @@ pub fn bundled_default_flavour(id: &str) -> Result<Option<String>, String> {
         .clone()
 }
 
+/// `flavor`, where it names a flavour of `preset` other than its default:
+/// the flavour whose own state model a section of its declarations is true
+/// to (S10).
+fn own_flavour<'f>(preset: &Preset, flavor: Option<&'f str>) -> Option<&'f str> {
+    flavor.filter(|flavor| preset.flavors().first().map(String::as_str) != Some(*flavor))
+}
+
 /// S17's predicate over `platform`'s facts for `preset`, under its default
 /// flavour.
 fn depth_of<'p>(platform: &'p Platform, preset: &Preset) -> Depth<'p> {
@@ -1206,7 +1213,7 @@ fn projected(
         .into_iter()
         .map(|entry| {
             let mut off = unspelled_variants(entry, report);
-            let drawn = depth.drawn_variants(&entry.widget);
+            let drawn = depth.drawn_variants(&entry.widget, own_flavour(preset, flavor));
             let nowhere: Vec<String> = entry
                 .variants
                 .iter()
@@ -2762,7 +2769,7 @@ pub fn declarations_run(
                     entry,
                     &platform.units,
                     preset.id(),
-                    &depth.drawn_variants(&entry.widget)
+                    &depth.drawn_variants(&entry.widget, own_flavour(preset, flavor))
                 ))
             ),
         );
