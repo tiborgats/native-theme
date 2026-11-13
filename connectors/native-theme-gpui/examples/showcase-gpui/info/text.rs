@@ -22,7 +22,7 @@ pub fn heading(t: &Theme, native: bool) -> WidgetInfo {
         "text",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:211",
+        "gpui-component/label.rs:213",
     ));
     if native {
         info.config(
@@ -63,7 +63,7 @@ pub fn label(t: &Theme) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/label.rs:211",
+            "gpui-component/label.rs:213",
         ))
         .instance(
             "style",
@@ -86,7 +86,7 @@ pub fn gallery_label(t: &Theme, kind: LabelKind, text: &str) -> WidgetInfo {
         "text",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:211",
+        "gpui-component/label.rs:213",
     ));
     let info = match kind {
         LabelKind::Plain => info.instance("text", text.to_string()),
@@ -95,7 +95,7 @@ pub fn gallery_label(t: &Theme, kind: LabelKind, text: &str) -> WidgetInfo {
                 "secondary",
                 "muted_foreground",
                 t.muted_foreground,
-                "gpui-component/label.rs:171",
+                "gpui-component/label.rs:173",
             ))
             .instance("text", text.to_string())
             .instance(
@@ -103,8 +103,8 @@ pub fn gallery_label(t: &Theme, kind: LabelKind, text: &str) -> WidgetInfo {
                 format!("\"{secondary}\", after a space, the two drawn as one text with the second part highlighted in muted_foreground (gpui-component/label.rs, Label::full_text)"),
             ),
         // Label::render repeats the mask once per character of the whole
-        // text (label.rs:201-205), and measure_highlights gives up on a
-        // masked Label before it colours anything (:154-156).
+        // text (label.rs:203-207), and measure_highlights gives up on a
+        // masked Label before it colours anything (:156-158).
         LabelKind::Masked => info.instance(
             "masked",
             format!(
@@ -128,7 +128,7 @@ pub fn sized_label(t: &Theme, size: TextSize) -> WidgetInfo {
         "text",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:211",
+        "gpui-component/label.rs:213",
     ));
     let info = match size {
         TextSize::Xs => info.instance("size", "text_xs: rems(0.75) (gpui-pre/styled.rs, text_xs)"),

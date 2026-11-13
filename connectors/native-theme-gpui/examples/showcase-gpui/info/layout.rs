@@ -218,7 +218,7 @@ pub fn group_box(
             "gpui-component/group_box.rs:158",
         ))
         // A Label would paint foreground over this on its own element
-        // (label.rs:211), so the content's text is plain text.
+        // (label.rs:213), so the content's text is plain text.
         .color(claim(
             "content text",
             "group_box_foreground",
@@ -417,7 +417,7 @@ pub fn card(
     container_margin: Option<Pixels>,
 ) -> WidgetInfo {
     // No content text: the content is a Label, which paints foreground on
-    // its own element over the group box's colour (label.rs:211) and
+    // its own element over the group box's colour (label.rs:213) and
     // reports itself.
     let info = WidgetInfo::new("GroupBox").variant("Fill, a card");
     let info = match native {
@@ -559,19 +559,19 @@ pub fn folder_tab_row(
             "selected tab",
             "tab_active",
             t.tab_active,
-            "gpui-component/tab/tab.rs:998",
+            "gpui-component/tab/tab.rs:1001",
         ))
         .color(claim(
             "hovered tab",
             "secondary",
             t.secondary,
-            "gpui-component/tab/tab.rs:1012",
+            "gpui-component/tab/tab.rs:1015",
         ))
         .color(claim(
             "separator",
             "border",
             t.border,
-            "gpui-component/tab/tab.rs:1025",
+            "gpui-component/tab/tab.rs:1028",
         ))
         .color(claim("panel", "tab_active", t.tab_active, "showcase"))
         .color(claim(
@@ -1137,7 +1137,7 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
             "title",
             "foreground",
             t.foreground,
-            "gpui-component/label.rs:211",
+            "gpui-component/label.rs:213",
         ))
         .color(claim(
             "caption",
@@ -1165,26 +1165,26 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
 pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
     let info = WidgetInfo::new("CarouselPaginationItem");
     // A selected Button takes its selected style and no hover or press
-    // style (button/button.rs:730, :755, :821-826).
+    // style (button/button.rs:730, :755, :823-828).
     let info = if selected {
         info.variant("selected")
             .color(claim(
                 "bg",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1322",
+                "gpui-component/button/button.rs:1327",
             ))
             .color(claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:1029",
+                "gpui-component/button/button.rs:1034",
             ))
             .color(claim(
                 "border",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1081",
+                "gpui-component/button/button.rs:1086",
             ))
             .not_themeable(
                 "hover",
@@ -1195,31 +1195,31 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
             "bg",
             "button",
             t.button,
-            "gpui-component/button/button.rs:1015",
+            "gpui-component/button/button.rs:1020",
         ))
         .color(claim(
             "text",
             "button_foreground",
             t.button_foreground,
-            "gpui-component/button/button.rs:1029",
+            "gpui-component/button/button.rs:1034",
         ))
         .color(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1081",
+            "gpui-component/button/button.rs:1086",
         ))
         .color(claim(
             "hover",
             "button_hover",
             t.button_hover,
-            "gpui-component/button/button.rs:1159",
+            "gpui-component/button/button.rs:1164",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "gpui-component/button/button.rs:1243",
+            "gpui-component/button/button.rs:1248",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -1454,19 +1454,19 @@ pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
             "track",
             "scrollbar",
             t.scrollbar,
-            "gpui-component/theme/mod.rs:416",
+            "gpui-component/theme/mod.rs:425",
         ))
         .color(claim(
             "thumb",
             "scrollbar_thumb",
             t.scrollbar_thumb,
-            "gpui-component/theme/mod.rs:421",
+            "gpui-component/theme/mod.rs:430",
         ))
         .color(claim(
             "thumb hover",
             "scrollbar_thumb_hover",
             t.scrollbar_thumb_hover,
-            "gpui-component/theme/mod.rs:432",
+            "gpui-component/theme/mod.rs:441",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .config(

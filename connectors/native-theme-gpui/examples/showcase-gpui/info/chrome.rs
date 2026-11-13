@@ -143,14 +143,14 @@ fn title_bar_colours(t: &Theme, controls: bool, inactive: bool) -> WidgetInfo {
             "bg",
             "title_bar",
             t.title_bar,
-            "gpui-component/title_bar.rs:343",
+            "gpui-component/title_bar.rs:346",
         ))
     };
     let info = info.color(claim(
         "border",
         "title_bar_border",
         t.title_bar_border,
-        "gpui-component/title_bar.rs:341",
+        "gpui-component/title_bar.rs:344",
     ));
     if !controls {
         return info;
@@ -354,25 +354,25 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "menu item text",
         "foreground",
         t.foreground,
-        "gpui-component/menu/menu_item.rs:104",
+        "gpui-component/menu/menu_item.rs:121",
     ))
     .color(claim(
         "menu item hover",
         "accent",
         t.accent,
-        "gpui-component/menu/menu_item.rs:117",
+        "gpui-component/menu/menu_item.rs:134",
     ))
     .color(claim(
         "menu item hover text",
         "accent_foreground",
         t.accent_foreground,
-        "gpui-component/menu/menu_item.rs:118",
+        "gpui-component/menu/menu_item.rs:135",
     ))
     .color(claim(
         "menu separator",
         "border",
         t.border,
-        "gpui-component/menu/popup_menu.rs:1286",
+        "gpui-component/menu/popup_menu.rs:1381",
     ))
     .config(
         "menu border-radius",
@@ -448,7 +448,7 @@ pub fn toolbar(
     WidgetInfo::new("Toolbar")
         .not_themeable(
             "widget",
-            "the application's own h_flex, not gpui-component 0.8.1's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
+            "the application's own h_flex, not gpui-component 0.9.1's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
         )
         .config(
             "edge",
@@ -800,13 +800,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1044",
+                "gpui-component/button/button.rs:1049",
             ),
             claim(
                 "hover text",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1221",
+                "gpui-component/button/button.rs:1226",
             ),
         ),
         GhostContent::Icon => (
@@ -814,13 +814,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1044",
+                "gpui-component/button/button.rs:1049",
             ),
             claim(
                 "icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1221",
+                "gpui-component/button/button.rs:1226",
             ),
         ),
         GhostContent::TextAndIcon => (
@@ -828,13 +828,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text and icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1044",
+                "gpui-component/button/button.rs:1049",
             ),
             claim(
                 "text and icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1221",
+                "gpui-component/button/button.rs:1226",
             ),
         ),
     };
@@ -850,27 +850,27 @@ pub(super) fn ghost_colours(t: &Theme, content: GhostContent) -> Vec<ColorClaim>
         "pressed",
         "button_active",
         t.button_active,
-        "gpui-component/button/button.rs:1260",
+        "gpui-component/button/button.rs:1265",
     ));
     claims
 }
 
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
-/// in dark mode (button/button.rs:1205-1211).
+/// in dark mode (button/button.rs:1210-1216).
 fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",
             "accent",
             t.accent.opacity(0.5),
-            "gpui-component/button/button.rs:1208",
+            "gpui-component/button/button.rs:1213",
         )
     } else {
         claim(
             "hover",
             "accent",
             t.accent,
-            "gpui-component/button/button.rs:1206",
+            "gpui-component/button/button.rs:1211",
         )
     }
 }
@@ -879,21 +879,21 @@ fn ghost_hover(t: &Theme) -> ColorClaim {
 /// every widget styled like one: the window background in light mode, and in
 /// dark mode an Oklab mix of 30% input and 70% transparent -- `mix_oklab`'s
 /// factor is the first colour's share (theme/color.rs:44-49) -- read at
-/// theme/mod.rs:485-490. The swatch is that mix, not input at full strength.
+/// theme/mod.rs:493-498. The swatch is that mix, not input at full strength.
 pub(super) fn input_background(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "bg, 30% input mixed with 70% transparent",
             "input",
             t.input.mix_oklab(t.transparent, 0.3),
-            "gpui-component/theme/mod.rs:487",
+            "gpui-component/theme/mod.rs:495",
         )
     } else {
         claim(
             "bg",
             "background",
             t.background,
-            "gpui-component/theme/mod.rs:489",
+            "gpui-component/theme/mod.rs:497",
         )
     }
 }
@@ -910,7 +910,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:103",
+            "gpui-component/input/input.rs:126",
         ))
         .color(claim(
             "popup bg",
@@ -922,13 +922,13 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
             "row hover, accent at 70%",
             "accent",
             t.accent.opacity(0.7),
-            "gpui-component/searchable_list/item.rs:114",
+            "gpui-component/searchable_list/item.rs:115",
         ))
         .color(claim(
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/combobox.rs:1000",
+            "gpui-component/combobox.rs:1018",
         ))
         .not_themeable(
             "font colour",
@@ -1345,11 +1345,11 @@ pub(super) fn dialog_surface(
         "unreported",
         if close_button {
             format!(
-                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 775-861), so only {reported} report"
+                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 775-862), so only {reported} report"
             )
         } else {
             format!(
-                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 775-861), so only {reported} report"
+                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 775-862), so only {reported} report"
             )
         },
     )
@@ -1376,7 +1376,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bo
     )
     .instance(
         "closes",
-        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:739; gpui-base/dialog.rs:613)",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:739; gpui-base/dialog.rs:623)",
     )
 }
 
@@ -1392,25 +1392,25 @@ pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
             "surface bg",
             "popover",
             t.popover,
-            "gpui-component/command/state.rs:932",
+            "gpui-component/command/state.rs:937",
         ))
         .color(claim(
             "surface text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/command/state.rs:933",
+            "gpui-component/command/state.rs:938",
         ))
         .color(claim(
             "search divider",
             "border",
             t.border,
-            "gpui-component/command/state.rs:949",
+            "gpui-component/command/state.rs:954",
         ))
         .color(claim(
             "search icon",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:954",
+            "gpui-component/command/state.rs:959",
         ))
         .color(claim(
             "group label",
@@ -1440,7 +1440,7 @@ pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
             "empty text",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:887",
+            "gpui-component/command/state.rs:892",
         ))
         .not_themeable(
             "geometry",
@@ -1492,13 +1492,13 @@ pub(super) fn sheet_surface(
             "bg",
             "background",
             t.background,
-            "gpui-component/sheet.rs:179",
+            "gpui-component/sheet.rs:180",
         ))
         .color(claim(
             "border",
             "border",
             t.border,
-            "gpui-component/sheet.rs:180",
+            "gpui-component/sheet.rs:181",
         ))
         .color(claim(
             "backdrop",
@@ -1549,7 +1549,7 @@ pub(super) fn sheet_surface(
     .instance(
         "unreported",
         format!(
-            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (gpui-component/sheet.rs, Sheet::render, lines 174-252), so {rest} shows no info"
+            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (gpui-component/sheet.rs, Sheet::render, lines 175-254), so {rest} shows no info"
         ),
     )
 }
@@ -1601,13 +1601,13 @@ pub(super) fn settings(t: &Theme, variant: &'static str) -> WidgetInfo {
             "header rule",
             "border",
             t.border,
-            "gpui-component/setting/page.rs:190",
+            "gpui-component/setting/page.rs:248",
         ))
         .color(claim(
             "page description",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/setting/page.rs:224",
+            "gpui-component/setting/page.rs:282",
         ))
         .color(claim(
             "item description",

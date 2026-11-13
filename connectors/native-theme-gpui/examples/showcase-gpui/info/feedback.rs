@@ -269,8 +269,8 @@ pub fn native_spinner(
             ))
         } else if icons.spins {
             // An SVG element draws the icon's alpha mask in its text colour
-            // (gpui-pre 0.3.10 src/svg_renderer.rs:241-250,
-            // src/window.rs:5025, :5050), the only element gpui turns.
+            // (gpui-pre 0.3.12 src/svg_renderer.rs:241-250,
+            // src/window.rs:5257, :5282), the only element gpui turns.
             info.color(claim(
                 "indicator",
                 "text_color",
@@ -383,7 +383,7 @@ pub fn spinner(
             "showcase",
         )),
         // No colour of its own: the Loader icon takes the text colour it
-        // inherits (spinner.rs:64-66, icon.rs:225), which the showcase sets
+        // inherits (spinner.rs:64-66, icon.rs:264), which the showcase sets
         // on its window.
         None => info.color(claim(
             "icon, inherited foreground",
@@ -678,8 +678,8 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre/window.rs:4705-4713 for fills and edges, :4849 and
-    // :4898 for glyphs), so these are what a hovered Tag paints.
+    // inside it (gpui-pre/window.rs:4937-4945 for fills and edges, :5081 and
+    // :5130 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
         .map(|c| format!("{} {}", c.role, as_rgba(c.value.opacity(TAG_HOVER_OPACITY))))
@@ -883,7 +883,7 @@ pub fn tooltip(
     };
     let info = match (built, delay) {
         (true, Some(delay)) => info.config("delay", format!("tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1755)", delay.as_millis())),
-        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3782) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1755), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
+        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3784) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1755), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
         (false, _) => info,
     };
     let info = if built {

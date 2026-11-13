@@ -25,7 +25,7 @@ fn name_label(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "name",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:211",
+        "gpui-component/label.rs:213",
     ))
 }
 
@@ -34,7 +34,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
     match drawn {
         IconDrawn::Builtin => info
             // No colour of its own: the Icon takes the text colour it
-            // inherits (icon.rs:176, :225), which the showcase sets on its
+            // inherits (icon.rs:214, :264), which the showcase sets on its
             // window.
             .color(claim(
                 "icon, inherited foreground",
@@ -375,8 +375,8 @@ pub fn icon_size(
     let info = name_label(WidgetInfo::new("Icon").variant(format!("{name} size")), t);
     let info = match drawn {
         ChromeIcon::Builtin(_) | ChromeIcon::Loaded(..) => info
-            // An Icon takes the text colour it inherits (icon.rs:176,
-            // :225), which the showcase sets on its window.
+            // An Icon takes the text colour it inherits (icon.rs:214,
+            // :264), which the showcase sets on its window.
             .color(claim(
                 "icon, inherited foreground",
                 "foreground",

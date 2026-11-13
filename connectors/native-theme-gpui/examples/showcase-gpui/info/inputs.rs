@@ -110,7 +110,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         InputField::HeightOnly => info.variant("control height only"),
     };
     // geometry::input_fill gives a refined field the platform's fill, in
-    // place of upstream's (input/input.rs:776, then :784); its geometry line
+    // place of upstream's (input/input.rs:800, then :808); its geometry line
     // names the fields. The showcase then leaves the field without a fill or
     // an edge colour of its own over a surface of its own (demo::text_field),
     // whose info claims the edge.
@@ -122,12 +122,12 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
             "border",
             "input",
             t.input,
-            "gpui-component/input/input.rs:779",
+            "gpui-component/input/input.rs:803",
         ))
         .color(input_background(t))
     };
     // Input takes only the fill from input_style and drops its foreground
-    // (input/input.rs:691), so the text is the colour of the root: the one
+    // (input/input.rs:715), so the text is the colour of the root: the one
     // geometry::input refines it with, or else the colour the showcase sets
     // on its window.
     let info = if filled {
@@ -144,10 +144,10 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         "placeholder",
         "muted_foreground",
         t.muted_foreground,
-        "gpui-component/input/input.rs:541",
+        "gpui-component/input/input.rs:565",
     ));
     // geometry::input carries border.corner_radius, which the refinement
-    // applies after upstream's own (input/input.rs:777, then :784).
+    // applies after upstream's own (input/input.rs:801, then :808).
     let info = if field == InputField::HeightOnly || !styled {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     } else {
@@ -208,7 +208,7 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
     // geometry::text_area letters the field in input.font's colour, over
     // the window's it inherits (a Textarea renders as an Input,
     // input/textarea.rs:221, which drops input_style's foreground,
-    // input/input.rs:691): its geometry line names it. A filled field has
+    // input/input.rs:715): its geometry line names it. A filled field has
     // no fill or edge colour of its own over the showcase's surface, whose
     // info claims the edge.
     let info = if filled {
@@ -225,14 +225,14 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
                 "border",
                 "input",
                 t.input,
-                "gpui-component/input/input.rs:779",
+                "gpui-component/input/input.rs:803",
             ))
     };
     info.color(claim(
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/input/input.rs:754",
+            "gpui-component/input/input.rs:778",
         ))
         .instance("row height", "defaults.line_height times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base/input/base/element.rs, TextElement::request_layout)")
         .instance("height", "the showcase's own 90px, set after geometry::text_area, which sets none")
@@ -301,7 +301,7 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
         ))
         .color(input_background(t))
         // The digits are the inner Input's, which drops input_style's
-        // foreground (input/input.rs:691).
+        // foreground (input/input.rs:715).
         .color(claim(
             "text, inherited",
             "foreground",
@@ -536,13 +536,13 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
                 "checked bg",
                 "primary",
                 t.primary,
-                "gpui-component/checkbox.rs:314",
+                "gpui-component/checkbox.rs:315",
             ))
             .color(claim(
                 "checked border",
                 "primary",
                 t.primary,
-                "gpui-component/checkbox.rs:249",
+                "gpui-component/checkbox.rs:250",
             ))
             .color(claim(
                 "checkmark",
@@ -554,14 +554,14 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
             "unchecked border",
             "input",
             t.input,
-            "gpui-component/checkbox.rs:248",
+            "gpui-component/checkbox.rs:249",
         )),
         (true, true) => info
             .color(claim(
                 "checked bg and border, at 50%",
                 "primary",
                 t.primary.opacity(0.5),
-                "gpui-component/checkbox.rs:249-251",
+                "gpui-component/checkbox.rs:250-252",
             ))
             .color(claim(
                 "checkmark, at 50%",
@@ -573,7 +573,7 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
             "unchecked border, at 50%",
             "input",
             t.input.opacity(0.5),
-            "gpui-component/checkbox.rs:248-253",
+            "gpui-component/checkbox.rs:249-254",
         )),
     };
     let info = if disabled {
@@ -581,14 +581,14 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
             "label",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/checkbox.rs:345",
+            "gpui-component/checkbox.rs:346",
         ))
     } else {
         info.color(claim(
             "label",
             "foreground",
             t.foreground,
-            "gpui-component/checkbox.rs:343",
+            "gpui-component/checkbox.rs:344",
         ))
     };
     let info = info
@@ -1524,7 +1524,7 @@ pub fn otp_input(t: &Theme) -> WidgetInfo {
             "digit",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:103",
+            "gpui-component/input/input.rs:126",
         ))
         .color(claim(
             "caret",
@@ -1551,7 +1551,7 @@ pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
             "upstream trigger text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:103",
+            "gpui-component/input/input.rs:126",
         )),
     };
     info.color(claim(
@@ -1616,7 +1616,7 @@ pub fn combo_fill(
                     "trigger border",
                     "input",
                     t.input,
-                    "gpui-component/combobox.rs:993",
+                    "gpui-component/combobox.rs:1011",
                 )
             } else {
                 claim(
@@ -1749,7 +1749,7 @@ pub fn color_select(t: &Theme, picked: bool) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:103",
+            "gpui-component/input/input.rs:126",
         ))
         .instance("swatch", "the picked colour, edged in it darkened by 30% (color_picker.rs, ColorPickerButton::render_field)")
     } else {
@@ -1777,13 +1777,13 @@ pub fn speech_waveform(t: &Theme) -> WidgetInfo {
             "bars, capturing",
             "primary",
             t.primary,
-            "gpui-component/speech/waveform.rs:93",
+            "gpui-component/speech/waveform.rs:137",
         ))
         .color(claim(
             "bars, idle",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/speech/waveform.rs:95",
+            "gpui-component/speech/waveform.rs:139",
         ))
         .instance("signal", "the showcase's own synthetic level envelope (speech.rs), no microphone; nothing is recognised")
         .not_themeable("size", "96px wide and 12 / 16 / 20 / 24px tall per Size, literals (speech/waveform.rs, DEFAULT_WIDTH and SpeechWaveform::height)")
@@ -1859,7 +1859,7 @@ pub fn time_field(t: &Theme) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:103",
+            "gpui-component/input/input.rs:126",
         ))
         .color(claim(
             "border",
