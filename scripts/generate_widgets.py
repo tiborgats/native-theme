@@ -42,7 +42,9 @@ The units
 
 The depth (S6.1, ADD-A147): `[deferred.<widget>]` may name a part's field, `"<part>.<field>"`, which the part's
 `fields(…)` then leaves out; `[[later]]` tables name the later units (scripts/check_facts_trace.py reads them in full),
-of which this reads each unit's name, `enabled`, `conditions`, `sizes` and the variants it holds per entry. An enabled
+of which this reads each unit's name, `enabled`, `conditions`, `sizes` and the variants it holds per entry on every
+preset (a group naming `presets` holds its names there alone, the entry's Depth item holding them elsewhere, so they
+stay in `Variant`), refusing a group or list of another shape. An enabled
 entry's **Depth** item (spec_catalogue.depth_names) lists its variants at depth: `Variant`, `WidgetInfo.variants` and
 `content_variants` hold those and the variants of the enabled later units, each other typed variant named in a
 generated comment with the later unit holding it (one neither lists nor holds, or one both do, is an input error);
@@ -154,7 +156,8 @@ class Later:
     enabled: bool
     conditions: list           # the conditions it holds model-wide
     sizes: bool                # it holds the sizes beyond the default in force and the densities
-    names: dict                # entry -> {"variants": set, "states": set}, every preset's groups together
+    names: dict                # entry -> {"variants": set, "states": set} of its groups naming no presets (held on
+                               # every preset; a group naming presets leaves the names to the Depth line elsewhere)
 
 
 @dataclass
@@ -172,7 +175,9 @@ class Units:
                 or any(u.name == unit and u.enabled for u in self.later))
 
     def holder(self, entry: str, kind: str, name: str):
-        """The later unit holding the entry's variant or state flag (on some preset), or None."""
+        """The later unit holding the entry's variant or state flag on every preset (a group naming no presets), or
+        None: a name a group holds on some presets alone is the entry's Depth line's on the others, so the model's
+        `Variant` holds it."""
         return next((u for u in self.later if name in u.names.get(entry, {}).get(kind, ())), None)
 
     def flag_of(self, what: str) -> bool:
@@ -222,14 +227,25 @@ def parse_units(text: str, entries=frozenset()) -> Units:
     for t in data.get("later", []) if isinstance(data.get("later", []), list) else [None]:
         if not isinstance(t, dict) or not isinstance(t.get("name"), str) or not isinstance(t.get("enabled"), bool):
             raise InputError(f"{UNITS}: a [[later]] table has no `name` or no boolean `enabled`")
+        def names_list(value) -> bool:
+            return isinstance(value, list) and all(isinstance(x, str) and x for x in value)
+
+        for k in ("conditions", "directions"):
+            if not names_list(t.get(k, [])):
+                raise InputError(f"{UNITS}: later unit `{t['name']}`: `{k}` is not a list of names")
         names = {}
         for entry, groups in t.items():
             if entry in ("name", "kind", "enabled", "conditions", "directions", "sizes"):
                 continue
-            if not isinstance(groups, list) or not all(isinstance(g, dict) for g in groups):
-                raise InputError(f"{UNITS}: later unit `{t['name']}`: `{entry}` is not a list of groups")
+            if not isinstance(groups, list) or not all(
+                    isinstance(g, dict) and g and set(g) <= {"presets", "variants", "states"}
+                    and all(names_list(v) for v in g.values()) for g in groups):
+                raise InputError(f"{UNITS}: later unit `{t['name']}`: `{entry}` is not a list of groups holding "
+                                 f"`presets`, `variants` and `states`, each a list of names")
             held = names.setdefault(entry, {"variants": set(), "states": set()})
             for g in groups:
+                if "presets" in g:
+                    continue   # held on those presets alone: the entry's Depth line holds the names on the others
                 for k in held:
                     held[k] |= set(g.get(k, []))
         if t["name"] in enabled or t["name"] in hand or any(u.name == t["name"] for u in later):
@@ -1345,6 +1361,25 @@ def self_test() -> int:
     w3 = read_widget(spec_catalogue.entries(shallow)[0], parse_units(SELF_TEST_LATER),
                      spec_catalogue.shared_types(shallow), {})
     expect("depth: variants", (w3.variants, w3.later_variants), (["flat", "round"], [("sharp", "styles")]))
+    # a group naming presets holds its names there alone: the Depth item's `sharp` stays in `Variant`
+    scoped = SELF_TEST_LATER.replace('knob = [{ variants = ["sharp"] }]',
+                                     'knob = [{ presets = ["adwaita"], variants = ["sharp"] }]')
+    try:
+        w5 = read_widget(spec_catalogue.entries(SELF_TEST_CATALOGUE)[0], parse_units(scoped),
+                         spec_catalogue.shared_types(SELF_TEST_CATALOGUE), {})
+        expect("depth: a preset-scoped typed variant", (w5.variants, w5.later_variants),
+               (["flat", "round", "sharp"], []))
+    except InputError as err:
+        failures.append(f"depth: a preset-scoped typed variant: refused with {err}")
+    for label, text in (("a string of variants", 'knob = [{ variants = "sharp" }]'),
+                        ("a group key no group has", 'knob = [{ variant = ["sharp"] }]'),
+                        ("a string of conditions", 'conditions = "x"')):
+        try:
+            parse_units(SELF_TEST_LATER.replace('knob = [{ variants = ["sharp"] }]', text))
+            failures.append(f"later unit with {label}: not refused")
+        except InputError as err:
+            if "is not a list" not in str(err):
+                failures.append(f"later unit with {label}: refused with {err}")
     expect("depth: the units' flags", (parse_units(SELF_TEST_LATER).flag_of("sizes"),
                                        parse_units(SELF_TEST_LATER).flag_of("flavours")), (True, False))
     entries = spec_catalogue.entries(SELF_TEST_CATALOGUE)
@@ -1358,9 +1393,15 @@ def self_test() -> int:
             ("a typed variant in no place", SELF_TEST_UNITS, shallow, "neither on the Depth item nor in a later unit"),
             ("a typed variant in two places", SELF_TEST_LATER, SELF_TEST_CATALOGUE, "on the Depth item and in the"),
             ("no Depth item", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.split("- **Depth**")[0], "no **Depth** item"),
-            ("a part field no part lists", SELF_TEST_UNITS + '[deferred.x]\n', SELF_TEST_CATALOGUE, "")):
-        if not needle:
-            continue
+            ("a field the part does not list", SELF_TEST_UNITS.replace('spot = "placement"', 'spot = "placement"\n'
+                                                                       '"body.text" = "placement"'),
+             SELF_TEST_CATALOGUE, '`deferred.knob."body.text"` is no field of a part of `knob`'),
+            ("a part the widget lacks", SELF_TEST_UNITS.replace('spot = "placement"', 'spot = "placement"\n'
+                                                                '"lid.fill" = "placement"'),
+             SELF_TEST_CATALOGUE, '`deferred.knob."lid.fill"` is no field of a part of `knob`'),
+            ("a part field naming no field", SELF_TEST_UNITS.replace('spot = "placement"', 'spot = "placement"\n'
+                                                                     '"body." = "placement"'),
+             SELF_TEST_CATALOGUE, '`deferred.knob."body."` is no field of a part of `knob`')):
         try:
             read_widget(spec_catalogue.entries(catalogue)[0], parse_units(unit_text),
                         spec_catalogue.shared_types(catalogue), {})
