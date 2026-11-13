@@ -26,6 +26,7 @@ use toml::{Table, Value};
 use super::facts::{self, Stated};
 use super::model::{self, Model, strings};
 use super::run::Platform;
+use super::units::entry_of;
 
 /// The unit of a fact drawn only in a context naming no widget: the
 /// identities, with their hosts.
@@ -803,15 +804,18 @@ impl<'p> Depth<'p> {
         out
     }
 
-    /// The widget and the part (`<widget>.<part>`, `None` for a widget
-    /// value, a part's own key or a key of no widget) of a key.
+    /// The entry ([`entry_of`]: a widget, `component.<key>`) and the part
+    /// (`<entry>.<part>`, `None` for a widget value, a part's own key or a
+    /// key of no widget) of a key.
     fn widget_part(key: &str) -> (&str, Option<String>) {
-        let segments: Vec<&str> = key.split('.').collect();
-        let widget = segments.first().copied().unwrap_or_default();
-        let part = match segments.get(1) {
-            Some(part) if segments.len() > 2 && *part != "values" => {
-                Some(format!("{widget}.{part}"))
-            }
+        let widget = entry_of(key);
+        let rest: Vec<&str> = key
+            .get(widget.len()..)
+            .and_then(|rest| rest.strip_prefix('.'))
+            .map(|rest| rest.split('.').collect())
+            .unwrap_or_default();
+        let part = match rest.first() {
+            Some(part) if rest.len() > 1 && *part != "values" => Some(format!("{widget}.{part}")),
             _ => None,
         };
         (widget, part)

@@ -3773,6 +3773,86 @@ fn units_differences(path: &Path, report: &run::Report) -> Vec<String> {
     out
 }
 
+/// A `[staged]` or `[deferred]` value of the units file names a unit a path
+/// may wait for (S6.1, ADD-A147; check_facts_trace.py's `check_waiting`): a
+/// unit `[unit_names]` lists or a catalogue entry is read; a misspelled one
+/// is refused, the message naming the file, the key and the value; a
+/// `[unit_names]` of another shape is refused. Synthetic files in a
+/// temporary repository.
+#[test]
+fn units_waiting_value_names_a_unit() -> Result<(), String> {
+    let root = std::env::temp_dir().join(format!("native-theme-units-{}", std::process::id()));
+    std::fs::create_dir_all(root.join("scripts")).map_err(failed)?;
+    std::fs::create_dir_all(root.join("docs")).map_err(failed)?;
+    std::fs::write(
+        root.join("docs/todo_v0.7.1_model-completeness-spec-widgets.md"),
+        "## Containers\n\n### scroll_view\n\n## Notes\n\n### not_an_entry\n",
+    )
+    .map_err(failed)?;
+    let file = root.join("scripts/widget_units.toml");
+    let read = |named: &str, value: &str| -> Result<Result<(), String>, String> {
+        std::fs::write(
+            &file,
+            format!(
+                "slice = [\"button\"]\n[unit_names]\nm3a = {named}\n[staged.slice]\n\
+                 \"token.behavior.scroll\" = \"{value}\"\n[deferred.button]\n\
+                 menu_placement = \"containers\"\n"
+            ),
+        )
+        .map_err(failed)?;
+        Ok(units::Units::read(&file).map(|_| ()))
+    };
+    let listed = "[\"containers\"]";
+    assert_eq!(read(listed, "containers")?, Ok(()));
+    assert_eq!(read(listed, "scroll_view")?, Ok(()));
+    let refused = |value: &str| {
+        format!(
+            "{file:?}: `staged.slice.\"token.behavior.scroll\"` = \"{value}\" names no later \
+             unit, no hand-written unit, no unit `unit_names` lists and no catalogue entry"
+        )
+    };
+    assert_eq!(read(listed, "scroll_veiw")?, Err(refused("scroll_veiw")));
+    assert_eq!(read(listed, "not_an_entry")?, Err(refused("not_an_entry")));
+    assert_eq!(
+        read("\"containers\"", "containers")?,
+        Err(format!("{file:?}: `unit_names.m3a` is not a list"))
+    );
+    std::fs::remove_dir_all(&root).map_err(failed)?;
+    Ok(())
+}
+
+/// A key under `component.` is of the entry `component.<key>`, as
+/// check_facts_trace.py's `entry_of` names it: a fact of a component no
+/// enabled unit holds waits for that entry, and the per-unit report names
+/// it so (`kde-breeze`'s `component.title_widget` facts).
+#[test]
+fn units_component_entry() -> Result<(), String> {
+    for (key, entry) in [
+        ("component.title_widget.body.fill", "component.title_widget"),
+        ("component.title_widget", "component.title_widget"),
+        ("component", "component"),
+        ("button.body.fill", "button"),
+        ("token.focus.width", "token"),
+    ] {
+        assert_eq!(units::entry_of(key), entry, "{key}");
+    }
+    let units = units::Units::repository()?;
+    assert_eq!(
+        units.key_unit("component.title_widget.body.fill"),
+        "component.title_widget"
+    );
+    let platform = depth_platform(
+        "sizes = []\naxes = { states = [\"hover\"], conditions = [], contexts = [] }\n",
+        "{}",
+    )?;
+    assert_eq!(
+        depth::Depth::new(&platform, "kde-breeze", None)
+            .unit("component.title_widget.body.fill", None),
+        depth::Place::Later("component.title_widget".to_owned())
+    );
+    Ok(())
+}
+
 /// The units cross-check compares each fact's place (the staging review's
 /// S2): over the `unit_not_enabled` fixture, a file placing every fact as
 /// the gate does passes; one with two facts' places swapped, whose counts

@@ -8,8 +8,12 @@ use std::path::Path;
 
 use toml::{Table, Value};
 
+/// The units file's table of unit names listed before their units are
+/// (M3a's widget units).
+const NAMED: &str = "unit_names";
+
 /// The units file's tables that are no unit.
-const TABLES: [&str; 7] = [
+const TABLES: [&str; 8] = [
     "deferred",
     "hand_written",
     "prefixes",
@@ -17,7 +21,124 @@ const TABLES: [&str; 7] = [
     "kept",
     "at_depth",
     "later",
+    NAMED,
 ];
+
+/// The widget catalogue, relative to the repository root, whose entries a
+/// `[staged]` or `[deferred]` value may name.
+const CATALOGUE: &str = "docs/todo_v0.7.1_model-completeness-spec-widgets.md";
+
+/// The catalogue's entry names (scripts/spec_catalogue.py's `entries`): each
+/// `### <name>` heading of a typed section (one of M3a's six, or one whose
+/// title starts `Typed widgets`) and each `#### component.<key>` heading of
+/// a `Keyed components` section.
+fn catalogue_entries(text: &str) -> Vec<String> {
+    const TYPED: [&str; 6] = [
+        "Window and chrome",
+        "Overlays",
+        "Buttons and toggles",
+        "Fields",
+        "Indicators",
+        "Containers",
+    ];
+    let mut out = Vec::new();
+    let mut section: Option<&str> = None;
+    for line in text.lines() {
+        if let Some(title) = line.strip_prefix("## ") {
+            section = Some(title.trim());
+        } else if let Some(name) = line.strip_prefix("### ") {
+            if section.is_some_and(|s| TYPED.contains(&s) || s.starts_with("Typed widgets")) {
+                out.push(name.trim().to_owned());
+            }
+        } else if let Some(rest) = line.strip_prefix("#### component.")
+            && section.is_some_and(|s| s.starts_with("Keyed components"))
+        {
+            let key: String = rest
+                .chars()
+                .take_while(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || *c == '_')
+                .collect();
+            if rest.starts_with(|c: char| c.is_ascii_lowercase() || c == '_') {
+                out.push(format!("component.{key}"));
+            }
+        }
+    }
+    out
+}
+
+/// Each `[staged.<unit>]` path and `[deferred.<widget>]` value or part's
+/// field, as the units file spells its key, with the unit it names, in the
+/// file's order.
+fn waiting_values(data: &Table) -> Vec<(String, String)> {
+    let table = |name: &str| data.get(name).and_then(Value::as_table);
+    let mut out = Vec::new();
+    for (unit, paths) in table("staged").into_iter().flatten() {
+        for (staged, value) in paths.as_table().into_iter().flatten() {
+            let value = value.as_str().unwrap_or_default().to_owned();
+            out.push((format!("staged.{unit}.\"{staged}\""), value));
+        }
+    }
+    for (widget, values) in table("deferred").into_iter().flatten() {
+        for (name, value) in values.as_table().into_iter().flatten() {
+            let value = value.as_str().unwrap_or_default().to_owned();
+            let key = if name.contains('.') {
+                format!("deferred.{widget}.\"{name}\"")
+            } else {
+                format!("deferred.{widget}.{name}")
+            };
+            out.push((key, value));
+        }
+    }
+    out
+}
+
+/// Why a `[staged]` or `[deferred]` value of `data` (the units file at
+/// `path`) names none of the units a path may wait for (S6.1, ADD-A147;
+/// check_facts_trace.py's `check_waiting`): a `[[later]]` unit, a
+/// `[hand_written]` unit, a unit `[unit_names]` lists or a catalogue entry,
+/// the catalogue (at [`CATALOGUE`] beside the file's `scripts/` folder)
+/// read only for a value none of the others names; and why a
+/// `[unit_names]` is no table of lists of names.
+fn check_waiting(data: &Table, path: &Path, later: &[Later]) -> Result<(), String> {
+    let mut known: Vec<String> = later.iter().map(|unit| unit.name.clone()).collect();
+    if let Some(hand) = data.get("hand_written").and_then(Value::as_table) {
+        known.extend(hand.keys().cloned());
+    }
+    match data.get(NAMED) {
+        None => {}
+        Some(Value::Table(named)) => {
+            for (milestone, names) in named {
+                known.extend(list(names, &format!("{path:?}: `{NAMED}.{milestone}`"))?);
+            }
+        }
+        Some(_) => return Err(format!("{path:?}: `{NAMED}` is not a table")),
+    }
+    let unknown: Vec<(String, String)> = waiting_values(data)
+        .into_iter()
+        .filter(|(_, value)| !known.contains(value))
+        .collect();
+    let Some((first_key, first_value)) = unknown.first() else {
+        return Ok(());
+    };
+    let catalogue = path
+        .parent()
+        .and_then(Path::parent)
+        .map(|root| root.join(CATALOGUE))
+        .ok_or_else(|| format!("{path:?}: no repository root above it"))?;
+    let text = std::fs::read_to_string(&catalogue).map_err(|error| {
+        format!(
+            "{path:?}: `{first_key}` = {first_value:?} names no later, hand-written or listed \
+             unit, and the catalogue that may name it an entry cannot be read: {error}"
+        )
+    })?;
+    let entries = catalogue_entries(&text);
+    match unknown.iter().find(|(_, value)| !entries.contains(value)) {
+        Some((key, value)) => Err(format!(
+            "{path:?}: `{key}` = {value:?} names no later unit, no hand-written unit, no unit \
+             `{NAMED}` lists and no catalogue entry"
+        )),
+        None => Ok(()),
+    }
+}
 
 /// The unit suffixes a path's segment drops before it is compared (S1).
 const SUFFIXES: [&str; 4] = ["_px", "_ms", "_deg", "_pt"];
@@ -77,6 +198,23 @@ pub struct Units {
     /// Each path `[staged]` stages or `[deferred]` defers, by its segments,
     /// with the unit it waits for, in the file's order.
     waiting_paths: Vec<(Vec<String>, String)>,
+}
+
+/// The catalogue entry a key, a path or a state model's `widget` names
+/// (check_facts_trace.py's `entry_of`): `component.<key>` under
+/// `component.`, else its first segment (a widget, or `role`, `token`,
+/// `input`).
+pub fn entry_of(key: &str) -> &str {
+    let mut ends = key.match_indices('.').map(|(at, _)| at);
+    let first = ends.next().unwrap_or(key.len());
+    let entry = key.get(..first).unwrap_or(key);
+    if entry == "component"
+        && first < key.len()
+        && let Some(end) = ends.next().or(Some(key.len()))
+    {
+        return key.get(..end).unwrap_or(key);
+    }
+    entry
 }
 
 /// A path's segments, each without its unit suffix.
@@ -297,9 +435,11 @@ impl Units {
                 list(conditions, &format!("{path:?}: `at_depth.{prefix}`"))?,
             ));
         }
+        let later = read_later(&data, path)?;
+        check_waiting(&data, path, &later)?;
         Ok(Units {
             units,
-            later: read_later(&data, path)?,
+            later,
             at_depth,
             waiting_paths,
         })
@@ -356,8 +496,8 @@ impl Units {
     }
 
     /// The unit a key no enabled unit holds waits for: the one the longest
-    /// `[staged]` or `[deferred]` path above it names, else its first
-    /// segment (an entry of a unit not enabled; check_facts_trace.py's
+    /// `[staged]` or `[deferred]` path above it names, else its entry
+    /// ([`entry_of`]: an entry of a unit not enabled; check_facts_trace.py's
     /// `key_unit`).
     pub fn key_unit(&self, key: &str) -> String {
         let path = segments(key);
@@ -365,10 +505,7 @@ impl Units {
             .iter()
             .filter(|(prefix, _)| under(&path, prefix))
             .max_by_key(|(prefix, _)| prefix.len())
-            .map_or_else(
-                || path.first().cloned().unwrap_or_default(),
-                |(_, unit)| unit.clone(),
-            )
+            .map_or_else(|| entry_of(key).to_owned(), |(_, unit)| unit.clone())
     }
 
     /// The later unit not enabled that holds a variant (`variant`) or a
