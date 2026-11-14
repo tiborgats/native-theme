@@ -1,0 +1,179 @@
+[light] platform offscreen | style breeze Breeze::Style
+[light] palette Window #eff0f1 WindowText #232629 Base #ffffff Text #232629 Button #fcfcfc Highlight #3daee9 Mid #c4c8cc Inactive Highlight #c2e0f5 Inactive HighlightedText #232629
+[light] app font Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0 | QFontInfo family Noto Sans pointSizeF 9.75 pixelSize 13
+[light] screen logicalDPI 96.0 physicalDPI 100.0 dpr 1.0
+[light] cursor pos PySide6.QtCore.QRect(0, 0, 800, 800)
+[light] ==== 1 scroll bar
+[light] list: isActiveWindow True hasFocus True
+[light] saved sb_list_focused_light.png size 300x200
+[light] list_focused: scrollbar visible True geometry-in-owner x=279 y=0 w=21 h=200 range 0..92 value 0
+[light] list_focused: viewport-in-owner x=0 y=0 w=279 h=200 | viewport sample (x=274, y=195) = #ffffff
+[light] list_focused: track sample (x=289, y=185) = #ffffff  expected viewport #ffffff
+[light] list_focused: track samples x=282,297 at y=185: #ffffff #ffffff
+[light] list_focused: middle column non-track rows (relative to bar top): [3, 4, 5]...[20, 21, 22] count 20
+[light] list_focused: row through handle middle y=12, x=279..299: ['#d3d4d4', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#b9e0f5', '#b1d9ef', '#b1d9ef', '#b1d9ef', '#b1d9ef', '#b1d9ef', '#b1d9ef', '#b9e0f5', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff']
+[light] list_focused: non-track columns in that row (relative): [0, 7, 8, 9, 10, 11, 12, 13, 14]
+[light] list_focused: handle fill at centre (x=289, y=12) = #b1d9ef; handle span rows 3..22 (length 20)
+[light] list_focused: separator column x=279 at y=185 = #d3d4d4; x=278 (viewport side) = #ffffff; x=280 = #ffffff | expected #232629 @0.2 over #ffffff = #d3d4d4
+[light] list after clearFocus: isActiveWindow True hasFocus False focusWidget None
+[light] saved sb_list_light.png size 300x200
+[light] list: scrollbar visible True geometry-in-owner x=279 y=0 w=21 h=200 range 0..92 value 0
+[light] list: viewport-in-owner x=0 y=0 w=279 h=200 | viewport sample (x=274, y=195) = #ffffff
+[light] list: track sample (x=289, y=185) = #ffffff  expected viewport #ffffff
+[light] list: track samples x=282,297 at y=185: #ffffff #ffffff
+[light] list: middle column non-track rows (relative to bar top): [3, 4, 5]...[20, 21, 22] count 20
+[light] list: row through handle middle y=12, x=279..299: ['#d3d4d4', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#bec0c0', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#bec0c0', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff']
+[light] list: non-track columns in that row (relative): [0, 7, 8, 9, 10, 11, 12, 13, 14]
+[light] list: handle fill at centre (x=289, y=12) = #cbcdcd; handle span rows 3..22 (length 20)
+[light] list: separator column x=279 at y=185 = #d3d4d4; x=278 (viewport side) = #ffffff; x=280 = #ffffff | expected #232629 @0.2 over #ffffff = #d3d4d4
+[light] scrollarea: isActiveWindow True hasFocus True focusWidget <PySide6.QtWidgets.QScrollArea(0x5597873c79b0) at 0x7f32ccba4400>
+[light] saved sb_scrollarea_focused_light.png size 300x200
+[light] scrollarea_focused: scrollbar visible True geometry-in-owner x=279 y=0 w=21 h=200 range 0..1800 value 0
+[light] scrollarea_focused: viewport-in-owner x=0 y=0 w=279 h=200 | viewport sample (x=274, y=195) = #eff0f1
+[light] scrollarea_focused: track sample (x=289, y=185) = #eff0f1  expected viewport #eff0f1
+[light] scrollarea_focused: track samples x=282,297 at y=185: #eff0f1 #eff0f1
+[light] scrollarea_focused: middle column non-track rows (relative to bar top): [3, 4, 5]...[20, 21, 22] count 20
+[light] scrollarea_focused: row through handle middle y=12, x=279..299: ['#c6c8c9', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#b2daef', '#b1d9ef', '#b1d9ef', '#b1d9ef', '#b1d9ef', '#b1d9ef', '#b1d9ef', '#b2daef', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1']
+[light] scrollarea_focused: non-track columns in that row (relative): [0, 7, 8, 9, 10, 11, 12, 13, 14]
+[light] scrollarea_focused: handle fill at centre (x=289, y=12) = #b1d9ef; handle span rows 3..22 (length 20)
+[light] scrollarea_focused: separator column x=279 at y=185 = #c6c8c9; x=278 (viewport side) = #eff0f1; x=280 = #eff0f1 | expected #232629 @0.2 over #eff0f1 = #c6c8c9
+[light] scrollarea after clearFocus: hasFocus False focusWidget None
+[light] saved sb_scrollarea_light.png size 300x200
+[light] scrollarea: scrollbar visible True geometry-in-owner x=279 y=0 w=21 h=200 range 0..1800 value 0
+[light] scrollarea: viewport-in-owner x=0 y=0 w=279 h=200 | viewport sample (x=274, y=195) = #eff0f1
+[light] scrollarea: track sample (x=289, y=185) = #eff0f1  expected viewport #eff0f1
+[light] scrollarea: track samples x=282,297 at y=185: #eff0f1 #eff0f1
+[light] scrollarea: middle column non-track rows (relative to bar top): [3, 4, 5]...[20, 21, 22] count 20
+[light] scrollarea: row through handle middle y=12, x=279..299: ['#c6c8c9', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#b8baba', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#b8baba', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1']
+[light] scrollarea: non-track columns in that row (relative): [0, 7, 8, 9, 10, 11, 12, 13, 14]
+[light] scrollarea: handle fill at centre (x=289, y=12) = #cbcdcd; handle span rows 3..22 (length 20)
+[light] scrollarea: separator column x=279 at y=185 = #c6c8c9; x=278 (viewport side) = #eff0f1; x=280 = #eff0f1 | expected #232629 @0.2 over #eff0f1 = #c6c8c9
+[light] scrollarea: viewport backgroundRole ColorRole.Window autoFill False content backgroundRole ColorRole.Window content autoFill False
+[light] metrics: PM_ScrollBarExtent 21 PM_ScrollBarSliderMin 20
+[light] saved sb_option_rest_light.png size 21x200
+[light] option rest: slider rect 0,3,21x64; row y=34: ['#d3d4d4', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#bec0c0', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#cbcdcd', '#bec0c0', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff']
+[light] option rest: handle centre (x=10,y=34) = #cbcdcd; track (x=10,y=190) = #ffffff; separator (x=0,y=190) = #d3d4d4 (canvas filled with Base #ffffff)
+[light] saved sb_option_hover_light.png size 21x200
+[light] option hover: slider rect 0,3,21x64; row y=34: ['#d3d4d4', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#aedcf4', '#96cfed', '#96cfed', '#96cfed', '#96cfed', '#96cfed', '#96cfed', '#aedcf4', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff']
+[light] option hover: handle centre (x=10,y=34) = #96cfed; track (x=10,y=190) = #ffffff; separator (x=0,y=190) = #d3d4d4 (canvas filled with Base #ffffff)
+[light] list real hover: slider rect 0,3,21x20, moving pointer to 10,12
+[light] list real hover: sb.underMouse() True
+[light] saved sb_list_hovered_light.png size 300x200
+[light] list real hover: handle centre (x=289, y=12) = #96cfed; row: ['#d3d4d4', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#aedcf4', '#96cfed', '#96cfed', '#96cfed', '#96cfed', '#96cfed', '#96cfed', '#aedcf4', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff']
+[light] ==== 2 popup menu
+[light] saved menu_light.png size 164x187
+[light] menu: image 164x187 format Format.Format_ARGB32_Premultiplied hasAlpha True; menu font Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0 family Noto Sans pixelSize 13
+[light] menu: actionGeometry Edit(active): x=4 y=4 w=156 h=29
+[light] menu: actionGeometry Print(icon): x=4 y=33 w=156 h=29
+[light] menu: actionGeometry Lock toolbars(checkable): x=4 y=62 w=156 h=29
+[light] menu: actionGeometry Properties: x=4 y=91 w=156 h=29
+[light] menu: actionGeometry separator: x=4 y=120 w=156 h=5
+[light] menu: actionGeometry More(submenu): x=4 y=125 w=156 h=29
+[light] menu: actionGeometry Exit: x=4 y=154 w=156 h=29
+[light] menu: panel sample (x=152, y=105) = #f4f5f5; (x=82, y=92) = #f4f5f5; (x=10, y=181) = #f4f5f5
+[light] menu: left edge row y=105 x=0..5: ['#c6c8c9', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5']; right edge x=158..163: ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f3f4f4', '#fec6c8c9']
+[light] menu: top edge column x=82 y=0..5: ['#c6c8c9', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#399acc', '#bcdff1']; bottom y=181..186: ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f3f4f4', '#fec6c8c9']
+[light] menu: corner (0,0)..(3,3) diagonal: ['#00000000', '#37cccccc', '#f4f5f5', '#f4f5f5']
+[light] menu: active row y=18: highlight columns 4..159 (width 156); pixels x=3..6: ['#f4f5f5', '#399acc', '#bcdff1', '#bcdff1']; x=157..160: ['#bcdff1', '#bbdef0', '#3b9bcd', '#f4f5f5']
+[light] menu: active column x=139 y=1..35: first 5 ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#399acc', '#bcdff1'] last 5 ['#bbdef0', '#3b9bcd', '#f4f5f5', '#f4f5f5', '#f4f5f5']; highlight rows 4..32 (height 29)
+[light] menu: active fill (x=139, y=18) = #bcdff1
+[light] menu: active text glyphs vs fill: {'dark': ('#232629', 59, 14), 'light': ('#9bb7c6', 76, 21), 'bbox': (58, 13, 79, 22)}
+[light] menu: highlight left edge 4 -> active text ink left 58: 54 px; first char 'E' leftBearing 1
+[light] menu: normal text glyphs (Properties) {'dark': ('#232629', 63, 103), 'light': ('#cbcccd', 95, 103), 'bbox': (58, 100, 119, 112)}
+[light] menu: icon (pure #ff0000) bbox x=37..52 y=39..54 (item row y=33..61)
+[light] menu: Print text glyphs right of icon: {'dark': ('#232629', 63, 45), 'light': ('#c7c8c9', 82, 50), 'bbox': (58, 42, 85, 51)}
+[light] menu: icon right edge x=52 -> text ink left x=58: blank columns between = 5; 'P' leftBearing 1
+[light] menu: check box item, non-panel bbox in x=5..44: {'dark': ('#c6c8c9', 15, 68), 'light': ('#d7d9da', 12, 69), 'bbox': (10, 68, 25, 83)}
+[light] menu: separator column x=82 rows 120..124: ['#f4f5f5', '#f4f5f5', '#c6c8c9', '#f4f5f5', '#f4f5f5']
+[light] menu: separator line y=122 colour #c6c8c9; non-panel x (excluding border columns) 8..156; pixels x=7..9: ['#f4f5f5', '#c6c8c9', '#c6c8c9'], x=155..157: ['#c6c8c9', '#c6c8c9', '#f4f5f5']
+[light] saved menu_textonly_light.png size 70x95
+[light] menu_textonly: image 70x95 format Format.Format_ARGB32_Premultiplied hasAlpha True; menu font Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0 family Noto Sans pixelSize 13
+[light] menu_textonly: actionGeometry Hide: x=4 y=4 w=62 h=29
+[light] menu_textonly: actionGeometry Edit(active): x=4 y=33 w=62 h=29
+[light] menu_textonly: actionGeometry Mark: x=4 y=62 w=62 h=29
+[light] menu_textonly: panel sample (x=58, y=18) = #f4f5f5; (x=35, y=5) = #f4f5f5; (x=10, y=89) = #f4f5f5
+[light] menu_textonly: left edge row y=18 x=0..5: ['#c6c8c9', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5']; right edge x=64..69: ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f3f4f4', '#fec6c8c9']
+[light] menu_textonly: top edge column x=35 y=0..5: ['#c6c8c9', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5']; bottom y=89..94: ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f3f4f4', '#fec6c8c9']
+[light] menu_textonly: corner (0,0)..(3,3) diagonal: ['#00000000', '#37cccccc', '#f4f5f5', '#f4f5f5']
+[light] menu_textonly: active row y=47: highlight columns 4..65 (width 62); pixels x=3..6: ['#f4f5f5', '#399acc', '#bcdff1', '#bcdff1']; x=63..66: ['#bcdff1', '#bbdef0', '#3b9bcd', '#f4f5f5']
+[light] menu_textonly: active column x=45 y=30..64: first 5 ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#399acc', '#bcdff1'] last 5 ['#bbdef0', '#3b9bcd', '#f4f5f5', '#f4f5f5', '#f4f5f5']; highlight rows 33..61 (height 29)
+[light] menu_textonly: active fill (x=45, y=47) = #bcdff1
+[light] menu_textonly: active text glyphs vs fill: {'dark': ('#232629', 22, 43), 'light': ('#9bb6c5', 26, 47), 'bbox': (21, 42, 37, 51)}
+[light] menu_textonly: highlight left edge 4 -> active text ink left 21: 17 px; first char 'E' leftBearing 1
+[light] menu_textonly: non-active 'Hide' text ink bbox (21, 13, 47, 22) (menu left edge x=0, item rect x=4)
+[light] ==== 3 item views
+[light] saved view_prim_hover_light.png size 220x44
+[light] view prim hover: fill centre (x=180,y=22) = #c4e6f8; row y=22 x=6..16: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#5ebbec', '#c4e6f8', '#c4e6f8', '#c4e6f8', '#c4e6f8', '#c4e6f8']; column x=180 y=6..14: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#5ebbec', '#c4e6f8', '#c4e6f8', '#c4e6f8']
+[light] saved view_item_hover_light.png size 220x44
+[light] view item hover: fill (x=180,y=22) = #c4e6f8; text glyphs {'dark': ('#232629', 18, 18), 'light': ('#a3becd', 63, 20), 'bbox': (17, 18, 67, 26)}
+[light] saved view_prim_selected_active_light.png size 220x44
+[light] view prim selected_active: fill centre (x=180,y=22) = #3daee9; row y=22 x=6..16: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#3daee9', '#3daee9', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; column x=180 y=6..14: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#3daee9', '#3daee9', '#3daee9', '#3daee9']
+[light] saved view_item_selected_active_light.png size 220x44
+[light] view item selected_active: fill (x=180,y=22) = #3daee9; text glyphs {'dark': ('#66bfed', 63, 20), 'light': ('#ffffff', 18, 18), 'bbox': (17, 18, 67, 26)}
+[light] saved view_prim_selected_inactive_light.png size 220x44
+[light] view prim selected_inactive: fill centre (x=180,y=22) = #c2e0f5; row y=22 x=6..16: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#c2e0f5', '#c2e0f5', '#c2e0f5', '#c2e0f5', '#c2e0f5', '#c2e0f5']; column x=180 y=6..14: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#c2e0f5', '#c2e0f5', '#c2e0f5', '#c2e0f5']
+[light] saved view_item_selected_inactive_light.png size 220x44
+[light] view item selected_inactive: fill (x=180,y=22) = #c2e0f5; text glyphs {'dark': ('#232629', 18, 18), 'light': ('#a1bacb', 63, 20), 'bbox': (17, 18, 67, 26)}
+[light] saved view_prim_selected_hover_light.png size 220x44
+[light] view prim selected_hover: fill centre (x=180,y=22) = #44bfff; row y=22 x=6..16: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#44bfff', '#44bfff', '#44bfff', '#44bfff', '#44bfff', '#44bfff']; column x=180 y=6..14: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#44bfff', '#44bfff', '#44bfff', '#44bfff']
+[light] saved view_item_selected_hover_light.png size 220x44
+[light] view item selected_hover: fill (x=180,y=22) = #44bfff; text glyphs {'dark': ('#6fceff', 31, 20), 'light': ('#ffffff', 18, 18), 'bbox': (17, 18, 67, 26)}
+[light] real list: isActiveWindow True hasFocus True
+[light] saved view_list_selected_focused_light.png size 260x200
+[light] real list selected+focused: row rect 0,24,260x24; fill (x=239,y=35) = #3daee9; text {'dark': ('#68c0ee', 46, 34), 'light': ('#ffffff', 39, 35), 'bbox': (6, 31, 94, 40)}
+[light] real list column x=239 rows 0..96: ['#3daee9', '#3eafe9', '#ffffff']
+[light] real list rows 2..3 column x=239: ['#3eafe9', '#ffffff', '#ffffff', '#ffffff', '#ffffff']
+[light] real list after other window activated: isActiveWindow False other active True
+[light] saved view_list_selected_inactive_light.png size 260x200
+[light] real list selected, window inactive: fill (x=239,y=35) = #c2e0f5; text {'dark': ('#232629', 39, 35), 'light': ('#a2bbcc', 46, 38), 'bbox': (6, 31, 94, 40)}
+[light] saved view_list_hover_light.png size 260x200
+[light] real list hover row 3 (active window True): fill (x=239,y=83) = #c4e6f8
+[light] saved view_table_light.png size 400x200
+[light] table showGrid True gridStyle PenStyle.SolidLine palette Mid #c4c8cc app palette Mid #c4c8cc
+[light] styleHint SH_Table_GridLineColor with option+widget: raw -3880756 -> #c4c8cc; without option: raw -1 -> #ffffff
+[light] table viewport at 20,30; row0 height 30; column x=170 around row0/row1 boundary y=57..61: ['#ffffff', '#ffffff', '#c4c8cc', '#ffffff', '#ffffff']
+[light] table row y=75 around col0/col1 boundary x=117..121: ['#ffffff', '#ffffff', '#c4c8cc', '#ffffff', '#ffffff']
+[light] saved header_table_light.png size 380x30
+[light] table header size 380x30 section0 width 100
+[light] table header column x=90: ['#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#d1d2d2']
+[light] table header row y=15 x=96..103: ['#fcfcfc', '#fcfcfc', '#fcfcfc', '#d1d2d2', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc']
+[light] table header section fill (x=90, y=15) = #fcfcfc
+[light] table header text glyphs: {'dark': ('#232629', 33, 11), 'light': ('#cececf', 55, 13), 'bbox': (32, 11, 67, 19)}
+[light] saved view_tree_light.png size 300x220
+[light] tree row height 24; colours in column x=80 over rows 0..4: ['#ffffff']
+[light] saved header_tree_light.png size 300x30
+[light] tree header size 300x30 section0 width 100
+[light] tree header column x=90: ['#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#d1d2d2']
+[light] tree header row y=15 x=96..103: ['#fcfcfc', '#fcfcfc', '#fcfcfc', '#d1d2d2', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc']
+[light] tree header section fill (x=90, y=15) = #fcfcfc; text glyphs {'dark': ('#232629', 33, 15), 'light': ('#cecfd0', 12, 16), 'bbox': (7, 11, 41, 19)}
+[light] ==== 4 push button
+[light] QFontMetrics(app font).height() 18 ascent 14 descent 4 lineSpacing 18
+[light] dialog active True b_def.isDefault True
+[light] QPushButton('OK').sizeHint() = 84x34; text width 18
+[light] QPushButton('A much longer label').sizeHint() = 140x34; text width 122
+[light] saved button_plain_light.png size 140x34
+[light] button plain: size 140x34; row y=17 x=0..7: ['#eff0f1', '#d1d1d2', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc']; column x=70 y=0..7: ['#eff0f1', '#d1d1d2', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc']; bottom y=26..33: ['#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#fcfcfc', '#d1d1d2', '#d1d2d3']
+[light] button plain: fill sample (x=8, y=17) = #fcfcfc; text glyphs {'dark': ('#232629', 64, 12), 'light': ('#cdcdce', 61, 13), 'bbox': (56, 12, 83, 21)}
+[light] saved button_default_light.png size 141x34
+[light] button default: size 141x34; row y=17 x=0..7: ['#eff0f1', '#87c0dd', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8']; column x=70 y=0..7: ['#eff0f1', '#87c0dd', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8']; bottom y=26..33: ['#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#d6ecf8', '#87c0dd', '#d1d2d3']
+[light] button default: fill sample (x=8, y=17) = #d6ecf8; text glyphs {'dark': ('#232629', 86, 12), 'light': ('#b2c5ce', 77, 19), 'bbox': (49, 12, 92, 21)}
+[light] QLineEdit().sizeHint() = 135x32
+[light] QComboBox(one item).sizeHint() = 67x32
+[light] QCheckBox('x').sizeHint() = 31x22
+[light] PM_IndicatorWidth 20 PM_IndicatorHeight 20
+[light] ==== 5 metrics
+[light] PM_MessageBoxIconSize: no widget 64; QMenu 64
+[light] PM_ScrollBarExtent: no widget 21; QMenu 21
+[light] PM_ScrollBarSliderMin: no widget 20; QMenu 20
+[light] PM_MenuHMargin: no widget 4; QMenu 4
+[light] PM_MenuVMargin: no widget 4; QMenu 4
+[light] PM_SmallIconSize: no widget 16; QMenu 16
+[light] PM_ButtonMargin: no widget 6; QMenu 6
+[light] PM_DefaultFrameWidth: no widget 0; QMenu 0
+[light] PM_FocusFrameHMargin: no widget 2; QMenu 2
+[light] PM_MenuPanelWidth: no widget 0; QMenu 0
+[light] SH_ScrollBar_Transient 0 with scroll bar widget 0
+[light] ==== 6 fonts
+[light] QFont('Noto Sans',10): QFontInfo family Noto Sans pointSizeF 9.75 pixelSize 13
+[light] QFontMetricsF: height 17.6875 ascent 13.890625 descent 3.796875 lineSpacing 17.6875 leading 0.0
+[light] logicalDotsPerInch 96.0

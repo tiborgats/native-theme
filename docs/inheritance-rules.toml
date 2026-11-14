@@ -192,7 +192,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # menu (§2.6)
 "menu.background_color"                      = "defaults.background_color"    # see wrong_safety_nets
-"menu.separator_color"                       = "defaults.border.color"
+"menu.separator_color"                       = "defaults.border.color"         # see wrong_safety_nets
 "menu.icon_size"                             = "defaults.icon_sizes.toolbar"
 "menu.hover_background"                      = "defaults.selection_background"  # see wrong_safety_nets
 "menu.hover_text_color"                      = "defaults.selection_text_color"  # see wrong_safety_nets
@@ -242,7 +242,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "list.selection_background"                  = "defaults.selection_background"
 "list.selection_text_color"                  = "defaults.selection_text_color"
 "list.header_background"                     = "defaults.surface_color"       # see wrong_safety_nets
-"list.grid_color"                            = "defaults.border.color"
+"list.grid_color"                            = "defaults.border.color"         # see wrong_safety_nets
 
 # popover (§2.16) — no additional uniform rules beyond border/font
 
@@ -318,7 +318,7 @@ gnome    = "input.font.color"  # currentColor (libadwaita 1.10.0 _entries.scss:1
 fallback = "defaults.background_color"
 macos    = "preset"
 windows  = "preset"
-kde      = "defaults.background_color"
+kde      = "preset"                       # no fill: Breeze paints no groove, the view shows through (platform-facts.md:1304, §2.8)
 gnome    = "preset"
 
 [per_platform."spinner.fill_color"]
@@ -536,7 +536,7 @@ why_wrong     = "KDE uses surface (View bg); all have distinct APIs"
 
 [wrong_safety_nets."menu.background_color"]
 inherits_from = "defaults.background_color"
-why_wrong     = "macOS vibrancy and Win COLOR_MENU differ; only KDE matches"
+why_wrong     = "macOS vibrancy and Win COLOR_MENU differ; KDE's Qt Widgets menu panel is mix(Window, Base, 0.3), #f4f5f5 / #1c1f22 under Breeze, four to five levels from the window colour, which kde-breeze keeps until the field's other readers allow (platform-facts.md:1253, §2.6)"
 
 [wrong_safety_nets."input.font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
@@ -564,11 +564,11 @@ why_wrong     = "KDE View group and GNOME .list fg are distinct from defaults"
 
 [wrong_safety_nets."list.header_font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
-why_wrong     = "macOS headerTextColor, KDE Header group, GNOME columnview header distinct"
+why_wrong     = "macOS headerTextColor, KDE's [Colors:Button] ForegroundNormal (Qt letters a header section in ButtonText; Breeze never reads the Header set for it, platform-facts.md:1428, §2.15) and GNOME's columnview header are distinct"
 
 [wrong_safety_nets."scrollbar.thumb_color"]
 inherits_from = "defaults.muted_color"
-why_wrong     = "Scrollbar thumb is a semi-transparent UI control; muted_color is a text color"
+why_wrong     = "Scrollbar thumb is a semi-transparent UI control; muted_color is a text color (KDE's is WindowText at 0.175 over the window, #cbcdcd / #46494b under Breeze, platform-facts.md:1305, §2.8)"
 
 [wrong_safety_nets."scrollbar.thumb_hover_color"]
 inherits_from = "defaults.muted_color"
@@ -584,11 +584,11 @@ why_wrong     = "Windows (ButtonBackgroundPointerOver), GNOME (.button:hover) an
 
 [wrong_safety_nets."menu.hover_background"]
 inherits_from = "defaults.selection_background"
-why_wrong     = "Windows' SubtleFillColorSecondary, GNOME's :hover modelbutton bg and Material's on-surface state layer are not the selection; macOS (selectedContentBackgroundColor) and KDE ([Colors:Selection]) take a selection colour (platform-facts.md:1269, §2.6)"
+why_wrong     = "Windows' SubtleFillColorSecondary, GNOME's :hover modelbutton bg, Material's on-surface state layer and KDE's DecorationFocus at alpha 0.3 (#3daee94d, a layer, not the opaque selection) are not the selection; macOS (selectedContentBackgroundColor) takes a selection colour (platform-facts.md:1269, §2.6)"
 
 [wrong_safety_nets."menu.hover_text_color"]
 inherits_from = "defaults.selection_text_color"
-why_wrong     = "Windows keeps defaults.text_color, GNOME its :hover fg (no change), Material on-surface; macOS (selectedMenuItemTextColor) and KDE ([Colors:Selection] ForegroundNormal) take a selection text colour (platform-facts.md:1270, §2.6)"
+why_wrong     = "Windows keeps defaults.text_color, GNOME its :hover fg (no change), Material on-surface, KDE the window text ([Colors:Window] ForegroundNormal); macOS (selectedMenuItemTextColor) takes a selection text colour (platform-facts.md:1270, §2.6)"
 
 [wrong_safety_nets."menu.disabled_text_color"]
 inherits_from = "defaults.disabled_text_color"
@@ -649,6 +649,14 @@ why_wrong     = "Windows fills an on switch with AccentFillColorDefault, the acc
 [wrong_safety_nets."segmented_control.active_background"]
 inherits_from = "defaults.accent_color"
 why_wrong     = "GNOME's AdwToggleGroup draws a checked toggle in --active-toggle-bg-color, white in light and white at 20 % in dark (libadwaita 1.10.0 _toggle-group.scss:79-80, _colors.scss:238, :245-247), and macOS 14 and 15 draw the selected segment raised and neutral, #ffffff / #666666 measured (platform-facts.md:1636, §2.25), and the Windows Community Toolkit's Segmented fills a selected item with ControlFillColorDefault, #B3FFFFFF / #0FFFFFFF (SegmentedItem.xaml:130-131, v8.2.251219; platform-facts.md:1636): a neutral pill, not the accent"
+
+[wrong_safety_nets."menu.separator_color"]
+inherits_from = "defaults.border.color"
+why_wrong     = "KDE's separator is mix(Window, WindowText, frameContrast), #c6c8c9 / #4c4e51 under Breeze, where kde-breeze's defaults.border.color is #bcc0bf / #4d545b; macOS (separatorColor), GNOME (its separator) and Material (divider-color) name a colour of their own; Windows inherits it (platform-facts.md:1254, §2.6)"
+
+[wrong_safety_nets."list.grid_color"]
+inherits_from = "defaults.border.color"
+why_wrong     = "KDE's table grid is QPalette::Mid, the Window set's MidShade at the scheme's contrast, #c4c8cc / #1c1f21 under Breeze, where kde-breeze's defaults.border.color is #bcc0bf / #4d545b, far brighter in dark mode; kde-breeze keeps the inherited value until the field's other readers allow (platform-facts.md:1430, §2.15)"
 
 # ─── TextScale inheritance ────────────────────────────────────────────────
 #
