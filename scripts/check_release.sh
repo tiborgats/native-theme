@@ -1249,16 +1249,27 @@ else
     # outdated walks transitive deps and reports confusing duplicate-version
     # artifacts (e.g. "Latest 0.12.3" for hashbrown 0.17.0) from unrelated
     # subgraphs.
-    OUTDATED_OUT=$(cargo outdated --workspace --depth 1 2>&1)
+    #
+    # --exclude zbus: cargo outdated resolves every dependency at its newest
+    # release, and zbus 6 has no `blocking-api` feature, which native-theme's
+    # `watch` enables on zbus 5, so the run failed on zbus and listed nothing
+    # (2026-10-17 to 2026-11-14). zbus stays at 5 for the reasons in
+    # docs/todo.md ("Dependencies: zbus 6 ..."); the line printed below keeps
+    # the exclusion visible. Remove both with the move to zbus 6.
+    OUTDATED_OUT=$(cargo outdated --workspace --depth 1 --exclude zbus 2>&1)
     OUTDATED_STATUS=$?
     set -e
+    printf "${DIM}   zbus is not compared: it stays at 5, see docs/todo.md (Dependencies: zbus 6)${NC}\n"
     # A row is outdated when Latest ($4) is a version other than Project ($2).
     # Compat ($3) is `---` when every newer release is semver-incompatible, as
     # each 0.x minor bump is, so it is not the column to read. `--workspace`
     # lists a dependency under every member that has it, so each name and
-    # version is counted once.
-    OUTDATED_COUNT=$(printf "%s\n" "$OUTDATED_OUT" \
-        | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $4 ~ /^[0-9]/ && $2 != $4 && !seen[$1 " " $2]++ {c++} END {print c+0}')
+    # version is listed once. The count is the list's, so the two cannot
+    # disagree.
+    OUTDATED_ROWS=$(printf "%s\n" "$OUTDATED_OUT" \
+        | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $4 ~ /^[0-9]/ && $2 != $4 && !seen[$1 " " $2]++ {printf "   %s %s -> %s\n", $1, $2, $4}' \
+        | sort)
+    OUTDATED_COUNT=$(printf "%s\n" "$OUTDATED_ROWS" | awk 'NF {c++} END {print c+0}')
     if [ "$OUTDATED_STATUS" -ne 0 ]; then
         # A failed run lists no rows, so its count says nothing.
         print_warn "cargo outdated failed (exit $OUTDATED_STATUS): dependencies not checked"
@@ -1267,7 +1278,9 @@ else
         print_ok "All dependencies current"
     else
         print_warn "$OUTDATED_COUNT outdated dependency/dependencies"
-        printf "${DIM}%s${NC}\n" "$OUTDATED_OUT" | head -20
+        # The rows the count counts, instead of the first lines of the
+        # per-member tables, which showed only the first member's.
+        printf "${DIM}%s${NC}\n" "$OUTDATED_ROWS"
     fi
 fi
 

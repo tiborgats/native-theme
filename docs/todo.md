@@ -1630,6 +1630,56 @@ model, the platform presets and the three connectors
       checked", and lists nothing. Settle it with the zbus move, or replace the
       check with one that compares each direct dependency's requirement with
       crates.io's newest stable release without resolving the graph.
+      2026-11-14 (crates.io read that day): the condition above is met in
+      part. ashpd 0.14.0 (2026-11-05) requires zbus ^6.0.0, so native-theme's
+      own `portal` and `watch` can move (`native-theme/Cargo.toml:128`, `:136`;
+      `watch` then drops `zbus?/blocking-api`, `:43`, which zbus 6 does not
+      have: zbus 6 removed the blocking API, "Remove the blocking API" and
+      "Stop generating blocking proxies" in zbus 6.3.0's `CHANGELOG.md`, so
+      `native-theme/src/watch/gnome.rs`, which is written on
+      `zbus::blocking`'s `Connection` and `Proxy`, is ported to the async
+      API). Three costs keep it out of 0.7.1 and make it a maintainer's
+      decision, that port being the first: ashpd
+      0.14.0 and zbus 6.0.0 and 6.3.0 declare Rust 1.89, above the workspace's
+      1.88.0 (`Cargo.toml:20`); and accesskit_unix 0.24.1 (zbus ^5.19) and
+      atspi 0.30.0 (zbus ^5.5), the newest of each, are still on zbus 5, as is
+      the oo7 0.6.0 that GPUI Kit 0.9.1's graph locks (oo7 0.7.1 is on zbus
+      ^6.0), so every application that uses a connector would build zbus 5
+      and zbus 6 side by side, and the three `.cargo/audit.toml` entries would
+      stay. The check itself runs again: `--exclude zbus` no longer fails on
+      the GPUI graph, so `scripts/check_release.sh` passes it and prints that
+      zbus is not compared; what the check then listed is the next entry.
+
+### Dependencies: the newer releases the outdated check did not show (2026-11-14)
+
+- [ ] [v0.7.x] The "Outdated dependencies" check of `scripts/check_release.sh`
+      listed nothing from 2026-10-17 to 2026-11-14 (the entry above). Run with
+      `--exclude zbus` on 2026-11-14 it lists 20 direct dependencies. Ten need
+      only `Cargo.lock` to move, their requirements already take the newest
+      release, which the nightly dependency canary
+      (`.github/workflows/dependency-canary.yml`) builds and tests against, as
+      every application's own resolution does: arc-swap 1.9.5, inventory
+      0.3.25, jiff 0.2.43, notify 8.2.2, objc2 0.6.5, serde_json 1.0.154, syn
+      3.0.10, toml 1.2.1, unicase 2.10.0, xcap 0.9.10. The others need their
+      requirement changed, each a change of its own:
+      - egui, eframe, egui_extras and egui_kittest 0.37.0 (egui 0.37.0 is of
+        2026-10-15; the egui connector and its widgets crate are on 0.36.2,
+        and the requirement `egui = "0.36.2"` does not take 0.37). skrifa
+        (0.44.0, newest 0.50.0) and muda (0.20.0, newest 0.21.2) follow it:
+        their requirements are epaint's and eframe's own
+        (`connectors/native-theme-egui/Cargo.toml`, the comments above each).
+        An egui 0.37 application cannot use native-theme-egui until this is
+        done; it is a connector upgrade of the GPUI Kit kind, with its own
+        rationale.
+      - ashpd 0.14.0 with zbus 6: the entry above.
+      - resvg 0.50.0 (2026-11-11; `native-theme/Cargo.toml:74` has 0.48.1) and
+        fontdb 0.24.0 (2026-07-29; `:70` has 0.23). Before either moves, read
+        which resvg and fontdb the connectors' toolkits resolve, so the move
+        does not add a second copy to an application's build (`Cargo.lock`
+        already holds resvg 0.45.1, 0.46.0 and 0.48.1).
+      - windows-version 0.100.0 (2026-09-03; `native-theme/Cargo.toml:151` has
+        0.1.7). It declares Rust 1.95, above the workspace's 1.88.0, so it
+        waits for an MSRV decision.
 
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 
