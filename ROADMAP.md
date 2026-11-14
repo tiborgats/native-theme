@@ -82,7 +82,7 @@ thumb outlines; and theme-change integrations in the iced and gpui connectors
 It also moves the gpui connector to GPUI Kit 0.8.1 on gpui-pre 0.3.10, with a
 `gpui-fast` feature that builds it on GPUI Kit's other core, GPUI Fast 0.1.12.
 
-## v0.7.1 — gpui connector on GPUI Kit 0.9.1
+## v0.7.1 — GPUI Kit 0.9.1, and the KDE fixes from issue #4
 
 **Delivered:** the gpui connector builds against GPUI Kit 0.9.1 and requires
 gpui-component, gpui-base and gpui-kit 0.9.1 on gpui-pre 0.3.12 (on the
@@ -91,7 +91,23 @@ gpui-component, gpui-base and gpui-kit 0.9.1 on gpui-pre 0.3.12 (on the
 `to_theme` and `to_theme_config` set from `window.border.corner_radius`; its
 `WindowBorder` now draws the frame in the theme's border colour instead of a
 fixed grey; and `apply` keeps the application's `cursor_blink`, which
-native-theme does not model. The showcase shows 0.9.1's `SpeechIndicator`.
+native-theme does not model. The showcase shows 0.9.1's `SpeechIndicator`. It
+also fixes what a KDE application's author found overriding by hand (issue
+#4). The font DPI is 96 on every Linux desktop, so a scaled KDE session and an
+X11 session with `Xft.dpi` above 96 no longer draw text at the display's scale
+twice. A hovered menu item and a hovered list row are tinted as Breeze tints
+them, at 30 % under the normal text; the menu separator and the table header
+take Breeze's colours, the scroll bar's resting thumb is Breeze's grey with no
+track behind it, and the message box icon is 64 px. The gpui connector
+restores the three selection colours gpui-component caps after a mode switch,
+makes `to_hsla` public, and its README covers overriding theme values, the
+focus ring, and what only gpui-component can change. The platform facts for
+the focus ring, the default button, the menu panel and the table's grid are
+corrected too, and their values wait for a connector design; the selection of
+an unfocused view waits for a text colour the model does not have yet. The
+next step proposed is Breeze's hover outlines: Breeze shows hover on a button,
+a combo box, a check box and a slider handle by recolouring the outline, which
+the model can state for text inputs only.
 
 ## Model completeness: what native-theme does not carry
 

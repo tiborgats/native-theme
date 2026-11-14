@@ -907,6 +907,57 @@ and many have since drifted, as the archive's [README](README.md) warns.
       (macOS 26.6.2), the three galleries link both pairs and say so, and the
       `macos-macos-sonoma-*` PNGs are removed.
 
+### kde-breeze: the Qt Widgets menu fill
+
+- [x] [v0.7.x] From M4 T36 and the kde-breeze validator after it (2026-10-13):
+      Breeze's Qt Widgets menu is filled with `frameBackgroundColor()`,
+      mix(Window, Base, 0.3) (breezestyle.cpp `drawPanelMenuPrimitive`;
+      breezehelper.cpp:200-203, as the T36 implementer read them), while
+      `docs/platform-facts.md:1253` gives KDE's `menu.background_color` as
+      `[Colors:Window] BackgroundNormal`, which qqc2-desktop-style's `Menu.qml`
+      uses (`Kirigami.Theme.backgroundColor`). The row depends on which toolkit
+      it describes. Cite both at v6.7.5 / v6.31.0 in the facts cell, decide
+      which one kde-breeze states, and correct the preset or the cell.
+  *Closed 2026-11-14 in 0d8fe8d5:* the facts cell gives Breeze's Qt Widgets panel,
+  `mix(Window, Base, 0.3)`, #f4f5f5 / #1c1f22, measured
+  (`docs/evidence/breeze-offscreen/2026-11-13/`); kde-breeze keeps the window colour,
+  because the field's other readers (egui's `window_fill`, iced_aw's menu bar) would
+  move away from Breeze (issue #4, `docs/issues/0004_kde-hand-overrides-rationale.md`
+  §5.5). The rest, with qqc2-desktop-style's `Menu` fill, which 0.7.1 did not re-read,
+  continues in *KDE: what a Qt application under Breeze shows that native-theme does not
+  (issue #4)*, "KDE values that wait for a connector design", (3).
+
+### Linux font DPI: the `xrandr` fallback has no facts row
+
+- [x] [v0.7.x] From the kde-breeze validator after M4 T34 (D3, deferred to Step
+      8): the font-DPI chain ends with the physical DPI `xrandr` reports
+      (`detect_physical_dpi`, `native-theme/src/detect.rs:473-485`, the last
+      step of `detect_system_font_dpi`, `:636`), and no
+      `docs/platform-facts.md` row says that any desktop uses it for fonts.
+      Find a source (Plasma, gnome-settings-daemon) and add the row, or drop
+      the step so the chain ends at 96.
+  *Closed 2026-11-14 in 06c1716a:* the step is gone with the whole chain. On Plasma the
+  toolkits already scale by the display (the compositor's scale on Wayland, `Xft.dpi` ÷
+  96 on X11), so a font DPI that carried it counted it twice, and `xrandr`'s physical
+  DPI added the monitor's density on X11 and logical pixels under Xwayland; since 0.7.1
+  the font DPI is 96 on every Linux desktop (issue #4,
+  `docs/issues/0004_kde-hand-overrides-rationale.md` §4.1).
+
+### Closed items from Values the v0.7.1 gap map found against their sources
+
+- [x] [v0.7.x] **KDE's dialog icon.** `kde-breeze.toml` `[light.dialog] icon_size_px` and
+      `[dark.dialog] icon_size_px` are 32 and `platform-facts.md` §2.22 says "(none) —
+      per-dialog", but on Plasma Breeze's base class is KStyle, whose
+      `PM_MessageBoxIconSize` is `KIconLoader::SizeHuge`, 64 (KDE/frameworkintegration
+      v6.31.0 `src/kstyle/kstyle.cpp:449-451`; gap map K1.224†).
+  *Closed 2026-11-14 in abb3b761:* `docs/platform-facts.md:1568` gives 64,
+  `PM_MessageBoxIconSize` from KStyle, measured 64 under Breeze 6.8.2
+  (`docs/evidence/breeze-offscreen/2026-11-13/`), and kde-breeze states 64 in both modes
+  (issue #4, `docs/issues/0004_kde-hand-overrides-rationale.md` §4.5). No connector
+  reads the field yet; a helper for it is in *KDE: what a Qt application under Breeze
+  shows that native-theme does not (issue #4)*, "Font sizes and the KDE button and
+  dialog sizes".
+
 ---
 
 ## Toolkit Connectors
@@ -2175,6 +2226,26 @@ platform (`native-theme/src/watch/`).
 - [x] [v0.7.0] For M4 (connectors): on GNOME and Budgie X11 the connectors apply a text-scaling factor the toolkit already applied. gnome-settings-daemon 51.0 writes XSETTINGS `Xft/DPI` and the `Xft.dpi` resource as 96 × `text-scaling-factor` × the window scale (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), and winit 0.30.13 (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:146`) and gpui-pre-linux 0.3.8 (`src/linux/x11/client.rs:2672-2677`) take their X11 scale factor from that DPI over 96. On an X11 session, and for any client through Xwayland, the window scale then carries the factor, and `AccessibilityPreferences::scaled` multiplies text by it again: text at factor² × the UI scale, and every other length scaled by the factor, which GTK does not do. Native Wayland clients are right. The connectors should not apply the factor where winit or gpui already did. Found in the M2e Step 7 review (2026-10-11).
   *Closed by M8 T8 (2026-10-17, d6ca9889):* on an `x11` session (`$XDG_SESSION_TYPE`, `detect::session_type`, now also under the `portal` feature) the GNOME reader reports `text_scaling_factor = 1.0` (`toolkit_scale_carries_text_scale` in `native-theme/src/gnome/mod.rs`, injected through `GnomePortalData::session_type` as the KDE DPI chain injects it), so the connectors apply nothing the toolkit's `Xft.dpi` scale factor carried; on a `wayland` session, or where the session type is not set, the factor is reported and applied once, as before. `AccessibilityPreferences::text_scaling_factor`'s doc says it is the factor the toolkit has not applied. The Xwayland half stays, the next entry.
   Archived 2026-10-17 (M8 T21): ticked in 775b26c0; its "above", "below" and "next entry" mean `docs/todo.md` at 6980aa05.
+- [x] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (`docs/archive/todo_closed.md`, *Closed items from Font DPI*, "For M4 (connectors): on GNOME and Budgie X11"; its Xwayland half is the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
+  M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
+  *Closed 2026-11-14 in 06c1716a:* answered from source and measured (issue #4,
+  `docs/issues/0004_kde-hand-overrides-rationale.md` §4.1): yes, on every Plasma
+  session. On Wayland Plasma writes `Xft.dpi` as the largest output's scale × 96 while
+  legacy X11 applications scale themselves, the default (kwin v6.7.5
+  `src/workspace.cpp:613-626`, v6.8.2 `src/main.cpp:281-310`; plasma-workspace v6.8.2
+  `startkde/plasma-setup-xwayland/main.cpp:47-58`), and on Plasma 6.7's X11
+  `forceFontDPI` is what kscreen writes as the global scale × 96 (kscreen v6.7.5
+  `kcm/kcm.cpp:421-482`), while gpui and winit already scale by the compositor's scale
+  or by `Xft.dpi` ÷ 96 and Qt converts points at 96. The chain made a 10 pt font 30
+  physical pixels at scale 1.5 where Qt's is 20; on a private X server the egui
+  showcase's body capitals were 22 px high at `Xft.dpi` 144 before the fix
+  and 14 after it, against 10 at 96 after it
+  (`docs/evidence/breeze-offscreen/2026-11-14/x11/capheight-out.txt`). The font DPI is
+  96 on every Linux desktop since 0.7.1, and the chain, its cache and the `kcmfonts`
+  read are gone. What 96 does not cover (Qt Widgets' whole-pixel font sizes, a font DPI
+  for `SystemTheme::from_system()`) is in *KDE: what a Qt application under Breeze shows
+  that native-theme does not (issue #4)*, "Font sizes and the KDE button and dialog
+  sizes".
 
 ### Icon-theme detection commands have no timeout
 - [x] [v0.7.0] The icon-theme detection runs `gsettings get <schema> icon-theme` (`native-theme/src/model/icons.rs` `gsettings_icon_theme`) and `xfconf-query -c xsettings -p /Net/IconThemeName` (`detect_xfce_icon_theme`) with `Command::output()`, which waits as long as the command runs; a hung D-Bus session blocks the caller (pre-existing). `detect.rs`'s `run_gsettings_with_timeout` (`:180-218`) bounds its own gsettings calls by `SUBPROCESS_TIMEOUT` (2 s), but it runs only `gsettings` and returns `Option<String>`, dropping why a call gave nothing (not found, unsuccessful status, stderr, empty output, timed out) — which the icon-theme error now reports. Needed: a general run-with-timeout helper that takes the program and its arguments and returns `io::Result<Output>`, with a timeout reported as its own reason ("timed out after 2 s"), so `command_icon_theme` keeps naming every failure.
