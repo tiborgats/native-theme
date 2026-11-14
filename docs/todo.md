@@ -940,7 +940,7 @@ model, the platform presets and the three connectors
       fix round 1). So kde-breeze states the window text (`#232629`) and
       adwaita white (`#ffffff`) for the same field, and gpui maps it to
       `danger_fg`, the text on the fill
-      (`connectors/native-theme-gpui/src/colors.rs:182`). Give the model
+      (`connectors/native-theme-gpui/src/colors.rs:208`). Give the model
       one meaning per field (or two fields), then restate the presets.
       M8 T21 (2026-10-17): no longer for M3, which closed on 2026-10-12
       (ledger "## M3") without naming this entry, and no milestone of the
@@ -2572,7 +2572,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       both from the one token instead — `link.opacity(0.8)` hovered,
       `link.opacity(0.6)` pressed (`link.rs:80, 85`) — while the two tokens
       exist, the connector writes them from `link.hover_text_color` and
-      `link.active_text_color` (`colors.rs:277-278`), and a `Button::link()`
+      `link.active_text_color` (`colors.rs:258-259`, `:304-305`), and a `Button::link()`
       *does* read them (`button/button.rs:1139, 1215`). So the fix is two
       lines in one widget, and it is the narrowest upstream change this audit
       has found: not a missing token, an inconsistency between two readers of
