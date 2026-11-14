@@ -11,9 +11,9 @@
 
 gpui-component 0.9.1 `src/table/state.rs:2743` and `:2762` size the box that
 holds a table's vertical and horizontal scroll bar with `Scrollbar::width()`,
-a constant 16 px (gpui-base 0.9.1 `src/scrollbar.rs:22`, `:951-953`). The bar
+a constant 16 px (gpui-base 0.9.1 `src/scrollbar.rs:22`, `:950-952`). The bar
 itself takes its width from the theme's `ScrollbarStyles` as it lays itself
-out (`src/scrollbar.rs:1390-1395`), so in every other scroll host it is as wide
+out (`src/scrollbar.rs:1391-1396`), so in every other scroll host it is as wide
 as the theme says. With a theme
 whose track is wider than 16 px (KDE Breeze's scroll bar is 21 px), the bar
 in a table is clipped to 16 px and its thumb sits off centre; from reading the

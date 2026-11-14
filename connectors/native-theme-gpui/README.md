@@ -582,7 +582,7 @@ upstream.
 **A table's scroll bar is 16 px wide.** `DataTable` sizes the box its scroll
 bars sit in with the fixed `Scrollbar::width()`, 16 px (gpui-component
 `src/table/state.rs:2743`, `:2762`; gpui-base `src/scrollbar.rs:22`,
-`:951-953`), where every other scroll area takes the track width the connector
+`:950-952`), where every other scroll area takes the track width the connector
 installs, `scrollbar.groove_width` (21 px under kde-breeze). With a wider
 groove, a table's bar is cut to 16 px with its thumb off centre, and its hit
 area reaches into the last column by the difference (read from gpui-base's

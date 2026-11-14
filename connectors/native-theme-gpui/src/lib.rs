@@ -2774,40 +2774,72 @@ mod apply_tests {
 
     /// The precondition of the restore and the exactness end to end: with no
     /// observer, upstream's `Theme::change` leaves each of the three exactly
-    /// at the native colour with the cap's alpha, and its solid token.
+    /// at the native colour with the cap's alpha, and its solid token, and
+    /// `colors::restore_capped` recognises that and writes the native colour
+    /// back. Once for macos-tahoe's opaque dark selections, once for a
+    /// translucent native above both caps (`#3daee980`, written `#rrggbbaa`
+    /// into the config).
     #[gpui::test]
     fn theme_change_caps_the_three_without_the_restore(cx: &mut TestAppContext) {
         let prefs = AccessibilityPreferences::default();
         let Some((_, (_, dark))) = tahoe(&prefs) else {
             return;
         };
-        let native = natives(&dark, true);
-        cx.update(|cx| {
-            gpui_component::init(cx);
-            GpuiTheme::global_mut(cx).dark_theme = Rc::new(config::to_theme_config(
-                &dark,
-                "Test",
-                GpuiThemeMode::Dark,
-                &prefs,
-            ));
-            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
-        });
-        cx.update(|cx| {
-            let fields = three(GpuiTheme::global(cx));
-            for ((name, color, token), (n, cap)) in fields
-                .into_iter()
-                .zip(native.into_iter().zip([0.3, 0.2, 0.2]))
-            {
-                let capped = n.alpha(cap);
-                assert_eq!(color, capped, "{name} is not the native colour at the cap");
-                assert_eq!(
-                    token,
-                    gpui_component::theme::ThemeToken::from(capped),
-                    "the token of {name} is not the capped solid colour"
+        let mut translucent = dark.clone();
+        let wash = Rgba::new(0x3d, 0xae, 0xe9, 0x80);
+        translucent.input.selection_background = wash;
+        translucent.list.selection_background = wash;
+        assert!(
+            natives(&translucent, true)
+                .iter()
+                .all(|n| n.a > 0.3 && n.a < 1.0),
+            "precondition: a translucent native above both caps"
+        );
+        cx.update(gpui_component::init);
+        for (what, variant) in [("macos-tahoe dark", &dark), ("#3daee980", &translucent)] {
+            let native = natives(variant, true);
+            cx.update(|cx| {
+                GpuiTheme::global_mut(cx).dark_theme = Rc::new(config::to_theme_config(
+                    variant,
+                    "Test",
+                    GpuiThemeMode::Dark,
+                    &prefs,
+                ));
+                GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+            });
+            cx.update(|cx| {
+                let fields = three(GpuiTheme::global(cx));
+                for ((name, color, token), (n, cap)) in fields
+                    .into_iter()
+                    .zip(native.into_iter().zip([0.3, 0.2, 0.2]))
+                {
+                    let capped = n.alpha(cap);
+                    assert_eq!(
+                        color, capped,
+                        "{what}: {name} is not the native colour at the cap"
+                    );
+                    assert_eq!(
+                        token,
+                        gpui_component::theme::ThemeToken::from(capped),
+                        "{what}: the token of {name} is not the capped solid colour"
+                    );
+                    assert_ne!(color, n, "{what}: precondition: the cap changed {name}");
+                }
+                let mut restored = GpuiTheme::global(cx).clone();
+                assert!(
+                    colors::restore_capped(&colors::capped_natives(variant), &mut restored),
+                    "{what}: the cap is recognised"
                 );
-                assert_ne!(color, n, "precondition: the cap changed {name}");
-            }
-        });
+                for ((name, color, token), n) in three(&restored).into_iter().zip(native) {
+                    assert_eq!(color, n, "{what}: {name} is not restored");
+                    assert_eq!(
+                        token,
+                        gpui_component::theme::ThemeToken::from(n),
+                        "{what}: the token of {name} is not restored"
+                    );
+                }
+            });
+        }
     }
 
     /// Sequence (a): a switch either way leaves the three native, with their
@@ -3070,9 +3102,13 @@ mod apply_tests {
     /// The `reapplying` flag cannot tell the observer's own notification from a
     /// rebuild another effect performs before that notification is delivered:
     /// GPUI merges the two (spec §3.3, limit). The observer therefore repairs
-    /// the handle colours when they no longer hold the native values. Without
-    /// that repair the deferred `Theme::change` below would leave upstream's
-    /// `drag_border` in `active_handle`.
+    /// the handle colours when they no longer hold the native values. The
+    /// deferred rebuild below is a bare `sync_base`, which applies no config
+    /// and so caps none of `selection`, `list_active`, `table_active`: the
+    /// delivery reaches the `reapplying` branch, and without that repair it
+    /// would leave upstream's `drag_border` in `active_handle`. (A merged
+    /// `Theme::change`, which caps them, is answered by the restore before
+    /// that branch: `a_rebuild_merged_into_the_observers_own_notification_is_restored`.)
     #[gpui::test]
     fn observer_repairs_a_rebuild_merged_into_its_own_notification(cx: &mut TestAppContext) {
         let prefs = AccessibilityPreferences::default();
@@ -3080,11 +3116,12 @@ mod apply_tests {
         let active = colors::rgba_to_hsla(resolved.splitter.hover_color);
         cx.update(|cx| apply(theme, &resolved, &prefs, cx)); // observer active after this flush
         cx.update(|cx| {
-            // Queue: [N_base (this write), Defer(change)]. The observer answers
-            // N_base with a marked write whose notification lands after the
-            // deferred change; the change's own notification is deduplicated.
+            // Queue: [N_base (this write), Defer(sync_base)]. The observer
+            // answers N_base with a marked write whose notification lands after
+            // the deferred rebuild; the rebuild's own notification is
+            // deduplicated.
             let _ = gpui_base::Theme::global_mut(cx);
-            cx.defer(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+            cx.defer(GpuiTheme::sync_base);
         });
         cx.update(|cx| {
             assert_eq!(
