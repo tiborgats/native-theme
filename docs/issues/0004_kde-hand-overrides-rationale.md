@@ -8,12 +8,14 @@
   which answers the first reply's question and lists what their application
   overrode by hand to match the Qt version of the same application under Breeze.
 - Written: 2026-11-13, on `v0.7.1-rc2`.
-- Status: **approved by the maintainer on 2026-11-13**, after three review
+- Status: **implemented on 2026-11-14** for 0.7.1, on `v0.7.1-rc2`, by the plan
+  [`../archive/todo_v0.7.1_kde-hand-overrides-plan.md`](../archive/todo_v0.7.1_kde-hand-overrides-plan.md).
+  The maintainer approved this document on 2026-11-13, after three review
   rounds, one confirming check and a comparison with the parked 0.8.0 work. The
   specification is
-  [`../todo_v0.7.1_kde-hand-overrides-spec.md`](../todo_v0.7.1_kde-hand-overrides-spec.md);
-  it lists the few corrections made here since the approval. Nothing is
-  implemented. The reply in §8 is a draft and is not posted.
+  [`../archive/todo_v0.7.1_kde-hand-overrides-spec.md`](../archive/todo_v0.7.1_kde-hand-overrides-spec.md);
+  it lists the few corrections made here since the approval. The reply in §8 is
+  a draft and is not posted.
 
 ## 1. The report
 

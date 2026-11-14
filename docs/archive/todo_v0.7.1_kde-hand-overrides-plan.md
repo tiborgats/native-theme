@@ -1,12 +1,20 @@
 # 0.7.1: the KDE fixes from issue #4 — implementation plan
 
-- Rationale: [`issues/0004_kde-hand-overrides-rationale.md`](issues/0004_kde-hand-overrides-rationale.md)
+- Rationale: [`../issues/0004_kde-hand-overrides-rationale.md`](../issues/0004_kde-hand-overrides-rationale.md)
   (approved 2026-11-13). Specification:
   [`todo_v0.7.1_kde-hand-overrides-spec.md`](todo_v0.7.1_kde-hand-overrides-spec.md)
   (Parts A to E; checked in three review rounds and a confirming check).
-- Written: 2026-11-14. Status: **approved by the maintainer on 2026-11-14**,
-  with the version kept at 0.7.1 and the specification's open points 1 and 2
-  decided as the specification has them (§7).
+- Written: 2026-11-14. Status: **implemented on 2026-11-14**, on `v0.7.1-rc2`
+  (commits `46e0ed6e` to `431673d9`, then the close-out commit that moved this
+  plan and the specification here from `docs/`). The maintainer approved it the
+  same day, with the version kept at 0.7.1 and the specification's open points
+  1 and 2 decided as the specification has them (§7). Two departures from the
+  text below: T5 ran in two halves, the source files' citations beside D3
+  (`75d4a6ec`) and `docs/todo.md`'s after the documentation merge (`3c722c1e`,
+  `431673d9`); and D3's new backlog entry says the KDE reader writes the
+  button's and the menu's hover text, where the specification's sentence named
+  the button's only, which T2 had made untrue. The paths below are those the
+  two documents had in `docs/`.
 - Where: branch `v0.7.1-rc2` (pull request #10), which stands at `387fc449`, the
   commit the 0.7.1 release was prepared at. The pull request is not merged by
   this plan.

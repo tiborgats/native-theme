@@ -1,13 +1,18 @@
 # 0.7.1: the KDE fixes from issue #4 — specification
 
-- Rationale: [`issues/0004_kde-hand-overrides-rationale.md`](issues/0004_kde-hand-overrides-rationale.md),
+- Rationale: [`../issues/0004_kde-hand-overrides-rationale.md`](../issues/0004_kde-hand-overrides-rationale.md),
   approved by the maintainer on 2026-11-13. This document says what changes, where,
   to which value, with which tests and gates. It decides nothing the rationale did
   not decide, except the small points listed under *Decisions taken while
   specifying*.
 - Plan: [`todo_v0.7.1_kde-hand-overrides-plan.md`](todo_v0.7.1_kde-hand-overrides-plan.md).
 - Written: 2026-11-14, against `v0.7.1-rc2` at `387fc449`. Every `file:line` is
-  that commit's unless it names another version. Nothing here is implemented.
+  that commit's unless it names another version.
+- Status: **implemented on 2026-11-14**, on `v0.7.1-rc2` (commits `46e0ed6e` to
+  `431673d9`, then the close-out commit that moved this document and the plan
+  here from `docs/`); the plan's status line names the two departures. The text
+  below is the specification as it was approved: it speaks of the work as still
+  to do, and gives this document's path as it was in `docs/`.
 - `<scratch>` stands for the working session's scratch folder, which holds the
   downloaded upstream sources and the measurement outputs; what the repository
   needs from it is copied in by Part C.5.
