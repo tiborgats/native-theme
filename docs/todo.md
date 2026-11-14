@@ -501,7 +501,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       Accent is mixed 85 % `accent`, 15 % `highlightedText` (`:114-130`). Map each class to its
       `ResolvedTheme` leaf. The KDE reader takes `text_color` from
       `[Colors:Window] ForegroundNormal` but the status colours from
-      `[Colors:View]` (`native-theme/src/kde/colors.rs:18`, `:23`, `:39-43`),
+      `[Colors:View]` (`native-theme/src/kde/colors.rs:477`, `:483`, `:499-503`),
       so check which group Qt's palette fills from. Then `FreedesktopLoader`
       takes those colours, not the one colour `color` takes, which would turn
       all eight classes into one colour
@@ -1054,7 +1054,7 @@ model, the platform presets and the three connectors
 ### GNOME: the reader's dark mode does not read `GTK_THEME`
 
 - [ ] [v0.7.x] From M4 T15 (ruled 2026-10-12): `detect::system_is_dark` checks
-      `GTK_THEME` first (`:dark` or `-dark`, `native-theme/src/detect.rs:766-771`),
+      `GTK_THEME` first (`:dark` or `-dark`, `native-theme/src/detect.rs:560-563`),
       while the GNOME reader takes its mode from the portal's colour scheme,
       then gsettings' `color-scheme` (`color_scheme_is_dark`,
       `native-theme/src/gnome/mod.rs:497`). A `GTK_THEME=Adwaita:dark` session
@@ -1123,7 +1123,7 @@ model, the platform presets and the three connectors
       and the icon theme decide by the refined desktop (the font DPI did too until
       0.7.1 made it 96 on every Linux desktop)
       (`DetectionContext::refined_linux_desktop_sync`,
-      `native-theme/src/detect.rs:1355`), but `platform_button_order`
+      `native-theme/src/detect.rs:1150`), but `platform_button_order`
       (`native-theme/src/resolve/inheritance.rs:62-71`) and
       `presets::detect_platform` (`native-theme/src/presets.rs:129-142`) still
       read `XDG_CURRENT_DESKTOP` alone. On an unrecognised desktop refined to
@@ -1137,10 +1137,10 @@ model, the platform presets and the three connectors
       `refined_linux_desktop_sync` asks no portal and caches nothing until a
       system read (`from_system`, `from_system_async`,
       `AccessibilityPreferences::from_system`) has refined the desktop
-      (`native-theme/src/detect.rs:1344-1352`), so an application that resolves
+      (`native-theme/src/detect.rs:1139-1145`), so an application that resolves
       presets without one gets only the `kdeglobals` check: on an unrecognised
       desktop a KDE portal backend without `kdeglobals` stays `Unknown`. Also,
-      `invalidate_linux_desktop()` (`:1406`) clears the desktop but no slot
+      `invalidate_linux_desktop()` (`:1192`) clears the desktop but no slot
       derived from it. Decide whether the sync path may ask the portal (through
       `pollster`, bounded as the readers are) or whether the docs stay as they
       are; give `invalidate_linux_desktop` the line its doc needs.
@@ -1153,7 +1153,7 @@ model, the platform presets and the three connectors
       reader writes neither: a custom colour scheme keeps Breeze's thumb, and
       an icon theme whose `SmallDefault` differs keeps 16 (the reader reads
       `SmallDefault` into `defaults.icon_sizes.small` only,
-      `native-theme/src/kde/mod.rs:188`). Write both, citing the facts rows,
+      `native-theme/src/kde/mod.rs:166`). Write both, citing the facts rows,
       and run the `preset-validator` over kde-breeze.
       M8 T16c (2026-10-17): the reader writes `switch.thumb_background`, the
       Button set's background (`SwitchIndicator.qml:29` at qqc2-desktop-style
@@ -1634,8 +1634,8 @@ model, the platform presets and the three connectors
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 
 - [ ] [v0.7.x] From M4's final review (P2-2, 2026-10-13):
-      `detect::prefers_reduced_motion()` (`native-theme/src/detect.rs:905`) and
-      `accessibility_preferences().reduce_motion` (`:942`) cache one read
+      `detect::prefers_reduced_motion()` (`native-theme/src/detect.rs:699`) and
+      `accessibility_preferences().reduce_motion` (`:740`) cache one read
       apart; `from_system()` refreshes the second, not the first, so after a
       watched change without `invalidate_caches()` they disagree. T19's
       equality test runs both cold and cannot see it. Fill the reduced-motion
@@ -1647,7 +1647,7 @@ model, the platform presets and the three connectors
 - [ ] [v0.7.x] From M4's final review (P3-2, 2026-10-13): the KDE reader looks
       for the icon theme's `index.theme` in KIconTheme's order, the data home,
       the data dirs, then `~/.icons` (`kde_icon_base_dirs`,
-      `native-theme/src/kde/mod.rs:220`), and the icon lookup in the Icon
+      `native-theme/src/kde/mod.rs:198`), and the icon lookup in the Icon
       Theme Specification's, `~/.icons` first (`icon_base_dirs_in`,
       `native-theme/src/icons.rs:899`). Both orders are cited; with a copy of
       the theme in both `~/.icons` and `~/.local/share/icons`, the sizes and
@@ -1658,7 +1658,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.x] From M4's final review (P7-1, 2026-10-13): on an unrecognised
       desktop with nothing cached yet, `refined_linux_desktop_sync`
-      (`native-theme/src/detect.rs:1355-1360`) checks that `kdeglobals` exists
+      (`native-theme/src/detect.rs:1150-1155`) checks that `kdeglobals` exists
       (a `stat`) on every call and caches nothing, and the `icon_name` that
       native-theme-build generates calls it per lookup (64a58f9f), an icon per
       widget per frame in egui. Low impact: a themed application has usually
@@ -2423,7 +2423,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       half the `ring` colour's alpha from two module consts
       (`styled.rs:11-12`), so the platform's `focus_ring_width` -- modelled,
       and used by the connector only to switch the ring on or off
-      (`lib.rs:180`) -- has no receiver. A `Theme::focus_ring_width`.
+      (`lib.rs:362`) -- has no receiver. A `Theme::focus_ring_width`.
       M8 T21 fix round 1 (2026-10-17): the connector's own widgets draw the
       same ring: *gpui: the theme-drawn widgets' focus ring*, "The connector's
       `Checkbox`, `Radio`, `Slider` and `Switch`".
@@ -2538,7 +2538,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       "**`Theme::shadow` has one reader.**" (*native-theme-gpui connector*,
       *Follow-ups from the v0.5.9 showcase and contract work*; 6faef5b2):
       **`Theme::shadow` has one reader.** The connector sets it from
-      `border.shadow_enabled` (`lib.rs:176`); gpui-component reads it only at
+      `border.shadow_enabled` (`lib.rs:358`); gpui-component reads it only at
       `button/button.rs:612`, for a `ButtonVariant::Custom` built with
       `.shadow(true)`. The semantic shadow tokens it feeds have no reader
       outside `theme/`. So the platform's shadow preference reaches nothing
@@ -2959,7 +2959,7 @@ What is still open on the iced side:
       `ResolvedTheme` has no motion field at all; KDE exposes
       `AnimationDurationFactor` and GNOME `enable-animations`, which
       native-theme reads only as the boolean `reduce_motion`
-      (`native-theme/src/kde/mod.rs:42-52`, `src/detect.rs:674-685`). Decide
+      (`native-theme/src/kde/mod.rs:255-261`, `src/detect.rs:768-780`). Decide
       whether native-theme should model motion — durations, easings,
       distances — which is a core-type change.
       2026-10-15: since c1208377 (M6 T5, M6-01) `apply` no longer overwrites
@@ -3309,7 +3309,7 @@ the gap — closing it is a change, and each wants its own decision.
 - [ ] [1.0] **The showcase ignores its own `text_scale`.** `ResolvedTextScale` states
       four typographic roles — `caption`, `section_heading`, `dialog_title`,
       `display` — each with a size, a weight and a line height, and
-      `native_theme_gpui::text_scale()` is public (`lib.rs:412`). The Headings
+      `native_theme_gpui::text_scale()` is public (`lib.rs:711`). The Headings
       demo draws a six-step rem ladder of its own instead, and there is no
       `geometry::` builder for a text role, so an application that wants the
       platform's scale has to reach past the builders. Four roles do not map
