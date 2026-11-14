@@ -1392,12 +1392,13 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
 /// refinement (`:235-237`), so its colour still wins.
 ///
 /// The fill is `list_active` only while gpui-component's
-/// `Theme::list.active_highlight` is true (`list_item.rs:258`), its default
-/// (gpui-base `list_settings.rs:14`), which this connector leaves alone; an
-/// application that turns it off gets `accent`, the menu
-/// hover fill (`menu.hover_background`, the `accent` row), under this text
-/// colour, which is still `list.selection_text_color` and was chosen for the
-/// selection fill, not for that one.
+/// `Theme::list.active_highlight` is true (gpui-component 0.9.1
+/// `list_item.rs:258-259`), its default (gpui-base 0.9.1 `list_settings.rs:15`),
+/// which this connector leaves alone. An application that turns it off gets
+/// `accent`, the menu hover fill (`menu.hover_background`), lettered
+/// `accent_foreground` (`menu.hover_text_color`), both set by upstream after the
+/// refinement (0.9.1 `:260-262`), so this builder's colour does not reach that
+/// row. Apply it only while `active_highlight` is on.
 #[must_use]
 pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().text_color(rgba_to_hsla(n.resolved.list.selection_text_color))

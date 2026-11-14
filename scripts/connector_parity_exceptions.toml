@@ -347,6 +347,12 @@ name = "layer_over"
 kind = "absent"
 reason = "egui's public composite is `convert::composite_over(layer, idle)`, ecolor's premultiplied `u8` blend, with which the atlas lays a stated hover or pressed fill over the idle fill (the egui spec §6.1, M7's hover ruling), not native-theme's straight-alpha `f32` one that gpui's `layer_over` and iced's `styles::composite_over` call (the M8-06 ruling)"
 
+[[exception]]
+connector = ["iced", "egui"]
+name = "to_hsla"
+kind = "absent"
+reason = "gpui's conversion of a model colour to the toolkit's, public at the crate root beside `layer_over` (docs/issues/0004_kde-hand-overrides-rationale.md §4.9); iced's is `palette::to_color(Rgba)` and egui's `convert::to_color32(Rgba)`, each in a module of the toolkit's own conversions that the script lists and does not compare"
+
 # ── group accessors ─────────────────────────────────────────────────────────
 
 [[exception]]
