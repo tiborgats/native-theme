@@ -579,8 +579,15 @@ scroll-bar track there; a `ProgressBar` inside `Role::ProgressBar` takes
 transparent track (macOS), the groove's opacities are 0 and the slot takes the
 input background instead. A solid scroll bar's groove is painted at full
 opacity, so its track stays in the slot even when the theme states it
-transparent, as `windows-11` does: there a canvas frame and a progress bar
-outside its role have no fill.
+transparent, as `windows-11` and `kde-breeze` do: there a canvas frame and a
+progress bar outside its role have no fill.
+
+egui paints a scroll bar's handle at rest with `visuals.widgets.inactive.bg_fill`,
+so the base style puts `scrollbar.thumb_color` there; egui has no slot of its own
+for it. The same slot fills an unscoped slider's rail and handle, a check box and a
+radio button. Where the handle is pale, as Breeze's grey is (`kde-breeze`, #cbcdcd /
+#46494b), an unscoped slider's rail all but disappears on the window (1.4:1 /
+1.7:1). A slider inside `Role::Slider` takes `slider.track_color`.
 
 ## Semver
 

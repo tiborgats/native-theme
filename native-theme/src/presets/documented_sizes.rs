@@ -181,7 +181,7 @@ const ROWS: &[Row] = &[
     row(KdeBreeze, "input", axes(6.0, 7.0), &[1213, 1214], "inside the frame line: LineEdit_FrameWidth 6 + QLineEdit's 2 / 1 − 1"),
     row(KdeBreeze, "text_area", all(5.0), &[1714, 1715], "inside the frame line: Frame_FrameWidth 2 + documentMargin 4 − 1"),
     row(KdeBreeze, "checkbox", NONE, &[1237, 1238], "(none)"),
-    row(KdeBreeze, "menu", all(4.0), &[1261, 1262], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4")
+    row(KdeBreeze, "menu", all(4.0), &[1261, 1262], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4; kept: :1261 gives a 16 px text inset in a menu without icons or checkable items and :1260 a floor of 29, which wait (docs/todo.md)")
         .with(&[("row_height", None, 1260)]),
     row(KdeBreeze, "tooltip", all(3.0), &[1283, 1284], "ToolTip_FrameWidth = 3"),
     row(KdeBreeze, "progress_bar", all(0.0), &[1341, 1342], "0; 0, the contents span the groove"),

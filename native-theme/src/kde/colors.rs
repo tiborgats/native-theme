@@ -9,9 +9,12 @@ fn get_color(ini: &configparser::ini::Ini, section: &str, key: &str) -> Option<R
     super::parse_rgb(&value)
 }
 
-/// Breeze's `Metrics::Blend_Value`, the alpha of the selection colour over a
-/// checked indicator's fill (breezemetrics.h:176 and breezehelper.cpp:40 at
-/// breeze v6.7.5; docs/platform-facts.md §2.5).
+/// Breeze's `Metrics::Blend_Value` (breezemetrics.h:176 at breeze v6.7.5), the
+/// alpha of the selection colour over a checked indicator's fill
+/// (breezehelper.cpp:40), of the focus colour over a hovered menu item
+/// (breezestyle.cpp:6021-6029 at breeze f0b1d75) and of the selection colour over
+/// a hovered item-view row (:4871-4875); docs/platform-facts.md §2.5, §2.6,
+/// §2.15.
 const BLEND_VALUE: f32 = 0.3;
 
 /// `kdeglobals` `[KDE] frameContrast` where it is unset, KColorScheme's own
@@ -375,6 +378,15 @@ const TAB_HOVER_ALPHA: f32 = 0.2;
 /// at breeze f0b1d75; docs/platform-facts.md §2.8).
 const SCROLLBAR_HANDLE_ALPHA: f32 = 0.5;
 
+/// The alpha of the window text over the window in a Breeze scroll-bar handle at
+/// rest, the pointer off the bar: the handle colour `WindowText` at 0.5
+/// (breezehelper.cpp:279), times 0.7 off the bar (breezestyle.cpp:6401-6403),
+/// filled at half of that over the window, `overlayColors(Window, alphaColor(fg,
+/// 0.5))` (breezehelper.cpp:1284, :349-355; breezestyle.cpp:6405) at breeze
+/// f0b1d75, with animations on, their default (breeze.kcfg:45-47);
+/// docs/platform-facts.md §2.8.
+const SCROLLBAR_IDLE_HANDLE_ALPHA: f32 = 0.175;
+
 /// The alpha of the accent over the window in a Breeze progress bar's
 /// contents, `alphaColor(fg, 0.7)` (breezehelper.cpp:1216 at breeze f0b1d75;
 /// docs/platform-facts.md §2.10).
@@ -447,12 +459,15 @@ fn frame_contrast(ini: &configparser::ini::Ini) -> f64 {
 /// Some colours Plasma computes from the scheme, and the reader computes
 /// them as Breeze, Kirigami and qqc2-desktop-style do, in Qt's arithmetic:
 /// the checked button, the checkbox and progress-bar blends, the switch
-/// tracks and outlines, the toolbar's fill and edge, and the popover's and the
-/// card's edges. The blends on the accent (the checked checkbox, the progress
-/// fill, the switch's on track and its outline) come from kdeglobals'
+/// tracks and outlines, the toolbar's fill and edge, the popover's and the
+/// card's edges, the menu's hover and separator, the list's hover and the
+/// scroll bar's resting handle. The blends on the accent (the checked
+/// checkbox, the progress fill, the switch's on track and its outline, and the
+/// list's hover) come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_accent`, applied by `GnomePortalKdeReader`) does
-/// not move them.
+/// not move them. The menu's hover comes from `[Colors:View] DecorationFocus`,
+/// so the same holds for it.
 ///
 /// The toolbar takes the Header set's fill as Breeze paints it where the
 /// window decoration's border size is automatic, None or NoSides
@@ -460,9 +475,10 @@ fn frame_contrast(ini: &configparser::ini::Ini) -> f64 {
 /// kwinrc and assumes Plasma's default, automatic.
 pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate::ThemeMode) {
     let window_fg = get_color(ini, "Colors:Window", "ForegroundNormal");
+    let view_focus = get_color(ini, "Colors:View", "DecorationFocus");
 
     // === defaults-level colors ===
-    variant.defaults.accent_color = get_color(ini, "Colors:View", "DecorationFocus");
+    variant.defaults.accent_color = view_focus;
     variant.defaults.background_color = get_color(ini, "Colors:Window", "BackgroundNormal");
     variant.defaults.text_color = window_fg;
     variant.defaults.surface_color = get_color(ini, "Colors:View", "BackgroundNormal");
@@ -471,7 +487,7 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.defaults.muted_color = get_color(ini, "Colors:Window", "ForegroundInactive");
     // KDE does not expose shadow color in kdeglobals
     variant.defaults.link_color = get_color(ini, "Colors:View", "ForegroundLink");
-    variant.defaults.focus_ring_color = get_color(ini, "Colors:View", "DecorationFocus");
+    variant.defaults.focus_ring_color = view_focus;
 
     // Selection
     variant.defaults.selection_background = get_color(ini, "Colors:Selection", "BackgroundNormal");
@@ -546,14 +562,14 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // KDE-02: placeholder from View/ForegroundInactive
     variant.input.placeholder_color = get_color(ini, "Colors:View", "ForegroundInactive");
     // input.caret from View/DecorationFocus (the focus decoration color)
-    variant.input.caret_color = get_color(ini, "Colors:View", "DecorationFocus");
+    variant.input.caret_color = view_focus;
     // A field's frame (docs/platform-facts.md §2.4): `frameOutlineColor`
     // strokes a hovered one in `hoverColor()` and a focused one in
     // `focusColor()`, focus winning, the View set's DecorationHover and
     // DecorationFocus (breezehelper.cpp:89-90, :142-168 at breeze f0b1d75).
     let view_hover = get_color(ini, "Colors:View", "DecorationHover");
     variant.input.hover_border_color = view_hover;
-    variant.input.focus_border_color = get_color(ini, "Colors:View", "DecorationFocus");
+    variant.input.focus_border_color = view_focus;
 
     // Checkbox and radio (docs/platform-facts.md §2.5): Breeze fills an
     // unchecked indicator with the button colour and outlines it in
@@ -638,6 +654,15 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         .map(|(window, hover)| overlay_colors(window, hover, SCROLLBAR_HANDLE_ALPHA));
     variant.scrollbar.thumb_hover_color = handle;
     variant.scrollbar.thumb_active_color = handle;
+    // A handle at rest, the pointer off the bar, is the window text at alpha
+    // 0.175 over the window (breezehelper.cpp:279, :1284;
+    // breezestyle.cpp:6401-6405 at breeze f0b1d75; docs/platform-facts.md
+    // §2.8); the focused view's handle and the pointer-on-the-bar shade have
+    // no field. Breeze paints no groove, which kde-breeze states as a
+    // transparent track.
+    variant.scrollbar.thumb_color = window_bg
+        .zip(window_fg)
+        .map(|(window, text)| overlay_colors(window, text, SCROLLBAR_IDLE_HANDLE_ALPHA));
 
     // Toolbar (docs/platform-facts.md §2.13): Breeze fills a main window's
     // tools area with the Header set's background and strokes its bottom edge
@@ -688,19 +713,35 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         variant.combo_box.font.get_or_insert_default().color = Some(color);
     }
 
-    // Menu text (docs/platform-facts.md §2.6): the window text.
+    // Menu (docs/platform-facts.md §2.6): the text is the window text; a
+    // hovered item is the focus colour at `Blend_Value` lettered in the window
+    // text; the separator is `separatorColor()`, the window moved towards its
+    // text by the frame contrast (breezestyle.cpp:5984, :6021-6029, :6155;
+    // breezehelper.cpp:329-332 at breeze f0b1d75).
     if let Some(color) = window_fg {
         variant.menu.font.get_or_insert_default().color = Some(color);
     }
+    variant.menu.hover_background = view_focus.map(|focus| translucent(focus, BLEND_VALUE));
+    variant.menu.hover_text_color = window_fg;
+    variant.menu.separator_color = window_bg
+        .zip(window_fg)
+        .map(|(window, text)| mix(window, text, frame_contrast(ini)));
 
-    // KDE-02: list fields (Colors:View is the native source for list/table content areas)
+    // KDE-02: list fields (Colors:View is the native source for list/table content areas); a
+    // hovered row is the selection at `Blend_Value` (breezestyle.cpp:4871-4875)
     variant.list.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
     if let Some(color) = get_color(ini, "Colors:View", "ForegroundNormal") {
         variant.list.item_font.get_or_insert_default().color = Some(color);
     }
     variant.list.alternate_row_background = get_color(ini, "Colors:View", "BackgroundAlternate");
-    variant.list.header_background = get_color(ini, "Colors:Header", "BackgroundNormal");
-    if let Some(color) = get_color(ini, "Colors:Header", "ForegroundNormal") {
+    variant.list.hover_background =
+        selection_bg.map(|selection| translucent(selection, BLEND_VALUE));
+    // The header is the Button set: Breeze fills a `QHeaderView` section with
+    // `QPalette::Button` (breezestyle.cpp:6827, :6838-6839 at breeze f0b1d75) and Qt
+    // letters it `ButtonText` (qcommonstyle.cpp:1659-1660), which Breeze does not
+    // override; neither reads the Header set (docs/platform-facts.md §2.15).
+    variant.list.header_background = button_bg;
+    if let Some(color) = button_fg {
         variant.list.header_font.get_or_insert_default().color = Some(color);
     }
 
@@ -1008,6 +1049,23 @@ inactiveForeground=161,169,177
              [Colors:Button]\nBackgroundNormal={button}\n\n\
              [Colors:View]\nForegroundNormal={view_fg}\n\n\
              [Colors:Selection]\nBackgroundNormal=61,174,233\n"
+        )
+    }
+
+    /// The groups the menu, scroll-bar and list colours read, from BreezeLight.colors
+    /// and BreezeDark.colors at breeze v6.7.5: Window :129/:130, :137/:138; Button
+    /// :31/:32, :39/:40; Selection :87/:88; View DecorationFocus :116/:117.
+    fn breeze_menu_list_groups(
+        window: &str,
+        window_fg: &str,
+        button: &str,
+        button_fg: &str,
+    ) -> String {
+        format!(
+            "[Colors:Window]\nBackgroundNormal={window}\nForegroundNormal={window_fg}\n\n\
+             [Colors:Button]\nBackgroundNormal={button}\nForegroundNormal={button_fg}\n\n\
+             [Colors:Selection]\nBackgroundNormal=61,174,233\n\n\
+             [Colors:View]\nDecorationFocus=61,174,233\n"
         )
     }
 
@@ -1329,21 +1387,218 @@ ForegroundNormal=239,240,241
         assert_eq!(v.list.alternate_row_background, Some(Rgba::rgb(30, 33, 36)));
     }
 
-    // === KDE-02: List header from Header group ===
+    // === List header from the Button set ===
 
     #[test]
-    fn test_list_header_background_from_header() {
+    fn test_list_header_background_from_button() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.list.header_background, Some(Rgba::rgb(35, 38, 41)));
+        assert_eq!(v.list.header_background, Some(Rgba::rgb(49, 54, 59)));
     }
 
     #[test]
-    fn test_list_header_font_color_from_header() {
+    fn test_list_header_font_color_from_button() {
         let v = populate_fixture(BREEZE_DARK);
         assert_eq!(
             v.list.header_font.as_ref().and_then(|f| f.color),
-            Some(Rgba::rgb(252, 252, 252))
+            Some(Rgba::rgb(239, 240, 241))
         );
+    }
+
+    // === Menu, scroll bar and list colours Breeze derives ===
+
+    /// The Breeze Light and Breeze Dark groups of `breeze_menu_list_groups`.
+    fn breeze_light_and_dark() -> [String; 2] {
+        [
+            breeze_menu_list_groups("239,240,241", "35,38,41", "252,252,252", "35,38,41"),
+            breeze_menu_list_groups("32,35,38", "252,252,252", "41,44,48", "252,252,252"),
+        ]
+    }
+
+    #[test]
+    fn test_menu_hover_and_separator_are_breezes() {
+        let [light, dark] = breeze_light_and_dark();
+        let cases = [
+            (
+                light,
+                Rgba::rgb(0x23, 0x26, 0x29),
+                Rgba::rgb(0xc6, 0xc8, 0xc9),
+            ),
+            (
+                dark,
+                Rgba::rgb(0xfc, 0xfc, 0xfc),
+                Rgba::rgb(0x4c, 0x4e, 0x51),
+            ),
+        ];
+        for (content, text, separator) in cases {
+            let v = populate_fixture(&content);
+            assert_eq!(
+                v.menu.hover_background,
+                Some(Rgba::new(0x3d, 0xae, 0xe9, 0x4d))
+            );
+            assert_eq!(v.menu.hover_text_color, Some(text));
+            assert_eq!(v.menu.separator_color, Some(separator));
+        }
+    }
+
+    #[test]
+    fn test_scrollbar_thumb_is_breezes() {
+        let [light, dark] = breeze_light_and_dark();
+        let cases = [
+            (light, Rgba::rgb(0xcb, 0xcd, 0xcd)),
+            (dark, Rgba::rgb(0x46, 0x49, 0x4b)),
+        ];
+        for (content, thumb) in cases {
+            let v = populate_fixture(&content);
+            assert_eq!(v.scrollbar.thumb_color, Some(thumb));
+            assert!(
+                v.scrollbar.track_color.is_none(),
+                "the reader leaves the track to the preset"
+            );
+        }
+    }
+
+    #[test]
+    fn test_list_hover_and_header_are_breezes() {
+        let [light, dark] = breeze_light_and_dark();
+        let cases = [
+            (
+                light,
+                Rgba::rgb(0xfc, 0xfc, 0xfc),
+                Rgba::rgb(0x23, 0x26, 0x29),
+            ),
+            (
+                dark,
+                Rgba::rgb(0x29, 0x2c, 0x30),
+                Rgba::rgb(0xfc, 0xfc, 0xfc),
+            ),
+        ];
+        for (content, header, header_text) in cases {
+            let v = populate_fixture(&content);
+            assert_eq!(
+                v.list.hover_background,
+                Some(Rgba::new(0x3d, 0xae, 0xe9, 0x4d))
+            );
+            assert_eq!(v.list.header_background, Some(header));
+            assert_eq!(
+                v.list.header_font.as_ref().and_then(|f| f.color),
+                Some(header_text)
+            );
+        }
+    }
+
+    /// A scheme whose window, button, selection and focus colours are not
+    /// Breeze's reaches the menu's, the scroll bar's and the list's colours.
+    #[test]
+    fn a_custom_scheme_moves_the_menu_scrollbar_and_list_colours() {
+        let [light, _] = breeze_light_and_dark();
+        let breeze = populate_fixture(&light);
+        let custom = breeze_menu_list_groups("230,220,200", "90,40,20", "200,180,150", "60,20,10")
+            .replace(
+                "[Colors:Selection]\nBackgroundNormal=61,174,233",
+                "[Colors:Selection]\nBackgroundNormal=200,40,90",
+            )
+            .replace("DecorationFocus=61,174,233", "DecorationFocus=20,200,90");
+        let v = populate_fixture(&custom);
+        let window = Rgba::rgb(230, 220, 200);
+        let text = Rgba::rgb(90, 40, 20);
+        assert_eq!(v.menu.hover_background, Some(Rgba::new(20, 200, 90, 0x4d)));
+        assert_eq!(v.menu.hover_text_color, Some(text));
+        assert_eq!(
+            v.menu.separator_color,
+            Some(mix(window, text, FRAME_CONTRAST_DEFAULT))
+        );
+        assert_eq!(
+            v.scrollbar.thumb_color,
+            Some(overlay_colors(window, text, SCROLLBAR_IDLE_HANDLE_ALPHA))
+        );
+        assert_eq!(v.list.hover_background, Some(Rgba::new(200, 40, 90, 0x4d)));
+        assert_eq!(v.list.header_background, Some(Rgba::rgb(200, 180, 150)));
+        let header_text = |mode: &ThemeMode| mode.list.header_font.as_ref().and_then(|f| f.color);
+        assert_eq!(header_text(&v), Some(Rgba::rgb(60, 20, 10)));
+        for (field, ours, breezes) in [
+            (
+                "menu.hover_background",
+                v.menu.hover_background,
+                breeze.menu.hover_background,
+            ),
+            (
+                "menu.hover_text_color",
+                v.menu.hover_text_color,
+                breeze.menu.hover_text_color,
+            ),
+            (
+                "menu.separator_color",
+                v.menu.separator_color,
+                breeze.menu.separator_color,
+            ),
+            (
+                "scrollbar.thumb_color",
+                v.scrollbar.thumb_color,
+                breeze.scrollbar.thumb_color,
+            ),
+            (
+                "list.hover_background",
+                v.list.hover_background,
+                breeze.list.hover_background,
+            ),
+            (
+                "list.header_background",
+                v.list.header_background,
+                breeze.list.header_background,
+            ),
+            (
+                "list.header_font.color",
+                header_text(&v),
+                header_text(&breeze),
+            ),
+        ] {
+            assert_ne!(ours, breezes, "{field}: the custom scheme did not reach it");
+        }
+    }
+
+    #[test]
+    fn test_menu_separator_follows_frame_contrast() {
+        let content = breeze_menu_list_groups("0,0,0", "200,100,0", "252,252,252", "35,38,41");
+        let with = |contrast: &str| {
+            populate_fixture(&format!("{content}\n[KDE]\nframeContrast={contrast}\n"))
+                .menu
+                .separator_color
+        };
+        assert_eq!(with("0.5"), Some(Rgba::rgb(100, 50, 0)));
+        assert_eq!(with("2"), Some(Rgba::rgb(200, 100, 0)), "clamped to 1");
+        assert_eq!(with("none"), Some(Rgba::rgb(40, 20, 0)), "the 0.2 default");
+    }
+
+    /// The column header is the Button set's; the Header set reaches the
+    /// toolbar only.
+    #[test]
+    fn test_the_header_ignores_the_header_set() {
+        let v = populate_fixture(
+            "[Colors:Header]\nBackgroundNormal=1,2,3\nForegroundNormal=4,5,6\n\n\
+             [Colors:Button]\nBackgroundNormal=7,8,9\nForegroundNormal=10,11,12\n",
+        );
+        assert_eq!(v.list.header_background, Some(Rgba::rgb(7, 8, 9)));
+        assert_eq!(
+            v.list.header_font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(10, 11, 12))
+        );
+        assert_eq!(v.toolbar.background_color, Some(Rgba::rgb(1, 2, 3)));
+    }
+
+    #[test]
+    fn test_missing_groups_leave_the_new_fields_to_the_preset() {
+        let v = populate_fixture("[Colors:Selection]\nBackgroundNormal=61,174,233\n");
+        assert!(v.list.hover_background.is_some());
+        assert!(v.menu.hover_background.is_none());
+        assert!(v.menu.hover_text_color.is_none());
+        assert!(v.menu.separator_color.is_none());
+        assert!(v.scrollbar.thumb_color.is_none());
+        assert!(v.list.header_background.is_none());
+        assert!(v.list.header_font.is_none());
+
+        let v = populate_fixture("[Colors:Window]\nBackgroundNormal=239,240,241\n");
+        assert!(v.menu.separator_color.is_none());
+        assert!(v.scrollbar.thumb_color.is_none());
     }
 
     // === KDE-02: Link visited ===
@@ -1533,6 +1788,26 @@ DecorationFocus=61,174,233
         assert!(
             v.menu.font.as_ref().and_then(|f| f.color).is_some(),
             "menu.font.color missing"
+        );
+        assert!(
+            v.menu.hover_background.is_some(),
+            "menu.hover_background missing"
+        );
+        assert!(
+            v.menu.hover_text_color.is_some(),
+            "menu.hover_text_color missing"
+        );
+        assert!(
+            v.menu.separator_color.is_some(),
+            "menu.separator_color missing"
+        );
+        assert!(
+            v.scrollbar.thumb_color.is_some(),
+            "scrollbar.thumb_color missing"
+        );
+        assert!(
+            v.list.hover_background.is_some(),
+            "list.hover_background missing"
         );
         assert!(
             v.list.background_color.is_some(),

@@ -85,8 +85,8 @@ fn breeze_dark_fixture_colors_and_fonts() {
     // WM: title bar
     assert_eq!(v.window.title_bar_background, Some(Rgba::rgb(49, 54, 59)));
 
-    // Header (list)
-    assert_eq!(v.list.header_background, Some(Rgba::rgb(35, 38, 41)));
+    // Header (list): the Button set
+    assert_eq!(v.list.header_background, Some(Rgba::rgb(49, 54, 59)));
 
     // Menu font: Noto Sans 9pt
     let menu_font = v.menu.font.as_ref().unwrap();
@@ -228,8 +228,8 @@ fn missing_groups_fixture() {
     // The sidebar is the View set, which this fixture has
     assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(35, 38, 41)));
 
-    // Missing Header section
-    assert!(v.list.header_background.is_none());
+    // The header is the Button set, which this fixture has
+    assert_eq!(v.list.header_background, Some(Rgba::rgb(49, 54, 59)));
 
     // Missing Selection section
     assert!(v.defaults.selection_background.is_none());
