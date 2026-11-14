@@ -1,0 +1,9 @@
+style breeze Window #eff0f1 popup view class QListView SH_ComboBox_Popup 0
+opened row 0 rect 0 0 280 31 fill #b9dcee text darkest #232629 lightest #b9dcee current
+opened row 1 rect 0 31 280 30 fill #eff0f1 text darkest #232629 lightest #eff0f1 
+opened row 2 rect 0 61 280 30 fill #eff0f1 text darkest #232629 lightest #eff0f1 
+opened row 3 rect 0 91 280 30 fill #eff0f1 text darkest #232629 lightest #eff0f1 
+hover_row2 row 0 rect 0 0 280 31 fill #eff0f1 text darkest #232629 lightest #eff0f1 
+hover_row2 row 1 rect 0 31 280 30 fill #eff0f1 text darkest #232629 lightest #eff0f1 
+hover_row2 row 2 rect 0 61 280 30 fill #b9dcee text darkest #232629 lightest #b9dcee current
+hover_row2 row 3 rect 0 91 280 30 fill #eff0f1 text darkest #232629 lightest #eff0f1 

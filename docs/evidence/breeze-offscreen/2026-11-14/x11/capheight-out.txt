@@ -1,0 +1,8 @@
+build 387fc449, Xft.dpi 96, label 'Theme' (the side panel's setting label, TextStyle::Body), letters T, box x0 6 x1 13 y0 80 y1 96
+egui-96-before.png bright rows 83 .. 92 height 10
+build 387fc449, Xft.dpi 144, label 'Theme' (the side panel's setting label, TextStyle::Body), letters T, box x0 9 x1 25 y0 140 y1 168
+egui-144-before.png bright rows 143 .. 164 height 22
+build cbc54fb8, Xft.dpi 96, label 'Theme' (the side panel's setting label, TextStyle::Body), letters T, box x0 6 x1 13 y0 80 y1 96
+egui-96-after.png bright rows 83 .. 92 height 10
+build cbc54fb8, Xft.dpi 144, label 'Theme' (the side panel's setting label, TextStyle::Body), letters T, box x0 9 x1 20 y0 123 y1 143
+egui-144-after.png bright rows 126 .. 139 height 14
