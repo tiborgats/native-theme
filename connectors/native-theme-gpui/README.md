@@ -16,9 +16,11 @@ Turns a `ResolvedTheme` into a fully configured
   their solid button surfaces instead of upstream's tinted house style.
 - **Fonts and global geometry**: families, sizes, `radius`, `shadow`,
   `focus_ring`, `scrollbar_mode`; a `ThemeConfig` per mode so upstream's own
-  `Theme::change` reproduces the native palette in light and dark (the 12
-  base-palette fields `ThemeConfigColors` keeps private are restored by the
-  connector's observer after each switch).
+  `Theme::change` reproduces the native palette in light and dark. The
+  connector's observer restores after each switch what the config cannot
+  carry: the 12 base-palette fields `ThemeConfigColors` keeps private, and
+  `selection`, `list_active` and `table_active`, whose alpha gpui-component
+  caps at 0.3, 0.2 and 0.2 whenever it applies a config.
 - **The base layer**: gpui-base paints scrollbars and resize handles without
   going through gpui-component; the connector writes the native scrollbar
   width, thumb width, inset and radius, minimum thumb length and colours, and
@@ -164,8 +166,25 @@ through it.
 
 Call `gpui_kit::init` (or `gpui_component::init`) **before** `apply`, as
 upstream requires before any component is used. `apply` initialises the styled
-layer itself only when it is absent; an `init` after `apply` would reset the
-theme to upstream's default.
+layer itself only when it is absent. An `init` after `apply` switches the theme
+to light mode (the stored light variant, or upstream's light constants when
+none is stored) and sets gpui-component's scroll bar mode from the platform
+(`Hover` on Linux), in place of the one `apply` chose from the theme
+(gpui-component `src/theme/mod.rs:36-42`, `:375-388`).
+
+`apply_system_theme` installs the mode the OS reports (`SystemTheme::mode`),
+so do not call gpui-component's `Theme::sync_system_appearance` right after
+it: on Linux GPUI reports a light appearance until the desktop portal has
+answered (gpui-pre-linux `src/linux/platform.rs:144`,
+`src/linux/xdg_desktop_portal.rs:49-51`), so a dark desktop's application
+would turn light for its first frames. Call it when the appearance changes,
+or follow the OS theme with `on_theme_change` (see
+[Runtime theme change](#runtime-theme-change)).
+
+The theme sets the colours and the global font and radius; each widget's own
+native height, padding, radius and font reaches it only through the
+`geometry` builder the application applies to it, as
+[Per-widget geometry](#per-widget-geometry) shows.
 
 ### Light and dark under a preset
 
@@ -179,8 +198,8 @@ use native_theme_gpui::{apply, from_preset};
 
 # fn f(cx: &mut gpui_kit::App) -> native_theme_gpui::Result<()> {
 let prefs = accessibility_preferences();
-let (light, light_resolved) = from_preset("catppuccin-latte", false, &prefs)?;
-let (dark, dark_resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
+let (light, light_resolved) = from_preset("adwaita", false, &prefs)?;
+let (dark, dark_resolved) = from_preset("adwaita", true, &prefs)?;
 apply(light, &light_resolved, &prefs, cx);
 apply(dark, &dark_resolved, &prefs, cx);   // dark is now current; both variants are stored
 # Ok(())
@@ -189,12 +208,17 @@ apply(dark, &dark_resolved, &prefs, cx);   // dark is now current; both variants
 
 Afterwards gpui-component's own `Theme::sync_system_appearance(None, cx)` or
 `Theme::change(mode, None, cx)` switches between the two native palettes: each
-`apply` installs a `ThemeConfig` for every stored variant, and the connector's
-observer restores the base-layer geometry and the 12 base-palette colours the
-config cannot carry after the switch. With only one variant stored, a switch to
-the other mode shows upstream's built-in `ThemeColor::light()` / `dark()`
-constants (the default config carries no colours), so call `apply` once per
-variant.
+`apply` installs a `ThemeConfig` for every stored variant, and after the switch
+the connector's observer restores what the config cannot carry: the
+base-layer geometry, the 12 base-palette colours, and the native `selection`,
+`list_active` and `table_active`, which gpui-component caps at alpha 0.3, 0.2
+and 0.2 whenever it applies a config (see
+[How re-application works](#how-re-application-works)). The two variants must
+be one theme's: `apply` drops the other mode's stored variant when a theme of
+another display name stored it. With only one variant stored, a switch to the
+other mode shows upstream's built-in `ThemeColor::light()` constants, in light
+mode, those three as upstream caps them (the default config is a light one and
+carries no colours), so call `apply` once per variant.
 
 ## Core concepts
 
@@ -364,7 +388,7 @@ test over every preset and mode says so.
 | `title_bar_inactive` | `window.inactive_title_bar_background`, `window.inactive_title_bar_text_color` | a `TitleBar` while its window is not the active one, after `title_bar`: `.when(!window.is_window_active(), \|bar\| bar.refine_style(&geometry::title_bar_inactive(n)))`. gpui redraws the window when its activation changes. The fill is upstream's gradient drawn from the inactive colour, so a theme whose inactive pair is the active one draws the same bar in both states |
 | `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.border.line_width` and `.border.color` (the bottom edge), `.background_color`, `toolbar.font`, `defaults.line_height` | a toolbar row the application draws with its own elements, or gpui-component 0.9.1's `Toolbar`: the height is the content's (at least `bar_height`), and the `Toolbar`'s own Small minimum height (`min_h_8`) is replaced by `bar_height` where stated and reset to `auto` where not. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. The edge is a bottom rule, `toolbar.border.color` at `.line_width`, inside the bar, none at a width of 0 |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
-| `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing |
+| `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing. Where the theme states no track (a transparent `scrollbar.track_color`: `kde-breeze`, `windows-11`), content that runs under the bar shows through it, a row's hover fill and text or cells that reach the edge among it; Qt ends the view at the bar, which this gutter reproduces. |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
 
 The `button`, `input`, `select`, `combobox`, `list_item` and `progress`
@@ -497,15 +521,28 @@ application's own `ScrollHandle`, to reveal a tab otherwise.
 ## How re-application works
 
 gpui-component's `Theme::change`, `sync_system_appearance` and `sync_base`
-rebuild gpui-base's theme with upstream's fixed scrollbar styles. `apply`
+rebuild gpui-base's theme with upstream's fixed scrollbar styles, and a
+rebuild from a config (`Theme::change`, `sync_system_appearance`, a
+`ThemeRegistry` reload) also resets what the config cannot carry. `apply`
 therefore installs, once per `App`, a global observer on `gpui_base::Theme`
-that writes the native scrollbar geometry and resize-handle colours back after
-every such rebuild, and restores the 12 base-palette colours (`red` …
-`cyan_light`) the rebuild reset, because `ThemeConfigColors` keeps those
-private and the variant's config cannot carry them. It absorbs the notification of its own write with a flag
-and repairs the handle colours if another effect rebuilt the base theme in the
-meantime; the scrollbar styles are opaque upstream, so a rebuild that happens
-to leave the handle colours unchanged is repaired at the next one.
+that, on every notification of that theme, and so after every such rebuild:
+
+- restores the 12 base-palette colours (`red` … `cyan_light`), which
+  `ThemeConfigColors` keeps private, so the variant's config cannot carry them;
+- restores `selection`, `list_active` and `table_active`, with their tokens,
+  where each holds what gpui-component's cap made of the native colour.
+  gpui-component 0.9.1 caps their alpha at 0.3, 0.2 and 0.2 whenever it applies
+  a config, a colour the config states included (`src/theme/schema.rs:1039-1070`),
+  so a selection the theme states opaque, as Breeze and macOS draw it, would
+  be a faint wash from the first switch on. The restore goes through
+  `Theme::update`, which also rebuilds gpui-base's copies of `selection`: its
+  colour tokens, which paint selected text, and the text view's defaults;
+- writes the native scrollbar geometry and resize-handle colours back.
+
+It absorbs the notification of its own write with a flag and repairs the
+handle colours if another effect rebuilt the base theme in the meantime; the
+scrollbar styles are opaque upstream, so a rebuild that happens to leave the
+handle colours unchanged is repaired at the next one.
 
 `apply` also installs the theme's `tooltip.show_delay_ms` as gpui-base's
 application-wide `TooltipDefaults` show delay, which every tooltip shown
@@ -523,13 +560,157 @@ through `StatefulInteractiveElement::tooltip_show_delay`.
 
 Assumptions: the connector is the only code writing `gpui_base::Theme`
 besides gpui-component itself, and the only code writing the styled theme's 12
-base-palette fields after `apply` (a value set there by the application is
-replaced at the next rebuild); and gpui-component's `ThemeRegistry` observer
-replaces the styled theme's configs by *name* on a registry change, so an
+base-palette fields after `apply` (a value set there by the application does
+not stay: the connector writes them back whenever gpui-base's theme is
+notified, which the application's own `Theme::update` does); a value the
+application gives `selection`,
+`list_active` or `table_active` is its own until the next rebuild replaces it,
+unless it is exactly the capped native colour (the native colour at alpha 0.3
+for `selection`, 0.2 for the other two), which cannot be told from
+gpui-component's cap and is replaced at once; and gpui-component's
+`ThemeRegistry` observer replaces the styled theme's configs by *name* on a registry change, so an
 application that loads a theme through `ThemeRegistry` under the same display
 name as the native theme replaces the connector's colours (the base-layer
 geometry is still restored). The default registry holds two themes,
 `Default Light` and `Default Dark`.
+
+## Limits
+
+Two things a theme cannot reach in gpui-component 0.9.1; each is a request to
+upstream.
+
+**A table's scroll bar is 16 px wide.** `DataTable` sizes the box its scroll
+bars sit in with the fixed `Scrollbar::width()`, 16 px (gpui-component
+`src/table/state.rs:2743`, `:2762`; gpui-base `src/scrollbar.rs:22`,
+`:950-952`), where every other scroll area takes the track width the connector
+installs, `scrollbar.groove_width` (21 px under kde-breeze). With a wider
+groove, a table's bar is cut to 16 px with its thumb off centre, and its hit
+area reaches into the last column by the difference (read from gpui-base's
+layout and paint code, `src/scrollbar.rs:1425-1448`, `:1554-1556`,
+`:1600-1604`, not run). An application whose tables matter more than its other
+scroll areas narrows the groove to 16 px with an overlay, which every scroll
+bar then takes:
+
+```rust,no_run
+use native_theme_gpui::{SystemTheme, Theme, apply_system_theme};
+
+# fn f(cx: &mut gpui_kit::App) -> native_theme_gpui::Result<()> {
+let overlay = Theme::from_toml(r##"
+[light.scrollbar]
+groove_width_px = 16.0
+
+[dark.scrollbar]
+groove_width_px = 16.0
+"##)?;
+apply_system_theme(&SystemTheme::from_system()?.with_overlay(&overlay)?, cx);
+# Ok(())
+# }
+```
+
+**A selected cell's fill covers its text.** In a `DataTable` with cell
+selection on (`cell_selectable`, off by default), gpui-component paints
+`table_active` over a selected cell (`src/table/state.rs:2458-2472`), where it
+paints it behind a selected row (`:2536-2541`). The connector gives
+`table_active` the platform's row selection colour, `list.selection_background`,
+which every bundled preset but windows-11 states opaque, so a selected cell's
+text is hidden. One token cannot serve both: a translucent one keeps the cell
+readable and washes out every selected row. An application that selects cells
+writes a translucent `table_active` of its own through `Theme::update`, at an
+alpha other than 0.2 (gpui-component's cap, which the connector undoes, see
+[How re-application works](#how-re-application-works)), after every call that
+replaces it (see [Overriding theme values](#overriding-theme-values)):
+
+```rust,no_run
+use gpui_kit::component::Theme;
+
+# fn f(cx: &mut gpui_kit::App) {
+Theme::update(cx, |theme| theme.table_active = theme.table_active.alpha(0.25));
+# }
+```
+
+## Overriding theme values
+
+An application that wants a value of its own writes it over the installed
+theme through gpui-component's `Theme::update`, which brings `Theme::tokens`
+and gpui-base's copy of the theme in step with the fields the closure sets
+(gpui-component `src/theme/mod.rs:264-299`, `src/theme/theme_color.rs:373-388`);
+writing `theme.tokens` as well is not needed.
+
+Three kinds of call replace such a value:
+
+- every `apply`, `apply_system_theme` (an `on_theme_change` closure's
+  included) and `apply_accessibility` (where a variant is stored) installs a
+  new theme, every field of it but the application's `notification`, `list`, `sheet`, `motion` and
+  `cursor_blink` settings;
+- every rebuild from a config, `Theme::change`, `Theme::sync_system_appearance`
+  and a `ThemeRegistry` reload, replaces the colours, fonts, radii, `shadow`
+  and the highlight theme with the config's (`src/theme/schema.rs:1078-1126`);
+  `focus_ring` and
+  `scrollbar_mode` survive it;
+- `gpui_kit::init` (or `gpui_component::init`) after `apply` is such a rebuild,
+  to light mode, and also sets `scrollbar_mode` from the platform.
+
+So the application writes its overrides in one function of its own and calls
+it after each of those calls (and calls `init` before `apply`, as the Quick
+start says):
+
+```rust,no_run
+use gpui_kit::App;
+use gpui_kit::component::{Theme, ThemeMode};
+use native_theme_gpui::{SystemTheme, apply_system_theme};
+
+/// The application's own values, written after every call that replaces them.
+fn theme_overrides(cx: &mut App) {
+    Theme::update(cx, |theme| {
+        theme.focus_ring = false;
+        theme.table_active = theme.table_active.alpha(0.25);
+    });
+}
+
+# fn f(cx: &mut App) -> native_theme_gpui::Result<()> {
+apply_system_theme(&SystemTheme::from_system()?, cx);
+theme_overrides(cx);
+
+// Later, a switch of the mode:
+Theme::change(ThemeMode::Dark, None, cx);
+theme_overrides(cx);
+# Ok(())
+# }
+```
+
+A value that is theme data, a colour or size of the platform's that the
+`geometry` builders and the other connectors should take too, belongs in a TOML
+overlay instead ([Apply user overrides to the OS theme](#apply-user-overrides-to-the-os-theme)):
+it reaches both modes and survives all of the above.
+
+The connector keeps some fields at the native value itself: the 12
+base-palette colours (`red` … `cyan_light`), which it writes back whenever
+gpui-base's theme is notified, so a value of the application's there does not
+stay (its own `Theme::update` causes such a notification); and `selection`,
+`list_active` and `table_active` where they hold gpui-component's cap of the
+native colour (the native colour at alpha 0.3, 0.2 and 0.2). A value the
+application sets to exactly that capped colour cannot be told from the cap and
+is replaced too; any other value of its own stays until one of the calls above
+replaces it.
+
+**The focus ring.** gpui-component draws focus the same way however the focus
+came, a click included (`DataTable` and `Carousel` are the exceptions: they
+show their focus style only for a focus that did not come from the pointer,
+`src/table/data_table.rs:255-261`, `src/carousel/carousel.rs:132-138`): a focused
+control's border turns `ring`, and a 3 px band of `ring` at alpha 0.5 lies
+outside it (gpui-component `src/styled.rs:11-12`, `:257-262`, `:302-327`).
+`theme.focus_ring = false`, as above, turns the band off. What remains: a
+focused element with a border keeps its border in `ring`, and one without a
+border gets a 1 px line (`:264-299`), in `ring`, or, on a borderless button
+that is neither a ghost nor unpadded, in the button's text colour at 60 % of
+its alpha (`src/button/button.rs:643-650`). For a
+text field that is Breeze's look on any focus; a focused button keeps a tinted
+border, which Breeze shows for keyboard focus only. Breeze draws its band, 2 px
+of the selection colour at alpha 0.3, only for a focus that came from the
+keyboard, so on KDE an application whose users mostly point and click may
+prefer the ring off; a keyboard user then loses the band Breeze would draw.
+`apply` sets `focus_ring` from the theme again (on where
+`defaults.focus_ring_width` is above 0), so write it after each `apply`.
 
 ## Features
 
