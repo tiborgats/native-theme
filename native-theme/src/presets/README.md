@@ -120,12 +120,12 @@ none:
   `[Icons] Theme`, and the GNOME reader from the `icon-theme` gsetting; the
   macOS and Windows readers read none. A variant's own value comes first,
   then the Theme-level one, then the detected system theme (`pipeline.rs`)
-- **`font_dpi`** -- filled by the platform reader: KDE's from `kcmfonts`'
-  `forceFontDPI` (on X11), `Xft.dpi` or the display, GNOME's a fixed 96
-  (GNOME's text-scaling factor goes to `text_scaling_factor`, not into the
-  DPI; on a GNOME or Budgie X11 session the reader reports a
-  `text_scaling_factor` of 1.0 instead, with the DPI still 96: winit and
-  gpui take their X11 scale factor from the `Xft.dpi` gnome-settings-daemon
+- **`font_dpi`** -- filled by the platform reader: 96 on every Linux desktop,
+  KDE's and GNOME's alike, since the toolkit's scale factor already carries
+  the display's scale (GNOME's text-scaling factor goes to
+  `text_scaling_factor`, not into the DPI; on a GNOME or Budgie X11 session
+  the reader reports a `text_scaling_factor` of 1.0 instead: winit and gpui
+  take their X11 scale factor from the `Xft.dpi` gnome-settings-daemon
   writes with the factor in it, so the connectors' text scaling would apply
   it twice, as `GnomeReader`'s doc in `gnome/mod.rs` says), macOS's a fixed
   72, and Windows' a fixed 96, since it reads its fonts at 96 DPI so that

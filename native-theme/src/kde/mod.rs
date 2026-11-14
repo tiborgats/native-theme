@@ -9,8 +9,6 @@
 //! - `kdeglobals`: the colours, fonts, icon theme and accessibility flags.
 //! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
 //!   file, read under it as KConfig cascades them.
-//! - `kcmfonts`: `forceFontDPI`, on X11, the file the fonts KCM writes it
-//!   to and krdb reads it from (`docs/platform-facts.md:717`).
 //! - `org.freedesktop.appearance accent-color`: the portal's accent colour,
 //!   with the `portal` feature (`crate::gnome::GnomePortalKdeReader`):
 //!   xdg-desktop-portal-kde gives the application palette's highlight
@@ -22,8 +20,6 @@
 //! - `$XDG_CONFIG_DIRS/kdeglobals` (`/etc/xdg/kdeglobals`): the system's
 //!   files, which the distribution or an administrator writes, not the user's
 //!   settings.
-//! - `Xft.dpi` (`xrdb -query`) and `xrandr`: the rest of the font DPI
-//!   chain, read from the X server, not from a settings file.
 //! - The icon theme's `index.theme`: its sizes, which the icon theme's
 //!   package writes.
 
@@ -95,7 +91,7 @@ fn read_kde_ini(
 }
 
 /// The KDE reader's result for the kdeglobals in `ini`: [`read_kde_ini`],
-/// with the font DPI and the icon theme's sizes read from the system.
+/// with the icon theme's sizes read from the system and the font DPI of every Linux desktop, 96.
 fn from_kde_ini(ini: &configparser::ini::Ini) -> crate::ReaderResult {
     let (mut mode, is_dark, name, accessibility) = read_kde_ini(ini);
 
@@ -112,8 +108,8 @@ fn from_kde_ini(ini: &configparser::ini::Ini) -> crate::ReaderResult {
         name: std::borrow::Cow::Owned(name),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
-        // I/O: the cached chain (kcmfonts forceFontDPI on X11 -> xrdb -> xrandr -> 96.0)
-        font_dpi: Some(crate::detect::system_font_dpi()),
+        // No I/O: the font DPI is a constant (detect::LINUX_FONT_DPI)
+        font_dpi: Some(crate::detect::LINUX_FONT_DPI),
         accessibility,
     }
 }
@@ -124,24 +120,6 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ReaderResu
     let mut ini = create_kde_parser();
     read_kconfig(&mut ini, content);
     Ok(from_kde_ini(&ini))
-}
-
-/// Read a single key from `kcmfonts` in the user's config directory
-/// ([`crate::detect::xdg_config_home`]).
-///
-/// Returns `None` if there is no config directory, the file is missing or
-/// unreadable, or the key is not found.
-pub(crate) fn read_kcmfonts_key(section: &str, key: &str) -> Option<String> {
-    kcmfonts_key_in(&crate::detect::xdg_config_home()?, section, key)
-}
-
-/// [`read_kcmfonts_key`] in the config directory `config_dir`, the file read
-/// as KConfig reads it ([`read_kconfig`]), its bytes decoded lossily.
-fn kcmfonts_key_in(config_dir: &std::path::Path, section: &str, key: &str) -> Option<String> {
-    let bytes = std::fs::read(config_dir.join("kcmfonts")).ok()?;
-    let mut ini = create_kde_parser();
-    read_kconfig(&mut ini, &String::from_utf8_lossy(&bytes));
-    ini.get(section, key)
 }
 
 /// Parse icon sizes from an icon theme's index.theme already loaded into a
@@ -847,44 +825,6 @@ BackgroundNormal=49,54,59
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("kdedefaults")).unwrap();
         TempConfigDir(dir)
-    }
-
-    /// Plasma's fonts KCM and krdb open `forceFontDPI`'s file by the name
-    /// `kcmfonts`, and KConfig adds no `rc` to a name it is given
-    /// (docs/platform-facts.md:717).
-    #[test]
-    fn force_font_dpi_is_read_from_kcmfonts() {
-        let dir = temp_config_dir("kcmfonts");
-        std::fs::write(dir.0.join("kcmfonts"), "[General]\nforceFontDPI=144\n").unwrap();
-        assert_eq!(
-            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
-            Some("144")
-        );
-    }
-
-    /// `kcmfonts` is read as KConfig reads it ([`read_kconfig`]): a stray
-    /// line, or a byte that is not UTF-8, loses that line, not the file.
-    #[test]
-    fn kcmfonts_keeps_its_keys_past_a_stray_line() {
-        let dir = temp_config_dir("kcmfonts-stray");
-        std::fs::write(
-            dir.0.join("kcmfonts"),
-            "[Stray\n[General]\nforceFontDPI=144\n",
-        )
-        .unwrap();
-        assert_eq!(
-            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
-            Some("144")
-        );
-        std::fs::write(
-            dir.0.join("kcmfonts"),
-            b"[General]\nName=\xff\nforceFontDPI=120\n",
-        )
-        .unwrap();
-        assert_eq!(
-            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
-            Some("120")
-        );
     }
 
     fn paths(paths: &[&str]) -> Vec<std::path::PathBuf> {
@@ -1754,6 +1694,22 @@ AnimationDurationFactor=1.0
         assert_eq!(dpi, None);
         let (_theme, dpi, _accessibility) = from_kde_content_pure(content, Some(144.0))?;
         assert_eq!(dpi, Some(144.0));
+        Ok(())
+    }
+
+    /// The reader reports the font DPI of every Linux desktop, 96, on any
+    /// session; the fixture's kdeglobals `forceFontDPI=120` stays ignored.
+    #[test]
+    fn the_reader_reports_a_font_dpi_of_96() -> crate::Result<()> {
+        let result = from_kde_content(BREEZE_DARK_FULL)?;
+        assert_eq!(result.font_dpi, Some(96.0));
+        let sys = crate::pipeline::run_pipeline(result, "kde-breeze")?;
+        // Noto Sans 10 pt at 96 DPI is 13.33 px.
+        let size = sys.dark.defaults.font.size;
+        assert!(
+            (size - 10.0 * 96.0 / 72.0).abs() < 0.01,
+            "drawn at {size} px"
+        );
         Ok(())
     }
 

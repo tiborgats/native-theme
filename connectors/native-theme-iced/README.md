@@ -720,7 +720,7 @@ let loaded = customised.to_iced_theme();
 With the `watch` feature, `theme_changes()` is an iced `Subscription` of the
 OS theme's changes: return it from `subscription()`, and on each change clear
 native-theme's detection caches, read the theme again and rebuild what was
-built from it, such as the `Spinner`. The caches hold the font DPI, dark mode,
+built from it, such as the `Spinner`. The caches hold dark mode,
 the icon theme and the accessibility preferences, so a re-read without
 `invalidate_caches()` gets the old ones. The caches are
 native-theme's, reached through the re-exported source crate

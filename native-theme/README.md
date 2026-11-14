@@ -68,7 +68,7 @@ does not supply keeps the preset's value. Both variants are resolved.
 
 | Platform | Feature | Reads | Preset |
 |---|---|---|---|
-| KDE Plasma | `kde` | `kdeglobals`, `kcmfonts`; with `portal`, the portal's accent colour | `kde-breeze` |
+| KDE Plasma | `kde` | `kdeglobals`; with `portal`, the portal's accent colour | `kde-breeze` |
 | GNOME, Budgie | `portal` | the XDG Desktop Portal settings and gsettings | `adwaita` |
 | macOS 11 and later | `macos` | `NSColor` under both appearances, `NSFont`, the scroller style and the accessibility options | `macos-monterey` before 26 (it covers 12 to 15), `macos-tahoe` from 26 |
 | Windows | `windows` | `UISettings`, the system metrics and fonts | `windows-11` |

@@ -79,9 +79,9 @@ fn scaled() -> AccessibilityPreferences {
 /// Resolve a preset without consulting the machine. `ResolutionContext::for_tests`
 /// pins the font DPI at 96, so the point sizes the presets declare convert to
 /// the same pixels everywhere; `from_preset` would resolve through
-/// `ResolutionContext::from_system`, whose DPI is read from the desktop
-/// (`native-theme/src/resolve/context.rs:62-83`) and would make the expected
-/// height machine-dependent.
+/// `ResolutionContext::from_system`, whose DPI is the host platform's (72 on
+/// macOS, 96 elsewhere: `ResolutionContext::font_dpi`) and would make the
+/// expected height platform-dependent.
 fn resolved(preset: &str) -> ResolvedTheme {
     resolved_at(preset, ResolutionContext::for_tests().font_dpi)
 }

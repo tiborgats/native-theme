@@ -569,7 +569,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
 /// (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`,
 /// `:797-798`), and on X11 winit 0.30.13 takes its scale factor from that
 /// DPI over 96, XSETTINGS first (`src/platform_impl/linux/x11/util/randr.rs:41-53`,
-/// `:145-146`), as gpui-pre-linux 0.3.10 does from `Xft.dpi`
+/// `:145-146`), as gpui-pre-linux 0.3.12 does from `Xft.dpi`
 /// (`src/linux/x11/client.rs:2674-2681`). Each does so only while its
 /// override is unset: winit's `WINIT_X11_SCALE_FACTOR` (`randr.rs:112-154`)
 /// and gpui's `GPUI_X11_SCALE_FACTOR` (`client.rs:2623-2669`) set the scale
@@ -600,7 +600,7 @@ fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::ReaderResult {
         name: "GNOME".into(),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
-        font_dpi: Some(crate::detect::GNOME_FONT_DPI),
+        font_dpi: Some(crate::detect::LINUX_FONT_DPI),
         accessibility,
     }
 }

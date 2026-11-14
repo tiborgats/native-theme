@@ -22,7 +22,7 @@ targets = [
 # No feature is needed to load, merge and resolve presets and TOML files.
 # Each OS-specific dependency is compiled only on its own target.
 
-# The KDE Plasma reader: kdeglobals and kcmfonts (Linux).
+# The KDE Plasma reader: kdeglobals (Linux).
 kde = ["dep:configparser"]
 # The GNOME and Budgie reader: the XDG Desktop Portal settings and gsettings;
 # with `kde`, the portal's accent colour on KDE too (Linux).

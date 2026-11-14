@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-gpui**: requires gpui-component, gpui-base and gpui-kit 0.9.1 and gpui-pre 0.3.12; on the `gpui-fast` feature, GPUI Fast 0.1.14 (MSRV unchanged, 1.95.0). `clippy.toml`'s list of upstream functions that panic on their input follows: `WindowTextSystem::shape_line_by_hash` and `layout_line_by_hash` are gone upstream, and `PriorityQueueSender::send` and `spin_send`, which panic on `Priority::RealtimeAudio`, are added.
 - **All crates**: the manifests no longer state `homepage`, which was the repository's URL that `repository` already gives (Cargo 1.100 warns on the duplicate).
 
+### Fixed
+
+- **native-theme**: on Linux the font DPI is 96 on every desktop, as it already was on GNOME and Budgie, so the display's scale reaches a font size once, through the toolkit's scale factor. The KDE reader and `ResolutionContext::from_system()` took it from KDE's `forceFontDPI` on X11, then `Xft.dpi`, then the monitor's physical DPI from `xrandr`; but gpui and winit already scale by the compositor's scale on Wayland and by `Xft.dpi` on X11, and Plasma writes `Xft.dpi` on Wayland as the display scale × 96, so at a scale of 1.5 a 10 pt font came out at 30 physical pixels where Qt's is 20. Text becomes smaller on a scaled KDE session and on an X11 session that sets `Xft.dpi` above 96; where `Xft.dpi` is unset (Sway and the like, X11 without a settings daemon) it can become larger or smaller, to the size Qt and GTK draw. native-theme no longer runs `xrdb` or `xrandr` or reads `kcmfonts`, the KDE watcher no longer watches `kcmfonts`, and `DetectionContext::invalidate_font_dpi()` has nothing to clear and does nothing.
+
 ## [0.7.0] - 2026-10-27
 
 ### Breaking Changes

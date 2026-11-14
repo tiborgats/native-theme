@@ -228,7 +228,7 @@ impl ThemeMode {
     ///
     /// * `ctx` -- resolution-time inputs captured once per theme-build.
     ///   Use [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
-    ///   for OS-detected values (Linux/Windows ≈ 96 DPI, macOS = 72 DPI,
+    ///   for the platform's values (96 DPI on Linux and Windows, 72 on macOS,
     ///   button order per desktop environment), or
     ///   [`ResolutionContext::for_tests`](crate::resolve::ResolutionContext::for_tests)
     ///   for deterministic test values (96 DPI, `PrimaryRight`,

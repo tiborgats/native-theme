@@ -619,8 +619,8 @@ foreground, with the window and the `App`, each time the OS theme changes,
 for as long as the returned `ThemeSubscription` is held and the window is
 open. Register it on the application's longest-lived window, the main
 window: once that window closes, events stop. In `f`, clear native-theme's
-detection caches, read the theme again and apply it. The caches hold the font
-DPI, dark mode, the icon theme and the accessibility preferences, so a
+detection caches, read the theme again and apply it. The caches hold
+dark mode, the icon theme and the accessibility preferences, so a
 re-read without `invalidate_caches()` gets the old ones. The caches are
 native-theme's, reached through the re-exported source crate
 (`native_theme_gpui::native_theme`), so the connector stays the one
