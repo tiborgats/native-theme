@@ -35,9 +35,9 @@
 //! [`ThemeChangeEvent`] carries no theme data. When you receive an event,
 //! call [`detect::invalidate_caches()`](crate::detect::invalidate_caches),
 //! then re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-//! to get the updated theme: the detection values the reader uses (the font
-//! DPI, dark mode, the icon theme, the accessibility preferences) stay cached
-//! until the caches are cleared.
+//! to get the updated theme: the detection values the reader uses (dark
+//! mode, the icon theme, the accessibility preferences) stay cached until
+//! the caches are cleared.
 //!
 //! # Example
 //!
