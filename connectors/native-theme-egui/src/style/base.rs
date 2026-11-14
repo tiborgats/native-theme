@@ -616,7 +616,7 @@ mod tests {
     /// (`egui/src/containers/scroll_area.rs:1485-1511`). An overlay bar whose stated track is
     /// fully transparent has no groove: the opacities are 0 and the slot takes the input
     /// background, egui's own meaning of it (`egui/src/style.rs:1513`). A solid bar's
-    /// transparent track (windows-11) and an opaque track (kde-breeze) stay in the slot.
+    /// transparent track (windows-11, kde-breeze) and an opaque one (material-3) stay in the slot.
     #[test]
     fn a_clear_overlay_track_leaves_the_slot_to_the_input_background() {
         let opacities = |s: &egui::Style| {
@@ -644,10 +644,19 @@ mod tests {
             );
             assert_eq!(opacities(&s), [0.0; 3], "{preset} {mode:?}");
         }
+        assert_eq!(
+            resolved("material-3", ColorMode::Light)
+                .scrollbar
+                .track_color
+                .a,
+            255,
+            "material-3: the opaque-track witness"
+        );
         for (preset, mode, scheme) in [
             ("kde-breeze", ColorMode::Light, egui::Theme::Light),
             ("windows-11", ColorMode::Light, egui::Theme::Light),
             ("windows-11", ColorMode::Dark, egui::Theme::Dark),
+            ("material-3", ColorMode::Light, egui::Theme::Light),
         ] {
             let t = resolved(preset, mode);
             let (s, _) = build(scheme, &t, &LayoutTheme::default(), None);

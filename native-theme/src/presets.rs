@@ -420,9 +420,9 @@ accent_color = "#00ff00"
                 ("dark", theme.dark.as_ref()),
             ] {
                 let variant = variant_opt.unwrap();
-                // button.primary_background is derived from accent, except on
-                // Windows, where WinUI 3 paints AccentFillColorDefault instead
-                // (docs/platform-facts.md:1188, §2.3)
+                // button.primary_background is derived from accent, except on Windows
+                // (AccentFillColorDefault); KDE's default button is mix(Button, Highlight, 0.2)
+                // and waits for the connectors (docs/platform-facts.md:1188, §2.3)
                 assert_eq!(
                     variant.button.primary_background.is_some(),
                     *name == "windows-11",
@@ -466,13 +466,13 @@ accent_color = "#00ff00"
                     "preset '{name}' {label}.switch.checked_background: stated only where \
                      platform-facts does not derive it from the accent"
                 );
-                // menu.hover_background is the selection on macOS and KDE
-                // ([Colors:Selection]), which it inherits; Windows and GNOME
-                // paint a hover fill of their own (docs/platform-facts.md:1269,
+                // menu.hover_background is the selection on macOS, which it
+                // inherits; KDE (DecorationFocus at 0.3, a layer), Windows and
+                // GNOME paint a hover fill of their own (docs/platform-facts.md:1269,
                 // §2.6)
                 assert_eq!(
                     variant.menu.hover_background.is_some(),
-                    matches!(*name, "adwaita" | "windows-11"),
+                    matches!(*name, "adwaita" | "kde-breeze" | "windows-11"),
                     "preset '{name}' {label}.menu.hover_background: stated only where \
                      platform-facts does not give it the selection"
                 );

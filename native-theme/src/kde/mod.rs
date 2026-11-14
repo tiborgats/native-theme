@@ -9,8 +9,6 @@
 //! - `kdeglobals`: the colours, fonts, icon theme and accessibility flags.
 //! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
 //!   file, read under it as KConfig cascades them.
-//! - `kcmfonts`: `forceFontDPI`, on X11, the file the fonts KCM writes it
-//!   to and krdb reads it from (`docs/platform-facts.md:717`).
 //! - `org.freedesktop.appearance accent-color`: the portal's accent colour,
 //!   with the `portal` feature (`crate::gnome::GnomePortalKdeReader`):
 //!   xdg-desktop-portal-kde gives the application palette's highlight
@@ -22,8 +20,6 @@
 //! - `$XDG_CONFIG_DIRS/kdeglobals` (`/etc/xdg/kdeglobals`): the system's
 //!   files, which the distribution or an administrator writes, not the user's
 //!   settings.
-//! - `Xft.dpi` (`xrdb -query`) and `xrandr`: the rest of the font DPI
-//!   chain, read from the X server, not from a settings file.
 //! - The icon theme's `index.theme`: its sizes, which the icon theme's
 //!   package writes.
 
@@ -95,7 +91,7 @@ fn read_kde_ini(
 }
 
 /// The KDE reader's result for the kdeglobals in `ini`: [`read_kde_ini`],
-/// with the font DPI and the icon theme's sizes read from the system.
+/// with the icon theme's sizes read from the system and the font DPI of every Linux desktop, 96.
 fn from_kde_ini(ini: &configparser::ini::Ini) -> crate::ReaderResult {
     let (mut mode, is_dark, name, accessibility) = read_kde_ini(ini);
 
@@ -112,8 +108,8 @@ fn from_kde_ini(ini: &configparser::ini::Ini) -> crate::ReaderResult {
         name: std::borrow::Cow::Owned(name),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
-        // I/O: the cached chain (kcmfonts forceFontDPI on X11 -> xrdb -> xrandr -> 96.0)
-        font_dpi: Some(crate::detect::system_font_dpi()),
+        // No I/O: the font DPI is a constant (detect::LINUX_FONT_DPI)
+        font_dpi: Some(crate::detect::LINUX_FONT_DPI),
         accessibility,
     }
 }
@@ -124,24 +120,6 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ReaderResu
     let mut ini = create_kde_parser();
     read_kconfig(&mut ini, content);
     Ok(from_kde_ini(&ini))
-}
-
-/// Read a single key from `kcmfonts` in the user's config directory
-/// ([`crate::detect::xdg_config_home`]).
-///
-/// Returns `None` if there is no config directory, the file is missing or
-/// unreadable, or the key is not found.
-pub(crate) fn read_kcmfonts_key(section: &str, key: &str) -> Option<String> {
-    kcmfonts_key_in(&crate::detect::xdg_config_home()?, section, key)
-}
-
-/// [`read_kcmfonts_key`] in the config directory `config_dir`, the file read
-/// as KConfig reads it ([`read_kconfig`]), its bytes decoded lossily.
-fn kcmfonts_key_in(config_dir: &std::path::Path, section: &str, key: &str) -> Option<String> {
-    let bytes = std::fs::read(config_dir.join("kcmfonts")).ok()?;
-    let mut ini = create_kde_parser();
-    read_kconfig(&mut ini, &String::from_utf8_lossy(&bytes));
-    ini.get(section, key)
 }
 
 /// Parse icon sizes from an icon theme's index.theme already loaded into a
@@ -849,44 +827,6 @@ BackgroundNormal=49,54,59
         TempConfigDir(dir)
     }
 
-    /// Plasma's fonts KCM and krdb open `forceFontDPI`'s file by the name
-    /// `kcmfonts`, and KConfig adds no `rc` to a name it is given
-    /// (docs/platform-facts.md:717).
-    #[test]
-    fn force_font_dpi_is_read_from_kcmfonts() {
-        let dir = temp_config_dir("kcmfonts");
-        std::fs::write(dir.0.join("kcmfonts"), "[General]\nforceFontDPI=144\n").unwrap();
-        assert_eq!(
-            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
-            Some("144")
-        );
-    }
-
-    /// `kcmfonts` is read as KConfig reads it ([`read_kconfig`]): a stray
-    /// line, or a byte that is not UTF-8, loses that line, not the file.
-    #[test]
-    fn kcmfonts_keeps_its_keys_past_a_stray_line() {
-        let dir = temp_config_dir("kcmfonts-stray");
-        std::fs::write(
-            dir.0.join("kcmfonts"),
-            "[Stray\n[General]\nforceFontDPI=144\n",
-        )
-        .unwrap();
-        assert_eq!(
-            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
-            Some("144")
-        );
-        std::fs::write(
-            dir.0.join("kcmfonts"),
-            b"[General]\nName=\xff\nforceFontDPI=120\n",
-        )
-        .unwrap();
-        assert_eq!(
-            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
-            Some("120")
-        );
-    }
-
     fn paths(paths: &[&str]) -> Vec<std::path::PathBuf> {
         paths.iter().map(std::path::PathBuf::from).collect()
     }
@@ -1160,13 +1100,13 @@ BackgroundNormal=49,54,59
     }
 
     #[test]
-    fn test_list_header_colors() {
+    fn test_list_header_colors_are_the_button_sets() {
         let result = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = reader_mode(&result);
-        assert_eq!(v.list.header_background, Some(Rgba::rgb(35, 38, 41)));
+        assert_eq!(v.list.header_background, Some(Rgba::rgb(49, 54, 59)));
         assert_eq!(
             v.list.header_font.as_ref().and_then(|f| f.color),
-            Some(Rgba::rgb(252, 252, 252))
+            Some(Rgba::rgb(239, 240, 241))
         );
     }
 
@@ -1303,8 +1243,9 @@ BackgroundNormal=49,54,59
         frame_contrast: None,
     };
 
-    /// The twenty-two colour leaves the reader derives from the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 22] {
+    /// The twenty-nine colour leaves the reader derives from, or reads
+    /// directly from, the colour scheme.
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 29] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1351,11 +1292,21 @@ BackgroundNormal=49,54,59
                 "scrollbar.thumb_active_color",
                 mode.scrollbar.thumb_active_color,
             ),
+            ("menu.hover_background", mode.menu.hover_background),
+            ("menu.hover_text_color", mode.menu.hover_text_color),
+            ("menu.separator_color", mode.menu.separator_color),
+            ("scrollbar.thumb_color", mode.scrollbar.thumb_color),
+            ("list.hover_background", mode.list.hover_background),
+            ("list.header_background", mode.list.header_background),
+            (
+                "list.header_font.color",
+                mode.list.header_font.as_ref().and_then(|f| f.color),
+            ),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 22] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 29] {
         let sw = &theme.switch;
         [
             (
@@ -1410,6 +1361,13 @@ BackgroundNormal=49,54,59
                 "scrollbar.thumb_active_color",
                 theme.scrollbar.thumb_active_color,
             ),
+            ("menu.hover_background", Some(theme.menu.hover_background)),
+            ("menu.hover_text_color", Some(theme.menu.hover_text_color)),
+            ("menu.separator_color", Some(theme.menu.separator_color)),
+            ("scrollbar.thumb_color", Some(theme.scrollbar.thumb_color)),
+            ("list.hover_background", Some(theme.list.hover_background)),
+            ("list.header_background", Some(theme.list.header_background)),
+            ("list.header_font.color", Some(theme.list.header_font.color)),
         ]
     }
 
@@ -1456,10 +1414,10 @@ BackgroundNormal=49,54,59
     }
 
     /// Another accent moves the switch's on track, hovered or not, and its
-    /// outline, the pressed button and the selected segment; the checkbox and
-    /// the progress bar follow it as before.
+    /// outline, the pressed button and the selected segment, and the list's
+    /// hover; the checkbox and the progress bar follow it as before.
     #[test]
-    fn an_accent_moves_the_on_track_the_pressed_button_and_the_selected_segment()
+    fn an_accent_moves_the_on_track_the_pressed_button_the_selected_segment_and_the_list_hover()
     -> crate::Result<()> {
         let scheme = Scheme {
             selection: "233,84,32",
@@ -1473,13 +1431,14 @@ BackgroundNormal=49,54,59
                 "switch.checked_track_border_color",
                 "button.active_background",
                 "segmented_control.active_background",
+                "list.hover_background",
             ]
         );
         Ok(())
     }
 
     #[test]
-    fn the_button_set_moves_the_button_slider_and_switch_leaves() -> crate::Result<()> {
+    fn the_button_set_moves_the_button_slider_switch_and_header_leaves() -> crate::Result<()> {
         let scheme = Scheme {
             button: ("200,180,150", "60,20,10"),
             ..BREEZE_LIGHT_SCHEME
@@ -1498,11 +1457,15 @@ BackgroundNormal=49,54,59
                 "switch.unchecked_track_border_color",
                 "switch.thumb_border_color",
                 "button.active_background",
+                "list.header_background",
+                "list.header_font.color",
             ]
         );
         Ok(())
     }
 
+    /// The Header set moves the toolbar's fill and edge, and not the list's
+    /// header, which is the Button set's.
     #[test]
     fn the_header_set_moves_the_toolbar() -> crate::Result<()> {
         let scheme = Scheme {
@@ -1516,8 +1479,9 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
-    /// The Window set moves the popover's edge, and the toolbar only where
-    /// the scheme has no Header group to take it from.
+    /// The Window set moves the popover's edge, the scroll-bar handles and the
+    /// menu's hover text and separator, and the toolbar only where the scheme
+    /// has no Header group to take it from.
     #[test]
     fn the_window_set_moves_the_popover_edge() -> crate::Result<()> {
         let window = ("230,220,200", "90,40,20");
@@ -1531,6 +1495,9 @@ BackgroundNormal=49,54,59
                 "popover.border.color",
                 "scrollbar.thumb_hover_color",
                 "scrollbar.thumb_active_color",
+                "menu.hover_text_color",
+                "menu.separator_color",
+                "scrollbar.thumb_color",
             ]
         );
         let without_header = Scheme {
@@ -1546,6 +1513,9 @@ BackgroundNormal=49,54,59
                 "popover.border.color",
                 "scrollbar.thumb_hover_color",
                 "scrollbar.thumb_active_color",
+                "menu.hover_text_color",
+                "menu.separator_color",
+                "scrollbar.thumb_color",
             ]
         );
         Ok(())
@@ -1563,7 +1533,7 @@ BackgroundNormal=49,54,59
 
     /// The View set's decorations (D7): DecorationHover moves a hovered
     /// field's frame, the tab hover and the scroll-bar handle, DecorationFocus
-    /// a focused field's frame alone.
+    /// a focused field's frame and the menu's hover.
     #[test]
     fn the_view_decorations_move_the_frames_the_tab_hover_and_the_handle() -> crate::Result<()> {
         let hover = Scheme {
@@ -1583,7 +1553,10 @@ BackgroundNormal=49,54,59
             focus: "20,200,90",
             ..BREEZE_LIGHT_SCHEME
         };
-        assert_eq!(moved_leaves(&focus)?, ["input.focus_border_color"]);
+        assert_eq!(
+            moved_leaves(&focus)?,
+            ["input.focus_border_color", "menu.hover_background"]
+        );
         Ok(())
     }
 
@@ -1601,6 +1574,7 @@ BackgroundNormal=49,54,59
                 "toolbar.border.color",
                 "popover.border.color",
                 "card.border.color",
+                "menu.separator_color",
             ]
         );
         Ok(())
@@ -1754,6 +1728,22 @@ AnimationDurationFactor=1.0
         assert_eq!(dpi, None);
         let (_theme, dpi, _accessibility) = from_kde_content_pure(content, Some(144.0))?;
         assert_eq!(dpi, Some(144.0));
+        Ok(())
+    }
+
+    /// The reader reports the font DPI of every Linux desktop, 96, on any
+    /// session; the fixture's kdeglobals `forceFontDPI=120` stays ignored.
+    #[test]
+    fn the_reader_reports_a_font_dpi_of_96() -> crate::Result<()> {
+        let result = from_kde_content(BREEZE_DARK_FULL)?;
+        assert_eq!(result.font_dpi, Some(96.0));
+        let sys = crate::pipeline::run_pipeline(result, "kde-breeze")?;
+        // Noto Sans 10 pt at 96 DPI is 13.33 px.
+        let size = sys.dark.defaults.font.size;
+        assert!(
+            (size - 10.0 * 96.0 / 72.0).abs() < 0.01,
+            "drawn at {size} px"
+        );
         Ok(())
     }
 

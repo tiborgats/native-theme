@@ -35,9 +35,9 @@
 //! [`ThemeChangeEvent`] carries no theme data. When you receive an event,
 //! call [`detect::invalidate_caches()`](crate::detect::invalidate_caches),
 //! then re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-//! to get the updated theme: the detection values the reader uses (the font
-//! DPI, dark mode, the icon theme, the accessibility preferences) stay cached
-//! until the caches are cleared.
+//! to get the updated theme: the detection values the reader uses (dark
+//! mode, the icon theme, the accessibility preferences) stay cached until
+//! the caches are cleared.
 //!
 //! # Example
 //!
@@ -80,7 +80,7 @@ use std::thread::JoinHandle;
 /// [`detect::invalidate_caches()`](crate::detect::invalidate_caches), then
 /// [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
 /// to read the updated theme; without the first call, the reader's detection
-/// values (the font DPI, dark mode, the icon theme) are the cached ones.
+/// values (dark mode, the icon theme) are the cached ones.
 ///
 /// # Non-exhaustive
 ///
@@ -378,8 +378,8 @@ impl Debounce {
 /// ```
 ///
 /// Clear the detection caches before the re-read, as above: the reader's
-/// detection values (the font DPI, dark mode, the icon theme, the
-/// accessibility preferences) are cached until
+/// detection values (dark mode, the icon theme, the accessibility
+/// preferences) are cached until
 /// [`detect::invalidate_caches()`](crate::detect::invalidate_caches).
 ///
 /// On macOS the change arrives as a distributed notification, which is
@@ -391,8 +391,8 @@ impl Debounce {
 /// thread and never twice at once.
 ///
 /// The watcher observes what the platform's reader reads (each reader
-/// module lists its sources): on KDE `kdeglobals`, `kdedefaults/kdeglobals`
-/// and `kcmfonts` in the config directory; on GNOME and Budgie the
+/// module lists its sources): on KDE `kdeglobals` and `kdedefaults/kdeglobals`
+/// in the config directory; on GNOME and Budgie the
 /// portal's `SettingChanged` for the `org.freedesktop.appearance` settings
 /// and the `org.gnome.desktop.interface`, `org.gnome.desktop.wm.preferences`
 /// and `org.gnome.desktop.a11y.interface` keys the reader reads; on macOS
@@ -568,7 +568,6 @@ mod tests {
     const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
         ("kde", "kdeglobals", "kdeglobals"),
         ("kde", "kdedefaults/kdeglobals", "kdedefaults/kdeglobals"),
-        ("kde", "kcmfonts", "kcmfonts"),
         // xdg-desktop-portal-kde's accent is the palette's highlight, which
         // the colour scheme in kdeglobals sets.
         (
@@ -736,7 +735,7 @@ mod tests {
         }
     }
 
-    /// The KDE watcher observes the file of every KDE row.
+    /// The KDE watcher observes the file of every KDE row, and no other file.
     #[cfg(all(target_os = "linux", feature = "kde"))]
     #[test]
     fn the_kde_watcher_observes_every_kde_source() {
@@ -744,6 +743,12 @@ mod tests {
             assert!(
                 kde::WATCHED_FILES.contains(&file),
                 "the KDE watcher does not observe `{file}`"
+            );
+        }
+        for file in kde::WATCHED_FILES {
+            assert!(
+                table_notifications("kde").any(|n| n == *file),
+                "the KDE watcher observes `{file}`, which no KDE source row names"
             );
         }
     }

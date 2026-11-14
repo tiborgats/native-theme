@@ -32,8 +32,8 @@ pub(crate) fn run_pipeline(reader: ReaderResult, preset_name: &str) -> crate::Re
     } = reader;
 
     // Build ONE resolution-time context for this theme-build. The reader
-    // may have supplied an authoritative font_dpi (e.g. KDE's, from `kcmfonts`' forceFontDPI);
-    // when it does, the context takes it and no DPI detection runs again.
+    // may have supplied its font_dpi (each platform reader does: 96 on Linux and
+    // Windows, 72 on macOS); when it does, the context takes it.
     // button_order + icon_theme are platform-detected as from_system()'s.
     let context = match font_dpi {
         Some(dpi) => crate::resolve::ResolutionContext::with_font_dpi(

@@ -42,8 +42,8 @@
 #   none.
 # - A PATH of the programs the binaries run that the runner has: fc-match
 #   (fontconfig; the run's substitutes were fc-match's, DejaVu Sans), sh, sleep,
-#   true, and the toolchain's cargo and rustc. Not gsettings, xrdb, xrandr or
-#   xfconf-query, the desktop readers native_theme::detect asks.
+#   true, and the toolchain's cargo and rustc. Not gsettings or xfconf-query,
+#   the desktop readers native_theme::detect asks.
 # - The runner's icon themes: Adwaita, hicolor, Humanity and ubuntu-mono,
 #   none other (no breeze). The image installs firefox from the mozillateam
 #   PPA (install-firefox.sh), which Depends on libgtk-3-0t64; it Depends on

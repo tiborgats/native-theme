@@ -1456,7 +1456,7 @@ pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
         )
         .instance(
             "accent is the menu highlight",
-            "the highlighted row takes the token a menu row's hover takes, which the connector fills from the platform's menu hover colour, so the palette follows the platform's menu selection rather than a list selection (native-theme-gpui/colors.rs, assign_core)",
+            "the highlighted row takes the token a menu row's hover takes, which the connector fills from the platform's menu hover colour, so the palette follows the platform's menu hover rather than a list selection (native-theme-gpui/colors.rs, assign_core)",
         )
         .not_themeable(
             "scrollbar",

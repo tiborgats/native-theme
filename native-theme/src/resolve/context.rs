@@ -43,22 +43,33 @@ pub struct ResolutionContext {
     /// [`Error::ResolutionInvalid`](crate::Error::ResolutionInvalid) on the
     /// path `context.font_dpi`, before any point size is converted.
     ///
-    /// [`from_system`](Self::from_system) detects it: 72.0 on macOS, 96.0 on
-    /// Windows, 96.0 on a GNOME or Budgie desktop (with the `portal` feature;
-    /// GNOME's text-scaling factor is carried in
-    /// [`AccessibilityPreferences`](crate::AccessibilityPreferences), not in
-    /// the DPI; an unrecognised desktop counts as the one
-    /// [`SystemTheme::from_system`](crate::SystemTheme::from_system) reads,
-    /// its portal backend's once a system read has asked it), and on other
-    /// Linux desktops KDE's kcmfonts `forceFontDPI` on an X11
-    /// session (with the `kde` feature), then `Xft.dpi`, then xrandr's
-    /// physical DPI (with `kde` or `portal`), then 96.0; 96.0 elsewhere. The
-    /// detected DPI is cached until
-    /// [`invalidate_caches()`](crate::detect::invalidate_caches). When the
-    /// OS theme is read
-    /// ([`SystemTheme::from_system`](crate::SystemTheme::from_system)), the
-    /// reader's own DPI replaces it: KDE's this same cached chain; GNOME's
-    /// 96.0, macOS's 72.0 and Windows' 96.0.
+    /// [`from_system`](Self::from_system) gives the platform's: 72.0 on macOS,
+    /// where a point is a pixel, and 96.0 everywhere else, every Linux desktop
+    /// included. Nothing is detected or cached. On Linux the toolkit's scale
+    /// factor carries the display's scale (from the compositor on Wayland, from
+    /// `Xft.dpi` on X11), so the font DPI carries none of it; GNOME's
+    /// text-scaling factor is carried in
+    /// [`AccessibilityPreferences`](crate::AccessibilityPreferences). When the OS
+    /// theme is read ([`SystemTheme::from_system`](crate::SystemTheme::from_system)),
+    /// the reader's own DPI, the same value, replaces it.
+    ///
+    /// No font DPI is right where the application, not the toolkit, decides the
+    /// X11 scale (`GPUI_X11_SCALE_FACTOR`, `WINIT_X11_SCALE_FACTOR`); on X11
+    /// without `Xft.dpi`, where gpui and winit scale the whole interface by the
+    /// monitor's size (gpui-fast by `GDK_SCALE` where the session sets it) and Qt
+    /// does not (text and interface stay in proportion, at the toolkit's size);
+    /// on Plasma 6.7 X11 with a global scale other than 1
+    /// and a forced font DPI that departs from it, where Qt takes its scale from
+    /// `QT_SCREEN_SCALE_FACTORS` and gpui and winit from `Xft.dpi`; and for a
+    /// toolkit that does not scale by `Xft.dpi` on X11 (none of the three
+    /// connectors'). Such an application builds its own context for the preset
+    /// and TOML paths ([`Theme::resolve_with`](crate::Theme::resolve_with),
+    /// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved));
+    /// [`SystemTheme::from_system`](crate::SystemTheme::from_system) takes no font
+    /// DPI, so on that path it re-derives its sizes from each resolved font's
+    /// [`defined_size`](crate::theme::ResolvedFontSpec::defined_size) (the text
+    /// scale's entries carry no `defined_size`, so their sizes cannot be
+    /// re-derived).
     pub font_dpi: f32,
     /// Dialog button ordering (`PrimaryLeft` on KDE and Windows,
     /// `PrimaryRight` elsewhere).
@@ -96,7 +107,7 @@ impl ResolutionContext {
     }
 
     /// [`from_system`](Self::from_system) with a `font_dpi` already known,
-    /// such as the one a platform reader detected: no DPI detection runs.
+    /// such as the one a platform reader reported.
     /// `detected` is the outcome of the icon theme's detection.
     pub(crate) fn with_font_dpi(font_dpi: f32, detected: crate::Result<String>) -> Self {
         Self {

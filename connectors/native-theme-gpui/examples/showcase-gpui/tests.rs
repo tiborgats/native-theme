@@ -1687,7 +1687,7 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
 /// shows; ios-13 is offered on macOS too (its `platforms` are `macos` and
 /// `ios`), so it is resolved at 72. A colour-scheme preset, offered
 /// everywhere (no `platforms`), keeps the host's DPI (`None`), as
-/// `ResolutionContext::from_system` reads it.
+/// `ResolutionContext::from_system` gives it.
 fn side_panel_presets() -> Vec<(&'static str, Option<f32>)> {
     native_theme::theme::Theme::list_presets()
         .iter()

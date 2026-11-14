@@ -615,7 +615,7 @@ pub fn button(
 /// The variant line of a Ghost Button built with
 /// `native_theme_gpui::variants::ghost_button`.
 fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
-    info.instance("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu selection colour, not a button hover")
+    info.instance("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu's hover fill (`menu.hover_background`), not a button hover")
 }
 
 /// `info` with what the page's Ghost Button paints, unrefined, and its
