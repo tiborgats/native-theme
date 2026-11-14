@@ -205,7 +205,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// variant), whose notes join [`ThemeAtlas::notes`](crate::ThemeAtlas::notes), as in [`from_system`]. Its
 /// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:270`), as
 /// in both siblings (`connectors/native-theme-iced/src/lib.rs:583`,
-/// `connectors/native-theme-gpui/src/lib.rs:459`).
+/// `connectors/native-theme-gpui/src/lib.rs:466`).
 /// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
 /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
 /// egui's default base. A family the OS lacks costs one ask of the platform per process, not
@@ -409,7 +409,7 @@ pub trait SystemThemeExt: sealed::Sealed {
     ///
     /// Deviation from `SystemThemeExt::to_iced_theme`
     /// (`connectors/native-theme-iced/src/lib.rs:663`) and `to_gpui_theme`
-    /// (`connectors/native-theme-gpui/src/lib.rs:578`), which return a `Loaded` holding one
+    /// (`connectors/native-theme-gpui/src/lib.rs:585`), which return a `Loaded` holding one
     /// toolkit theme, of the OS colour mode's variant: egui stores one `Style` per
     /// `egui::Theme` and, under `ThemePreference::System`, picks one every pass from
     /// `RawInput::system_theme` (`egui/src/memory/mod.rs:358-359`), so returning one variant

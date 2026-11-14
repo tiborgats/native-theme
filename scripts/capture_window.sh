@@ -348,7 +348,7 @@ SHOWCASE_START_DELAY=3
 # the release asset run's parity step also compares at rest: three, dark and
 # light, each with its icon set, as `theme:variant:icon-set:icon-theme`.
 # kde-breeze names its freedesktop icon theme per variant, breeze and
-# breeze-dark (native-theme/src/presets/kde-breeze.toml:16, :478).
+# breeze-dark (native-theme/src/presets/kde-breeze.toml:16, :601).
 SCREENSHOT_ENTRIES=(
     "kde-breeze:dark:freedesktop:breeze-dark"
     "kde-breeze:light:freedesktop:breeze"

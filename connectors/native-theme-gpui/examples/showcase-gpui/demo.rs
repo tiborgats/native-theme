@@ -2180,7 +2180,7 @@ pub(crate) fn text_in(n: &Native<'_>, font: &ResolvedFontSpec, text: &'static st
         .font_weight(FontWeight(f32::from(font.weight)))
         .child(text);
     // The connector's own mapping, `font_style` (native-theme-gpui
-    // src/lib.rs:765-771), is private to its crate.
+    // src/lib.rs:834-840), is private to its crate.
     label.text_style().font_style = Some(match font.style {
         FontStyle::Normal => gpui::FontStyle::Normal,
         FontStyle::Italic => gpui::FontStyle::Italic,
